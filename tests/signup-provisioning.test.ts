@@ -1,0 +1,93 @@
+import { describe, expect, it } from "vitest";
+
+import {
+  createSignupProvisioningService,
+  resolveAvailableSlug,
+  type SignupProvisioningRepository
+} from "@/modules/onboarding/signup-provisioning";
+
+function createRepository(
+  existingSlugs: string[] = []
+): SignupProvisioningRepository & {
+  calls: string[];
+} {
+  const calls: string[] = [];
+
+  return {
+    calls,
+    async emailExists(email) {
+      calls.push(`email:${email}`);
+      return email === "used@example.com";
+    },
+    async getUnavailableSlugs() {
+      calls.push("slugs");
+      return new Set(existingSlugs);
+    },
+    async createAccountWithSite(input) {
+      calls.push("transaction");
+      return {
+        userId: "user_1",
+        tenantId: "tenant_1",
+        siteId: "site_1",
+        slug: input.site.slug,
+        subscriptionStatus: input.subscription.status
+      };
+    }
+  };
+}
+
+describe("signup provisioning", () => {
+  it("creates a user, tenant, site, default content and trial subscription", async () => {
+    const repository = createRepository(["ali-ahmed-studio"]);
+    const service = createSignupProvisioningService({
+      repository,
+      now: () => new Date("2026-07-06T12:00:00.000Z")
+    });
+
+    const result = await service.provisionTrialSite({
+      name: "Ali Ahmed Studio",
+      email: "ali@example.com",
+      password: "StrongPass123!",
+      selectedTemplateCode: "noir-gold"
+    });
+
+    expect(repository.calls).toEqual([
+      "email:ali@example.com",
+      "slugs",
+      "transaction"
+    ]);
+    expect(result).toMatchObject({
+      userId: "user_1",
+      tenantId: "tenant_1",
+      siteId: "site_1",
+      slug: "ali-ahmed-photo",
+      subscriptionStatus: "TRIAL",
+      redirectTo: "/dashboard"
+    });
+  });
+
+  it("stops before provisioning when the email is already used", async () => {
+    const repository = createRepository();
+    const service = createSignupProvisioningService({ repository });
+
+    await expect(
+      service.provisionTrialSite({
+        name: "Ali Ahmed",
+        email: "used@example.com",
+        password: "StrongPass123!"
+      })
+    ).rejects.toThrow("Email already exists");
+
+    expect(repository.calls).toEqual(["email:used@example.com"]);
+  });
+
+  it("skips reserved route names when generating a site slug", () => {
+    expect(resolveAvailableSlug("Admin", new Set())).toBe("admin-studio");
+  });
+
+  it("uses a safe fallback when the display name cannot become a URL slug", () => {
+    expect(resolveAvailableSlug("مصور القاهرة", new Set())).toBe(
+      "photographer-studio"
+    );
+  });
+});

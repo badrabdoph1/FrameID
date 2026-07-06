@@ -1,0 +1,647 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  USER
+  SUPER_ADMIN
+  OPERATIONS_ADMIN
+  BILLING_MANAGER
+  TEMPLATE_MANAGER
+  SUPPORT_AGENT
+  SECURITY_AUDITOR
+}
+
+enum TenantStatus {
+  TRIAL
+  ACTIVE
+  EXPIRED
+  SUSPENDED
+}
+
+enum SiteStatus {
+  DRAFT
+  PUBLISHED
+  EXPIRED
+  SUSPENDED
+}
+
+enum DomainStatus {
+  PENDING
+  VERIFIED
+  FAILED
+}
+
+enum ThemeStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum SubscriptionStatus {
+  TRIAL
+  ACTIVE
+  EXPIRED
+  PAST_DUE
+  CANCELLED
+  SUSPENDED
+}
+
+enum PaymentMethod {
+  INSTAPAY
+  VODAFONE_CASH
+  STRIPE
+  PAYPAL
+}
+
+enum PaymentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  EXPIRED
+}
+
+enum BackupType {
+  DATABASE
+  UPLOADS
+  FULL
+}
+
+enum BackupStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+  VERIFICATION_FAILED
+  UPLOAD_FAILED
+}
+
+enum SupportCaseStatus {
+  OPEN
+  PENDING_CUSTOMER
+  RESOLVED
+  CLOSED
+}
+
+enum FeatureFlagScope {
+  PLATFORM
+  TENANT
+  SITE
+}
+
+model User {
+  id              String    @id @default(cuid())
+  email           String    @unique
+  name            String
+  phone           String?
+  passwordHash    String?
+  role            UserRole  @default(USER)
+  emailVerifiedAt DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  deletedAt       DateTime?
+
+  ownedTenants          Tenant[]
+  auditLogs             AuditLog[]             @relation("AuditActor")
+  adminNotes            AdminNote[]            @relation("AdminNoteAuthor")
+  reviewedPayments      PaymentRequest[]       @relation("PaymentReviewer")
+  backupJobs            BackupJob[]            @relation("BackupInitiator")
+  impersonationSessions ImpersonationSession[] @relation("ImpersonationAdmin")
+  sessions              Session[]
+  passwordResetTokens   PasswordResetToken[]
+
+  @@index([role, deletedAt])
+}
+
+model Session {
+  id          String    @id @default(cuid())
+  userId      String
+  tokenHash   String    @unique
+  expiresAt   DateTime
+  revokedAt   DateTime?
+  lastSeenAt  DateTime?
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId, expiresAt])
+  @@index([expiresAt, revokedAt])
+}
+
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId, expiresAt])
+}
+
+model Tenant {
+  id             String       @id @default(cuid())
+  ownerUserId    String
+  displayName    String
+  status         TenantStatus @default(TRIAL)
+  trialStartedAt DateTime     @default(now())
+  trialEndsAt    DateTime
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  deletedAt      DateTime?
+
+  owner                 User                   @relation(fields: [ownerUserId], references: [id])
+  sites                 Site[]
+  mediaAssets           MediaAsset[]
+  subscriptions         Subscription[]
+  payments              PaymentRequest[]
+  notifications         Notification[]
+  auditLogs             AuditLog[]
+  adminNotes            AdminNote[]
+  supportCases          SupportCase[]
+  featureFlags          FeatureFlag[]
+  impersonationSessions ImpersonationSession[]
+
+  @@index([ownerUserId])
+  @@index([status, deletedAt])
+}
+
+model Site {
+  id               String     @id @default(cuid())
+  tenantId         String
+  themeId          String
+  slug             String     @unique
+  slugChangeUsed   Boolean    @default(false)
+  title            String
+  description      String?
+  status           SiteStatus @default(PUBLISHED)
+  locale           String     @default("ar")
+  isPublished      Boolean    @default(true)
+  publishedVersion Int        @default(1)
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+  deletedAt        DateTime?
+
+  tenant       Tenant           @relation(fields: [tenantId], references: [id])
+  theme        Theme            @relation(fields: [themeId], references: [id])
+  domains      SiteDomain[]
+  themeConfig  SiteThemeConfig?
+  sections     SiteSection[]
+  packages     Package[]
+  extras       ExtraService[]
+  albums       GalleryAlbum[]
+  contact      ContactProfile?
+  seoSettings  SEOSettings?
+  featureFlags FeatureFlag[]
+
+  @@index([tenantId, status, deletedAt])
+  @@index([themeId])
+}
+
+model SiteDomain {
+  id                String       @id @default(cuid())
+  siteId            String
+  domain            String       @unique
+  status            DomainStatus @default(PENDING)
+  verificationToken String
+  verifiedAt        DateTime?
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+  deletedAt         DateTime?
+
+  site Site @relation(fields: [siteId], references: [id])
+
+  @@index([siteId])
+}
+
+model Theme {
+  id            String      @id @default(cuid())
+  code          String      @unique
+  name          String
+  status        ThemeStatus @default(DRAFT)
+  version       String
+  category      String
+  defaultConfig Json
+  contentSchema Json
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  deletedAt     DateTime?
+
+  sites       Site[]
+  templates   Template[]
+  siteConfigs SiteThemeConfig[]
+
+  @@index([status, deletedAt])
+}
+
+model Template {
+  id            String      @id @default(cuid())
+  themeId       String
+  code          String      @unique
+  name          String
+  status        ThemeStatus @default(DRAFT)
+  showroomOrder Int         @default(100)
+  previewData   Json
+  settings      Json
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  deletedAt     DateTime?
+
+  theme Theme @relation(fields: [themeId], references: [id])
+
+  @@index([themeId])
+  @@index([status, showroomOrder, deletedAt])
+}
+
+model SiteThemeConfig {
+  id        String    @id @default(cuid())
+  siteId    String    @unique
+  themeId   String
+  config    Json
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  site  Site  @relation(fields: [siteId], references: [id])
+  theme Theme @relation(fields: [themeId], references: [id])
+
+  @@index([themeId])
+}
+
+model SiteSection {
+  id        String    @id @default(cuid())
+  siteId    String
+  type      String
+  title     String?
+  data      Json
+  sortOrder Int       @default(0)
+  isVisible Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  site Site @relation(fields: [siteId], references: [id])
+
+  @@index([siteId, deletedAt, sortOrder])
+}
+
+model Package {
+  id            String    @id @default(cuid())
+  siteId        String
+  name          String
+  subtitle      String?
+  priceAmount   Int
+  currency      String    @default("EGP")
+  features      Json
+  imageAssetId  String?
+  isHighlighted Boolean   @default(false)
+  sortOrder     Int       @default(0)
+  isActive      Boolean   @default(true)
+  deletedAt     DateTime?
+
+  site       Site        @relation(fields: [siteId], references: [id])
+  imageAsset MediaAsset? @relation("PackageImage", fields: [imageAssetId], references: [id])
+
+  @@index([siteId, deletedAt, sortOrder])
+  @@index([imageAssetId])
+}
+
+model ExtraService {
+  id          String    @id @default(cuid())
+  siteId      String
+  name        String
+  priceAmount Int
+  currency    String    @default("EGP")
+  iconKey     String?
+  sortOrder   Int       @default(0)
+  isActive    Boolean   @default(true)
+  deletedAt   DateTime?
+
+  site Site @relation(fields: [siteId], references: [id])
+
+  @@index([siteId, sortOrder])
+}
+
+model GalleryAlbum {
+  id           String    @id @default(cuid())
+  siteId       String
+  title        String
+  slug         String
+  description  String?
+  coverAssetId String?
+  sortOrder    Int       @default(0)
+  isVisible    Boolean   @default(true)
+  deletedAt    DateTime?
+
+  site       Site           @relation(fields: [siteId], references: [id])
+  coverAsset MediaAsset?    @relation("AlbumCover", fields: [coverAssetId], references: [id])
+  images     GalleryImage[]
+
+  @@unique([siteId, slug])
+  @@index([siteId, sortOrder])
+  @@index([coverAssetId])
+}
+
+model MediaAsset {
+  id            String    @id @default(cuid())
+  tenantId      String
+  storageKey    String    @unique
+  url           String
+  mimeType      String
+  width         Int?
+  height        Int?
+  sizeBytes     Int
+  blurHash      String?
+  dominantColor String?
+  alt           String?
+  createdAt     DateTime  @default(now())
+  deletedAt     DateTime?
+
+  tenant        Tenant           @relation(fields: [tenantId], references: [id])
+  packageImages Package[]        @relation("PackageImage")
+  albumCovers   GalleryAlbum[]   @relation("AlbumCover")
+  galleryImages GalleryImage[]
+  seoImages     SEOSettings[]    @relation("SEOOgImage")
+  paymentProofs PaymentRequest[] @relation("PaymentProof")
+
+  @@index([tenantId, deletedAt, createdAt])
+}
+
+model GalleryImage {
+  id        String    @id @default(cuid())
+  albumId   String
+  assetId   String
+  caption   String?
+  sortOrder Int       @default(0)
+  deletedAt DateTime?
+
+  album GalleryAlbum @relation(fields: [albumId], references: [id])
+  asset MediaAsset   @relation(fields: [assetId], references: [id])
+
+  @@index([albumId, sortOrder])
+  @@index([assetId])
+}
+
+model ContactProfile {
+  id                     String    @id @default(cuid())
+  siteId                 String    @unique
+  phone                  String?
+  whatsapp               String?
+  email                  String?
+  instagram              String?
+  facebook               String?
+  locationLabel          String?
+  bookingMessageTemplate String?
+  updatedAt              DateTime  @updatedAt
+  deletedAt              DateTime?
+
+  site Site @relation(fields: [siteId], references: [id])
+}
+
+model SEOSettings {
+  id                      String    @id @default(cuid())
+  siteId                  String    @unique
+  title                   String
+  description             String?
+  ogAssetId               String?
+  robotsIndex             Boolean   @default(true)
+  canonicalUrl            String?
+  structuredDataOverrides Json?
+  updatedAt               DateTime  @updatedAt
+  deletedAt               DateTime?
+
+  site    Site        @relation(fields: [siteId], references: [id])
+  ogAsset MediaAsset? @relation("SEOOgImage", fields: [ogAssetId], references: [id])
+
+  @@index([ogAssetId])
+}
+
+model Plan {
+  id              String    @id @default(cuid())
+  code            String    @unique
+  name            String
+  priceAmount     Int
+  currency        String    @default("EGP")
+  billingInterval String
+  features        Json
+  isActive        Boolean   @default(true)
+  deletedAt       DateTime?
+
+  subscriptions Subscription[]
+}
+
+model Subscription {
+  id                 String             @id @default(cuid())
+  tenantId           String
+  planId             String?
+  status             SubscriptionStatus @default(TRIAL)
+  currentPeriodStart DateTime?
+  currentPeriodEnd   DateTime?
+  activatedAt        DateTime?
+  expiresAt          DateTime?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  deletedAt          DateTime?
+
+  tenant   Tenant           @relation(fields: [tenantId], references: [id])
+  plan     Plan?            @relation(fields: [planId], references: [id])
+  payments PaymentRequest[]
+
+  @@index([tenantId, status, deletedAt])
+}
+
+model PaymentRequest {
+  id             String        @id @default(cuid())
+  tenantId       String
+  subscriptionId String
+  method         PaymentMethod
+  amount         Int
+  currency       String        @default("EGP")
+  status         PaymentStatus @default(PENDING)
+  reference      String?
+  proofAssetId   String?
+  reviewedById   String?
+  adminNote      String?
+  createdAt      DateTime      @default(now())
+  reviewedAt     DateTime?
+  deletedAt      DateTime?
+
+  tenant       Tenant       @relation(fields: [tenantId], references: [id])
+  subscription Subscription @relation(fields: [subscriptionId], references: [id])
+  proofAsset   MediaAsset?  @relation("PaymentProof", fields: [proofAssetId], references: [id])
+  reviewedBy   User?        @relation("PaymentReviewer", fields: [reviewedById], references: [id])
+
+  @@index([status, createdAt])
+  @@index([tenantId])
+  @@index([proofAssetId])
+  @@index([reviewedById])
+}
+
+model Notification {
+  id        String    @id @default(cuid())
+  tenantId  String
+  type      String
+  title     String
+  body      String
+  priority  String    @default("info")
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+  deletedAt DateTime?
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId, createdAt])
+}
+
+model AdminNote {
+  id        String    @id @default(cuid())
+  tenantId  String
+  authorId  String
+  body      String
+  createdAt DateTime  @default(now())
+  deletedAt DateTime?
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  author User   @relation("AdminNoteAuthor", fields: [authorId], references: [id])
+
+  @@index([tenantId, createdAt])
+  @@index([authorId, createdAt])
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  actorUserId String?
+  tenantId    String?
+  action      String
+  entityType  String
+  entityId    String?
+  metadata    Json?
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime @default(now())
+
+  actor  User?   @relation("AuditActor", fields: [actorUserId], references: [id])
+  tenant Tenant? @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId, createdAt])
+  @@index([actorUserId, createdAt])
+}
+
+model ImpersonationSession {
+  id          String    @id @default(cuid())
+  adminUserId String
+  tenantId    String
+  reason      String
+  startedAt   DateTime  @default(now())
+  endedAt     DateTime?
+
+  admin  User   @relation("ImpersonationAdmin", fields: [adminUserId], references: [id])
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@index([adminUserId, startedAt])
+  @@index([tenantId, startedAt])
+}
+
+model SupportCase {
+  id        String            @id @default(cuid())
+  tenantId  String
+  subject   String
+  status    SupportCaseStatus @default(OPEN)
+  priority  String            @default("normal")
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+  deletedAt DateTime?
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId, status, createdAt])
+}
+
+model FeatureFlag {
+  id        String           @id @default(cuid())
+  key       String
+  scope     FeatureFlagScope @default(PLATFORM)
+  tenantId  String?
+  siteId    String?
+  enabled   Boolean          @default(false)
+  value     Json?
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  tenant Tenant? @relation(fields: [tenantId], references: [id])
+  site   Site?   @relation(fields: [siteId], references: [id])
+
+  @@unique([key, scope, tenantId, siteId])
+  @@index([tenantId])
+  @@index([siteId])
+}
+
+model BackupSettings {
+  id             String     @id @default(cuid())
+  type           BackupType @unique
+  enabled        Boolean    @default(false)
+  schedule       String
+  retentionCount Int        @default(10)
+  compression    String     @default("zstd")
+  encryption     Boolean    @default(true)
+  githubBranch   String     @default("platform-backups")
+  lastRunAt      DateTime?
+  nextRunAt      DateTime?
+  updatedAt      DateTime   @updatedAt
+}
+
+model BackupJob {
+  id             String       @id @default(cuid())
+  type           BackupType
+  status         BackupStatus @default(PENDING)
+  trigger        String
+  initiatedById  String?
+  note           String?
+  sizeBytes      Int?
+  checksumSha256 String?
+  localPath      String?
+  githubPath     String?
+  startedAt      DateTime?
+  completedAt    DateTime?
+  createdAt      DateTime     @default(now())
+
+  manifest    BackupManifest?
+  initiatedBy User?           @relation("BackupInitiator", fields: [initiatedById], references: [id])
+
+  @@index([type, createdAt])
+  @@index([status, createdAt])
+  @@index([initiatedById, createdAt])
+}
+
+model BackupManifest {
+  id                       String   @id @default(cuid())
+  backupJobId              String   @unique
+  platformVersion          String
+  gitCommitSha             String?
+  databaseMigrationVersion String?
+  usersCount               Int
+  tenantsCount             Int
+  sitesCount               Int
+  mediaFilesCount          Int
+  compressedSizeBytes      Int
+  compressionAlgorithm     String
+  encryptionEnabled        Boolean
+  sha256Checksum           String
+  localVerificationStatus  String
+  githubUploadStatus       String
+  durationMs               Int?
+  uploadDurationMs         Int?
+  createdAt                DateTime @default(now())
+
+  backupJob BackupJob @relation(fields: [backupJobId], references: [id])
+}

@@ -1,0 +1,90 @@
+import type { PasswordResetRepository } from "@/modules/auth/password-reset-service";
+
+type PrismaPasswordResetClient = {
+  user: {
+    findUnique(input: unknown): Promise<{ id: string; email: string } | null>;
+    update(input: unknown): Promise<unknown>;
+  };
+  passwordResetToken: {
+    create(input: unknown): Promise<unknown>;
+    findFirst(input: unknown): Promise<{ id: string; userId: string } | null>;
+    update(input: unknown): Promise<unknown>;
+  };
+  session: {
+    updateMany(input: unknown): Promise<unknown>;
+  };
+};
+
+export function createPrismaPasswordResetRepository(
+  prisma: PrismaPasswordResetClient
+): PasswordResetRepository {
+  return {
+    async findUserByEmail(email) {
+      return prisma.user.findUnique({
+        where: {
+          email,
+          deletedAt: null
+        },
+        select: {
+          id: true,
+          email: true
+        }
+      });
+    },
+    async createResetToken(input) {
+      await prisma.passwordResetToken.create({
+        data: {
+          userId: input.userId,
+          tokenHash: input.tokenHash,
+          expiresAt: input.expiresAt
+        }
+      });
+    },
+    async findValidTokenByHash(tokenHash, now) {
+      return prisma.passwordResetToken.findFirst({
+        where: {
+          tokenHash,
+          usedAt: null,
+          expiresAt: {
+            gt: now
+          }
+        },
+        select: {
+          id: true,
+          userId: true
+        }
+      });
+    },
+    async updateUserPassword(input) {
+      await prisma.user.update({
+        where: {
+          id: input.userId
+        },
+        data: {
+          passwordHash: input.passwordHash
+        }
+      });
+    },
+    async markTokenUsed(input) {
+      await prisma.passwordResetToken.update({
+        where: {
+          id: input.tokenId
+        },
+        data: {
+          usedAt: input.usedAt
+        }
+      });
+    },
+    async revokeUserSessions(input) {
+      await prisma.session.updateMany({
+        where: {
+          userId: input.userId,
+          revokedAt: null
+        },
+        data: {
+          revokedAt: input.revokedAt
+        }
+      });
+    }
+  };
+}
