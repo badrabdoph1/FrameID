@@ -92,7 +92,7 @@ export default async function DashboardSettingsPage({
                 <Label htmlFor="seo-title">عنوان البحث</Label>
                 <Input
                   id="seo-title"
-                  name="title"
+                  name="seoTitle"
                   defaultValue={seo?.title ?? session.site.title}
                   required
                 />

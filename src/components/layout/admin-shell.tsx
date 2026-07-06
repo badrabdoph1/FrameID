@@ -7,9 +7,12 @@ import {
   DatabaseBackup,
   Headphones,
   Home,
+  LogOut,
   ShieldCheck,
   Users
 } from "lucide-react";
+
+import { logoutAction } from "@/app/_actions/logout";
 
 const adminNav = [
   { href: "/admin", label: "الرئيسية", icon: Home },
@@ -40,6 +43,15 @@ export function AdminShell({ children }: { children: ReactNode }) {
                 {item.label}
               </Link>
             ))}
+            <form action={logoutAction}>
+              <button
+                type="submit"
+                className="flex w-full min-h-10 items-center gap-3 rounded-[var(--radius-control)] px-3 text-sm text-white/64 transition hover:bg-white/10 hover:text-white"
+              >
+                <LogOut className="size-4" aria-hidden />
+                تسجيل الخروج
+              </button>
+            </form>
           </nav>
         </aside>
         <div>{children}</div>

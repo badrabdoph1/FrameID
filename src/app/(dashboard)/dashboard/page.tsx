@@ -84,7 +84,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
                 </CardHeader>
                 <CardContent className="flex items-center justify-between">
                   <span className="text-2xl font-semibold">{widget.value}</span>
-                  <Badge tone={widget.tone}>مباشر</Badge>
+                  <Badge tone={widget.tone}>{widget.tone === "success" ? "مباشر" : widget.tone === "warning" ? "معلق" : "غير متاح"}</Badge>
                 </CardContent>
               </Card>
             ))}

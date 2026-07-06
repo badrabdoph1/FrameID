@@ -13,7 +13,7 @@ export async function updateSeoSettingsAction(formData: FormData) {
     redirect("/login");
   }
 
-  const title = readString(formData, "title");
+  const title = readString(formData, "seoTitle");
   const description = readString(formData, "description");
   const canonicalUrl = readString(formData, "canonicalUrl");
   const robotsIndex = formData.get("robotsIndex") === "on";

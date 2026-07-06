@@ -7,9 +7,12 @@ import {
   FileText,
   Home,
   Images,
+  LogOut,
   Settings,
   WandSparkles
 } from "lucide-react";
+
+import { logoutAction } from "@/app/_actions/logout";
 
 const dashboardNav = [
   { href: "/dashboard", label: "الرئيسية", icon: Home },
@@ -25,10 +28,19 @@ export function DashboardShell({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-30 border-b border-border bg-background/88 backdrop-blur-xl">
-        <div className="container-page flex h-16 items-center justify-between">
+        <div className="container-page flex h-16 items-center justify-between gap-3">
           <Link href="/dashboard" className="font-display text-xl font-semibold">
             FrameID
           </Link>
+          <form action={logoutAction} className="md:hidden">
+            <button
+              type="submit"
+              aria-label="خروج"
+              className="inline-flex min-h-9 items-center justify-center rounded-[var(--radius-control)] border border-border bg-surface px-3 text-xs font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground"
+            >
+              <LogOut className="size-3.5" aria-hidden />
+            </button>
+          </form>
         </div>
       </header>
 
@@ -47,6 +59,17 @@ export function DashboardShell({ children }: { children: ReactNode }) {
               {item.label}
             </Link>
           ))}
+          <div className="hidden md:block">
+            <form action={logoutAction}>
+              <button
+                type="submit"
+                className="flex w-full min-h-11 items-center gap-2 rounded-[var(--radius-control)] px-3 text-sm font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground"
+              >
+                <LogOut className="size-4" aria-hidden />
+                تسجيل الخروج
+              </button>
+            </form>
+          </div>
         </nav>
         <div>{children}</div>
       </div>
