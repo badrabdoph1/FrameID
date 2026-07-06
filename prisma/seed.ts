@@ -1,7 +1,7 @@
 import { Prisma, PrismaClient } from "@prisma/client";
 
-import { hashPassword } from "../src/modules/auth/password-hashing";
 import { getPlatformSeedData } from "../src/modules/setup/platform-seed-data";
+import { seedSuperAdminUser } from "../src/modules/setup/super-admin-seed-service";
 
 const prisma = new PrismaClient();
 
@@ -85,25 +85,28 @@ async function main() {
 }
 
 async function seedSuperAdmin() {
-  const email = process.env.SEED_SUPER_ADMIN_EMAIL;
-  const password = process.env.SEED_SUPER_ADMIN_PASSWORD;
-
-  if (!email || !password) {
-    return;
-  }
-
-  await prisma.user.upsert({
-    where: { email: email.toLowerCase() },
-    update: {
-      role: "SUPER_ADMIN",
-      deletedAt: null
+  await seedSuperAdminUser({
+    repository: {
+      async upsertSuperAdmin(input) {
+        await prisma.user.upsert({
+          where: { email: input.email },
+          update: {
+            name: input.name,
+            role: "SUPER_ADMIN",
+            passwordHash: input.passwordHash,
+            deletedAt: null
+          },
+          create: {
+            email: input.email,
+            name: input.name,
+            role: "SUPER_ADMIN",
+            passwordHash: input.passwordHash
+          }
+        });
+      }
     },
-    create: {
-      email: email.toLowerCase(),
-      name: "FrameID Admin",
-      role: "SUPER_ADMIN",
-      passwordHash: await hashPassword(password)
-    }
+    email: process.env.SEED_SUPER_ADMIN_EMAIL,
+    password: process.env.SEED_SUPER_ADMIN_PASSWORD
   });
 }
 
