@@ -28,6 +28,7 @@ describe("prisma public site repository", () => {
             isPublished: true,
             theme: { code: "noir-gold", name: "Noir Gold" },
             tenant: { displayName: "Ali Ahmed" },
+            contact: null,
             sections: [],
             packages: [],
             extras: [],

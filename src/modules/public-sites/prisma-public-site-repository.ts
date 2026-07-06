@@ -8,8 +8,9 @@ type PrismaPublicSiteClient = {
 
 type RawPublicSiteRecord = Omit<
   PublicSiteRecord,
-  "sections" | "seoSettings" | "packages" | "gallery"
+  "sections" | "seoSettings" | "packages" | "gallery" | "contactProfile"
 > & {
+  contact: PublicSiteRecord["contactProfile"];
   sections: Array<{
     type: string;
     title: string | null;
@@ -78,6 +79,15 @@ export function createPrismaPublicSiteRepository(
           tenant: {
             select: {
               displayName: true
+            }
+          },
+          contact: {
+            select: {
+              phone: true,
+              whatsapp: true,
+              email: true,
+              instagram: true,
+              facebook: true
             }
           },
           sections: {
@@ -201,6 +211,7 @@ export function createPrismaPublicSiteRepository(
           ...item,
           imageUrl: item.imageAsset?.url ?? null
         })),
+        contactProfile: site.contact,
         gallery: site.albums.flatMap((album) =>
           album.images.map((image) => ({
             id: image.id,

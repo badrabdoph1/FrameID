@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, WandSparkles } from "lucide-react";
 import { notFound } from "next/navigation";
 
-import { getTemplatePreviewImage } from "@/modules/marketing/platform-content";
+import { AliAhmedLuxurySite } from "@/components/themes/ali-ahmed-luxury-site";
+import type { PublicSiteViewModel } from "@/modules/public-sites/public-site-view-model";
 import { getTemplateByCode } from "@/modules/themes/theme-registry";
 
 export const metadata: Metadata = {
@@ -28,31 +28,8 @@ export default async function TemplatePreviewPage({ params }: Props) {
   }
 
   return (
-    <main className="min-h-screen bg-ink text-white">
-      <section className="relative min-h-screen overflow-hidden">
-        <Image
-          src={getTemplatePreviewImage(template)}
-          alt={`معاينة قالب ${template.name}`}
-          fill
-          priority
-          sizes="100vw"
-          className="object-cover opacity-60"
-        />
-        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(7,7,7,.3),rgba(7,7,7,.92))]" />
-        <div className="container-page relative flex min-h-screen flex-col justify-end pb-24 pt-24">
-          <p className="font-display text-sm uppercase tracking-[0.28em] text-champagne">
-            Professional Photography
-          </p>
-          <h1 className="mt-4 max-w-3xl text-5xl font-semibold leading-none md:text-8xl">
-            ALI AHMED
-          </h1>
-          <p className="mt-5 max-w-xl text-lg leading-8 text-white/74">
-            هذه معاينة حية لقالب {template.name} ببيانات منظمة تعكس تجربة
-            الموقع الحقيقي قبل استخدام القالب.
-          </p>
-        </div>
-      </section>
-
+    <>
+      <AliAhmedLuxurySite site={previewSite} />
       <div className="fixed inset-x-4 bottom-4 z-40 mx-auto flex max-w-md items-center gap-2 rounded-[var(--radius-panel)] border border-white/10 bg-ink/80 p-2 shadow-soft backdrop-blur-xl">
         <Link
           href="/templates"
@@ -69,6 +46,79 @@ export default async function TemplatePreviewPage({ params }: Props) {
           استخدام هذا القالب
         </Link>
       </div>
-    </main>
+    </>
   );
 }
+
+const previewSite: PublicSiteViewModel = {
+  siteId: "preview",
+  themeCode: "noir-gold",
+  publicUrl: "https://frameid.app/templates/noir-gold/preview",
+  metadata: {
+    title: "Ali Ahmed Luxury"
+  },
+  structuredData: {
+    "@context": "https://schema.org",
+    "@type": "LocalBusiness",
+    name: "Ali Ahmed"
+  },
+  hero: {
+    headline: "ALI AHMED",
+    subheadline: "باقات تصوير 2026 لتجربة زفاف وخطوبة أنيقة.",
+    imageUrl:
+      "https://i.ibb.co/JwBLNkjP/Whats-App-Image-2026-06-04-at-2-30-53-AM-1.jpg"
+  },
+  contact: {
+    callToAction: "تأكيد عبر واتساب",
+    phone: "01068427413",
+    whatsapp: "201068427413",
+    email: null,
+    instagram: "3li__a7mad_ph",
+    facebook: "aliahmed8585"
+  },
+  packages: [
+    {
+      id: "silver",
+      name: "Silver",
+      subtitle: "سيشن خطوبة / كتب كتاب",
+      price: "2,500 EGP",
+      priceAmount: 2500,
+      currency: "EGP",
+      features: ["ألبوم وسط", "عدد الصور مفتوح", "تابلوه", "الوقت مفتوح"],
+      imageUrl:
+        "https://i.ibb.co/JwBLNkjP/Whats-App-Image-2026-06-04-at-2-30-53-AM-1.jpg",
+      isHighlighted: false
+    },
+    {
+      id: "mini",
+      name: "Mini Wedding",
+      subtitle: "سيشن زفاف",
+      price: "4,000 EGP",
+      priceAmount: 4000,
+      currency: "EGP",
+      features: ["تصوير الفيرست لوك", "ألبوم وسط", "تابلوه", "تصوير القاعة"],
+      imageUrl:
+        "https://i.ibb.co/JwBLNkjP/Whats-App-Image-2026-06-04-at-2-30-53-AM-1.jpg",
+      isHighlighted: true
+    },
+    {
+      id: "vip",
+      name: "VIP Wedding",
+      subtitle: "سيشن زفاف فاخر",
+      price: "4,500 EGP",
+      priceAmount: 4500,
+      currency: "EGP",
+      features: ["ألبوم كبير", "عدد الصور مفتوح", "تصوير القاعة", "تسليم ريلز"],
+      imageUrl:
+        "https://i.ibb.co/JwBLNkjP/Whats-App-Image-2026-06-04-at-2-30-53-AM-1.jpg",
+      isHighlighted: false
+    }
+  ],
+  extras: [
+    { id: "video", name: "فيديو برومو", price: "2,500 EGP", priceAmount: 2500, currency: "EGP", iconKey: "video" },
+    { id: "casual", name: "سيشن كاجوال", price: "2,500 EGP", priceAmount: 2500, currency: "EGP", iconKey: "camera" },
+    { id: "reel", name: "فيديو Reel", price: "1,000 EGP", priceAmount: 1000, currency: "EGP", iconKey: "film" },
+    { id: "team", name: "فوتوجرافر إضافي", price: "1,000 EGP", priceAmount: 1000, currency: "EGP", iconKey: "team" }
+  ],
+  gallery: []
+};

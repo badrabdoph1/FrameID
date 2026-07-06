@@ -47,6 +47,22 @@ export type AccountCreationInput = {
       sortOrder: number;
       data: Record<string, unknown>;
     }>;
+    packages: Array<{
+      name: string;
+      subtitle: string;
+      priceAmount: number;
+      currency: string;
+      features: string[];
+      isHighlighted: boolean;
+      sortOrder: number;
+    }>;
+    extras: Array<{
+      name: string;
+      priceAmount: number;
+      currency: string;
+      iconKey: string;
+      sortOrder: number;
+    }>;
   };
 };
 
@@ -122,7 +138,9 @@ export function createSignupProvisioningService({
           trialEndsAt
         },
         defaultContent: {
-          sections: createDefaultSections(input.name)
+          sections: createDefaultSections(input.name),
+          packages: createDefaultPackages(),
+          extras: createDefaultExtras()
         }
       });
 
@@ -196,5 +214,66 @@ function createDefaultSections(
         callToAction: "احجز عبر واتساب"
       }
     }
+  ];
+}
+
+function createDefaultPackages(): AccountCreationInput["defaultContent"]["packages"] {
+  return [
+    {
+      name: "Silver",
+      subtitle: "سيشن خطوبة / كتب كتاب",
+      priceAmount: 2500,
+      currency: "EGP",
+      features: ["ألبوم وسط", "عدد الصور مفتوح", "تابلوه", "الوقت مفتوح"],
+      isHighlighted: false,
+      sortOrder: 0
+    },
+    {
+      name: "Mini Wedding",
+      subtitle: "سيشن زفاف",
+      priceAmount: 4000,
+      currency: "EGP",
+      features: ["تصوير الفيرست لوك", "ألبوم وسط", "تابلوه", "تصوير القاعة"],
+      isHighlighted: true,
+      sortOrder: 1
+    },
+    {
+      name: "VIP Wedding",
+      subtitle: "سيشن زفاف فاخر",
+      priceAmount: 4500,
+      currency: "EGP",
+      features: ["تصوير الفيرست لوك", "ألبوم كبير", "تابلوه", "تسليم ريلز"],
+      isHighlighted: false,
+      sortOrder: 2
+    },
+    {
+      name: "Full Day",
+      subtitle: "تغطية يوم كامل",
+      priceAmount: 7000,
+      currency: "EGP",
+      features: ["سيشن كاجوال", "تصوير التجهيزات", "تغطية اليوم", "تصوير القاعة"],
+      isHighlighted: false,
+      sortOrder: 3
+    },
+    {
+      name: "Luxury Day",
+      subtitle: "تغطية بفريق كامل",
+      priceAmount: 9000,
+      currency: "EGP",
+      features: ["2 مصورين", "فيديو برومو", "ألبوم كبير", "تغطية كاملة"],
+      isHighlighted: false,
+      sortOrder: 4
+    }
+  ];
+}
+
+function createDefaultExtras(): AccountCreationInput["defaultContent"]["extras"] {
+  return [
+    { name: "فيديو برومو", priceAmount: 2500, currency: "EGP", iconKey: "video", sortOrder: 0 },
+    { name: "سيشن كاجوال", priceAmount: 2500, currency: "EGP", iconKey: "camera", sortOrder: 1 },
+    { name: "فيديو Reel", priceAmount: 1000, currency: "EGP", iconKey: "film", sortOrder: 2 },
+    { name: "ميديا كافريدج", priceAmount: 1500, currency: "EGP", iconKey: "coverage", sortOrder: 3 },
+    { name: "فوتوجرافر إضافي", priceAmount: 1000, currency: "EGP", iconKey: "team", sortOrder: 4 },
+    { name: "ألبوم + تابلوه", priceAmount: 1500, currency: "EGP", iconKey: "album", sortOrder: 5 }
   ];
 }

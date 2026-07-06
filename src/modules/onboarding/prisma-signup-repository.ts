@@ -27,6 +27,12 @@ type PrismaSignupTransaction = {
   subscription: {
     create(input: unknown): Promise<{ id: string; status: "TRIAL" }>;
   };
+  package: {
+    createMany(input: unknown): Promise<{ count: number }>;
+  };
+  extraService: {
+    createMany(input: unknown): Promise<{ count: number }>;
+  };
 };
 
 type PrismaSignupClient = {
@@ -122,6 +128,32 @@ export function createPrismaSignupProvisioningRepository(
             sortOrder: section.sortOrder,
             data: section.data,
             isVisible: true
+          }))
+        });
+
+        await transaction.package.createMany({
+          data: input.defaultContent.packages.map((item) => ({
+            siteId: site.id,
+            name: item.name,
+            subtitle: item.subtitle,
+            priceAmount: item.priceAmount,
+            currency: item.currency,
+            features: item.features,
+            isHighlighted: item.isHighlighted,
+            sortOrder: item.sortOrder,
+            isActive: true
+          }))
+        });
+
+        await transaction.extraService.createMany({
+          data: input.defaultContent.extras.map((item) => ({
+            siteId: site.id,
+            name: item.name,
+            priceAmount: item.priceAmount,
+            currency: item.currency,
+            iconKey: item.iconKey,
+            sortOrder: item.sortOrder,
+            isActive: true
           }))
         });
 

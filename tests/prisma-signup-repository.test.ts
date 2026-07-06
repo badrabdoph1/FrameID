@@ -36,6 +36,26 @@ function createAccountInput(): AccountCreationInput {
           sortOrder: 0,
           data: { headline: "Ali Ahmed" }
         }
+      ],
+      packages: [
+        {
+          name: "Silver",
+          subtitle: "Engagement",
+          priceAmount: 2500,
+          currency: "EGP",
+          features: ["Album"],
+          isHighlighted: false,
+          sortOrder: 0
+        }
+      ],
+      extras: [
+        {
+          name: "Reel",
+          priceAmount: 1000,
+          currency: "EGP",
+          iconKey: "film",
+          sortOrder: 0
+        }
       ]
     }
   };
@@ -79,6 +99,18 @@ describe("prisma signup repository", () => {
         async createMany() {
           operations.push("sections");
           return { count: 1 };
+        }
+      },
+      package: {
+        async createMany(args: { data: unknown[] }) {
+          operations.push(`packages:${args.data.length}`);
+          return { count: args.data.length };
+        }
+      },
+      extraService: {
+        async createMany(args: { data: unknown[] }) {
+          operations.push(`extras:${args.data.length}`);
+          return { count: args.data.length };
         }
       },
       subscription: {
@@ -131,6 +163,8 @@ describe("prisma signup repository", () => {
       "tenant",
       "site:ali-ahmed",
       "sections",
+      "packages:1",
+      "extras:1",
       "subscription:TRIAL",
       "commit"
     ]);

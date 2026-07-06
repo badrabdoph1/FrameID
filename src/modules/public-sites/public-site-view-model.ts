@@ -14,6 +14,13 @@ export type PublicSiteRecord = {
   tenant: {
     displayName: string;
   };
+  contactProfile: {
+    phone: string | null;
+    whatsapp: string | null;
+    email: string | null;
+    instagram: string | null;
+    facebook: string | null;
+  } | null;
   sections: Array<{
     type: string;
     title: string | null;
@@ -66,12 +73,19 @@ export type PublicSiteViewModel = {
   };
   contact: {
     callToAction: string;
+    phone: string | null;
+    whatsapp: string | null;
+    email: string | null;
+    instagram: string | null;
+    facebook: string | null;
   };
   packages: Array<{
     id: string;
     name: string;
     subtitle: string | null;
     price: string;
+    priceAmount: number;
+    currency: string;
     features: string[];
     imageUrl: string | null;
     isHighlighted: boolean;
@@ -80,6 +94,8 @@ export type PublicSiteViewModel = {
     id: string;
     name: string;
     price: string;
+    priceAmount: number;
+    currency: string;
     iconKey: string | null;
   }>;
   gallery: Array<{
@@ -154,13 +170,20 @@ export function createPublicSiteViewModel({
       callToAction: readString(
         contactSection?.data.callToAction,
         "احجز جلستك الآن"
-      )
+      ),
+      phone: site.contactProfile?.phone ?? null,
+      whatsapp: site.contactProfile?.whatsapp ?? null,
+      email: site.contactProfile?.email ?? null,
+      instagram: site.contactProfile?.instagram ?? null,
+      facebook: site.contactProfile?.facebook ?? null
     },
     packages: site.packages.map((item) => ({
       id: item.id,
       name: item.name,
       subtitle: item.subtitle,
       price: formatMoney(item.priceAmount, item.currency),
+      priceAmount: item.priceAmount,
+      currency: item.currency,
       features: readStringList(item.features),
       imageUrl: item.imageUrl,
       isHighlighted: item.isHighlighted
@@ -169,6 +192,8 @@ export function createPublicSiteViewModel({
       id: item.id,
       name: item.name,
       price: formatMoney(item.priceAmount, item.currency),
+      priceAmount: item.priceAmount,
+      currency: item.currency,
       iconKey: item.iconKey
     })),
     gallery: site.gallery.map((item) => ({

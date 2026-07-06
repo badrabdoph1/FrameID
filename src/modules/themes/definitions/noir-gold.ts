@@ -2,7 +2,7 @@ import type { TemplateSummary, ThemeDefinition } from "@/modules/themes/theme-re
 
 export const noirGoldTheme: ThemeDefinition = {
   code: "noir-gold",
-  name: "Noir Gold",
+  name: "Ali Ahmed Luxury",
   version: "1.0.0",
   status: "published",
   supportedSections: ["hero", "gallery", "packages", "extras", "contact"],
@@ -16,8 +16,8 @@ export const noirGoldTheme: ThemeDefinition = {
 export const noirGoldTemplate: TemplateSummary = {
   code: "noir-gold",
   themeCode: "noir-gold",
-  name: "Noir Gold",
+  name: "Ali Ahmed Luxury",
   status: "published",
   showroomOrder: 1,
-  description: "قالب داكن فاخر لمصوري الزفاف والبورتريه."
+  description: "قالب داكن ذهبي مستوحى من باقات تصوير علي أحمد، جاهز للباقات والحجز."
 };

@@ -25,6 +25,8 @@ function createRepository(
     },
     async createAccountWithSite(input) {
       calls.push("transaction");
+      calls.push(`packages:${input.defaultContent.packages.length}`);
+      calls.push(`extras:${input.defaultContent.extras.length}`);
       return {
         userId: "user_1",
         tenantId: "tenant_1",
@@ -54,7 +56,9 @@ describe("signup provisioning", () => {
     expect(repository.calls).toEqual([
       "email:ali@example.com",
       "slugs",
-      "transaction"
+      "transaction",
+      "packages:5",
+      "extras:6"
     ]);
     expect(result).toMatchObject({
       userId: "user_1",

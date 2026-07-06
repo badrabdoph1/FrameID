@@ -20,6 +20,13 @@ function createRecord(): PublicSiteRecord {
     tenant: {
       displayName: "Ali Ahmed"
     },
+    contactProfile: {
+      phone: "01000000000",
+      whatsapp: "201000000000",
+      email: "ali@example.com",
+      instagram: "ali",
+      facebook: "ali"
+    },
     sections: [
       {
         type: "hero",
@@ -100,7 +107,8 @@ describe("public site view model", () => {
     });
     expect(viewModel.extras[0]).toMatchObject({
       name: "ألبوم فاخر",
-      price: "15,000 EGP"
+      price: "15,000 EGP",
+      priceAmount: 15000
     });
     expect(viewModel.gallery[0]).toMatchObject({
       url: "https://example.com/gallery.jpg"
@@ -113,5 +121,6 @@ describe("public site view model", () => {
       }
     });
     expect(viewModel.structuredData["@type"]).toBe("LocalBusiness");
+    expect(viewModel.contact.whatsapp).toBe("201000000000");
   });
 });
