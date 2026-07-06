@@ -38,7 +38,13 @@ export default function RootLayout({
   children
 }: Readonly<{ children: ReactNode }>) {
   return (
-    <html lang="ar" dir="rtl" className={`${tajawal.variable} ${playfair.variable}`}>
+    <html
+      lang="ar"
+      dir="rtl"
+      data-scroll-behavior="smooth"
+      suppressHydrationWarning
+      className={`${tajawal.variable} ${playfair.variable}`}
+    >
       <body>{children}</body>
     </html>
   );

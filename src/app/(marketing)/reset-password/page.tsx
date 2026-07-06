@@ -1,3 +1,5 @@
+import React from "react";
+
 import { AuthShell } from "@/components/layout/auth-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,7 +25,7 @@ export default async function ResetPasswordPage({
     >
       {error ? (
         <p className="mb-4 rounded-[var(--radius-panel)] border border-warning/30 bg-warning/10 px-4 py-3 text-sm text-foreground">
-          الرابط غير صالح أو انتهت صلاحيته.
+          {error}
         </p>
       ) : null}
       <form action={resetPasswordAction} className="space-y-4">

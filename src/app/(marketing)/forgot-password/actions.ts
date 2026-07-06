@@ -4,7 +4,10 @@ import { redirect } from "next/navigation";
 
 import { getPlatformBaseUrl } from "@/lib/platform-url";
 import { prisma } from "@/lib/prisma";
-import { readFormString } from "@/modules/auth/auth-action-utils";
+import {
+  getAuthActionErrorMessage,
+  readFormString
+} from "@/modules/auth/auth-action-utils";
 import { sendPasswordResetLink } from "@/modules/auth/password-reset-delivery";
 import { createPasswordResetService } from "@/modules/auth/password-reset-service";
 import { createPrismaPasswordResetRepository } from "@/modules/auth/prisma-password-reset-repository";
@@ -15,7 +18,15 @@ export async function requestPasswordResetAction(formData: FormData) {
     repository: createPrismaPasswordResetRepository(prisma)
   });
 
-  const result = await service.requestPasswordReset({ email });
+  let result: Awaited<ReturnType<typeof service.requestPasswordReset>>;
+
+  try {
+    result = await service.requestPasswordReset({ email });
+  } catch (error) {
+    redirect(
+      `/forgot-password?error=${encodeURIComponent(getAuthActionErrorMessage(error))}`
+    );
+  }
 
   if (result.rawToken && result.userEmail) {
     await sendPasswordResetLink({

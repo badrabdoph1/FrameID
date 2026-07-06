@@ -1,3 +1,5 @@
+import React from "react";
+
 import { requestPasswordResetAction } from "@/app/(marketing)/forgot-password/actions";
 import { AuthShell } from "@/components/layout/auth-shell";
 import { Button } from "@/components/ui/button";
@@ -7,13 +9,14 @@ import { Label } from "@/components/ui/label";
 type ForgotPasswordPageProps = {
   searchParams: Promise<{
     sent?: string;
+    error?: string;
   }>;
 };
 
 export default async function ForgotPasswordPage({
   searchParams
 }: ForgotPasswordPageProps) {
-  const { sent } = await searchParams;
+  const { sent, error } = await searchParams;
 
   return (
     <AuthShell
@@ -24,6 +27,11 @@ export default async function ForgotPasswordPage({
         <p className="mb-4 rounded-[var(--radius-panel)] border border-success/20 bg-success-soft px-4 py-3 text-sm text-success">
           إذا كان البريد مسجلًا، تم تجهيز رابط الاستعادة عبر قناة الإرسال
           المتاحة.
+        </p>
+      ) : null}
+      {error ? (
+        <p className="mb-4 rounded-[var(--radius-panel)] border border-warning/30 bg-warning/10 px-4 py-3 text-sm text-foreground">
+          {error}
         </p>
       ) : null}
       <form action={requestPasswordResetAction} className="space-y-4">
