@@ -15,8 +15,13 @@ describe("marketing homepage", () => {
     ).toBeInTheDocument();
     expect(screen.getByText("لا يوجد دفع قبل التجربة")).toBeInTheDocument();
     expect(screen.getByText("اختر قالبًا حيًا")).toBeInTheDocument();
-    expect(
-      screen.getByRole("link", { name: /شاهد القوالب الحية/u })
-    ).toHaveAttribute("href", "/templates");
+    const templateLinks = screen.getAllByRole("link", {
+      name: /شاهد القوالب الحية/u
+    });
+
+    expect(templateLinks.length).toBeGreaterThanOrEqual(1);
+    expect(templateLinks.every((link) => link.getAttribute("href") === "/templates")).toBe(
+      true
+    );
   });
 });

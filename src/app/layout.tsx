@@ -1,7 +1,21 @@
 import type { Metadata, Viewport } from "next";
+import { Playfair_Display, Tajawal } from "next/font/google";
 import type { ReactNode } from "react";
 
 import "./globals.css";
+
+const tajawal = Tajawal({
+  subsets: ["arabic", "latin"],
+  weight: ["400", "500", "700"],
+  variable: "--font-arabic",
+  display: "swap"
+});
+
+const playfair = Playfair_Display({
+  subsets: ["latin"],
+  variable: "--font-display-face",
+  display: "swap"
+});
 
 export const metadata: Metadata = {
   title: {
@@ -10,7 +24,8 @@ export const metadata: Metadata = {
   },
   description:
     "منصة SaaS تمنح المصور موقعًا احترافيًا ولوحة تحكم ورابطًا خاصًا خلال دقائق.",
-  metadataBase: new URL("https://frameid.app")
+  metadataBase: new URL("https://frameid.app"),
+  applicationName: "FrameID"
 };
 
 export const viewport: Viewport = {
@@ -23,7 +38,7 @@ export default function RootLayout({
   children
 }: Readonly<{ children: ReactNode }>) {
   return (
-    <html lang="ar" dir="rtl">
+    <html lang="ar" dir="rtl" className={`${tajawal.variable} ${playfair.variable}`}>
       <body>{children}</body>
     </html>
   );
