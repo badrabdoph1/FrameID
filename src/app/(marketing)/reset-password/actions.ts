@@ -3,7 +3,10 @@
 import { redirect } from "next/navigation";
 
 import { prisma } from "@/lib/prisma";
-import { readFormString } from "@/modules/auth/auth-action-utils";
+import {
+  getAuthActionErrorMessage,
+  readFormString
+} from "@/modules/auth/auth-action-utils";
 import { createPasswordResetService } from "@/modules/auth/password-reset-service";
 import { createPrismaPasswordResetRepository } from "@/modules/auth/prisma-password-reset-repository";
 
@@ -18,8 +21,10 @@ export async function resetPasswordAction(formData: FormData) {
       rawToken: token,
       newPassword: password
     });
-  } catch {
-    redirect("/reset-password?error=invalid");
+  } catch (error) {
+    redirect(
+      `/reset-password?error=${encodeURIComponent(getAuthActionErrorMessage(error))}`
+    );
   }
 
   redirect("/login?error=تم تحديث كلمة المرور. سجل الدخول بكلمتك الجديدة.");
