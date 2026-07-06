@@ -35,5 +35,10 @@ describe("auth action utils", () => {
         ])
       )
     ).toBe("راجع البيانات وحاول مرة أخرى.");
+    expect(
+      getAuthActionErrorMessage(
+        new Error("Can't reach database server at `localhost:5432`")
+      )
+    ).toBe("قاعدة البيانات غير متصلة حاليًا. شغّل قاعدة البيانات ثم حاول مرة أخرى.");
   });
 });

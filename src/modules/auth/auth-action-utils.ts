@@ -26,5 +26,12 @@ export function getAuthActionErrorMessage(error: unknown): string {
     return "القالب المختار غير متاح حاليًا.";
   }
 
+  if (
+    error.message.includes("Can't reach database server") ||
+    error.message.includes("P1001")
+  ) {
+    return "قاعدة البيانات غير متصلة حاليًا. شغّل قاعدة البيانات ثم حاول مرة أخرى.";
+  }
+
   return "حدث خطأ غير متوقع. حاول مرة أخرى.";
 }

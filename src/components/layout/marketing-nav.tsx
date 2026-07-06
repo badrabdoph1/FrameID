@@ -1,5 +1,8 @@
+"use client";
+
 import Link from "next/link";
-import React from "react";
+import React, { useState } from "react";
+import { Menu, X } from "lucide-react";
 
 const navItems = [
   { href: "/templates", label: "القوالب", intent: "link" },
@@ -8,6 +11,8 @@ const navItems = [
 ];
 
 export function MarketingNav() {
+  const [menuOpen, setMenuOpen] = useState(false);
+
   return (
     <>
       <Link
@@ -16,7 +21,7 @@ export function MarketingNav() {
       >
         تخطي إلى المحتوى
       </Link>
-      <header className="fixed inset-x-0 top-0 z-30 border-b border-white/10 bg-ink/55 backdrop-blur-xl">
+      <header className="fixed inset-x-0 top-0 z-30 border-b border-white/10 bg-ink/70 backdrop-blur-xl">
         <nav className="container-page flex h-16 items-center justify-between gap-3 text-white">
           <Link
             href="/"
@@ -25,7 +30,7 @@ export function MarketingNav() {
           >
             FrameID
           </Link>
-          <div className="flex min-w-0 items-center gap-1 text-sm">
+          <div className="hidden min-w-0 items-center gap-1 text-sm md:flex">
             {navItems.map((item) => (
               <Link
                 key={item.href}
@@ -42,7 +47,47 @@ export function MarketingNav() {
               </Link>
             ))}
           </div>
+          <div className="flex items-center gap-2 md:hidden">
+            <Link
+              href="/signup"
+              className="inline-flex min-h-10 items-center justify-center rounded-full bg-white px-4 text-sm font-semibold text-ink transition-[background-color] hover:bg-white/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+            >
+              إنشاء حساب
+            </Link>
+            <button
+              type="button"
+              aria-label="القائمة"
+              aria-expanded={menuOpen}
+              onClick={() => setMenuOpen((open) => !open)}
+              className="inline-flex size-10 items-center justify-center rounded-full border border-white/15 bg-white/5 text-white transition hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+            >
+              {menuOpen ? <X className="size-4" aria-hidden /> : <Menu className="size-4" aria-hidden />}
+            </button>
+          </div>
         </nav>
+        {menuOpen ? (
+          <nav
+            aria-label="قائمة الموقع"
+            className="border-t border-white/10 bg-ink/95 px-4 py-3 text-white shadow-soft md:hidden"
+          >
+            <div className="container-page grid gap-2 px-0">
+              {navItems.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={() => setMenuOpen(false)}
+                  className={
+                    item.intent === "primary"
+                      ? "inline-flex min-h-12 items-center justify-center rounded-[var(--radius-control)] bg-white px-4 text-sm font-semibold text-ink transition hover:bg-white/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+                      : "inline-flex min-h-12 items-center justify-center rounded-[var(--radius-control)] border border-white/10 bg-white/5 px-4 text-sm font-semibold text-white transition hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+                  }
+                >
+                  {item.label}
+                </Link>
+              ))}
+            </div>
+          </nav>
+        ) : null}
       </header>
     </>
   );
