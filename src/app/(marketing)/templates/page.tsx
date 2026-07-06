@@ -21,7 +21,7 @@ export default function TemplatesPage() {
             قوالب حية، قابلة للاستخدام مباشرة.
           </h1>
           <p className="mt-5 max-w-2xl leading-8 text-muted-foreground">
-            المعاينة تفتح موقعًا حقيقيًا ببيانات Preview، ثم يمكن استخدام
+            المعاينة تفتح موقعًا حقيقيًا ببيانات تجريبية، ثم يمكن استخدام
             القالب لإنشاء موقع المصور تلقائيًا.
           </p>
           <div className="mt-10 grid gap-5 md:grid-cols-2">

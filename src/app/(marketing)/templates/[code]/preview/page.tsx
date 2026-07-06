@@ -55,15 +55,15 @@ const previewSite: PublicSiteViewModel = {
   themeCode: "noir-gold",
   publicUrl: "https://frameid.app/templates/noir-gold/preview",
   metadata: {
-    title: "Ali Ahmed Luxury"
+    title: "قالب علي أحمد الفاخر"
   },
   structuredData: {
     "@context": "https://schema.org",
     "@type": "LocalBusiness",
-    name: "Ali Ahmed"
+    name: "علي أحمد"
   },
   hero: {
-    headline: "ALI AHMED",
+    headline: "علي أحمد",
     subheadline: "باقات تصوير 2026 لتجربة زفاف وخطوبة أنيقة.",
     imageUrl:
       "https://i.ibb.co/JwBLNkjP/Whats-App-Image-2026-06-04-at-2-30-53-AM-1.jpg"
@@ -79,9 +79,9 @@ const previewSite: PublicSiteViewModel = {
   packages: [
     {
       id: "silver",
-      name: "Silver",
+      name: "الباقة الفضية",
       subtitle: "سيشن خطوبة / كتب كتاب",
-      price: "2,500 EGP",
+      price: "2,500 جنيه",
       priceAmount: 2500,
       currency: "EGP",
       features: ["ألبوم وسط", "عدد الصور مفتوح", "تابلوه", "الوقت مفتوح"],
@@ -91,9 +91,9 @@ const previewSite: PublicSiteViewModel = {
     },
     {
       id: "mini",
-      name: "Mini Wedding",
+      name: "زفاف مختصر",
       subtitle: "سيشن زفاف",
-      price: "4,000 EGP",
+      price: "4,000 جنيه",
       priceAmount: 4000,
       currency: "EGP",
       features: ["تصوير الفيرست لوك", "ألبوم وسط", "تابلوه", "تصوير القاعة"],
@@ -103,9 +103,9 @@ const previewSite: PublicSiteViewModel = {
     },
     {
       id: "vip",
-      name: "VIP Wedding",
+      name: "زفاف فاخر",
       subtitle: "سيشن زفاف فاخر",
-      price: "4,500 EGP",
+      price: "4,500 جنيه",
       priceAmount: 4500,
       currency: "EGP",
       features: ["ألبوم كبير", "عدد الصور مفتوح", "تصوير القاعة", "تسليم ريلز"],
@@ -115,10 +115,10 @@ const previewSite: PublicSiteViewModel = {
     }
   ],
   extras: [
-    { id: "video", name: "فيديو برومو", price: "2,500 EGP", priceAmount: 2500, currency: "EGP", iconKey: "video" },
-    { id: "casual", name: "سيشن كاجوال", price: "2,500 EGP", priceAmount: 2500, currency: "EGP", iconKey: "camera" },
-    { id: "reel", name: "فيديو Reel", price: "1,000 EGP", priceAmount: 1000, currency: "EGP", iconKey: "film" },
-    { id: "team", name: "فوتوجرافر إضافي", price: "1,000 EGP", priceAmount: 1000, currency: "EGP", iconKey: "team" }
+    { id: "video", name: "فيديو برومو", price: "2,500 جنيه", priceAmount: 2500, currency: "EGP", iconKey: "video" },
+    { id: "casual", name: "سيشن كاجوال", price: "2,500 جنيه", priceAmount: 2500, currency: "EGP", iconKey: "camera" },
+    { id: "reel", name: "فيديو ريلز", price: "1,000 جنيه", priceAmount: 1000, currency: "EGP", iconKey: "film" },
+    { id: "team", name: "فوتوجرافر إضافي", price: "1,000 جنيه", priceAmount: 1000, currency: "EGP", iconKey: "team" }
   ],
   gallery: []
 };

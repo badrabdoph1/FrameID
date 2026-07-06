@@ -48,11 +48,15 @@ export function createAdminOverviewViewModel(metrics: AdminOverviewMetrics): {
       },
       {
         label: "إيراد الشهر",
-        value: `${formatNumber(metrics.monthlyRevenue)} ${metrics.currency}`,
+        value: `${formatNumber(metrics.monthlyRevenue)} ${formatCurrencyLabel(metrics.currency)}`,
         tone: "success"
       }
     ]
   };
+}
+
+function formatCurrencyLabel(currency: string): string {
+  return currency === "EGP" ? "جنيه" : currency;
 }
 
 function formatNumber(value: number): string {

@@ -228,5 +228,9 @@ function readStringList(value: unknown): string[] {
 function formatMoney(amount: number, currency: string): string {
   return `${new Intl.NumberFormat("en-US", {
     maximumFractionDigits: 0
-  }).format(amount)} ${currency}`;
+  }).format(amount)} ${formatCurrencyLabel(currency)}`;
+}
+
+function formatCurrencyLabel(currency: string): string {
+  return currency === "EGP" ? "جنيه" : currency;
 }

@@ -220,7 +220,7 @@ function createDefaultSections(
 function createDefaultPackages(): AccountCreationInput["defaultContent"]["packages"] {
   return [
     {
-      name: "Silver",
+      name: "الباقة الفضية",
       subtitle: "سيشن خطوبة / كتب كتاب",
       priceAmount: 2500,
       currency: "EGP",
@@ -229,7 +229,7 @@ function createDefaultPackages(): AccountCreationInput["defaultContent"]["packag
       sortOrder: 0
     },
     {
-      name: "Mini Wedding",
+      name: "زفاف مختصر",
       subtitle: "سيشن زفاف",
       priceAmount: 4000,
       currency: "EGP",
@@ -238,7 +238,7 @@ function createDefaultPackages(): AccountCreationInput["defaultContent"]["packag
       sortOrder: 1
     },
     {
-      name: "VIP Wedding",
+      name: "زفاف فاخر",
       subtitle: "سيشن زفاف فاخر",
       priceAmount: 4500,
       currency: "EGP",
@@ -247,7 +247,7 @@ function createDefaultPackages(): AccountCreationInput["defaultContent"]["packag
       sortOrder: 2
     },
     {
-      name: "Full Day",
+      name: "اليوم الكامل",
       subtitle: "تغطية يوم كامل",
       priceAmount: 7000,
       currency: "EGP",
@@ -256,7 +256,7 @@ function createDefaultPackages(): AccountCreationInput["defaultContent"]["packag
       sortOrder: 3
     },
     {
-      name: "Luxury Day",
+      name: "اليوم الفاخر",
       subtitle: "تغطية بفريق كامل",
       priceAmount: 9000,
       currency: "EGP",
@@ -271,7 +271,7 @@ function createDefaultExtras(): AccountCreationInput["defaultContent"]["extras"]
   return [
     { name: "فيديو برومو", priceAmount: 2500, currency: "EGP", iconKey: "video", sortOrder: 0 },
     { name: "سيشن كاجوال", priceAmount: 2500, currency: "EGP", iconKey: "camera", sortOrder: 1 },
-    { name: "فيديو Reel", priceAmount: 1000, currency: "EGP", iconKey: "film", sortOrder: 2 },
+    { name: "فيديو ريلز", priceAmount: 1000, currency: "EGP", iconKey: "film", sortOrder: 2 },
     { name: "ميديا كافريدج", priceAmount: 1500, currency: "EGP", iconKey: "coverage", sortOrder: 3 },
     { name: "فوتوجرافر إضافي", priceAmount: 1000, currency: "EGP", iconKey: "team", sortOrder: 4 },
     { name: "ألبوم + تابلوه", priceAmount: 1500, currency: "EGP", iconKey: "album", sortOrder: 5 }

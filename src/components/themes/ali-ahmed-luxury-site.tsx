@@ -165,7 +165,7 @@ export function AliAhmedLuxurySite({ site }: AliAhmedLuxurySiteProps) {
         <div className="container-page">
           <SectionHeading eyebrow="باقات التصوير" title="اختر باقتك" />
         </div>
-        <div className="mt-10 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-6 md:px-12">
+        <div className="mt-10 grid gap-4 px-4 pb-6 md:flex md:snap-x md:snap-mandatory md:overflow-x-auto md:px-12">
           {site.packages.map((item, index) => {
             const selected = selectedPackageId === item.id;
             const imageUrl =
@@ -175,7 +175,7 @@ export function AliAhmedLuxurySite({ site }: AliAhmedLuxurySiteProps) {
               <article
                 key={item.id}
                 className={cn(
-                  "relative w-[84vw] shrink-0 snap-center overflow-hidden rounded-2xl border bg-[#0f0f0f] shadow-[0_20px_80px_rgba(0,0,0,.25)] transition md:w-[340px]",
+                  "relative w-full overflow-hidden rounded-2xl border bg-[#0f0f0f] shadow-[0_20px_80px_rgba(0,0,0,.25)] transition md:w-[340px] md:shrink-0 md:snap-center",
                   selected
                     ? "border-[#e5c07b] shadow-[0_0_35px_rgba(229,192,123,.16)]"
                     : "border-white/5"
@@ -428,7 +428,11 @@ function createBookingHref({
 function formatTotal(value: number, currency: string) {
   return `${new Intl.NumberFormat("en-US", {
     maximumFractionDigits: 0
-  }).format(value)} ${currency}`;
+  }).format(value)} ${formatCurrencyLabel(currency)}`;
+}
+
+function formatCurrencyLabel(currency: string): string {
+  return currency === "EGP" ? "جنيه" : currency;
 }
 
 function normalizeSocialUrl(value: string, provider: "instagram" | "facebook") {

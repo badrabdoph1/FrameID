@@ -202,5 +202,5 @@ export default async function DashboardServicesPage({
 function formatMoney(amount: number, currency: string): string {
   return `${new Intl.NumberFormat("en-US", {
     maximumFractionDigits: 0
-  }).format(amount)} ${currency}`;
+  }).format(amount)} ${currency === "EGP" ? "جنيه" : currency}`;
 }

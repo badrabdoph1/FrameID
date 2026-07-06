@@ -20,7 +20,7 @@ describe("admin overview view model", () => {
       { label: "تجارب تنتهي قريبًا", value: "9", tone: "warning" },
       { label: "طلبات دفع معلقة", value: "5", tone: "danger" },
       { label: "مواقع فعالة", value: "120", tone: "success" },
-      { label: "إيراد الشهر", value: "450,000 EGP", tone: "success" }
+      { label: "إيراد الشهر", value: "450,000 جنيه", tone: "success" }
     ]);
   });
 });

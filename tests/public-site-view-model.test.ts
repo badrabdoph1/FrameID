@@ -103,11 +103,11 @@ describe("public site view model", () => {
     });
     expect(viewModel.packages[0]).toMatchObject({
       name: "Wedding Story",
-      price: "120,000 EGP"
+      price: "120,000 جنيه"
     });
     expect(viewModel.extras[0]).toMatchObject({
       name: "ألبوم فاخر",
-      price: "15,000 EGP",
+      price: "15,000 جنيه",
       priceAmount: 15000
     });
     expect(viewModel.gallery[0]).toMatchObject({
