@@ -2,7 +2,6 @@ import Link from "next/link";
 import React from "react";
 import type { ReactNode } from "react";
 import {
-  Bell,
   BriefcaseBusiness,
   CreditCard,
   FileText,
@@ -30,13 +29,6 @@ export function DashboardShell({ children }: { children: ReactNode }) {
           <Link href="/dashboard" className="font-display text-xl font-semibold">
             FrameID
           </Link>
-          <button
-            type="button"
-            className="inline-flex size-10 items-center justify-center rounded-full border border-border bg-surface"
-            aria-label="الإشعارات"
-          >
-            <Bell className="size-4" aria-hidden />
-          </button>
         </div>
       </header>
 

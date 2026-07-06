@@ -1,13 +1,13 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Copy, ExternalLink, WandSparkles } from "lucide-react";
+import { ExternalLink } from "lucide-react";
 
 import { getPlatformBaseUrl } from "@/lib/platform-url";
 import { getCurrentRequestSession } from "@/modules/auth/request-session";
 import { createDashboardViewModel } from "@/modules/dashboard/dashboard-view-model";
+import { DashboardSiteActions } from "@/components/dashboard/dashboard-site-actions";
 import { SlugEditor } from "@/components/dashboard/slug-editor";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export const dynamic = "force-dynamic";
@@ -64,16 +64,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
               <div className="rounded-[var(--radius-panel)] bg-muted p-4 text-left font-medium" dir="ltr">
                 {dashboard.siteUrl}
               </div>
-              <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                <Button variant="secondary">
-                  <Copy className="size-4" aria-hidden />
-                  نسخ الرابط
-                </Button>
-                <Button>
-                  <WandSparkles className="size-4" aria-hidden />
-                  تعديل الموقع
-                </Button>
-              </div>
+              <DashboardSiteActions siteUrl={dashboard.siteUrl} />
               <SlugEditor
                 currentSlug={dashboard.siteSlug}
                 disabled={dashboard.slugChangeUsed}

@@ -35,6 +35,13 @@ function createRepository(): SiteContentRepository & { writes: string[] } {
 
   return {
     writes,
+    async findEditorContent() {
+      return {
+        title: "Ali Studio",
+        description: null,
+        sections: []
+      };
+    },
     async upsertSection(input) {
       writes.push(`${input.siteId}:${input.type}:${input.title}`);
       return { id: `${input.type}_1` };
@@ -91,5 +98,66 @@ describe("site content service", () => {
     ).resolves.toEqual({ sectionId: "contact_1" });
 
     expect(repository.writes).toEqual(["site_1:contact:التواصل"]);
+  });
+
+  it("loads saved editor content for dashboard forms", async () => {
+    const repository = createRepository();
+    repository.findEditorContent = async () => ({
+      title: "Ali Studio",
+      description: "Fine art wedding photography",
+      sections: [
+        {
+          type: "hero",
+          data: {
+            headline: "Ali Ahmed",
+            subheadline: "Luxury weddings",
+            imageUrl: "https://example.com/hero.jpg"
+          }
+        },
+        {
+          type: "contact",
+          data: {
+            callToAction: "احجز موعد التصوير"
+          }
+        }
+      ]
+    });
+    const service = createSiteContentService({ repository });
+
+    await expect(
+      service.getEditorContent({ session: createSession() })
+    ).resolves.toEqual({
+      hero: {
+        headline: "Ali Ahmed",
+        subheadline: "Luxury weddings",
+        imageUrl: "https://example.com/hero.jpg"
+      },
+      contact: {
+        callToAction: "احجز موعد التصوير"
+      }
+    });
+  });
+
+  it("falls back to real site basics when optional editor sections are missing", async () => {
+    const repository = createRepository();
+    repository.findEditorContent = async () => ({
+      title: "Ali Studio",
+      description: "Documentary weddings",
+      sections: []
+    });
+    const service = createSiteContentService({ repository });
+
+    await expect(
+      service.getEditorContent({ session: createSession() })
+    ).resolves.toEqual({
+      hero: {
+        headline: "Ali Studio",
+        subheadline: "Documentary weddings",
+        imageUrl: ""
+      },
+      contact: {
+        callToAction: "احجز جلستك الآن"
+      }
+    });
   });
 });

@@ -2,6 +2,14 @@ import type { SiteContentRepository } from "@/modules/content/site-content-servi
 
 type PrismaSiteContentClient = {
   site: {
+    findUnique(input: unknown): Promise<{
+      title: string;
+      description: string | null;
+      sections: Array<{
+        type: string;
+        data: Record<string, unknown>;
+      }>;
+    } | null>;
     update(input: unknown): Promise<unknown>;
   };
   siteSection: {
@@ -15,6 +23,29 @@ export function createPrismaSiteContentRepository(
   prisma: PrismaSiteContentClient
 ): SiteContentRepository {
   return {
+    async findEditorContent(siteId) {
+      return prisma.site.findUnique({
+        where: {
+          id: siteId
+        },
+        select: {
+          title: true,
+          description: true,
+          sections: {
+            where: {
+              type: {
+                in: ["hero", "contact"]
+              },
+              deletedAt: null
+            },
+            select: {
+              type: true,
+              data: true
+            }
+          }
+        }
+      });
+    },
     async updateSiteBasics(input) {
       await prisma.site.update({
         where: {

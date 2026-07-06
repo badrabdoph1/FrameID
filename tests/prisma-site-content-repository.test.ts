@@ -45,4 +45,59 @@ describe("prisma site content repository", () => {
       "update-section:section_1:hero"
     ]);
   });
+
+  it("loads site basics and editable sections for dashboard content forms", async () => {
+    const calls: string[] = [];
+    const prisma = {
+      site: {
+        async update() {
+          throw new Error("should not update while reading editor content");
+        },
+        async findUnique(args: {
+          where: { id: string };
+          select: {
+            title: boolean;
+            description: boolean;
+            sections: unknown;
+          };
+        }) {
+          calls.push(`find-site:${args.where.id}`);
+          return {
+            title: "Ali Studio",
+            description: "Luxury weddings",
+            sections: [
+              {
+                type: "hero",
+                data: { headline: "Ali Ahmed" }
+              }
+            ]
+          };
+        }
+      },
+      siteSection: {
+        async findFirst() {
+          throw new Error("should not read individual sections");
+        },
+        async update() {
+          throw new Error("should not update");
+        },
+        async create() {
+          throw new Error("should not create");
+        }
+      }
+    };
+    const repository = createPrismaSiteContentRepository(prisma);
+
+    await expect(repository.findEditorContent("site_1")).resolves.toEqual({
+      title: "Ali Studio",
+      description: "Luxury weddings",
+      sections: [
+        {
+          type: "hero",
+          data: { headline: "Ali Ahmed" }
+        }
+      ]
+    });
+    expect(calls).toEqual(["find-site:site_1"]);
+  });
 });

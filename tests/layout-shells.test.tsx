@@ -15,6 +15,7 @@ describe("application shells", () => {
 
     expect(screen.getByText("Dashboard content")).toBeInTheDocument();
     expect(screen.getByRole("navigation", { name: "لوحة المصور" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "الإشعارات" })).not.toBeInTheDocument();
   });
 
   it("renders super admin navigation as a reusable shell", () => {

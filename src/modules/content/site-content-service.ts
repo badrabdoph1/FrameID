@@ -1,6 +1,14 @@
 import type { CurrentSession } from "@/modules/auth/current-session-service";
 
 export type SiteContentRepository = {
+  findEditorContent(siteId: string): Promise<{
+    title: string;
+    description: string | null;
+    sections: Array<{
+      type: string;
+      data: Record<string, unknown>;
+    }>;
+  } | null>;
   upsertSection(input: {
     siteId: string;
     type: "hero" | "contact";
@@ -21,6 +29,39 @@ export function createSiteContentService({
   repository: SiteContentRepository;
 }) {
   return {
+    async getEditorContent(input: { session: CurrentSession }): Promise<{
+      hero: {
+        headline: string;
+        subheadline: string;
+        imageUrl: string;
+      };
+      contact: {
+        callToAction: string;
+      };
+    }> {
+      const content = await repository.findEditorContent(input.session.site.id);
+      const heroSection = content?.sections.find((section) => section.type === "hero");
+      const contactSection = content?.sections.find(
+        (section) => section.type === "contact"
+      );
+
+      return {
+        hero: {
+          headline: readString(
+            heroSection?.data.headline,
+            content?.title ?? input.session.site.title
+          ),
+          subheadline: readString(heroSection?.data.subheadline, content?.description ?? ""),
+          imageUrl: readString(heroSection?.data.imageUrl, "")
+        },
+        contact: {
+          callToAction: readString(
+            contactSection?.data.callToAction,
+            "احجز جلستك الآن"
+          )
+        }
+      };
+    },
     async updateHero(input: {
       session: CurrentSession;
       headline: string;
@@ -81,4 +122,8 @@ export function createSiteContentService({
       };
     }
   };
+}
+
+function readString(value: unknown, fallback: string): string {
+  return typeof value === "string" && value.trim() ? value : fallback;
 }
