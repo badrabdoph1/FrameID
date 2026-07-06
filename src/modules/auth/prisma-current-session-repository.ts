@@ -1,6 +1,7 @@
 import type {
   CurrentSession,
-  CurrentSessionRepository
+  CurrentSessionRepository,
+  CurrentUserSession
 } from "@/modules/auth/current-session-service";
 
 type PrismaCurrentSessionClient = {
@@ -36,10 +37,46 @@ type RawCurrentSessionRecord = {
   };
 };
 
+type RawCurrentUserSessionRecord = {
+  user: CurrentUserSession["user"];
+};
+
 export function createPrismaCurrentSessionRepository(
   prisma: PrismaCurrentSessionClient
-): CurrentSessionRepository {
+): CurrentSessionRepository & {
+  findActiveUserByTokenHash(
+    tokenHash: string,
+    now: Date
+  ): Promise<CurrentUserSession | null>;
+} {
   return {
+    async findActiveUserByTokenHash(tokenHash, now) {
+      const session = (await prisma.session.findFirst({
+        where: {
+          tokenHash,
+          revokedAt: null,
+          expiresAt: {
+            gt: now
+          },
+          user: {
+            deletedAt: null
+          }
+        },
+        select: {
+          user: {
+            select: {
+              id: true,
+              email: true,
+              name: true,
+              role: true
+            }
+          }
+        }
+      })) as RawCurrentUserSessionRecord | null;
+
+      return session ? { user: session.user } : null;
+    },
+
     async findActiveSessionByTokenHash(tokenHash, now) {
       const session = (await prisma.session.findFirst({
         where: {

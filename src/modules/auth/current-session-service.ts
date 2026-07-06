@@ -1,4 +1,14 @@
 import { hashSessionToken } from "@/modules/auth/session-tokens";
+import { canAccessSuperAdmin } from "@/modules/admin/admin-rbac";
+
+export type CurrentUserSession = {
+  user: {
+    id: string;
+    email: string;
+    name: string;
+    role: string;
+  };
+};
 
 export type CurrentSession = {
   user: {
@@ -34,6 +44,13 @@ export type CurrentSessionRepository = {
   ): Promise<CurrentSession | null>;
 };
 
+export type CurrentUserSessionRepository = {
+  findActiveUserByTokenHash(
+    tokenHash: string,
+    now: Date
+  ): Promise<CurrentUserSession | null>;
+};
+
 export async function getCurrentSession({
   repository,
   rawToken,
@@ -48,4 +65,24 @@ export async function getCurrentSession({
   }
 
   return repository.findActiveSessionByTokenHash(hashSessionToken(rawToken), now);
+}
+
+export async function getCurrentUserSession({
+  repository,
+  rawToken,
+  now
+}: {
+  repository: CurrentUserSessionRepository;
+  rawToken: string | undefined;
+  now: Date;
+}): Promise<CurrentUserSession | null> {
+  if (!rawToken) {
+    return null;
+  }
+
+  return repository.findActiveUserByTokenHash(hashSessionToken(rawToken), now);
+}
+
+export function getPostLoginRedirectPath(role: string): "/admin" | "/dashboard" {
+  return canAccessSuperAdmin(role) ? "/admin" : "/dashboard";
 }
