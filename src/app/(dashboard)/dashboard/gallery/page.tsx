@@ -59,7 +59,7 @@ export default async function DashboardGalleryPage({
   return (
     <main className="space-y-5">
       <section>
-        <Badge tone="luxury">Gallery</Badge>
+        <Badge tone="luxury">المعرض</Badge>
         <h1 className="mt-4 text-3xl font-semibold">معرض الصور</h1>
         <p className="mt-2 max-w-2xl text-muted-foreground">
           ارفع أفضل أعمالك وسيتم عرضها داخل موقعك مباشرة.

@@ -24,7 +24,7 @@ export default async function AdminSupportPage() {
   return (
     <main className="space-y-5">
       <section>
-        <Badge tone="luxury">Support Center</Badge>
+        <Badge tone="luxury">مركز الدعم</Badge>
         <h1 className="mt-4 text-3xl font-semibold">الدعم</h1>
       </section>
       <div className="grid gap-3">

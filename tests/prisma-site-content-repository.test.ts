@@ -7,6 +7,9 @@ describe("prisma site content repository", () => {
     const calls: string[] = [];
     const prisma = {
       site: {
+        async findUnique() {
+          throw new Error("should not read editor content in this test");
+        },
         async update(args: { where: { id: string }; data: { title: string } }) {
           calls.push(`site:${args.where.id}:${args.data.title}`);
           return {};

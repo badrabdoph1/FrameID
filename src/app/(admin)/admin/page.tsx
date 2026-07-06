@@ -1,18 +1,10 @@
-import { Activity, CreditCard, DatabaseBackup, ShieldCheck } from "lucide-react";
-
+import { AdminCenterLinks } from "@/components/admin/admin-center-links";
 import { prisma } from "@/lib/prisma";
 import { createAdminOverviewViewModel } from "@/modules/admin/admin-overview-view-model";
 import { requireSuperAdminSession } from "@/modules/admin/admin-page-guards";
 import { createPrismaAdminOverviewRepository } from "@/modules/admin/prisma-admin-overview-repository";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-
-const adminCenters = [
-  { label: "Security Center", icon: ShieldCheck },
-  { label: "Payments Review", icon: CreditCard },
-  { label: "Backup Center", icon: DatabaseBackup },
-  { label: "System Health", icon: Activity }
-];
 
 export const dynamic = "force-dynamic";
 
@@ -26,8 +18,8 @@ export default async function AdminPage() {
   return (
     <main>
       <section>
-        <Badge tone="luxury">Super Admin Console</Badge>
-        <h1 className="mt-5 text-4xl font-semibold">Control Center</h1>
+        <Badge tone="luxury">لوحة الإدارة العليا</Badge>
+        <h1 className="mt-5 text-4xl font-semibold">مركز التحكم</h1>
         <p className="mt-3 max-w-2xl text-white/70">
           إدارة العملاء والمواقع والمدفوعات والأمان والنسخ الاحتياطي من مركز
           قيادة واحد.
@@ -43,21 +35,14 @@ export default async function AdminPage() {
               </CardHeader>
               <CardContent className="flex items-center justify-between gap-3">
                 <span className="text-3xl font-semibold">{widget.value}</span>
-                <Badge tone={widget.tone}>Live</Badge>
+                <Badge tone={widget.tone}>مباشر</Badge>
               </CardContent>
             </Card>
           ))}
         </div>
 
-        <div className="mt-8 grid gap-4 md:grid-cols-4">
-          {adminCenters.map((center) => (
-            <Card key={center.label} className="border-white/10 bg-white/10 text-white">
-              <CardHeader>
-                <center.icon className="size-5 text-champagne" aria-hidden />
-                <CardTitle>{center.label}</CardTitle>
-              </CardHeader>
-            </Card>
-          ))}
+        <div className="mt-8">
+          <AdminCenterLinks />
         </div>
       </section>
     </main>

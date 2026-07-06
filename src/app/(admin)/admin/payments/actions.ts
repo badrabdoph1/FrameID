@@ -24,7 +24,7 @@ export async function approvePaymentAction(formData: FormData) {
   await service.approveManualPayment({
     paymentRequestId,
     reviewerId: session.user.id,
-    adminNote: "Approved from Super Admin Console"
+    adminNote: "تم القبول من لوحة الإدارة العليا"
   });
 
   revalidatePath("/admin");
@@ -52,7 +52,7 @@ export async function rejectPaymentAction(formData: FormData) {
     adminNote:
       typeof adminNote === "string" && adminNote.trim()
         ? adminNote.trim()
-        : "Rejected from Super Admin Console"
+        : "تم الرفض من لوحة الإدارة العليا"
   });
 
   revalidatePath("/admin");

@@ -25,7 +25,7 @@ export default async function AdminBackupsPage({ searchParams }: BackupsPageProp
   return (
     <main className="space-y-5">
       <section>
-        <Badge tone="luxury">Backup Center</Badge>
+        <Badge tone="luxury">مركز النسخ الاحتياطي</Badge>
         <h1 className="mt-4 text-3xl font-semibold">النسخ الاحتياطي</h1>
         <p className="mt-2 text-white/65">
           إدارة النسخ والتحقق منها كسجل تشغيلي واضح.
@@ -46,14 +46,14 @@ export default async function AdminBackupsPage({ searchParams }: BackupsPageProp
 
       <Card className="border-white/10 bg-white/10 text-white">
         <CardHeader>
-          <CardTitle>Backup Now</CardTitle>
+          <CardTitle>إنشاء نسخة الآن</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-3 sm:grid-cols-3">
           {(["DATABASE", "UPLOADS", "FULL"] as const).map((type) => (
             <form key={type} action={runBackupAction}>
               <input type="hidden" name="type" value={type} />
               <Button type="submit" variant="luxury" className="w-full">
-                {type}
+                {formatBackupType(type)}
               </Button>
             </form>
           ))}
@@ -71,11 +71,11 @@ export default async function AdminBackupsPage({ searchParams }: BackupsPageProp
                 <div className="flex items-center justify-between">
                   <strong>{setting.type}</strong>
                   <Badge tone={setting.enabled ? "success" : "neutral"}>
-                    {setting.enabled ? "Enabled" : "Disabled"}
+                    {setting.enabled ? "مفعل" : "متوقف"}
                   </Badge>
                 </div>
                 <p className="mt-2 text-sm text-white/60">
-                  {setting.schedule} · retention {setting.retentionCount}
+                  {setting.schedule} · الاحتفاظ بآخر {setting.retentionCount}
                 </p>
               </div>
             ))}
@@ -91,9 +91,9 @@ export default async function AdminBackupsPage({ searchParams }: BackupsPageProp
               backupCenter.jobs.map((job) => (
                 <div key={job.id} className="rounded-[var(--radius-panel)] border border-white/10 p-4">
                   <div className="flex items-center justify-between">
-                    <strong>{job.type}</strong>
+                    <strong>{formatBackupJobType(job.type)}</strong>
                     <Badge tone={job.status === "COMPLETED" ? "success" : "warning"}>
-                      {job.status}
+                      {formatBackupStatus(job.status)}
                     </Badge>
                   </div>
                   <p className="mt-2 text-sm text-white/60">{job.createdAt}</p>
@@ -124,6 +124,38 @@ export default async function AdminBackupsPage({ searchParams }: BackupsPageProp
       </div>
     </main>
   );
+}
+
+function formatBackupType(type: "DATABASE" | "UPLOADS" | "FULL"): string {
+  switch (type) {
+    case "DATABASE":
+      return "قاعدة البيانات";
+    case "UPLOADS":
+      return "الملفات المرفوعة";
+    case "FULL":
+      return "نسخة كاملة";
+  }
+}
+
+function formatBackupJobType(type: string): string {
+  if (type === "DATABASE" || type === "UPLOADS" || type === "FULL") {
+    return formatBackupType(type);
+  }
+
+  return type;
+}
+
+function formatBackupStatus(status: string): string {
+  switch (status) {
+    case "COMPLETED":
+      return "مكتملة";
+    case "RUNNING":
+      return "قيد التشغيل";
+    case "FAILED":
+      return "فشلت";
+    default:
+      return status;
+  }
 }
 
 function formatBytes(value: number): string {

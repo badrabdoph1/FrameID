@@ -24,7 +24,7 @@ export default async function AdminCustomersPage() {
   return (
     <main className="space-y-5">
       <section>
-        <Badge tone="luxury">Customers</Badge>
+        <Badge tone="luxury">العملاء</Badge>
         <h1 className="mt-4 text-3xl font-semibold">إدارة العملاء</h1>
       </section>
       <div className="grid gap-4">

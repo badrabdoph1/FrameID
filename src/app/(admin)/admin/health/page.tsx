@@ -15,16 +15,16 @@ export default async function AdminHealthPage() {
   ]);
 
   const metrics = [
-    ["Users", users],
-    ["Tenants", tenants],
-    ["Sites", sites],
-    ["Backup Jobs", backupJobs]
+    ["المستخدمون", users],
+    ["العملاء", tenants],
+    ["المواقع", sites],
+    ["عمليات النسخ", backupJobs]
   ] as const;
 
   return (
     <main className="space-y-5">
       <section>
-        <Badge tone="luxury">System Health</Badge>
+        <Badge tone="luxury">صحة النظام</Badge>
         <h1 className="mt-4 text-3xl font-semibold">صحة النظام</h1>
       </section>
       <div className="grid gap-4 md:grid-cols-4">

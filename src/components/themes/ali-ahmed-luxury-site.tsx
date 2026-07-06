@@ -116,8 +116,8 @@ export function AliAhmedLuxurySite({ site }: AliAhmedLuxurySiteProps) {
         />
         <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,.68),rgba(5,5,5,.22)_45%,#050505_100%)]" />
         <div className="container-page relative z-10 pt-24 text-center">
-          <p className="font-display text-xs uppercase tracking-[0.38em] text-[#e5c07b]">
-            Professional Photography
+          <p className="font-display text-xs uppercase tracking-[0.28em] text-[#e5c07b]">
+            تصوير احترافي
           </p>
           <h1 className="mx-auto mt-5 max-w-5xl font-display text-5xl font-bold tracking-[0.12em] text-white md:text-8xl">
             {site.hero.headline}
@@ -136,7 +136,7 @@ export function AliAhmedLuxurySite({ site }: AliAhmedLuxurySiteProps) {
 
       {site.gallery.length ? (
         <section className="container-page py-16 md:py-24">
-          <SectionHeading eyebrow="Portfolio" title="لمحات من الأعمال" />
+          <SectionHeading eyebrow="أعمال مختارة" title="لمحات من الأعمال" />
           <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {site.gallery.slice(0, 8).map((image, index) => (
               <figure
@@ -163,7 +163,7 @@ export function AliAhmedLuxurySite({ site }: AliAhmedLuxurySiteProps) {
 
       <section id="packages" className="bg-[#050505] py-16 md:py-24">
         <div className="container-page">
-          <SectionHeading eyebrow="Our Packages" title="اختر باقتك" />
+          <SectionHeading eyebrow="باقات التصوير" title="اختر باقتك" />
         </div>
         <div className="mt-10 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-6 md:px-12">
           {site.packages.map((item, index) => {
@@ -237,7 +237,7 @@ export function AliAhmedLuxurySite({ site }: AliAhmedLuxurySiteProps) {
       {site.extras.length ? (
         <section id="extras" className="border-y border-white/5 bg-[#080808] py-16 md:py-24">
           <div className="container-page">
-            <SectionHeading eyebrow="Extras" title="إضافات مميزة" />
+            <SectionHeading eyebrow="خدمات إضافية" title="إضافات مميزة" />
             <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {site.extras.map((extra) => {
                 const selected = selectedExtraIds.includes(extra.id);

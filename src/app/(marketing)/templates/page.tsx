@@ -16,7 +16,7 @@ export default function TemplatesPage() {
       <MarketingNav />
       <main className="min-h-screen bg-background pt-28">
         <section className="container-page pb-16">
-          <Badge tone="luxury">Showroom</Badge>
+          <Badge tone="luxury">معرض القوالب</Badge>
           <h1 className="mt-5 max-w-3xl text-4xl font-semibold md:text-6xl">
             قوالب حية، قابلة للاستخدام مباشرة.
           </h1>

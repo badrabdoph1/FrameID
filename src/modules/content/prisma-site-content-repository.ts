@@ -2,14 +2,7 @@ import type { SiteContentRepository } from "@/modules/content/site-content-servi
 
 type PrismaSiteContentClient = {
   site: {
-    findUnique(input: unknown): Promise<{
-      title: string;
-      description: string | null;
-      sections: Array<{
-        type: string;
-        data: Record<string, unknown>;
-      }>;
-    } | null>;
+    findUnique(input: unknown): Promise<unknown>;
     update(input: unknown): Promise<unknown>;
   };
   siteSection: {
@@ -24,7 +17,7 @@ export function createPrismaSiteContentRepository(
 ): SiteContentRepository {
   return {
     async findEditorContent(siteId) {
-      return prisma.site.findUnique({
+      const site = await prisma.site.findUnique({
         where: {
           id: siteId
         },
@@ -45,6 +38,12 @@ export function createPrismaSiteContentRepository(
           }
         }
       });
+
+      if (!isEditorContentRecord(site)) {
+        return null;
+      }
+
+      return site;
     },
     async updateSiteBasics(input) {
       await prisma.site.update({
@@ -102,4 +101,40 @@ export function createPrismaSiteContentRepository(
       });
     }
   };
+}
+
+function isEditorContentRecord(value: unknown): value is {
+  title: string;
+  description: string | null;
+  sections: Array<{
+    type: string;
+    data: Record<string, unknown>;
+  }>;
+} {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const record = value as {
+    title?: unknown;
+    description?: unknown;
+    sections?: unknown;
+  };
+
+  return (
+    typeof record.title === "string" &&
+    (record.description === null || typeof record.description === "string") &&
+    Array.isArray(record.sections) &&
+    record.sections.every(
+      (section) =>
+        section &&
+        typeof section === "object" &&
+        typeof (section as { type?: unknown }).type === "string" &&
+        isRecord((section as { data?: unknown }).data)
+    )
+  );
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }

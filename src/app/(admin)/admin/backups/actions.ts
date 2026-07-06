@@ -28,7 +28,7 @@ export async function runBackupAction(formData: FormData) {
   await service.runManualBackup({
     type: type as BackupType,
     initiatedById: session.user.id,
-    note: "Manual backup from Backup Center"
+    note: "نسخة يدوية من مركز النسخ الاحتياطي"
   });
 
   revalidatePath("/admin/backups");

@@ -38,7 +38,7 @@ export default async function DashboardSettingsPage({
   return (
     <main className="space-y-5">
       <section>
-        <Badge tone="neutral">Settings</Badge>
+        <Badge tone="neutral">الإعدادات</Badge>
         <h1 className="mt-4 text-3xl font-semibold">الإعدادات</h1>
         <p className="mt-2 max-w-2xl text-muted-foreground">
           معلومات الحساب والموقع الأساسية.

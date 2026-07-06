@@ -23,7 +23,7 @@ export default async function AdminSecurityPage() {
   return (
     <main className="space-y-5">
       <section>
-        <Badge tone="luxury">Security Center</Badge>
+        <Badge tone="luxury">مركز الأمان</Badge>
         <h1 className="mt-4 text-3xl font-semibold">الأمان وسجل العمليات</h1>
       </section>
       <div className="grid gap-3">

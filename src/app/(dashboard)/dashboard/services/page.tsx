@@ -56,7 +56,7 @@ export default async function DashboardServicesPage({
   return (
     <main className="space-y-5">
       <section>
-        <Badge tone="luxury">Services</Badge>
+        <Badge tone="luxury">الخدمات</Badge>
         <h1 className="mt-4 text-3xl font-semibold">الباقات والخدمات</h1>
         <p className="mt-2 max-w-2xl text-muted-foreground">
           أضف عروض التصوير والخدمات الإضافية التي تظهر داخل موقعك.

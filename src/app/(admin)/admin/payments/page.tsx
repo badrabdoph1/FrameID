@@ -31,7 +31,7 @@ export default async function AdminPaymentsPage({
   return (
     <main className="space-y-5">
       <section>
-        <Badge tone="luxury">Payments Review</Badge>
+        <Badge tone="luxury">مراجعة المدفوعات</Badge>
         <h1 className="mt-4 text-3xl font-semibold">طلبات الدفع المعلقة</h1>
         <p className="mt-2 text-white/65">
           راجع المدفوعات اليدوية وفعّل المواقع بعد التأكد.
@@ -65,7 +65,7 @@ export default async function AdminPaymentsPage({
               </CardHeader>
               <CardContent className="grid gap-4 md:grid-cols-[1fr_auto] md:items-center">
                 <div className="grid gap-2 text-sm text-white/70">
-                  <span>{payment.method}</span>
+                  <span>{formatPaymentMethod(payment.method)}</span>
                   <span>{payment.amount}</span>
                   <span>{payment.reference || "بدون مرجع"}</span>
                   <span>{payment.createdAt}</span>
@@ -122,4 +122,15 @@ export default async function AdminPaymentsPage({
       </div>
     </main>
   );
+}
+
+function formatPaymentMethod(method: string): string {
+  switch (method) {
+    case "INSTAPAY":
+      return "إنستا باي";
+    case "VODAFONE_CASH":
+      return "فودافون كاش";
+    default:
+      return method;
+  }
 }
