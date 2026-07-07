@@ -1,0 +1,15 @@
+{
+  "$schema": "manifest",
+  "version": 1,
+  "updatedAt": "2026-07-07T00:00:00.000Z",
+  "data": {
+    "marketing/homepage": { "version": 1, "updatedAt": "2026-07-07T00:00:00.000Z" },
+    "marketing/faq": { "version": 1, "updatedAt": "2026-07-07T00:00:00.000Z" },
+    "marketing/navigation": { "version": 1, "updatedAt": "2026-07-07T00:00:00.000Z" },
+    "marketing/footer": { "version": 1, "updatedAt": "2026-07-07T00:00:00.000Z" },
+    "legal/privacy": { "version": 1, "updatedAt": "2026-07-07T00:00:00.000Z" },
+    "legal/terms": { "version": 1, "updatedAt": "2026-07-07T00:00:00.000Z" },
+    "seo/metadata": { "version": 1, "updatedAt": "2026-07-07T00:00:00.000Z" },
+    "settings/platform": { "version": 1, "updatedAt": "2026-07-07T00:00:00.000Z" }
+  }
+}

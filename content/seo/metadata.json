@@ -1,0 +1,26 @@
+{
+  "$schema": "seo/metadata",
+  "version": 1,
+  "updatedAt": "2026-07-07T00:00:00.000Z",
+  "data": {
+    "defaultTitle": "FrameID | موقع مصور—موقع خاص باسمك يضم أعمالك وباقاتك",
+    "titleTemplate": "%s | FrameID",
+    "description": "موقع خاص للمصورين: معرض أعمال، باقات وأسعار، رابط خاص، بدون برمجة. جرب ١٤ يوم مجاناً.",
+    "siteUrl": "https://frameid.app",
+    "locale": "ar_EG",
+    "openGraph": {
+      "title": "FrameID | موقع خاص باسمك—يضم أعمالك وباقاتك",
+      "description": "خلال دقائق، حول صورك إلى موقع متكامل: معرض أعمال، باقات، رابط خاص. جرب مجاناً.",
+      "siteName": "FrameID",
+      "images": [
+        { "url": "https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?auto=format&fit=crop&w=1800&q=85", "width": 1200, "height": 630, "alt": "FrameID—منصة مواقع للمصورين" }
+      ]
+    },
+    "twitter": {
+      "card": "summary_large_image",
+      "title": "FrameID | موقع خاص باسمك—يضم أعمالك وباقاتك",
+      "description": "موقع متكامل للمصور: معرض، باقات، رابط خاص. جرب مجاناً.",
+      "images": ["https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?auto=format&fit=crop&w=1800&q=85"]
+    }
+  }
+}

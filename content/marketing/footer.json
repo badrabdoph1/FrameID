@@ -1,0 +1,20 @@
+{
+  "$schema": "marketing/footer",
+  "version": 1,
+  "updatedAt": "2026-07-07T00:00:00.000Z",
+  "data": {
+    "description": "منصة عربية تمنح المصورين مواقع احترافية بقوالب حية وروابط خاصة، مع تجربة مجانية قبل الدفع.",
+    "quickLinks": [
+      { "label": "القوالب", "href": "/templates" },
+      { "label": "سياسة الخصوصية", "href": "/privacy" },
+      { "label": "الشروط والأحكام", "href": "/terms" }
+    ],
+    "cta": {
+      "title": "ابدأ الآن",
+      "subtitle": "جرب FrameID مجانًا لمدة 14 يومًا، بدون بطاقة ائتمان.",
+      "label": "ابدأ التجربة المجانية",
+      "href": "/signup"
+    },
+    "copyright": "© 2026 FrameID. جميع الحقوق محفوظة."
+  }
+}
