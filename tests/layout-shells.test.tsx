@@ -1,6 +1,25 @@
 import React from "react";
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+vi.mock("next/navigation", () => ({
+  usePathname: () => "/admin",
+  useRouter: () => ({ push: vi.fn() }),
+  redirect: vi.fn(),
+}));
+
+vi.mock("next/link", () => ({
+  default: ({
+    children,
+    href,
+    ...props
+  }: {
+    children: React.ReactNode;
+    href: string;
+    [key: string]: unknown;
+  }) =>
+    React.createElement("a", { href, ...props }, children),
+}));
 
 import { AdminShell } from "@/components/layout/admin-shell";
 import { DashboardShell } from "@/components/layout/dashboard-shell";

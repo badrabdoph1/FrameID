@@ -1,61 +1,20 @@
-import Link from "next/link";
-import React from "react";
-import type { ReactNode } from "react";
-import {
-  Activity,
-  CreditCard,
-  DatabaseBackup,
-  Headphones,
-  Home,
-  LogOut,
-  ShieldCheck,
-  Users
-} from "lucide-react";
-
-import { logoutAction } from "@/app/_actions/logout";
-
-const adminNav = [
-  { href: "/admin", label: "الرئيسية", icon: Home },
-  { href: "/admin/customers", label: "العملاء", icon: Users },
-  { href: "/admin/payments", label: "المدفوعات", icon: CreditCard },
-  { href: "/admin/security", label: "الأمان", icon: ShieldCheck },
-  { href: "/admin/backups", label: "النسخ", icon: DatabaseBackup },
-  { href: "/admin/support", label: "الدعم", icon: Headphones },
-  { href: "/admin/health", label: "الصحة", icon: Activity }
-];
+import React, { type ReactNode } from "react";
+import { AdminSidebar } from "@/components/layout/admin-sidebar";
+import { AdminHeader } from "@/components/layout/admin-header";
+import { ToastProvider } from "@/components/ui/toast";
 
 export function AdminShell({ children }: { children: ReactNode }) {
   return (
-    <div className="min-h-screen bg-ink text-white">
-      <div className="container-page grid gap-6 py-6 md:grid-cols-[240px_1fr]">
-        <aside className="rounded-[var(--radius-panel)] border border-white/10 bg-white/10 p-3">
-          <Link href="/admin" className="block px-3 py-3 font-display text-xl font-semibold">
-            إدارة FrameID
-          </Link>
-          <nav aria-label="لوحة الإدارة" className="mt-4 space-y-1">
-            {adminNav.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="flex min-h-10 items-center gap-3 rounded-[var(--radius-control)] px-3 text-sm text-white/64 transition hover:bg-white/10 hover:text-white"
-              >
-                <item.icon className="size-4" aria-hidden />
-                {item.label}
-              </Link>
-            ))}
-            <form action={logoutAction}>
-              <button
-                type="submit"
-                className="flex w-full min-h-10 items-center gap-3 rounded-[var(--radius-control)] px-3 text-sm text-white/64 transition hover:bg-white/10 hover:text-white"
-              >
-                <LogOut className="size-4" aria-hidden />
-                تسجيل الخروج
-              </button>
-            </form>
-          </nav>
-        </aside>
-        <div>{children}</div>
+    <ToastProvider>
+      <div className="flex min-h-screen bg-[#070707]">
+        <AdminSidebar />
+        <div className="flex min-w-0 flex-1 flex-col">
+          <AdminHeader />
+          <main className="flex-1 overflow-auto p-4 lg:p-6">
+            {children}
+          </main>
+        </div>
       </div>
-    </div>
+    </ToastProvider>
   );
 }

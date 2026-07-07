@@ -1,128 +1,126 @@
-import { runBackupAction } from "@/app/(admin)/admin/backups/actions";
-import { prisma } from "@/lib/prisma";
-import { requireSuperAdminSession } from "@/modules/admin/admin-page-guards";
-import { createPrismaAdminBackupCenterRepository } from "@/modules/admin/prisma-admin-backup-center-repository";
+import { CenterPageShell } from "@/components/admin/shared/center-page-shell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-
-type BackupsPageProps = {
-  searchParams: Promise<{
-    started?: string;
-    error?: string;
-  }>;
-};
+import { prisma } from "@/lib/prisma";
+import { requireSuperAdminSession } from "@/modules/admin/admin-page-guards";
+import { runBackupAction } from "@/app/(admin)/admin/backups/actions";
+import { createPrismaAdminBackupCenterRepository } from "@/modules/admin/prisma-admin-backup-center-repository";
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminBackupsPage({ searchParams }: BackupsPageProps) {
+type Props = {
+  searchParams: Promise<{ started?: string; error?: string }>;
+};
+
+export default async function AdminBackupsPage({ searchParams }: Props) {
   await requireSuperAdminSession();
   const { started, error } = await searchParams;
-
   const repository = createPrismaAdminBackupCenterRepository(prisma);
   const backupCenter = await repository.getBackupCenter();
 
   return (
-    <main className="space-y-5">
-      <section>
-        <Badge tone="luxury">مركز النسخ الاحتياطي</Badge>
-        <h1 className="mt-4 text-3xl font-semibold">النسخ الاحتياطي</h1>
-        <p className="mt-2 text-white/65">
-          إدارة النسخ والتحقق منها كسجل تشغيلي واضح.
-        </p>
-      </section>
-
-      {started ? (
-        <p className="rounded-[var(--radius-panel)] border border-success/20 bg-success-soft px-4 py-3 text-sm text-success">
+    <CenterPageShell
+      badge="مركز النسخ الاحتياطي"
+      title="النسخ الاحتياطي"
+      description="إدارة النسخ الاحتياطي والتحقق منها."
+      breadcrumbs={[{ label: "القيادة", href: "/admin" }, { label: "النسخ" }]}
+    >
+      {started && (
+        <p className="rounded-[var(--radius-panel)] border border-success/20 bg-success/10 px-4 py-3 text-sm text-success">
           تم إنشاء نسخة احتياطية والتحقق منها.
         </p>
-      ) : null}
+      )}
 
-      {error ? (
-        <p className="rounded-[var(--radius-panel)] border border-danger/20 bg-danger-soft px-4 py-3 text-sm text-danger">
+      {error && (
+        <p className="rounded-[var(--radius-panel)] border border-danger/20 bg-danger/10 px-4 py-3 text-sm text-danger">
           تعذر تشغيل النسخ الاحتياطي.
         </p>
-      ) : null}
+      )}
 
-      <Card className="border-white/10 bg-white/10 text-white">
-        <CardHeader>
-          <CardTitle>إنشاء نسخة الآن</CardTitle>
-        </CardHeader>
-        <CardContent className="grid gap-3 sm:grid-cols-3">
+      <div className="rounded-[var(--radius-panel)] border border-white/10 bg-white/[0.02] p-5">
+        <h3 className="mb-4 text-sm font-medium text-white/60">إنشاء نسخة الآن</h3>
+        <div className="flex flex-wrap gap-3">
           {(["DATABASE", "UPLOADS", "FULL"] as const).map((type) => (
             <form key={type} action={runBackupAction}>
               <input type="hidden" name="type" value={type} />
-              <Button type="submit" variant="luxury" className="w-full">
+              <Button type="submit" variant="luxury" size="sm">
                 {formatBackupType(type)}
               </Button>
             </form>
           ))}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <Card className="border-white/10 bg-white/10 text-white">
-          <CardHeader>
-            <CardTitle>الإعدادات</CardTitle>
-          </CardHeader>
-          <CardContent className="grid gap-3">
+      <div className="mt-6 grid gap-6 lg:grid-cols-2">
+        <div className="rounded-[var(--radius-panel)] border border-white/10 bg-white/[0.02] p-5">
+          <h3 className="mb-4 text-sm font-medium text-white/60">الإعدادات</h3>
+          <div className="space-y-3">
             {backupCenter.settings.map((setting) => (
-              <div key={setting.type} className="rounded-[var(--radius-panel)] border border-white/10 p-4">
-                <div className="flex items-center justify-between">
-                  <strong>{setting.type}</strong>
-                  <Badge tone={setting.enabled ? "success" : "neutral"}>
-                    {setting.enabled ? "مفعل" : "متوقف"}
-                  </Badge>
+              <div
+                key={setting.type}
+                className="flex items-center justify-between rounded-[var(--radius-panel)] border border-white/10 bg-white/[0.02] p-4"
+              >
+                <div>
+                  <p className="text-sm font-medium text-white">
+                    {setting.type}
+                  </p>
+                  <p className="text-xs text-white/50">
+                    {setting.schedule} · الاحتفاظ بآخر {setting.retentionCount}
+                  </p>
                 </div>
-                <p className="mt-2 text-sm text-white/60">
-                  {setting.schedule} · الاحتفاظ بآخر {setting.retentionCount}
-                </p>
+                <Badge tone={setting.enabled ? "success" : "neutral"}>
+                  {setting.enabled ? "مفعل" : "متوقف"}
+                </Badge>
               </div>
             ))}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
-        <Card className="border-white/10 bg-white/10 text-white">
-          <CardHeader>
-            <CardTitle>السجل الأخير</CardTitle>
-          </CardHeader>
-          <CardContent className="grid gap-3">
-            {backupCenter.jobs.length ? (
+        <div className="rounded-[var(--radius-panel)] border border-white/10 bg-white/[0.02] p-5">
+          <h3 className="mb-4 text-sm font-medium text-white/60">السجل</h3>
+          <div className="space-y-3 max-h-[400px] overflow-y-auto">
+            {backupCenter.jobs.length > 0 ? (
               backupCenter.jobs.map((job) => (
-                <div key={job.id} className="rounded-[var(--radius-panel)] border border-white/10 p-4">
+                <div
+                  key={job.id}
+                  className="rounded-[var(--radius-panel)] border border-white/10 bg-white/[0.02] p-4"
+                >
                   <div className="flex items-center justify-between">
-                    <strong>{formatBackupJobType(job.type)}</strong>
-                    <Badge tone={job.status === "COMPLETED" ? "success" : "warning"}>
+                    <p className="text-sm font-medium text-white">
+                      {formatBackupJobType(job.type)}
+                    </p>
+                    <Badge
+                      tone={
+                        job.status === "COMPLETED"
+                          ? "success"
+                          : job.status === "FAILED"
+                            ? "danger"
+                            : "warning"
+                      }
+                    >
                       {formatBackupStatus(job.status)}
                     </Badge>
                   </div>
-                  <p className="mt-2 text-sm text-white/60">{job.createdAt}</p>
-                  {job.sizeBytes ? (
-                    <p className="mt-1 text-sm text-white/60">
-                      الحجم: {formatBytes(job.sizeBytes)}
-                    </p>
-                  ) : null}
-                  {job.checksumSha256 ? (
-                    <p className="mt-1 break-all text-xs text-white/45" dir="ltr">
-                      sha256: {job.checksumSha256.slice(0, 16)}...
-                    </p>
-                  ) : null}
-                  {job.localPath ? (
-                    <p className="mt-1 break-all text-xs text-white/45" dir="ltr">
-                      {job.localPath}
-                    </p>
-                  ) : null}
+                  <div className="mt-2 space-y-1 text-xs text-white/50">
+                    <p>{job.createdAt}</p>
+                    {job.sizeBytes && <p>الحجم: {formatBytes(job.sizeBytes)}</p>}
+                    {job.checksumSha256 && (
+                      <p className="font-mono" dir="ltr">
+                        sha256:{job.checksumSha256.slice(0, 16)}...
+                      </p>
+                    )}
+                  </div>
                 </div>
               ))
             ) : (
-              <p className="py-8 text-center text-white/60">
+              <p className="py-8 text-center text-sm text-white/40">
                 لا توجد نسخ بعد.
               </p>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
-    </main>
+    </CenterPageShell>
   );
 }
 
@@ -139,9 +137,12 @@ function formatBackupType(type: "DATABASE" | "UPLOADS" | "FULL"): string {
 
 function formatBackupJobType(type: string): string {
   if (type === "DATABASE" || type === "UPLOADS" || type === "FULL") {
-    return formatBackupType(type);
+    return type === "DATABASE"
+      ? "قاعدة البيانات"
+      : type === "UPLOADS"
+        ? "الملفات المرفوعة"
+        : "نسخة كاملة";
   }
-
   return type;
 }
 
@@ -153,19 +154,15 @@ function formatBackupStatus(status: string): string {
       return "قيد التشغيل";
     case "FAILED":
       return "فشلت";
+    case "PENDING":
+      return "معلقة";
     default:
       return status;
   }
 }
 
 function formatBytes(value: number): string {
-  if (value < 1024) {
-    return `${value} B`;
-  }
-
-  if (value < 1024 * 1024) {
-    return `${(value / 1024).toFixed(1)} KB`;
-  }
-
+  if (value < 1024) return `${value} B`;
+  if (value < 1024 * 1024) return `${(value / 1024).toFixed(1)} KB`;
   return `${(value / 1024 / 1024).toFixed(1)} MB`;
 }
