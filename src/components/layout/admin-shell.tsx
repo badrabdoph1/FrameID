@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import type { ReactNode } from "react";
 import { AdminProvider } from "@/components/layout/admin-context";
 import { AdminSidebar } from "@/components/layout/admin-sidebar";

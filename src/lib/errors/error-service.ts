@@ -104,6 +104,35 @@ function extractPrismaMessage(error: Error): string | undefined {
   return undefined;
 }
 
+type PrismaKnownError = Error & {
+  code?: string;
+  meta?: {
+    target?: string[] | string;
+  };
+};
+
+function isPrismaUniqueError(error: Error): error is PrismaKnownError {
+  return (
+    (error as PrismaKnownError).code === "P2002" ||
+    error.message.includes("P2002") ||
+    error.message.includes("Unique constraint failed")
+  );
+}
+
+function getPrismaUniqueTarget(error: PrismaKnownError): string {
+  const target = error.meta?.target;
+
+  if (Array.isArray(target)) {
+    return target.join(",");
+  }
+
+  if (typeof target === "string") {
+    return target;
+  }
+
+  return error.message;
+}
+
 function classifyErrorCode(error: unknown): ErrorCodeDef {
   if (error instanceof ZodError) {
     return getErrorCodeDef("FID-VAL-001");
@@ -115,6 +144,18 @@ function classifyErrorCode(error: unknown): ErrorCodeDef {
 
   if (error instanceof Error) {
     const msg = error.message;
+
+    if (isPrismaUniqueError(error)) {
+      const target = getPrismaUniqueTarget(error);
+
+      if (target.includes("email")) {
+        return getErrorCodeDef("FID-AUTH-002");
+      }
+
+      if (target.includes("slug")) {
+        return getErrorCodeDef("FID-SITE-001");
+      }
+    }
 
     if (
       msg.includes("fetch failed") ||

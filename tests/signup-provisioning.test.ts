@@ -57,8 +57,8 @@ describe("signup provisioning", () => {
       "email:ali@example.com",
       "slugs",
       "transaction",
-      "packages:5",
-      "extras:6"
+      "packages:3",
+      "extras:5"
     ]);
     expect(result).toMatchObject({
       userId: "user_1",

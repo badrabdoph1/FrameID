@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  default as React,
   createContext,
   useContext,
   useCallback,

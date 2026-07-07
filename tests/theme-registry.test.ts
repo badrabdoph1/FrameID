@@ -10,7 +10,8 @@ import {
 describe("theme registry", () => {
   it("returns only published templates in showroom order", () => {
     expect(getPublishedTemplates().map((template) => template.code)).toEqual([
-      "noir-gold"
+      "noir-gold",
+      "rose-blush"
     ]);
   });
 

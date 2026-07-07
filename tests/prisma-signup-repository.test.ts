@@ -95,6 +95,12 @@ describe("prisma signup repository", () => {
           return { id: "site_1", slug: args.data.slug };
         }
       },
+      siteThemeConfig: {
+        async create(args: { data: { siteId: string; themeId: string; config: unknown } }) {
+          operations.push(`config:${args.data.siteId}:${args.data.themeId}`);
+          return { id: "config_1" };
+        }
+      },
       siteSection: {
         async createMany() {
           operations.push("sections");
@@ -162,6 +168,7 @@ describe("prisma signup repository", () => {
       "user",
       "tenant",
       "site:ali-ahmed",
+      "config:site_1:theme_1",
       "sections",
       "packages:1",
       "extras:1",

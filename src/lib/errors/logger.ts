@@ -32,6 +32,25 @@ function devLog(
   }
 }
 
+function productionLog(
+  level: ErrorLevel,
+  code: string,
+  message: string,
+  meta?: Record<string, unknown>,
+) {
+  const safeMeta = {
+    requestId: meta?.requestId,
+    correlationId: meta?.correlationId,
+    route: meta?.route,
+    method: meta?.method,
+    category: meta?.category,
+    cause: meta?.cause,
+    metadata: meta?.metadata,
+  };
+
+  console.error(`[${formatTimestamp()}] [${level}] [${code}] ${message}`, safeMeta);
+}
+
 async function persistErrorLog(entry: ErrorLogEntry): Promise<void> {
   inMemoryBuffer.unshift(entry);
   if (inMemoryBuffer.length > MAX_BUFFER) {
@@ -113,6 +132,8 @@ export const logger: Logger = {
       if (entry.stack) {
         console.error("  Stack:", entry.stack);
       }
+    } else {
+      productionLog("ERROR", code, message, meta);
     }
 
     persistErrorLog(entry);
@@ -146,6 +167,8 @@ export const logger: Logger = {
       if (entry.stack) {
         console.error("  Stack:", entry.stack);
       }
+    } else {
+      productionLog("FATAL", code, message, meta);
     }
 
     persistErrorLog(entry);

@@ -21,6 +21,9 @@ type PrismaSignupTransaction = {
   site: {
     create(input: unknown): Promise<{ id: string; slug: string }>;
   };
+  siteThemeConfig: {
+    create(input: unknown): Promise<{ id: string }>;
+  };
   siteSection: {
     createMany(input: unknown): Promise<{ count: number }>;
   };
@@ -117,6 +120,14 @@ export function createPrismaSignupProvisioningRepository(
           select: {
             id: true,
             slug: true
+          }
+        });
+
+        await transaction.siteThemeConfig.create({
+          data: {
+            siteId: site.id,
+            themeId: theme.id,
+            config: themeRegistry.getTheme(input.site.themeCode)?.defaultConfig ?? {}
           }
         });
 
