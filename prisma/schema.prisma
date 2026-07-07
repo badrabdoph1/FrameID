@@ -184,10 +184,10 @@ model Site {
   slugChangeUsed   Boolean    @default(false)
   title            String
   description      String?
-  status           SiteStatus @default(PUBLISHED)
+  status           SiteStatus @default(DRAFT)
   locale           String     @default("ar")
-  isPublished      Boolean    @default(true)
-  publishedVersion Int        @default(1)
+  isPublished      Boolean    @default(false)
+  publishedVersion Int        @default(0)
   createdAt        DateTime   @default(now())
   updatedAt        DateTime   @updatedAt
   deletedAt        DateTime?
@@ -323,11 +323,15 @@ model ExtraService {
   priceAmount Int
   currency    String    @default("EGP")
   iconKey     String?
+  description String?
+  imageAssetId String?
   sortOrder   Int       @default(0)
   isActive    Boolean   @default(true)
+  isHighlighted Boolean @default(false)
   deletedAt   DateTime?
 
-  site Site @relation(fields: [siteId], references: [id])
+  site       Site        @relation(fields: [siteId], references: [id])
+  imageAsset MediaAsset? @relation("ExtraImage", fields: [imageAssetId], references: [id])
 
   @@index([siteId, sortOrder])
 }
@@ -369,10 +373,13 @@ model MediaAsset {
 
   tenant        Tenant           @relation(fields: [tenantId], references: [id])
   packageImages Package[]        @relation("PackageImage")
+  extraImages   ExtraService[]   @relation("ExtraImage")
   albumCovers   GalleryAlbum[]   @relation("AlbumCover")
   galleryImages GalleryImage[]
   seoImages     SEOSettings[]    @relation("SEOOgImage")
   paymentProofs PaymentRequest[] @relation("PaymentProof")
+  contactAvatar ContactProfile[] @relation("ContactAvatar")
+  contactCover  ContactProfile[] @relation("ContactCover")
 
   @@index([tenantId, deletedAt, createdAt])
 }
@@ -383,6 +390,7 @@ model GalleryImage {
   assetId   String
   caption   String?
   sortOrder Int       @default(0)
+  isFeatured Boolean  @default(false)
   deletedAt DateTime?
 
   album GalleryAlbum @relation(fields: [albumId], references: [id])
@@ -402,10 +410,40 @@ model ContactProfile {
   facebook               String?
   locationLabel          String?
   bookingMessageTemplate String?
+
+  // New extended fields
+  studioName             String?
+  bio                    String?
+  longDescription        String?
+  city                   String?
+  country                String?
+  address                String?
+  googleMapsUrl          String?
+  workingHours           Json?
+  avatarAssetId          String?
+  coverAssetId           String?
+
+  // Social links
+  tiktok                 String?
+  snapchat               String?
+  youtube                String?
+  behance                String?
+  fiveHundredPx          String?
+  linkedin               String?
+  telegram               String?
+  xTwitter               String?
+  threads                String?
+  website                String?
+
   updatedAt              DateTime  @updatedAt
   deletedAt              DateTime?
 
-  site Site @relation(fields: [siteId], references: [id])
+  site       Site        @relation(fields: [siteId], references: [id])
+  avatarAsset MediaAsset? @relation("ContactAvatar", fields: [avatarAssetId], references: [id])
+  coverAsset  MediaAsset? @relation("ContactCover", fields: [coverAssetId], references: [id])
+
+  @@index([avatarAssetId])
+  @@index([coverAssetId])
 }
 
 model SEOSettings {
