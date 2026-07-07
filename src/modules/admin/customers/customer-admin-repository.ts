@@ -8,6 +8,11 @@ import type {
   CustomerPaymentInfo,
   CustomerActivityEntry,
   CustomerSessionInfo,
+  CustomerSupportCaseInfo,
+  CustomerMediaAsset,
+  CustomerNotification,
+  CustomerAdminNote,
+  CustomerAuditEntry,
   CustomerExport,
   CustomerStatus,
 } from "./customer-types";
@@ -134,13 +139,17 @@ export function createCustomerAdminRepository(prisma: PrismaClient) {
           orderBy: { createdAt: "desc" },
         },
         subscriptions: {
-          include: { plan: { select: { name: true, priceAmount: true } } },
+          include: { plan: { select: { name: true, priceAmount: true, code: true } } },
           orderBy: { createdAt: "desc" },
-          take: 1,
         },
         payments: {
           orderBy: { createdAt: "desc" },
           take: 10,
+        },
+        supportCases: {
+          orderBy: { createdAt: "desc" },
+          take: 10,
+          select: { id: true, subject: true, status: true, priority: true, createdAt: true },
         },
         _count: {
           select: {
@@ -148,6 +157,9 @@ export function createCustomerAdminRepository(prisma: PrismaClient) {
             payments: true,
             mediaAssets: true,
             supportCases: true,
+            auditLogs: true,
+            notifications: true,
+            adminNotes: true,
           },
         },
       },
@@ -166,6 +178,32 @@ export function createCustomerAdminRepository(prisma: PrismaClient) {
       take: 10,
       include: {
         actor: { select: { name: true } },
+      },
+    });
+
+    const sessions = await prisma.session.findMany({
+      where: { userId: tenant.ownerUserId },
+      orderBy: { createdAt: "desc" },
+      take: 50,
+    });
+
+    const mediaAgg = await prisma.mediaAsset.aggregate({
+      where: { tenantId: id, deletedAt: null },
+      _sum: { sizeBytes: true },
+    });
+
+    const totalImages = await prisma.mediaAsset.count({
+      where: {
+        tenantId: id,
+        deletedAt: null,
+        mimeType: { startsWith: "image/" },
+      },
+    });
+
+    const totalPackages = await prisma.package.count({
+      where: {
+        site: { tenantId: id, deletedAt: null },
+        deletedAt: null,
       },
     });
 
@@ -189,15 +227,51 @@ export function createCustomerAdminRepository(prisma: PrismaClient) {
       deletedAt: tenant.deletedAt?.toISOString() ?? null,
       sites: tenant.sites.map(mapSiteInfo),
       subscription: subscription ? mapSubscriptionInfo(subscription) : null,
+      allSubscriptions: tenant.subscriptions.map((sub) => ({
+        id: sub.id,
+        status: sub.status as CustomerSubscriptionInfo["status"],
+        planName: sub.plan?.name ?? null,
+        planPrice: sub.plan?.priceAmount ?? null,
+        planCode: sub.plan?.code ?? null,
+        currentPeriodStart: sub.currentPeriodStart?.toISOString() ?? null,
+        currentPeriodEnd: sub.currentPeriodEnd?.toISOString() ?? null,
+        activatedAt: sub.activatedAt?.toISOString() ?? null,
+        expiresAt: sub.expiresAt?.toISOString() ?? null,
+        createdAt: sub.createdAt.toISOString(),
+      })),
       stats: {
         sitesCount: tenant._count.sites,
         paymentsCount: tenant._count.payments,
         mediaCount: tenant._count.mediaAssets,
         supportCasesCount: tenant._count.supportCases,
+        auditLogsCount: tenant._count.auditLogs,
+        notificationsCount: tenant._count.notifications,
+        adminNotesCount: tenant._count.adminNotes,
         totalRevenue,
+        totalStorageBytes: mediaAgg._sum.sizeBytes ?? 0,
+        totalVisits: 0,
+        totalImages,
+        totalPackages,
+        totalOrders: 0,
       },
       recentPayments: tenant.payments.map(mapPaymentInfo),
       recentActivity: recentActivity.map(mapActivityEntry),
+      sessions: sessions.map((s) => ({
+        id: s.id,
+        lastSeenAt: s.lastSeenAt?.toISOString() ?? null,
+        ipAddress: s.ipAddress,
+        userAgent: s.userAgent,
+        createdAt: s.createdAt.toISOString(),
+        expiresAt: s.expiresAt.toISOString(),
+        isRevoked: s.revokedAt !== null,
+      })),
+      supportCases: tenant.supportCases.map((sc) => ({
+        id: sc.id,
+        subject: sc.subject,
+        status: sc.status,
+        priority: sc.priority,
+        createdAt: sc.createdAt.toISOString(),
+      })),
     };
   }
 
@@ -469,6 +543,177 @@ export function createCustomerAdminRepository(prisma: PrismaClient) {
     });
   }
 
+  async function getAllSubscriptions(tenantId: string): Promise<CustomerSubscriptionInfo[]> {
+    const subscriptions = await prisma.subscription.findMany({
+      where: { tenantId, deletedAt: null },
+      orderBy: { createdAt: "desc" },
+      include: { plan: { select: { name: true, priceAmount: true, code: true } } },
+    });
+
+    return subscriptions.map((sub) => ({
+      id: sub.id,
+      status: sub.status as CustomerSubscriptionInfo["status"],
+      planName: sub.plan?.name ?? null,
+      planPrice: sub.plan?.priceAmount ?? null,
+      planCode: sub.plan?.code ?? null,
+      currentPeriodStart: sub.currentPeriodStart?.toISOString() ?? null,
+      currentPeriodEnd: sub.currentPeriodEnd?.toISOString() ?? null,
+      activatedAt: sub.activatedAt?.toISOString() ?? null,
+      expiresAt: sub.expiresAt?.toISOString() ?? null,
+      createdAt: sub.createdAt.toISOString(),
+    }));
+  }
+
+  async function getCustomerMedia(tenantId: string): Promise<{ assets: CustomerMediaAsset[]; totalBytes: number }> {
+    const assets = await prisma.mediaAsset.findMany({
+      where: { tenantId, deletedAt: null },
+      orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        url: true,
+        mimeType: true,
+        sizeBytes: true,
+        width: true,
+        height: true,
+        alt: true,
+        createdAt: true,
+      },
+    });
+
+    const totalBytes = assets.reduce((sum, a) => sum + a.sizeBytes, 0);
+
+    return {
+      assets: assets.map((a) => ({
+        id: a.id,
+        url: a.url,
+        mimeType: a.mimeType,
+        sizeBytes: a.sizeBytes,
+        width: a.width,
+        height: a.height,
+        alt: a.alt,
+        createdAt: a.createdAt.toISOString(),
+      })),
+      totalBytes,
+    };
+  }
+
+  async function getCustomerNotifications(tenantId: string): Promise<CustomerNotification[]> {
+    const notifications = await prisma.notification.findMany({
+      where: { tenantId, deletedAt: null },
+      orderBy: { createdAt: "desc" },
+      take: 100,
+    });
+
+    return notifications.map((n) => ({
+      id: n.id,
+      type: n.type,
+      title: n.title,
+      body: n.body,
+      priority: n.priority,
+      readAt: n.readAt?.toISOString() ?? null,
+      createdAt: n.createdAt.toISOString(),
+    }));
+  }
+
+  async function getCustomerAdminNotes(tenantId: string): Promise<CustomerAdminNote[]> {
+    const notes = await prisma.adminNote.findMany({
+      where: { tenantId, deletedAt: null },
+      orderBy: { createdAt: "desc" },
+      include: { author: { select: { name: true } } },
+    });
+
+    return notes.map((n) => ({
+      id: n.id,
+      body: n.body,
+      authorName: n.author.name,
+      createdAt: n.createdAt.toISOString(),
+    }));
+  }
+
+  async function createAdminNote(tenantId: string, authorId: string, body: string): Promise<void> {
+    await prisma.adminNote.create({
+      data: { tenantId, authorId, body },
+    });
+  }
+
+  async function deleteAdminNote(noteId: string): Promise<void> {
+    await prisma.adminNote.update({
+      where: { id: noteId },
+      data: { deletedAt: new Date() },
+    });
+  }
+
+  async function revokeSession(sessionId: string): Promise<void> {
+    await prisma.session.update({
+      where: { id: sessionId },
+      data: { revokedAt: new Date() },
+    });
+  }
+
+  async function extendTrial(tenantId: string, newEndDate: Date, actorId: string): Promise<void> {
+    await prisma.$transaction(async (tx: PrismaTransaction) => {
+      await tx.tenant.update({
+        where: { id: tenantId },
+        data: { trialEndsAt: newEndDate },
+      });
+
+      await tx.auditLog.create({
+        data: {
+          actorUserId: actorId,
+          tenantId,
+          action: "TRIAL_EXTENDED",
+          entityType: "Tenant",
+          entityId: tenantId,
+          metadata: { newEndDate: newEndDate.toISOString() },
+        },
+      });
+    });
+  }
+
+  async function activateSubscription(subscriptionId: string): Promise<void> {
+    await prisma.subscription.update({
+      where: { id: subscriptionId },
+      data: { status: "ACTIVE", activatedAt: new Date() },
+    });
+  }
+
+  async function cancelSubscription(subscriptionId: string): Promise<void> {
+    await prisma.subscription.update({
+      where: { id: subscriptionId },
+      data: { status: "CANCELLED" },
+    });
+  }
+
+  async function toggleSiteStatus(siteId: string, isPublished: boolean): Promise<void> {
+    await prisma.site.update({
+      where: { id: siteId },
+      data: { isPublished },
+    });
+  }
+
+  async function toggleSiteSuspension(siteId: string, status: CustomerStatus): Promise<void> {
+    await prisma.site.update({
+      where: { id: siteId },
+      data: { status: status as "SUSPENDED" | "PUBLISHED" | "DRAFT" | "EXPIRED" },
+    });
+  }
+
+  async function createNotification(tenantId: string, type: string, title: string, body: string, priority?: string): Promise<void> {
+    await prisma.notification.create({
+      data: {
+        tenantId,
+        type,
+        title,
+        body,
+        priority: priority ?? "info",
+      },
+    });
+  }
+
+  async function getCustomerVisits(_tenantId: string): Promise<number> {
+    return 0;
+  }
+
   return {
     listCustomers,
     getCustomerDetail,
@@ -480,6 +725,20 @@ export function createCustomerAdminRepository(prisma: PrismaClient) {
     deleteCustomer,
     createAuditLog,
     updateUserPassword,
+    getAllSubscriptions,
+    getCustomerMedia,
+    getCustomerNotifications,
+    getCustomerAdminNotes,
+    createAdminNote,
+    deleteAdminNote,
+    revokeSession,
+    extendTrial,
+    activateSubscription,
+    cancelSubscription,
+    toggleSiteStatus,
+    toggleSiteSuspension,
+    createNotification,
+    getCustomerVisits,
   };
 }
 

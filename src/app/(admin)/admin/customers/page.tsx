@@ -93,8 +93,6 @@ export default async function AdminCustomersPage({ searchParams }: Props) {
       <AdminToolbar
         searchValue={search}
         searchPlaceholder="بحث بالاسم أو البريد..."
-        searchParam="search"
-        basePath="/admin/customers"
         filters={
           <div className="flex gap-2">
             {statuses.map((s) => (
