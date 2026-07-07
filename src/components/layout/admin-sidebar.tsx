@@ -1,158 +1,138 @@
-"use client";
+"use client"
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import {
-  ChevronDown,
-  LogOut,
-  Menu,
-  Search,
-  X,
-} from "lucide-react";
-import { cn } from "@/lib/utils/cn";
-import { useAdmin } from "@/components/layout/admin-context";
-import { adminNavigation } from "@/modules/admin/navigation";
-import { adminLogoutAction } from "@/app/_actions/admin-logout";
+import { useState } from "react"
+import Link from "next/link"
+import { usePathname } from "next/navigation"
+import { Search, LogOut, ExternalLink } from "lucide-react"
+import { adminSections, type AdminSection } from "@/modules/admin/navigation"
+import { adminLogoutAction } from "@/app/_actions/admin-logout"
 
-export function AdminSidebar() {
-  const pathname = usePathname();
-  const { sidebarOpen, toggleSidebar, mobileSidebarOpen, setMobileSidebarOpen, setSearchOpen } = useAdmin();
-
-  const isActive = (href: string) => {
-    if (href === "/admin") return pathname === "/admin";
-    return pathname.startsWith(href + "/") || pathname === href;
-  };
-
-  const sidebarContent = (
-    <div className="flex h-full flex-col">
-      <div className="flex items-center justify-between border-b border-white/[0.06] px-4 py-4">
-        <Link href="/admin" className="flex items-center gap-2.5">
-          <div className="flex size-8 items-center justify-center rounded-lg bg-champagne text-xs font-bold text-ink">
-            F
-          </div>
-          {sidebarOpen && (
-            <span className="font-display text-lg font-semibold tracking-tight text-white">
-              FrameID
-            </span>
-          )}
-        </Link>
-        <button
-          onClick={toggleSidebar}
-          className="hidden size-7 items-center justify-center rounded-md text-white/30 transition hover:bg-white/[0.06] hover:text-white/70 lg:flex"
-          aria-label={sidebarOpen ? "طي القائمة" : "توسيع القائمة"}
-        >
-          <ChevronDown className={cn("size-4 transition", sidebarOpen ? "" : "rotate-180")} />
-        </button>
-      </div>
-
-      <div className="px-3 pt-3">
-        <button
-          onClick={() => { setSearchOpen(true); setMobileSidebarOpen(false); }}
-          className="flex h-9 w-full items-center gap-2.5 rounded-lg bg-white/[0.04] px-3 text-sm text-white/30 transition hover:bg-white/[0.08] hover:text-white/60"
-        >
-          <Search className="size-4" />
-          {sidebarOpen && (
-            <span className="flex w-full items-center justify-between">
-              بحث سريع
-              <kbd className="hidden rounded border border-white/[0.08] px-1.5 py-0.5 text-[10px] text-white/20 md:inline">
-                ⌘K
-              </kbd>
-            </span>
-          )}
-        </button>
-      </div>
-
-      <nav aria-label="لوحة الإدارة" className="flex-1 overflow-y-auto px-3 pb-4 pt-4 admin-scrollbar">
-        {adminNavigation.map((group) => (
-          <div key={group.label} className="mb-5">
-            {sidebarOpen && (
-              <p className="mb-1.5 px-3 text-[11px] font-medium uppercase tracking-widest text-white/20">
-                {group.label}
-              </p>
-            )}
-            <div className="space-y-0.5">
-              {group.items.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={() => setMobileSidebarOpen(false)}
-                  className={cn(
-                    "group flex h-9 items-center gap-3 rounded-lg px-3 text-sm transition",
-                    isActive(item.href)
-                      ? "bg-champagne/[0.08] font-medium text-champagne"
-                      : "text-white/50 hover:bg-white/[0.04] hover:text-white/80",
-                  )}
-                >
-                  <item.icon className="size-[18px] shrink-0" />
-                  {sidebarOpen && (
-                    <>
-                      <span>{item.label}</span>
-                      {item.badge && (
-                        <span className="mr-auto rounded-full bg-champagne/15 px-2 py-0.5 text-[11px] text-champagne">
-                          {item.badge}
-                        </span>
-                      )}
-                    </>
-                  )}
-                </Link>
-              ))}
-            </div>
-          </div>
-        ))}
-      </nav>
-
-      <div className="border-t border-white/[0.06] p-3">
-        <form action={adminLogoutAction}>
-          <button
-            type="submit"
-            className={cn(
-              "flex h-9 w-full items-center gap-3 rounded-lg px-3 text-sm transition text-white/40 hover:bg-white/[0.04] hover:text-white/70",
-              !sidebarOpen && "justify-center",
-            )}
-          >
-            <LogOut className="size-[18px] shrink-0" />
-            {sidebarOpen && <span>تسجيل الخروج</span>}
-          </button>
-        </form>
-      </div>
-    </div>
-  );
+function SecondaryPanel({ sections }: { sections: AdminSection[] }) {
+  const pathname = usePathname()
 
   return (
-    <>
-      <button
-        onClick={() => setMobileSidebarOpen(true)}
-        className="fixed right-4 top-3 z-30 flex size-9 items-center justify-center rounded-lg border border-white/[0.08] bg-[#0a0a0a] text-white lg:hidden"
-        aria-label="فتح القائمة"
-      >
-        <Menu className="size-5" />
-      </button>
+    <div className="dashboard-secondary-panel admin-scrollbar">
+      {sections.map((section) => (
+        <div key={section.id}>
+          <div className="dashboard-secondary-head">
+            {section.badge && <span className="eyebrow">{section.badge}</span>}
+            <h2>{section.title}</h2>
+            {section.description && <p>{section.description}</p>}
+          </div>
+          <nav className="dashboard-nav-group-links">
+            {section.links.map((link) => {
+              const isActive =
+                pathname === link.href || pathname?.startsWith(link.href + "/")
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={isActive ? "active" : ""}
+                >
+                  {link.icon && <link.icon size={18} />}
+                  <span>{link.label}</span>
+                  {link.badge != null && (
+                    <span className="dashboard-nav-badge">{link.badge}</span>
+                  )}
+                </Link>
+              )
+            })}
+          </nav>
+        </div>
+      ))}
+    </div>
+  )
+}
 
-      {mobileSidebarOpen && (
-        <div
-          className="fixed inset-0 z-30 bg-black/60 backdrop-blur-sm lg:hidden"
-          onClick={() => setMobileSidebarOpen(false)}
-        />
-      )}
+export function AdminSidebar() {
+  const pathname = usePathname()
+  const [activeSection, setActiveSection] = useState<string | null>(() => {
+    const found = adminSections.find((section) =>
+      section.links.some(
+        (link) => pathname === link.href || pathname?.startsWith(link.href + "/")
+      )
+    )
+    return found?.id ?? adminSections[0]?.id ?? null
+  })
 
-      <aside
-        className={cn(
-          "fixed right-0 top-0 z-40 flex h-full flex-col border-l border-white/[0.06] bg-[#070707] transition-all duration-300 lg:static lg:z-auto",
-          sidebarOpen ? "w-64" : "w-[60px]",
-          mobileSidebarOpen ? "translate-x-0 shadow-2xl" : "translate-x-full lg:translate-x-0",
+  const currentSections = adminSections.filter((s) => s.id === activeSection)
+
+  return (
+    <aside className="dashboard-sidebar admin-scrollbar">
+      <Link href="/admin" className="admin-brand" style={{ textDecoration: "none" }}>
+        <svg width="26" height="26" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+          <rect width="32" height="32" rx="8" fill="url(#brand-grad)" />
+          <path
+            d="M8 18l4-5.5 4 5.5 4-5.5 4 5.5"
+            stroke="#17120a"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            fill="none"
+          />
+          <defs>
+            <linearGradient id="brand-grad" x1="0" y1="0" x2="32" y2="32">
+              <stop stopColor="#f3cf73" />
+              <stop offset="1" stopColor="#d4af37" />
+            </linearGradient>
+          </defs>
+        </svg>
+        <span>
+          <strong>FrameID</strong>
+          <small>Admin</small>
+        </span>
+      </Link>
+
+      <Link href="/admin/search" className="sidebar-search-link">
+        <Search size={15} />
+        ابحث في لوحة التحكم…
+        <kbd>⌘K</kbd>
+      </Link>
+
+      <div className="dashboard-section-nav">
+        <div className="dashboard-primary-sections admin-scrollbar">
+          {adminSections.map((section) => {
+            const Icon = section.icon
+            return (
+              <button
+                key={section.id}
+                data-accent={section.accent ?? "gold"}
+                className={activeSection === section.id ? "selected" : ""}
+                onClick={() => setActiveSection(section.id)}
+                title={section.description}
+              >
+                {Icon ? (
+                  <span>
+                    <Icon size={16} aria-hidden="true" />
+                  </span>
+                ) : null}
+                <strong>{section.title}</strong>
+                {section.shortDescription && (
+                  <small>{section.shortDescription}</small>
+                )}
+              </button>
+            )
+          })}
+        </div>
+
+        {currentSections.length > 0 && (
+          <SecondaryPanel sections={currentSections} />
         )}
-      >
-        {mobileSidebarOpen && (
-          <button
-            onClick={() => setMobileSidebarOpen(false)}
-            className="absolute left-3 top-3 flex size-7 items-center justify-center rounded-md text-white/40 transition hover:bg-white/[0.06] hover:text-white/70"
-            aria-label="إغلاق القائمة"
-          >
-            <X className="size-4" />
-          </button>
-        )}
-        {sidebarContent}
-      </aside>
-    </>
-  );
+      </div>
+
+      <div className="dashboard-sidebar-footer">
+        <div className="sidebar-footer-row">
+          <Link href="/" className="dashboard-home-link">
+            <ExternalLink size={17} />
+            العودة للموقع
+          </Link>
+          <form action={adminLogoutAction}>
+            <button className="dashboard-logout" style={{ width: "auto", padding: "10px 14px" }}>
+              <LogOut size={17} />
+            </button>
+          </form>
+        </div>
+      </div>
+    </aside>
+  )
 }

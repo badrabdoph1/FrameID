@@ -1,25 +1,45 @@
-"use client";
+"use client"
 
-import React from "react";
-import type { ReactNode } from "react";
-import { AdminProvider } from "@/components/layout/admin-context";
-import { AdminSidebar } from "@/components/layout/admin-sidebar";
-import { AdminTopbar } from "@/components/layout/admin-topbar";
-import { AdminMobileNav } from "@/components/layout/admin-mobile-nav";
+import { usePathname } from "next/navigation"
+import { AdminProvider } from "@/components/layout/admin-context"
+import { AdminSidebar } from "@/components/layout/admin-sidebar"
+import { AdminTopbar } from "@/components/layout/admin-topbar"
+import { AdminMobileNav } from "@/components/layout/admin-mobile-nav"
+import { useEffect } from "react"
+import "@/app/admin.css"
 
-export function AdminShell({ children }: { children: ReactNode }) {
+function RouteChangeProgress() {
+  const pathname = usePathname()
+
+  useEffect(() => {
+    const bar = document.querySelector<HTMLDivElement>("#admin-route-progress")
+    if (!bar) return
+    bar.classList.remove("animate-fade-in")
+    bar.style.display = "block"
+    const id = setTimeout(() => {
+      bar.classList.add("animate-fade-in")
+      bar.style.display = "none"
+    }, 340)
+    return () => clearTimeout(id)
+  }, [pathname])
+
+  return <div id="admin-route-progress" className="admin-route-progress" style={{ display: "none" }} />
+}
+
+export function AdminShell({ children }: { children: React.ReactNode }) {
   return (
     <AdminProvider>
-      <div className="flex min-h-screen bg-[#070707]">
+      <RouteChangeProgress />
+      <div className="admin-dark-shell">
+        <div className="dashboard-layout">
           <AdminSidebar />
-          <div className="flex min-w-0 flex-1 flex-col">
+          <main className="dashboard-main admin-scrollbar">
             <AdminTopbar />
-            <main className="flex-1 overflow-auto p-4 pb-safe lg:p-6">
-              {children}
-            </main>
-          </div>
-          <AdminMobileNav />
+            <div className="dashboard-content">{children}</div>
+          </main>
         </div>
+      </div>
+      <AdminMobileNav />
     </AdminProvider>
-  );
+  )
 }

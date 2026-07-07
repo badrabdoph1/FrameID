@@ -1,34 +1,33 @@
-"use client";
+"use client"
 
 import {
-  default as React,
   createContext,
   useContext,
-  useCallback,
   useState,
+  useCallback,
   type ReactNode,
-} from "react";
+} from "react"
 
-type AdminContextType = {
-  sidebarOpen: boolean;
-  setSidebarOpen: (open: boolean) => void;
-  toggleSidebar: () => void;
-  mobileSidebarOpen: boolean;
-  setMobileSidebarOpen: (open: boolean) => void;
-  searchOpen: boolean;
-  setSearchOpen: (open: boolean) => void;
-};
+interface AdminContextValue {
+  sidebarOpen: boolean
+  setSidebarOpen: (open: boolean) => void
+  toggleSidebar: () => void
+  mobileMenuOpen: boolean
+  setMobileMenuOpen: (open: boolean) => void
+  toggleMobileMenu: () => void
+  searchOpen: boolean
+  setSearchOpen: (open: boolean) => void
+}
 
-const AdminContext = createContext<AdminContextType | null>(null);
+const AdminContext = createContext<AdminContextValue | null>(null)
 
 export function AdminProvider({ children }: { children: ReactNode }) {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
-  const [searchOpen, setSearchOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [searchOpen, setSearchOpen] = useState(false)
 
-  const toggleSidebar = useCallback(() => {
-    setSidebarOpen((prev) => !prev);
-  }, []);
+  const toggleSidebar = useCallback(() => setSidebarOpen((v) => !v), [])
+  const toggleMobileMenu = useCallback(() => setMobileMenuOpen((v) => !v), [])
 
   return (
     <AdminContext.Provider
@@ -36,21 +35,20 @@ export function AdminProvider({ children }: { children: ReactNode }) {
         sidebarOpen,
         setSidebarOpen,
         toggleSidebar,
-        mobileSidebarOpen,
-        setMobileSidebarOpen,
+        mobileMenuOpen,
+        setMobileMenuOpen,
+        toggleMobileMenu,
         searchOpen,
         setSearchOpen,
       }}
     >
       {children}
     </AdminContext.Provider>
-  );
+  )
 }
 
 export function useAdmin() {
-  const ctx = useContext(AdminContext);
-  if (!ctx) {
-    throw new Error("useAdmin must be used within an AdminProvider");
-  }
-  return ctx;
+  const ctx = useContext(AdminContext)
+  if (!ctx) throw new Error("useAdmin must be used within <AdminProvider>")
+  return ctx
 }
