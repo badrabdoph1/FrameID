@@ -1,4 +1,4 @@
-import { CenterPageShell } from "@/components/admin/shared/center-page-shell";
+import { AdminPageShell } from "@/components/layout/admin-page-shell";
 import { prisma } from "@/lib/prisma";
 import { requireSuperAdminSession } from "@/modules/admin/admin-page-guards";
 import { SitesTable, type SiteRow } from "@/app/(admin)/admin/sites/sites-table";
@@ -41,13 +41,12 @@ export default async function AdminSitesPage() {
   }));
 
   return (
-    <CenterPageShell
-      badge="إدارة المواقع"
+    <AdminPageShell
+      badge="الإدارة"
       title="المواقع"
-      description="جميع مواقع المصورين على المنصة."
-      breadcrumbs={[{ label: "القيادة", href: "/admin" }, { label: "المواقع" }]}
+      description="جميع مواقع المصورين على المنصة"
     >
       <SitesTable data={data} />
-    </CenterPageShell>
+    </AdminPageShell>
   );
 }

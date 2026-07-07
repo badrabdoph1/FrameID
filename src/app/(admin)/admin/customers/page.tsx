@@ -1,4 +1,6 @@
-import { CenterPageShell } from "@/components/admin/shared/center-page-shell";
+import Link from "next/link";
+import { AdminPageShell } from "@/components/layout/admin-page-shell";
+import { AdminStatusBadge } from "@/components/layout/admin-status-badge";
 import { prisma } from "@/lib/prisma";
 import { requireSuperAdminSession } from "@/modules/admin/admin-page-guards";
 import { CustomersTable, type CustomerRow } from "@/app/(admin)/admin/customers/customers-table";
@@ -41,13 +43,16 @@ export default async function AdminCustomersPage() {
   }));
 
   return (
-    <CenterPageShell
-      badge="إدارة العملاء"
+    <AdminPageShell
+      badge="الإدارة"
       title="العملاء"
-      description="عرض وإدارة جميع العملاء على المنصة."
-      breadcrumbs={[{ label: "القيادة", href: "/admin" }, { label: "العملاء" }]}
+      description="عرض وإدارة جميع العملاء على المنصة"
+      actions={[
+        { label: "إنشاء عميل", variant: "primary" },
+        { label: "تصدير", variant: "secondary" },
+      ]}
     >
       <CustomersTable data={data} />
-    </CenterPageShell>
+    </AdminPageShell>
   );
 }

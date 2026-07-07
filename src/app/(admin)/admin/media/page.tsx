@@ -1,18 +1,22 @@
-import { AdminModulePage } from "@/components/admin/shared/admin-module-page";
+import { AdminPageShell } from "@/components/layout/admin-page-shell";
+import { AdminEmptyState } from "@/components/layout/admin-empty-state";
+import { Image } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
 export default function AdminMediaPage() {
   return (
-    <AdminModulePage
-      badge="مكتبة الوسائط"
-      title="الوسائط"
-      description="مراقبة الصور والملفات المرفوعة على مستوى المنصة."
-      items={[
-        { label: "صور العملاء", value: "متابعة الملفات المرفوعة لكل عميل وموقع." },
-        { label: "صور القوالب", value: "إدارة صور المعاينات والمواد الافتراضية." },
-        { label: "إثباتات الدفع", value: "ربط صور الإثبات بمراجعة المدفوعات." }
-      ]}
-    />
+    <AdminPageShell
+      badge="الوسائط"
+      title="مدير الوسائط"
+      description="رفع، إدارة، والبحث في جميع ملفات وصور المنصة"
+      breadcrumbs={[{ label: "القيادة", href: "/admin" }, { label: "الوسائط" }]}
+    >
+      <AdminEmptyState
+        icon={Image}
+        title="مدير الوسائط"
+        description="قريبًا: رفع، حذف، ضغط، تحويل WebP/AVIF، والبحث في الملفات."
+      />
+    </AdminPageShell>
   );
 }

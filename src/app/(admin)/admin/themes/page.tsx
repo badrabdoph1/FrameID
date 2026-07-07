@@ -1,18 +1,22 @@
-import { AdminModulePage } from "@/components/admin/shared/admin-module-page";
+import { AdminPageShell } from "@/components/layout/admin-page-shell";
+import { AdminEmptyState } from "@/components/layout/admin-empty-state";
+import { Palette } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
 export default function AdminThemesPage() {
   return (
-    <AdminModulePage
-      badge="محرك السمات"
-      title="السمات"
-      description="إدارة محرك التصميم والإعدادات التقنية للقوالب."
-      items={[
-        { label: "الألوان", value: "إعدادات الهوية البصرية الافتراضية لكل سمة." },
-        { label: "الأقسام", value: "تحديد الأقسام المدعومة مثل المعرض والباقات والتواصل." },
-        { label: "الإصدارات", value: "متابعة إصدارات السمات دون كسر مواقع العملاء." }
-      ]}
-    />
+    <AdminPageShell
+      badge="السمات"
+      title="إدارة السمات"
+      description="إدارة السمات والألوان والمظهر العام للمنصة"
+      breadcrumbs={[{ label: "القيادة", href: "/admin" }, { label: "السمات" }]}
+    >
+      <AdminEmptyState
+        icon={Palette}
+        title="مركز السمات"
+        description="قريبًا: إدارة الألوان، الأقسام، والإصدارات."
+      />
+    </AdminPageShell>
   );
 }

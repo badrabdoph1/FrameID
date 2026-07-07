@@ -1,6 +1,6 @@
 "use client";
 
-import React, {
+import {
   type KeyboardEvent,
   useCallback,
   useEffect,
@@ -10,6 +10,7 @@ import React, {
 import { useRouter } from "next/navigation";
 import { Search, Command } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
+import { useAdmin } from "@/components/layout/admin-context";
 
 type SearchResult = {
   id: string;
@@ -20,50 +21,38 @@ type SearchResult = {
 };
 
 const adminPages: SearchResult[] = [
-  { id: "dashboard", label: "القيادة", description: "نظرة عامة على المنصة", href: "/admin", group: "الصفحات" },
-  { id: "customers", label: "العملاء", description: "إدارة العملاء", href: "/admin/customers", group: "التشغيل" },
-  { id: "sites", label: "المواقع", description: "إدارة المواقع", href: "/admin/sites", group: "التشغيل" },
-  { id: "payments", label: "المدفوعات", description: "مراجعة المدفوعات", href: "/admin/payments", group: "التشغيل" },
-  { id: "backups", label: "النسخ الاحتياطي", href: "/admin/backups", group: "المنصة" },
-  { id: "security", label: "الأمان", href: "/admin/security", group: "المنصة" },
-  { id: "support", label: "الدعم", href: "/admin/support", group: "المنصة" },
-  { id: "settings", label: "الإعدادات", href: "/admin/settings", group: "الإعدادات" },
+  { id: "dashboard", label: "لوحة القيادة", description: "نظرة عامة على المنصة", href: "/admin", group: "الرئيسية" },
+  { id: "customers", label: "العملاء", description: "إدارة العملاء", href: "/admin/customers", group: "الإدارة" },
+  { id: "sites", label: "المواقع", description: "إدارة المواقع", href: "/admin/sites", group: "الإدارة" },
+  { id: "subscriptions", label: "الاشتراكات", description: "إدارة الاشتراكات", href: "/admin/subscriptions", group: "الإدارة" },
+  { id: "payments", label: "المدفوعات", description: "مراجعة المدفوعات", href: "/admin/payments", group: "الإدارة" },
+  { id: "templates", label: "القوالب", description: "إدارة القوالب", href: "/admin/templates", group: "المحتوى" },
   { id: "content", label: "المحتوى", description: "إدارة محتوى المنصة", href: "/admin/content", group: "المحتوى" },
-  { id: "media", label: "الوسائط", href: "/admin/media", group: "المحتوى" },
-  { id: "templates", label: "القوالب", href: "/admin/templates", group: "المحتوى" },
-  { id: "themes", label: "السمات", href: "/admin/themes", group: "المحتوى" },
-  { id: "analytics", label: "التحليلات", href: "/admin/analytics", group: "المنصة" },
-  { id: "notifications", label: "الإشعارات", href: "/admin/notifications", group: "المنصة" },
-  { id: "feature-flags", label: "الميزات", href: "/admin/feature-flags", group: "المنصة" },
-  { id: "audit", label: "سجل التدقيق", href: "/admin/audit", group: "المنصة" },
-  { id: "marketing", label: "التسويق", href: "/admin/marketing", group: "التسويق" },
+  { id: "media", label: "الوسائط", description: "مدير الملفات والصور", href: "/admin/media", group: "المحتوى" },
+  { id: "themes", label: "السمات", description: "إدارة السمات", href: "/admin/themes", group: "المحتوى" },
+  { id: "backups", label: "النسخ الاحتياطي", description: "مركز النسخ الاحتياطي", href: "/admin/backups", group: "التشغيل" },
+  { id: "analytics", label: "التحليلات", description: "إحصائيات المنصة", href: "/admin/analytics", group: "التشغيل" },
+  { id: "audit", label: "سجل التدقيق", description: "سجل أحداث المنصة", href: "/admin/audit", group: "التشغيل" },
+  { id: "notifications", label: "الإشعارات", description: "إدارة الإشعارات", href: "/admin/notifications", group: "النظام" },
+  { id: "security", label: "الأمان", description: "إعدادات الأمان", href: "/admin/security", group: "النظام" },
+  { id: "support", label: "الدعم", description: "تذاكر الدعم", href: "/admin/support", group: "النظام" },
+  { id: "settings", label: "الإعدادات", description: "إعدادات المنصة", href: "/admin/settings", group: "الإعدادات" },
 ];
 
 export function AdminCommandPalette() {
   const router = useRouter();
-  const [open, setOpen] = useState(false);
+  const { searchOpen, setSearchOpen } = useAdmin();
   const [query, setQuery] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    const handler = (e: globalThis.KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
-        e.preventDefault();
-        setOpen((prev) => !prev);
-      }
-    };
-    document.addEventListener("keydown", handler);
-    return () => document.removeEventListener("keydown", handler);
-  }, []);
-
-  useEffect(() => {
-    if (open) {
+    if (searchOpen) {
       setTimeout(() => inputRef.current?.focus(), 50);
     } else {
       setQuery("");
     }
-  }, [open]);
+  }, [searchOpen]);
 
   const results = query.trim()
     ? adminPages.filter(
@@ -85,10 +74,10 @@ export function AdminCommandPalette() {
 
   const navigate = useCallback(
     (href: string) => {
-      setOpen(false);
+      setSearchOpen(false);
       router.push(href);
     },
-    [router],
+    [router, setSearchOpen],
   );
 
   const handleKeyDown = (e: KeyboardEvent) => {
@@ -103,15 +92,15 @@ export function AdminCommandPalette() {
     }
   };
 
-  if (!open) {
+  if (!searchOpen) {
     return (
       <button
-        onClick={() => setOpen(true)}
-        className="flex h-9 items-center gap-2 rounded-[var(--radius-control)] border border-white/10 bg-white/[0.03] px-3 text-sm text-white/40 transition hover:border-white/20 hover:text-white/60 w-56"
+        onClick={() => setSearchOpen(true)}
+        className="flex h-9 items-center gap-2 rounded-lg border border-white/[0.06] bg-white/[0.03] px-3 text-sm text-white/30 transition hover:border-white/[0.12] hover:text-white/60 w-56"
       >
         <Search className="size-4" />
         <span>بحث سريع...</span>
-        <kbd className="mr-auto flex items-center gap-0.5 rounded-[var(--radius-control)] border border-white/10 px-1.5 py-0.5 text-[10px] text-white/30">
+        <kbd className="mr-auto flex items-center gap-0.5 rounded border border-white/[0.08] px-1.5 py-0.5 text-[10px] text-white/20">
           <Command className="size-2.5" />K
         </kbd>
       </button>
@@ -121,12 +110,12 @@ export function AdminCommandPalette() {
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center pt-[15vh]">
       <div
-        className="fixed inset-0 bg-black/60"
-        onClick={() => setOpen(false)}
+        className="fixed inset-0 bg-black/60 backdrop-blur-sm"
+        onClick={() => setSearchOpen(false)}
       />
-      <div className="relative z-10 w-full max-w-lg rounded-[var(--radius-panel)] border border-white/10 bg-[#0f0f0f] shadow-2xl animate-fade-in">
-        <div className="flex items-center border-b border-white/10 px-4">
-          <Search className="size-4 text-white/40" />
+      <div className="animate-scale-in relative z-10 w-full max-w-lg rounded-xl border border-white/[0.08] bg-[#0a0a0a] shadow-2xl">
+        <div className="flex items-center border-b border-white/[0.06] px-4">
+          <Search className="size-4 text-white/30" />
           <input
             ref={inputRef}
             type="text"
@@ -137,39 +126,36 @@ export function AdminCommandPalette() {
             }}
             onKeyDown={handleKeyDown}
             placeholder="ابحث عن صفحة، إجراء، أو إعداد..."
-            className="h-12 w-full bg-transparent px-3 text-sm text-white outline-none placeholder:text-white/30"
+            className="h-12 w-full bg-transparent px-3 text-sm text-white outline-none placeholder:text-white/25"
           />
-          <button
-            onClick={() => setOpen(false)}
-            className="flex size-6 items-center justify-center rounded-[var(--radius-control)] text-[10px] text-white/30 transition hover:bg-white/10 hover:text-white/60"
-          >
+          <kbd className="rounded border border-white/[0.08] px-1.5 py-0.5 text-[10px] text-white/20">
             ESC
-          </button>
+          </kbd>
         </div>
 
-        <div className="max-h-[60vh] overflow-y-auto p-2">
+        <div className="max-h-[50vh] overflow-y-auto p-2 admin-scrollbar">
           {Object.entries(grouped).map(([group, items]) => (
             <div key={group}>
-              <p className="px-3 py-2 text-xs font-medium text-white/30">
+              <p className="px-3 py-2 text-[11px] font-medium uppercase tracking-widest text-white/20">
                 {group}
               </p>
-              {items.map((item, i) => {
+              {items.map((item) => {
                 const globalIndex = flatResults.indexOf(item);
                 return (
                   <button
                     key={item.id}
                     onClick={() => navigate(item.href)}
                     className={cn(
-                      "flex w-full items-center gap-3 rounded-[var(--radius-control)] px-3 py-2.5 text-right transition",
+                      "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-right transition",
                       globalIndex === currentIndex
                         ? "bg-champagne/10 text-champagne"
-                        : "text-white/70 hover:bg-white/5 hover:text-white",
+                        : "text-white/60 hover:bg-white/[0.04] hover:text-white/80",
                     )}
                   >
                     <div className="flex-1">
                       <p className="text-sm font-medium">{item.label}</p>
                       {item.description && (
-                        <p className="mt-0.5 text-xs text-white/40">
+                        <p className="mt-0.5 text-xs text-white/35">
                           {item.description}
                         </p>
                       )}
@@ -181,8 +167,8 @@ export function AdminCommandPalette() {
           ))}
 
           {results.length === 0 && (
-            <p className="px-3 py-8 text-center text-sm text-white/40">
-              لا توجد نتائج لـ &quot;{query}&quot;
+            <p className="px-3 py-8 text-center text-sm text-white/35">
+              لا توجد نتائج لـ &ldquo;{query}&rdquo;
             </p>
           )}
         </div>

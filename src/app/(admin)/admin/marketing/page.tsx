@@ -1,18 +1,22 @@
-import { AdminModulePage } from "@/components/admin/shared/admin-module-page";
+import { AdminPageShell } from "@/components/layout/admin-page-shell";
+import { AdminEmptyState } from "@/components/layout/admin-empty-state";
+import { Megaphone } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
 export default function AdminMarketingPage() {
   return (
-    <AdminModulePage
-      badge="تسويق المنصة"
-      title="التسويق"
-      description="إدارة الرسائل التسويقية التي تشرح FrameID للمصورين."
-      items={[
-        { label: "الصفحة الرئيسية", value: "تحديث الوعد، الرحلة، ودعوات الإجراء." },
-        { label: "القوالب", value: "إبراز القوالب والمعاينات الحية." },
-        { label: "SEO", value: "تحسين ظهور المنصة للمصورين الباحثين عن موقع احترافي." }
-      ]}
-    />
+    <AdminPageShell
+      badge="التسويق"
+      title="إدارة التسويق"
+      description="إدارة الصفحة الرئيسية، القوالب التسويقية، وتحسين محركات البحث"
+      breadcrumbs={[{ label: "القيادة", href: "/admin" }, { label: "التسويق" }]}
+    >
+      <AdminEmptyState
+        icon={Megaphone}
+        title="قريبًا"
+        description="مركز التسويق قيد التطوير."
+      />
+    </AdminPageShell>
   );
 }

@@ -1,0 +1,39 @@
+import type { ReactNode } from "react";
+import { Inbox } from "lucide-react";
+import { cn } from "@/lib/utils/cn";
+
+type AdminEmptyStateProps = {
+  icon?: React.ComponentType<{ className?: string }>;
+  title: string;
+  description?: string;
+  action?: ReactNode;
+  className?: string;
+};
+
+export function AdminEmptyState({
+  icon: Icon,
+  title,
+  description,
+  action,
+  className,
+}: AdminEmptyStateProps) {
+  return (
+    <div className={cn(
+      "flex flex-col items-center justify-center rounded-xl border border-dashed border-white/[0.06] px-6 py-16 text-center",
+      className,
+    )}>
+      <div className="mb-4 flex size-14 items-center justify-center rounded-xl bg-white/[0.04]">
+        {Icon ? (
+          <Icon className="size-7 text-white/25" />
+        ) : (
+          <Inbox className="size-7 text-white/25" />
+        )}
+      </div>
+      <h3 className="text-base font-medium text-white/60">{title}</h3>
+      {description && (
+        <p className="mt-1 max-w-sm text-sm text-white/30">{description}</p>
+      )}
+      {action && <div className="mt-5">{action}</div>}
+    </div>
+  );
+}

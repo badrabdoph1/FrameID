@@ -1,18 +1,22 @@
-import { AdminModulePage } from "@/components/admin/shared/admin-module-page";
+import { AdminPageShell } from "@/components/layout/admin-page-shell";
+import { AdminEmptyState } from "@/components/layout/admin-empty-state";
+import { Bell } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
 export default function AdminNotificationsPage() {
   return (
-    <AdminModulePage
-      badge="مركز الإشعارات"
+    <AdminPageShell
+      badge="الإشعارات"
       title="الإشعارات"
-      description="إدارة رسائل العملاء والتنبيهات الخاصة بالاشتراك والتفعيل."
-      items={[
-        { label: "إشعارات التجربة", value: "تنبيهات قرب انتهاء التجربة المجانية." },
-        { label: "إشعارات الدفع", value: "رسائل قبول أو رفض إثبات الدفع." },
-        { label: "إشعارات النظام", value: "رسائل الصيانة والتحديثات المهمة." }
-      ]}
-    />
+      description="إدارة وإرسال الإشعارات للعملاء"
+      breadcrumbs={[{ label: "القيادة", href: "/admin" }, { label: "الإشعارات" }]}
+    >
+      <AdminEmptyState
+        icon={Bell}
+        title="مركز الإشعارات"
+        description="قريبًا: إرسال إشعارات البريد، WhatsApp، وإشعارات الموقع."
+      />
+    </AdminPageShell>
   );
 }

@@ -1,4 +1,4 @@
-import { CenterPageShell } from "@/components/admin/shared/center-page-shell";
+import { AdminPageShell } from "@/components/layout/admin-page-shell";
 import { prisma } from "@/lib/prisma";
 import { requireSuperAdminSession } from "@/modules/admin/admin-page-guards";
 import { SupportTable, type CaseRow } from "@/app/(admin)/admin/support/support-table";
@@ -32,13 +32,12 @@ export default async function AdminSupportPage() {
   }));
 
   return (
-    <CenterPageShell
-      badge="مركز الدعم"
+    <AdminPageShell
+      badge="النظام"
       title="الدعم"
-      description="تذاكر الدعم واستفسارات العملاء."
-      breadcrumbs={[{ label: "القيادة", href: "/admin" }, { label: "الدعم" }]}
+      description="تذاكر الدعم واستفسارات العملاء"
     >
       <SupportTable data={data} />
-    </CenterPageShell>
+    </AdminPageShell>
   );
 }

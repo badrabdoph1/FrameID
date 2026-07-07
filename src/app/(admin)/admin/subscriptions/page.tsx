@@ -1,7 +1,6 @@
+import { AdminPageShell } from "@/components/layout/admin-page-shell";
 import { prisma } from "@/lib/prisma";
 import { requireSuperAdminSession } from "@/modules/admin/admin-page-guards";
-import { CenterPageShell } from "@/components/admin/shared/center-page-shell";
-import { StatCard } from "@/components/admin/shared/stat-card";
 
 export const dynamic = "force-dynamic";
 
@@ -12,22 +11,30 @@ export default async function AdminSubscriptionsPage() {
     prisma.subscription.count({ where: { status: "TRIAL", deletedAt: null } }),
     prisma.subscription.count({ where: { status: "ACTIVE", deletedAt: null } }),
     prisma.subscription.count({ where: { status: "EXPIRED", deletedAt: null } }),
-    prisma.subscription.count({ where: { status: "PAST_DUE", deletedAt: null } })
+    prisma.subscription.count({ where: { status: "PAST_DUE", deletedAt: null } }),
   ]);
 
+  const cards = [
+    { label: "تجارب مجانية", value: trial, color: "text-sky-400" },
+    { label: "نشطة", value: active, color: "text-emerald-400" },
+    { label: "منتهية", value: expired, color: "text-red-400" },
+    { label: "متأخرة", value: pastDue, color: "text-amber-400" },
+  ];
+
   return (
-    <CenterPageShell
-      badge="إدارة الاشتراكات"
+    <AdminPageShell
+      badge="الإدارة"
       title="الاشتراكات"
-      description="متابعة التجارب المجانية، الاشتراكات النشطة، والحالات المتأخرة."
-      breadcrumbs={[{ label: "القيادة", href: "/admin" }, { label: "الاشتراكات" }]}
+      description="متابعة التجارب المجانية، الاشتراكات النشطة، والحالات المتأخرة"
     >
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="تجارب مجانية" value={trial} />
-        <StatCard label="نشطة" value={active} />
-        <StatCard label="منتهية" value={expired} />
-        <StatCard label="متأخرة" value={pastDue} />
+        {cards.map((card) => (
+          <div key={card.label} className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-5">
+            <p className="text-sm text-white/40">{card.label}</p>
+            <p className={`mt-2 text-3xl font-semibold ${card.color}`}>{card.value}</p>
+          </div>
+        ))}
       </div>
-    </CenterPageShell>
+    </AdminPageShell>
   );
 }

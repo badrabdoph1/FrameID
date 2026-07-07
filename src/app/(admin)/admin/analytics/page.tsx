@@ -1,18 +1,21 @@
-import { AdminModulePage } from "@/components/admin/shared/admin-module-page";
+import { AdminPageShell } from "@/components/layout/admin-page-shell";
+import { AdminEmptyState } from "@/components/layout/admin-empty-state";
+import { BarChart3 } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
 export default function AdminAnalyticsPage() {
   return (
-    <AdminModulePage
-      badge="تحليلات المنصة"
+    <AdminPageShell
       title="التحليلات"
-      description="قراءة نمو المنصة واستخدام العملاء ومسارات التفعيل."
-      items={[
-        { label: "رحلة التسجيل", value: "قياس مشاهدة القوالب، فتح المعاينة، وإنشاء الحساب." },
-        { label: "نشاط العملاء", value: "متابعة المواقع النشطة والتعديلات ورفع الصور." },
-        { label: "الإيرادات", value: "ربط طلبات الدفع والتحويلات بحالة الاشتراكات." }
-      ]}
-    />
+      description="إحصائيات وأداء المنصة"
+      breadcrumbs={[{ label: "القيادة", href: "/admin" }, { label: "التحليلات" }]}
+    >
+      <AdminEmptyState
+        icon={BarChart3}
+        title="قريبًا"
+        description="لوحة التحليلات قيد التطوير. ستتمكن من مشاهدة إحصائيات الزوار، الإيرادات، ونشاط المنصة."
+      />
+    </AdminPageShell>
   );
 }

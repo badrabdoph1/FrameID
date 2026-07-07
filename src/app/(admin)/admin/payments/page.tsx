@@ -1,6 +1,5 @@
-import { CenterPageShell } from "@/components/admin/shared/center-page-shell";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { AdminPageShell } from "@/components/layout/admin-page-shell";
+import { AdminStatusBadge } from "@/components/layout/admin-status-badge";
 import { prisma } from "@/lib/prisma";
 import { requireSuperAdminSession } from "@/modules/admin/admin-page-guards";
 import {
@@ -18,16 +17,11 @@ type Props = {
 
 function formatMethod(method: string): string {
   switch (method) {
-    case "INSTAPAY":
-      return "إنستا باي";
-    case "VODAFONE_CASH":
-      return "فودافون كاش";
-    case "STRIPE":
-      return "Stripe";
-    case "PAYPAL":
-      return "PayPal";
-    default:
-      return method;
+    case "INSTAPAY": return "إنستا باي";
+    case "VODAFONE_CASH": return "فودافون كاش";
+    case "STRIPE": return "Stripe";
+    case "PAYPAL": return "PayPal";
+    default: return method;
   }
 }
 
@@ -67,48 +61,43 @@ export default async function AdminPaymentsPage({ searchParams }: Props) {
   }));
 
   return (
-    <CenterPageShell
-      badge="مراجعة المدفوعات"
+    <AdminPageShell
+      badge="الإدارة"
       title="المدفوعات"
-      description="مراجعة وإدارة طلبات الدفع."
-      breadcrumbs={[{ label: "القيادة", href: "/admin" }, { label: "المدفوعات" }]}
+      description="مراجعة وإدارة طلبات الدفع"
     >
       {approved && (
-        <p className="rounded-[var(--radius-panel)] border border-success/20 bg-success/10 px-4 py-3 text-sm text-success">
-          تم قبول الدفع وتفعيل الاشتراك.
-        </p>
+        <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-400">
+          تم قبول الدفع وتفعيل الاشتراك
+        </div>
       )}
       {rejected && (
-        <p className="rounded-[var(--radius-panel)] border border-warning/20 bg-warning/10 px-4 py-3 text-sm text-warning">
-          تم رفض طلب الدفع.
-        </p>
+        <div className="rounded-xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-400">
+          تم رفض طلب الدفع
+        </div>
       )}
       {error && (
-        <p className="rounded-[var(--radius-panel)] border border-danger/20 bg-danger/10 px-4 py-3 text-sm text-danger">
-          تعذر تنفيذ العملية.
-        </p>
+        <div className="rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+          تعذر تنفيذ العملية
+        </div>
       )}
 
       {payments.length > 0 && (
-        <div className="rounded-[var(--radius-panel)] border border-warning/20 bg-warning/5 p-4">
-          <h3 className="mb-3 text-sm font-medium text-warning">
+        <div className="rounded-xl border border-amber-500/20 bg-amber-500/[0.03] p-4">
+          <h3 className="mb-3 text-sm font-medium text-amber-400">
             مدفوعات معلقة ({payments.length})
           </h3>
           <div className="space-y-3">
             {payments.map((p) => (
               <div
                 key={p.id}
-                className="flex flex-col gap-3 rounded-[var(--radius-panel)] border border-white/10 bg-white/[0.02] p-4 sm:flex-row sm:items-center sm:justify-between"
+                className="flex flex-col gap-3 rounded-xl border border-white/[0.06] bg-white/[0.02] p-4 sm:flex-row sm:items-center sm:justify-between"
               >
                 <div className="space-y-1 text-sm">
-                  <p className="font-medium text-white">{p.customerName}</p>
-                  <p className="text-white/60">
-                    {p.amount} ج.م · {formatMethod(p.method)}
-                  </p>
-                  {p.reference && (
-                    <p className="text-xs text-white/40">مرجع: {p.reference}</p>
-                  )}
-                  <p className="text-xs text-white/40">{p.createdAt}</p>
+                  <p className="font-medium text-white/80">{p.customerName}</p>
+                  <p className="text-white/50">{p.amount} ج.م · {formatMethod(p.method)}</p>
+                  {p.reference && <p className="text-xs text-white/35">مرجع: {p.reference}</p>}
+                  <p className="text-xs text-white/35">{p.createdAt}</p>
                 </div>
                 <div className="flex items-center gap-2">
                   {p.proofUrl && (
@@ -123,20 +112,20 @@ export default async function AdminPaymentsPage({ searchParams }: Props) {
                   )}
                   <form action={approvePaymentAction}>
                     <input type="hidden" name="paymentRequestId" value={p.id} />
-                    <Button type="submit" variant="luxury" size="sm">
+                    <button type="submit" className="rounded-lg bg-champagne px-4 py-2 text-xs font-medium text-ink transition hover:bg-champagne/90">
                       قبول
-                    </Button>
+                    </button>
                   </form>
                   <form action={rejectPaymentAction} className="flex items-center gap-2">
                     <input type="hidden" name="paymentRequestId" value={p.id} />
                     <input
                       name="adminNote"
-                      className="h-8 w-32 rounded-[var(--radius-control)] border border-white/10 bg-white/5 px-2 text-xs text-white outline-none"
+                      className="h-8 w-28 rounded-lg border border-white/[0.08] bg-white/[0.03] px-2 text-xs text-white outline-none placeholder:text-white/20"
                       placeholder="سبب الرفض"
                     />
-                    <Button type="submit" variant="secondary" size="sm">
+                    <button type="submit" className="rounded-lg border border-white/[0.08] px-4 py-2 text-xs font-medium text-white/60 transition hover:bg-white/[0.06] hover:text-white">
                       رفض
-                    </Button>
+                    </button>
                   </form>
                 </div>
               </div>
@@ -146,11 +135,9 @@ export default async function AdminPaymentsPage({ searchParams }: Props) {
       )}
 
       <div className="mt-6">
-        <h3 className="mb-4 text-sm font-medium text-white/60">
-          سجل المدفوعات
-        </h3>
+        <h3 className="mb-4 text-sm font-medium text-white/60">سجل المدفوعات</h3>
         <PaymentsTable data={data} />
       </div>
-    </CenterPageShell>
+    </AdminPageShell>
   );
 }

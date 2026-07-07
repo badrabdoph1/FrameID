@@ -1,4 +1,4 @@
-import { CenterPageShell } from "@/components/admin/shared/center-page-shell";
+import { AdminPageShell } from "@/components/layout/admin-page-shell";
 import { prisma } from "@/lib/prisma";
 import { requireSuperAdminSession } from "@/modules/admin/admin-page-guards";
 import { SecurityTable, type LogRow } from "@/app/(admin)/admin/security/security-table";
@@ -31,13 +31,12 @@ export default async function AdminSecurityPage() {
   }));
 
   return (
-    <CenterPageShell
-      badge="مركز الأمان"
+    <AdminPageShell
+      badge="النظام"
       title="الأمان وسجل العمليات"
-      description="سجل حركة النظام وجميع العمليات."
-      breadcrumbs={[{ label: "القيادة", href: "/admin" }, { label: "الأمان" }]}
+      description="سجل حركة النظام وجميع العمليات"
     >
       <SecurityTable data={data} />
-    </CenterPageShell>
+    </AdminPageShell>
   );
 }

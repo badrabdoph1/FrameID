@@ -1,27 +1,22 @@
-import { AdminModulePage } from "@/components/admin/shared/admin-module-page";
+import { AdminPageShell } from "@/components/layout/admin-page-shell";
+import { AdminEmptyState } from "@/components/layout/admin-empty-state";
+import { FileText } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
 export default function AdminContentPage() {
   return (
-    <AdminModulePage
-      badge="محتوى المنصة"
-      title="المحتوى"
-      description="إدارة النصوص والصفحات التي تظهر في المنصة ومواقع العملاء."
-      items={[
-        {
-          label: "النصوص",
-          value: "تحكم في عناوين الصفحة الرئيسية، وصف الرحلة، ورسائل التجربة."
-        },
-        {
-          label: "صفحات المنصة",
-          value: "إدارة الصفحات القانونية، صفحات التسويق، ومحتوى الدعم."
-        },
-        {
-          label: "محتوى العملاء",
-          value: "مراجعة محتوى المواقع عند الحاجة دون الدخول إلى لوحة المصور."
-        }
-      ]}
-    />
+    <AdminPageShell
+      badge="المحتوى"
+      title="إدارة المحتوى"
+      description="إدارة محتوى المنصة: النصوص، الصفحات، والرسائل"
+      breadcrumbs={[{ label: "القيادة", href: "/admin" }, { label: "المحتوى" }]}
+    >
+      <AdminEmptyState
+        icon={FileText}
+        title="مركز المحتوى"
+        description="إدارة الصفحات الرئيسية، النصوص، الأزرار، الفوتر، الهيدر، SEO، صفحات الخصوصية، الشروط، رسائل النظام، البريد، WhatsApp، والإشعارات."
+      />
+    </AdminPageShell>
   );
 }

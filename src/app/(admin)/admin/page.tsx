@@ -1,21 +1,12 @@
-import { CenterPageShell } from "@/components/admin/shared/center-page-shell";
-import { StatCard } from "@/components/admin/shared/stat-card";
+import { AdminPageShell } from "@/components/layout/admin-page-shell";
+import { AdminStatusBadge } from "@/components/layout/admin-status-badge";
 import { prisma } from "@/lib/prisma";
 import { requireSuperAdminSession } from "@/modules/admin/admin-page-guards";
 import { createPrismaAdminOverviewRepository } from "@/modules/admin/prisma-admin-overview-repository";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Users, Globe, CreditCard, TrendingUp } from "lucide-react";
+import Link from "next/link";
 
 export const dynamic = "force-dynamic";
-
-function statusBadge(status: string) {
-  const tone =
-    status === "ACTIVE" ? "success" as const
-      : status === "SUSPENDED" ? "danger" as const
-        : status === "TRIAL" ? "warning" as const
-          : "neutral" as const;
-  return <Badge tone={tone}>{status}</Badge>;
-}
 
 export default async function AdminDashboardPage() {
   const session = await requireSuperAdminSession();
@@ -55,113 +46,99 @@ export default async function AdminDashboardPage() {
     },
   });
 
+  const cards = [
+    { label: "إجمالي العملاء", value: totalTenants, icon: Users, href: "/admin/customers" },
+    { label: "المواقع النشطة", value: metrics.activeSites, icon: Globe, href: "/admin/sites" },
+    { label: "المستخدمين", value: totalUsers, icon: TrendingUp },
+    { label: "المدفوعات المعلقة", value: metrics.pendingPayments, icon: CreditCard, href: "/admin/payments" },
+  ];
+
   return (
-    <CenterPageShell
-      badge="لوحة الإدارة العليا"
+    <AdminPageShell
+      badge="لوحة القيادة"
       title="مركز القيادة"
-      description="نظرة عامة على المنصة وإدارة جميع العمليات من مكان واحد."
-      actions={
-        <Button variant="luxury" size="sm">
-          تحديث البيانات
-        </Button>
-      }
+      description="نظرة عامة على المنصة وإدارة جميع العمليات من مكان واحد"
     >
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard
-          label="إجمالي العملاء"
-          value={totalTenants}
-          href="/admin/customers"
-        />
-        <StatCard
-          label="المواقع النشطة"
-          value={metrics.activeSites}
-          href="/admin/sites"
-        />
-        <StatCard
-          label="المستخدمين"
-          value={totalUsers}
-        />
-        <StatCard
-          label="المدفوعات المعلقة"
-          value={metrics.pendingPayments}
-          href="/admin/payments"
-          trend={{
-            value: `${metrics.monthlyRevenue} ${metrics.currency} هذا الشهر`,
-            positive: true,
-          }}
-        />
+        {cards.map((card) => {
+          const Icon = card.icon;
+          return (
+            <Link
+              key={card.label}
+              href={card.href ?? "#"}
+              className="group rounded-xl border border-white/[0.06] bg-white/[0.02] p-5 transition hover:border-white/[0.12] hover:bg-white/[0.04]"
+            >
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-white/40">{card.label}</p>
+                <Icon className="size-[18px] text-white/20 transition group-hover:text-champagne/60" />
+              </div>
+              <p className="mt-2 text-3xl font-semibold text-white">{card.value}</p>
+              {metrics.monthlyRevenue && card.label === "المدفوعات المعلقة" && (
+                <p className="mt-1 text-xs text-emerald-400">
+                  ↑ {metrics.monthlyRevenue} {metrics.currency} هذا الشهر
+                </p>
+              )}
+            </Link>
+          );
+        })}
       </div>
 
-      <div className="mt-8 grid gap-6 lg:grid-cols-2">
-        <div>
-          <h2 className="mb-4 text-lg font-semibold text-white">
-            أحدث العملاء
-          </h2>
+      <div className="mt-6 grid gap-6 lg:grid-cols-2">
+        <div className="rounded-xl border border-white/[0.06]">
+          <div className="border-b border-white/[0.06] px-5 py-4">
+            <h2 className="text-sm font-medium text-white/80">أحدث العملاء</h2>
+          </div>
           {recentCustomers.length > 0 ? (
-            <div className="overflow-x-auto rounded-[var(--radius-panel)] border border-white/10">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-white/10 bg-white/[0.03]">
-                    <th className="px-4 py-3 text-right text-xs font-medium text-white/50">العميل</th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-white/50">البريد</th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-white/50">الحالة</th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-white/50">المواقع</th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-white/50">تاريخ التسجيل</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {recentCustomers.map((c) => (
-                    <tr key={c.id} className="border-b border-white/5 transition last:border-0">
-                      <td className="px-4 py-3 text-white/80">{c.displayName}</td>
-                      <td className="px-4 py-3 text-white/80">{c.owner.email}</td>
-                      <td className="px-4 py-3 text-white/80">{statusBadge(c.status)}</td>
-                      <td className="px-4 py-3 text-white/80">{c._count.sites}</td>
-                      <td className="px-4 py-3 text-white/80">{c.createdAt.toLocaleDateString("ar-EG")}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <p className="text-sm text-white/40">لا يوجد عملاء بعد.</p>
-          )}
-        </div>
-
-        <div>
-          <h2 className="mb-4 text-lg font-semibold text-white">
-            المدفوعات المعلقة
-          </h2>
-          {pendingPayments.length > 0 ? (
-            <div className="space-y-2">
-              {pendingPayments.map((p) => (
-                <div
-                  key={p.id}
-                  className="flex items-center justify-between rounded-[var(--radius-panel)] border border-white/10 bg-white/[0.02] px-4 py-3"
-                >
+            <div className="divide-y divide-white/[0.04]">
+              {recentCustomers.map((c) => (
+                <div key={c.id} className="flex items-center justify-between px-5 py-3 transition hover:bg-white/[0.02]">
                   <div>
-                    <p className="text-sm font-medium text-white">
-                      {p.tenant.displayName}
-                    </p>
-                    <p className="text-xs text-white/50">
-                      {p.amount} ج.م · {p.method}
-                    </p>
+                    <Link href={`/admin/customers/${c.id}`} className="text-sm font-medium text-white/80 hover:text-champagne">
+                      {c.displayName}
+                    </Link>
+                    <p className="text-xs text-white/35">{c.owner.email}</p>
                   </div>
-                  <span className="text-xs text-warning">قيد المراجعة</span>
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs text-white/35">{c._count.sites} مواقع</span>
+                    <AdminStatusBadge tone={c.status === "ACTIVE" ? "success" : c.status === "SUSPENDED" ? "danger" : "default"}>
+                      {c.status}
+                    </AdminStatusBadge>
+                  </div>
                 </div>
               ))}
             </div>
           ) : (
-            <p className="text-sm text-white/40">لا توجد مدفوعات معلقة.</p>
+            <p className="p-5 text-sm text-white/35">لا يوجد عملاء بعد</p>
+          )}
+        </div>
+
+        <div className="rounded-xl border border-white/[0.06]">
+          <div className="border-b border-white/[0.06] px-5 py-4">
+            <h2 className="text-sm font-medium text-white/80">المدفوعات المعلقة</h2>
+          </div>
+          {pendingPayments.length > 0 ? (
+            <div className="divide-y divide-white/[0.04]">
+              {pendingPayments.map((p) => (
+                <div key={p.id} className="flex items-center justify-between px-5 py-3">
+                  <div>
+                    <p className="text-sm font-medium text-white/80">{p.tenant.displayName}</p>
+                    <p className="text-xs text-white/35">{p.amount} ج.م · {p.method}</p>
+                  </div>
+                  <AdminStatusBadge tone="warning">قيد المراجعة</AdminStatusBadge>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="p-5 text-sm text-white/35">لا توجد مدفوعات معلقة</p>
           )}
         </div>
       </div>
 
-      <div className="mt-8 rounded-[var(--radius-panel)] border border-white/10 bg-white/[0.02] p-5">
+      <div className="mt-6 rounded-xl border border-white/[0.06] bg-white/[0.02] px-5 py-4">
         <p className="text-sm text-white/40">
-          مرحباً {session.user.name} · صلاحياتك:{" "}
-          <span className="text-champagne">{session.user.role}</span>
+          مرحباً {session.user.name} · صلاحياتك: <span className="text-champagne">{session.user.role}</span>
         </p>
       </div>
-    </CenterPageShell>
+    </AdminPageShell>
   );
 }

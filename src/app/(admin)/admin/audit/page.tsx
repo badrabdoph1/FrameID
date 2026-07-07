@@ -1,18 +1,22 @@
-import { AdminModulePage } from "@/components/admin/shared/admin-module-page";
+import { AdminPageShell } from "@/components/layout/admin-page-shell";
+import { AdminEmptyState } from "@/components/layout/admin-empty-state";
+import { ClipboardList } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
 export default function AdminAuditPage() {
   return (
-    <AdminModulePage
-      badge="سجل المنصة"
-      title="السجل"
-      description="تتبع العمليات الحساسة داخل المنصة."
-      items={[
-        { label: "عمليات العملاء", value: "إنشاء وتعديل وتعليق حسابات العملاء." },
-        { label: "عمليات الدفع", value: "قبول ورفض ومراجعة طلبات التفعيل." },
-        { label: "عمليات الأمان", value: "الدخول، الجلسات، والصلاحيات الإدارية." }
-      ]}
-    />
+    <AdminPageShell
+      badge="التدقيق"
+      title="سجل التدقيق"
+      description="سجل أحداث وإجراءات المنصة"
+      breadcrumbs={[{ label: "القيادة", href: "/admin" }, { label: "سجل التدقيق" }]}
+    >
+      <AdminEmptyState
+        icon={ClipboardList}
+        title="قريبًا"
+        description="سجل أحداث المنصة قيد التطوير."
+      />
+    </AdminPageShell>
   );
 }
