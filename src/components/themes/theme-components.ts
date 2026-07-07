@@ -1,0 +1,14 @@
+import type { PublicSiteViewModel } from "@/modules/public-sites/public-site-view-model";
+import { AliAhmedLuxurySite } from "./ali-ahmed-luxury-site";
+import { RoseBlushSite } from "./rose-blush-site";
+
+type ThemeSiteComponent = (props: { site: PublicSiteViewModel }) => JSX.Element;
+
+const registry: Record<string, ThemeSiteComponent> = {
+  "noir-gold": AliAhmedLuxurySite,
+  "rose-blush": RoseBlushSite,
+};
+
+export function getThemeSiteComponent(code: string): ThemeSiteComponent {
+  return registry[code] ?? AliAhmedLuxurySite;
+}

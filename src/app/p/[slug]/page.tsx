@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
-import { AliAhmedLuxurySite } from "@/components/themes/ali-ahmed-luxury-site";
+import { getThemeSiteComponent } from "@/components/themes/theme-components";
 import { prisma } from "@/lib/prisma";
 import { getPlatformBaseUrl } from "@/lib/platform-url";
 import { createPrismaPublicSiteRepository } from "@/modules/public-sites/prisma-public-site-repository";
@@ -46,6 +46,8 @@ export default async function PublicSitePage({ params }: Props) {
     notFound();
   }
 
+  const ThemeSiteComponent = getThemeSiteComponent(site.themeCode);
+
   return (
     <>
       <script
@@ -55,7 +57,7 @@ export default async function PublicSitePage({ params }: Props) {
           __html: JSON.stringify(site.structuredData)
         }}
       />
-      <AliAhmedLuxurySite site={site} />
+      <ThemeSiteComponent site={site} />
     </>
   );
 }
