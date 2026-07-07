@@ -18,11 +18,9 @@ describe("marketing templates page", () => {
         "المعاينة الحية تفتح نفس القالب الذي سيحصل عليه المصور، ثم يحمل زر استخدام القالب اختياره إلى التسجيل."
       )
     ).toBeInTheDocument();
-    expect(
-      screen.getByRole("link", { name: /معاينة/u })
-    ).toHaveAttribute("href", "/templates/noir-gold/preview");
-    expect(
-      screen.getByRole("link", { name: /استخدام القالب/u })
-    ).toHaveAttribute("href", "/signup?template=noir-gold");
+    const previewLinks = screen.getAllByRole("link", { name: /معاينة/u });
+    expect(previewLinks[0]).toHaveAttribute("href", "/templates/noir-gold/preview");
+    const useLinks = screen.getAllByRole("link", { name: /استخدام القالب/u });
+    expect(useLinks[0]).toHaveAttribute("href", "/signup?template=noir-gold");
   });
 });
