@@ -8,7 +8,6 @@ import {
   Crown,
   Images,
   LayoutDashboard,
-  MessageCircle,
   PanelsTopLeft,
   Sparkles,
   Star
