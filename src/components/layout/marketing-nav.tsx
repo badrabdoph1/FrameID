@@ -4,14 +4,24 @@ import Link from "next/link";
 import React, { useState } from "react";
 import { Menu, X } from "lucide-react";
 
-const navItems = [
-  { href: "/templates", label: "القوالب", intent: "link" },
-  { href: "/login", label: "دخول", intent: "quiet" },
-  { href: "/signup", label: "إنشاء حساب", intent: "primary" }
+interface NavLink {
+  label: string;
+  href: string;
+}
+
+interface MarketingNavProps {
+  links?: NavLink[];
+}
+
+const defaultLinks: NavLink[] = [
+  { href: "/templates", label: "القوالب" },
+  { href: "/login", label: "دخول" },
+  { href: "/signup", label: "إنشاء حساب" }
 ];
 
-export function MarketingNav() {
+export function MarketingNav({ links = defaultLinks }: MarketingNavProps) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const primaryLink = links.find((l) => l.href === "/signup");
 
   return (
     <>
@@ -31,29 +41,35 @@ export function MarketingNav() {
             FrameID
           </Link>
           <div className="hidden min-w-0 items-center gap-1 text-sm md:flex">
-            {navItems.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={
-                  item.intent === "primary"
-                    ? "inline-flex min-h-10 items-center justify-center rounded-full bg-white px-4 text-sm font-semibold text-ink transition-[background-color] hover:bg-white/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
-                    : item.intent === "quiet"
-                      ? "hidden rounded-full px-3 py-2 text-white/72 transition-[background-color,color] hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white sm:inline-flex"
-                      : "rounded-full px-3 py-2 text-white/78 transition-[background-color,color] hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
-                }
-              >
-                {item.label}
-              </Link>
-            ))}
+            {links.map((item) => {
+              const isPrimary = item.href === "/signup";
+              const isQuiet = item.href === "/login";
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={
+                    isPrimary
+                      ? "inline-flex min-h-10 items-center justify-center rounded-full bg-white px-4 text-sm font-semibold text-ink transition-[background-color] hover:bg-white/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+                      : isQuiet
+                        ? "hidden rounded-full px-3 py-2 text-white/72 transition-[background-color,color] hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white sm:inline-flex"
+                        : "rounded-full px-3 py-2 text-white/78 transition-[background-color,color] hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+                  }
+                >
+                  {item.label}
+                </Link>
+              );
+            })}
           </div>
           <div className="flex items-center gap-2 md:hidden">
-            <Link
-              href="/signup"
-              className="inline-flex min-h-10 items-center justify-center rounded-full bg-white px-4 text-sm font-semibold text-ink transition-[background-color] hover:bg-white/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
-            >
-              إنشاء حساب
-            </Link>
+            {primaryLink && (
+              <Link
+                href={primaryLink.href}
+                className="inline-flex min-h-10 items-center justify-center rounded-full bg-white px-4 text-sm font-semibold text-ink transition-[background-color] hover:bg-white/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+              >
+                {primaryLink.label}
+              </Link>
+            )}
             <button
               type="button"
               aria-label="القائمة"
@@ -71,13 +87,13 @@ export function MarketingNav() {
             className="border-t border-white/10 bg-ink/95 px-4 py-3 text-white shadow-soft md:hidden"
           >
             <div className="container-page grid gap-2 px-0">
-              {navItems.map((item) => (
+              {links.map((item) => (
                 <Link
                   key={item.href}
                   href={item.href}
                   onClick={() => setMenuOpen(false)}
                   className={
-                    item.intent === "primary"
+                    item.href === "/signup"
                       ? "inline-flex min-h-12 items-center justify-center rounded-[var(--radius-control)] bg-white px-4 text-sm font-semibold text-ink transition hover:bg-white/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
                       : "inline-flex min-h-12 items-center justify-center rounded-[var(--radius-control)] border border-white/10 bg-white/5 px-4 text-sm font-semibold text-white transition hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
                   }

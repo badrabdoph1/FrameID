@@ -1,6 +1,6 @@
 import "server-only"
 import { writeFileSync } from "node:fs"
-import { join } from "node:fs"
+import { join } from "node:path"
 import type { ZodTypeAny } from "zod"
 import { createBackup } from "./backup"
 import { updateManifestEntry } from "./manifest"
@@ -18,8 +18,8 @@ export function saveContent(
   if (!result.success) {
     return {
       success: false,
-      errors: result.error.errors.map((e) => ({
-        path: e.path.join("."),
+      errors: result.error.issues.map((e) => ({
+        path: (e.path ?? []).join("."),
         message: e.message,
       })),
     }

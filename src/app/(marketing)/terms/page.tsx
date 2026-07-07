@@ -1,16 +1,17 @@
+import { getContent } from "@/lib/content";
+
 export default function TermsPage() {
+  const content = getContent("legal/terms");
+
   return (
     <main className="container-page max-w-3xl py-20">
-      <h1 className="text-4xl font-semibold">الشروط والأحكام</h1>
-      <p className="mt-6 leading-8 text-muted-foreground">
-        تمنح FrameID المصور تجربة مجانية لإنشاء موقعه وإدارته قبل الدفع. بعد
-        انتهاء التجربة يمكن تفعيل الموقع عبر طرق الدفع المتاحة ومراجعة الإدارة.
-      </p>
-      <p className="mt-4 leading-8 text-muted-foreground">
-        يلتزم المستخدم برفع محتوى يملك حق استخدامه، وباستخدام المنصة بطريقة
-        لا تضر العملاء أو الخدمة. تحتفظ المنصة بحق إيقاف المواقع المخالفة مع
-        الحفاظ على سجلات المراجعة اللازمة.
-      </p>
+      <h1 className="text-4xl font-semibold">{content.title}</h1>
+      {content.sections.map((section: { title: string; body: string }) => (
+        <div key={section.title}>
+          <h2 className="mt-8 text-2xl font-semibold">{section.title}</h2>
+          <p className="mt-2 leading-8 text-muted-foreground">{section.body}</p>
+        </div>
+      ))}
     </main>
   );
 }

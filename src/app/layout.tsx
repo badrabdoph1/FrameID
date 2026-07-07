@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Playfair_Display, Tajawal } from "next/font/google";
 import type { ReactNode } from "react";
 
+import { ToastRootProvider } from "@/components/errors/toast-root-provider";
 import "./globals.css";
 
 const tajawal = Tajawal({
@@ -17,6 +18,8 @@ const playfair = Playfair_Display({
   display: "swap"
 });
 
+const seoBaseUrl = "https://frameid.app";
+
 export const metadata: Metadata = {
   title: {
     default: "FrameID | مواقع احترافية للمصورين",
@@ -24,7 +27,7 @@ export const metadata: Metadata = {
   },
   description:
     "منصة SaaS تمنح المصور موقعًا احترافيًا ولوحة تحكم ورابطًا خاصًا خلال دقائق.",
-  metadataBase: new URL("https://frameid.app"),
+  metadataBase: new URL(seoBaseUrl),
   applicationName: "FrameID"
 };
 
@@ -51,7 +54,11 @@ export default function RootLayout({
         <link rel="preconnect" href="https://i.ibb.co" />
         <link rel="dns-prefetch" href="https://i.ibb.co" />
       </head>
-      <body>{children}</body>
+      <body>
+        <ToastRootProvider>
+          {children}
+        </ToastRootProvider>
+      </body>
     </html>
   );
 }

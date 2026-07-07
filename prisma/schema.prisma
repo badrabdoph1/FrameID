@@ -672,3 +672,52 @@ model AdminSession {
   @@index([adminUserId, expiresAt])
   @@index([expiresAt, revokedAt])
 }
+
+model ErrorLog {
+  id             String   @id @default(cuid())
+  code           String
+  message        String
+  category       String
+  level          String
+  requestId      String?
+  correlationId  String?
+  route          String?
+  method         String?
+  userId         String?
+  tenantId       String?
+  userAgent      String?
+  platform       String?
+  browser        String?
+  stack          String?
+  cause          String?
+  metadata       Json?
+  resolved       Boolean  @default(false)
+  resolvedAt     DateTime?
+  resolvedBy     String?
+  resolutionNote String?
+  createdAt      DateTime @default(now())
+
+  @@index([code, createdAt])
+  @@index([category, createdAt])
+  @@index([level, createdAt])
+  @@index([userId])
+  @@index([createdAt])
+}
+
+model NotificationLog {
+  id        String    @id @default(cuid())
+  type      String
+  title     String
+  body      String?
+  category  String?
+  userId    String?
+  tenantId  String?
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+  deletedAt DateTime?
+
+  @@index([userId, createdAt])
+  @@index([tenantId, createdAt])
+  @@index([type, createdAt])
+  @@index([createdAt])
+}

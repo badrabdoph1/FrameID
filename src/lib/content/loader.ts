@@ -39,12 +39,12 @@ export const getContent = cache(function getContent<T>(
     throw new ContentValidationError(
       type,
       result.error.issues.map((e) => ({
-        path: e.path.join("."),
+        path: (e.path ?? []).join("."),
         message: e.message,
       })),
     )
   }
-  return { ...result.data, _version: version, _updatedAt: updatedAt }
+  return { ...(result.data as Record<string, unknown>), _version: version, _updatedAt: updatedAt } as T & { _version: number; _updatedAt: string }
 })
 
 export function getContentPath(type: string): string {
