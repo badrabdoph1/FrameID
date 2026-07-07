@@ -107,7 +107,6 @@ export async function createAdminNoteAction(formData: FormData) {
 export async function deleteAdminNoteAction(formData: FormData) {
   const { admin, service } = await getService();
   const noteId = readFormString(formData, "noteId");
-  const tenantId = readFormString(formData, "tenantId");
   await service.deleteAdminNote(noteId, { id: admin.id, name: admin.name });
 }
 
@@ -121,10 +120,8 @@ export async function sendNotificationAction(formData: FormData) {
 }
 
 export async function impersonateCustomerAction(formData: FormData) {
-  const { admin, service } = await getService();
+  const { admin } = await getService();
   const tenantId = readFormString(formData, "tenantId");
-  // Impersonation requires creating a session token for the customer
-  // For now, create an audit log entry
   const repo = createCustomerAdminRepository(prisma);
   await repo.createAuditLog(
     admin.id, tenantId,

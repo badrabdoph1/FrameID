@@ -128,11 +128,20 @@ export function createCustomerAdminRepository(prisma: PrismaClient) {
         },
         sites: {
           include: {
-            theme: { select: { name: true } },
+            theme: { select: { name: true, code: true } },
             domains: {
-              where: { deletedAt: null, status: "VERIFIED" },
-              select: { domain: true },
-              take: 1,
+              where: { deletedAt: null },
+              select: { domain: true, status: true },
+            },
+            seoSettings: {
+              select: { title: true, description: true },
+            },
+            _count: {
+              select: {
+                packages: true,
+                albums: true,
+                extras: true,
+              },
             },
           },
           where: { deletedAt: null },
@@ -145,6 +154,10 @@ export function createCustomerAdminRepository(prisma: PrismaClient) {
         payments: {
           orderBy: { createdAt: "desc" },
           take: 10,
+          include: {
+            proofAsset: { select: { url: true } },
+            reviewedBy: { select: { name: true } },
+          },
         },
         supportCases: {
           orderBy: { createdAt: "desc" },
@@ -279,31 +292,48 @@ export function createCustomerAdminRepository(prisma: PrismaClient) {
     id: string;
     slug: string;
     title: string;
+    description: string | null;
     status: string;
+    locale: string;
     isPublished: boolean;
     publishedVersion: number;
     createdAt: Date;
-    theme: { name: string } | null;
-    domains: { domain: string }[];
+    updatedAt: Date;
+    theme: { name: string; code: string } | null;
+    domains: { domain: string; status: string }[];
+    seoSettings: { title: string; description: string | null } | null;
+    _count: { packages: number; albums: number; extras: number };
   }): CustomerSiteInfo {
     return {
       id: site.id,
       slug: site.slug,
       title: site.title,
+      description: site.description,
       status: site.status as CustomerSiteInfo["status"],
       themeName: site.theme?.name ?? null,
+      themeCode: site.theme?.code ?? null,
       templateName: null,
       domain: site.domains[0]?.domain ?? null,
+      domains: site.domains.map((d) => ({ domain: d.domain, status: d.status })),
       isPublished: site.isPublished,
       publishedVersion: site.publishedVersion,
+      locale: site.locale,
       createdAt: site.createdAt.toISOString(),
+      updatedAt: site.updatedAt.toISOString(),
+      packagesCount: site._count.packages,
+      albumsCount: site._count.albums,
+      extrasCount: site._count.extras,
+      seo: site.seoSettings ? {
+        title: site.seoSettings.title,
+        description: site.seoSettings.description,
+      } : null,
     };
   }
 
   function mapSubscriptionInfo(sub: {
     id: string;
     status: string;
-    plan: { name: string; priceAmount: number } | null;
+    plan: { name: string; priceAmount: number; code: string } | null;
     currentPeriodStart: Date | null;
     currentPeriodEnd: Date | null;
     activatedAt: Date | null;
@@ -315,6 +345,7 @@ export function createCustomerAdminRepository(prisma: PrismaClient) {
       status: sub.status as CustomerSubscriptionInfo["status"],
       planName: sub.plan?.name ?? null,
       planPrice: sub.plan?.priceAmount ?? null,
+      planCode: sub.plan?.code ?? null,
       currentPeriodStart: sub.currentPeriodStart?.toISOString() ?? null,
       currentPeriodEnd: sub.currentPeriodEnd?.toISOString() ?? null,
       activatedAt: sub.activatedAt?.toISOString() ?? null,
@@ -333,6 +364,8 @@ export function createCustomerAdminRepository(prisma: PrismaClient) {
     createdAt: Date;
     reviewedAt: Date | null;
     adminNote: string | null;
+    proofAsset: { url: string } | null;
+    reviewedBy: { name: string } | null;
   }): CustomerPaymentInfo {
     return {
       id: p.id,
@@ -341,9 +374,11 @@ export function createCustomerAdminRepository(prisma: PrismaClient) {
       currency: p.currency,
       status: p.status,
       reference: p.reference,
+      proofUrl: p.proofAsset?.url ?? null,
+      reviewedByName: p.reviewedBy?.name ?? null,
+      adminNote: p.adminNote,
       createdAt: p.createdAt.toISOString(),
       reviewedAt: p.reviewedAt?.toISOString() ?? null,
-      adminNote: p.adminNote,
     };
   }
 
@@ -352,7 +387,7 @@ export function createCustomerAdminRepository(prisma: PrismaClient) {
     action: string;
     entityType: string;
     entityId: string | null;
-    metadata: Record<string, unknown> | null;
+    metadata: unknown;
     actor: { name: string } | null;
     createdAt: Date;
   }): CustomerActivityEntry {
@@ -391,6 +426,10 @@ export function createCustomerAdminRepository(prisma: PrismaClient) {
     const payments = await prisma.paymentRequest.findMany({
       where: { tenantId },
       orderBy: { createdAt: "desc" },
+      include: {
+        proofAsset: { select: { url: true } },
+        reviewedBy: { select: { name: true } },
+      },
     });
     return payments.map(mapPaymentInfo);
   }
@@ -710,7 +749,7 @@ export function createCustomerAdminRepository(prisma: PrismaClient) {
     });
   }
 
-  async function getCustomerVisits(_tenantId: string): Promise<number> {
+  async function getCustomerVisits(tenantId: string): Promise<number> {
     return 0;
   }
 

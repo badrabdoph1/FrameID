@@ -10,10 +10,7 @@ import {
 import {
   ArrowDown,
   ArrowUp,
-  ChevronLeft,
-  ChevronRight,
   Search,
-  SlidersHorizontal,
 } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 import { SkeletonTable } from "@/components/ui/skeleton";

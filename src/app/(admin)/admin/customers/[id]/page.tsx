@@ -29,10 +29,6 @@ export default async function AdminCustomerDetailPage({ params }: Props) {
     service.getAllSubscriptions(id),
   ]);
 
-  const currentAdmin = await prisma.adminUser.findFirst({
-    where: { email: (await requireSuperAdminSession()).user.email },
-  });
-
   return (
     <AdminPageShell
       badge="العملاء"
@@ -47,8 +43,6 @@ export default async function AdminCustomerDetailPage({ params }: Props) {
         notifications={notifications}
         adminNotes={adminNotes}
         allSubscriptions={allSubs}
-        adminId={currentAdmin?.id ?? ""}
-        adminName={currentAdmin?.name ?? "Admin"}
       />
     </AdminPageShell>
   );

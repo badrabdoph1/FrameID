@@ -32,7 +32,6 @@ export function Select({
   className,
   ref,
 }: SelectProps) {
-  const generatedId = useId();
   const [internalValue, setInternalValue] = useState(defaultValue ?? "");
   const isControlled = controlledValue !== undefined;
   const value = isControlled ? controlledValue : internalValue;

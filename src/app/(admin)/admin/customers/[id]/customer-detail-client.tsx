@@ -5,11 +5,11 @@ import { useRouter } from "next/navigation";
 import {
   User, Globe, CreditCard, DollarSign, Activity, Shield,
   Archive, Trash2, Copy, KeyRound, ExternalLink, Mail, Phone,
-  Calendar, CheckCircle2, XCircle, AlertTriangle, Clock,
-  Download, Eye, EyeOff, ChevronLeft, ChevronRight,
+  Calendar, CheckCircle2, XCircle, Clock,
+  Download, Eye,
   Image, MessageSquare, Bell, Monitor, Smartphone, Laptop,
   FileText, Search, Link2, BarChart3, Zap, PauseCircle,
-  PlayCircle, RefreshCw, Send, Ban, Settings, Info,
+  PlayCircle, RefreshCw, Send, Ban, Settings,
   ShoppingBag, HardDrive, FolderOpen, BookOpen,
 } from "lucide-react";
 import { AdminStatusBadge } from "@/components/layout/admin-status-badge";
@@ -36,8 +36,6 @@ type Props = {
   notifications: CustomerNotification[];
   adminNotes: CustomerAdminNote[];
   allSubscriptions: CustomerSubscriptionInfo[];
-  adminId: string;
-  adminName: string;
 };
 
 // ─── Tab types ───
@@ -96,7 +94,6 @@ function StatCard({ label, value, icon: Icon, accent }: { label: string; value: 
 
 export function CustomerDetailClient({
   customer, media, notifications, adminNotes, allSubscriptions,
-  adminId, adminName,
 }: Props) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<Tab>("overview");
@@ -109,8 +106,7 @@ export function CustomerDetailClient({
     formData?: FormData;
   } | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [newPassword, setNewPassword] = useState("");
+  
   const [noteBody, setNoteBody] = useState("");
   const [notificationForm, setNotificationForm] = useState({ type: "info", title: "", body: "" });
 

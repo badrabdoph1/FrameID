@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Bell, Search } from "lucide-react";
+import { Bell } from "lucide-react";
 import { AdminCommandPalette } from "@/components/admin/command-palette/command-palette";
 
 export function AdminHeader() {
