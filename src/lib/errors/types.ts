@@ -68,6 +68,9 @@ export interface Notification {
   suggestion?: string;
   error?: UserError;
   duration?: number;
+  groupKey?: string;
+  groupCount?: number;
+  requestId?: string;
 }
 
 export interface NotificationLogEntry {
