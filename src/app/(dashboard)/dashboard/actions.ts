@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { prisma } from "@/lib/prisma";
+import { processError } from "@/lib/errors";
 import { getCurrentRequestSession } from "@/modules/auth/request-session";
 import { createPrismaSiteSlugRepository } from "@/modules/sites/prisma-site-slug-repository";
 import { createSiteSlugService } from "@/modules/sites/site-slug-service";
@@ -47,12 +48,12 @@ export async function changeSiteSlugAction(formData: FormData) {
       requestedSlug
     });
   } catch (error) {
-    const reason =
-      error instanceof Error && error.message.includes(":")
-        ? error.message.split(":").at(-1)?.trim()
-        : "unavailable";
-
-    redirect(`/dashboard?slugError=${encodeURIComponent(reason ?? "unavailable")}`);
+    const { userError } = await processError(error, {
+      userId: session.user.id,
+      tenantId: session.tenant.id,
+      metadata: { action: "changeSiteSlug" },
+    });
+    redirect(`/dashboard?slugError=${encodeURIComponent(userError.message)}`);
   }
 
   revalidatePath("/dashboard");

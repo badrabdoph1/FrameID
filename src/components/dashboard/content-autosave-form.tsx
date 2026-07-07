@@ -2,12 +2,13 @@
 
 import { useRef, useState, useTransition } from "react";
 
-import { Loader2 } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Loader2 } from "lucide-react";
 
 import type { AutosaveState } from "@/app/(dashboard)/dashboard/content/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils/cn";
 
 type ContentAutosaveFormProps = {
   title: string;
@@ -25,21 +26,18 @@ export function ContentAutosaveForm({
   title,
   description,
   fields,
-  action
+  action,
 }: ContentAutosaveFormProps) {
   const formRef = useRef<HTMLFormElement>(null);
   const [state, setState] = useState<AutosaveState>({
     ok: true,
-    message: "جاهز للحفظ التلقائي"
+    message: "جاهز للحفظ التلقائي",
   });
   const [isPending, startTransition] = useTransition();
 
   function autosave() {
     const form = formRef.current;
-
-    if (!form) {
-      return;
-    }
+    if (!form) return;
 
     const formData = new FormData(form);
     startTransition(async () => {
@@ -62,8 +60,19 @@ export function ContentAutosaveForm({
           <h2 className="text-lg font-semibold">{title}</h2>
           <p className="mt-1 text-sm text-muted-foreground">{description}</p>
         </div>
-        <span className="inline-flex items-center gap-2 text-xs text-muted-foreground">
-          {isPending ? <Loader2 className="size-4 animate-spin" aria-hidden /> : null}
+        <span
+          className={cn(
+            "inline-flex items-center gap-2 text-xs",
+            state.ok ? "text-muted-foreground" : "text-danger",
+          )}
+        >
+          {isPending ? (
+            <Loader2 className="size-4 animate-spin" aria-hidden />
+          ) : state.ok ? (
+            <CheckCircle2 className="size-3.5" aria-hidden />
+          ) : (
+            <AlertTriangle className="size-3.5" aria-hidden />
+          )}
           {state.message}
         </span>
       </div>

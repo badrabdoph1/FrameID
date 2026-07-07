@@ -1,6 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
+import { processError } from "@/lib/errors";
 import { createCustomerAdminRepository } from "@/modules/admin/customers/customer-admin-repository";
 import { createCustomerAdminService } from "@/modules/admin/customers/customer-admin-service";
 import { getCurrentAdmin } from "@/modules/admin/admin-page-guards";
@@ -19,59 +20,104 @@ async function getService() {
   return { admin, service };
 }
 
+async function withErrorHandling<T>(
+  action: string,
+  fn: () => Promise<T>,
+  context?: { userId?: string; tenantId?: string },
+): Promise<T> {
+  try {
+    return await fn();
+  } catch (error) {
+    await processError(error, {
+      userId: context?.userId,
+      tenantId: context?.tenantId,
+      metadata: { action },
+    });
+    throw error;
+  }
+}
+
 export async function suspendCustomerAction(formData: FormData) {
   const { admin, service } = await getService();
   const id = readFormString(formData, "customerId");
   const reason = readFormString(formData, "reason");
-  await service.suspendCustomer(id, { id: admin.id, name: admin.name }, reason);
+  return withErrorHandling("suspendCustomer", () =>
+    service.suspendCustomer(id, { id: admin.id, name: admin.name }, reason),
+  );
 }
 
 export async function activateCustomerAction(formData: FormData) {
   const { admin, service } = await getService();
   const id = readFormString(formData, "customerId");
-  await service.activateCustomer(id, { id: admin.id, name: admin.name });
+  return withErrorHandling("activateCustomer", () =>
+    service.activateCustomer(id, { id: admin.id, name: admin.name }),
+  );
 }
 
 export async function archiveCustomerAction(formData: FormData) {
   const { admin, service } = await getService();
   const id = readFormString(formData, "customerId");
-  await service.archiveCustomer(id, { id: admin.id, name: admin.name });
+  return withErrorHandling("archiveCustomer", () =>
+    service.archiveCustomer(id, { id: admin.id, name: admin.name }),
+  );
 }
 
 export async function deleteCustomerAction(formData: FormData) {
   const { admin, service } = await getService();
   const id = readFormString(formData, "customerId");
-  await service.deleteCustomer(id, { id: admin.id, name: admin.name });
+  return withErrorHandling("deleteCustomer", () =>
+    service.deleteCustomer(id, { id: admin.id, name: admin.name }),
+  );
 }
 
 export async function resetCustomerPasswordAction(formData: FormData) {
   const { admin, service } = await getService();
   const userId = readFormString(formData, "userId");
   const newPassword = readFormString(formData, "newPassword");
-  await service.resetCustomerPassword(userId, newPassword, { id: admin.id, name: admin.name });
+  return withErrorHandling("resetCustomerPassword", () =>
+    service.resetCustomerPassword(userId, newPassword, {
+      id: admin.id,
+      name: admin.name,
+    }),
+  );
 }
-
-// === NEW ACTIONS ===
 
 export async function extendCustomerTrialAction(formData: FormData) {
   const { admin, service } = await getService();
   const tenantId = readFormString(formData, "tenantId");
   const days = readFormInt(formData, "days");
-  await service.extendTrial(tenantId, days, { id: admin.id, name: admin.name });
+  return withErrorHandling("extendCustomerTrial", () =>
+    service.extendTrial(tenantId, days, { id: admin.id, name: admin.name }),
+    { userId: admin.id },
+  );
 }
 
-export async function activateCustomerSubscriptionAction(formData: FormData) {
+export async function activateCustomerSubscriptionAction(
+  formData: FormData,
+) {
   const { admin, service } = await getService();
   const subscriptionId = readFormString(formData, "subscriptionId");
   const tenantId = readFormString(formData, "tenantId");
-  await service.activateSubscription(subscriptionId, tenantId, { id: admin.id, name: admin.name });
+  return withErrorHandling("activateCustomerSubscription", () =>
+    service.activateSubscription(subscriptionId, tenantId, {
+      id: admin.id,
+      name: admin.name,
+    }),
+    { userId: admin.id, tenantId },
+  );
 }
 
 export async function cancelCustomerSubscriptionAction(formData: FormData) {
   const { admin, service } = await getService();
   const subscriptionId = readFormString(formData, "subscriptionId");
   const tenantId = readFormString(formData, "tenantId");
-  await service.cancelSubscription(subscriptionId, tenantId, { id: admin.id, name: admin.name });
+  return withErrorHandling("cancelCustomerSubscription", () =>
+    service.cancelSubscription(subscriptionId, tenantId, {
+      id: admin.id,
+      name: admin.name,
+    }),
+    { userId: admin.id, tenantId },
+  );
 }
 
 export async function publishSiteAction(formData: FormData) {
@@ -79,7 +125,15 @@ export async function publishSiteAction(formData: FormData) {
   const siteId = readFormString(formData, "siteId");
   const tenantId = readFormString(formData, "tenantId");
   const publish = formData.get("publish") === "true";
-  await service.publishSite(siteId, tenantId, { id: admin.id, name: admin.name }, publish);
+  return withErrorHandling("publishSite", () =>
+    service.publishSite(
+      siteId,
+      tenantId,
+      { id: admin.id, name: admin.name },
+      publish,
+    ),
+    { userId: admin.id, tenantId },
+  );
 }
 
 export async function suspendSiteAction(formData: FormData) {
@@ -87,27 +141,49 @@ export async function suspendSiteAction(formData: FormData) {
   const siteId = readFormString(formData, "siteId");
   const tenantId = readFormString(formData, "tenantId");
   const suspended = formData.get("suspended") === "true";
-  await service.suspendSite(siteId, tenantId, { id: admin.id, name: admin.name }, suspended);
+  return withErrorHandling("suspendSite", () =>
+    service.suspendSite(
+      siteId,
+      tenantId,
+      { id: admin.id, name: admin.name },
+      suspended,
+    ),
+    { userId: admin.id, tenantId },
+  );
 }
 
 export async function revokeSessionAction(formData: FormData) {
   const { admin, service } = await getService();
   const sessionId = readFormString(formData, "sessionId");
   const tenantId = readFormString(formData, "tenantId");
-  await service.revokeSession(sessionId, tenantId, { id: admin.id, name: admin.name });
+  return withErrorHandling("revokeSession", () =>
+    service.revokeSession(sessionId, tenantId, {
+      id: admin.id,
+      name: admin.name,
+    }),
+    { userId: admin.id, tenantId },
+  );
 }
 
 export async function createAdminNoteAction(formData: FormData) {
   const { admin, service } = await getService();
   const tenantId = readFormString(formData, "tenantId");
   const body = readFormString(formData, "body");
-  await service.createAdminNote(tenantId, body, { id: admin.id, name: admin.name });
+  return withErrorHandling("createAdminNote", () =>
+    service.createAdminNote(tenantId, body, {
+      id: admin.id,
+      name: admin.name,
+    }),
+    { userId: admin.id, tenantId },
+  );
 }
 
 export async function deleteAdminNoteAction(formData: FormData) {
   const { admin, service } = await getService();
   const noteId = readFormString(formData, "noteId");
-  await service.deleteAdminNote(noteId, { id: admin.id, name: admin.name });
+  return withErrorHandling("deleteAdminNote", () =>
+    service.deleteAdminNote(noteId, { id: admin.id, name: admin.name }),
+  );
 }
 
 export async function sendNotificationAction(formData: FormData) {
@@ -116,7 +192,13 @@ export async function sendNotificationAction(formData: FormData) {
   const notificationType = readFormString(formData, "notificationType");
   const title = readFormString(formData, "title");
   const body = readFormString(formData, "body");
-  await service.sendNotification(tenantId, notificationType, title, body, { id: admin.id, name: admin.name });
+  return withErrorHandling("sendNotification", () =>
+    service.sendNotification(tenantId, notificationType, title, body, {
+      id: admin.id,
+      name: admin.name,
+    }),
+    { userId: admin.id, tenantId },
+  );
 }
 
 export async function impersonateCustomerAction(formData: FormData) {
@@ -124,8 +206,11 @@ export async function impersonateCustomerAction(formData: FormData) {
   const tenantId = readFormString(formData, "tenantId");
   const repo = createCustomerAdminRepository(prisma);
   await repo.createAuditLog(
-    admin.id, tenantId,
-    "ADMIN_IMPERSONATED", "Tenant", tenantId,
-    { adminName: admin.name }
+    admin.id,
+    tenantId,
+    "ADMIN_IMPERSONATED",
+    "Tenant",
+    tenantId,
+    { adminName: admin.name },
   );
 }

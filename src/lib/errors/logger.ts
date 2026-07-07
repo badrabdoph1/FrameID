@@ -1,3 +1,4 @@
+import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import type { ErrorLevel, ErrorLogEntry, Logger } from "./types";
 
@@ -55,7 +56,7 @@ async function persistErrorLog(entry: ErrorLogEntry): Promise<void> {
         browser: entry.browser || null,
         stack: entry.stack || null,
         cause: entry.cause || null,
-        metadata: entry.metadata as Record<string, unknown> | null,
+        metadata: entry.metadata as Prisma.InputJsonValue | undefined,
       },
     });
   } catch {

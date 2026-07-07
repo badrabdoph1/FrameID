@@ -23,7 +23,6 @@ import { formatErrorForClipboard } from "@/lib/errors/format-error";
 import type {
   ErrorDetail,
   Notification as NotificationType,
-  UserError,
 } from "@/lib/errors/types";
 import { cn } from "@/lib/utils/cn";
 

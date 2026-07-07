@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { prisma } from "@/lib/prisma";
+import { processError } from "@/lib/errors";
 import { getCurrentRequestSession } from "@/modules/auth/request-session";
 
 export async function updateSeoSettingsAction(formData: FormData) {
@@ -22,24 +23,31 @@ export async function updateSeoSettingsAction(formData: FormData) {
     redirect("/dashboard/settings?error=seo-title");
   }
 
-  await prisma.sEOSettings.upsert({
-    where: {
-      siteId: session.site.id
-    },
-    update: {
-      title,
-      description: description || null,
-      canonicalUrl: canonicalUrl || null,
-      robotsIndex
-    },
-    create: {
-      siteId: session.site.id,
-      title,
-      description: description || null,
-      canonicalUrl: canonicalUrl || null,
-      robotsIndex
-    }
-  });
+  try {
+    await prisma.sEOSettings.upsert({
+      where: { siteId: session.site.id },
+      update: {
+        title,
+        description: description || null,
+        canonicalUrl: canonicalUrl || null,
+        robotsIndex,
+      },
+      create: {
+        siteId: session.site.id,
+        title,
+        description: description || null,
+        canonicalUrl: canonicalUrl || null,
+        robotsIndex,
+      },
+    });
+  } catch (error) {
+    const { userError } = await processError(error, {
+      userId: session.user.id,
+      tenantId: session.tenant.id,
+      metadata: { action: "updateSeoSettings" },
+    });
+    redirect(`/dashboard/settings?error=${encodeURIComponent(userError.message)}`);
+  }
 
   revalidatePath("/dashboard/settings");
   revalidatePath(`/p/${session.site.slug}`);

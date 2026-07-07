@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { prisma } from "@/lib/prisma";
+import { processError } from "@/lib/errors";
 import { requireSuperAdminSession } from "@/modules/admin/admin-page-guards";
 import { createBillingActivationService } from "@/modules/billing/billing-activation-service";
 import { createPrismaBillingActivationRepository } from "@/modules/billing/prisma-billing-activation-repository";
@@ -17,15 +18,23 @@ export async function approvePaymentAction(formData: FormData) {
     redirect("/admin/payments?error=invalid-payment");
   }
 
-  const service = createBillingActivationService({
-    repository: createPrismaBillingActivationRepository(prisma)
-  });
+  try {
+    const service = createBillingActivationService({
+      repository: createPrismaBillingActivationRepository(prisma),
+    });
 
-  await service.approveManualPayment({
-    paymentRequestId,
-    reviewerId: session.user.id,
-    adminNote: "تم القبول من لوحة الإدارة العليا"
-  });
+    await service.approveManualPayment({
+      paymentRequestId,
+      reviewerId: session.user.id,
+      adminNote: "تم القبول من لوحة الإدارة العليا",
+    });
+  } catch (error) {
+    const { userError } = await processError(error, {
+      userId: session.user.id,
+      metadata: { action: "approvePayment", paymentRequestId },
+    });
+    redirect(`/admin/payments?error=${encodeURIComponent(userError.message)}`);
+  }
 
   revalidatePath("/admin");
   revalidatePath("/admin/payments");
@@ -42,18 +51,26 @@ export async function rejectPaymentAction(formData: FormData) {
     redirect("/admin/payments?error=invalid-payment");
   }
 
-  const service = createBillingActivationService({
-    repository: createPrismaBillingActivationRepository(prisma)
-  });
+  try {
+    const service = createBillingActivationService({
+      repository: createPrismaBillingActivationRepository(prisma),
+    });
 
-  await service.rejectManualPayment({
-    paymentRequestId,
-    reviewerId: session.user.id,
-    adminNote:
-      typeof adminNote === "string" && adminNote.trim()
-        ? adminNote.trim()
-        : "تم الرفض من لوحة الإدارة العليا"
-  });
+    await service.rejectManualPayment({
+      paymentRequestId,
+      reviewerId: session.user.id,
+      adminNote:
+        typeof adminNote === "string" && adminNote.trim()
+          ? adminNote.trim()
+          : "تم الرفض من لوحة الإدارة العليا",
+    });
+  } catch (error) {
+    const { userError } = await processError(error, {
+      userId: session.user.id,
+      metadata: { action: "rejectPayment", paymentRequestId },
+    });
+    redirect(`/admin/payments?error=${encodeURIComponent(userError.message)}`);
+  }
 
   revalidatePath("/admin");
   revalidatePath("/admin/payments");

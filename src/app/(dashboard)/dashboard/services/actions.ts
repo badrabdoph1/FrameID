@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { prisma } from "@/lib/prisma";
+import { processError } from "@/lib/errors";
 import { getCurrentRequestSession } from "@/modules/auth/request-session";
 
 export async function addPackageAction(formData: FormData) {
@@ -25,20 +26,29 @@ export async function addPackageAction(formData: FormData) {
     redirect("/dashboard/services?error=invalid-package");
   }
 
-  const sortOrder = await nextPackageOrder(session.site.id);
+  try {
+    const sortOrder = await nextPackageOrder(session.site.id);
 
-  await prisma.package.create({
-    data: {
-      siteId: session.site.id,
-      name,
-      subtitle: subtitle || null,
-      priceAmount,
-      currency: "EGP",
-      features,
-      isHighlighted: formData.get("isHighlighted") === "on",
-      sortOrder
-    }
-  });
+    await prisma.package.create({
+      data: {
+        siteId: session.site.id,
+        name,
+        subtitle: subtitle || null,
+        priceAmount,
+        currency: "EGP",
+        features,
+        isHighlighted: formData.get("isHighlighted") === "on",
+        sortOrder,
+      },
+    });
+  } catch (error) {
+    const { userError } = await processError(error, {
+      userId: session.user.id,
+      tenantId: session.tenant.id,
+      metadata: { action: "addPackage" },
+    });
+    redirect(`/dashboard/services?error=${encodeURIComponent(userError.message)}`);
+  }
 
   revalidatePath("/dashboard/services");
   revalidatePath(`/p/${session.site.slug}`);
@@ -59,18 +69,27 @@ export async function addExtraAction(formData: FormData) {
     redirect("/dashboard/services?error=invalid-extra");
   }
 
-  const sortOrder = await nextExtraOrder(session.site.id);
+  try {
+    const sortOrder = await nextExtraOrder(session.site.id);
 
-  await prisma.extraService.create({
-    data: {
-      siteId: session.site.id,
-      name,
-      priceAmount,
-      currency: "EGP",
-      iconKey: readString(formData, "iconKey") || null,
-      sortOrder
-    }
-  });
+    await prisma.extraService.create({
+      data: {
+        siteId: session.site.id,
+        name,
+        priceAmount,
+        currency: "EGP",
+        iconKey: readString(formData, "iconKey") || null,
+        sortOrder,
+      },
+    });
+  } catch (error) {
+    const { userError } = await processError(error, {
+      userId: session.user.id,
+      tenantId: session.tenant.id,
+      metadata: { action: "addExtra" },
+    });
+    redirect(`/dashboard/services?error=${encodeURIComponent(userError.message)}`);
+  }
 
   revalidatePath("/dashboard/services");
   revalidatePath(`/p/${session.site.slug}`);
@@ -79,29 +98,17 @@ export async function addExtraAction(formData: FormData) {
 
 async function nextPackageOrder(siteId: string): Promise<number> {
   const result = await prisma.package.aggregate({
-    where: {
-      siteId,
-      deletedAt: null
-    },
-    _max: {
-      sortOrder: true
-    }
+    where: { siteId, deletedAt: null },
+    _max: { sortOrder: true },
   });
-
   return (result._max.sortOrder ?? -1) + 1;
 }
 
 async function nextExtraOrder(siteId: string): Promise<number> {
   const result = await prisma.extraService.aggregate({
-    where: {
-      siteId,
-      deletedAt: null
-    },
-    _max: {
-      sortOrder: true
-    }
+    where: { siteId, deletedAt: null },
+    _max: { sortOrder: true },
   });
-
   return (result._max.sortOrder ?? -1) + 1;
 }
 

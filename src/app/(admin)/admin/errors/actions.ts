@@ -1,5 +1,6 @@
 "use server";
 
+import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 
 export async function getErrorLogs(params?: {
@@ -44,12 +45,12 @@ export async function getErrorLogs(params?: {
 
   const [entries, total] = await Promise.all([
     prisma.errorLog.findMany({
-      where: where as Parameters<typeof prisma.errorLog.findMany>[0]["where"],
+      where: where as Prisma.ErrorLogWhereInput,
       orderBy: { createdAt: "desc" },
       skip,
       take: pageSize,
     }),
-    prisma.errorLog.count({ where: where as Parameters<typeof prisma.errorLog.count>[0]["where"] }),
+    prisma.errorLog.count({ where: where as Prisma.ErrorLogWhereInput }),
   ]);
 
   return {

@@ -1,5 +1,6 @@
 "use server";
 
+import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 
 export async function getNotificationLogs(params?: {
@@ -18,12 +19,12 @@ export async function getNotificationLogs(params?: {
 
   const [entries, total] = await Promise.all([
     prisma.notificationLog.findMany({
-      where: where as Parameters<typeof prisma.notificationLog.findMany>[0]["where"],
+      where: where as Prisma.NotificationLogWhereInput,
       orderBy: { createdAt: "desc" },
       skip,
       take: pageSize,
     }),
-    prisma.notificationLog.count({ where: where as Parameters<typeof prisma.notificationLog.count>[0]["where"] }),
+    prisma.notificationLog.count({ where: where as Prisma.NotificationLogWhereInput }),
   ]);
 
   return {

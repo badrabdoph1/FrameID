@@ -3,10 +3,8 @@
 import { redirect } from "next/navigation";
 
 import { prisma } from "@/lib/prisma";
-import {
-  getAuthActionErrorMessage,
-  readFormString
-} from "@/modules/auth/auth-action-utils";
+import { processError } from "@/lib/errors";
+import { readFormString } from "@/modules/auth/auth-action-utils";
 import { createPasswordResetService } from "@/modules/auth/password-reset-service";
 import { createPrismaPasswordResetRepository } from "@/modules/auth/prisma-password-reset-repository";
 
@@ -16,14 +14,17 @@ export async function resetPasswordAction(formData: FormData) {
 
   try {
     await createPasswordResetService({
-      repository: createPrismaPasswordResetRepository(prisma)
+      repository: createPrismaPasswordResetRepository(prisma),
     }).resetPassword({
       rawToken: token,
-      newPassword: password
+      newPassword: password,
     });
   } catch (error) {
+    const { userError } = await processError(error, {
+      metadata: { action: "resetPassword" },
+    });
     redirect(
-      `/reset-password?error=${encodeURIComponent(getAuthActionErrorMessage(error))}`
+      `/reset-password?error=${encodeURIComponent(userError.message)}`,
     );
   }
 

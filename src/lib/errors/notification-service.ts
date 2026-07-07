@@ -1,6 +1,6 @@
 "use client";
 
-import type { Notification, NotificationType, UserError } from "./types";
+import type { Notification, UserError } from "./types";
 
 type Listener = (notification: Notification) => void;
 
