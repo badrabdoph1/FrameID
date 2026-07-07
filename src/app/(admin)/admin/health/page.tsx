@@ -1,5 +1,4 @@
-import { CenterPageShell } from "@/components/admin/shared/center-page-shell";
-import { StatCard } from "@/components/admin/shared/stat-card";
+import { AdminPageShell } from "@/components/layout/admin-page-shell";
 import { prisma } from "@/lib/prisma";
 import { requireSuperAdminSession } from "@/modules/admin/admin-page-guards";
 
@@ -14,32 +13,33 @@ export default async function AdminHealthPage() {
       prisma.tenant.count({ where: { deletedAt: null } }),
       prisma.site.count({ where: { deletedAt: null } }),
       prisma.backupJob.count(),
-      prisma.paymentRequest.count({
-        where: { status: "PENDING", deletedAt: null },
-      }),
-      prisma.supportCase.count({
-        where: { deletedAt: null, status: "OPEN" },
-      }),
+      prisma.paymentRequest.count({ where: { status: "PENDING", deletedAt: null } }),
+      prisma.supportCase.count({ where: { deletedAt: null, status: "OPEN" } }),
     ]);
 
+  const cards = [
+    { label: "المستخدمون", value: users },
+    { label: "العملاء", value: tenants },
+    { label: "المواقع", value: sites },
+    { label: "النسخ الاحتياطي", value: backupJobs },
+    { label: "المدفوعات المعلقة", value: pendingPayments },
+    { label: "تذاكر الدعم المفتوحة", value: supportCases },
+  ];
+
   return (
-    <CenterPageShell
-      badge="صحة النظام"
+    <AdminPageShell
+      badge="النظام"
       title="صحة النظام"
-      description="مؤشرات أداء المنصة."
-      breadcrumbs={[{ label: "القيادة", href: "/admin" }, { label: "الصحة" }]}
+      description="مؤشرات أداء المنصة"
     >
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <StatCard label="المستخدمون" value={users} />
-        <StatCard label="العملاء" value={tenants} />
-        <StatCard label="المواقع" value={sites} />
-        <StatCard label="النسخ الاحتياطي" value={backupJobs} />
-        <StatCard
-          label="المدفوعات المعلقة"
-          value={pendingPayments}
-        />
-        <StatCard label="تذاكر الدعم المفتوحة" value={supportCases} />
+        {cards.map((card) => (
+          <div key={card.label} className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-5">
+            <p className="text-sm text-white/40">{card.label}</p>
+            <p className="mt-2 text-2xl font-semibold text-white">{card.value}</p>
+          </div>
+        ))}
       </div>
-    </CenterPageShell>
+    </AdminPageShell>
   );
 }

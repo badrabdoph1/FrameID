@@ -1,6 +1,5 @@
-import { CenterPageShell } from "@/components/admin/shared/center-page-shell";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { AdminPageShell } from "@/components/layout/admin-page-shell";
+import { AdminStatusBadge } from "@/components/layout/admin-status-badge";
 import { prisma } from "@/lib/prisma";
 import { requireSuperAdminSession } from "@/modules/admin/admin-page-guards";
 import { runBackupAction } from "@/app/(admin)/admin/backups/actions";
@@ -19,89 +18,87 @@ export default async function AdminBackupsPage({ searchParams }: Props) {
   const backupCenter = await repository.getBackupCenter();
 
   return (
-    <CenterPageShell
-      badge="مركز النسخ الاحتياطي"
+    <AdminPageShell
+      badge="التشغيل"
       title="النسخ الاحتياطي"
-      description="إدارة النسخ الاحتياطي والتحقق منها."
-      breadcrumbs={[{ label: "القيادة", href: "/admin" }, { label: "النسخ" }]}
+      description="إدارة النسخ الاحتياطي والتحقق منها"
     >
       {started && (
-        <p className="rounded-[var(--radius-panel)] border border-success/20 bg-success/10 px-4 py-3 text-sm text-success">
-          تم إنشاء نسخة احتياطية والتحقق منها.
-        </p>
+        <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-400">
+          تم إنشاء نسخة احتياطية والتحقق منها
+        </div>
       )}
 
       {error && (
-        <p className="rounded-[var(--radius-panel)] border border-danger/20 bg-danger/10 px-4 py-3 text-sm text-danger">
-          تعذر تشغيل النسخ الاحتياطي.
-        </p>
+        <div className="rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+          تعذر تشغيل النسخ الاحتياطي
+        </div>
       )}
 
-      <div className="rounded-[var(--radius-panel)] border border-white/10 bg-white/[0.02] p-5">
+      <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-5">
         <h3 className="mb-4 text-sm font-medium text-white/60">إنشاء نسخة الآن</h3>
         <div className="flex flex-wrap gap-3">
           {(["DATABASE", "UPLOADS", "FULL"] as const).map((type) => (
             <form key={type} action={runBackupAction}>
               <input type="hidden" name="type" value={type} />
-              <Button type="submit" variant="luxury" size="sm">
-                {formatBackupType(type)}
-              </Button>
+              <button
+                type="submit"
+                className="rounded-lg bg-champagne px-4 py-2 text-sm font-medium text-ink transition hover:bg-champagne/90"
+              >
+                {type === "DATABASE" ? "قاعدة البيانات" : type === "UPLOADS" ? "الملفات المرفوعة" : "نسخة كاملة"}
+              </button>
             </form>
           ))}
         </div>
       </div>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
-        <div className="rounded-[var(--radius-panel)] border border-white/10 bg-white/[0.02] p-5">
+        <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-5">
           <h3 className="mb-4 text-sm font-medium text-white/60">الإعدادات</h3>
           <div className="space-y-3">
             {backupCenter.settings.map((setting) => (
               <div
                 key={setting.type}
-                className="flex items-center justify-between rounded-[var(--radius-panel)] border border-white/10 bg-white/[0.02] p-4"
+                className="flex items-center justify-between rounded-xl border border-white/[0.06] bg-white/[0.02] p-4"
               >
                 <div>
-                  <p className="text-sm font-medium text-white">
-                    {setting.type}
-                  </p>
-                  <p className="text-xs text-white/50">
+                  <p className="text-sm font-medium text-white/80">{setting.type}</p>
+                  <p className="text-xs text-white/40">
                     {setting.schedule} · الاحتفاظ بآخر {setting.retentionCount}
                   </p>
                 </div>
-                <Badge tone={setting.enabled ? "success" : "neutral"}>
+                <AdminStatusBadge tone={setting.enabled ? "success" : "default"}>
                   {setting.enabled ? "مفعل" : "متوقف"}
-                </Badge>
+                </AdminStatusBadge>
               </div>
             ))}
           </div>
         </div>
 
-        <div className="rounded-[var(--radius-panel)] border border-white/10 bg-white/[0.02] p-5">
+        <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-5">
           <h3 className="mb-4 text-sm font-medium text-white/60">السجل</h3>
-          <div className="space-y-3 max-h-[400px] overflow-y-auto">
+          <div className="space-y-3 max-h-[400px] overflow-y-auto admin-scrollbar">
             {backupCenter.jobs.length > 0 ? (
               backupCenter.jobs.map((job) => (
                 <div
                   key={job.id}
-                  className="rounded-[var(--radius-panel)] border border-white/10 bg-white/[0.02] p-4"
+                  className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4"
                 >
                   <div className="flex items-center justify-between">
-                    <p className="text-sm font-medium text-white">
-                      {formatBackupJobType(job.type)}
+                    <p className="text-sm font-medium text-white/80">
+                      {job.type === "DATABASE" ? "قاعدة البيانات" : job.type === "UPLOADS" ? "الملفات المرفوعة" : "نسخة كاملة"}
                     </p>
-                    <Badge
+                    <AdminStatusBadge
                       tone={
-                        job.status === "COMPLETED"
-                          ? "success"
-                          : job.status === "FAILED"
-                            ? "danger"
+                        job.status === "COMPLETED" ? "success"
+                          : job.status === "FAILED" ? "danger"
                             : "warning"
                       }
                     >
-                      {formatBackupStatus(job.status)}
-                    </Badge>
+                      {job.status === "COMPLETED" ? "مكتملة" : job.status === "FAILED" ? "فشلت" : job.status === "RUNNING" ? "قيد التشغيل" : "معلقة"}
+                    </AdminStatusBadge>
                   </div>
-                  <div className="mt-2 space-y-1 text-xs text-white/50">
+                  <div className="mt-2 space-y-1 text-xs text-white/40">
                     <p>{job.createdAt}</p>
                     {job.sizeBytes && <p>الحجم: {formatBytes(job.sizeBytes)}</p>}
                     {job.checksumSha256 && (
@@ -113,52 +110,13 @@ export default async function AdminBackupsPage({ searchParams }: Props) {
                 </div>
               ))
             ) : (
-              <p className="py-8 text-center text-sm text-white/40">
-                لا توجد نسخ بعد.
-              </p>
+              <p className="py-8 text-center text-sm text-white/35">لا توجد نسخ بعد</p>
             )}
           </div>
         </div>
       </div>
-    </CenterPageShell>
+    </AdminPageShell>
   );
-}
-
-function formatBackupType(type: "DATABASE" | "UPLOADS" | "FULL"): string {
-  switch (type) {
-    case "DATABASE":
-      return "قاعدة البيانات";
-    case "UPLOADS":
-      return "الملفات المرفوعة";
-    case "FULL":
-      return "نسخة كاملة";
-  }
-}
-
-function formatBackupJobType(type: string): string {
-  if (type === "DATABASE" || type === "UPLOADS" || type === "FULL") {
-    return type === "DATABASE"
-      ? "قاعدة البيانات"
-      : type === "UPLOADS"
-        ? "الملفات المرفوعة"
-        : "نسخة كاملة";
-  }
-  return type;
-}
-
-function formatBackupStatus(status: string): string {
-  switch (status) {
-    case "COMPLETED":
-      return "مكتملة";
-    case "RUNNING":
-      return "قيد التشغيل";
-    case "FAILED":
-      return "فشلت";
-    case "PENDING":
-      return "معلقة";
-    default:
-      return status;
-  }
 }
 
 function formatBytes(value: number): string {
