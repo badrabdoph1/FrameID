@@ -1,5 +1,4 @@
 import { notFound } from "next/navigation";
-import Link from "next/link";
 import { AdminPageShell } from "@/components/layout/admin-page-shell";
 import { AdminStatusBadge } from "@/components/layout/admin-status-badge";
 import { prisma } from "@/lib/prisma";

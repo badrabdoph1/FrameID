@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback } from "react";
-import { Bell, Search, Command } from "lucide-react";
+import { Bell, Search } from "lucide-react";
 import { useAdmin } from "@/components/layout/admin-context";
 import { AdminCommandPalette } from "@/components/admin/command-palette/command-palette";
 

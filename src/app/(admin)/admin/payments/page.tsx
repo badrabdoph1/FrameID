@@ -1,5 +1,4 @@
 import { AdminPageShell } from "@/components/layout/admin-page-shell";
-import { AdminStatusBadge } from "@/components/layout/admin-status-badge";
 import { prisma } from "@/lib/prisma";
 import { requireSuperAdminSession } from "@/modules/admin/admin-page-guards";
 import {
