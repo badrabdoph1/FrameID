@@ -156,7 +156,7 @@ export default async function AdminCustomerDetailPage({ params }: Props) {
             packagesCount: s._count.packages,
             albumsCount: s._count.albums,
             seo: s.seoSettings
-              ? { title: s.seoSettings.title, description: s.seoSettings.description }
+              ? { title: s.seoSettings.title, description: s.seoSettings.description ?? "" }
               : null,
           })),
           subscription: subscription

@@ -13,16 +13,12 @@ export const beforeAfterData = {
   before: [
     "ترسل صور وتسعيرة لكل عميل على واتساب",
     "العميل يسأل نفس الأسئلة كل مرة",
-    "صورك تتوه بين محادثاتك",
-    "كل عميل تشوف له طريقة تسعير مختلفة",
-    "انطباعك يعتمد على جودة الرد"
+    "صورك تتوه بين محادثاتك"
   ],
   after: [
     "رابط واحد فيه كل شيء—صور، أسعار، تواصل",
     "العميل يشوف الباقات ويقرر بنفسه",
-    "معرض أعمال مرتب يركز على صورتك",
-    "أسعار واضحة قدام الجميع",
-    "أول انطباع احترافي يبني الثقة"
+    "معرض أعمال مرتب يركز على صورتك"
   ]
 };
 
@@ -84,6 +80,10 @@ export const faqItems = [
   {
     question: "وش يصير بعد التجربة؟",
     answer: "موقعك يبقى موجود ومحتواك محفوظ. تقدر تفعل الاشتراك بأي خطة تناسبك."
+  },
+  {
+    question: "هل ينفع موقعي لجوالات العملاء؟",
+    answer: "كل القوالب مصممة للجوال والكمبيوتر—العميل يفتح الرابط ويشوف كل شيء بسرعة."
   }
 ];
 
@@ -93,6 +93,9 @@ export const betaMessage =
 export function getTemplatePreviewImage(template: TemplateSummary) {
   if (template.code === "noir-gold") {
     return "https://i.ibb.co/JwBLNkjP/Whats-App-Image-2026-06-04-at-2-30-53-AM-1.jpg";
+  }
+  if (template.code === "rose-blush") {
+    return "https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1200&q=85";
   }
 
   return "https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?auto=format&fit=crop&w=1200&q=85";

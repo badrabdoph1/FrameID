@@ -32,7 +32,7 @@ const heroImage =
 export const metadata: Metadata = {
   title: "FrameID | موقع مصور—موقع خاص باسمك يضم أعمالك وباقاتك",
   description:
-    "موقع خاص للمصورين: معرض أعمال، باقات وأسعار، رابط خاص، ولوحة تحكم. بدون برمجة. جرب ١٤ يوم مجاناً.",
+    "موقع خاص للمصورين: معرض أعمال، باقات وأسعار، رابط خاص، بدون برمجة. جرب ١٤ يوم مجاناً.",
   alternates: {
     canonical: siteUrl
   },
@@ -133,8 +133,7 @@ export default function HomePage() {
                 <span className="text-champagne">موقع واحد يضم كل شيء ويخلّي العميل يثق فيك.</span>
               </h1>
               <p className="mt-4 max-w-2xl text-base leading-7 text-white/72 md:mt-5 md:text-lg md:leading-8">
-                بدل ما ترسل صور وتسعير لكل عميل على واتساب—ارفعهم مرة وحدة
-                وخل الرابط يتكلم عنك.
+                ارفع صورك، حدد أسعارك، وشارك الرابط. موقعك جاهز في دقائق.
               </p>
               <div className="mt-6 flex flex-col gap-3 sm:flex-row md:mt-8">
                 <Link
@@ -169,26 +168,6 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* ──────────────── FOR WHOM ──────────────── */}
-        <section className="container-page py-8 md:py-12">
-          <div className="text-center">
-            <p className="text-sm font-semibold text-champagne-strong">
-              لمن هذه المنصة؟
-            </p>
-          </div>
-          <div className="mt-4 flex flex-wrap justify-center gap-2 md:gap-3">
-            {photographerTypes.map((t) => (
-              <span
-                key={t.label}
-                className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1.5 text-xs font-medium text-muted-foreground shadow-soft md:gap-2 md:px-4 md:py-2 md:text-sm"
-              >
-                <Camera className="size-3.5 text-champagne-strong md:size-4" aria-hidden />
-                {t.label}
-              </span>
-            ))}
-          </div>
-        </section>
-
         {/* ──────────────── TEMPLATES + WOW ──────────────── */}
         <section className="bg-surface py-10 md:py-22">
           <div className="container-page">
@@ -200,10 +179,21 @@ export default function HomePage() {
                 هذا شكل موقعك.
               </h2>
               <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-muted-foreground md:mt-4 md:text-base md:leading-7">
-                اختر قالب وخل موقعك جاهز خلال دقائق.
+                اختر قالب يناسب تخصصك وخل موقعك جاهز خلال دقائق.
               </p>
             </div>
-            <div className="mt-8 grid gap-6 md:grid-cols-2">
+            <div className="mt-5 flex flex-wrap justify-center gap-2 md:mt-6 md:gap-3">
+              {photographerTypes.map((t) => (
+                <span
+                  key={t.label}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-border bg-white px-3 py-1.5 text-xs font-medium text-muted-foreground shadow-soft md:gap-2 md:px-4 md:py-2 md:text-sm"
+                >
+                  <Camera className="size-3.5 text-champagne-strong md:size-4" aria-hidden />
+                  {t.label}
+                </span>
+              ))}
+            </div>
+            <div className="mt-5 grid gap-6 md:mt-8 md:grid-cols-2">
               {templates.map((template) => (
                 <article
                   key={template.code}
@@ -267,6 +257,36 @@ export default function HomePage() {
           </div>
         </section>
 
+        {/* ──────────────── WHY FRAMEID ──────────────── */}
+        <section className="bg-ink py-10 text-white md:py-22">
+          <div className="container-page">
+            <div className="max-w-2xl">
+              <p className="text-sm font-semibold text-champagne">
+                وش تستفيد؟
+              </p>
+              <h2 className="mt-2 text-2xl font-semibold md:text-5xl">
+                ستة أسباب تخلي المصورين يختارون FrameID.
+              </h2>
+            </div>
+            <div className="mt-6 grid grid-cols-2 gap-2 md:mt-8 md:grid-cols-3 md:gap-3">
+              {benefitCards.map((card) => (
+                <div
+                  key={card.title}
+                  className="rounded-[var(--radius-card)] border border-white/10 bg-white/[0.04] p-3 transition hover:bg-white/[0.07] md:p-4"
+                >
+                  <span className="inline-flex size-7 items-center justify-center rounded-full bg-champagne/15 text-champagne md:size-8">
+                    <CheckCircle2 className="size-3.5 md:size-4" aria-hidden />
+                  </span>
+                  <h3 className="mt-2 text-sm font-semibold leading-5 md:mt-3">{card.title}</h3>
+                  <p className="mt-0.5 text-xs leading-5 text-white/60 md:mt-1 md:leading-6">
+                    {card.body}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
         {/* ──────────────── BEFORE vs AFTER ──────────────── */}
         <section className="container-page py-10 md:py-22">
           <div className="text-center">
@@ -313,36 +333,6 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* ──────────────── WHY FRAMEID ──────────────── */}
-        <section className="bg-ink py-10 text-white md:py-22">
-          <div className="container-page">
-            <div className="max-w-2xl">
-              <p className="text-sm font-semibold text-champagne">
-                وش تستفيد؟
-              </p>
-              <h2 className="mt-2 text-2xl font-semibold md:text-5xl">
-                كل بطاقة = فائدة حقيقية لمصور زيك.
-              </h2>
-            </div>
-            <div className="mt-6 grid grid-cols-2 gap-2 md:mt-8 md:grid-cols-3 md:gap-3">
-              {benefitCards.map((card) => (
-                <div
-                  key={card.title}
-                  className="rounded-[var(--radius-card)] border border-white/10 bg-white/[0.04] p-3 transition hover:bg-white/[0.07] md:p-4"
-                >
-                  <span className="inline-flex size-7 items-center justify-center rounded-full bg-champagne/15 text-champagne md:size-8">
-                    <CheckCircle2 className="size-3.5 md:size-4" aria-hidden />
-                  </span>
-                  <h3 className="mt-2 text-sm font-semibold leading-5 md:mt-3">{card.title}</h3>
-                  <p className="mt-0.5 text-xs leading-5 text-white/60 md:mt-1 md:leading-6">
-                    {card.body}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
         {/* ──────────────── HOW IT WORKS ──────────────── */}
         <section className="container-page py-10 md:py-22">
           <div className="max-w-2xl text-center md:mx-auto">
@@ -377,14 +367,6 @@ export default function HomePage() {
               </div>
             ))}
           </div>
-          <div className="mt-6 text-center">
-            <Link
-              href="/signup"
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-[var(--radius-control)] bg-foreground px-5 text-sm font-semibold text-background transition hover:bg-foreground/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            >
-              ابدأ مجاناً—بدون بطاقة
-            </Link>
-          </div>
         </section>
 
         {/* ──────────────── TRUST + FAQ ──────────────── */}
@@ -392,11 +374,14 @@ export default function HomePage() {
           <div className="container-page">
             <div className="mx-auto max-w-3xl">
               <p className="text-center text-sm font-semibold text-champagne-strong">
-                أسئلة وإجابات
+                الثقة أولاً
               </p>
-              <h2 className="mt-2 text-center text-2xl font-semibold md:text-5xl">
-                {betaMessage}
+              <h2 className="text-center text-2xl font-semibold md:text-5xl">
+                ليه تثق في FrameID؟
               </h2>
+              <p className="mx-auto mt-3 max-w-lg text-center text-sm leading-6 text-muted-foreground md:mt-4 md:text-base md:leading-7">
+                {betaMessage}
+              </p>
               <div className="mt-6 space-y-2 md:mt-8 md:space-y-3">
                 {faqItems.map((item) => (
                   <details
@@ -421,15 +406,6 @@ export default function HomePage() {
                 ))}
               </div>
             </div>
-            <div className="mt-6 text-center">
-              <Link
-                href="/signup"
-                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-[var(--radius-control)] bg-foreground px-5 text-sm font-semibold text-background transition hover:bg-foreground/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              >
-                <WandSparkles className="size-4" aria-hidden />
-                جرب وقلنا رأيك
-              </Link>
-            </div>
           </div>
         </section>
 
@@ -448,13 +424,6 @@ export default function HomePage() {
                 className="inline-flex min-h-12 items-center justify-center gap-2 rounded-[var(--radius-control)] bg-champagne px-7 text-sm font-semibold text-ink transition-[background-color] hover:bg-champagne/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-champagne"
               >
                 ابدأ التجربة المجانية
-              </Link>
-              <Link
-                href="/templates"
-                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-[var(--radius-control)] border border-white/20 bg-white/5 px-6 text-sm font-semibold text-white transition-[background-color,border-color] hover:border-white/40 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
-              >
-                شاهد القوالب
-                <ArrowLeft className="size-4" aria-hidden />
               </Link>
             </div>
           </div>

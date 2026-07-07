@@ -92,7 +92,7 @@ type SiteData = {
   createdAt: string;
   packagesCount: number;
   albumsCount: number;
-  seo: { title: string; description: string } | null;
+  seo: { title: string; description: string | null } | null;
 };
 
 type SubscriptionData = {
@@ -434,7 +434,7 @@ export function CustomerDetailClient({ customer, adminId, adminName }: Props) {
                         <StatusSection
                           label="الاشتراك"
                           value={customer.subscription.status}
-                          tone={subStatusTone[customer.subscription.status] || "neutral"}
+                          tone={subStatusTone[customer.subscription.status] || "default"}
                         />
                         <div className="flex items-center justify-between rounded-xl border border-white/[0.06] bg-white/[0.02] px-4 py-3">
                           <span className="text-sm text-white/60">الخطة</span>
@@ -697,7 +697,7 @@ export function CustomerDetailClient({ customer, adminId, adminName }: Props) {
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-white/60">الحالة</span>
                       <AdminStatusBadge
-                        tone={subStatusTone[customer.subscription.status] || "neutral"}
+                        tone={subStatusTone[customer.subscription.status] || "default"}
                       >
                         {customer.subscription.status}
                       </AdminStatusBadge>
