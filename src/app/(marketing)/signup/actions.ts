@@ -35,6 +35,7 @@ export async function signupAction(formData: FormData) {
     cookieToSet = session.cookie;
     redirectTo = result.redirectTo;
   } catch (error) {
+    console.error("[signup-action]", error instanceof Error ? `${error.constructor.name}: ${error.message}` : String(error));
     redirect(`/signup?error=${encodeURIComponent(getAuthActionErrorMessage(error))}`);
   }
 

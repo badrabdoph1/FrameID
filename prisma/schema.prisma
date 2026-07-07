@@ -645,3 +645,30 @@ model BackupManifest {
 
   backupJob BackupJob @relation(fields: [backupJobId], references: [id])
 }
+
+model AdminUser {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  name         String
+  passwordHash String?
+  role         String    @default("SUPER_ADMIN")
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  sessions AdminSession[]
+}
+
+model AdminSession {
+  id          String   @id @default(cuid())
+  adminUserId String
+  tokenHash   String   @unique
+  expiresAt   DateTime
+  revokedAt   DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  adminUser AdminUser @relation(fields: [adminUserId], references: [id])
+
+  @@index([adminUserId, expiresAt])
+  @@index([expiresAt, revokedAt])
+}

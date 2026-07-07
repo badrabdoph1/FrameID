@@ -24,6 +24,8 @@ export function getAuthActionErrorMessage(error: unknown): string {
     return "حدث خطأ غير متوقع. حاول مرة أخرى.";
   }
 
+  console.error("[auth-action-error]", error.constructor.name, error.message, error.stack?.split("\n").slice(0, 3).join("\n"));
+
   if (error.message === "Email already exists") {
     return "هذا البريد مستخدم بالفعل.";
   }
