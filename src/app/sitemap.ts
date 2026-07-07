@@ -2,7 +2,17 @@ import type { MetadataRoute } from "next";
 
 const siteUrl = "https://frameid.app";
 
-const publicRoutes = ["", "/templates", "/signup", "/login", "/privacy", "/terms"];
+const publicRoutes = [
+  "",
+  "/templates",
+  "/templates/noir-gold/preview",
+  "/signup",
+  "/login",
+  "/forgot-password",
+  "/reset-password",
+  "/privacy",
+  "/terms"
+];
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const lastModified = new Date("2026-07-07T00:00:00.000Z");

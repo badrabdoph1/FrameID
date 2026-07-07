@@ -3,7 +3,7 @@ import Link from "next/link";
 import { ArrowRight, WandSparkles } from "lucide-react";
 import { notFound } from "next/navigation";
 
-import { AliAhmedLuxurySite } from "@/components/themes/ali-ahmed-luxury-site";
+import { getThemeSiteComponent } from "@/components/themes/theme-components";
 import type { PublicSiteViewModel } from "@/modules/public-sites/public-site-view-model";
 import { getTemplateByCode } from "@/modules/themes/theme-registry";
 
@@ -27,9 +27,12 @@ export default async function TemplatePreviewPage({ params }: Props) {
     notFound();
   }
 
+  const ThemeComponent = getThemeSiteComponent(code);
+  const siteData = { ...previewSite, themeCode: code };
+
   return (
     <>
-      <AliAhmedLuxurySite site={previewSite} />
+      <ThemeComponent site={siteData} />
       <div className="fixed inset-x-4 bottom-4 z-40 mx-auto flex max-w-md items-center gap-2 rounded-[var(--radius-panel)] border border-white/10 bg-ink/80 p-2 shadow-soft backdrop-blur-xl">
         <Link
           href="/templates"

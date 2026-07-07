@@ -45,6 +45,12 @@ export default function RootLayout({
       suppressHydrationWarning
       className={`${tajawal.variable} ${playfair.variable}`}
     >
+      <head>
+        <link rel="preconnect" href="https://images.unsplash.com" />
+        <link rel="dns-prefetch" href="https://images.unsplash.com" />
+        <link rel="preconnect" href="https://i.ibb.co" />
+        <link rel="dns-prefetch" href="https://i.ibb.co" />
+      </head>
       <body>{children}</body>
     </html>
   );

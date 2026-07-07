@@ -3,6 +3,7 @@ import Link from "next/link";
 import React from "react";
 import { Eye, WandSparkles } from "lucide-react";
 
+import { MarketingFooter } from "@/components/layout/marketing-footer";
 import { MarketingNav } from "@/components/layout/marketing-nav";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -84,6 +85,7 @@ export default function TemplatesPage() {
             ))}
           </div>
         </section>
+        <MarketingFooter />
       </main>
     </>
   );

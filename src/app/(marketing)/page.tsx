@@ -8,18 +8,23 @@ import {
   Crown,
   Images,
   LayoutDashboard,
+  MessageCircle,
   PanelsTopLeft,
-  Sparkles
+  Sparkles,
+  Star
 } from "lucide-react";
 
+import { MarketingFooter } from "@/components/layout/marketing-footer";
 import { MarketingNav } from "@/components/layout/marketing-nav";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   adminControls,
+  faqItems,
   onboardingJourney,
   photographerControls,
-  platformStats
+  platformStats,
+  testimonials
 } from "@/modules/marketing/platform-content";
 
 const siteUrl = "https://frameid.app";
@@ -119,6 +124,17 @@ const jsonLd = {
         priceCurrency: "EGP",
         description: "تجربة مجانية قبل الدفع"
       }
+    },
+    {
+      "@type": "FAQPage",
+      mainEntity: faqItems.map((item) => ({
+        "@type": "Question",
+        name: item.question,
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: item.answer
+        }
+      }))
     }
   ]
 };
@@ -298,6 +314,83 @@ export default function HomePage() {
             </div>
           </div>
         </section>
+
+        <section className="bg-surface py-14 md:py-24">
+          <div className="container-page">
+            <p className="text-sm font-semibold text-champagne-strong text-center">
+              آراء المصورين
+            </p>
+            <h2 className="mt-3 text-center text-3xl font-semibold md:text-5xl">
+              ماذا يقول من جرب FrameID؟
+            </h2>
+            <div className="mt-8 grid gap-5 md:grid-cols-3">
+              {testimonials.map((t) => (
+                <article
+                  key={t.name}
+                  className="rounded-[var(--radius-card)] border border-border bg-card p-6"
+                >
+                  <div className="flex gap-1" aria-label="تقييم ٥ نجوم">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <Star key={i} className="size-4 fill-champagne text-champagne" aria-hidden />
+                    ))}
+                  </div>
+                  <blockquote className="mt-4 text-sm leading-7 text-muted-foreground">
+                    &ldquo;{t.quote}&rdquo;
+                  </blockquote>
+                  <footer className="mt-4 border-t border-border pt-4">
+                    <span className="text-sm font-semibold">{t.name}</span>
+                    <span className="mr-2 text-sm text-muted-foreground">{t.role}</span>
+                  </footer>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="container-page py-14 md:py-24">
+          <div className="mx-auto max-w-3xl">
+            <p className="text-center text-sm font-semibold text-champagne-strong">
+              أسئلة شائعة
+            </p>
+            <h2 className="mt-3 text-center text-3xl font-semibold md:text-5xl">
+              إجابات سريعة لأسئلتك
+            </h2>
+            <div className="mt-8 space-y-3">
+              {faqItems.map((item) => (
+                <details
+                  key={item.question}
+                  className="group rounded-[var(--radius-card)] border border-border bg-card"
+                >
+                  <summary className="flex cursor-pointer items-center justify-between gap-3 p-4 text-sm font-semibold transition hover:bg-muted/50 [&::-webkit-details-marker]:hidden">
+                    {item.question}
+                    <span className="shrink-0 text-muted-foreground transition-transform group-open:rotate-180" aria-hidden>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="6 9 12 15 18 9" />
+                      </svg>
+                    </span>
+                  </summary>
+                  <div className="border-t border-border px-4 py-3 text-sm leading-7 text-muted-foreground">
+                    {item.answer}
+                  </div>
+                </details>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="sticky-cta fixed inset-x-0 bottom-0 z-40 border-t border-border bg-white/95 backdrop-blur-md md:hidden">
+          <div className="container-page flex items-center gap-3 px-4 py-3">
+            <span className="text-sm font-semibold">جرب FrameID مجانًا</span>
+            <Link
+              href="/signup"
+              className="mr-auto inline-flex min-h-10 items-center justify-center rounded-[var(--radius-control)] bg-foreground px-4 text-sm font-semibold text-background transition hover:bg-foreground/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground"
+            >
+              ابدأ الآن
+            </Link>
+          </div>
+        </section>
+
+        <MarketingFooter />
       </main>
       <script
         id="frameid-home-schema"

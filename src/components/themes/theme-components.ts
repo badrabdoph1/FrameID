@@ -1,8 +1,9 @@
+import type { ReactElement } from "react";
 import type { PublicSiteViewModel } from "@/modules/public-sites/public-site-view-model";
 import { AliAhmedLuxurySite } from "./ali-ahmed-luxury-site";
 import { RoseBlushSite } from "./rose-blush-site";
 
-type ThemeSiteComponent = (props: { site: PublicSiteViewModel }) => JSX.Element;
+type ThemeSiteComponent = (props: { site: PublicSiteViewModel }) => ReactElement;
 
 const registry: Record<string, ThemeSiteComponent> = {
   "noir-gold": AliAhmedLuxurySite,
