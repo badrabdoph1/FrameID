@@ -69,7 +69,7 @@ describe("marketing homepage", () => {
 
     expect(
       screen.getByRole("heading", {
-        name: /كل بطاقة = فائدة حقيقية لمصور زيك/i
+        name: /ستة أسباب تخلي المصورين/i
       })
     ).toBeInTheDocument();
     expect(screen.getAllByText(/بدل ما/i).length).toBeGreaterThanOrEqual(6);
@@ -125,12 +125,9 @@ describe("marketing homepage", () => {
     ).toBeInTheDocument();
   });
 
-  it("shows for-whom photographer type badges", () => {
+  it("shows photographer type badges in templates section", () => {
     render(<HomePage />);
 
-    expect(
-      screen.getByText(/لمن هذه المنصة/i)
-    ).toBeInTheDocument();
     expect(screen.getByText("مصوري الزفاف")).toBeInTheDocument();
     expect(screen.getByText("الاستوديوهات")).toBeInTheDocument();
   });
