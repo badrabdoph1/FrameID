@@ -1,7 +1,8 @@
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 
-import { ADMIN_SESSION_COOKIE_NAME, hashAdminSessionToken } from "@/modules/admin/admin-session-tokens";
+import { ADMIN_SESSION_COOKIE_NAME } from "@/modules/admin/admin-session-constants";
+import { hashAdminSessionToken } from "@/modules/admin/admin-session-tokens";
 import { prisma } from "@/lib/prisma";
 
 export type CurrentAdmin = {

@@ -1,19 +1,12 @@
 import { createHash, randomBytes } from "node:crypto";
 
-export const ADMIN_SESSION_COOKIE_NAME = "frameid_admin_session";
-export const ADMIN_SESSION_TTL_DAYS = 30;
+import {
+  ADMIN_SESSION_COOKIE_NAME,
+  ADMIN_SESSION_TTL_DAYS,
+} from "@/modules/admin/admin-session-constants";
+import type { AdminSessionCookie } from "@/modules/admin/admin-session-constants";
 
-export type AdminSessionCookie = {
-  name: typeof ADMIN_SESSION_COOKIE_NAME;
-  value: string;
-  options: {
-    expires: Date;
-    httpOnly: true;
-    path: "/";
-    sameSite: "lax";
-    secure: boolean;
-  };
-};
+export { ADMIN_SESSION_COOKIE_NAME, ADMIN_SESSION_TTL_DAYS, type AdminSessionCookie };
 
 export function createRawAdminSessionToken(): string {
   return randomBytes(32).toString("base64url");
@@ -23,7 +16,7 @@ export function hashAdminSessionToken(token: string): string {
   return createHash("sha256").update(token).digest("base64url");
 }
 
-export function getAdminSessionExpiresAt(now: Date, ttlDays = ADMIN_SESSION_TTL_DAYS): Date {
+export function getAdminSessionExpiresAt(now: Date, ttlDays = 30): Date {
   const expiresAt = new Date(now);
   expiresAt.setUTCDate(expiresAt.getUTCDate() + ttlDays);
   return expiresAt;

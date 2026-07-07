@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-import { ADMIN_SESSION_COOKIE_NAME } from "@/modules/admin/admin-session-tokens";
+import { ADMIN_SESSION_COOKIE_NAME } from "@/modules/admin/admin-session-constants";
 
 const PUBLIC_ADMIN_PATHS = new Set(["/admin/login"]);
 

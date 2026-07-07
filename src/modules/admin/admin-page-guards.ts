@@ -1,10 +1,13 @@
-import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { prisma } from "@/lib/prisma";
-import { ADMIN_SESSION_COOKIE_NAME, hashAdminSessionToken } from "@/modules/admin/admin-session-tokens";
 import { canAccessSuperAdmin } from "@/modules/admin/admin-rbac";
 
+const ADMIN_SESSION_COOKIE_NAME = "frameid_admin_session";
+
 export async function getCurrentAdmin() {
+  const { cookies } = await import("next/headers");
+  const { hashAdminSessionToken } = await import("@/modules/admin/admin-session-tokens");
+  const { prisma } = await import("@/lib/prisma");
+
   const cookieStore = await cookies();
   const rawToken = cookieStore.get(ADMIN_SESSION_COOKIE_NAME)?.value;
 
@@ -33,8 +36,8 @@ export async function requireSuperAdminSession() {
     return { user: adminUser };
   }
 
-  const { getCurrentRequestUserSession } = await import("@/modules/auth/request-session");
-  const oldSession = await getCurrentRequestUserSession();
+  const { getCurrentRequestUserSession: getSession } = await import("@/modules/auth/request-session");
+  const oldSession = await getSession();
 
   if (oldSession) {
     if (canAccessSuperAdmin(oldSession.user.role)) {

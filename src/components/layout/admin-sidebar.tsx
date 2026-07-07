@@ -12,7 +12,7 @@ import {
 import { cn } from "@/lib/utils/cn";
 import { useAdmin } from "@/components/layout/admin-context";
 import { adminNavigation } from "@/modules/admin/navigation";
-import { adminLogoutAction } from "@/app/admin/login/actions";
+import { adminLogoutAction } from "@/app/_actions/admin-logout";
 
 export function AdminSidebar() {
   const pathname = usePathname();

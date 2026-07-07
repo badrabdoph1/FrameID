@@ -6,9 +6,9 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { createPrismaAdminAuthRepository } from "@/modules/admin/prisma-admin-auth-repository";
 import { createAdminLoginService } from "@/modules/admin/admin-auth-service";
-import { ADMIN_SESSION_COOKIE_NAME } from "@/modules/admin/admin-session-tokens";
+import { ADMIN_SESSION_COOKIE_NAME } from "@/modules/admin/admin-session-constants";
 import { readFormString, getAuthActionErrorMessage } from "@/modules/auth/auth-action-utils";
-import type { AdminSessionCookie } from "@/modules/admin/admin-session-tokens";
+import type { AdminSessionCookie } from "@/modules/admin/admin-session-constants";
 
 export async function adminLoginAction(formData: FormData) {
   let cookieToSet: AdminSessionCookie | undefined;
