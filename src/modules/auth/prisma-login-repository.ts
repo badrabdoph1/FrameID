@@ -26,7 +26,7 @@ export function createPrismaLoginRepository(
     async findUserByEmail(email) {
       return prisma.user.findFirst({
         where: {
-          email,
+          email: email.trim().toLowerCase(),
           deletedAt: null
         },
         select: {

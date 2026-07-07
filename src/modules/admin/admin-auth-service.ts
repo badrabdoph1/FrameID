@@ -47,12 +47,12 @@ export function createAdminLoginService(repository: AdminLoginRepository) {
       const admin = await repository.findAdminByEmail(input.email);
 
       if (!admin?.passwordHash) {
-        throw new Error("البريد أو كلمة المرور غير صحيحة");
+        throw new Error("Invalid email or password");
       }
 
       const isValid = await verifyPassword(input.password, admin.passwordHash);
       if (!isValid) {
-        throw new Error("البريد أو كلمة المرور غير صحيحة");
+        throw new Error("Invalid email or password");
       }
 
       const rawToken = createRawAdminSessionToken();

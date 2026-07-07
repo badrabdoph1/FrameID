@@ -25,7 +25,7 @@ export function createPrismaAdminAuthRepository(
   return {
     async findAdminByEmail(email) {
       return prisma.adminUser.findFirst({
-        where: { email },
+        where: { email: email.trim().toLowerCase() },
         select: { id: true, email: true, name: true, role: true, passwordHash: true },
       });
     },
