@@ -69,7 +69,7 @@ describe("marketing homepage", () => {
 
     expect(
       screen.getByRole("heading", {
-        name: /ستة أسباب تخلي المصورين/i
+        name: /وش تتغير في شغلك/i
       })
     ).toBeInTheDocument();
     expect(screen.getAllByText(/بدل ما/i).length).toBeGreaterThanOrEqual(6);
@@ -106,14 +106,16 @@ describe("marketing homepage", () => {
     ).toBeInTheDocument();
   });
 
-  it("shows before-after comparison section", () => {
+  it("shows before-after concept in benefits section", () => {
     render(<HomePage />);
 
     expect(
       screen.getByText(/قبل FrameID وبعده/i)
     ).toBeInTheDocument();
     expect(
-      screen.getByText(/الفرق واضح/i)
+      screen.getByRole("heading", {
+        name: /وش تتغير في شغلك/i
+      })
     ).toBeInTheDocument();
   });
 

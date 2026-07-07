@@ -7,8 +7,7 @@ import {
   Camera,
   CheckCircle2,
   Eye,
-  WandSparkles,
-  X
+  WandSparkles
 } from "lucide-react";
 
 import { MarketingFooter } from "@/components/layout/marketing-footer";
@@ -16,7 +15,6 @@ import { MarketingNav } from "@/components/layout/marketing-nav";
 import { Badge } from "@/components/ui/badge";
 import { getPublishedTemplates } from "@/modules/themes/theme-registry";
 import {
-  beforeAfterData,
   benefitCards,
   betaMessage,
   faqItems,
@@ -262,10 +260,10 @@ export default function HomePage() {
           <div className="container-page">
             <div className="max-w-2xl">
               <p className="text-sm font-semibold text-champagne">
-                وش تستفيد؟
+                قبل FrameID وبعده
               </p>
               <h2 className="mt-2 text-2xl font-semibold md:text-5xl">
-                ستة أسباب تخلي المصورين يختارون FrameID.
+                وش تتغير في شغلك لما يكون عندك موقع؟
               </h2>
             </div>
             <div className="mt-6 grid grid-cols-2 gap-2 md:mt-8 md:grid-cols-3 md:gap-3">
@@ -283,52 +281,6 @@ export default function HomePage() {
                   </p>
                 </div>
               ))}
-            </div>
-          </div>
-        </section>
-
-        {/* ──────────────── BEFORE vs AFTER ──────────────── */}
-        <section className="container-page py-10 md:py-22">
-          <div className="text-center">
-            <p className="text-sm font-semibold text-champagne-strong">
-              قبل FrameID وبعده
-            </p>
-            <h2 className="mt-2 text-2xl font-semibold md:text-5xl">
-              الفرق واضح في ثوانٍ.
-            </h2>
-          </div>
-          <div className="mt-8 grid gap-4 md:grid-cols-2">
-            <div className="rounded-[var(--radius-panel)] border border-border bg-muted/30 p-5 md:p-6">
-              <h3 className="flex items-center gap-2 text-sm font-semibold text-muted-foreground md:text-base">
-                <span className="inline-flex size-6 items-center justify-center rounded-full bg-danger/10 text-danger md:size-7">
-                  <X className="size-3 md:size-4" aria-hidden />
-                </span>
-                قبل
-              </h3>
-              <ul className="mt-4 space-y-2 md:mt-5 md:space-y-3">
-                {beforeAfterData.before.map((item) => (
-                  <li key={item} className="flex items-start gap-2 text-sm leading-6 text-muted-foreground">
-                    <span className="mt-1.5 size-1.5 shrink-0 rounded-full bg-danger/40" />
-                    {item}
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div className="rounded-[var(--radius-panel)] border border-champagne/30 bg-champagne/[0.04] p-5 md:p-6">
-              <h3 className="flex items-center gap-2 text-sm font-semibold md:text-base">
-                <span className="inline-flex size-6 items-center justify-center rounded-full bg-champagne/15 text-champagne-strong md:size-7">
-                  <CheckCircle2 className="size-3 md:size-4" aria-hidden />
-                </span>
-                بعد
-              </h3>
-              <ul className="mt-4 space-y-2 md:mt-5 md:space-y-3">
-                {beforeAfterData.after.map((item) => (
-                  <li key={item} className="flex items-start gap-2 text-sm leading-6">
-                    <span className="mt-1.5 size-1.5 shrink-0 rounded-full bg-champagne" />
-                    {item}
-                  </li>
-                ))}
-              </ul>
             </div>
           </div>
         </section>
