@@ -19,7 +19,7 @@ import {
 } from "react";
 
 import { notify } from "@/lib/errors/notification-service";
-import { formatErrorForClipboard } from "@/lib/errors/error-service";
+import { formatErrorForClipboard } from "@/lib/errors/format-error";
 import type {
   ErrorDetail,
   Notification as NotificationType,

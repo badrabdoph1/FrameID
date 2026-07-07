@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { prisma } from "@/lib/prisma";
+import { processError } from "@/lib/errors";
 import { getCurrentRequestSession } from "@/modules/auth/request-session";
 import { createPrismaSiteThemeSelectionRepository } from "@/modules/themes/prisma-site-theme-selection-repository";
 import { createSiteThemeSelectionService } from "@/modules/themes/site-theme-selection-service";
@@ -18,18 +19,23 @@ export async function selectTemplateAction(formData: FormData) {
   const templateCode = readString(formData, "templateCode");
 
   if (!templateCode) {
-    redirect("/dashboard/design?error=missing-template");
+    redirect("/dashboard/design?error=لم يتم اختيار قالب");
   }
 
   try {
     await createSiteThemeSelectionService({
-      repository: createPrismaSiteThemeSelectionRepository(prisma)
+      repository: createPrismaSiteThemeSelectionRepository(prisma),
     }).selectTemplate({
       session,
-      templateCode
+      templateCode,
     });
-  } catch {
-    redirect("/dashboard/design?error=unavailable-template");
+  } catch (error) {
+    const { userError } = await processError(error, {
+      userId: session.user.id,
+      tenantId: session.tenant.id,
+      metadata: { action: "selectTemplate", templateCode },
+    });
+    redirect(`/dashboard/design?error=${encodeURIComponent(userError.message)}`);
   }
 
   revalidatePath("/dashboard/design");

@@ -26,6 +26,45 @@ function getFieldType(value: unknown): "string" | "number" | "boolean" | "array"
   return "string";
 }
 
+function BooleanField({
+  name,
+  value,
+  onChange,
+  indent,
+}: {
+  name: string;
+  value: boolean;
+  onChange: (v: boolean) => void;
+  indent: number;
+}) {
+  const [checked, setChecked] = useState(value);
+  return (
+    <div className="flex items-center gap-3 py-2" style={{ marginRight: indent }}>
+      <label className="text-sm text-white/60 min-w-24">{name}</label>
+      <button
+        type="button"
+        role="switch"
+        aria-checked={checked}
+        onClick={() => {
+          const next = !checked;
+          setChecked(next);
+          onChange(next);
+        }}
+        className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${
+          checked ? "bg-champagne" : "bg-white/20"
+        }`}
+      >
+        <span
+          className={`inline-block size-5 rounded-full bg-white shadow transition-transform ${
+            checked ? "translate-x-5" : "translate-x-0"
+          }`}
+        />
+      </button>
+      <span className="text-sm text-white/40">{checked ? "نعم" : "لا"}</span>
+    </div>
+  );
+}
+
 function FieldEditor({
   name,
   value,
@@ -75,31 +114,13 @@ function FieldEditor({
   }
 
   if (type === "boolean") {
-    const [checked, setChecked] = useState(value as boolean);
     return (
-      <div className="flex items-center gap-3 py-2" style={{ marginRight: indent }}>
-        <label className="text-sm text-white/60 min-w-24">{name}</label>
-        <button
-          type="button"
-          role="switch"
-          aria-checked={checked}
-          onClick={() => {
-            const next = !checked;
-            setChecked(next);
-            onChange(next);
-          }}
-          className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${
-            checked ? "bg-champagne" : "bg-white/20"
-          }`}
-        >
-          <span
-            className={`inline-block size-5 rounded-full bg-white shadow transition-transform ${
-              checked ? "translate-x-5" : "translate-x-0"
-            }`}
-          />
-        </button>
-        <span className="text-sm text-white/40">{checked ? "نعم" : "لا"}</span>
-      </div>
+      <BooleanField
+        name={name}
+        value={value as boolean}
+        onChange={(v) => onChange(v)}
+        indent={indent}
+      />
     );
   }
 

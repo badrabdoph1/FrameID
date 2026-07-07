@@ -4,7 +4,8 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { prisma } from "@/lib/prisma";
-import { getAuthActionErrorMessage, readFormString } from "@/modules/auth/auth-action-utils";
+import { processError } from "@/lib/errors";
+import { readFormString } from "@/modules/auth/auth-action-utils";
 import { getPostLoginRedirectPath } from "@/modules/auth/current-session-service";
 import { createLoginService } from "@/modules/auth/login-service";
 import { createPrismaLoginRepository } from "@/modules/auth/prisma-login-repository";
@@ -17,17 +18,20 @@ export async function loginAction(formData: FormData) {
 
   try {
     const loginService = createLoginService({
-      repository: createPrismaLoginRepository(prisma)
+      repository: createPrismaLoginRepository(prisma),
     });
     const result = await loginService.login({
       email: readFormString(formData, "email"),
-      password: readFormString(formData, "password")
+      password: readFormString(formData, "password"),
     });
 
     cookieToSet = result.session.cookie;
     redirectPath = getPostLoginRedirectPath(result.user.role);
   } catch (error) {
-    redirect(`/login?error=${encodeURIComponent(getAuthActionErrorMessage(error))}`);
+    const { userError } = await processError(error, {
+      metadata: { action: "login" },
+    });
+    redirect(`/login?error=${encodeURIComponent(userError.message)}`);
   }
 
   if (cookieToSet) {

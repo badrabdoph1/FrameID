@@ -4,7 +4,8 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { prisma } from "@/lib/prisma";
-import { getAuthActionErrorMessage, readFormString } from "@/modules/auth/auth-action-utils";
+import { processError } from "@/lib/errors";
+import { readFormString } from "@/modules/auth/auth-action-utils";
 import { createPrismaLoginRepository } from "@/modules/auth/prisma-login-repository";
 import { createSessionForUser } from "@/modules/auth/session-service";
 import { createPrismaSignupProvisioningRepository } from "@/modules/onboarding/prisma-signup-repository";
@@ -18,25 +19,27 @@ export async function signupAction(formData: FormData) {
 
   try {
     const provisioningService = createSignupProvisioningService({
-      repository: createPrismaSignupProvisioningRepository(prisma)
+      repository: createPrismaSignupProvisioningRepository(prisma),
     });
     const result = await provisioningService.provisionTrialSite({
       name: readFormString(formData, "name"),
       email: readFormString(formData, "email"),
       password: readFormString(formData, "password"),
       selectedTemplateCode:
-        readFormString(formData, "selectedTemplateCode") || undefined
+        readFormString(formData, "selectedTemplateCode") || undefined,
     });
     const session = await createSessionForUser({
       repository: createPrismaLoginRepository(prisma),
-      userId: result.userId
+      userId: result.userId,
     });
 
     cookieToSet = session.cookie;
     redirectTo = result.redirectTo;
   } catch (error) {
-    console.error("[signup-action]", error instanceof Error ? `${error.constructor.name}: ${error.message}` : String(error));
-    redirect(`/signup?error=${encodeURIComponent(getAuthActionErrorMessage(error))}`);
+    const { userError } = await processError(error, {
+      metadata: { action: "signup" },
+    });
+    redirect(`/signup?error=${encodeURIComponent(userError.message)}`);
   }
 
   if (cookieToSet) {

@@ -1,7 +1,6 @@
 import { ZodError } from "zod";
 import { getErrorCodeDef } from "./error-codes";
 import { logger } from "./logger";
-import { createRequestContext, getBrowser, getPlatform } from "./request-context";
 import type {
   ErrorCategory,
   ErrorCodeDef,
@@ -219,6 +218,7 @@ export async function processError(
     metadata?: Record<string, unknown>;
   },
 ): Promise<{ userError: UserError; detail: ErrorDetail }> {
+  const { createRequestContext, getBrowser, getPlatform } = await import("./request-context");
   const ctx = await createRequestContext();
   const classified = classifyError(error);
 

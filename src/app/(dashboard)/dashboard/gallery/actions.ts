@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { prisma } from "@/lib/prisma";
+import { processError } from "@/lib/errors";
 import { getCurrentRequestSession } from "@/modules/auth/request-session";
 import { createGalleryManagementService } from "@/modules/gallery/gallery-management-service";
 import { createPrismaGalleryManagementRepository } from "@/modules/gallery/prisma-gallery-management-repository";
@@ -22,31 +23,36 @@ export async function uploadGalleryImageAction(formData: FormData) {
   const caption = formData.get("caption");
 
   if (!(image instanceof File) || image.size === 0) {
-    redirect("/dashboard/gallery?error=missing-image");
+    redirect("/dashboard/gallery?error=لم يتم اختيار صورة للرفع");
   }
 
   const uploadService = createMediaUploadService({
     storage: createLocalMediaStorage(),
-    repository: createPrismaMediaUploadRepository(prisma)
+    repository: createPrismaMediaUploadRepository(prisma),
   });
   const galleryService = createGalleryManagementService({
-    repository: createPrismaGalleryManagementRepository(prisma)
+    repository: createPrismaGalleryManagementRepository(prisma),
   });
 
   try {
     const asset = await uploadService.uploadImage({
       tenantId: session.tenant.id,
       file: image,
-      alt: typeof caption === "string" ? caption : undefined
+      alt: typeof caption === "string" ? caption : undefined,
     });
 
     await galleryService.addPortfolioImage({
       siteId: session.site.id,
       assetId: asset.id,
-      caption: typeof caption === "string" ? caption : undefined
+      caption: typeof caption === "string" ? caption : undefined,
     });
-  } catch {
-    redirect("/dashboard/gallery?error=upload-failed");
+  } catch (error) {
+    const { userError } = await processError(error, {
+      userId: session.user.id,
+      tenantId: session.tenant.id,
+      metadata: { action: "uploadGalleryImage" },
+    });
+    redirect(`/dashboard/gallery?error=${encodeURIComponent(userError.message)}`);
   }
 
   revalidatePath("/dashboard/gallery");

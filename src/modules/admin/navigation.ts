@@ -1,4 +1,5 @@
 import {
+  AlertTriangle,
   Home,
   Users,
   Globe,
@@ -67,6 +68,7 @@ export const adminNavigation: AdminNavGroup[] = [
     label: "النظام",
     items: [
       { href: "/admin/notifications", label: "الإشعارات", icon: Bell },
+      { href: "/admin/errors", label: "الأخطاء", icon: AlertTriangle },
       { href: "/admin/security", label: "الأمان", icon: ShieldCheck },
       { href: "/admin/support", label: "الدعم", icon: Headphones },
     ],

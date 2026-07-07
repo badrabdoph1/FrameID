@@ -1,23 +1,21 @@
 import { redirect } from "next/navigation";
-import { processError, sanitizeForUser, classifyError } from "./error-service";
+import { processError } from "./error-service";
 import { createRequestContext } from "./request-context";
 import type { ActionResult } from "./types";
 
 function isRedirectError(error: unknown): boolean {
-  return (
-    error instanceof Error &&
-    (error.message.includes("NEXT_REDIRECT") ||
-      error.message === "redirect" ||
-      (error as { digest?: string }).digest?.startsWith("NEXT_REDIRECT"))
-  );
+  if (!(error instanceof Error)) return false;
+  if (error.message.includes("NEXT_REDIRECT")) return true;
+  if (error.message === "redirect") return true;
+  const digest = (error as { digest?: string }).digest;
+  if (digest?.startsWith("NEXT_REDIRECT")) return true;
+  return false;
 }
 
 function isNotFoundError(error: unknown): boolean {
-  return (
-    error instanceof Error &&
-    ((error as { digest?: string }).digest?.startsWith("NEXT_NOT_FOUND") ??
-      false)
-  );
+  if (!(error instanceof Error)) return false;
+  const digest = (error as { digest?: string }).digest;
+  return digest?.startsWith("NEXT_NOT_FOUND") ?? false;
 }
 
 type ActionFn<TArgs extends unknown[], T> = (
@@ -61,7 +59,7 @@ export async function handleActionResult<T>(
   result: ActionResult<T>,
   options?: {
     onSuccess?: (data: T) => void;
-    onError?: (error: ActionResult<T>["error"]) => void;
+    onError?: (error: { code: string; message: string; suggestion?: string }) => void;
     successRedirect?: string;
   },
 ): Promise<T | undefined> {
