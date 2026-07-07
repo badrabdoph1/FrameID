@@ -17,7 +17,6 @@ import {
   Palette,
   UserCheck,
   Activity,
-  BriefcaseBusiness,
   type LucideIcon,
 } from "lucide-react";
 
@@ -171,71 +170,4 @@ export const adminSections: AdminSection[] = [
   },
 ];
 
-export const clientSections: AdminSection[] = [
-  {
-    id: "dashboard",
-    title: "الرئيسية",
-    shortDescription: "نظرة عامة سريعة",
-    description: "نظرة عامة على موقعك",
-    accent: "gold",
-    badge: "الرئيسية",
-    icon: Home,
-    links: [
-      { href: "/dashboard", label: "الرئيسية", icon: Home },
-      { href: "/dashboard/services", label: "الخدمات", icon: BriefcaseBusiness as LucideIcon },
-    ],
-  },
-  {
-    id: "content",
-    title: "المحتوى",
-    shortDescription: "موقعك المرئي",
-    description: "المحتوى والمعرض والخدمات",
-    accent: "rose",
-    badge: "المحتوى",
-    icon: FileText,
-    links: [
-      { href: "/dashboard/content", label: "المحتوى", icon: FileText },
-      { href: "/dashboard/gallery", label: "المعرض", icon: Image },
-      { href: "/dashboard/services", label: "الخدمات", icon: BriefcaseBusiness as LucideIcon },
-    ],
-  },
-  {
-    id: "design",
-    title: "التصميم",
-    shortDescription: "شكل موقعك",
-    description: "تخصيص مظهر موقعك",
-    accent: "blue",
-    badge: "التصميم",
-    icon: Palette,
-    links: [
-      { href: "/dashboard/design", label: "التصميم", icon: Palette },
-    ],
-  },
-  {
-    id: "billing",
-    title: "الاشتراك",
-    shortDescription: "الفاتورة والتفعيل",
-    description: "حالة اشتراكك والتفعيل",
-    accent: "green",
-    badge: "الاشتراك",
-    icon: CreditCard,
-    links: [
-      { href: "/dashboard/billing", label: "التفعيل", icon: CreditCard },
-    ],
-  },
-  {
-    id: "settings",
-    title: "الإعدادات",
-    shortDescription: "بيانات حسابك",
-    description: "إعدادات الملف الشخصي",
-    accent: "slate",
-    badge: "الإعدادات",
-    icon: Settings,
-    links: [
-      { href: "/dashboard/settings", label: "الإعدادات", icon: Settings },
-    ],
-  },
-];
-
 export const allAdminLinks = adminSections.flatMap((section) => section.links);
-export const allClientLinks = clientSections.flatMap((section) => section.links);

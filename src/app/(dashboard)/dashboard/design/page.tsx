@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
 import { selectTemplateAction } from "@/app/(dashboard)/dashboard/design/actions";
@@ -12,6 +13,10 @@ type DashboardDesignPageProps = {
     selected?: string;
     error?: string;
   }>;
+};
+
+export const metadata: Metadata = {
+  title: "التصميم والقوالب | FrameID"
 };
 
 export const dynamic = "force-dynamic";

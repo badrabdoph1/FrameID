@@ -1,4 +1,10 @@
+import type { Metadata } from "next";
 import { getContent } from "@/lib/content";
+
+export const metadata: Metadata = {
+  title: "شروط الاستخدام",
+  description: "شروط استخدام منصة FrameID — تعرّف على الحقوق والالتزامات عند استخدام خدماتنا."
+};
 
 export default function TermsPage() {
   const content = getContent("legal/terms");

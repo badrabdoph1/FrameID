@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 
-import { ClientShell } from "@/components/layout/client-shell";
+import { DashboardShell } from "@/components/layout/dashboard-shell";
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
-  return <ClientShell>{children}</ClientShell>;
+  return <DashboardShell>{children}</DashboardShell>;
 }

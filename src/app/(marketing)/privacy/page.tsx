@@ -1,4 +1,10 @@
+import type { Metadata } from "next";
 import { getContent } from "@/lib/content";
+
+export const metadata: Metadata = {
+  title: "سياسة الخصوصية",
+  description: "سياسة الخصوصية لمنصة FrameID — كيف نحمي بياناتك ومعلوماتك الشخصية."
+};
 
 export default function PrivacyPage() {
   const content = getContent("legal/privacy");

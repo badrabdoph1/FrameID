@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import React from "react";
@@ -9,6 +10,11 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getTemplatePreviewImage } from "@/modules/marketing/platform-content";
 import { getPublishedTemplates } from "@/modules/themes/theme-registry";
+
+export const metadata: Metadata = {
+  title: "معرض القوالب",
+  description: "تصفح قوالب مواقع المصورين الاحترافية. اختر قالبًا وجرّبه مباشرة قبل التسجيل."
+};
 
 export default function TemplatesPage() {
   const templates = getPublishedTemplates();

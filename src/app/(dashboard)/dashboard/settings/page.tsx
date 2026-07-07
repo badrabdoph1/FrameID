@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
 import { updateSeoSettingsAction } from "@/app/(dashboard)/dashboard/settings/actions";
@@ -15,6 +16,10 @@ type DashboardSettingsPageProps = {
     updated?: string;
     error?: string;
   }>;
+};
+
+export const metadata: Metadata = {
+  title: "الإعدادات | FrameID"
 };
 
 export const dynamic = "force-dynamic";

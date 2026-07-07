@@ -11,7 +11,6 @@ import {
   Search,
   Settings,
   Puzzle,
-  FileText,
 } from "lucide-react";
 
 const contentTypes: Record<

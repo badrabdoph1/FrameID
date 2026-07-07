@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 
 import { AuthShell } from "@/components/layout/auth-shell";
@@ -5,6 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { loginAction } from "@/app/(marketing)/login/actions";
+
+export const metadata: Metadata = {
+  title: "تسجيل الدخول",
+  description: "تسجيل الدخول إلى لوحة تحكم FrameID لإدارة موقعك وصورك وباقاتك."
+};
 
 type LoginPageProps = {
   searchParams: Promise<{

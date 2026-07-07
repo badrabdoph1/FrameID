@@ -1,4 +1,9 @@
+import type { Metadata } from "next";
 import { adminLoginAction } from "@/app/admin/login/actions";
+
+export const metadata: Metadata = {
+  title: "تسجيل دخول الإدارة | FrameID"
+};
 
 type Props = {
   searchParams: Promise<{ error?: string }>;

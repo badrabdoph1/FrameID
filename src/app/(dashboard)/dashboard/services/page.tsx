@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { BriefcaseBusiness, CirclePlus } from "lucide-react";
 
@@ -18,6 +19,10 @@ type ServicesPageProps = {
     created?: string;
     error?: string;
   }>;
+};
+
+export const metadata: Metadata = {
+  title: "الباقات والخدمات | FrameID"
 };
 
 export const dynamic = "force-dynamic";

@@ -8,7 +8,7 @@ import type { PublicSiteViewModel } from "@/modules/public-sites/public-site-vie
 import { getTemplateByCode } from "@/modules/themes/theme-registry";
 
 export const metadata: Metadata = {
-  title: "معاينة القالب",
+  title: "معاينة القالب | FrameID",
   robots: {
     index: false,
     follow: false

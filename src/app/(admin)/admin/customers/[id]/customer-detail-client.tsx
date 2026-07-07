@@ -866,7 +866,7 @@ export function CustomerDetailClient({
                 </div>
               ) : (
                 <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-8 text-center">
-                  <Image className="size-8 text-white/20 mx-auto mb-3" />
+                  <Image className="size-8 text-white/20 mx-auto mb-3" aria-hidden="true" />
                   <p className="text-sm text-white/40">لا توجد ملفات وسائط</p>
                 </div>
               )}

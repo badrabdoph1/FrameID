@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import { redirect } from "next/navigation";
 import { ImagePlus, Images } from "lucide-react";
@@ -16,6 +17,10 @@ type GalleryPageProps = {
     uploaded?: string;
     error?: string;
   }>;
+};
+
+export const metadata: Metadata = {
+  title: "معرض الصور | FrameID"
 };
 
 export const dynamic = "force-dynamic";

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 
 import { AuthShell } from "@/components/layout/auth-shell";
@@ -5,6 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { signupAction } from "@/app/(marketing)/signup/actions";
+
+export const metadata: Metadata = {
+  title: "إنشاء حساب",
+  description: "ابدأ تجربتك المجانية في FrameID واحصل على موقع احترافي ولوحة تحكم فوراً."
+};
 
 type SignupPageProps = {
   searchParams: Promise<{

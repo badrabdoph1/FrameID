@@ -8,11 +8,9 @@ import type {
   CustomerPaymentInfo,
   CustomerActivityEntry,
   CustomerSessionInfo,
-  CustomerSupportCaseInfo,
   CustomerMediaAsset,
   CustomerNotification,
   CustomerAdminNote,
-  CustomerAuditEntry,
   CustomerExport,
   CustomerStatus,
 } from "./customer-types";

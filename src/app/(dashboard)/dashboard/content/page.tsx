@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
 import {
@@ -9,6 +10,10 @@ import { prisma } from "@/lib/prisma";
 import { getCurrentRequestSession } from "@/modules/auth/request-session";
 import { createPrismaSiteContentRepository } from "@/modules/content/prisma-site-content-repository";
 import { createSiteContentService } from "@/modules/content/site-content-service";
+
+export const metadata: Metadata = {
+  title: "تحرير المحتوى | FrameID"
+};
 
 export const dynamic = "force-dynamic";
 

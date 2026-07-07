@@ -22,14 +22,14 @@ vi.mock("next/link", () => ({
 }));
 
 import { AdminShell } from "@/components/layout/admin-shell";
-import { DashboardShell } from "@/components/layout/dashboard-shell";
+import { PhotographerShell } from "@/components/layout/photographer-shell";
 
 describe("application shells", () => {
   it("renders photographer dashboard navigation as a reusable shell", () => {
     render(
-      <DashboardShell>
+      <PhotographerShell>
         <p>Dashboard content</p>
-      </DashboardShell>
+      </PhotographerShell>
     );
 
     expect(screen.getByText("Dashboard content")).toBeInTheDocument();

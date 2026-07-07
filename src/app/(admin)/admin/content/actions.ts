@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getContent, saveContent } from "@/lib/content";
+import { saveContent } from "@/lib/content";
 import type { ContentSchemaKey, SaveResult } from "@/lib/content";
 
 export async function saveContentAction(

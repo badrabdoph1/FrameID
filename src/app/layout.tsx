@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Playfair_Display, Tajawal } from "next/font/google";
 import type { ReactNode } from "react";
 
+import { Analytics } from "@/components/analytics";
 import { ToastRootProvider } from "@/components/errors/toast-root-provider";
 import "./globals.css";
 
@@ -55,6 +56,7 @@ export default function RootLayout({
         <link rel="dns-prefetch" href="https://i.ibb.co" />
       </head>
       <body>
+        <Analytics />
         <ToastRootProvider>
           {children}
         </ToastRootProvider>

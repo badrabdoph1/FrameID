@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import React from "react";
 
 import { requestPasswordResetAction } from "@/app/(marketing)/forgot-password/actions";
@@ -5,6 +6,11 @@ import { AuthShell } from "@/components/layout/auth-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+
+export const metadata: Metadata = {
+  title: "استعادة كلمة المرور",
+  description: "أدخل بريدك الإلكتروني لاستعادة كلمة مرور حساب FrameID."
+};
 
 type ForgotPasswordPageProps = {
   searchParams: Promise<{

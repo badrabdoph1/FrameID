@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
 import { requestActivationAction } from "@/app/(dashboard)/dashboard/billing/actions";
@@ -13,6 +14,10 @@ type BillingPageProps = {
     requested?: string;
     error?: string;
   }>;
+};
+
+export const metadata: Metadata = {
+  title: "الاشتراك والتفعيل | FrameID"
 };
 
 export const dynamic = "force-dynamic";
