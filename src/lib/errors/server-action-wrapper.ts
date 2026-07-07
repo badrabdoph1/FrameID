@@ -61,15 +61,28 @@ export async function handleActionResult<T>(
     onSuccess?: (data: T) => void;
     onError?: (error: { code: string; message: string; suggestion?: string }) => void;
     successRedirect?: string;
+    successMessage?: string;
+    errorMessage?: string;
   },
 ): Promise<T | undefined> {
   if (result.success) {
+    if (options?.successMessage) {
+      const { notify } = await import("./notification-service");
+      notify.success(options.successMessage, undefined, undefined, result.requestId);
+    }
     if (options?.successRedirect) {
       redirect(options.successRedirect);
     }
     options?.onSuccess?.(result.data);
     return result.data;
   } else {
+    if (options?.errorMessage) {
+      const { notify } = await import("./notification-service");
+      notify.error(options.errorMessage, result.error.message, result.error, undefined, result.requestId);
+    } else {
+      const { notify } = await import("./notification-service");
+      notify.error(result.error.message, undefined, result.error, undefined, result.requestId);
+    }
     options?.onError?.(result.error);
     return undefined;
   }

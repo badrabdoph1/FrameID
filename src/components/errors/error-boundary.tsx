@@ -1,6 +1,6 @@
 "use client";
 
-import { ClipboardCopy, RotateCcw } from "lucide-react";
+import { AlertTriangle, ClipboardCopy, RotateCcw } from "lucide-react";
 import { Component, type ErrorInfo, type ReactNode } from "react";
 
 import { cn } from "@/lib/utils/cn";
@@ -52,7 +52,7 @@ export class ErrorBoundary extends Component<Props, State> {
         <div className="flex min-h-[200px] items-center justify-center p-8">
           <div className="w-full max-w-md text-center">
             <div className="mx-auto mb-4 flex size-12 items-center justify-center rounded-full bg-danger/10">
-              <span className="text-2xl">❌</span>
+              <AlertTriangle className="size-6 text-danger" />
             </div>
             <h2 className="mb-2 text-lg font-semibold text-foreground">
               حدث خطأ غير متوقع

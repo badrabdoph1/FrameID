@@ -272,7 +272,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     const key = notification.groupKey;
     const existing = key ? toastMapRef.current.get(key) : undefined;
 
-    if (existing) {
+    if (existing && key) {
       const updated = {
         ...existing,
         id: crypto.randomUUID(),
