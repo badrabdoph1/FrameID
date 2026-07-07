@@ -88,12 +88,12 @@ const previewSite: PublicSiteViewModel = {
   themeCode: "noir-gold",
   publicUrl: "https://frameid.app/templates/preview",
   metadata: {
-    title: "Body Studio — تصوير زفاف فاخر"
+    title: "Kareem Magdy — تصوير زفاف فاخر"
   },
   structuredData: {
     "@context": "https://schema.org",
     "@type": "LocalBusiness",
-    name: "Body Studio"
+    name: "Kareem Magdy"
   },
   hero: {
     headline: "نصنع ذكريات تبقى للأبد",

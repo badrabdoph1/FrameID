@@ -32,9 +32,9 @@ const heroImage =
   "https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?auto=format&fit=crop&w=1800&q=85";
 
 export const metadata: Metadata = {
-  title: "موقع مصور—موقع خاص باسمك يضم أعمالك وباقاتك",
+  title: "FrameID | موقع مصور—موقع خاص باسمك يضم أعمالك وباقاتك",
   description:
-    "FrameID يمنح المصور موقعاً خاصاً، رابطاً مخصصاً، معرض أعمال، وباقات—بدون برمجة. جرب ١٤ يوم مجاناً.",
+    "موقع خاص للمصورين: معرض أعمال، باقات وأسعار، رابط خاص، ولوحة تحكم. بدون برمجة. جرب ١٤ يوم مجاناً.",
   alternates: {
     canonical: siteUrl
   },
@@ -150,32 +150,32 @@ export default function HomePage() {
       <MarketingNav />
       <main id="main-content">
         {/* ──────────────── HERO ──────────────── */}
-        <section className="relative min-h-[92svh] overflow-hidden bg-ink text-white">
+        <section className="relative min-h-[90dvh] overflow-hidden bg-ink text-white">
           <Image
             src={heroImage}
             alt=""
             fill
             priority
             sizes="100vw"
-            className="object-cover opacity-50"
+            className="object-cover opacity-55"
           />
-          <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(7,7,7,.38),rgba(7,7,7,.85)_72%,#070707_100%)]" />
-          <div className="container-page relative flex min-h-[92svh] flex-col justify-center pb-16 pt-24">
+          <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(7,7,7,.35),rgba(7,7,7,.82)_72%,#070707_100%)]" />
+          <div className="container-page relative flex min-h-[90dvh] flex-col justify-center pb-12 pt-20 md:pb-16">
             <div className="max-w-3xl">
-              <Badge tone="luxury" className="mb-5 border-white/20 bg-white/10 text-white">
+              <Badge tone="luxury" className="mb-4 border-white/20 bg-white/10 text-white md:mb-5">
                 منصة مواقع للمصورين
               </Badge>
-              <h1 className="text-balance text-4xl font-semibold leading-[1.08] md:text-6xl lg:text-7xl">
+              <h1 className="text-balance text-[clamp(1.75rem,5vw,4.5rem)] font-semibold leading-[1.08]">
                 موقع خاص باسمك.
                 <br />
-                <span className="text-champagne">يضم أعمالك كلها</span>
-                —وتفتخر فيه قدام أي عميل.
+                يضم أعمالك كلها—
+                <span className="text-champagne">وتفتخر فيه قدام أي عميل.</span>
               </h1>
-              <p className="mt-5 max-w-2xl text-base leading-8 text-white/72 md:text-lg">
+              <p className="mt-4 max-w-2xl text-base leading-7 text-white/72 md:mt-5 md:text-lg md:leading-8">
                 خلال دقائق، حول صورك إلى موقع متكامل: معرض أعمال مرتب، باقات وأسعار واضحة،
                 رابط خاص، ولوحة تحكم بسيطة. بدون برمجة وبدون تعقيد.
               </p>
-              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+              <div className="mt-6 flex flex-col gap-3 sm:flex-row md:mt-8">
                 <Link
                   href="/signup"
                   className="inline-flex min-h-12 items-center justify-center gap-2 rounded-[var(--radius-control)] bg-champagne px-7 text-sm font-semibold text-ink transition-[background-color] hover:bg-champagne/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-champagne"
@@ -190,7 +190,7 @@ export default function HomePage() {
                   <ArrowLeft className="size-4" aria-hidden />
                 </Link>
               </div>
-              <div className="mt-6 flex flex-wrap gap-x-5 gap-y-2 text-sm text-white/70">
+              <div className="mt-5 flex flex-wrap gap-x-5 gap-y-2 text-sm text-white/70 md:mt-6">
                 <span className="inline-flex items-center gap-2">
                   <CheckCircle2 className="size-4 text-champagne" aria-hidden />
                   تجربة مجانية ١٤ يوم
@@ -209,14 +209,14 @@ export default function HomePage() {
         </section>
 
         {/* ──────────────── TEMPLATES ──────────────── */}
-        <section className="container-page py-14 md:py-22">
+        <section className="container-page py-10 md:py-22">
           <div className="flex items-end justify-between gap-4">
             <div>
               <p className="text-sm font-semibold text-champagne-strong">
                 اختر قالبك
               </p>
-              <h2 className="mt-2 text-3xl font-semibold md:text-5xl">
-                قوالب جاهزة—زي ما تكون موقع عميل حقيقي.
+              <h2 className="mt-2 text-2xl font-semibold md:text-5xl">
+                قوالب جاهزة—تبدو وكأنها موقع لمصور محترف.
               </h2>
             </div>
             <Link
@@ -227,7 +227,7 @@ export default function HomePage() {
               <ArrowLeft className="size-4" aria-hidden />
             </Link>
           </div>
-          <div className="mt-8 grid gap-5 md:grid-cols-2">
+          <div className="mt-6 grid gap-4 md:mt-8 md:grid-cols-2 md:gap-5">
             {templates.map((template) => (
               <article
                 key={template.code}
@@ -239,7 +239,7 @@ export default function HomePage() {
                     alt={`معاينة قالب ${template.name}`}
                     fill
                     sizes="(max-width: 768px) 100vw, 50vw"
-                    className="object-cover transition duration-500 group-hover:scale-105"
+                    className="object-cover transition duration-700 group-hover:scale-105"
                   />
                 </div>
                 <div className="flex items-center justify-between gap-3 p-4">
@@ -260,7 +260,7 @@ export default function HomePage() {
               </article>
             ))}
           </div>
-          <div className="mt-6 text-center md:hidden">
+          <div className="mt-5 text-center md:hidden">
             <Link
               href="/templates"
               className="inline-flex items-center gap-2 text-sm font-semibold text-champagne-strong underline underline-offset-4"
@@ -272,56 +272,64 @@ export default function HomePage() {
         </section>
 
         {/* ──────────────── WHY FRAMEID ──────────────── */}
-        <section className="bg-surface py-14 md:py-22">
+        <section className="bg-surface py-10 md:py-22">
           <div className="container-page">
             <div className="max-w-2xl">
               <p className="text-sm font-semibold text-champagne-strong">
                 ليش تختار FrameID؟
               </p>
-              <h2 className="mt-2 text-3xl font-semibold md:text-5xl">
+              <h2 className="mt-2 text-2xl font-semibold md:text-5xl">
                 كل اللي يحتاجه المصور في مكان واحد.
               </h2>
             </div>
-            <div className="mt-8 grid grid-cols-2 gap-3 md:grid-cols-4">
+            <div className="mt-6 grid grid-cols-2 gap-2 md:mt-8 md:grid-cols-4 md:gap-3">
               {benefitCards.map((card) => (
                 <div
                   key={card.title}
-                  className="rounded-[var(--radius-card)] border border-border bg-background p-4 transition hover:shadow-soft"
+                  className="rounded-[var(--radius-card)] border border-border bg-background p-3 transition hover:shadow-soft md:p-4"
                 >
-                  <span className="inline-flex size-8 items-center justify-center rounded-full bg-champagne/15 text-champagne-strong">
-                    <CheckCircle2 className="size-4" aria-hidden />
+                  <span className="inline-flex size-7 items-center justify-center rounded-full bg-champagne/15 text-champagne-strong md:size-8">
+                    <CheckCircle2 className="size-3.5 md:size-4" aria-hidden />
                   </span>
-                  <h3 className="mt-3 text-sm font-semibold">{card.title}</h3>
-                  <p className="mt-1 text-xs leading-6 text-muted-foreground">
+                  <h3 className="mt-2 text-sm font-semibold md:mt-3">{card.title}</h3>
+                  <p className="mt-0.5 text-xs leading-5 text-muted-foreground md:mt-1 md:leading-6">
                     {card.body}
                   </p>
                 </div>
               ))}
             </div>
+            <div className="mt-6 text-center">
+              <Link
+                href="/signup"
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-[var(--radius-control)] bg-foreground px-5 text-sm font-semibold text-background transition hover:bg-foreground/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                ابدأ التجربة المجانية
+              </Link>
+            </div>
           </div>
         </section>
 
         {/* ──────────────── HOW IT WORKS ──────────────── */}
-        <section className="container-page py-14 md:py-22">
+        <section className="container-page py-10 md:py-22">
           <div className="max-w-2xl text-center md:mx-auto">
             <p className="text-sm font-semibold text-champagne-strong">
               ٤ خطوات فقط
             </p>
-            <h2 className="mt-2 text-3xl font-semibold md:text-5xl">
+            <h2 className="mt-2 text-2xl font-semibold md:text-5xl">
               كيف تبدا؟
             </h2>
           </div>
-          <div className="mt-10 grid gap-4 md:grid-cols-4">
+          <div className="mt-8 grid gap-3 md:mt-10 md:grid-cols-4 md:gap-4">
             {howItWorks.map((step, index) => (
               <div
                 key={step.title}
-                className="relative rounded-[var(--radius-card)] border border-border bg-card p-5 text-center"
+                className="relative rounded-[var(--radius-card)] border border-border bg-card p-4 text-center md:p-5"
               >
-                <span className="mx-auto flex size-12 items-center justify-center rounded-full bg-ink text-lg font-semibold text-white">
+                <span className="mx-auto flex size-10 items-center justify-center rounded-full bg-ink text-base font-semibold text-white md:size-12 md:text-lg">
                   {index + 1}
                 </span>
-                <h3 className="mt-4 font-semibold">{step.title}</h3>
-                <p className="mt-2 text-sm leading-7 text-muted-foreground">
+                <h3 className="mt-3 font-semibold md:mt-4">{step.title}</h3>
+                <p className="mt-1 text-sm leading-6 text-muted-foreground md:mt-2 md:leading-7">
                   {step.body}
                 </p>
                 {index < howItWorks.length - 1 && (
@@ -335,87 +343,111 @@ export default function HomePage() {
               </div>
             ))}
           </div>
+          <div className="mt-6 text-center">
+            <Link
+              href="/signup"
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-[var(--radius-control)] bg-foreground px-5 text-sm font-semibold text-background transition hover:bg-foreground/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              ابدأ مجاناً—بدون بطاقة
+            </Link>
+          </div>
         </section>
 
         {/* ──────────────── COMPARISON ──────────────── */}
-        <section className="bg-ink py-14 text-white md:py-22">
+        <section className="bg-ink py-10 text-white md:py-22">
           <div className="container-page">
             <div className="max-w-2xl">
               <p className="text-sm font-semibold text-champagne">
                 مقارنة سريعة
               </p>
-              <h2 className="mt-2 text-3xl font-semibold md:text-5xl">
+              <h2 className="mt-2 text-2xl font-semibold md:text-5xl">
                 {comparisonData.headline}
               </h2>
             </div>
-            <div className="mt-8 grid gap-4 md:grid-cols-2">
-              <div className="rounded-[var(--radius-panel)] border border-white/10 bg-white/[0.04] p-6">
+            <div className="mt-6 grid gap-3 md:mt-8 md:grid-cols-2 md:gap-4">
+              <div className="rounded-[var(--radius-panel)] border border-white/10 bg-white/[0.04] p-5 md:p-6">
                 <div className="flex items-center gap-3">
-                  <span className="inline-flex size-10 items-center justify-center rounded-full bg-white/10 text-white/60">
-                    <X className="size-5" aria-hidden />
+                  <span className="inline-flex size-9 items-center justify-center rounded-full bg-white/10 text-white/60 md:size-10">
+                    <X className="size-4 md:size-5" aria-hidden />
                   </span>
-                  <h3 className="text-lg font-semibold">{comparisonData.instagram.title}</h3>
+                  <h3 className="text-base font-semibold md:text-lg">{comparisonData.instagram.title}</h3>
                 </div>
-                <ul className="mt-5 space-y-3">
+                <ul className="mt-4 space-y-2 md:mt-5 md:space-y-3">
                   {comparisonData.instagram.cons.map((item) => (
                     <li key={item} className="flex items-center gap-3 text-sm text-white/60">
-                      <span className="size-1.5 rounded-full bg-white/20" />
+                      <span className="size-1.5 shrink-0 rounded-full bg-white/20" />
                       {item}
                     </li>
                   ))}
                 </ul>
               </div>
-              <div className="rounded-[var(--radius-panel)] border border-champagne/30 bg-champagne/[0.04] p-6">
+              <div className="rounded-[var(--radius-panel)] border border-champagne/30 bg-champagne/[0.04] p-5 md:p-6">
                 <div className="flex items-center gap-3">
-                  <span className="inline-flex size-10 items-center justify-center rounded-full bg-champagne/20 text-champagne">
-                    <CheckCircle2 className="size-5" aria-hidden />
+                  <span className="inline-flex size-9 items-center justify-center rounded-full bg-champagne/20 text-champagne md:size-10">
+                    <CheckCircle2 className="size-4 md:size-5" aria-hidden />
                   </span>
-                  <h3 className="text-lg font-semibold">{comparisonData.frameid.title}</h3>
+                  <h3 className="text-base font-semibold md:text-lg">{comparisonData.frameid.title}</h3>
                 </div>
-                <ul className="mt-5 space-y-3">
+                <ul className="mt-4 space-y-2 md:mt-5 md:space-y-3">
                   {comparisonData.frameid.pros.map((item) => (
                     <li key={item} className="flex items-center gap-3 text-sm text-white/85">
-                      <span className="size-1.5 rounded-full bg-champagne" />
+                      <span className="size-1.5 shrink-0 rounded-full bg-champagne" />
                       {item}
                     </li>
                   ))}
                 </ul>
               </div>
+            </div>
+            <div className="mt-6 text-center">
+              <Link
+                href="/signup"
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-[var(--radius-control)] bg-champagne px-5 text-sm font-semibold text-ink transition-[background-color] hover:bg-champagne/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-champagne"
+              >
+                ابدأ التجربة المجانية
+              </Link>
             </div>
           </div>
         </section>
 
         {/* ──────────────── DASHBOARD ──────────────── */}
-        <section className="container-page py-14 md:py-22">
+        <section className="container-page py-10 md:py-22">
           <div className="grid gap-8 lg:grid-cols-[1fr_1.1fr] lg:items-center">
             <div>
               <p className="text-sm font-semibold text-champagne-strong">
                 لوحة التحكم
               </p>
-              <h2 className="mt-2 text-3xl font-semibold md:text-5xl">
+              <h2 className="mt-2 text-2xl font-semibold md:text-5xl">
                 كل شيء تحت سيطرتك.
               </h2>
-              <p className="mt-4 leading-8 text-muted-foreground">
+              <p className="mt-4 leading-7 text-muted-foreground md:leading-8">
                 من لوحة واحدة تدير صورك، باقاتك، قوالبك، وإعدادات موقعك.
                 بدون مبرمج وبدون دروس—كل شي واضح من أول دقيقة.
               </p>
-              <div className="mt-6 flex flex-col gap-2 text-sm text-muted-foreground">
-                <span className="inline-flex items-center gap-2">
-                  <CheckCircle2 className="size-4 text-success" aria-hidden />
+              <ul className="mt-4 space-y-2 md:mt-6">
+                <li className="inline-flex items-center gap-2 text-sm text-muted-foreground">
+                  <CheckCircle2 className="size-4 shrink-0 text-success" aria-hidden />
                   رفع الصور وإدارة المعرض
-                </span>
-                <span className="inline-flex items-center gap-2">
-                  <CheckCircle2 className="size-4 text-success" aria-hidden />
+                </li>
+                <li className="inline-flex items-center gap-2 text-sm text-muted-foreground">
+                  <CheckCircle2 className="size-4 shrink-0 text-success" aria-hidden />
                   إضافة الباقات وتحديد الأسعار
-                </span>
-                <span className="inline-flex items-center gap-2">
-                  <CheckCircle2 className="size-4 text-success" aria-hidden />
+                </li>
+                <li className="inline-flex items-center gap-2 text-sm text-muted-foreground">
+                  <CheckCircle2 className="size-4 shrink-0 text-success" aria-hidden />
                   تغيير القالب والألوان
-                </span>
-                <span className="inline-flex items-center gap-2">
-                  <CheckCircle2 className="size-4 text-success" aria-hidden />
+                </li>
+                <li className="inline-flex items-center gap-2 text-sm text-muted-foreground">
+                  <CheckCircle2 className="size-4 shrink-0 text-success" aria-hidden />
                   تعديل البيانات والـ SEO
-                </span>
+                </li>
+              </ul>
+              <div className="mt-6">
+                <Link
+                  href="/signup"
+                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-[var(--radius-control)] bg-foreground px-5 text-sm font-semibold text-background transition hover:bg-foreground/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  جرب اللوحة بنفسك
+                </Link>
               </div>
             </div>
             <div className="order-first lg:order-last">
@@ -424,79 +456,87 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* ──────────────── TESTIMONIALS ──────────────── */}
-        <section className="bg-surface py-14 md:py-22">
+        {/* ──────────────── FAQ ──────────────── */}
+        <section className="bg-surface py-10 md:py-22">
           <div className="container-page">
-            <div className="mx-auto max-w-2xl text-center">
-              <p className="text-sm font-semibold text-champagne-strong">
-                آراء المصورين
+            <div className="mx-auto max-w-3xl">
+              <p className="text-center text-sm font-semibold text-champagne-strong">
+                أسئلة شائعة
               </p>
-              <h2 className="mt-2 text-3xl font-semibold md:text-5xl">
-                وش يقولون المصورين عن FrameID؟
+              <h2 className="mt-2 text-center text-2xl font-semibold md:text-5xl">
+                إجابات سريعة
               </h2>
-              <div className="mt-8 rounded-[var(--radius-panel)] border border-border bg-card p-8">
-                <p className="text-base leading-8 text-muted-foreground">
-                  {betaTestimonial.message}
-                </p>
-                <div className="mt-6">
-                  <Link
-                    href="/signup"
-                    className="inline-flex min-h-11 items-center justify-center gap-2 rounded-[var(--radius-control)] bg-foreground px-6 text-sm font-semibold text-background transition hover:bg-foreground/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              <div className="mt-6 space-y-2 md:mt-8 md:space-y-3">
+                {faqItems.map((item) => (
+                  <details
+                    key={item.question}
+                    className="group rounded-[var(--radius-card)] border border-border bg-card transition hover:shadow-soft"
                   >
-                    <WandSparkles className="size-4" aria-hidden />
-                    سجل الآن وكن أول المصورين
-                  </Link>
-                </div>
+                    <summary className="flex cursor-pointer items-center justify-between gap-3 p-4 text-sm font-semibold transition hover:bg-muted/50 [&::-webkit-details-marker]:hidden">
+                      {item.question}
+                      <span
+                        className="shrink-0 text-muted-foreground transition-transform group-open:rotate-180"
+                        aria-hidden
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="6 9 12 15 18 9" />
+                        </svg>
+                      </span>
+                    </summary>
+                    <div className="border-t border-border px-4 py-3 text-sm leading-7 text-muted-foreground">
+                      {item.answer}
+                    </div>
+                  </details>
+                ))}
+              </div>
+            </div>
+            <div className="mt-6 text-center">
+              <Link
+                href="/signup"
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-[var(--radius-control)] bg-foreground px-5 text-sm font-semibold text-background transition hover:bg-foreground/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                ابدأ التجربة المجانية
+              </Link>
+            </div>
+          </div>
+        </section>
+
+        {/* ──────────────── TESTIMONIALS ──────────────── */}
+        <section className="container-page py-10 md:py-22">
+          <div className="mx-auto max-w-2xl text-center">
+            <p className="text-sm font-semibold text-champagne-strong">
+              آراء المصورين
+            </p>
+            <h2 className="mt-2 text-2xl font-semibold md:text-5xl">
+              وش يقولون المصورين عن FrameID؟
+            </h2>
+            <div className="mt-6 rounded-[var(--radius-panel)] border border-border bg-card p-6 md:mt-8 md:p-8">
+              <p className="text-sm leading-7 text-muted-foreground md:text-base md:leading-8">
+                {betaTestimonial.message}
+              </p>
+              <div className="mt-5 md:mt-6">
+                <Link
+                  href="/signup"
+                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-[var(--radius-control)] bg-foreground px-5 text-sm font-semibold text-background transition hover:bg-foreground/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  <WandSparkles className="size-4" aria-hidden />
+                  سجل الآن—جرب وقلنا رأيك
+                </Link>
               </div>
             </div>
           </div>
         </section>
 
-        {/* ──────────────── FAQ ──────────────── */}
-        <section className="container-page py-14 md:py-22">
-          <div className="mx-auto max-w-3xl">
-            <p className="text-center text-sm font-semibold text-champagne-strong">
-              أسئلة شائعة
-            </p>
-            <h2 className="mt-2 text-center text-3xl font-semibold md:text-5xl">
-              إجابات سريعة
-            </h2>
-            <div className="mt-8 space-y-3">
-              {faqItems.map((item) => (
-                <details
-                  key={item.question}
-                  className="group rounded-[var(--radius-card)] border border-border bg-card transition hover:shadow-soft"
-                >
-                  <summary className="flex cursor-pointer items-center justify-between gap-3 p-4 text-sm font-semibold transition hover:bg-muted/50 [&::-webkit-details-marker]:hidden">
-                    {item.question}
-                    <span
-                      className="shrink-0 text-muted-foreground transition-transform group-open:rotate-180"
-                      aria-hidden
-                    >
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <polyline points="6 9 12 15 18 9" />
-                      </svg>
-                    </span>
-                  </summary>
-                  <div className="border-t border-border px-4 py-3 text-sm leading-7 text-muted-foreground">
-                    {item.answer}
-                  </div>
-                </details>
-              ))}
-            </div>
-          </div>
-        </section>
-
         {/* ──────────────── FINAL CTA ──────────────── */}
-        <section className="bg-ink py-16 text-white md:py-22">
+        <section className="bg-ink py-14 text-white md:py-22">
           <div className="container-page text-center">
-            <h2 className="text-balance text-3xl font-semibold md:text-5xl">
-              جاهز تطلع صورتك المهنية؟
+            <h2 className="text-balance text-2xl font-semibold md:text-5xl">
+              جاهز تبدأ؟ موقعك ينتظرك.
             </h2>
-            <p className="mx-auto mt-4 max-w-xl text-base leading-8 text-white/65">
+            <p className="mx-auto mt-3 max-w-xl text-sm leading-7 text-white/65 md:mt-4 md:text-base md:leading-8">
               جرب ١٤ يوم مجاناً—بدون بطاقة بنكية وبدون التزام. موقعك جاهز خلال دقائق.
             </p>
-            <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+            <div className="mt-6 flex flex-col items-center justify-center gap-3 md:mt-8 md:flex-row">
               <Link
                 href="/signup"
                 className="inline-flex min-h-12 items-center justify-center gap-2 rounded-[var(--radius-control)] bg-champagne px-7 text-sm font-semibold text-ink transition-[background-color] hover:bg-champagne/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-champagne"
@@ -520,7 +560,7 @@ export default function HomePage() {
             <span className="text-sm font-semibold">جرب FrameID مجاناً</span>
             <Link
               href="/signup"
-              className="mr-auto inline-flex min-h-10 items-center justify-center rounded-[var(--radius-control)] bg-foreground px-4 text-sm font-semibold text-background transition hover:bg-foreground/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground"
+              className="mr-auto inline-flex min-h-11 items-center justify-center rounded-[var(--radius-control)] bg-foreground px-4 text-sm font-semibold text-background transition hover:bg-foreground/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground"
             >
               ابدأ الآن
             </Link>

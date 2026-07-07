@@ -92,7 +92,7 @@ const DEMO_PREVIEW_DATA = {
   structuredData: {
     "@context": "https://schema.org",
     "@type": "LocalBusiness",
-    name: "Body Studio"
+    name: "Kareem Magdy"
   }
 };
 

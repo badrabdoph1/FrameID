@@ -15,7 +15,7 @@ describe("marketing homepage", () => {
     ).toBeInTheDocument();
     expect(
       screen.getByRole("heading", {
-        name: /يضم أعمالك كلها/i
+        name: /وتفتخر فيه قدام أي عميل/i
       })
     ).toBeInTheDocument();
   });
@@ -28,7 +28,7 @@ describe("marketing homepage", () => {
     expect(screen.getByText("موقع جاهز خلال دقائق")).toBeInTheDocument();
   });
 
-  it("has both primary and secondary CTAs", () => {
+  it("has primary and secondary CTAs in hero", () => {
     render(<HomePage />);
 
     const signupLinks = screen.getAllByRole("link", {
@@ -58,7 +58,7 @@ describe("marketing homepage", () => {
     ).toBeInTheDocument();
   });
 
-  it("shows benefit cards", () => {
+  it("shows benefit cards with outcome-focused copy", () => {
     render(<HomePage />);
 
     expect(
@@ -70,6 +70,8 @@ describe("marketing homepage", () => {
     expect(screen.getByText("باقات وأسعار")).toBeInTheDocument();
     expect(screen.getByText("رابط خاص")).toBeInTheDocument();
     expect(screen.getByText("ظهور في Google")).toBeInTheDocument();
+    expect(screen.getByText("سرعة الموقع")).toBeInTheDocument();
+    expect(screen.getByText("متوافق مع الجوال")).toBeInTheDocument();
   });
 
   it("does not include admin panel section", () => {
@@ -92,11 +94,11 @@ describe("marketing homepage", () => {
     render(<HomePage />);
 
     expect(
-      screen.getByText(/سيتم عرض آراء المصورين بعد الإطلاق الرسمي/i)
+      screen.getByText(/FrameID لسه جديد/i)
     ).toBeInTheDocument();
   });
 
-  it("shows faq section", () => {
+  it("shows faq section with quick answers", () => {
     render(<HomePage />);
 
     expect(
@@ -112,7 +114,7 @@ describe("marketing homepage", () => {
     ).toBeInTheDocument();
   });
 
-  it("shows comparison section", () => {
+  it("shows comparison section with Instagram", () => {
     render(<HomePage />);
 
     expect(
@@ -120,11 +122,20 @@ describe("marketing homepage", () => {
     ).toBeInTheDocument();
   });
 
-  it("shows how many steps", () => {
+  it("shows ٤ خطوات فقط label", () => {
     render(<HomePage />);
 
     expect(
       screen.getByText(/٤ خطوات فقط/i)
     ).toBeInTheDocument();
+  });
+
+  it("has micro-ctas after each major section", () => {
+    render(<HomePage />);
+
+    const signupLinks = screen.getAllByRole("link", {
+      name: /ابدأ التجربة المجانية/u
+    });
+    expect(signupLinks.length).toBeGreaterThanOrEqual(3);
   });
 });
