@@ -1,8 +1,18 @@
 import { ZodError } from "zod";
 
 export function readFormString(formData: FormData, key: string): string {
-  const value = formData.get(key);
+  const value = formData.get(key) ?? readServerActionFormValue(formData, key);
   return typeof value === "string" ? value : "";
+}
+
+function readServerActionFormValue(formData: FormData, key: string) {
+  for (const [formKey, value] of formData.entries()) {
+    if (formKey.endsWith(`_${key}`)) {
+      return value;
+    }
+  }
+
+  return null;
 }
 
 export function getAuthActionErrorMessage(error: unknown): string {

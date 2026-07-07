@@ -17,6 +17,17 @@ describe("auth action utils", () => {
     expect(readFormString(formData, "missing")).toBe("");
   });
 
+  it("reads React server action prefixed form fields", () => {
+    const formData = new FormData();
+    formData.set("_1_email", "ali@example.com");
+    formData.set("_1_password", "StrongPass123");
+    formData.set("_1_avatar", new File(["x"], "avatar.jpg"));
+
+    expect(readFormString(formData, "email")).toBe("ali@example.com");
+    expect(readFormString(formData, "password")).toBe("StrongPass123");
+    expect(readFormString(formData, "avatar")).toBe("");
+  });
+
   it("maps internal auth errors to safe user-facing messages", () => {
     expect(getAuthActionErrorMessage(new Error("Email already exists"))).toBe(
       "هذا البريد مستخدم بالفعل."
