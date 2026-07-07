@@ -129,7 +129,7 @@ describe("marketing homepage", () => {
     render(<HomePage />);
 
     expect(
-      screen.getByText(/مناسب لمن/i)
+      screen.getByText(/لمن هذه المنصة/i)
     ).toBeInTheDocument();
     expect(screen.getByText("مصوري الزفاف")).toBeInTheDocument();
     expect(screen.getByText("الاستوديوهات")).toBeInTheDocument();

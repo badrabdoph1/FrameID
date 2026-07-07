@@ -5,7 +5,6 @@ import type {
   CustomerFilter,
   CustomerListResult,
   CustomerExport,
-  CustomerStatus,
 } from "./customer-types";
 
 export type AdminActor = {
@@ -57,6 +56,7 @@ export function createCustomerAdminService(repo: CustomerAdminRepository) {
     actor: AdminActor,
   ): Promise<void> {
     const passwordHash = await hashPassword(newPassword);
+    await repo.updateUserPassword(customerOwnerId, passwordHash);
     await repo.createAuditLog(
       actor.id,
       customerOwnerId,

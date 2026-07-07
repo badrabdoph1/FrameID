@@ -1,7 +1,6 @@
 import type { PrismaClient } from "@prisma/client";
 import type {
   CustomerDetail,
-  CustomerSummary,
   CustomerFilter,
   CustomerListResult,
   CustomerSiteInfo,
@@ -460,6 +459,16 @@ export function createCustomerAdminRepository(prisma: PrismaClient) {
     });
   }
 
+  async function updateUserPassword(
+    userId: string,
+    passwordHash: string,
+  ): Promise<void> {
+    await prisma.user.update({
+      where: { id: userId },
+      data: { passwordHash },
+    });
+  }
+
   return {
     listCustomers,
     getCustomerDetail,
@@ -470,6 +479,7 @@ export function createCustomerAdminRepository(prisma: PrismaClient) {
     updateCustomerStatus,
     deleteCustomer,
     createAuditLog,
+    updateUserPassword,
   };
 }
 

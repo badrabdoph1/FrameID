@@ -964,7 +964,7 @@ export function CustomerDetailClient({ customer, adminId, adminName }: Props) {
                           tone={
                             c.status === "OPEN" ? "warning"
                               : c.status === "RESOLVED" ? "success"
-                                : "neutral"
+                                 : "default"
                           }
                         >
                           {c.status}
@@ -1103,9 +1103,9 @@ export function CustomerDetailClient({ customer, adminId, adminName }: Props) {
             open
             title={confirmAction.title}
             description={confirmAction.description}
-            danger={confirmAction.danger}
+            variant={confirmAction.danger ? "danger" : "default"}
             onConfirm={() => {}}
-            onCancel={() => setConfirmAction(null)}
+            onClose={() => setConfirmAction(null)}
           />
         </form>
       )}
