@@ -23,7 +23,13 @@ function RouteChangeProgress() {
     return () => clearTimeout(id)
   }, [pathname])
 
-  return <div id="admin-route-progress" className="admin-route-progress" style={{ display: "none" }} />
+  return (
+    <div
+      id="admin-route-progress"
+      className="admin-route-progress"
+      style={{ display: "none" }}
+    />
+  )
 }
 
 export function AdminShell({ children }: { children: React.ReactNode }) {

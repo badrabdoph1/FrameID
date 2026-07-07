@@ -2,6 +2,14 @@
   "$schema": "https://railway.app/railway.schema.json",
   "deploy": {
     "preDeployCommand": "npm run db:deploy",
-    "startCommand": "npm run start"
+    "startCommand": "npm run start",
+    "healthcheckPath": "/api/health",
+    "healthcheckTimeout": 30,
+    "restartPolicyType": "on-failure",
+    "restartPolicyMaxRetries": 5
+  },
+  "build": {
+    "builder": "nixpacks",
+    "buildCommand": "npm run build"
   }
 }
