@@ -2,9 +2,7 @@
 
 import { AlertTriangle, Bell, CheckCircle2, Info, XCircle } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
-import { Button } from "@/components/ui/button";
 import { AdminPageShell } from "@/components/layout/admin-page-shell";
-import { cn } from "@/lib/utils/cn";
 import { getNotificationLogs } from "./actions";
 
 const iconMap: Record<string, typeof Bell> = {
@@ -12,13 +10,6 @@ const iconMap: Record<string, typeof Bell> = {
   error: XCircle,
   warning: AlertTriangle,
   info: Info,
-};
-
-const colorMap: Record<string, string> = {
-  success: "text-success bg-success/10",
-  error: "text-danger bg-danger/10",
-  warning: "text-warning bg-warning/10",
-  info: "text-signal bg-signal/10",
 };
 
 const labels: Record<string, string> = {
@@ -65,6 +56,13 @@ export default function AdminNotificationsPage() {
 
   const totalPages = Math.ceil(total / pageSize);
 
+  const typeStyles: Record<string, { bg: string; icon: string }> = {
+    success: { bg: "rgba(74, 222, 128, 0.1)", icon: "#4ade80" },
+    error: { bg: "rgba(248, 113, 113, 0.1)", icon: "#f87171" },
+    warning: { bg: "rgba(243, 207, 115, 0.1)", icon: "#f3cf73" },
+    info: { bg: "rgba(96, 165, 250, 0.1)", icon: "#60a5fa" },
+  };
+
   return (
     <AdminPageShell
       badge="الإشعارات"
@@ -72,12 +70,21 @@ export default function AdminNotificationsPage() {
       description="سجل الإشعارات والتنبيهات والأخطاء"
       breadcrumbs={[{ label: "القيادة", href: "/admin" }, { label: "الإشعارات" }]}
     >
-      <div className="space-y-4">
-        <div className="flex items-center gap-3">
+      <div style={{ display: "grid", gap: 14 }}>
+        {/* Filters */}
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <select
             value={typeFilter}
             onChange={(e) => { setTypeFilter(e.target.value); setPage(1); }}
-            className="rounded-[var(--radius-control)] border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-white outline-none"
+            style={{
+              borderRadius: "var(--radius-control)",
+              border: "1px solid rgba(245, 234, 214, 0.12)",
+              background: "rgba(255, 255, 255, 0.04)",
+              padding: "8px 14px",
+              fontSize: "0.85rem",
+              color: "#f5ead6",
+              outline: "none",
+            }}
           >
             <option value="">جميع الأنواع</option>
             <option value="success">نجاح</option>
@@ -85,70 +92,99 @@ export default function AdminNotificationsPage() {
             <option value="warning">تنبيه</option>
             <option value="info">معلومات</option>
           </select>
-          <Button
+          <button
             onClick={loadLogs}
-            variant="secondary"
-            className="border-white/10 bg-white/[0.04] text-white hover:bg-white/10"
+            className="btn-soft"
+            style={{ minHeight: 38 }}
           >
             تحديث
-          </Button>
+          </button>
         </div>
 
-        <div className="space-y-2">
+        {/* List */}
+        <div className="admin-compact-list">
           {loading ? (
-            <div className="py-8 text-center text-sm text-white/40">
+            <div style={{ padding: "32px 0", textAlign: "center", fontSize: "0.85rem", color: "rgba(245, 234, 214, 0.5)" }}>
               جارٍ التحميل...
             </div>
           ) : logs.length === 0 ? (
-            <div className="py-8 text-center text-sm text-white/40">
+            <div style={{ padding: "32px 0", textAlign: "center", fontSize: "0.85rem", color: "rgba(245, 234, 214, 0.5)" }}>
               لا توجد إشعارات مسجلة
             </div>
           ) : (
             logs.map((log) => {
               const Icon = iconMap[log.type] ?? Bell;
+              const ts = typeStyles[log.type] ?? typeStyles.info;
               return (
-                <div
-                  key={log.id}
-                  className="flex items-start gap-3 rounded-[var(--radius-panel)] border border-white/10 bg-white/[0.02] p-4 transition hover:bg-white/[0.04]"
-                >
-                  <div className={cn("flex size-8 shrink-0 items-center justify-center rounded-full", colorMap[log.type] ?? "")}>
-                    <Icon className="size-4" aria-hidden />
+                <div key={log.id} className="admin-compact-row" style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+                  <div
+                    style={{
+                      width: 32,
+                      height: 32,
+                      borderRadius: "50%",
+                      display: "grid",
+                      placeItems: "center",
+                      background: ts.bg,
+                      color: ts.icon,
+                      flexShrink: 0,
+                    }}
+                  >
+                    <Icon size={16} />
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <p className="text-sm font-medium text-white">{log.title}</p>
-                      <span className="rounded-[var(--radius-control)] bg-white/[0.06] px-1.5 py-0.5 text-[10px] text-white/40">
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <strong style={{ color: "#fff7e8", fontSize: "0.9rem" }}>{log.title}</strong>
+                      <span
+                        style={{
+                          borderRadius: "var(--radius-control)",
+                          background: "rgba(245, 234, 214, 0.08)",
+                          padding: "1px 8px",
+                          fontSize: "0.7rem",
+                          color: "rgba(245, 234, 214, 0.55)",
+                          fontWeight: 900,
+                        }}
+                      >
                         {labels[log.type] ?? log.type}
                       </span>
                     </div>
                     {log.body && (
-                      <p className="mt-0.5 text-sm text-white/50">{log.body}</p>
+                      <p style={{ margin: "2px 0 0", fontSize: "0.85rem", color: "rgba(245, 234, 214, 0.6)" }}>
+                        {log.body}
+                      </p>
                     )}
-                    <p className="mt-1 text-xs text-white/30">
+                    <p style={{ margin: "4px 0 0", fontSize: "0.78rem", color: "rgba(245, 234, 214, 0.4)" }}>
                       {new Date(log.createdAt).toLocaleString("ar-EG")}
                       {log.category && ` · ${log.category}`}
                     </p>
                   </div>
+                  <span className="eyebrow" style={{ fontSize: "0.7rem", color: "rgba(245, 234, 214, 0.35)" }}>
+                    {log.readAt ? "مقروء" : "جديد"}
+                  </span>
                 </div>
               );
             })
           )}
         </div>
 
+        {/* Pagination */}
         {totalPages > 1 && (
-          <div className="flex items-center justify-center gap-2 pt-2">
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, paddingTop: 8 }}>
             <button
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page === 1}
-              className="rounded-[var(--radius-control)] border border-white/10 px-3 py-1.5 text-sm text-white/60 transition hover:bg-white/10 disabled:opacity-30"
+              className="btn-soft"
+              style={{ minHeight: 36, opacity: page === 1 ? 0.4 : 1 }}
             >
               السابق
             </button>
-            <span className="text-sm text-white/40">{page} / {totalPages}</span>
+            <span style={{ fontSize: "0.85rem", color: "rgba(245, 234, 214, 0.5)" }}>
+              {page} / {totalPages}
+            </span>
             <button
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               disabled={page === totalPages}
-              className="rounded-[var(--radius-control)] border border-white/10 px-3 py-1.5 text-sm text-white/60 transition hover:bg-white/10 disabled:opacity-30"
+              className="btn-soft"
+              style={{ minHeight: 36, opacity: page === totalPages ? 0.4 : 1 }}
             >
               التالي
             </button>
