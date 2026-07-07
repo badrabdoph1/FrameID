@@ -48,28 +48,48 @@ export type CustomerDetail = {
   deletedAt: string | null;
   sites: CustomerSiteInfo[];
   subscription: CustomerSubscriptionInfo | null;
+  allSubscriptions: CustomerSubscriptionInfo[];
   stats: {
     sitesCount: number;
     paymentsCount: number;
     mediaCount: number;
     supportCasesCount: number;
+    auditLogsCount: number;
+    notificationsCount: number;
+    adminNotesCount: number;
     totalRevenue: number;
+    totalStorageBytes: number;
+    totalVisits: number;
+    totalImages: number;
+    totalPackages: number;
+    totalOrders: number;
   };
   recentPayments: CustomerPaymentInfo[];
   recentActivity: CustomerActivityEntry[];
+  sessions: CustomerSessionInfo[];
+  supportCases: CustomerSupportCaseInfo[];
 };
 
 export type CustomerSiteInfo = {
   id: string;
   slug: string;
   title: string;
+  description: string | null;
   status: CustomerSiteStatus;
   themeName: string | null;
+  themeCode: string | null;
   templateName: string | null;
   domain: string | null;
+  domains: { domain: string; status: string }[];
   isPublished: boolean;
   publishedVersion: number;
+  locale: string;
   createdAt: string;
+  updatedAt: string;
+  packagesCount: number;
+  albumsCount: number;
+  extrasCount: number;
+  seo: { title: string; description: string | null } | null;
 };
 
 export type CustomerSubscriptionInfo = {
@@ -77,6 +97,7 @@ export type CustomerSubscriptionInfo = {
   status: CustomerSubscriptionStatus;
   planName: string | null;
   planPrice: number | null;
+  planCode: string | null;
   currentPeriodStart: string | null;
   currentPeriodEnd: string | null;
   activatedAt: string | null;
@@ -91,9 +112,11 @@ export type CustomerPaymentInfo = {
   currency: string;
   status: string;
   reference: string | null;
+  proofUrl: string | null;
+  reviewedByName: string | null;
+  adminNote: string | null;
   createdAt: string;
   reviewedAt: string | null;
-  adminNote: string | null;
 };
 
 export type CustomerActivityEntry = {
@@ -114,6 +137,52 @@ export type CustomerSessionInfo = {
   createdAt: string;
   expiresAt: string;
   isRevoked: boolean;
+};
+
+export type CustomerSupportCaseInfo = {
+  id: string;
+  subject: string;
+  status: string;
+  priority: string;
+  createdAt: string;
+};
+
+export type CustomerMediaAsset = {
+  id: string;
+  url: string;
+  mimeType: string;
+  sizeBytes: number;
+  width: number | null;
+  height: number | null;
+  alt: string | null;
+  createdAt: string;
+};
+
+export type CustomerNotification = {
+  id: string;
+  type: string;
+  title: string;
+  body: string;
+  priority: string;
+  readAt: string | null;
+  createdAt: string;
+};
+
+export type CustomerAdminNote = {
+  id: string;
+  body: string;
+  authorName: string | null;
+  createdAt: string;
+};
+
+export type CustomerAuditEntry = {
+  id: string;
+  action: string;
+  entityType: string;
+  entityId: string | null;
+  metadata: Record<string, unknown> | null;
+  actorName: string | null;
+  createdAt: string;
 };
 
 export type CustomerFilter = {

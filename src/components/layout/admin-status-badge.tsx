@@ -8,6 +8,7 @@ const tones = {
   danger: "bg-red-500/10 text-red-400",
   info: "bg-sky-500/10 text-sky-400",
   champagne: "bg-champagne/10 text-champagne",
+  neutral: "bg-neutral-500/10 text-neutral-400",
 } as const;
 
 const dotColors = {
@@ -17,6 +18,7 @@ const dotColors = {
   danger: "bg-red-400",
   info: "bg-sky-400",
   champagne: "bg-champagne",
+  neutral: "bg-neutral-400",
 } as const;
 
 type AdminStatusBadgeProps = {
