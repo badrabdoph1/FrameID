@@ -103,6 +103,20 @@ async function seedSuperAdmin() {
             passwordHash: input.passwordHash
           }
         });
+        await prisma.adminUser.upsert({
+          where: { email: input.email },
+          update: {
+            name: input.name,
+            role: "SUPER_ADMIN",
+            passwordHash: input.passwordHash,
+          },
+          create: {
+            email: input.email,
+            name: input.name,
+            role: "SUPER_ADMIN",
+            passwordHash: input.passwordHash,
+          },
+        });
       }
     },
     email: process.env.SEED_SUPER_ADMIN_EMAIL,
