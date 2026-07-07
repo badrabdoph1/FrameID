@@ -7,6 +7,12 @@ type DashboardWidget = {
   tone: BadgeProps["tone"];
 };
 
+type DashboardControlArea = {
+  label: string;
+  href: string;
+  description: string;
+};
+
 export type DashboardViewModel = {
   photographerName: string;
   siteTitle: string;
@@ -15,6 +21,7 @@ export type DashboardViewModel = {
   statusLabel: string;
   slugChangeUsed: boolean;
   widgets: DashboardWidget[];
+  controlAreas: DashboardControlArea[];
 };
 
 export function createDashboardViewModel({
@@ -50,6 +57,38 @@ export function createDashboardViewModel({
         label: "الأيام المتبقية",
         value: String(daysRemaining(session.tenant.trialEndsAt, now)),
         tone: "warning"
+      }
+    ],
+    controlAreas: [
+      {
+        label: "بيانات الموقع",
+        href: "/dashboard/content",
+        description: "العنوان، الوصف، وصورة الغلاف."
+      },
+      {
+        label: "المعرض",
+        href: "/dashboard/gallery",
+        description: "رفع الصور وإدارة الأعمال المعروضة."
+      },
+      {
+        label: "الباقات والخدمات",
+        href: "/dashboard/services",
+        description: "أسعار التصوير والخدمات الإضافية."
+      },
+      {
+        label: "SEO والتواصل",
+        href: "/dashboard/settings",
+        description: "بيانات البحث والرابط وطرق التواصل."
+      },
+      {
+        label: "القالب",
+        href: "/dashboard/design",
+        description: "تغيير القالب وإعدادات الشكل."
+      },
+      {
+        label: "التفعيل",
+        href: "/dashboard/billing",
+        description: "متابعة التجربة ورفع إثبات الدفع."
       }
     ]
   };

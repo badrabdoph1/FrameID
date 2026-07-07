@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import React from "react";
 import { Eye, WandSparkles } from "lucide-react";
 
 import { MarketingNav } from "@/components/layout/marketing-nav";
@@ -18,12 +19,28 @@ export default function TemplatesPage() {
         <section className="container-page pb-16">
           <Badge tone="luxury">معرض القوالب</Badge>
           <h1 className="mt-5 max-w-3xl text-4xl font-semibold md:text-6xl">
-            قوالب حية، قابلة للاستخدام مباشرة.
+            اختر قالبًا كأنه موقع عميل حقيقي.
           </h1>
           <p className="mt-5 max-w-2xl leading-8 text-muted-foreground">
-            المعاينة تفتح موقعًا حقيقيًا ببيانات تجريبية، ثم يمكن استخدام
-            القالب لإنشاء موقع المصور تلقائيًا.
+            المعاينة الحية تفتح نفس القالب الذي سيحصل عليه المصور، ثم يحمل زر استخدام القالب اختياره إلى التسجيل.
           </p>
+          <div className="mt-8 grid gap-3 md:grid-cols-3">
+            {[
+              ["معاينة", "افتح القالب كموقع حقيقي قبل الاختيار."],
+              ["استخدام", "احمل القالب المختار إلى صفحة إنشاء الحساب."],
+              ["إنشاء تلقائي", "يحصل المصور على الحساب والموقع والرابط والتجربة."]
+            ].map(([title, body]) => (
+              <div
+                key={title}
+                className="rounded-[var(--radius-card)] border border-border bg-card p-4"
+              >
+                <h2 className="font-semibold">{title}</h2>
+                <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                  {body}
+                </p>
+              </div>
+            ))}
+          </div>
           <div className="mt-10 grid gap-5 md:grid-cols-2">
             {templates.map((template) => (
               <Card key={template.code} className="overflow-hidden bg-surface">

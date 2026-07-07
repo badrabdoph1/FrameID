@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ExternalLink } from "lucide-react";
+import { ArrowLeft, ExternalLink } from "lucide-react";
 
 import { getPlatformBaseUrl } from "@/lib/platform-url";
 import { getCurrentRequestSession } from "@/modules/auth/request-session";
@@ -90,6 +90,44 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
             ))}
           </div>
         </div>
+
+        <section className="mt-8">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <h2 className="text-xl font-semibold">تحكم في موقعك من مكان واحد</h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                هذه ليست لوحة إدارة المنصة؛ هذه مساحة المصور لتعديل موقعه فقط.
+              </p>
+            </div>
+            <Link
+              href={`/p/${dashboard.siteSlug}`}
+              className="inline-flex min-h-10 items-center gap-2 text-sm font-semibold text-champagne-strong md:hidden"
+            >
+              فتح الموقع
+              <ExternalLink className="size-4" aria-hidden />
+            </Link>
+          </div>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            {dashboard.controlAreas.map((area) => (
+              <Link
+                key={area.href}
+                href={area.href}
+                className="group rounded-[var(--radius-card)] border border-border bg-surface p-4 transition hover:border-champagne hover:shadow-soft"
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <h3 className="font-semibold">{area.label}</h3>
+                  <ArrowLeft
+                    className="size-4 text-muted-foreground transition group-hover:-translate-x-1 group-hover:text-champagne-strong"
+                    aria-hidden
+                  />
+                </div>
+                <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                  {area.description}
+                </p>
+              </Link>
+            ))}
+          </div>
+        </section>
       </section>
     </main>
   );

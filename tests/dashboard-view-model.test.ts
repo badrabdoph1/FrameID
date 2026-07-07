@@ -59,5 +59,18 @@ describe("dashboard view model", () => {
         tone: "warning"
       }
     ]);
+    expect(viewModel.controlAreas.map((area) => area.label)).toEqual([
+      "بيانات الموقع",
+      "المعرض",
+      "الباقات والخدمات",
+      "SEO والتواصل",
+      "القالب",
+      "التفعيل"
+    ]);
+    expect(viewModel.controlAreas[0]).toEqual({
+      label: "بيانات الموقع",
+      href: "/dashboard/content",
+      description: "العنوان، الوصف، وصورة الغلاف."
+    });
   });
 });

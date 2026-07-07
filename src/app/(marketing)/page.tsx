@@ -2,12 +2,25 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import React from "react";
-import { ArrowLeft, CheckCircle2, Images, LayoutDashboard, Sparkles } from "lucide-react";
+import {
+  ArrowLeft,
+  CheckCircle2,
+  Crown,
+  Images,
+  LayoutDashboard,
+  PanelsTopLeft,
+  Sparkles
+} from "lucide-react";
 
 import { MarketingNav } from "@/components/layout/marketing-nav";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { platformStats } from "@/modules/marketing/platform-content";
+import {
+  adminControls,
+  onboardingJourney,
+  photographerControls,
+  platformStats
+} from "@/modules/marketing/platform-content";
 
 const siteUrl = "https://frameid.app";
 const heroImage =
@@ -62,6 +75,19 @@ const productPillars = [
     icon: Sparkles,
     title: "فخامة محفوظة",
     body: "قوالب بقيود ذكية تحافظ على الشكل النظيف مهما أضفت من محتوى."
+  }
+];
+
+const separationCards = [
+  {
+    icon: PanelsTopLeft,
+    title: "لوحة المصور",
+    body: "كل مصور يدخل إلى لوحة تخص موقعه فقط: الصور، الباقات، SEO، القالب، الرابط، والتفعيل."
+  },
+  {
+    icon: Crown,
+    title: "لوحة الإدارة الرئيسية",
+    body: "الأدمن الرئيسي يدير المنصة والعملاء والمدفوعات والقوالب، ولا يختلط مع لوحات المصورين."
   }
 ];
 
@@ -184,6 +210,92 @@ export default function HomePage() {
                 </CardContent>
               </Card>
             ))}
+          </div>
+        </section>
+
+        <section className="bg-ink py-14 text-white md:py-24">
+          <div className="container-page">
+            <div className="max-w-3xl">
+              <Badge tone="luxury" className="border-white/15 bg-white/10 text-white">
+                رحلة المستخدم
+              </Badge>
+              <h2 className="mt-4 text-3xl font-semibold md:text-5xl">
+                من قالب حي إلى موقع مستقل ولوحة تحكم.
+              </h2>
+              <p className="mt-4 max-w-2xl leading-8 text-white/68">
+                FrameID لا يبيع صفحة جاهزة فقط؛ هو ينشئ للمصور هوية رقمية
+                قابلة للإدارة من أول تسجيل.
+              </p>
+            </div>
+            <div className="mt-8 grid gap-3 md:grid-cols-4">
+              {onboardingJourney.map((step, index) => (
+                <article
+                  key={step.title}
+                  className="rounded-[var(--radius-card)] border border-white/10 bg-white/[0.04] p-4"
+                >
+                  <span className="text-sm font-semibold text-champagne">
+                    {String(index + 1).padStart(2, "0")}
+                  </span>
+                  <h3 className="mt-4 font-semibold">{step.title}</h3>
+                  <p className="mt-2 text-sm leading-7 text-white/60">{step.body}</p>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="container-page py-14 md:py-24">
+          <div className="grid gap-8 lg:grid-cols-[.9fr_1.1fr] lg:items-start">
+            <div>
+              <p className="text-sm font-semibold text-champagne-strong">
+                فصل الصلاحيات
+              </p>
+              <h2 className="mt-3 text-3xl font-semibold md:text-5xl">
+                لوحة المصور ليست لوحة الأدمن.
+              </h2>
+              <p className="mt-4 leading-8 text-muted-foreground">
+                المصور يدير موقعه فقط، بينما الأدمن الرئيسي يدير منصة FrameID
+                بالكامل: العملاء، المواقع، القوالب، المدفوعات، والإعدادات.
+              </p>
+            </div>
+            <div className="grid gap-4 md:grid-cols-2">
+              {separationCards.map((card) => (
+                <Card key={card.title} className="bg-surface">
+                  <CardHeader>
+                    <card.icon className="mb-4 size-5 text-champagne-strong" aria-hidden />
+                    <CardTitle>{card.title}</CardTitle>
+                  </CardHeader>
+                  <CardContent className="text-sm leading-7 text-muted-foreground">
+                    {card.body}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+
+          <div className="mt-8 grid gap-4 lg:grid-cols-2">
+            <div className="rounded-[var(--radius-card)] border border-border bg-card p-5">
+              <h3 className="font-semibold">ماذا يتحكم فيه المصور؟</h3>
+              <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                {photographerControls.map((item) => (
+                  <span key={item} className="inline-flex items-center gap-2 text-sm text-muted-foreground">
+                    <CheckCircle2 className="size-4 text-success" aria-hidden />
+                    {item}
+                  </span>
+                ))}
+              </div>
+            </div>
+            <div className="rounded-[var(--radius-card)] border border-border bg-card p-5">
+              <h3 className="font-semibold">ماذا يدير الأدمن؟</h3>
+              <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                {adminControls.map((item) => (
+                  <span key={item} className="inline-flex items-center gap-2 text-sm text-muted-foreground">
+                    <CheckCircle2 className="size-4 text-champagne-strong" aria-hidden />
+                    {item}
+                  </span>
+                ))}
+              </div>
+            </div>
           </div>
         </section>
       </main>

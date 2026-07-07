@@ -39,6 +39,15 @@ describe("auth action utils", () => {
       getAuthActionErrorMessage(
         new Error("Can't reach database server at `localhost:5432`")
       )
-    ).toBe("قاعدة البيانات غير متصلة حاليًا. شغّل قاعدة البيانات ثم حاول مرة أخرى.");
+    ).toBe(
+      "قاعدة البيانات غير متصلة حاليًا. تأكد من DATABASE_URL وتشغيل قاعدة البيانات ثم حاول مرة أخرى."
+    );
+    expect(
+      getAuthActionErrorMessage(
+        new Error("Environment variable not found: DATABASE_URL")
+      )
+    ).toBe(
+      "قاعدة البيانات غير متصلة حاليًا. تأكد من DATABASE_URL وتشغيل قاعدة البيانات ثم حاول مرة أخرى."
+    );
   });
 });

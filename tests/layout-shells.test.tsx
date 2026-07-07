@@ -47,6 +47,18 @@ describe("application shells", () => {
 
     expect(screen.getByText("Admin content")).toBeInTheDocument();
     expect(screen.getByRole("navigation", { name: "لوحة الإدارة" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "الاشتراكات" })).toHaveAttribute(
+      "href",
+      "/admin/subscriptions"
+    );
+    expect(screen.getByRole("link", { name: "التحليلات" })).toHaveAttribute(
+      "href",
+      "/admin/analytics"
+    );
+    expect(screen.getByRole("link", { name: "إعدادات المنصة" })).toHaveAttribute(
+      "href",
+      "/admin/settings"
+    );
     expect(screen.getByRole("button", { name: "تسجيل الخروج" })).toBeInTheDocument();
   });
 });

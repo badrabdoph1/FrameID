@@ -25,5 +25,25 @@ describe("marketing homepage", () => {
     );
     expect(screen.queryByText("قبل أن تسأل")).not.toBeInTheDocument();
     expect(screen.queryByText("الخطة المعمارية أولًا")).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", {
+        name: "من قالب حي إلى موقع مستقل ولوحة تحكم."
+      })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "الحساب، الموقع، الرابط الخاص، لوحة التحكم، والاشتراك التجريبي تُنشأ معًا بعد التسجيل."
+      )
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", {
+        name: "لوحة المصور ليست لوحة الأدمن."
+      })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "الأدمن الرئيسي يدير المنصة والعملاء والمدفوعات والقوالب، ولا يختلط مع لوحات المصورين."
+      )
+    ).toBeInTheDocument();
   });
 });

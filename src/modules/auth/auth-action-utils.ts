@@ -27,10 +27,11 @@ export function getAuthActionErrorMessage(error: unknown): string {
   }
 
   if (
+    error.message.includes("Environment variable not found: DATABASE_URL") ||
     error.message.includes("Can't reach database server") ||
     error.message.includes("P1001")
   ) {
-    return "قاعدة البيانات غير متصلة حاليًا. شغّل قاعدة البيانات ثم حاول مرة أخرى.";
+    return "قاعدة البيانات غير متصلة حاليًا. تأكد من DATABASE_URL وتشغيل قاعدة البيانات ثم حاول مرة أخرى.";
   }
 
   return "حدث خطأ غير متوقع. حاول مرة أخرى.";

@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  Activity,
+  BadgeCheck,
   CreditCard,
   DatabaseBackup,
   FileText,
@@ -24,8 +24,6 @@ import {
   ChevronDown,
   Menu,
   X,
-  Layers,
-  Megaphone,
   Globe,
   ClipboardList,
 } from "lucide-react";
@@ -51,6 +49,7 @@ const navGroups: NavGroup[] = [
       { href: "/admin", label: "القيادة", icon: Home },
       { href: "/admin/customers", label: "العملاء", icon: Users },
       { href: "/admin/sites", label: "المواقع", icon: Globe },
+      { href: "/admin/subscriptions", label: "الاشتراكات", icon: BadgeCheck },
       { href: "/admin/payments", label: "المدفوعات", icon: CreditCard },
     ],
   },
@@ -66,7 +65,7 @@ const navGroups: NavGroup[] = [
   {
     label: "المنصة",
     items: [
-      { href: "/admin/backups", label: "النسخ", icon: DatabaseBackup },
+      { href: "/admin/backups", label: "النسخ الاحتياطي", icon: DatabaseBackup },
       { href: "/admin/analytics", label: "التحليلات", icon: BarChart3 },
       { href: "/admin/feature-flags", label: "الميزات", icon: Flag },
       { href: "/admin/notifications", label: "الإشعارات", icon: Bell },
@@ -81,10 +80,6 @@ const navGroups: NavGroup[] = [
       { href: "/admin/settings", label: "إعدادات المنصة", icon: Settings },
     ],
   },
-];
-
-const bottomItems: NavItem[] = [
-  { href: "/admin/marketing", label: "التسويق", icon: Megaphone },
 ];
 
 export function AdminSidebar() {
