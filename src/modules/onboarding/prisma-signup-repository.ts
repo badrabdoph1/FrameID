@@ -79,9 +79,7 @@ export function createPrismaSignupProvisioningRepository(
       return new Set(sites.map((site) => site.slug));
     },
     async createAccountWithSite(input) {
-      const runTransaction = prisma.$transaction as PrismaTransactionRunner;
-
-      return runTransaction(async (transaction) => {
+      return (prisma.$transaction as PrismaTransactionRunner)(async (transaction) => {
         const theme = await upsertTheme(transaction, input);
         await upsertTemplate(transaction, input, theme.id);
         const user = await transaction.user.create({
