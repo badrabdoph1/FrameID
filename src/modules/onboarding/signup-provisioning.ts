@@ -203,7 +203,7 @@ function createDefaultSections(
       data: {
         photographerName: displayName,
         headline: displayName,
-        subheadline: "تصوير احترافي بتجربة هادئة وراقية."
+        subheadline: "نصنع ذكريات تبقى للأبد — تصوير حفلات الزفاف والخطوبة والجلسات الخاصة بأسلوب فاخر."
       }
     },
     {
@@ -211,7 +211,7 @@ function createDefaultSections(
       title: "التواصل",
       sortOrder: 10,
       data: {
-        callToAction: "احجز عبر واتساب"
+        callToAction: "احجز الآن"
       }
     }
   ];
@@ -220,60 +220,41 @@ function createDefaultSections(
 function createDefaultPackages(): AccountCreationInput["defaultContent"]["packages"] {
   return [
     {
-      name: "الباقة الفضية",
-      subtitle: "سيشن خطوبة / كتب كتاب",
+      name: "الباقة البرونزية",
+      subtitle: "جلسة تصوير بسيطة",
       priceAmount: 2500,
       currency: "EGP",
-      features: ["ألبوم وسط", "عدد الصور مفتوح", "تابلوه", "الوقت مفتوح"],
+      features: ["3 ساعات", "جميع الصور المعدلة", "معرض إلكتروني", "تسليم خلال 7 أيام"],
       isHighlighted: false,
       sortOrder: 0
     },
     {
-      name: "زفاف مختصر",
-      subtitle: "سيشن زفاف",
-      priceAmount: 4000,
+      name: "الباقة الفضية",
+      subtitle: "نصف يوم تصوير",
+      priceAmount: 5000,
       currency: "EGP",
-      features: ["تصوير الفيرست لوك", "ألبوم وسط", "تابلوه", "تصوير القاعة"],
+      features: ["نصف يوم", "جميع الصور المعدلة", "ألبوم فاخر", "فيديو Highlight"],
       isHighlighted: true,
       sortOrder: 1
     },
     {
-      name: "زفاف فاخر",
-      subtitle: "سيشن زفاف فاخر",
-      priceAmount: 4500,
+      name: "الباقة الذهبية",
+      subtitle: "تغطية يوم كامل",
+      priceAmount: 8500,
       currency: "EGP",
-      features: ["تصوير الفيرست لوك", "ألبوم كبير", "تابلوه", "تسليم ريلز"],
+      features: ["يوم كامل", "تصوير العريس والعروسة", "فيديو سينمائي", "ألبوم فاخر", "معرض إلكتروني", "تسليم سريع"],
       isHighlighted: false,
       sortOrder: 2
-    },
-    {
-      name: "اليوم الكامل",
-      subtitle: "تغطية يوم كامل",
-      priceAmount: 7000,
-      currency: "EGP",
-      features: ["سيشن كاجوال", "تصوير التجهيزات", "تغطية اليوم", "تصوير القاعة"],
-      isHighlighted: false,
-      sortOrder: 3
-    },
-    {
-      name: "اليوم الفاخر",
-      subtitle: "تغطية بفريق كامل",
-      priceAmount: 9000,
-      currency: "EGP",
-      features: ["2 مصورين", "فيديو برومو", "ألبوم كبير", "تغطية كاملة"],
-      isHighlighted: false,
-      sortOrder: 4
     }
   ];
 }
 
 function createDefaultExtras(): AccountCreationInput["defaultContent"]["extras"] {
   return [
-    { name: "فيديو برومو", priceAmount: 2500, currency: "EGP", iconKey: "video", sortOrder: 0 },
-    { name: "سيشن كاجوال", priceAmount: 2500, currency: "EGP", iconKey: "camera", sortOrder: 1 },
-    { name: "فيديو ريلز", priceAmount: 1000, currency: "EGP", iconKey: "film", sortOrder: 2 },
-    { name: "ميديا كافريدج", priceAmount: 1500, currency: "EGP", iconKey: "coverage", sortOrder: 3 },
-    { name: "فوتوجرافر إضافي", priceAmount: 1000, currency: "EGP", iconKey: "team", sortOrder: 4 },
-    { name: "ألبوم + تابلوه", priceAmount: 1500, currency: "EGP", iconKey: "album", sortOrder: 5 }
+    { name: "فيديو سينمائي", priceAmount: 3000, currency: "EGP", iconKey: "video", sortOrder: 0 },
+    { name: "Drone", priceAmount: 2500, currency: "EGP", iconKey: "camera", sortOrder: 1 },
+    { name: "جلسة قبل الزفاف", priceAmount: 2000, currency: "EGP", iconKey: "camera", sortOrder: 2 },
+    { name: "ألبوم فاخر", priceAmount: 1500, currency: "EGP", iconKey: "album", sortOrder: 3 },
+    { name: "طباعة إضافية", priceAmount: 0, currency: "EGP", iconKey: "album", sortOrder: 4 }
   ];
 }

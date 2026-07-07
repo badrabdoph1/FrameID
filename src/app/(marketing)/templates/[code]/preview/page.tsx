@@ -53,75 +53,155 @@ export default async function TemplatePreviewPage({ params }: Props) {
   );
 }
 
+const DEMO_HERO_IMAGE =
+  "https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1800&q=85";
+
+const DEMO_GALLERY_IMAGES = [
+  {
+    id: "demo-1",
+    url: "https://images.unsplash.com/photo-1511285560929-80b456fea0bc?auto=format&fit=crop&w=800&q=85",
+    alt: "زفاف في الهواء الطلق",
+    caption: "لحظة تبادل الخواتم"
+  },
+  {
+    id: "demo-2",
+    url: "https://images.unsplash.com/photo-1465495976277-4387d4b0b4c6?auto=format&fit=crop&w=800&q=85",
+    alt: "باقة ورد الزفاف",
+    caption: "تفاصيل الباقة"
+  },
+  {
+    id: "demo-3",
+    url: "https://images.unsplash.com/photo-1474552226712-ac0f0961a954?auto=format&fit=crop&w=800&q=85",
+    alt: "جلسة تصوير زفاف",
+    caption: "جلسة العروسين"
+  },
+  {
+    id: "demo-4",
+    url: "https://images.unsplash.com/photo-1529636798458-92182e662485?auto=format&fit=crop&w=800&q=85",
+    alt: "ديكور حفل زفاف",
+    caption: "قاعة الزفاف"
+  }
+];
+
 const previewSite: PublicSiteViewModel = {
   siteId: "preview",
   themeCode: "noir-gold",
-  publicUrl: "https://frameid.app/templates/noir-gold/preview",
+  publicUrl: "https://frameid.app/templates/preview",
   metadata: {
-    title: "قالب علي أحمد الفاخر"
+    title: "Body Studio — تصوير زفاف فاخر"
   },
   structuredData: {
     "@context": "https://schema.org",
     "@type": "LocalBusiness",
-    name: "علي أحمد"
+    name: "Body Studio"
   },
   hero: {
-    headline: "علي أحمد",
-    subheadline: "باقات تصوير 2026 لتجربة زفاف وخطوبة أنيقة.",
-    imageUrl:
-      "https://i.ibb.co/JwBLNkjP/Whats-App-Image-2026-06-04-at-2-30-53-AM-1.jpg"
+    headline: "نصنع ذكريات تبقى للأبد",
+    subheadline:
+      "تصوير حفلات الزفاف والخطوبة والجلسات الخاصة بأسلوب فاخر يجمع بين البساطة، والإضاءة السينمائية، والألوان الطبيعية.",
+    imageUrl: DEMO_HERO_IMAGE
   },
   contact: {
-    callToAction: "تأكيد عبر واتساب",
-    phone: "01068427413",
-    whatsapp: "201068427413",
+    callToAction: "احجز الآن",
+    phone: null,
+    whatsapp: null,
     email: null,
-    instagram: "3li__a7mad_ph",
-    facebook: "aliahmed8585"
+    instagram: "bodystudio",
+    facebook: "bodystudio"
   },
   packages: [
     {
-      id: "silver",
-      name: "الباقة الفضية",
-      subtitle: "سيشن خطوبة / كتب كتاب",
+      id: "bronze",
+      name: "الباقة البرونزية",
+      subtitle: "جلسة تصوير بسيطة",
       price: "2,500 جنيه",
       priceAmount: 2500,
       currency: "EGP",
-      features: ["ألبوم وسط", "عدد الصور مفتوح", "تابلوه", "الوقت مفتوح"],
-      imageUrl:
-        "https://i.ibb.co/JwBLNkjP/Whats-App-Image-2026-06-04-at-2-30-53-AM-1.jpg",
+      features: [
+        "3 ساعات",
+        "جميع الصور المعدلة",
+        "معرض إلكتروني",
+        "تسليم خلال 7 أيام"
+      ],
+      imageUrl: null,
       isHighlighted: false
     },
     {
-      id: "mini",
-      name: "زفاف مختصر",
-      subtitle: "سيشن زفاف",
-      price: "4,000 جنيه",
-      priceAmount: 4000,
+      id: "silver",
+      name: "الباقة الفضية",
+      subtitle: "نصف يوم تصوير",
+      price: "5,000 جنيه",
+      priceAmount: 5000,
       currency: "EGP",
-      features: ["تصوير الفيرست لوك", "ألبوم وسط", "تابلوه", "تصوير القاعة"],
-      imageUrl:
-        "https://i.ibb.co/JwBLNkjP/Whats-App-Image-2026-06-04-at-2-30-53-AM-1.jpg",
+      features: [
+        "نصف يوم",
+        "جميع الصور المعدلة",
+        "ألبوم فاخر",
+        "فيديو Highlight"
+      ],
+      imageUrl: null,
       isHighlighted: true
     },
     {
-      id: "vip",
-      name: "زفاف فاخر",
-      subtitle: "سيشن زفاف فاخر",
-      price: "4,500 جنيه",
-      priceAmount: 4500,
+      id: "gold",
+      name: "الباقة الذهبية",
+      subtitle: "تغطية يوم كامل",
+      price: "8,500 جنيه",
+      priceAmount: 8500,
       currency: "EGP",
-      features: ["ألبوم كبير", "عدد الصور مفتوح", "تصوير القاعة", "تسليم ريلز"],
-      imageUrl:
-        "https://i.ibb.co/JwBLNkjP/Whats-App-Image-2026-06-04-at-2-30-53-AM-1.jpg",
+      features: [
+        "يوم كامل",
+        "تصوير العريس والعروسة",
+        "فيديو سينمائي",
+        "ألبوم فاخر",
+        "معرض إلكتروني",
+        "تسليم سريع"
+      ],
+      imageUrl: null,
       isHighlighted: false
     }
   ],
   extras: [
-    { id: "video", name: "فيديو برومو", price: "2,500 جنيه", priceAmount: 2500, currency: "EGP", iconKey: "video" },
-    { id: "casual", name: "سيشن كاجوال", price: "2,500 جنيه", priceAmount: 2500, currency: "EGP", iconKey: "camera" },
-    { id: "reel", name: "فيديو ريلز", price: "1,000 جنيه", priceAmount: 1000, currency: "EGP", iconKey: "film" },
-    { id: "team", name: "فوتوجرافر إضافي", price: "1,000 جنيه", priceAmount: 1000, currency: "EGP", iconKey: "team" }
+    {
+      id: "cinematic",
+      name: "فيديو سينمائي",
+      price: "3,000 جنيه",
+      priceAmount: 3000,
+      currency: "EGP",
+      iconKey: "video"
+    },
+    {
+      id: "drone",
+      name: "Drone",
+      price: "2,500 جنيه",
+      priceAmount: 2500,
+      currency: "EGP",
+      iconKey: "camera"
+    },
+    {
+      id: "pre-wedding",
+      name: "جلسة قبل الزفاف",
+      price: "2,000 جنيه",
+      priceAmount: 2000,
+      currency: "EGP",
+      iconKey: "camera"
+    },
+    {
+      id: "album",
+      name: "ألبوم فاخر",
+      price: "1,500 جنيه",
+      priceAmount: 1500,
+      currency: "EGP",
+      iconKey: "album"
+    },
+    {
+      id: "printing",
+      name: "طباعة إضافية",
+      price: "حسب الطلب",
+      priceAmount: 0,
+      currency: "EGP",
+      iconKey: "album"
+    }
   ],
-  gallery: []
+  gallery: DEMO_GALLERY_IMAGES
 };

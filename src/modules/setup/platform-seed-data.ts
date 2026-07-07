@@ -1,5 +1,101 @@
 import { templateDefinitions, themeDefinitions } from "@/modules/themes/definitions";
 
+const DEMO_HERO_IMAGE =
+  "https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1800&q=85";
+
+const DEMO_GALLERY = [
+  {
+    id: "demo-1",
+    url: "https://images.unsplash.com/photo-1511285560929-80b456fea0bc?auto=format&fit=crop&w=800&q=85",
+    alt: "زفاف في الهواء الطلق",
+    caption: "لحظة تبادل الخواتم"
+  },
+  {
+    id: "demo-2",
+    url: "https://images.unsplash.com/photo-1465495976277-4387d4b0b4c6?auto=format&fit=crop&w=800&q=85",
+    alt: "باقة ورد الزفاف",
+    caption: "تفاصيل الباقة"
+  },
+  {
+    id: "demo-3",
+    url: "https://images.unsplash.com/photo-1474552226712-ac0f0961a954?auto=format&fit=crop&w=800&q=85",
+    alt: "جلسة تصوير زفاف",
+    caption: "جلسة العروسين"
+  },
+  {
+    id: "demo-4",
+    url: "https://images.unsplash.com/photo-1529636798458-92182e662485?auto=format&fit=crop&w=800&q=85",
+    alt: "ديكور حفل زفاف",
+    caption: "قاعة الزفاف"
+  }
+];
+
+const DEMO_PREVIEW_DATA = {
+  hero: {
+    headline: "نصنع ذكريات تبقى للأبد",
+    subheadline:
+      "تصوير حفلات الزفاف والخطوبة والجلسات الخاصة بأسلوب فاخر يجمع بين البساطة، والإضاءة السينمائية، والألوان الطبيعية.",
+    imageUrl: DEMO_HERO_IMAGE
+  },
+  contact: {
+    callToAction: "احجز الآن",
+    instagram: "bodystudio",
+    facebook: "bodystudio"
+  },
+  packages: [
+    {
+      id: "bronze",
+      name: "الباقة البرونزية",
+      subtitle: "جلسة تصوير بسيطة",
+      price: "2,500 جنيه",
+      priceAmount: 2500,
+      currency: "EGP",
+      features: ["3 ساعات", "جميع الصور المعدلة", "معرض إلكتروني", "تسليم خلال 7 أيام"],
+      isHighlighted: false
+    },
+    {
+      id: "silver",
+      name: "الباقة الفضية",
+      subtitle: "نصف يوم تصوير",
+      price: "5,000 جنيه",
+      priceAmount: 5000,
+      currency: "EGP",
+      features: ["نصف يوم", "جميع الصور المعدلة", "ألبوم فاخر", "فيديو Highlight"],
+      isHighlighted: true
+    },
+    {
+      id: "gold",
+      name: "الباقة الذهبية",
+      subtitle: "تغطية يوم كامل",
+      price: "8,500 جنيه",
+      priceAmount: 8500,
+      currency: "EGP",
+      features: [
+        "يوم كامل",
+        "تصوير العريس والعروسة",
+        "فيديو سينمائي",
+        "ألبوم فاخر",
+        "معرض إلكتروني",
+        "تسليم سريع"
+      ],
+      isHighlighted: false
+    }
+  ],
+  extras: [
+    { id: "cinematic", name: "فيديو سينمائي", price: "3,000 جنيه", priceAmount: 3000, currency: "EGP", iconKey: "video" },
+    { id: "drone", name: "Drone", price: "2,500 جنيه", priceAmount: 2500, currency: "EGP", iconKey: "camera" },
+    { id: "pre-wedding", name: "جلسة قبل الزفاف", price: "2,000 جنيه", priceAmount: 2000, currency: "EGP", iconKey: "camera" },
+    { id: "album", name: "ألبوم فاخر", price: "1,500 جنيه", priceAmount: 1500, currency: "EGP", iconKey: "album" },
+    { id: "printing", name: "طباعة إضافية", price: "حسب الطلب", priceAmount: 0, currency: "EGP", iconKey: "album" }
+  ],
+  gallery: DEMO_GALLERY,
+  structuredData: {
+    "@context": "https://schema.org",
+    "@type": "LocalBusiness",
+    name: "Body Studio"
+  }
+};
+
 export function getPlatformSeedData() {
   return {
     themes: themeDefinitions.map((theme) => ({
@@ -19,7 +115,7 @@ export function getPlatformSeedData() {
       name: template.name,
       status: template.status.toUpperCase() as "DRAFT" | "PUBLISHED" | "ARCHIVED",
       showroomOrder: template.showroomOrder,
-      previewData: {},
+      previewData: DEMO_PREVIEW_DATA,
       settings: {}
     })),
     plans: [

@@ -5,25 +5,26 @@ import React from "react";
 import {
   ArrowLeft,
   CheckCircle2,
-  Crown,
+  Eye,
   Images,
-  LayoutDashboard,
-  PanelsTopLeft,
-  Sparkles,
-  Star
+  Palette,
+  Settings,
+  ShoppingBag,
+  WandSparkles,
+  X
 } from "lucide-react";
 
 import { MarketingFooter } from "@/components/layout/marketing-footer";
 import { MarketingNav } from "@/components/layout/marketing-nav";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { getPublishedTemplates } from "@/modules/themes/theme-registry";
 import {
-  adminControls,
+  benefitCards,
+  betaTestimonial,
+  comparisonData,
   faqItems,
-  onboardingJourney,
-  photographerControls,
-  platformStats,
-  testimonials
+  getTemplatePreviewImage,
+  howItWorks
 } from "@/modules/marketing/platform-content";
 
 const siteUrl = "https://frameid.app";
@@ -31,16 +32,16 @@ const heroImage =
   "https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?auto=format&fit=crop&w=1800&q=85";
 
 export const metadata: Metadata = {
-  title: "موقع مصور جاهز خلال دقائق",
+  title: "موقع مصور—موقع خاص باسمك يضم أعمالك وباقاتك",
   description:
-    "FrameID يمنح المصور موقعًا احترافيًا، رابطًا خاصًا، قالبًا حيًا، وتجربة مجانية قبل الدفع.",
+    "FrameID يمنح المصور موقعاً خاصاً، رابطاً مخصصاً، معرض أعمال، وباقات—بدون برمجة. جرب ١٤ يوم مجاناً.",
   alternates: {
     canonical: siteUrl
   },
   openGraph: {
-    title: "FrameID | موقع مصور جاهز خلال دقائق",
+    title: "FrameID | موقع خاص باسمك—يضم أعمالك وباقاتك",
     description:
-      "موقع احترافي للمصورين: قالب حي، رابط خاص، وتجربة مجانية قبل الدفع.",
+      "خلال دقائق، حول صورك إلى موقع متكامل: معرض أعمال، باقات، رابط خاص. جرب مجاناً.",
     url: siteUrl,
     siteName: "FrameID",
     locale: "ar_EG",
@@ -50,50 +51,17 @@ export const metadata: Metadata = {
         url: heroImage,
         width: 1200,
         height: 630,
-        alt: "FrameID منصة مواقع للمصورين"
+        alt: "FrameID—منصة مواقع للمصورين"
       }
     ]
   },
   twitter: {
     card: "summary_large_image",
-    title: "FrameID | موقع مصور جاهز خلال دقائق",
-    description: "قالب حي ورابط خاص وتجربة مجانية قبل الدفع.",
+    title: "FrameID | موقع خاص باسمك—يضم أعمالك وباقاتك",
+    description: "موقع متكامل للمصور: معرض، باقات، رابط خاص. جرب مجاناً.",
     images: [heroImage]
   }
 };
-
-const trustSignals = ["لا يوجد دفع قبل التجربة", "قالب حي", "رابط خاص"];
-
-const productPillars = [
-  {
-    icon: LayoutDashboard,
-    title: "لوحة تحكم هادئة",
-    body: "عدّل رابطك، صورك، باقاتك، وبيانات التواصل بدون محرر معقد."
-  },
-  {
-    icon: Images,
-    title: "موقع يليق بالصور",
-    body: "واجهة بسيطة تجعل أعمالك هي البطل وتعمل بسلاسة من الهاتف."
-  },
-  {
-    icon: Sparkles,
-    title: "فخامة محفوظة",
-    body: "قوالب بقيود ذكية تحافظ على الشكل النظيف مهما أضفت من محتوى."
-  }
-];
-
-const separationCards = [
-  {
-    icon: PanelsTopLeft,
-    title: "لوحة المصور",
-    body: "كل مصور يدخل إلى لوحة تخص موقعه فقط: الصور، الباقات، SEO، القالب، الرابط، والتفعيل."
-  },
-  {
-    icon: Crown,
-    title: "لوحة الإدارة الرئيسية",
-    body: "الأدمن الرئيسي يدير المنصة والعملاء والمدفوعات والقوالب، ولا يختلط مع لوحات المصورين."
-  }
-];
 
 const jsonLd = {
   "@context": "https://schema.org",
@@ -116,12 +84,12 @@ const jsonLd = {
       operatingSystem: "Web",
       url: siteUrl,
       description:
-        "منصة عربية تمنح المصورين مواقع احترافية بقوالب حية وروابط خاصة.",
+        "منصة عربية تمنح المصورين مواقع احترافية بقوالب جاهزة وروابط خاصة.",
       offers: {
         "@type": "Offer",
         price: "0",
         priceCurrency: "EGP",
-        description: "تجربة مجانية قبل الدفع"
+        description: "تجربة مجانية ١٤ يوم بدون بطاقة بنكية"
       }
     },
     {
@@ -138,231 +106,373 @@ const jsonLd = {
   ]
 };
 
+function DashboardMockup() {
+  const items = [
+    { icon: Images, label: "المعرض", desc: "إدارة صورك وترتيب ألبوماتك", color: "bg-amber-100 text-amber-800" },
+    { icon: ShoppingBag, label: "الباقات", desc: "تحديد الخدمات والأسعار", color: "bg-emerald-100 text-emerald-800" },
+    { icon: Palette, label: "التصميم", desc: "تغيير القالب والألوان", color: "bg-violet-100 text-violet-800" },
+    { icon: Settings, label: "الإعدادات", desc: "بياناتك ورابطك والـ SEO", color: "bg-sky-100 text-sky-800" }
+  ];
+
+  return (
+    <div className="overflow-hidden rounded-[var(--radius-panel)] border border-border bg-white shadow-soft">
+      <div className="flex items-center gap-2 border-b border-border bg-muted/50 px-4 py-3">
+        <div className="flex gap-1.5">
+          <span className="size-2.5 rounded-full bg-danger" />
+          <span className="size-2.5 rounded-full bg-warning" />
+          <span className="size-2.5 rounded-full bg-success" />
+        </div>
+        <span className="mr-2 text-xs text-muted-foreground">frameid.app/dashboard</span>
+      </div>
+      <div className="grid grid-cols-2 gap-3 p-4 md:grid-cols-4">
+        {items.map((item) => (
+          <div
+            key={item.label}
+            className="rounded-[var(--radius-card)] border border-border bg-surface p-4 transition hover:shadow-soft"
+          >
+            <div className={`inline-flex size-9 items-center justify-center rounded-lg ${item.color}`}>
+              <item.icon className="size-4" aria-hidden />
+            </div>
+            <p className="mt-3 text-sm font-semibold">{item.label}</p>
+            <p className="mt-1 text-xs text-muted-foreground">{item.desc}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function HomePage() {
+  const templates = getPublishedTemplates();
+
   return (
     <>
       <MarketingNav />
       <main id="main-content">
-        <section className="relative min-h-[94svh] overflow-hidden bg-ink text-white">
+        {/* ──────────────── HERO ──────────────── */}
+        <section className="relative min-h-[92svh] overflow-hidden bg-ink text-white">
           <Image
             src={heroImage}
             alt=""
             fill
             priority
             sizes="100vw"
-            className="object-cover opacity-55"
+            className="object-cover opacity-50"
           />
-          <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(7,7,7,.42),rgba(7,7,7,.88)_72%,#070707_100%)]" />
-          <div className="container-page relative flex min-h-[94svh] flex-col justify-end pb-10 pt-28 md:pb-16">
+          <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(7,7,7,.38),rgba(7,7,7,.85)_72%,#070707_100%)]" />
+          <div className="container-page relative flex min-h-[92svh] flex-col justify-center pb-16 pt-24">
             <div className="max-w-3xl">
               <Badge tone="luxury" className="mb-5 border-white/20 bg-white/10 text-white">
                 منصة مواقع للمصورين
               </Badge>
-              <h1 className="text-balance text-5xl font-semibold leading-[1.05] md:text-7xl">
-                موقع مصور احترافي خلال دقائق.
+              <h1 className="text-balance text-4xl font-semibold leading-[1.08] md:text-6xl lg:text-7xl">
+                موقع خاص باسمك.
+                <br />
+                <span className="text-champagne">يضم أعمالك كلها</span>
+                —وتفتخر فيه قدام أي عميل.
               </h1>
-              <p className="mt-6 max-w-2xl text-base leading-8 text-white/78 md:text-lg">
-                FrameID يبني للمصور حضورًا فخمًا وسريعًا: قالب حي، رابط خاص،
-                لوحة تحكم بسيطة، وتجربة مجانية قبل الدفع.
+              <p className="mt-5 max-w-2xl text-base leading-8 text-white/72 md:text-lg">
+                خلال دقائق، حول صورك إلى موقع متكامل: معرض أعمال مرتب، باقات وأسعار واضحة،
+                رابط خاص، ولوحة تحكم بسيطة. بدون برمجة وبدون تعقيد.
               </p>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                 <Link
+                  href="/signup"
+                  className="inline-flex min-h-12 items-center justify-center gap-2 rounded-[var(--radius-control)] bg-champagne px-7 text-sm font-semibold text-ink transition-[background-color] hover:bg-champagne/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-champagne"
+                >
+                  ابدأ التجربة المجانية
+                </Link>
+                <Link
                   href="/templates"
-                  className="inline-flex min-h-12 items-center justify-center gap-2 rounded-[var(--radius-control)] bg-white px-6 text-sm font-semibold text-ink transition-[background-color] hover:bg-white/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+                  className="inline-flex min-h-12 items-center justify-center gap-2 rounded-[var(--radius-control)] border border-white/20 bg-white/5 px-6 text-sm font-semibold text-white transition-[background-color,border-color] hover:border-white/40 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
                 >
                   شاهد القوالب
                   <ArrowLeft className="size-4" aria-hidden />
                 </Link>
-                <Link
-                  href="/signup"
-                  className="inline-flex min-h-12 items-center justify-center rounded-[var(--radius-control)] border border-white/20 px-6 text-sm font-semibold text-white transition-[background-color,border-color] hover:border-white/45 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
-                >
-                  ابدأ التجربة المجانية
-                </Link>
               </div>
-              <div className="mt-6 flex flex-wrap gap-3 text-sm text-white/72">
-                {trustSignals.map((signal) => (
-                  <span key={signal} className="inline-flex items-center gap-2">
-                    <CheckCircle2 className="size-4 text-champagne" aria-hidden />
-                    {signal}
-                  </span>
-                ))}
+              <div className="mt-6 flex flex-wrap gap-x-5 gap-y-2 text-sm text-white/70">
+                <span className="inline-flex items-center gap-2">
+                  <CheckCircle2 className="size-4 text-champagne" aria-hidden />
+                  تجربة مجانية ١٤ يوم
+                </span>
+                <span className="inline-flex items-center gap-2">
+                  <CheckCircle2 className="size-4 text-champagne" aria-hidden />
+                  بدون بطاقة بنكية
+                </span>
+                <span className="inline-flex items-center gap-2">
+                  <CheckCircle2 className="size-4 text-champagne" aria-hidden />
+                  موقع جاهز خلال دقائق
+                </span>
               </div>
             </div>
+          </div>
+        </section>
 
-            <div className="mt-10 grid gap-3 sm:grid-cols-3">
-              {platformStats.map((stat) => (
+        {/* ──────────────── TEMPLATES ──────────────── */}
+        <section className="container-page py-14 md:py-22">
+          <div className="flex items-end justify-between gap-4">
+            <div>
+              <p className="text-sm font-semibold text-champagne-strong">
+                اختر قالبك
+              </p>
+              <h2 className="mt-2 text-3xl font-semibold md:text-5xl">
+                قوالب جاهزة—زي ما تكون موقع عميل حقيقي.
+              </h2>
+            </div>
+            <Link
+              href="/templates"
+              className="hidden shrink-0 items-center gap-2 text-sm font-semibold text-champagne-strong underline underline-offset-4 transition hover:text-champagne md:inline-flex"
+            >
+              عرض جميع القوالب
+              <ArrowLeft className="size-4" aria-hidden />
+            </Link>
+          </div>
+          <div className="mt-8 grid gap-5 md:grid-cols-2">
+            {templates.map((template) => (
+              <article
+                key={template.code}
+                className="group overflow-hidden rounded-[var(--radius-panel)] border border-border bg-surface shadow-soft transition hover:shadow-champagne"
+              >
+                <div className="relative aspect-[4/3] overflow-hidden">
+                  <Image
+                    src={getTemplatePreviewImage(template)}
+                    alt={`معاينة قالب ${template.name}`}
+                    fill
+                    sizes="(max-width: 768px) 100vw, 50vw"
+                    className="object-cover transition duration-500 group-hover:scale-105"
+                  />
+                </div>
+                <div className="flex items-center justify-between gap-3 p-4">
+                  <div>
+                    <h3 className="font-semibold">{template.name}</h3>
+                    <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                      {template.description}
+                    </p>
+                  </div>
+                  <Link
+                    href={`/templates/${template.code}/preview`}
+                    className="inline-flex shrink-0 items-center gap-2 rounded-[var(--radius-control)] border border-border bg-surface px-4 py-2 text-sm font-semibold transition hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    <Eye className="size-4" aria-hidden />
+                    معاينة
+                  </Link>
+                </div>
+              </article>
+            ))}
+          </div>
+          <div className="mt-6 text-center md:hidden">
+            <Link
+              href="/templates"
+              className="inline-flex items-center gap-2 text-sm font-semibold text-champagne-strong underline underline-offset-4"
+            >
+              عرض جميع القوالب
+              <ArrowLeft className="size-4" aria-hidden />
+            </Link>
+          </div>
+        </section>
+
+        {/* ──────────────── WHY FRAMEID ──────────────── */}
+        <section className="bg-surface py-14 md:py-22">
+          <div className="container-page">
+            <div className="max-w-2xl">
+              <p className="text-sm font-semibold text-champagne-strong">
+                ليش تختار FrameID؟
+              </p>
+              <h2 className="mt-2 text-3xl font-semibold md:text-5xl">
+                كل اللي يحتاجه المصور في مكان واحد.
+              </h2>
+            </div>
+            <div className="mt-8 grid grid-cols-2 gap-3 md:grid-cols-4">
+              {benefitCards.map((card) => (
                 <div
-                  key={stat.label}
-                  className="border-t border-white/18 pt-4 text-white"
+                  key={card.title}
+                  className="rounded-[var(--radius-card)] border border-border bg-background p-4 transition hover:shadow-soft"
                 >
-                  <div className="text-3xl font-semibold">{stat.value}</div>
-                  <div className="mt-1 text-sm text-white/60">{stat.label}</div>
+                  <span className="inline-flex size-8 items-center justify-center rounded-full bg-champagne/15 text-champagne-strong">
+                    <CheckCircle2 className="size-4" aria-hidden />
+                  </span>
+                  <h3 className="mt-3 text-sm font-semibold">{card.title}</h3>
+                  <p className="mt-1 text-xs leading-6 text-muted-foreground">
+                    {card.body}
+                  </p>
                 </div>
               ))}
             </div>
           </div>
         </section>
 
-        <section className="container-page py-14 md:py-24">
-          <div className="max-w-2xl">
+        {/* ──────────────── HOW IT WORKS ──────────────── */}
+        <section className="container-page py-14 md:py-22">
+          <div className="max-w-2xl text-center md:mx-auto">
             <p className="text-sm font-semibold text-champagne-strong">
-              كل شيء قليل، لكن مضبوط
+              ٤ خطوات فقط
             </p>
-            <h2 className="mt-3 text-3xl font-semibold md:text-5xl">
-              موقع جاهز للعميل، ولوحة سهلة للمصور.
+            <h2 className="mt-2 text-3xl font-semibold md:text-5xl">
+              كيف تبدا؟
             </h2>
           </div>
-          <div className="mt-8 grid gap-4 md:grid-cols-3">
-            {productPillars.map((pillar) => (
-              <Card key={pillar.title}>
-                <CardHeader>
-                  <pillar.icon className="mb-4 size-5 text-champagne-strong" />
-                  <CardTitle>{pillar.title}</CardTitle>
-                </CardHeader>
-                <CardContent className="text-sm leading-7 text-muted-foreground">
-                  {pillar.body}
-                </CardContent>
-              </Card>
+          <div className="mt-10 grid gap-4 md:grid-cols-4">
+            {howItWorks.map((step, index) => (
+              <div
+                key={step.title}
+                className="relative rounded-[var(--radius-card)] border border-border bg-card p-5 text-center"
+              >
+                <span className="mx-auto flex size-12 items-center justify-center rounded-full bg-ink text-lg font-semibold text-white">
+                  {index + 1}
+                </span>
+                <h3 className="mt-4 font-semibold">{step.title}</h3>
+                <p className="mt-2 text-sm leading-7 text-muted-foreground">
+                  {step.body}
+                </p>
+                {index < howItWorks.length - 1 && (
+                  <span
+                    className="absolute -left-2 top-1/2 hidden -translate-y-1/2 text-champagne-strong/30 md:block"
+                    aria-hidden
+                  >
+                    <ArrowLeft className="size-5" />
+                  </span>
+                )}
+              </div>
             ))}
           </div>
         </section>
 
-        <section className="bg-ink py-14 text-white md:py-24">
+        {/* ──────────────── COMPARISON ──────────────── */}
+        <section className="bg-ink py-14 text-white md:py-22">
           <div className="container-page">
-            <div className="max-w-3xl">
-              <Badge tone="luxury" className="border-white/15 bg-white/10 text-white">
-                رحلة المستخدم
-              </Badge>
-              <h2 className="mt-4 text-3xl font-semibold md:text-5xl">
-                من قالب حي إلى موقع مستقل ولوحة تحكم.
-              </h2>
-              <p className="mt-4 max-w-2xl leading-8 text-white/68">
-                FrameID لا يبيع صفحة جاهزة فقط؛ هو ينشئ للمصور هوية رقمية
-                قابلة للإدارة من أول تسجيل.
+            <div className="max-w-2xl">
+              <p className="text-sm font-semibold text-champagne">
+                مقارنة سريعة
               </p>
+              <h2 className="mt-2 text-3xl font-semibold md:text-5xl">
+                {comparisonData.headline}
+              </h2>
             </div>
-            <div className="mt-8 grid gap-3 md:grid-cols-4">
-              {onboardingJourney.map((step, index) => (
-                <article
-                  key={step.title}
-                  className="rounded-[var(--radius-card)] border border-white/10 bg-white/[0.04] p-4"
-                >
-                  <span className="text-sm font-semibold text-champagne">
-                    {String(index + 1).padStart(2, "0")}
+            <div className="mt-8 grid gap-4 md:grid-cols-2">
+              <div className="rounded-[var(--radius-panel)] border border-white/10 bg-white/[0.04] p-6">
+                <div className="flex items-center gap-3">
+                  <span className="inline-flex size-10 items-center justify-center rounded-full bg-white/10 text-white/60">
+                    <X className="size-5" aria-hidden />
                   </span>
-                  <h3 className="mt-4 font-semibold">{step.title}</h3>
-                  <p className="mt-2 text-sm leading-7 text-white/60">{step.body}</p>
-                </article>
-              ))}
+                  <h3 className="text-lg font-semibold">{comparisonData.instagram.title}</h3>
+                </div>
+                <ul className="mt-5 space-y-3">
+                  {comparisonData.instagram.cons.map((item) => (
+                    <li key={item} className="flex items-center gap-3 text-sm text-white/60">
+                      <span className="size-1.5 rounded-full bg-white/20" />
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div className="rounded-[var(--radius-panel)] border border-champagne/30 bg-champagne/[0.04] p-6">
+                <div className="flex items-center gap-3">
+                  <span className="inline-flex size-10 items-center justify-center rounded-full bg-champagne/20 text-champagne">
+                    <CheckCircle2 className="size-5" aria-hidden />
+                  </span>
+                  <h3 className="text-lg font-semibold">{comparisonData.frameid.title}</h3>
+                </div>
+                <ul className="mt-5 space-y-3">
+                  {comparisonData.frameid.pros.map((item) => (
+                    <li key={item} className="flex items-center gap-3 text-sm text-white/85">
+                      <span className="size-1.5 rounded-full bg-champagne" />
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              </div>
             </div>
           </div>
         </section>
 
-        <section className="container-page py-14 md:py-24">
-          <div className="grid gap-8 lg:grid-cols-[.9fr_1.1fr] lg:items-start">
+        {/* ──────────────── DASHBOARD ──────────────── */}
+        <section className="container-page py-14 md:py-22">
+          <div className="grid gap-8 lg:grid-cols-[1fr_1.1fr] lg:items-center">
             <div>
               <p className="text-sm font-semibold text-champagne-strong">
-                فصل الصلاحيات
+                لوحة التحكم
               </p>
-              <h2 className="mt-3 text-3xl font-semibold md:text-5xl">
-                لوحة المصور ليست لوحة الأدمن.
+              <h2 className="mt-2 text-3xl font-semibold md:text-5xl">
+                كل شيء تحت سيطرتك.
               </h2>
               <p className="mt-4 leading-8 text-muted-foreground">
-                المصور يدير موقعه فقط، بينما الأدمن الرئيسي يدير منصة FrameID
-                بالكامل: العملاء، المواقع، القوالب، المدفوعات، والإعدادات.
+                من لوحة واحدة تدير صورك، باقاتك، قوالبك، وإعدادات موقعك.
+                بدون مبرمج وبدون دروس—كل شي واضح من أول دقيقة.
               </p>
-            </div>
-            <div className="grid gap-4 md:grid-cols-2">
-              {separationCards.map((card) => (
-                <Card key={card.title} className="bg-surface">
-                  <CardHeader>
-                    <card.icon className="mb-4 size-5 text-champagne-strong" aria-hidden />
-                    <CardTitle>{card.title}</CardTitle>
-                  </CardHeader>
-                  <CardContent className="text-sm leading-7 text-muted-foreground">
-                    {card.body}
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </div>
-
-          <div className="mt-8 grid gap-4 lg:grid-cols-2">
-            <div className="rounded-[var(--radius-card)] border border-border bg-card p-5">
-              <h3 className="font-semibold">ماذا يتحكم فيه المصور؟</h3>
-              <div className="mt-4 grid gap-2 sm:grid-cols-2">
-                {photographerControls.map((item) => (
-                  <span key={item} className="inline-flex items-center gap-2 text-sm text-muted-foreground">
-                    <CheckCircle2 className="size-4 text-success" aria-hidden />
-                    {item}
-                  </span>
-                ))}
+              <div className="mt-6 flex flex-col gap-2 text-sm text-muted-foreground">
+                <span className="inline-flex items-center gap-2">
+                  <CheckCircle2 className="size-4 text-success" aria-hidden />
+                  رفع الصور وإدارة المعرض
+                </span>
+                <span className="inline-flex items-center gap-2">
+                  <CheckCircle2 className="size-4 text-success" aria-hidden />
+                  إضافة الباقات وتحديد الأسعار
+                </span>
+                <span className="inline-flex items-center gap-2">
+                  <CheckCircle2 className="size-4 text-success" aria-hidden />
+                  تغيير القالب والألوان
+                </span>
+                <span className="inline-flex items-center gap-2">
+                  <CheckCircle2 className="size-4 text-success" aria-hidden />
+                  تعديل البيانات والـ SEO
+                </span>
               </div>
             </div>
-            <div className="rounded-[var(--radius-card)] border border-border bg-card p-5">
-              <h3 className="font-semibold">ماذا يدير الأدمن؟</h3>
-              <div className="mt-4 grid gap-2 sm:grid-cols-2">
-                {adminControls.map((item) => (
-                  <span key={item} className="inline-flex items-center gap-2 text-sm text-muted-foreground">
-                    <CheckCircle2 className="size-4 text-champagne-strong" aria-hidden />
-                    {item}
-                  </span>
-                ))}
-              </div>
+            <div className="order-first lg:order-last">
+              <DashboardMockup />
             </div>
           </div>
         </section>
 
-        <section className="bg-surface py-14 md:py-24">
+        {/* ──────────────── TESTIMONIALS ──────────────── */}
+        <section className="bg-surface py-14 md:py-22">
           <div className="container-page">
-            <p className="text-sm font-semibold text-champagne-strong text-center">
-              آراء المصورين
-            </p>
-            <h2 className="mt-3 text-center text-3xl font-semibold md:text-5xl">
-              ماذا يقول من جرب FrameID؟
-            </h2>
-            <div className="mt-8 grid gap-5 md:grid-cols-3">
-              {testimonials.map((t) => (
-                <article
-                  key={t.name}
-                  className="rounded-[var(--radius-card)] border border-border bg-card p-6"
-                >
-                  <div className="flex gap-1" aria-label="تقييم ٥ نجوم">
-                    {Array.from({ length: 5 }).map((_, i) => (
-                      <Star key={i} className="size-4 fill-champagne text-champagne" aria-hidden />
-                    ))}
-                  </div>
-                  <blockquote className="mt-4 text-sm leading-7 text-muted-foreground">
-                    &ldquo;{t.quote}&rdquo;
-                  </blockquote>
-                  <footer className="mt-4 border-t border-border pt-4">
-                    <span className="text-sm font-semibold">{t.name}</span>
-                    <span className="mr-2 text-sm text-muted-foreground">{t.role}</span>
-                  </footer>
-                </article>
-              ))}
+            <div className="mx-auto max-w-2xl text-center">
+              <p className="text-sm font-semibold text-champagne-strong">
+                آراء المصورين
+              </p>
+              <h2 className="mt-2 text-3xl font-semibold md:text-5xl">
+                وش يقولون المصورين عن FrameID؟
+              </h2>
+              <div className="mt-8 rounded-[var(--radius-panel)] border border-border bg-card p-8">
+                <p className="text-base leading-8 text-muted-foreground">
+                  {betaTestimonial.message}
+                </p>
+                <div className="mt-6">
+                  <Link
+                    href="/signup"
+                    className="inline-flex min-h-11 items-center justify-center gap-2 rounded-[var(--radius-control)] bg-foreground px-6 text-sm font-semibold text-background transition hover:bg-foreground/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    <WandSparkles className="size-4" aria-hidden />
+                    سجل الآن وكن أول المصورين
+                  </Link>
+                </div>
+              </div>
             </div>
           </div>
         </section>
 
-        <section className="container-page py-14 md:py-24">
+        {/* ──────────────── FAQ ──────────────── */}
+        <section className="container-page py-14 md:py-22">
           <div className="mx-auto max-w-3xl">
             <p className="text-center text-sm font-semibold text-champagne-strong">
               أسئلة شائعة
             </p>
-            <h2 className="mt-3 text-center text-3xl font-semibold md:text-5xl">
-              إجابات سريعة لأسئلتك
+            <h2 className="mt-2 text-center text-3xl font-semibold md:text-5xl">
+              إجابات سريعة
             </h2>
             <div className="mt-8 space-y-3">
               {faqItems.map((item) => (
                 <details
                   key={item.question}
-                  className="group rounded-[var(--radius-card)] border border-border bg-card"
+                  className="group rounded-[var(--radius-card)] border border-border bg-card transition hover:shadow-soft"
                 >
                   <summary className="flex cursor-pointer items-center justify-between gap-3 p-4 text-sm font-semibold transition hover:bg-muted/50 [&::-webkit-details-marker]:hidden">
                     {item.question}
-                    <span className="shrink-0 text-muted-foreground transition-transform group-open:rotate-180" aria-hidden>
+                    <span
+                      className="shrink-0 text-muted-foreground transition-transform group-open:rotate-180"
+                      aria-hidden
+                    >
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <polyline points="6 9 12 15 18 9" />
                       </svg>
@@ -377,9 +487,37 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section className="sticky-cta fixed inset-x-0 bottom-0 z-40 border-t border-border bg-white/95 backdrop-blur-md md:hidden">
+        {/* ──────────────── FINAL CTA ──────────────── */}
+        <section className="bg-ink py-16 text-white md:py-22">
+          <div className="container-page text-center">
+            <h2 className="text-balance text-3xl font-semibold md:text-5xl">
+              جاهز تطلع صورتك المهنية؟
+            </h2>
+            <p className="mx-auto mt-4 max-w-xl text-base leading-8 text-white/65">
+              جرب ١٤ يوم مجاناً—بدون بطاقة بنكية وبدون التزام. موقعك جاهز خلال دقائق.
+            </p>
+            <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+              <Link
+                href="/signup"
+                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-[var(--radius-control)] bg-champagne px-7 text-sm font-semibold text-ink transition-[background-color] hover:bg-champagne/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-champagne"
+              >
+                ابدأ التجربة المجانية
+              </Link>
+              <Link
+                href="/templates"
+                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-[var(--radius-control)] border border-white/20 bg-white/5 px-6 text-sm font-semibold text-white transition-[background-color,border-color] hover:border-white/40 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+              >
+                شاهد القوالب
+                <ArrowLeft className="size-4" aria-hidden />
+              </Link>
+            </div>
+          </div>
+        </section>
+
+        {/* ──────────────── MOBILE STICKY CTA ──────────────── */}
+        <section className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-white/95 backdrop-blur-md md:hidden">
           <div className="container-page flex items-center gap-3 px-4 py-3">
-            <span className="text-sm font-semibold">جرب FrameID مجانًا</span>
+            <span className="text-sm font-semibold">جرب FrameID مجاناً</span>
             <Link
               href="/signup"
               className="mr-auto inline-flex min-h-10 items-center justify-center rounded-[var(--radius-control)] bg-foreground px-4 text-sm font-semibold text-background transition hover:bg-foreground/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground"
