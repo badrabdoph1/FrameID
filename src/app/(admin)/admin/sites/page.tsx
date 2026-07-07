@@ -1,9 +1,7 @@
-import Link from "next/link";
 import { CenterPageShell } from "@/components/admin/shared/center-page-shell";
-import { DataTable, type Column } from "@/components/admin/shared/data-table";
-import { Badge } from "@/components/ui/badge";
 import { prisma } from "@/lib/prisma";
 import { requireSuperAdminSession } from "@/modules/admin/admin-page-guards";
+import { SitesTable, type SiteRow } from "@/app/(admin)/admin/sites/sites-table";
 
 export const dynamic = "force-dynamic";
 
@@ -30,70 +28,17 @@ export default async function AdminSitesPage() {
     },
   });
 
-  type SiteRow = {
-    id: string;
-    slug: string;
-    title: string;
-    status: string;
-    locale: string;
-    isPublished: boolean;
-    createdAt: Date;
-    tenantName: string;
-    themeName: string;
-  };
-
-  const columns: Column<SiteRow>[] = [
-    {
-      key: "title",
-      header: "الموقع",
-      render: (r) => (
-        <div>
-          <p className="font-medium text-white">{r.title}</p>
-          <p className="text-xs text-white/50" dir="ltr">
-            {r.slug}.frameid.app
-          </p>
-        </div>
-      ),
-      searchable: true,
-    },
-    {
-      key: "tenantName",
-      header: "العميل",
-      render: (r) => (
-        <span className="text-sm text-white/70">{r.tenantName}</span>
-      ),
-    },
-    {
-      key: "themeName",
-      header: "القالب",
-      render: (r) => (
-        <span className="text-sm text-white/60">{r.themeName}</span>
-      ),
-    },
-    {
-      key: "status",
-      header: "الحالة",
-      render: (r) => {
-        const toneMap: Record<string, "success" | "warning" | "danger" | "neutral"> = {
-          PUBLISHED: "success",
-          DRAFT: "neutral",
-          EXPIRED: "danger",
-          SUSPENDED: "danger",
-        };
-        return <Badge tone={toneMap[r.status] || "neutral"}>{r.status}</Badge>;
-      },
-    },
-    {
-      key: "locale",
-      header: "اللغة",
-      render: (r) => (r.locale === "ar" ? "العربية" : r.locale),
-    },
-    {
-      key: "createdAt",
-      header: "تاريخ الإنشاء",
-      render: (r) => r.createdAt.toLocaleDateString("ar-EG"),
-    },
-  ];
+  const data: SiteRow[] = sites.map((s) => ({
+    id: s.id,
+    slug: s.slug,
+    title: s.title,
+    status: s.status,
+    locale: s.locale,
+    isPublished: s.isPublished,
+    createdAt: s.createdAt.toISOString(),
+    tenantName: s.tenant.displayName,
+    themeName: s.theme.name,
+  }));
 
   return (
     <CenterPageShell
@@ -102,22 +47,7 @@ export default async function AdminSitesPage() {
       description="جميع مواقع المصورين على المنصة."
       breadcrumbs={[{ label: "القيادة", href: "/admin" }, { label: "المواقع" }]}
     >
-      <DataTable
-        columns={columns}
-        data={sites.map((s) => ({
-          id: s.id,
-          slug: s.slug,
-          title: s.title,
-          status: s.status,
-          locale: s.locale,
-          isPublished: s.isPublished,
-          createdAt: s.createdAt,
-          tenantName: s.tenant.displayName,
-          themeName: s.theme.name,
-        }))}
-        keyField="id"
-        pageSize={20}
-      />
+      <SitesTable data={data} />
     </CenterPageShell>
   );
 }

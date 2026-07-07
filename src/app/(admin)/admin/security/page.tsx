@@ -1,8 +1,7 @@
 import { CenterPageShell } from "@/components/admin/shared/center-page-shell";
-import { DataTable, type Column } from "@/components/admin/shared/data-table";
-import { Badge } from "@/components/ui/badge";
 import { prisma } from "@/lib/prisma";
 import { requireSuperAdminSession } from "@/modules/admin/admin-page-guards";
+import { SecurityTable, type LogRow } from "@/app/(admin)/admin/security/security-table";
 
 export const dynamic = "force-dynamic";
 
@@ -22,30 +21,14 @@ export default async function AdminSecurityPage() {
     },
   });
 
-  type LogRow = {
-    id: string;
-    action: string;
-    entityType: string;
-    entityId: string | null;
-    actorEmail: string | null;
-    createdAt: Date;
-  };
-
-  const columns: Column<LogRow>[] = [
-    { key: "action", header: "الإجراء", searchable: true },
-    { key: "entityType", header: "الكيان" },
-    {
-      key: "entityId",
-      header: "المعرف",
-      render: (r) => r.entityId ?? "—",
-    },
-    { key: "actorEmail", header: "المستخدم", render: (r) => r.actorEmail ?? "system" },
-    {
-      key: "createdAt",
-      header: "التاريخ",
-      render: (r) => r.createdAt.toLocaleString("ar-EG"),
-    },
-  ];
+  const data: LogRow[] = auditLogs.map((l) => ({
+    id: l.id,
+    action: l.action,
+    entityType: l.entityType,
+    entityId: l.entityId,
+    actorEmail: l.actor?.email ?? null,
+    createdAt: l.createdAt.toISOString(),
+  }));
 
   return (
     <CenterPageShell
@@ -54,19 +37,7 @@ export default async function AdminSecurityPage() {
       description="سجل حركة النظام وجميع العمليات."
       breadcrumbs={[{ label: "القيادة", href: "/admin" }, { label: "الأمان" }]}
     >
-      <DataTable
-        columns={columns}
-        data={auditLogs.map((l) => ({
-          id: l.id,
-          action: l.action,
-          entityType: l.entityType,
-          entityId: l.entityId,
-          actorEmail: l.actor?.email ?? null,
-          createdAt: l.createdAt,
-        }))}
-        keyField="id"
-        pageSize={25}
-      />
+      <SecurityTable data={data} />
     </CenterPageShell>
   );
 }

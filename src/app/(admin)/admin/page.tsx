@@ -1,6 +1,5 @@
 import { CenterPageShell } from "@/components/admin/shared/center-page-shell";
 import { StatCard } from "@/components/admin/shared/stat-card";
-import { DataTable, type Column } from "@/components/admin/shared/data-table";
 import { prisma } from "@/lib/prisma";
 import { requireSuperAdminSession } from "@/modules/admin/admin-page-guards";
 import { createPrismaAdminOverviewRepository } from "@/modules/admin/prisma-admin-overview-repository";
@@ -8,6 +7,15 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
 export const dynamic = "force-dynamic";
+
+function statusBadge(status: string) {
+  const tone =
+    status === "ACTIVE" ? "success" as const
+      : status === "SUSPENDED" ? "danger" as const
+        : status === "TRIAL" ? "warning" as const
+          : "neutral" as const;
+  return <Badge tone={tone}>{status}</Badge>;
+}
 
 export default async function AdminDashboardPage() {
   const session = await requireSuperAdminSession();
@@ -46,45 +54,6 @@ export default async function AdminDashboardPage() {
       tenant: { select: { displayName: true } },
     },
   });
-
-  type CustomerRow = {
-    id: string;
-    displayName: string;
-    ownerEmail: string;
-    status: string;
-    sitesCount: number;
-    createdAt: Date;
-  };
-
-  const customerColumns: Column<CustomerRow>[] = [
-    { key: "displayName", header: "العميل", searchable: true },
-    { key: "ownerEmail", header: "البريد", searchable: true },
-    {
-      key: "status",
-      header: "الحالة",
-      render: (r) => (
-        <Badge
-          tone={
-            r.status === "ACTIVE"
-              ? "success"
-              : r.status === "SUSPENDED"
-                ? "danger"
-                : r.status === "TRIAL"
-                  ? "warning"
-                  : "neutral"
-          }
-        >
-          {r.status}
-        </Badge>
-      ),
-    },
-    { key: "sitesCount", header: "المواقع" },
-    {
-      key: "createdAt",
-      header: "التاريخ",
-      render: (r) => r.createdAt.toLocaleDateString("ar-EG"),
-    },
-  ];
 
   return (
     <CenterPageShell
@@ -128,20 +97,34 @@ export default async function AdminDashboardPage() {
           <h2 className="mb-4 text-lg font-semibold text-white">
             أحدث العملاء
           </h2>
-          <DataTable
-            columns={customerColumns}
-            data={recentCustomers.map((c) => ({
-              id: c.id,
-              displayName: c.displayName,
-              ownerEmail: c.owner.email,
-              status: c.status,
-              sitesCount: c._count.sites,
-              createdAt: c.createdAt,
-            }))}
-            keyField="id"
-            pageSize={5}
-            searchable={false}
-          />
+          {recentCustomers.length > 0 ? (
+            <div className="overflow-x-auto rounded-[var(--radius-panel)] border border-white/10">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-white/10 bg-white/[0.03]">
+                    <th className="px-4 py-3 text-right text-xs font-medium text-white/50">العميل</th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-white/50">البريد</th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-white/50">الحالة</th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-white/50">المواقع</th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-white/50">تاريخ التسجيل</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {recentCustomers.map((c) => (
+                    <tr key={c.id} className="border-b border-white/5 transition last:border-0">
+                      <td className="px-4 py-3 text-white/80">{c.displayName}</td>
+                      <td className="px-4 py-3 text-white/80">{c.owner.email}</td>
+                      <td className="px-4 py-3 text-white/80">{statusBadge(c.status)}</td>
+                      <td className="px-4 py-3 text-white/80">{c._count.sites}</td>
+                      <td className="px-4 py-3 text-white/80">{c.createdAt.toLocaleDateString("ar-EG")}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <p className="text-sm text-white/40">لا يوجد عملاء بعد.</p>
+          )}
         </div>
 
         <div>

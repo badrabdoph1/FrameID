@@ -1,5 +1,4 @@
 import { CenterPageShell } from "@/components/admin/shared/center-page-shell";
-import { DataTable, type Column } from "@/components/admin/shared/data-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { prisma } from "@/lib/prisma";
@@ -9,12 +8,28 @@ import {
   rejectPaymentAction,
 } from "@/app/(admin)/admin/payments/actions";
 import { createPrismaAdminPaymentReviewRepository } from "@/modules/admin/prisma-admin-payment-review-repository";
+import { PaymentsTable, type PaymentRow } from "@/app/(admin)/admin/payments/payments-table";
 
 export const dynamic = "force-dynamic";
 
 type Props = {
   searchParams: Promise<{ approved?: string; rejected?: string; error?: string }>;
 };
+
+function formatMethod(method: string): string {
+  switch (method) {
+    case "INSTAPAY":
+      return "إنستا باي";
+    case "VODAFONE_CASH":
+      return "فودافون كاش";
+    case "STRIPE":
+      return "Stripe";
+    case "PAYPAL":
+      return "PayPal";
+    default:
+      return method;
+  }
+}
 
 export default async function AdminPaymentsPage({ searchParams }: Props) {
   await requireSuperAdminSession();
@@ -39,49 +54,17 @@ export default async function AdminPaymentsPage({ searchParams }: Props) {
     },
   });
 
-  type PaymentRow = {
-    id: string;
-    tenantName: string;
-    amount: number;
-    method: string;
-    status: string;
-    reference: string | null;
-    createdAt: Date;
-    reviewedAt: Date | null;
-    reviewerName: string | null;
-  };
-
-  const columns: Column<PaymentRow>[] = [
-    { key: "tenantName", header: "العميل", searchable: true },
-    {
-      key: "amount",
-      header: "المبلغ",
-      render: (r) => `${r.amount} ج.م`,
-    },
-    {
-      key: "method",
-      header: "طريقة الدفع",
-      render: (r) => formatMethod(r.method),
-    },
-    {
-      key: "status",
-      header: "الحالة",
-      render: (r) => {
-        const toneMap: Record<string, "success" | "warning" | "danger" | "neutral"> = {
-          APPROVED: "success",
-          PENDING: "warning",
-          REJECTED: "danger",
-          EXPIRED: "neutral",
-        };
-        return <Badge tone={toneMap[r.status] || "neutral"}>{r.status}</Badge>;
-      },
-    },
-    {
-      key: "createdAt",
-      header: "التاريخ",
-      render: (r) => r.createdAt.toLocaleDateString("ar-EG"),
-    },
-  ];
+  const data: PaymentRow[] = allPayments.map((p) => ({
+    id: p.id,
+    tenantName: p.tenant.displayName,
+    amount: p.amount,
+    method: p.method,
+    status: p.status,
+    reference: p.reference,
+    createdAt: p.createdAt.toISOString(),
+    reviewedAt: p.reviewedAt?.toISOString() ?? null,
+    reviewerName: p.reviewedBy?.name ?? null,
+  }));
 
   return (
     <CenterPageShell
@@ -166,38 +149,8 @@ export default async function AdminPaymentsPage({ searchParams }: Props) {
         <h3 className="mb-4 text-sm font-medium text-white/60">
           سجل المدفوعات
         </h3>
-        <DataTable
-          columns={columns}
-          data={allPayments.map((p) => ({
-            id: p.id,
-            tenantName: p.tenant.displayName,
-            amount: p.amount,
-            method: p.method,
-            status: p.status,
-            reference: p.reference,
-            createdAt: p.createdAt,
-            reviewedAt: p.reviewedAt,
-            reviewerName: p.reviewedBy?.name ?? null,
-          }))}
-          keyField="id"
-          pageSize={15}
-        />
+        <PaymentsTable data={data} />
       </div>
     </CenterPageShell>
   );
-}
-
-function formatMethod(method: string): string {
-  switch (method) {
-    case "INSTAPAY":
-      return "إنستا باي";
-    case "VODAFONE_CASH":
-      return "فودافون كاش";
-    case "STRIPE":
-      return "Stripe";
-    case "PAYPAL":
-      return "PayPal";
-    default:
-      return method;
-  }
 }
