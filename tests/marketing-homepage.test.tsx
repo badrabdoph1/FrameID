@@ -64,12 +64,12 @@ describe("marketing homepage", () => {
     expect(screen.getAllByText(/frameid.app/i).length).toBeGreaterThanOrEqual(1);
   });
 
-  it("shows photographer-focused benefit cards", () => {
+  it("shows photographer-focused benefit cards with بدل ما", () => {
     render(<HomePage />);
 
     expect(
       screen.getByRole("heading", {
-        name: /أشياء يحتاجها كل مصور/i
+        name: /كل بطاقة = فائدة حقيقية لمصور زيك/i
       })
     ).toBeInTheDocument();
     expect(screen.getAllByText(/بدل ما/i).length).toBeGreaterThanOrEqual(6);
@@ -106,11 +106,14 @@ describe("marketing homepage", () => {
     ).toBeInTheDocument();
   });
 
-  it("shows comparison section", () => {
+  it("shows before-after comparison section", () => {
     render(<HomePage />);
 
     expect(
-      screen.getByText(/ليه تعتمد على حساب/i)
+      screen.getByText(/قبل FrameID وبعده/i)
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/الفرق واضح/i)
     ).toBeInTheDocument();
   });
 
@@ -120,5 +123,15 @@ describe("marketing homepage", () => {
     expect(
       screen.getByText(/هل أحتاج بطاقة ائتمان/i)
     ).toBeInTheDocument();
+  });
+
+  it("shows for-whom photographer type badges", () => {
+    render(<HomePage />);
+
+    expect(
+      screen.getByText(/مناسب لمن/i)
+    ).toBeInTheDocument();
+    expect(screen.getByText("مصوري الزفاف")).toBeInTheDocument();
+    expect(screen.getByText("الاستوديوهات")).toBeInTheDocument();
   });
 });
