@@ -6,21 +6,23 @@ import type { ContentSchemaKey, ContentSchemaType, SaveResult, ContentManifest }
 
 export type { SaveResult, ContentManifest, ContentSchemaKey, ContentSchemaType }
 
+type ContentSchema = NonNullable<(typeof ContentSchemas)[ContentSchemaKey]>
+
 export function getContent<T extends ContentSchemaKey>(
   type: T,
 ): ContentSchemaType<T> & { _version: number; _updatedAt: string } {
-  const schema = ContentSchemas[type]
+  const schema: ContentSchema = ContentSchemas[type]
   if (!schema) throw new Error(`Unknown content type: ${String(type)}`)
-  return loadContent(type as string, schema as any) as ContentSchemaType<T> & {
+  return loadContent(type, schema) as ContentSchemaType<T> & {
     _version: number
     _updatedAt: string
   }
 }
 
 export function saveContent(type: ContentSchemaKey, data: unknown): SaveResult {
-  const schema = ContentSchemas[type]
+  const schema: ContentSchema = ContentSchemas[type]
   if (!schema) throw new Error(`Unknown content type: ${String(type)}`)
-  return writeContent(type as string, schema as any, data)
+  return writeContent(type, schema, data)
 }
 
 export function getManifest(): ContentManifest {

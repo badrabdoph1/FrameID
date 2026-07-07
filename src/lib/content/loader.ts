@@ -2,7 +2,7 @@ import "server-only"
 import { readFileSync, existsSync } from "node:fs"
 import { join } from "node:path"
 import { cache } from "react"
-import type { z } from "zod"
+import type { ZodTypeAny } from "zod"
 import { ContentNotFoundError, ContentValidationError } from "./errors"
 
 const CONTENT_DIR = join(process.cwd(), "content")
@@ -30,7 +30,7 @@ function parseEnvelope(raw: unknown): { data: unknown; version: number; updatedA
 
 export const getContent = cache(function getContent<T>(
   type: string,
-  schema: z.ZodType<T>,
+  schema: ZodTypeAny,
 ): T & { _version: number; _updatedAt: string } {
   const raw = readRawContent(type)
   const { data, version, updatedAt } = parseEnvelope(raw)
@@ -38,7 +38,7 @@ export const getContent = cache(function getContent<T>(
   if (!result.success) {
     throw new ContentValidationError(
       type,
-      result.error.errors.map((e) => ({
+      result.error.issues.map((e) => ({
         path: e.path.join("."),
         message: e.message,
       })),

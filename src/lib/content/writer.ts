@@ -1,7 +1,7 @@
 import "server-only"
 import { writeFileSync } from "node:fs"
 import { join } from "node:fs"
-import type { z } from "zod"
+import type { ZodTypeAny } from "zod"
 import { createBackup } from "./backup"
 import { updateManifestEntry } from "./manifest"
 import { getContent, contentFileExists } from "./loader"
@@ -11,7 +11,7 @@ const CONTENT_DIR = join(process.cwd(), "content")
 
 export function saveContent(
   type: string,
-  schema: z.ZodType,
+  schema: ZodTypeAny,
   data: unknown,
 ): SaveResult {
   const result = schema.safeParse(data)
