@@ -22,6 +22,10 @@ function readFlagValue(raw: string): unknown {
   return JSON.parse(trimmed);
 }
 
+function redirectWithError(code: string): never {
+  redirect(`/admin/feature-flags?error=${encodeURIComponent(code)}`);
+}
+
 async function auditFeatureFlagChange(input: {
   adminId: string;
   adminEmail?: string;
@@ -55,19 +59,11 @@ export async function saveFeatureFlagAction(formData: FormData) {
   const tenantId = scope === "TENANT" ? readFormString(formData, "tenantId") || null : null;
   const siteId = scope === "SITE" ? readFormString(formData, "siteId") || null : null;
 
+  if (!key || key.length < 3) redirectWithError("invalid-key");
+  if (scope === "TENANT" && !tenantId) redirectWithError("missing-tenant");
+  if (scope === "SITE" && !siteId) redirectWithError("missing-site");
+
   try {
-    if (!key || key.length < 3) {
-      redirect("/admin/feature-flags?error=invalid-key");
-    }
-
-    if (scope === "TENANT" && !tenantId) {
-      redirect("/admin/feature-flags?error=missing-tenant");
-    }
-
-    if (scope === "SITE" && !siteId) {
-      redirect("/admin/feature-flags?error=missing-site");
-    }
-
     const value = readFlagValue(rawValue);
 
     const existing = id
@@ -78,16 +74,16 @@ export async function saveFeatureFlagAction(formData: FormData) {
             scope,
             tenantId,
             siteId,
-          },
+          } as never,
         });
 
     const saved = existing
       ? await prisma.featureFlag.update({
           where: { id: existing.id },
-          data: { key, scope, tenantId, siteId, enabled, value },
+          data: { key, scope, tenantId, siteId, enabled, value } as never,
         })
       : await prisma.featureFlag.create({
-          data: { key, scope, tenantId, siteId, enabled, value },
+          data: { key, scope, tenantId, siteId, enabled, value } as never,
         });
 
     await auditFeatureFlagChange({
@@ -113,11 +109,11 @@ export async function saveFeatureFlagAction(formData: FormData) {
 export async function toggleFeatureFlagAction(formData: FormData) {
   const admin = await requireAdminPermission("feature-flags", "edit");
   const id = readFormString(formData, "id");
+  const current = await prisma.featureFlag.findUnique({ where: { id } });
+
+  if (!current) redirectWithError("flag-not-found");
 
   try {
-    const current = await prisma.featureFlag.findUnique({ where: { id } });
-    if (!current) redirect("/admin/feature-flags?error=flag-not-found");
-
     const updated = await prisma.featureFlag.update({
       where: { id },
       data: { enabled: !current.enabled },
@@ -146,11 +142,11 @@ export async function toggleFeatureFlagAction(formData: FormData) {
 export async function deleteFeatureFlagAction(formData: FormData) {
   const admin = await requireAdminPermission("feature-flags", "delete");
   const id = readFormString(formData, "id");
+  const current = await prisma.featureFlag.findUnique({ where: { id } });
+
+  if (!current) redirectWithError("flag-not-found");
 
   try {
-    const current = await prisma.featureFlag.findUnique({ where: { id } });
-    if (!current) redirect("/admin/feature-flags?error=flag-not-found");
-
     await prisma.featureFlag.delete({ where: { id } });
     await auditFeatureFlagChange({
       adminId: admin.id,
