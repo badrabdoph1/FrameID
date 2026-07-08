@@ -17,6 +17,7 @@ import {
   Palette,
   UserCheck,
   Activity,
+  Flag,
   type LucideIcon,
 } from "lucide-react";
 
@@ -82,6 +83,7 @@ export const adminNavigation: AdminNavGroup[] = [
       { href: "/admin/notifications", label: "الإشعارات", icon: Bell },
       { href: "/admin/errors", label: "الأخطاء", icon: Activity },
       { href: "/admin/security", label: "الأمان", icon: ShieldCheck },
+      { href: "/admin/feature-flags", label: "Feature Flags", icon: Flag },
       { href: "/admin/support", label: "الدعم", icon: Headphones },
     ],
   },
@@ -105,6 +107,7 @@ export const adminSections: AdminSection[] = [
     icon: Home,
     links: [
       { href: "/admin", label: "لوحة القيادة", icon: Home },
+      { href: "/admin/search", label: "البحث الشامل", icon: Activity },
       { href: "/admin/analytics", label: "التحليلات", icon: BarChart3 },
       { href: "/admin/health", label: "صحة النظام", icon: Activity },
     ],
@@ -150,7 +153,7 @@ export const adminSections: AdminSection[] = [
     icon: DatabaseBackup,
     links: [
       { href: "/admin/backups", label: "النسخ الاحتياطي", icon: DatabaseBackup },
-      { href: "/admin/audit", label: "سجل التدقيق", icon: ClipboardList },
+      { href: "/admin/audit", label: "Audit Explorer", icon: ClipboardList },
       { href: "/admin/errors", label: "الأخطاء", icon: Activity },
     ],
   },
@@ -165,6 +168,7 @@ export const adminSections: AdminSection[] = [
     links: [
       { href: "/admin/notifications", label: "الإشعارات", icon: Bell },
       { href: "/admin/security", label: "الأمان", icon: ShieldCheck },
+      { href: "/admin/feature-flags", label: "Feature Flags", icon: Flag },
       { href: "/admin/support", label: "الدعم", icon: Headphones },
       { href: "/admin/settings", label: "إعدادات المنصة", icon: Settings },
       { href: "/admin/settings/payment", label: "إعدادات الدفع", icon: CreditCard },
