@@ -73,6 +73,27 @@ async function main() {
     });
   }
 
+  for (const paymentSettings of seedData.paymentSettings) {
+    await prisma.paymentSettings.upsert({
+      where: { paymentMethod: paymentSettings.paymentMethod },
+      update: {
+        isActive: paymentSettings.isActive,
+        label: paymentSettings.label,
+        description: paymentSettings.description,
+        config: paymentSettings.config as Prisma.InputJsonValue,
+        sortOrder: paymentSettings.sortOrder,
+      },
+      create: {
+        paymentMethod: paymentSettings.paymentMethod,
+        isActive: paymentSettings.isActive,
+        label: paymentSettings.label,
+        description: paymentSettings.description,
+        config: paymentSettings.config as Prisma.InputJsonValue,
+        sortOrder: paymentSettings.sortOrder,
+      },
+    });
+  }
+
   for (const settings of seedData.backupSettings) {
     await prisma.backupSettings.upsert({
       where: { type: settings.type },
