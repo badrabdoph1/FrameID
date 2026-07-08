@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import type { Prisma } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
 import { processError } from "@/lib/errors";
@@ -25,6 +24,23 @@ function clean(value: unknown, max = 500): string | undefined {
   return trimmed.slice(0, max);
 }
 
+function buildBody(payload: NotificationEventPayload): string | null {
+  const lines = [clean(payload.body, 2000)].filter(Boolean) as string[];
+  const requestId = clean(payload.requestId, 80);
+  const correlationId = clean(payload.correlationId, 80);
+  const route = clean(payload.route, 500);
+
+  if (requestId || correlationId || route) {
+    lines.push("");
+    lines.push("--- diagnostics ---");
+    if (requestId) lines.push(`Request ID: ${requestId}`);
+    if (correlationId) lines.push(`Correlation ID: ${correlationId}`);
+    if (route) lines.push(`Route: ${route}`);
+  }
+
+  return lines.length > 0 ? lines.join("\n") : null;
+}
+
 export async function POST(request: Request) {
   try {
     const payload = (await request.json()) as NotificationEventPayload;
@@ -39,22 +55,15 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: false, error: "Missing notification title" }, { status: 400 });
     }
 
-    const metadata: Prisma.InputJsonObject = {
-      requestId: clean(payload.requestId, 80) ?? null,
-      correlationId: clean(payload.correlationId, 80) ?? null,
-      route: clean(payload.route, 500) ?? null,
-    };
-
     await prisma.notificationLog.create({
       data: {
         type,
         title,
-        body: clean(payload.body, 2000) ?? null,
+        body: buildBody(payload),
         category: clean(payload.category, 80) ?? null,
         userId: clean(payload.userId, 80) ?? null,
         tenantId: clean(payload.tenantId, 80) ?? null,
-        metadata,
-      } as Prisma.NotificationLogUncheckedCreateInput,
+      },
     });
 
     return NextResponse.json({ ok: true });
