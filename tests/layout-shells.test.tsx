@@ -22,6 +22,7 @@ vi.mock("next/link", () => ({
 }));
 
 import { AdminShell } from "@/components/layout/admin-shell";
+import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { PhotographerShell } from "@/components/layout/photographer-shell";
 
 describe("application shells", () => {
@@ -49,5 +50,24 @@ describe("application shells", () => {
     expect(frameIdElements.length).toBeGreaterThanOrEqual(1);
     const adminElements = screen.getAllByText("Admin");
     expect(adminElements.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("keeps the customer dashboard shell on a dark readable surface", () => {
+    const { container } = render(
+      <DashboardShell siteSlug="demo">
+        <p>Customer dashboard content</p>
+      </DashboardShell>
+    );
+
+    const shell = container.firstElementChild as HTMLElement;
+    expect(screen.getByText("Customer dashboard content")).toBeInTheDocument();
+    expect(shell).toHaveStyle({
+      background: "#0b0d12",
+      color: "#f5ead6",
+    });
+    expect(screen.getByText("Customer dashboard content").parentElement).toHaveStyle({
+      width: "min(100%, 1120px)",
+      marginInline: "auto",
+    });
   });
 });

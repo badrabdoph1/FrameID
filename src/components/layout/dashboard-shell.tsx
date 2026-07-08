@@ -50,7 +50,16 @@ export function DashboardShell({
   }
 
   return (
-    <div className="admin-dark-shell" style={{ display: "flex", flexDirection: "column", minHeight: "100dvh" }}>
+    <div
+      className="admin-dark-shell"
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        minHeight: "100dvh",
+        background: "#0b0d12",
+        color: "#f5ead6",
+      }}
+    >
       {/* Header */}
       <header
         style={{
@@ -228,10 +237,14 @@ export function DashboardShell({
             padding: "14px 16px",
             overflowY: "auto",
             paddingBottom: 80,
+            background:
+              "radial-gradient(circle at top right, rgba(243,207,115,0.08), transparent 32%), #0b0d12",
           }}
           className="lg:pb-6"
         >
-          {children}
+          <div style={{ width: "min(100%, 1120px)", marginInline: "auto" }}>
+            {children}
+          </div>
         </main>
       </div>
 

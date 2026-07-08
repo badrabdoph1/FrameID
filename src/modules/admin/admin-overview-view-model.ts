@@ -16,10 +16,43 @@ export type AdminOverviewWidget = {
   tone: BadgeProps["tone"];
 };
 
+export type AdminPrimaryAction = {
+  label: string;
+  href: string;
+  tone: "danger" | "warning" | "success";
+  description: string;
+};
+
+export type AdminHealthItem = {
+  label: string;
+  status: "healthy" | "watch" | "needs-attention";
+  value: string;
+};
+
 export function createAdminOverviewViewModel(metrics: AdminOverviewMetrics): {
   widgets: AdminOverviewWidget[];
+  primaryAction: AdminPrimaryAction;
+  healthItems: AdminHealthItem[];
 } {
   return {
+    primaryAction: createPrimaryAction(metrics),
+    healthItems: [
+      {
+        label: "المدفوعات",
+        status: metrics.pendingPayments > 0 ? "needs-attention" : "healthy",
+        value: metrics.pendingPayments > 0 ? `${metrics.pendingPayments} معلقة` : "لا توجد معلقة"
+      },
+      {
+        label: "التجارب",
+        status: metrics.expiringTrials > 0 ? "watch" : "healthy",
+        value: metrics.expiringTrials > 0 ? `${metrics.expiringTrials} تنتهي قريباً` : "مستقرة"
+      },
+      {
+        label: "المواقع المنشورة",
+        status: "healthy",
+        value: `${metrics.activeSites} موقع`
+      }
+    ],
     widgets: [
       {
         label: "مستخدمون جدد اليوم",
@@ -52,6 +85,33 @@ export function createAdminOverviewViewModel(metrics: AdminOverviewMetrics): {
         tone: "success"
       }
     ]
+  };
+}
+
+function createPrimaryAction(metrics: AdminOverviewMetrics): AdminPrimaryAction {
+  if (metrics.pendingPayments > 0) {
+    return {
+      label: `راجع ${metrics.pendingPayments} مدفوعات معلقة`,
+      href: "/admin/payments",
+      tone: "danger",
+      description: "طلبات الدفع هي أسرع نقطة تؤثر على الإيراد وتفعيل العملاء."
+    };
+  }
+
+  if (metrics.expiringTrials > 0) {
+    return {
+      label: `تابع ${metrics.expiringTrials} تجارب تنتهي قريباً`,
+      href: "/admin/customers",
+      tone: "warning",
+      description: "التجارب القريبة من الانتهاء تحتاج متابعة قبل أن تتحول إلى فقدان عميل."
+    };
+  }
+
+  return {
+    label: "راجع نمو المنصة",
+    href: "/admin/analytics",
+    tone: "success",
+    description: "لا توجد عمليات عاجلة الآن. راجع النمو والاستخدام وحدد فرصة التحسين التالية."
   };
 }
 
