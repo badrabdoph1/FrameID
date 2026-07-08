@@ -1,4 +1,15 @@
 @layer base {
+  .admin-dark-shell {
+    --color-background: #0b0d12;
+    --color-foreground: #fff7e8;
+    --color-card: rgba(255, 255, 255, 0.03);
+    --color-card-foreground: #fff7e8;
+    --color-border: rgba(245, 234, 214, 0.08);
+    --color-surface: rgba(255, 255, 255, 0.03);
+    --color-muted: rgba(255, 255, 255, 0.06);
+    --color-muted-foreground: rgba(245, 234, 214, 0.6);
+  }
+
   .admin-scrollbar::-webkit-scrollbar {
     width: 4px;
     height: 4px;
