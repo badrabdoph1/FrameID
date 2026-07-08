@@ -52,6 +52,7 @@ export type ActionResult<T = void> =
   | {
       success: false;
       error: UserError;
+      detail?: ErrorDetail;
       requestId: string;
       correlationId?: string;
     };
@@ -67,10 +68,14 @@ export interface Notification {
   description?: string;
   suggestion?: string;
   error?: UserError;
+  detail?: ErrorDetail;
   duration?: number;
   groupKey?: string;
   groupCount?: number;
   requestId?: string;
+  correlationId?: string;
+  route?: string;
+  createdAt?: string;
 }
 
 export interface NotificationLogEntry {
