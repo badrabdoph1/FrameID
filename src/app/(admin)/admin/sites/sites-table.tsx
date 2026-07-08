@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 import { DataTable, type Column } from "@/components/admin/shared/data-table";
 import { Badge } from "@/components/ui/badge";
 
@@ -28,7 +30,9 @@ const columns: Column<SiteRow>[] = [
     header: "الموقع",
     render: (r) => (
       <div>
-        <p className="font-medium text-white">{r.title}</p>
+        <Link href={`/admin/sites/${r.id}`} className="font-bold text-white no-underline transition hover:text-amber-200">
+          {r.title}
+        </Link>
         <p className="text-xs text-white/50" dir="ltr">
           {r.slug}.frameid.app
         </p>
@@ -76,6 +80,11 @@ export function SitesTable({ data }: { data: SiteRow[] }) {
       data={data}
       keyField="id"
       pageSize={20}
+      actions={(site) => (
+        <Link href={`/admin/sites/${site.id}`} className="rounded-lg border border-amber-500/20 bg-amber-500/10 px-3 py-1.5 text-xs font-black text-amber-200 no-underline transition hover:bg-amber-500/20">
+          Workspace
+        </Link>
+      )}
     />
   );
 }
