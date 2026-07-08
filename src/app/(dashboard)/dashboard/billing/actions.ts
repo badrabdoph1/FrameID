@@ -12,11 +12,12 @@ import { createLocalMediaStorage } from "@/modules/media/local-media-storage";
 import { createMediaUploadService } from "@/modules/media/media-upload-service";
 import { createPrismaMediaUploadRepository } from "@/modules/media/prisma-media-upload-repository";
 
+import type { PaymentStatus } from "@prisma/client";
 import type { PaymentMethod } from "@/modules/billing/billing-activation-service";
 
 const VALID_METHODS: PaymentMethod[] = ["INSTAPAY", "VODAFONE_CASH", "STRIPE", "PAYPAL"];
-const EDITABLE_PAYMENT_STATUSES = ["DRAFT"];
-const ACTIVE_PAYMENT_STATUSES = ["DRAFT", "SUBMITTED", "PENDING", "UNDER_REVIEW"];
+const EDITABLE_PAYMENT_STATUSES: PaymentStatus[] = ["DRAFT"];
+const ACTIVE_PAYMENT_STATUSES: PaymentStatus[] = ["DRAFT", "SUBMITTED", "PENDING", "UNDER_REVIEW"];
 const MAX_PROOF_SIZE_BYTES = 5 * 1024 * 1024;
 const ALLOWED_PROOF_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
