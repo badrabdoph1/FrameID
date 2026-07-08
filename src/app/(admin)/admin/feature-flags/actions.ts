@@ -26,6 +26,12 @@ function redirectWithError(code: string): never {
   redirect(`/admin/feature-flags?error=${encodeURIComponent(code)}`);
 }
 
+function compactMetadata(input: Record<string, unknown>): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries(input).filter(([, value]) => value !== undefined),
+  );
+}
+
 async function auditFeatureFlagChange(input: {
   adminId: string;
   adminEmail?: string;
@@ -39,12 +45,12 @@ async function auditFeatureFlagChange(input: {
       action: input.action,
       entityType: "FeatureFlag",
       entityId: input.flagId,
-      metadata: {
+      metadata: compactMetadata({
         adminId: input.adminId,
         adminEmail: input.adminEmail,
         key: input.key,
         ...(input.metadata ?? {}),
-      },
+      }),
     },
   });
 }
