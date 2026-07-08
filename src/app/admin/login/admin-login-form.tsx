@@ -33,6 +33,9 @@ export function AdminLoginForm({ initialError }: AdminLoginFormProps) {
     setError("");
     setPending(true);
 
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), 15000);
+
     try {
       const body = new URLSearchParams();
       body.set("email", email);
@@ -41,6 +44,9 @@ export function AdminLoginForm({ initialError }: AdminLoginFormProps) {
       const response = await fetch("/api/admin/login", {
         method: "POST",
         credentials: "same-origin",
+        cache: "no-store",
+        redirect: "follow",
+        signal: controller.signal,
         headers: {
           accept: "application/json",
           "content-type": "application/x-www-form-urlencoded;charset=UTF-8",
@@ -57,10 +63,13 @@ export function AdminLoginForm({ initialError }: AdminLoginFormProps) {
         return;
       }
 
-      window.location.assign(data.redirectTo ?? "/admin");
-    } catch {
-      setError("تعذر الاتصال بالخادم. حاول مرة أخرى أو أعد تحميل الصفحة.");
+      window.location.href = data.redirectTo ?? "/admin";
+    } catch (requestError) {
+      const isTimeout = requestError instanceof DOMException && requestError.name === "AbortError";
+      setError(isTimeout ? "طلب الدخول لم يكتمل خلال 15 ثانية. أعد المحاولة بعد إعادة تحميل الصفحة." : "تعذر الاتصال بالخادم. حاول مرة أخرى أو أعد تحميل الصفحة.");
       setPending(false);
+    } finally {
+      window.clearTimeout(timeout);
     }
   }
 
