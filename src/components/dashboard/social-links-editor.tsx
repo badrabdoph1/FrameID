@@ -294,7 +294,7 @@ export function SocialLinksEditor({
           className="inline-flex items-center gap-1.5 text-sm text-champagne transition hover:text-champagne/80"
         >
           <Plus className="size-3.5" />
-          إضافة منصة ({hiddenCount})
+          ضيف منصة ({hiddenCount})
         </button>
       )}
     </div>

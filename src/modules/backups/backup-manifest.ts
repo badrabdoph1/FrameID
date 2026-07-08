@@ -1,5 +1,6 @@
 import "server-only";
 import { createHash } from "node:crypto";
+import { readFile, stat } from "node:fs/promises";
 
 export type BackupType = "DATABASE" | "UPLOADS" | "FULL";
 
@@ -150,9 +151,49 @@ export function validateBackupManifest(manifest: unknown): RestoreValidationResu
   return result;
 }
 
-export function verifyFileChecksum(
-  _filePath: string,
-  _expectedChecksum: string
-): boolean {
-  return true;
+export async function verifyFileChecksum(
+  filePath: string,
+  expectedChecksum: string
+): Promise<boolean> {
+  try {
+    const content = await readFile(filePath, "utf-8");
+    const actualChecksum = createSha256Checksum(content);
+    return actualChecksum === expectedChecksum;
+  } catch {
+    return false;
+  }
+}
+
+export async function verifyDatabaseDumpIntegrity(
+  dumpPath: string
+): Promise<{ valid: boolean; error?: string }> {
+  try {
+    const stats = await stat(dumpPath);
+    if (stats.size === 0) {
+      return { valid: false, error: "Database dump is empty" };
+    }
+    return { valid: true };
+  } catch (error) {
+    return {
+      valid: false,
+      error: error instanceof Error ? error.message : "Cannot read dump file",
+    };
+  }
+}
+
+export async function verifyArchiveIntegrity(
+  archivePath: string
+): Promise<{ valid: boolean; fileCount?: number; error?: string }> {
+  try {
+    const stats = await stat(archivePath);
+    if (stats.size === 0) {
+      return { valid: false, error: "Archive is empty" };
+    }
+    return { valid: true };
+  } catch (error) {
+    return {
+      valid: false,
+      error: error instanceof Error ? error.message : "Cannot read archive",
+    };
+  }
 }

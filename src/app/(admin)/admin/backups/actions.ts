@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { join } from "node:path";
+import { rm } from "node:fs/promises";
+import { existsSync } from "node:fs";
 
 import { prisma } from "@/lib/prisma";
 import { processError } from "@/lib/errors";
@@ -11,6 +13,9 @@ import { requireSuperAdminSession } from "@/modules/admin/admin-page-guards";
 import { createBackupJobService } from "@/modules/backups/backup-job-service";
 import { createPrismaBackupJobRepository } from "@/modules/backups/prisma-backup-job-repository";
 import { createRestoreService } from "@/modules/backups/backup-restore-service";
+import { createVerificationService } from "@/modules/backups/backup-verification-service";
+import { createAutoRestoreService } from "@/modules/backups/backup-auto-restore-service";
+import { createSnapshotService } from "@/modules/backups/backup-snapshot-service";
 import { env } from "@/lib/env";
 import type { BackupType } from "@/modules/backups/backup-manifest";
 import { listBackupDirs } from "@/modules/backups/local-backup-artifact-writer";
@@ -32,7 +37,7 @@ export async function runBackupAction(formData: FormData) {
       databaseUrl,
       platformVersion: process.env.npm_package_version ?? "0.1.0",
       backupGitHubToken: env.BACKUP_GITHUB_TOKEN,
-      backupEncryptionKey: env.BACKUP_ENCRYPTION_KEY,
+      backupEncryptionKey: env.BACKUP_ENCRYPTION_KEY ?? undefined,
     });
 
     await service.runManualBackup({
@@ -150,4 +155,145 @@ export async function listLocalBackupsAction() {
       display: dir,
     };
   });
+}
+
+export async function verifyBackupAction(formData: FormData) {
+  await requireSuperAdminSession();
+  const backupId = formData.get("backupId") as string;
+  const backupRoot = join(process.cwd(), "backups");
+  const verification = createVerificationService();
+  const result = await verification.verifyBackup(backupId, backupRoot);
+  revalidatePath("/admin/backups");
+  redirect(
+    `/admin/backups?verified=${result.valid ? "1" : "0"}&backup=${encodeURIComponent(backupId)}`
+  );
+}
+
+export async function verifyAllBackupsAction() {
+  await requireSuperAdminSession();
+  const backupRoot = join(process.cwd(), "backups");
+  const verification = createVerificationService();
+  const result = await verification.verifyAllBackups(backupRoot);
+  revalidatePath("/admin/backups");
+  redirect(
+    `/admin/backups?verified-all=1&valid=${result.valid}&invalid=${result.invalid}`
+  );
+}
+
+export async function deleteBackupAction(formData: FormData) {
+  const session = await requireSuperAdminSession();
+  const backupId = formData.get("backupId") as string;
+  const backupRoot = join(process.cwd(), "backups");
+  const backupDir = join(backupRoot, backupId);
+
+  try {
+    if (existsSync(backupDir)) {
+      await rm(backupDir, { recursive: true, force: true });
+    }
+    revalidatePath("/admin/backups");
+    redirect(`/admin/backups?deleted=1&backup=${encodeURIComponent(backupId)}`);
+  } catch (error) {
+    const { userError } = await processError(error, {
+      userId: session.user.id,
+      metadata: { action: "deleteBackup", backupId },
+    });
+    redirect(`/admin/backups?error=${encodeURIComponent(userError.message)}`);
+  }
+}
+
+export async function createSnapshotAction() {
+  const session = await requireSuperAdminSession();
+  const databaseUrl = env.DATABASE_URL;
+
+  try {
+    const snapshot = createSnapshotService();
+    const result = await snapshot.createSnapshot({
+      reason: "manual-snapshot",
+      databaseUrl,
+      uploadsDir: join(process.cwd(), "public", "uploads"),
+      contentDir: join(process.cwd(), "content"),
+      backupRoot: join(process.cwd(), "backups"),
+      platformVersion: process.env.npm_package_version ?? "0.1.0",
+      initiatedById: session.user.id,
+    });
+
+    revalidatePath("/admin/backups");
+    if (result.success) {
+      redirect(`/admin/backups?snapshot=1&backup=${encodeURIComponent(result.backupId)}`);
+    } else {
+      redirect(`/admin/backups?error=snapshot-failed&details=${encodeURIComponent(result.error || "")}`);
+    }
+  } catch (error) {
+    const { userError } = await processError(error, {
+      userId: session.user.id,
+      metadata: { action: "createSnapshot" },
+    });
+    redirect(`/admin/backups?error=${encodeURIComponent(userError.message)}`);
+  }
+}
+
+export async function checkAutoRestoreAction() {
+  const session = await requireSuperAdminSession();
+  const databaseUrl = env.DATABASE_URL;
+
+  try {
+    const autoRestore = createAutoRestoreService();
+    const result = await autoRestore.checkAndRestore({
+      databaseUrl,
+      backupRoot: join(process.cwd(), "backups"),
+      uploadsDir: join(process.cwd(), "public", "uploads"),
+      contentDir: join(process.cwd(), "content"),
+    });
+
+    revalidatePath("/admin/backups");
+    if (result.restored) {
+      redirect("/admin/backups?auto-restored=1");
+    } else {
+      redirect(`/admin/backups?auto-restore-check=1&needed=${result.needed ? "1" : "0"}`);
+    }
+  } catch (error) {
+    const { userError } = await processError(error, {
+      userId: session.user.id,
+      metadata: { action: "checkAutoRestore" },
+    });
+    redirect(`/admin/backups?error=${encodeURIComponent(userError.message)}`);
+  }
+}
+
+export async function updateBackupSettingsAction(formData: FormData) {
+  const session = await requireSuperAdminSession();
+  const type = formData.get("type") as string;
+  const enabled = formData.get("enabled") === "true";
+  const schedule = formData.get("schedule") as string;
+  const retentionCount = parseInt(formData.get("retentionCount") as string, 10);
+
+  if (type !== "DATABASE" && type !== "UPLOADS" && type !== "FULL") {
+    redirect("/admin/backups?error=invalid-type");
+  }
+
+  try {
+    await prisma.backupSettings.upsert({
+      where: { type: type as BackupType },
+      update: {
+        enabled,
+        schedule: schedule || "0 2 * * 0",
+        retentionCount: retentionCount || 10,
+      },
+      create: {
+        type: type as BackupType,
+        enabled,
+        schedule: schedule || "0 2 * * 0",
+        retentionCount: retentionCount || 10,
+      },
+    });
+
+    revalidatePath("/admin/backups");
+    redirect("/admin/backups?settings-updated=1");
+  } catch (error) {
+    const { userError } = await processError(error, {
+      userId: session.user.id,
+      metadata: { action: "updateBackupSettings", type },
+    });
+    redirect(`/admin/backups?error=${encodeURIComponent(userError.message)}`);
+  }
 }

@@ -1,81 +1,76 @@
-import { createCipheriv, createDecipheriv, createHash, randomBytes } from "node:crypto";
-import { createReadStream, createWriteStream } from "node:fs";
-import { mkdir } from "node:fs/promises";
-import { dirname } from "node:path";
-import { pipeline } from "node:stream/promises";
+import {
+  createCipheriv,
+  createDecipheriv,
+  randomBytes,
+  pbkdf2Sync,
+} from "node:crypto";
+import { readFile, writeFile } from "node:fs/promises";
 
-export type BackupEncryptor = {
-  encryptFile(inputPath: string, outputPath: string): Promise<string>;
-  decryptFile(inputPath: string, outputPath: string): Promise<void>;
+const ALGORITHM = "aes-256-gcm";
+const KEY_LENGTH = 32;
+const IV_LENGTH = 16;
+const SALT_LENGTH = 32;
+const TAG_LENGTH = 16;
+const PBKDF2_ITERATIONS = 600_000;
+const PBKDF2_DIGEST = "sha512";
+
+export type EncryptionResult = {
+  encryptedFilePath: string;
+  iv: string;
+  salt: string;
+  authTag: string;
 };
 
-function deriveKey(encryptionKey: string, salt: Buffer): Buffer {
-  return createHash("sha256")
-    .update(encryptionKey)
-    .update(salt)
-    .digest();
+function deriveKey(password: string, salt: Buffer): Buffer {
+  return pbkdf2Sync(password, salt, PBKDF2_ITERATIONS, KEY_LENGTH, PBKDF2_DIGEST);
 }
 
-function deriveIV(encryptionKey: string, salt: Buffer): Buffer {
-  return createHash("md5")
-    .update(encryptionKey)
-    .update(salt)
-    .digest()
-    .subarray(0, 16);
-}
+export async function encryptBackupFile(
+  filePath: string,
+  password: string
+): Promise<EncryptionResult> {
+  const salt = randomBytes(SALT_LENGTH);
+  const key = deriveKey(password, salt);
+  const iv = randomBytes(IV_LENGTH);
 
-export function createBackupEncryptor(
-  encryptionKey: string | undefined
-): BackupEncryptor | null {
-  if (!encryptionKey) return null;
+  const cipher = createCipheriv(ALGORITHM, key, iv);
+  const input = await readFile(filePath);
+  const encrypted = Buffer.concat([cipher.update(input), cipher.final()]);
+  const authTag = cipher.getAuthTag();
+
+  const outputPath = `${filePath}.encrypted`;
+  const header = Buffer.concat([salt, iv, authTag, encrypted]);
+  await writeFile(outputPath, header);
 
   return {
-    async encryptFile(inputPath: string, outputPath: string): Promise<string> {
-      const salt = randomBytes(16);
-      const key = deriveKey(encryptionKey, salt);
-      const iv = deriveIV(encryptionKey, salt);
-
-      await mkdir(dirname(outputPath), { recursive: true });
-
-      const cipher = createCipheriv("aes-256-cbc", key, iv);
-      const outputHandle = createWriteStream(outputPath);
-
-      outputHandle.write(salt);
-
-      const inputHandle = createReadStream(inputPath);
-      await pipeline(inputHandle, cipher, outputHandle);
-
-      const checksum = createHash("sha256")
-        .update(encryptionKey)
-        .update(await readFileAsBuffer(outputPath))
-        .digest("hex");
-
-      return checksum;
-    },
-
-    async decryptFile(inputPath: string, outputPath: string): Promise<void> {
-      const inputHandle = createReadStream(inputPath, { start: 0, end: 15 });
-      const salt = await new Promise<Buffer>((resolve, reject) => {
-        const chunks: Buffer[] = [];
-        inputHandle.on("data", (chunk) => chunks.push(Buffer.from(chunk)));
-        inputHandle.on("end", () => resolve(Buffer.concat(chunks)));
-        inputHandle.on("error", reject);
-      });
-
-      const key = deriveKey(encryptionKey, salt);
-      const iv = deriveIV(encryptionKey, salt);
-
-      const decipher = createDecipheriv("aes-256-cbc", key, iv);
-      const encryptedHandle = createReadStream(inputPath, { start: 16 });
-      const outputHandle = createWriteStream(outputPath);
-
-      await mkdir(dirname(outputPath), { recursive: true });
-      await pipeline(encryptedHandle, decipher, outputHandle);
-    },
+    encryptedFilePath: outputPath,
+    iv: iv.toString("hex"),
+    salt: salt.toString("hex"),
+    authTag: authTag.toString("hex"),
   };
 }
 
-async function readFileAsBuffer(path: string): Promise<Buffer> {
-  const fs = await import("node:fs/promises");
-  return fs.readFile(path);
+export async function decryptBackupFile(
+  filePath: string,
+  password: string
+): Promise<Buffer> {
+  const data = await readFile(filePath);
+
+  const salt = data.subarray(0, SALT_LENGTH);
+  const iv = data.subarray(SALT_LENGTH, SALT_LENGTH + IV_LENGTH);
+  const authTag = data.subarray(
+    SALT_LENGTH + IV_LENGTH,
+    SALT_LENGTH + IV_LENGTH + TAG_LENGTH
+  );
+  const encrypted = data.subarray(SALT_LENGTH + IV_LENGTH + TAG_LENGTH);
+
+  const key = deriveKey(password, salt);
+  const decipher = createDecipheriv(ALGORITHM, key, iv);
+  decipher.setAuthTag(authTag);
+
+  return Buffer.concat([decipher.update(encrypted), decipher.final()]);
+}
+
+export function generateEncryptionKey(): string {
+  return randomBytes(32).toString("hex");
 }

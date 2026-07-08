@@ -70,18 +70,18 @@ export default async function AdminDashboardPage() {
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div className="min-w-0">
             <span className="inline-flex w-fit items-center gap-1.5 rounded-md border border-amber-500/20 bg-amber-500/10 px-2 py-0.5 text-[0.68rem] font-extrabold text-[#f3cf73]">
-              مركز قيادة FrameID
+              مركز تحكم FrameID
             </span>
             <h1 className="mt-3 text-2xl font-black leading-tight text-[#fff7e8] sm:text-3xl lg:text-4xl">
-              صباح الخير، {adminName}
+              أهلاً، {adminName}
             </h1>
             <p className="mt-2 max-w-2xl text-sm font-bold leading-7 text-white/58">
-              هذه الشاشة تخبرك بما يحتاج تدخلك الآن: المدفوعات، التجارب، العملاء الجدد، وصحة المواقع المنشورة.
+              الشاشة دي بتوريك إيه محتاج تدخلك دلوقتي: المدفوعات، التجارب، العملاء الجدد، وصحة المواقع.
             </p>
           </div>
           <div className="grid gap-2 sm:flex sm:shrink-0 sm:flex-wrap">
-            <ActionButton href="/admin/customers/new" icon={Plus} label="إضافة عميل" variant="primary" />
-            <ActionButton href="/admin/sites" icon={ExternalLink} label="استعراض المواقع" />
+            <ActionButton href="/admin/customers/new" icon={Plus} label="ضيف عميل" variant="primary" />
+            <ActionButton href="/admin/sites" icon={ExternalLink} label="عرض المواقع" />
           </div>
         </div>
 
@@ -99,7 +99,7 @@ export default async function AdminDashboardPage() {
           >
             <div className="flex items-start justify-between gap-3">
               <div>
-                <p className="text-xs font-black text-white/45">الأولوية الآن</p>
+                <p className="text-xs font-black text-white/45">المهم دلوقتي</p>
                 <h2 className="mt-1 text-lg font-black text-[#fff7e8]">
                   {overview.primaryAction.label}
                 </h2>
@@ -127,11 +127,11 @@ export default async function AdminDashboardPage() {
       </section>
 
       <section className="grid grid-cols-2 gap-3 xl:grid-cols-4">
-        <MetricCard label="إجمالي العملاء" value={totalTenants} icon={Users} href="/admin/customers" />
+        <MetricCard label="كل العملاء" value={totalTenants} icon={Users} href="/admin/customers" />
         <MetricCard label="المواقع المنشورة" value={metrics.activeSites} icon={Globe} href="/admin/sites" />
-        <MetricCard label="المستخدمون" value={totalUsers} icon={TrendingUp} href="/admin/analytics" />
+        <MetricCard label="المستخدمين" value={totalUsers} icon={TrendingUp} href="/admin/analytics" />
         <MetricCard
-          label="إيراد الشهر"
+          label="إيرادات الشهر"
           value={`${metrics.monthlyRevenue.toLocaleString()} ${metrics.currency}`}
           icon={WalletCards}
           href="/admin/payments"
@@ -140,16 +140,16 @@ export default async function AdminDashboardPage() {
       </section>
 
       <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-        <StartCard label="مراجعة المدفوعات" desc={`${metrics.pendingPayments} طلبات معلقة`} icon={CreditCard} href="/admin/payments" urgent={metrics.pendingPayments > 0} />
-        <StartCard label="متابعة التجارب" desc={`${metrics.expiringTrials} تنتهي قريباً`} icon={UserCheck} href="/admin/customers" urgent={metrics.expiringTrials > 0} />
+        <StartCard label="مراجعة المدفوعات" desc={`${metrics.pendingPayments} طلب معلق`} icon={CreditCard} href="/admin/payments" urgent={metrics.pendingPayments > 0} />
+        <StartCard label="متابعة التجارب" desc={`${metrics.expiringTrials} حتنتهي قريب`} icon={UserCheck} href="/admin/customers" urgent={metrics.expiringTrials > 0} />
         <StartCard label="تحليلات المنصة" desc="نمو العملاء والاستخدام" icon={BarChart3} href="/admin/analytics" />
-        <StartCard label="الأمان والصلاحيات" desc="جلسات ودخول ومراجعة" icon={ShieldCheck} href="/admin/security" />
+        <StartCard label="الأمان والصلاحيات" desc="الجلسات والدخول والمراجعة" icon={ShieldCheck} href="/admin/security" />
       </section>
 
       <section className="grid gap-4 xl:grid-cols-[1fr_1fr]">
         <Panel
           title="آخر العملاء"
-          description="أحدث الحسابات التي دخلت المنصة."
+          description="أحدث الحسابات اللي دخلت المنصة."
           href="/admin/customers"
           cta="عرض العملاء"
         >
@@ -173,13 +173,13 @@ export default async function AdminDashboardPage() {
               ))}
             </div>
           ) : (
-            <EmptyState icon={Sparkles} title="لا يوجد عملاء بعد" description="ابدأ بإضافة أول عميل من زر الإضافة بالأعلى." />
+            <EmptyState icon={Sparkles} title="لسه مفيش عملاء" description="ابدأ بإضافة أول عميل من زر الإضافة بالأعلى." />
           )}
         </Panel>
 
         <Panel
-          title="مدفوعات تحتاج مراجعة"
-          description="طلبات الدفع المعلقة تؤثر مباشرة على تفعيل العملاء."
+          title="مدفوعات محتاجة مراجعة"
+          description="طلبات الدفع المعلقة بتأثر على تفعيل العملاء."
           href="/admin/payments"
           cta="مراجعة المدفوعات"
           highlighted={pendingPayments.length > 0}
@@ -205,7 +205,7 @@ export default async function AdminDashboardPage() {
               ))}
             </div>
           ) : (
-            <EmptyState icon={CheckCircle2} title="لا توجد مدفوعات معلقة" description="كل طلبات الدفع الحالية تمت مراجعتها." />
+            <EmptyState icon={CheckCircle2} title="مفيش مدفوعات معلقة" description="كل طلبات الدفع الحالية اتراجعت." />
           )}
         </Panel>
       </section>
@@ -365,7 +365,7 @@ function StatusPill({ status }: { status: string }) {
     ACTIVE: "نشط",
     TRIAL: "تجربة",
     EXPIRED: "منتهي",
-    SUSPENDED: "معلق",
+    SUSPENDED: "موقف",
   };
 
   return (

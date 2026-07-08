@@ -1,12 +1,12 @@
 {
   "$schema": "settings/platform",
-  "version": 1,
-  "updatedAt": "2026-07-07T00:00:00.000Z",
+  "version": 2,
+  "updatedAt": "2026-07-08T00:00:00.000Z",
   "data": {
     "name": "FrameID",
     "logo": "/logo.svg",
     "favicon": "/favicon.ico",
-    "tagline": "مواقع احترافية للمصورين",
+    "tagline": "مواقع احترافية لكل مصور",
     "accentColor": "#C9A96E",
     "locale": "ar",
     "direction": "rtl"

@@ -26,8 +26,8 @@ export function TemplatesClient({
       <section className="rounded-[var(--radius-panel)] border border-border bg-surface/70 p-5 sm:p-7">
         <BuilderPageHeader
           eyebrow="سوق القوالب"
-          title="اختر الشكل الذي يشبه أسلوب تصويرك"
-          description="عاين القالب كواجهة Desktop وMobile قبل التفعيل. تغيير القالب لا يحذف صورك أو بياناتك."
+          title="اختار الشكل اللي يشبه أسلوب تصويرك"
+          description="عاين القالب على Desktop وMobile قبل التفعيل. تغيير القالب ميمسحش صورك ولا بياناتك."
         />
         <div
           style={{
@@ -43,16 +43,16 @@ export function TemplatesClient({
               : "border-border/80 bg-background/70")
           }
         >
-          <p className="text-xs opacity-70">القالب المفعل الآن</p>
+          <p className="text-xs opacity-70">القالب اللي شغال دلوقتي</p>
           <p className="mt-1 text-lg font-semibold">
-            {currentThemeName ?? "لم يتم تحديد قالب"}
+            {currentThemeName ?? "مفيش قالب محدد"}
           </p>
         </div>
       </section>
 
       <section className="space-y-3">
         <div>
-          <h2 className="text-lg font-semibold">جميع القوالب</h2>
+          <h2 className="text-lg font-semibold">كل القوالب</h2>
           <p className="mt-1 text-sm text-muted-foreground">
             عاين القالب على بيانات تجريبية قبل التفعيل.
           </p>
@@ -92,7 +92,7 @@ function TemplateCard({
         {isCurrent ? (
           <div className="absolute right-3 top-3 z-10 inline-flex items-center gap-1 rounded-full bg-success px-3 py-1 text-xs font-bold text-black">
             <CheckCircle2 className="size-3.5" aria-hidden />
-            مفعل الآن
+            مفعل دلوقتي
           </div>
         ) : null}
         <div className="absolute inset-4 rounded-2xl border border-white/10 p-3 shadow-2xl" style={{ background: palette[0] }}>
@@ -177,7 +177,7 @@ function TemplateCard({
               disabled={isCurrent}
             >
               <WandSparkles className="size-4" aria-hidden />
-              {isCurrent ? "القالب مفعل" : "تفعيل القالب"}
+              {isCurrent ? "القالب شغال" : "شغّل القالب"}
             </Button>
           </form>
         </div>

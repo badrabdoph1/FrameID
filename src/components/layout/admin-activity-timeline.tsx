@@ -17,7 +17,7 @@ type AdminActivityTimelineProps = {
 
 export function AdminActivityTimeline({ events, className }: AdminActivityTimelineProps) {
   if (events.length === 0) {
-    return <div className="py-8 text-center text-sm text-white/30">لا توجد أحداث مسجلة</div>
+    return <div className="py-8 text-center text-sm text-white/30">مفيش أحداث مسجلة</div>
   }
 
   return (

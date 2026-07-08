@@ -3,7 +3,7 @@ export default function BillingLoading() {
     <div className="flex min-h-[40dvh] items-center justify-center">
       <div className="flex flex-col items-center gap-3">
         <div className="size-8 animate-spin rounded-full border-4 border-champagne border-t-transparent" />
-        <p className="text-sm text-muted-foreground">جاري تحميل صفحة التفعيل...</p>
+        <p className="text-sm text-muted-foreground">بنجهز صفحة التفعيل...</p>
       </div>
     </div>
   )

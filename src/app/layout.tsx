@@ -23,11 +23,11 @@ const seoBaseUrl = "https://frameid.app";
 
 export const metadata: Metadata = {
   title: {
-    default: "FrameID | مواقع احترافية للمصورين",
+    default: "FrameID | موقع احترافي لكل مصور",
     template: "%s | FrameID"
   },
   description:
-    "منصة SaaS تمنح المصور موقعًا احترافيًا ولوحة تحكم ورابطًا خاصًا خلال دقائق.",
+    "منصة بتدي المصور موقع احترافي ولوحة تحكم ورابط خاص في دقايق.",
   metadataBase: new URL(seoBaseUrl),
   applicationName: "FrameID"
 };

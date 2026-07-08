@@ -1,10 +1,7 @@
-import { exec } from "node:child_process";
-import { promisify } from "node:util";
+import { spawn } from "node:child_process";
 import { existsSync } from "node:fs";
 import { mkdir, readdir, stat } from "node:fs/promises";
 import { join, dirname } from "node:path";
-
-const execAsync = promisify(exec);
 
 export type UploadsPackagerResult = {
   archivePath: string;
@@ -17,6 +14,17 @@ export type UploadsPackager = {
   packageUploads(outputDir: string, backupId: string): Promise<UploadsPackagerResult>;
   getUploadsSize(): Promise<number>;
 };
+
+function tarArchive(args: string[]): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const child = spawn("tar", args, { stdio: "inherit" });
+    child.on("close", (code) => {
+      if (code === 0) resolve();
+      else reject(new Error(`tar exited with code ${code}`));
+    });
+    child.on("error", reject);
+  });
+}
 
 export function createUploadsPackager(uploadsDir: string): UploadsPackager {
   return {
@@ -36,15 +44,18 @@ export function createUploadsPackager(uploadsDir: string): UploadsPackager {
       }
 
       if (fileCount > 0) {
-        await execAsync(
-          `tar --exclude=".*" -czf "${archivePath}" -C "${uploadsDir}/.." "${uploadsDir.split("/").pop()}"`,
-          { maxBuffer: 1024 * 1024 * 1024 }
-        );
+        const parentDir = join(uploadsDir, "..");
+        const dirName = uploadsDir.split("/").filter(Boolean).pop() ?? "uploads";
+        await tarArchive([
+          "--exclude=.*",
+          "-czf",
+          archivePath,
+          "-C",
+          parentDir,
+          dirName,
+        ]);
       } else {
-        await execAsync(
-          `tar -czf "${archivePath}" --files-from=/dev/null`,
-          { maxBuffer: 1024 * 1024 }
-        );
+        await tarArchive(["-czf", archivePath, "--files-from=/dev/null"]);
       }
 
       const durationMs = Date.now() - startTime;

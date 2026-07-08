@@ -3,7 +3,7 @@ export default function ServicesLoading() {
     <div className="flex min-h-[40dvh] items-center justify-center">
       <div className="flex flex-col items-center gap-3">
         <div className="size-8 animate-spin rounded-full border-4 border-champagne border-t-transparent" />
-        <p className="text-sm text-muted-foreground">جاري تحميل الخدمات...</p>
+        <p className="text-sm text-muted-foreground">بنجهز الخدمات...</p>
       </div>
     </div>
   )

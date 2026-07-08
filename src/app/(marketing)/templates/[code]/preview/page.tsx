@@ -8,7 +8,7 @@ import type { PublicSiteViewModel } from "@/modules/public-sites/public-site-vie
 import { getTemplateByCode } from "@/modules/themes/theme-registry";
 
 export const metadata: Metadata = {
-  title: "معاينة القالب | FrameID",
+  title: "معاينة القالب",
   robots: {
     index: false,
     follow: false
@@ -46,7 +46,7 @@ export default async function TemplatePreviewPage({ params }: Props) {
           className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-[var(--radius-control)] bg-white px-4 text-sm font-semibold text-ink"
         >
           <WandSparkles className="size-4" aria-hidden />
-          استخدام هذا القالب
+          استخدم القالب ده
         </Link>
       </div>
     </>
@@ -96,13 +96,13 @@ const previewSite: PublicSiteViewModel = {
     name: "Kareem Magdy"
   },
   hero: {
-    headline: "نصنع ذكريات تبقى للأبد",
+    headline: "بنصنع ذكريات تفضل طول العمر",
     subheadline:
-      "تصوير حفلات الزفاف والخطوبة والجلسات الخاصة بأسلوب فاخر يجمع بين البساطة، والإضاءة السينمائية، والألوان الطبيعية.",
+      "تصوير زفاف وخطوبة وجلسات خاصة بأسلوب فاخر—بساطة، إضاءة سينمائية، وألوان طبيعية.",
     imageUrl: DEMO_HERO_IMAGE
   },
   contact: {
-    callToAction: "احجز الآن",
+    callToAction: "احجز دلوقتي",
     phone: null,
     whatsapp: null,
     email: null,

@@ -17,25 +17,25 @@ function readServerActionFormValue(formData: FormData, key: string) {
 
 export function getAuthActionErrorMessage(error: unknown): string {
   if (error instanceof ZodError) {
-    return "راجع البيانات وحاول مرة أخرى.";
+    return "راجع البيانات وجرب تاني.";
   }
 
   if (!(error instanceof Error)) {
-    return "حدث خطأ غير متوقع. حاول مرة أخرى.";
+    return "حصل خطأ غير متوقع. حاول تاني.";
   }
 
   console.error("[auth-action-error]", error.constructor.name, error.message, error.stack?.split("\n").slice(0, 3).join("\n"));
 
   if (error.message === "Email already exists") {
-    return "هذا البريد مستخدم بالفعل.";
+    return "البريد دا مستخدم قبل كده.";
   }
 
   if (error.message === "Invalid email or password") {
-    return "البريد أو كلمة المرور غير صحيحة.";
+    return "البريد أو كلمة السر غلط.";
   }
 
   if (error.message === "Selected template is not available") {
-    return "القالب المختار غير متاح حاليًا.";
+    return "القالب المختار مش متاح دلوقتي.";
   }
 
   if (
@@ -43,7 +43,7 @@ export function getAuthActionErrorMessage(error: unknown): string {
     error.message.includes("Can't reach database server") ||
     error.message.includes("P1001")
   ) {
-    return "قاعدة البيانات غير متصلة حاليًا. تأكد من DATABASE_URL وتشغيل قاعدة البيانات ثم حاول مرة أخرى.";
+    return "قاعدة البيانات مش متصلة دلوقتي. تأكد من DATABASE_URL وشغل قاعدة البيانات وجرب تاني.";
   }
 
   return "حدث خطأ غير متوقع. حاول مرة أخرى.";

@@ -57,7 +57,7 @@ export function AdminConfirmDialog({
         <div className="mt-6 flex gap-3">
           <button onClick={onClose} disabled={loading} className="flex-1 rounded-lg border border-white/8 px-4 py-2.5 text-sm font-extrabold text-white/60 transition hover:bg-white/6 hover:text-white disabled:opacity-40">{cancelLabel}</button>
           <button onClick={onConfirm} disabled={loading} className={cn("flex-1 rounded-lg px-4 py-2.5 text-sm font-extrabold transition disabled:opacity-40", variant === "danger" && "bg-red-500 text-white hover:bg-red-600", variant === "warning" && "bg-amber-500 text-[#17120a] hover:bg-amber-600", variant === "default" && "bg-gradient-to-br from-[#f3cf73] to-[#d4af37] text-[#17120a] hover:opacity-90")}>
-            {loading ? "جاري..." : confirmLabel}
+            {loading ? "..." : confirmLabel}
           </button>
         </div>
       </div>

@@ -1,4 +1,5 @@
 import type { BackupJobRepository } from "@/modules/backups/backup-job-service";
+import type { BackupManifest } from "@/modules/backups/backup-manifest";
 
 type PrismaBackupJobClient = {
   backupJob: {
@@ -52,21 +53,21 @@ export function createPrismaBackupJobRepository(
         mediaFilesCount
       };
     },
-    async saveManifest(input) {
+    async saveManifest(input: BackupManifest) {
       await prisma.backupManifest.create({
         data: {
           backupJobId: input.backupJobId,
-          platformVersion: input.platformVersion,
+          platformVersion: input.appVersion,
           usersCount: input.usersCount,
           tenantsCount: input.tenantsCount,
           sitesCount: input.sitesCount,
           mediaFilesCount: input.mediaFilesCount,
-          compressedSizeBytes: input.compressedSizeBytes,
+          compressedSizeBytes: input.totalSizeBytes,
           compressionAlgorithm: input.compressionAlgorithm,
           encryptionEnabled: input.encryptionEnabled,
-          sha256Checksum: input.sha256Checksum,
-          localVerificationStatus: input.localVerificationStatus,
-          githubUploadStatus: input.githubUploadStatus
+          sha256Checksum: input.checksum,
+          localVerificationStatus: "PASSED",
+          githubUploadStatus: "PENDING"
         }
       });
     },

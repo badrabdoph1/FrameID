@@ -22,7 +22,7 @@ export function MarketingFooter() {
             </p>
           </div>
           <div>
-            <h4 className="text-sm font-semibold text-white/80">روابط سريعة</h4>
+            <h4 className="text-sm font-semibold text-white/80">روابط مهمة</h4>
             <ul className="mt-4 space-y-3">
               {footer.quickLinks.map((link: { label: string; href: string }) => (
                 <li key={link.href}>

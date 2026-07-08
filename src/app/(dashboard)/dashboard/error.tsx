@@ -21,15 +21,15 @@ export default function DashboardError({
         <div className="mx-auto mb-4 flex size-12 items-center justify-center rounded-full bg-danger-soft">
           <AlertTriangle className="size-6 text-danger" />
         </div>
-        <h2 className="text-xl font-bold">حدث خطأ في لوحة التحكم</h2>
-        <p className="mt-2 text-sm text-muted-foreground">نأسف للإزعاج، يرجى المحاولة مرة أخرى.</p>
+        <h2 className="text-xl font-bold">حصل خطأ في لوحة التحكم</h2>
+        <p className="mt-2 text-sm text-muted-foreground">آسفين على الإزعاج، جرب تاني.</p>
         <div className="mt-6 flex justify-center gap-3">
           <button
             onClick={reset}
             className="inline-flex min-h-10 items-center justify-center gap-2 rounded-[var(--radius-control)] bg-foreground px-5 text-sm font-semibold text-background transition hover:bg-foreground/90"
           >
             <RefreshCw className="size-4" />
-            إعادة المحاولة
+            جرب تاني
           </button>
           <Link
             href="/"

@@ -43,7 +43,7 @@ export async function sendPasswordResetLink(input: {
 
     await sendEmail(smtpConfig, {
       to: input.email,
-      subject: "استعادة كلمة المرور - FrameID",
+      subject: "استعادة كلمة السر - FrameID",
       html,
     });
     return;

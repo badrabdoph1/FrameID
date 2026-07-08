@@ -19,10 +19,10 @@ export function AuthShell({
         </Link>
         <div className="max-w-md">
           <p className="text-sm font-semibold text-champagne">
-            منصة مصممة للمصورين
+            منصة لكل مصور
           </p>
           <h2 className="mt-4 text-4xl font-semibold leading-tight">
-            موقع، رابط، لوحة تحكم، وتجربة مجانية من أول دخول.
+            موقع، رابط، لوحة تحكم—وتجربة مجانية من أول دخول.
           </h2>
         </div>
       </section>

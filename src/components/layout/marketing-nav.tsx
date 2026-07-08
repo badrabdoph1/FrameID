@@ -15,8 +15,8 @@ interface MarketingNavProps {
 
 const defaultLinks: NavLink[] = [
   { href: "/templates", label: "القوالب" },
-  { href: "/login", label: "دخول" },
-  { href: "/signup", label: "إنشاء حساب" }
+  { href: "/login", label: "تسجيل دخول" },
+  { href: "/signup", label: "جرب مجاناً" }
 ];
 
 export function MarketingNav({ links = defaultLinks }: MarketingNavProps) {
@@ -29,7 +29,7 @@ export function MarketingNav({ links = defaultLinks }: MarketingNavProps) {
         href="#main-content"
         className="fixed start-4 top-4 z-50 -translate-y-24 rounded-[var(--radius-control)] bg-white px-4 py-2 text-sm font-semibold text-ink shadow-soft transition-transform focus-visible:translate-y-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
       >
-        تخطي إلى المحتوى
+       انتقال للمحتوى
       </Link>
       <header className="fixed inset-x-0 top-0 z-30 border-b border-white/10 bg-ink/70 backdrop-blur-xl">
         <nav className="container-page flex h-16 items-center justify-between gap-3 text-white">

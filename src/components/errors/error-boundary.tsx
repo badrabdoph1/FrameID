@@ -55,10 +55,10 @@ export class ErrorBoundary extends Component<Props, State> {
               <AlertTriangle className="size-6 text-danger" />
             </div>
             <h2 className="mb-2 text-lg font-semibold text-foreground">
-              حدث خطأ غير متوقع
+              حصل خطأ غير متوقع
             </h2>
             <p className="mb-6 text-sm text-muted-foreground">
-              تعذر تحميل هذا الجزء. حاول تحديث الصفحة.
+              مقدرناش نحمل الجزء ده. حاول تحديث الصفحة.
             </p>
             <div className="flex items-center justify-center gap-3">
               <button
@@ -69,7 +69,7 @@ export class ErrorBoundary extends Component<Props, State> {
                 )}
               >
                 <RotateCcw className="size-4" aria-hidden />
-                إعادة المحاولة
+                جرب تاني
               </button>
               <button
                 onClick={this.handleCopy}
@@ -79,7 +79,7 @@ export class ErrorBoundary extends Component<Props, State> {
                 )}
               >
                 <ClipboardCopy className="size-4" aria-hidden />
-                نسخ التفاصيل
+                انسخ التفاصيل
               </button>
             </div>
             {isDev && this.state.error && (

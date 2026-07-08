@@ -1,8 +1,9 @@
-import { mkdir, writeFile, readFile } from "node:fs/promises";
+import { mkdir, writeFile, readFile, readdir, stat } from "node:fs/promises";
 import { join } from "node:path";
 import { existsSync } from "node:fs";
 
-import type { BackupType } from "@/modules/backups/backup-manifest";
+import type { BackupType, BackupManifest } from "@/modules/backups/backup-manifest";
+import { generateBackupId } from "@/modules/backups/backup-package-creator";
 
 export type BackupArtifact = {
   backupDir: string;
@@ -28,7 +29,7 @@ export type BackupArtifactWriter = {
     databaseSizeBytes: number;
     uploadsSizeBytes: number;
     contentSizeBytes: number;
-    manifest: Record<string, unknown>;
+    manifest: BackupManifest;
     checksumSha256: string;
   }): Promise<{ backupDir: string; manifestPath: string }>;
 };
@@ -57,25 +58,11 @@ export function createLocalBackupArtifactWriter({
   };
 }
 
-function formatBackupId(date: Date): string {
-  const y = date.getUTCFullYear();
-  const m = String(date.getUTCMonth() + 1).padStart(2, "0");
-  const d = String(date.getUTCDate()).padStart(2, "0");
-  const h = String(date.getUTCHours()).padStart(2, "0");
-  const min = String(date.getUTCMinutes()).padStart(2, "0");
-  return `${y}-${m}-${d}_${h}-${min}`;
-}
-
-export function generateBackupId(now?: Date): string {
-  return formatBackupId(now ?? new Date());
-}
+export { generateBackupId };
 
 export async function listBackupDirs(backupRoot?: string): Promise<string[]> {
   const root = backupRoot ?? join(process.cwd(), "backups");
   if (!existsSync(root)) return [];
-
-  const { readdir } = await import("node:fs/promises");
-  const { stat } = await import("node:fs/promises");
 
   const entries = await readdir(root);
   const dirs: string[] = [];

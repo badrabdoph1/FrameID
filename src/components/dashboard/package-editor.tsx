@@ -99,7 +99,7 @@ export function PackageEditor({
                 saving ? "text-champagne opacity-100" : "text-muted-foreground opacity-0",
               )}
             >
-              جاري الحفظ...
+              بيحفظ...
             </p>
           </div>
 

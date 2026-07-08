@@ -25,8 +25,31 @@ describe("local backup artifact writer", () => {
       contentSizeBytes: 0,
       manifest: {
         version: 1,
-        backupId,
+        schemaVersion: 1,
+        backupJobId: backupId,
+        backupType: "DATABASE",
         createdAt: "2026-07-06T12:00:00.000Z",
+        appVersion: "0.1.0",
+        gitCommitSha: "",
+        databaseVersion: "1.0",
+        usersCount: 0,
+        tenantsCount: 0,
+        sitesCount: 0,
+        mediaFilesCount: 0,
+        databaseSizeBytes: 1024,
+        uploadsSizeBytes: 0,
+        contentSizeBytes: 0,
+        totalSizeBytes: 1024,
+        compressionAlgorithm: "gzip",
+        encryptionEnabled: false,
+        files: {
+          database: "database.sql.gz",
+          uploads: "uploads.tar.gz",
+          content: "content.tar.gz",
+          manifest: "manifest.json",
+          checksum: "checksum.sha256",
+        },
+        checksum: "abc123def456abc123def456abc123def456abc123def456abc123def456abc1",
       },
       checksumSha256:
         "abc123def456abc123def456abc123def456abc123def456abc123def456abc1",
@@ -38,6 +61,6 @@ describe("local backup artifact writer", () => {
     const manifestContent = await readFile(result.manifestPath, "utf-8");
     const manifest = JSON.parse(manifestContent);
     expect(manifest.version).toBe(1);
-    expect(manifest.backupId).toBe(backupId);
+    expect(manifest.backupJobId).toBe(backupId);
   });
 });

@@ -26,7 +26,7 @@ export function DashboardSiteActions({ siteUrl }: DashboardSiteActionsProps) {
         ) : (
           <Copy className="size-4" aria-hidden />
         )}
-        {copied ? "تم النسخ" : "نسخ الرابط"}
+        {copied ? "اتنسخ" : "انسخ الرابط"}
       </Button>
       <Link
         href="/dashboard/content"

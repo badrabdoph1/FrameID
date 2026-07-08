@@ -9,7 +9,7 @@ import { loginAction } from "@/app/(marketing)/login/actions";
 
 export const metadata: Metadata = {
   title: "تسجيل الدخول",
-  description: "تسجيل الدخول إلى لوحة تحكم FrameID لإدارة موقعك وصورك وباقاتك."
+  description: "ادخل عشان تدير موقعك، صورك، وباقاتك من لوحة تحكم FrameID."
 };
 
 type LoginPageProps = {
@@ -25,7 +25,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   return (
     <AuthShell
       title="تسجيل الدخول"
-      description="ادخل إلى لوحة التحكم لإدارة موقعك، صورك، باقاتك، وحالة التفعيل."
+      description="ادخل عشان تدير موقعك، صورك، باقاتك، وكل حاجة."
     >
       {message ? (
         <p className="mb-4 rounded-[var(--radius-panel)] border border-success/20 bg-success-soft px-4 py-3 text-sm text-success">
@@ -53,15 +53,15 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
           />
         </div>
         <Button type="submit" className="w-full">
-          دخول
+          تسجيل الدخول
         </Button>
       </form>
       <div className="mt-6 flex items-center justify-between text-sm">
         <Link href="/forgot-password" className="text-muted-foreground hover:text-foreground">
-          نسيت كلمة المرور؟
+          نسيت كلمة السر؟
         </Link>
         <Link href="/signup" className="font-semibold">
-          إنشاء حساب
+          إنشاء حساب جديد
         </Link>
       </div>
     </AuthShell>

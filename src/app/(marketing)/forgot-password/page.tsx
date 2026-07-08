@@ -9,8 +9,8 @@ import { Label } from "@/components/ui/label";
 import { CopyButton } from "@/components/ui/copy-button";
 
 export const metadata: Metadata = {
-  title: "استعادة كلمة المرور",
-  description: "أدخل بريدك الإلكتروني لاستعادة كلمة مرور حساب FrameID."
+  title: "نسيت كلمة السر",
+  description: "ادخل بريدك عشان نرسلك رابط استعادة كلمة السر."
 };
 
 type ForgotPasswordPageProps = {
@@ -27,12 +27,12 @@ export default async function ForgotPasswordPage({
 
   return (
     <AuthShell
-      title="استعادة كلمة المرور"
-      description="أدخل بريدك وسنرسل رابطًا آمنًا إذا كان الحساب موجودًا."
+      title="نسيت كلمة السر"
+      description="ادخل بريدك وهنرسلك رابط آمن لو الحساب موجود."
     >
       {sent ? (
         <div className="mb-4 rounded-[var(--radius-panel)] border border-success/20 bg-success-soft px-4 py-3 text-sm text-success">
-          إذا كان البريد مسجلًا، تم إرسال رابط الاستعادة.
+          لو البريد مسجل عندنا، تم إرسال رابط الاستعادة.
         </div>
       ) : null}
       {error ? (
@@ -47,7 +47,7 @@ export default async function ForgotPasswordPage({
           <Input id="email" name="email" type="email" autoComplete="email" required />
         </div>
         <Button type="submit" className="w-full">
-          إرسال رابط الاستعادة
+          أرسل رابط الاستعادة
         </Button>
       </form>
     </AuthShell>

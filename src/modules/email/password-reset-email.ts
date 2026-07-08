@@ -14,7 +14,7 @@ export function buildPasswordResetEmailHtml(input: {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>استعادة كلمة المرور</title>
+  <title>استعادة كلمة السر</title>
 </head>
 <body style="margin:0;padding:0;background-color:#f4f4f5;font-family:'Tajawal',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f4f5;padding:24px 0;">
@@ -35,14 +35,14 @@ export function buildPasswordResetEmailHtml(input: {
           <tr>
             <td style="padding:32px 40px 0 40px;">
               <h1 style="margin:0;font-size:22px;font-weight:700;color:#1c1c1e;text-align:center;line-height:1.4;">
-                استعادة كلمة المرور
+                استعادة كلمة السر
               </h1>
               <p style="margin:12px 0 0 0;font-size:15px;color:#6b7280;text-align:center;line-height:1.6;">
-                مرحباً ${input.userName}،
+                أهلاً ${input.userName}،
               </p>
               <p style="margin:8px 0 0 0;font-size:15px;color:#6b7280;text-align:center;line-height:1.6;">
-                استلمنا طلباً لاستعادة كلمة المرور لحسابك في FrameID.
-                يمكنك تعيين كلمة مرور جديدة عبر الزر أدناه.
+                استلمنا طلب استعادة كلمة السر لحسابك في FrameID.
+                تقدر تعين كلمة سر جديدة من الزر تحت.
               </p>
             </td>
           </tr>
@@ -52,7 +52,7 @@ export function buildPasswordResetEmailHtml(input: {
                 <tr>
                   <td style="border-radius:12px;background-color:#1c1c1e;padding:0;">
                     <a href="${input.resetUrl}" target="_blank" style="display:inline-block;padding:14px 36px;font-size:15px;font-weight:700;color:#ffffff;background-color:#1c1c1e;border-radius:12px;text-decoration:none;transition:background-color 0.2s;">
-                      تعيين كلمة مرور جديدة
+                      عين كلمة سر جديدة
                     </a>
                   </td>
                 </tr>
@@ -62,7 +62,7 @@ export function buildPasswordResetEmailHtml(input: {
           <tr>
             <td style="padding:0 40px;">
               <p style="margin:0;font-size:13px;color:#9ca3af;text-align:center;line-height:1.6;">
-                أو انسخ الرابط التالي والصقه في المتصفح:
+                أو انسخ الرابط ده وحطه في المتصفح:
               </p>
               <p style="margin:6px 0 0 0;font-size:12px;color:#6b7280;text-align:center;line-height:1.6;word-break:break-all;direction:ltr;unicode-bidi:embed;">
                 ${input.resetUrl}
@@ -75,8 +75,8 @@ export function buildPasswordResetEmailHtml(input: {
                 <tr>
                   <td style="padding:14px 18px;">
                     <p style="margin:0;font-size:13px;color:#92400e;text-align:center;line-height:1.6;">
-                      ⚠️ هذا الرابط صالح لمدة <strong>${expiresText}</strong> فقط.
-                      إذا لم تطلب استعادة كلمة المرور، تجاهل هذا البريد.
+                      ⚠️ الرابط ده شغال لمدة <strong>${expiresText}</strong> بس.
+                      لو ما طلبتش استعادة كلمة السر، تجاهل البريد ده.
                     </p>
                   </td>
                 </tr>
@@ -86,8 +86,8 @@ export function buildPasswordResetEmailHtml(input: {
           <tr>
             <td style="padding:0 40px 8px 40px;">
               <p style="margin:0;font-size:13px;color:#9ca3af;text-align:center;line-height:1.6;">
-                لمزيد من الأمان، لا تشارك هذا الرابط مع أي شخص.
-                فريق FrameID لن يطلب منك كلمة المرور أبداً.
+                للأمان، ما تشاركش الرابط دا مع أي حد.
+                فريق FrameID مش هيطلب منك كلمة السر أبداً.
               </p>
             </td>
           </tr>
@@ -100,7 +100,7 @@ export function buildPasswordResetEmailHtml(input: {
                       FrameID © ${new Date().getFullYear()} - منصة المصورين المحترفين
                     </p>
                     <p style="margin:4px 0 0 0;font-size:12px;color:#d1d5db;line-height:1.6;">
-                      هذا بريد تلقائي، يرجى عدم الرد عليه.
+                      ده بريد تلقائي، من فضلك ما تردش عليه.
                     </p>
                   </td>
                 </tr>

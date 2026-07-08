@@ -133,7 +133,7 @@ function DropZone({
       }}
       role="button"
       tabIndex={disabled ? -1 : 0}
-      aria-label={multiple ? "اختر صوراً أو أسقطها هنا" : "اختر صورة أو أسقطها هنا"}
+      aria-label={multiple ? "اختار صور أو اسحبهم هنا" : "اختار صورة أو اسحبها هنا"}
     >
       <input
         ref={inputRef}
@@ -151,10 +151,10 @@ function DropZone({
       <div>
         <p className="text-sm font-medium text-foreground">
           {dragging
-            ? "أفلت الصور هنا"
+            ? "حط الصور هنا"
             : multiple
-              ? "اسحب وأفلت الصور هنا أو انقر للاختيار"
-              : "اسحب وأفلت الصورة هنا أو انقر للاختيار"}
+              ? "اسحب الصور هنا أو ضغط عشان تختار"
+              : "اسحب الصورة هنا أو ضغط عشان تختار"}
         </p>
         <p className="mt-1 text-xs text-muted-foreground">
           {accept ?? "PNG, JPEG, WebP"}
@@ -191,11 +191,11 @@ export function ImageUploader({
 
       for (const f of incoming) {
         if (!isImageType(f.type)) {
-          setError(`"${f.name}" ليس بصيغة صورة مدعومة`);
+          setError(`"${f.name}" مش صيغة صورة مدعومة`);
           continue;
         }
         if (f.size > rawMaxBytes) {
-          setError(`"${f.name}" كبير جداً. جرّب صورة أقل من ${formatFileSize(rawMaxBytes)}.`);
+          setError(`"${f.name}" كبير أوي. جرب صورة أقل من ${formatFileSize(rawMaxBytes)}.`);
           continue;
         }
         valid.push(f);
@@ -259,7 +259,7 @@ export function ImageUploader({
       setFiles([]);
       setProgress(0);
     } catch {
-      setError("فشل رفع الصور. حاول مرة أخرى.");
+      setError("فشل رفع الصور. جرب تاني.");
     } finally {
       setUploading(false);
     }
@@ -304,7 +304,7 @@ export function ImageUploader({
           <div className="flex items-center justify-between gap-3">
             <p className="text-sm text-muted-foreground">
               {files.length} {files.length === 1 ? "صورة" : "صور"} &mdash;{" "}
-              {formatFileSize(totalSize)} قبل التحسين
+              {formatFileSize(totalSize)} قبل الضغط
             </p>
             <div className="flex items-center gap-2">
               {uploading && (
@@ -328,7 +328,7 @@ export function ImageUploader({
           <div
             className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4"
             role="list"
-            aria-label="الصور المختارة"
+            aria-label="الصور اللي اختارتها"
           >
             {files.map((f) => (
               <div
@@ -392,7 +392,7 @@ export function ImageUploader({
                 <Upload className="size-4" />
               )}
               {uploading
-                ? "جاري الرفع..."
+                ? "بيرفع..."
                 : `رفع ${files.length} ${files.length === 1 ? "صورة" : "صور"}`}
             </Button>
           </div>
@@ -402,7 +402,7 @@ export function ImageUploader({
       {files.length === 0 && !error && (
         <p className="text-center text-xs text-muted-foreground">
           <CheckCircle2 className="ml-1 inline size-3.5 align-text-top text-champagne" />
-          {" "}سنضغط الصور ونحولها تلقائياً عند الحاجة
+          {" "}بنضغط الصور تلقائياً واحنا بنرفعها
         </p>
       )}
     </div>

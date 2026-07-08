@@ -88,24 +88,24 @@ export function PublishClient({
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20, maxWidth: 900 }}>
       <BuilderPageHeader
-        eyebrow="النشر والمشاركة"
-        title="جهّز رابطك قبل إرساله للعميل"
-        description="انسخ الرابط، حمّل QR، واضبط عنوان الموقع وصورة المشاركة كما ستظهر في Google وواتساب وفيسبوك."
+        eyebrow="نشر ومشاركة"
+        title="جهز رابطك قبل ما تبعته للعميل"
+        description="انسخ الرابط، حمل QR، واضبط عنوان الموقع وصورة المشاركة زي ما هتظهر في Google وواتساب وفيسبوك."
       />
 
       {updated ? (
         <BuilderNotice
           tone="success"
-          title="تم تحديث إعدادات النشر"
-          description="ستظهر التغييرات في معاينات المشاركة."
+          title="اتحدثت إعدادات النشر"
+          description="التغييرات هتظهر في معاينات المشاركة."
         />
       ) : null}
 
       {error ? (
         <BuilderNotice
           tone="error"
-          title="لم يتم حفظ إعدادات النشر"
-          description="راجع البيانات المطلوبة ثم حاول مرة أخرى."
+          title="مفيش حفظ لإعدادات النشر"
+          description="راجع البيانات وجرب تاني."
           errorId={error}
         />
       ) : null}
@@ -185,7 +185,7 @@ export function PublishClient({
               }}
             >
               {copied ? <CheckCircle2 size={13} /> : <Copy size={13} />}
-              {copied ? "تم النسخ" : "نسخ"}
+              {copied ? "اتنسخ" : "نسخ"}
             </button>
             <a
               href={siteUrl}
@@ -236,7 +236,7 @@ export function PublishClient({
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={qrUrl}
-              alt="QR Code لرابط الموقع"
+              alt="QR Code بتاع الموقع"
               width={180}
               height={180}
               style={{ borderRadius: 12, background: "#fff", padding: 10 }}
@@ -246,7 +246,7 @@ export function PublishClient({
               download="frameid-qr.png"
               className="inline-flex min-h-10 items-center justify-center rounded-[var(--radius-control)] border border-border bg-surface px-4 text-sm font-semibold text-foreground"
             >
-              تحميل QR
+              حمل QR
             </a>
           </div>
         </div>
@@ -263,7 +263,7 @@ export function PublishClient({
             صورة المشاركة
           </h2>
           <p style={{ color: "rgba(245, 234, 214, 0.55)", fontSize: "0.8rem", lineHeight: 1.6, margin: "0 0 12px" }}>
-            ارفع صورة تظهر عند مشاركة الرابط. سنجهزها تلقائياً.
+            ارفع صورة تظهر لما تشارك الرابط. هنضبطها تلقائياً.
           </p>
           {shareImageState ? (
             <BuilderNotice tone={shareImageOk ? "success" : "error"} title={shareImageState} />
@@ -676,9 +676,9 @@ export function PublishClient({
           >
             <div>
               {robots ? (
-                <Badge tone="success">مفعلة — مسموح للأرشفة</Badge>
+                <Badge tone="success">مفعلة — الأرشفة مسموحة</Badge>
               ) : (
-                <Badge tone="warning">معطلة — ممنوع الأرشفة</Badge>
+                <Badge tone="warning">مطفية — الأرشفة ممنوعة</Badge>
               )}
             </div>
 
@@ -729,7 +729,7 @@ export function PublishClient({
               margin: 0,
             }}
           >
-            إعادة توليد
+إعادة التوليد
           </h2>
         </div>
 
@@ -741,7 +741,7 @@ export function PublishClient({
             lineHeight: 1.5,
           }}
         >
-          بعد تعديل المحتوى أو الصور، يمكنك إعادة توليد معاينة الموقع لمشاركتها على
+          بعد ما تغير المحتوى أو الصور، تقدر تولد المعاينة تاني عشان تشاركها على
           واتساب وفيسبوك.
         </p>
 
@@ -753,7 +753,7 @@ export function PublishClient({
           }}
         >
           <RefreshCw size={14} />
-          إعادة توليد المعاينة
+          أعد توليد المعاينة
         </Button>
       </div>
     </div>

@@ -38,8 +38,8 @@ export function WorkingHoursEditor({ value, onBlur }: WorkingHoursEditorProps) {
           lineHeight: 1.6,
         }}
       >
-        اختر الأيام المفتوحة وساعات العمل. إذا كان اليوم يعتمد على الحجز فقط،
-        اكتب ذلك في خانة الملاحظة.
+        اختار الأيام اللي شغال فيها ومواعيدك. لو اليوم كله بالحجز،
+        اكتب ملاحظة.
       </p>
 
       <div style={{ display: "grid", gap: 8 }}>
@@ -105,7 +105,7 @@ export function WorkingHoursEditor({ value, onBlur }: WorkingHoursEditorProps) {
                   name={`hours-${key}-note`}
                   defaultValue={row.note}
                   onBlur={onBlur}
-                  placeholder="ملاحظة اختيارية"
+                  placeholder="ملاحظة (اختياري)"
                   aria-label={`${label} ملاحظة`}
                   style={inputStyle}
                 />

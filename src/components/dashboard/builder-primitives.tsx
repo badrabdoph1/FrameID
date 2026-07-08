@@ -186,14 +186,14 @@ export function BuilderNotice({
                 onClick={() => navigator.clipboard?.writeText(errorId)}
                 style={noticeButtonStyle}
               >
-                نسخ الخطأ
+                انسخ الخطأ
               </button>
               <button
                 type="button"
                 onClick={() => window.location.reload()}
                 style={noticeButtonStyle}
               >
-                إعادة المحاولة
+                جرب تاني
               </button>
             </div>
           </div>
@@ -210,11 +210,11 @@ export function AutoSavePill({
 }) {
   const label =
     state === "saving"
-      ? "جاري الحفظ"
+      ? "بيحفظ…"
       : state === "saved"
-        ? "تم الحفظ"
+        ? "اتحفظ"
         : state === "error"
-          ? "فشل الحفظ"
+          ? "مقدرناش نحفظ"
           : "حفظ تلقائي";
 
   return (

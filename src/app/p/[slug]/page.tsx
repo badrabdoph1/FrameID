@@ -31,7 +31,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   if (!site) {
     return {
-      title: "الموقع غير موجود"
+      title: "الموقع مش موجود"
     };
   }
 

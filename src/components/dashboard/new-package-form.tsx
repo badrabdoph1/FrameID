@@ -30,7 +30,7 @@ export function NewPackageForm() {
           <Input id="pkg-subtitle" name="subtitle" placeholder="مناسبة ليوم كامل" />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="pkg-price">السعر بالجنيه</Label>
+          <Label htmlFor="pkg-price">السعر</Label>
           <Input id="pkg-price" name="priceAmount" inputMode="numeric" required placeholder="12000" />
         </div>
       </div>
@@ -63,12 +63,12 @@ export function NewPackageForm() {
       >
         <input type="checkbox" name="isHighlighted" />
         <Star className="size-3.5 text-champagne" aria-hidden />
-        تمييز هذه الباقة
+        تمييز الباقة دي
       </label>
 
       <Button type="submit" variant="luxury">
         <CirclePlus className="size-4" aria-hidden />
-        إضافة الباقة
+        ضيف الباقة
       </Button>
     </form>
   );

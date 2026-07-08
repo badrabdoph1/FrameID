@@ -90,24 +90,24 @@ function getGalleryNotice(messages: Messages):
   if (messages.error) {
     return {
       tone: "error",
-      title: "تعذر تنفيذ العملية",
-      description: "حاول مرة أخرى، وإذا استمرت المشكلة انسخ رقم الخطأ للدعم.",
+      title: "مقدرناش ننفذ العملية",
+      description: "جرب تاني، ولو المشكلة لسه موجودة، انسخ رقم الخطأ وإبعتلنا.",
       errorId: messages.error,
     };
   }
   if (messages.uploaded) {
     return {
       tone: "success",
-      title: `تم رفع ${messages.uploaded} ${messages.uploaded === "1" ? "صورة" : "صور"}`,
-      description: "يمكنك الآن ترتيب الصور واختيار الغلاف والصور المميزة.",
+      title: `اترفع ${messages.uploaded} ${messages.uploaded === "1" ? "صورة" : "صور"}`,
+      description: "تقدر دلوقتي ترتب الصور وتختار الغلاف والصور المميزة.",
     };
   }
-  if (messages.created) return { tone: "success", title: "تم إنشاء الألبوم" };
-  if (messages.deleted) return { tone: "success", title: "تم الحذف" };
-  if (messages.renamed) return { tone: "success", title: "تم تعديل اسم الألبوم" };
-  if (messages.coverSet) return { tone: "success", title: "تم اختيار صورة الغلاف" };
-  if (messages.featuredToggled) return { tone: "success", title: "تم تحديث الصورة المميزة" };
-  if (messages.reordered) return { tone: "success", title: "تم ترتيب الصور" };
+  if (messages.created) return { tone: "success", title: "الألبوم اتعمل" };
+  if (messages.deleted) return { tone: "success", title: "اتمسح" };
+  if (messages.renamed) return { tone: "success", title: "اتغير اسم الألبوم" };
+  if (messages.coverSet) return { tone: "success", title: "اتحددت صورة الغلاف" };
+  if (messages.featuredToggled) return { tone: "success", title: "اتحدثت الصورة المميزة" };
+  if (messages.reordered) return { tone: "success", title: "اترتبت الصور" };
   return null;
 }
 
@@ -205,9 +205,9 @@ export function GalleryClient({
   return (
     <main className="space-y-5">
       <BuilderPageHeader
-        eyebrow="الأعمال"
-        title="نظّم صورك كألبومات جاهزة للعرض"
-        description="ابدأ بألبوم واحد، ارفع عدة صور معاً، ثم اختر الغلاف والصور المميزة التي تظهر أولاً."
+        eyebrow="معرض الصور"
+        title="نظم صورك في ألبومات"
+        description="ابدأ بألبوم، ارفع صورك، واختار الغلاف والصورة المميزة."
       />
 
       {notice ? (
@@ -225,7 +225,7 @@ export function GalleryClient({
             <div className="flex items-center gap-3">
               <Button variant="ghost" size="sm" onClick={deselectAlbum}>
                 <X className="size-4" aria-hidden />
-                العودة
+                رجوع
               </Button>
               <div>
                 <h2 className="text-xl font-semibold">{selectedAlbum.title}</h2>
@@ -240,14 +240,14 @@ export function GalleryClient({
               onClick={() => setShowUpload((v) => !v)}
             >
               <ImagePlus className="size-4" aria-hidden />
-              {showUpload ? "إخفاء" : "إضافة صور"}
+              {showUpload ? "إخفاء" : "ضيف صور"}
             </Button>
           </div>
 
           {showUpload ? (
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">رفع صور إلى {selectedAlbum.title}</CardTitle>
+                <CardTitle className="text-base">ارفع صور للألبوم {selectedAlbum.title}</CardTitle>
               </CardHeader>
               <CardContent>
                 <ImageUploader
@@ -292,7 +292,7 @@ export function GalleryClient({
                           type="button"
                           onClick={() => handleToggleFeatured(image.id)}
                           className="flex size-7 items-center justify-center rounded-full bg-black/60 text-white/90 transition hover:bg-champagne hover:text-black"
-                          title="تمييز"
+                          title="مميزة"
                         >
                           <Star
                             className={`size-3.5 ${image.isFeatured ? "fill-champagne text-champagne" : ""}`}
@@ -329,7 +329,7 @@ export function GalleryClient({
                         <button
                           type="button"
                           onClick={() => {
-                            if (window.confirm("هل أنت متأكد من حذف هذه الصورة؟")) {
+                            if (window.confirm("متأكد إنك عايز تمسح الصورة دي؟")) {
                               handleDeleteImage(image.id);
                             }
                           }}
@@ -355,14 +355,14 @@ export function GalleryClient({
             <Card>
               <CardContent className="grid justify-items-center gap-3 py-10 text-center text-muted-foreground">
                 <Images className="size-8" aria-hidden />
-                <p>لا توجد صور في هذا الألبوم بعد.</p>
+                <p>لسه مفيش صور في الألبوم ده.</p>
                 <Button
                   variant="luxury"
                   size="sm"
                   onClick={() => setShowUpload(true)}
                 >
                   <ImagePlus className="size-4" aria-hidden />
-                  إضافة صور
+                  ضيف صور
                 </Button>
               </CardContent>
             </Card>
@@ -373,6 +373,7 @@ export function GalleryClient({
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-2">
               <h2 className="text-lg font-semibold">الألبومات</h2>
+
               <span className="text-sm text-muted-foreground">
                 {albums.length} {albums.length === 1 ? "ألبوم" : "ألبومات"}
               </span>
@@ -390,7 +391,7 @@ export function GalleryClient({
           {showCreateForm ? (
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">إنشاء ألبوم جديد</CardTitle>
+                <CardTitle className="text-base">ألبوم جديد</CardTitle>
               </CardHeader>
               <CardContent>
                 <form
@@ -405,7 +406,7 @@ export function GalleryClient({
                     <Input
                       id="new-album-title"
                       name="title"
-                      placeholder="مثال: جلسة زفاف"
+                       placeholder="مثلاً: جلسة زفاف"
                       required
                       autoFocus
                     />
@@ -413,7 +414,7 @@ export function GalleryClient({
                   <div className="flex gap-2">
                     <Button type="submit" variant="luxury" size="sm">
                       <Plus className="size-4" aria-hidden />
-                      إنشاء
+                      إضافة
                     </Button>
                     <Button
                       type="button"
@@ -474,7 +475,7 @@ export function GalleryClient({
                       <Card>
                         <CardContent className="p-3 text-center">
                           <p className="mb-2 text-sm text-foreground">
-                            حذف &ldquo;{album.title}&rdquo;؟
+                            تمسيح &ldquo;{album.title}&rdquo;؟
                           </p>
                           <div className="flex justify-center gap-2">
                             <Button
@@ -570,7 +571,7 @@ export function GalleryClient({
             <Card>
               <CardContent className="grid justify-items-center gap-3 py-10 text-center text-muted-foreground">
                 <FolderOpen className="size-8" aria-hidden />
-                <p>لا توجد ألبومات بعد. أنشئ أول ألبوم لصورك.</p>
+                <p>لسه مفيش ألبومات. اعمل أول ألبوم لصورك.</p>
                 <Button
                   variant="luxury"
                   size="sm"

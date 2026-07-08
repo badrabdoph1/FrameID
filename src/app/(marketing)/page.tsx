@@ -37,12 +37,12 @@ export default function HomePage() {
         applicationCategory: "BusinessApplication",
         operatingSystem: "Web",
         url: "https://frameid.app",
-        description: "منصة عربية تمنح المصورين مواقع احترافية بقوالب جاهزة وروابط خاصة.",
+        description: "منصة بتقدم للمصورين مواقع احترافية بقوالب جاهزة وروابط خاصة.",
         offers: {
           "@type": "Offer",
           price: "0",
           priceCurrency: "EGP",
-          description: "تجربة مجانية ١٤ يوم بدون بطاقة بنكية"
+          description: "تجربة مجانية ١٤ يوم من غير بطاقة بنكية"
         }
       },
       {
@@ -173,7 +173,7 @@ export default function HomePage() {
                         className="inline-flex shrink-0 items-center gap-1.5 rounded-[var(--radius-control)] border border-border bg-surface px-3 py-1.5 text-xs font-semibold transition hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:gap-2 md:px-4 md:py-2 md:text-sm"
                       >
                         <Eye className="size-3.5 md:size-4" aria-hidden />
-                        معاينة
+                        شوف القالب
                       </Link>
                     </div>
                     <div className="mt-4">
@@ -182,7 +182,7 @@ export default function HomePage() {
                         className="inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-[var(--radius-control)] bg-foreground text-sm font-semibold text-background transition hover:bg-foreground/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                       >
                         <WandSparkles className="size-4" aria-hidden />
-                        استخدام هذا القالب
+                        استخدم القالب ده
                       </Link>
                     </div>
                   </div>
@@ -194,7 +194,7 @@ export default function HomePage() {
                 href="/templates"
                 className="inline-flex items-center gap-2 text-sm font-semibold text-champagne-strong underline underline-offset-4 transition hover:text-champagne"
               >
-                عرض جميع القوالب
+                شوف كل القوالب
                 <ArrowLeft className="size-4" aria-hidden />
               </Link>
             </div>
@@ -208,7 +208,7 @@ export default function HomePage() {
                 قبل FrameID وبعده
               </p>
               <h2 className="mt-2 text-2xl font-semibold md:text-5xl">
-                وش تتغير في شغلك لما يكون عندك موقع؟
+                إيه اللي هيتغير في شغلك لما يبقى ليك موقع؟
               </h2>
             </div>
             <div className="mt-6 grid grid-cols-2 gap-2 md:mt-8 md:grid-cols-3 md:gap-3">
@@ -232,12 +232,12 @@ export default function HomePage() {
 
         <section className="container-page py-10 md:py-22">
           <div className="max-w-2xl text-center md:mx-auto">
-            <p className="text-sm font-semibold text-champagne-strong">
-              ٤ خطوات
-            </p>
-            <h2 className="mt-2 text-2xl font-semibold md:text-5xl">
-              كيف تبدا؟
-            </h2>
+              <p className="text-sm font-semibold text-champagne-strong">
+                ٤ خطوات بس
+              </p>
+              <h2 className="mt-2 text-2xl font-semibold md:text-5xl">
+                إزاي تبدا؟
+              </h2>
           </div>
           <div className="mt-8 grid gap-3 md:mt-10 md:grid-cols-4 md:gap-4">
             {howItWorks.map((step: { title: string; body: string }, index: number) => (

@@ -366,13 +366,13 @@ export function SiteInfoClient(props: SiteInfoClientProps) {
     >
       <BuilderPageHeader
         eyebrow="بيانات الموقع"
-        title="عرّف العملاء عليك في مكان واحد"
-        description="أضف اسمك وصورك وطرق التواصل وساعات العمل. كل تعديل يُحفظ تلقائياً عند خروجك من الحقل."
+        title="عرف العملاء عليك في مكان واحد"
+        description="ضيف اسمك وصورك وطرق التواصل ومواعيد الشغل. كل تعديل بيحفظ تلقائي."
       />
 
       {/* Photographer Info */}
       <FormCard
-        title="معلومات المصور"
+        title="معلوماتك"
         icon={<User size={16} />}
         formId="profile-form"
         sectionKey="profile"
@@ -424,7 +424,7 @@ export function SiteInfoClient(props: SiteInfoClientProps) {
                   color: "rgba(245, 234, 214, 0.6)",
                 }}
               >
-                اسم الاستوديو
+                اسم الاستوديو (اختياري)
               </Label>
               <Input
                 id="studioName"
@@ -440,7 +440,7 @@ export function SiteInfoClient(props: SiteInfoClientProps) {
 
       {/* Bio */}
       <FormCard
-        title="السيرة الشخصية"
+        title="نبذة عنك"
         icon={<Pencil size={16} />}
         formId="bio-form"
         sectionKey="bio"
@@ -457,13 +457,13 @@ export function SiteInfoClient(props: SiteInfoClientProps) {
                 color: "rgba(245, 234, 214, 0.6)",
               }}
             >
-              نبذة مختصرة
+              نبذة مختصرة (تظهر في البطاقة)
             </Label>
             <Input
               id="bio"
               name="bio"
               defaultValue={props.bio ?? ""}
-              placeholder="مصور فوتوغرافي متخصص في..."
+               placeholder="مثلاً: مصور فوتوغرافي متخصص في..."
               {...fieldAttrs("bio-form", "bio")}
             />
           </div>
@@ -476,13 +476,13 @@ export function SiteInfoClient(props: SiteInfoClientProps) {
                 color: "rgba(245, 234, 214, 0.6)",
               }}
             >
-              الوصف الطويل
+              وصف أطول (قصة خبراتك)
             </Label>
             <Textarea
               id="longDescription"
               name="longDescription"
               defaultValue={props.longDescription ?? ""}
-              placeholder="اكتب نبذة أوسع عن خبراتك وأعمالك..."
+               placeholder="اكتب نبذة أوسع عن خبراتك..."
               rows={5}
               {...fieldAttrs("bio-form", "bio")}
             />
@@ -492,7 +492,7 @@ export function SiteInfoClient(props: SiteInfoClientProps) {
 
       {/* Contact Info */}
       <FormCard
-        title="معلومات الاتصال"
+        title="وسائل التواصل"
         icon={<Phone size={16} />}
         formId="contact-form"
         sectionKey="contact"
@@ -672,7 +672,7 @@ export function SiteInfoClient(props: SiteInfoClientProps) {
 
       {/* Working Hours */}
       <FormCard
-        title="مواعيد العمل"
+        title="مواعيد الشغل"
         icon={<Clock size={16} />}
         formId="hours-form"
         sectionKey="hours"
@@ -687,7 +687,7 @@ export function SiteInfoClient(props: SiteInfoClientProps) {
 
       {/* Booking Button */}
       <FormCard
-        title="زر الحجز"
+        title="زر الحجز المباشر"
         icon={<MessageSquareText size={16} />}
         formId="booking-form"
         sectionKey="booking"
@@ -719,7 +719,7 @@ export function SiteInfoClient(props: SiteInfoClientProps) {
 
       {/* Social Links */}
       <Card
-        title="روابط التواصل الاجتماعي"
+        title="حسابات التواصل"
         icon={<Globe size={16} />}
         status={
           <AutosaveBadge state={socialState} isPending={socialPending} />
@@ -758,7 +758,7 @@ export function SiteInfoClient(props: SiteInfoClientProps) {
       </Card>
 
       {/* Images */}
-      <Card title="صور الموقع" icon={<ImageIcon size={16} />}>
+      <Card title="صورك" icon={<ImageIcon size={16} />}>
         <div style={{ display: "grid", gap: 20 }}>
           <div>
             <Label
@@ -812,7 +812,7 @@ export function SiteInfoClient(props: SiteInfoClientProps) {
                   }}
                 >
                   <Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} />
-                  جاري رفع الصورة...
+                  بترفع الصورة...
                 </div>
               )}
             </ImageUploader>
@@ -828,7 +828,7 @@ export function SiteInfoClient(props: SiteInfoClientProps) {
                 display: "block",
               }}
             >
-              الصورة الشخصية
+              صورتك الشخصية
             </Label>
             {avatarPreview && (
               <div
@@ -871,7 +871,7 @@ export function SiteInfoClient(props: SiteInfoClientProps) {
                   }}
                 >
                   <Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} />
-                  جاري رفع الصورة...
+                  بترفع الصورة...
                 </div>
               )}
             </ImageUploader>

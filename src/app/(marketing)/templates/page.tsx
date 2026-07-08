@@ -13,7 +13,7 @@ import { getPublishedTemplates } from "@/modules/themes/theme-registry";
 
 export const metadata: Metadata = {
   title: "معرض القوالب",
-  description: "تصفح قوالب مواقع المصورين الاحترافية. اختر قالبًا وجرّبه مباشرة قبل التسجيل."
+  description: "تصفح قوالب مواقع المصورين الاحترافية. اختار قالب وجربه قبل ما تسجل."
 };
 
 export default function TemplatesPage() {
@@ -26,16 +26,16 @@ export default function TemplatesPage() {
         <section className="container-page pb-16">
           <Badge tone="luxury">معرض القوالب</Badge>
           <h1 className="mt-5 max-w-3xl text-4xl font-semibold md:text-6xl">
-            اختر قالبًا كأنه موقع عميل حقيقي.
+            اختار قالب—كأنه موقع عميل حقيقي.
           </h1>
           <p className="mt-5 max-w-2xl leading-8 text-muted-foreground">
-            المعاينة الحية تفتح نفس القالب الذي سيحصل عليه المصور، ثم يحمل زر استخدام القالب اختياره إلى التسجيل.
+            المعاينة الحية بتفتح نفس القالب اللي هياخده المصور، وزير استخدم القالب بياخد اختيارك للتسجيل.
           </p>
           <div className="mt-8 grid gap-3 md:grid-cols-3">
             {[
-              ["معاينة", "افتح القالب كموقع حقيقي قبل الاختيار."],
-              ["استخدام", "احمل القالب المختار إلى صفحة إنشاء الحساب."],
-              ["إنشاء تلقائي", "يحصل المصور على الحساب والموقع والرابط والتجربة."]
+              ["معاينة", "افتح القالب كموقع حقيقي قبل ما تختار."],
+              ["استخدام", "القالب اللي اخترته بينتقل لصفحة إنشاء الحساب."],
+              ["إنشاء تلقائي", "المصور بياخد الحساب والموقع والرابط والتجربة."]
             ].map(([title, body]) => (
               <div
                 key={title}
@@ -76,14 +76,14 @@ export default function TemplatesPage() {
                       className="inline-flex min-h-11 items-center justify-center gap-2 rounded-[var(--radius-control)] border border-border bg-surface px-4 text-sm font-semibold transition hover:bg-muted"
                     >
                       <Eye className="size-4" aria-hidden />
-                      معاينة
+                      معاينة القالب
                     </Link>
                     <Link
                       href={`/signup?template=${template.code}`}
                       className="inline-flex min-h-11 items-center justify-center gap-2 rounded-[var(--radius-control)] bg-foreground px-4 text-sm font-semibold text-background transition hover:bg-foreground/90"
                     >
                       <WandSparkles className="size-4" aria-hidden />
-                      استخدام القالب
+                      استخدم القالب ده
                     </Link>
                   </div>
                 </CardContent>

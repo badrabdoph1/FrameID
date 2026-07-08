@@ -1,10 +1,9 @@
-import { join } from "node:path";
-import { execSync } from "node:child_process";
+import { cp, mkdir, writeFile, readFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
-import { mkdir, writeFile, readFile } from "node:fs/promises";
+import { join } from "node:path";
 
 import { createSha256Checksum } from "@/modules/backups/backup-manifest";
-import { generateBackupId } from "@/modules/backups/local-backup-artifact-writer";
+import type { BackupManifest } from "@/modules/backups/backup-manifest";
 
 export type BackupPackage = {
   backupId: string;
@@ -21,6 +20,19 @@ export type BackupPackage = {
   checksumSha256: string;
 };
 
+function formatBackupId(date: Date): string {
+  const y = date.getUTCFullYear();
+  const m = String(date.getUTCMonth() + 1).padStart(2, "0");
+  const d = String(date.getUTCDate()).padStart(2, "0");
+  const h = String(date.getUTCHours()).padStart(2, "0");
+  const min = String(date.getUTCMinutes()).padStart(2, "0");
+  return `${y}-${m}-${d}_${h}-${min}`;
+}
+
+export function generateBackupId(now?: Date): string {
+  return formatBackupId(now ?? new Date());
+}
+
 export async function createBackupPackage(
   input: {
     databaseDumpPath: string | null;
@@ -29,7 +41,7 @@ export async function createBackupPackage(
     databaseSizeBytes: number;
     uploadsSizeBytes: number;
     contentSizeBytes: number;
-    manifest: Record<string, unknown>;
+    manifest: BackupManifest;
   },
   backupRoot: string,
   now?: Date
@@ -41,21 +53,15 @@ export async function createBackupPackage(
 
   if (input.databaseDumpPath && existsSync(input.databaseDumpPath)) {
     const dest = join(backupDir, "database.sql.gz");
-    execSync(`cp "${input.databaseDumpPath}" "${dest}"`, {
-      stdio: "pipe",
-    });
+    await cp(input.databaseDumpPath, dest);
   }
   if (input.uploadsArchivePath && existsSync(input.uploadsArchivePath)) {
     const dest = join(backupDir, "uploads.tar.gz");
-    execSync(`cp "${input.uploadsArchivePath}" "${dest}"`, {
-      stdio: "pipe",
-    });
+    await cp(input.uploadsArchivePath, dest);
   }
   if (input.contentArchivePath && existsSync(input.contentArchivePath)) {
     const dest = join(backupDir, "content.tar.gz");
-    execSync(`cp "${input.contentArchivePath}" "${dest}"`, {
-      stdio: "pipe",
-    });
+    await cp(input.contentArchivePath, dest);
   }
 
   const manifestPath = join(backupDir, "manifest.json");

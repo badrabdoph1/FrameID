@@ -4,7 +4,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "FrameID",
     short_name: "FrameID",
-    description: "منصة إنشاء مواقع المصورين المحترفين",
+    description: "منصة المصورين المحترفين لعمل مواقعهم",
     start_url: "/",
     display: "standalone",
     background_color: "#f7f4ee",

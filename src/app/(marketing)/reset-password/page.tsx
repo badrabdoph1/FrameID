@@ -21,8 +21,8 @@ export default async function ResetPasswordPage({
 
   return (
     <AuthShell
-      title="تعيين كلمة مرور جديدة"
-      description="اختر كلمة مرور قوية وسيتم إغلاق الجلسات القديمة بعد التحديث."
+      title="تعيين كلمة سر جديدة"
+      description="اختار كلمة سر قوية وهتتقفل الجلسات القديمة بعد التحديث."
     >
       {error ? (
         <div className="mb-4 rounded-[var(--radius-panel)] border border-warning/30 bg-warning/10 px-4 py-3 text-sm">
@@ -33,7 +33,7 @@ export default async function ResetPasswordPage({
       <form action={resetPasswordAction} className="space-y-4">
         <input type="hidden" name="token" value={token ?? ""} />
         <div className="space-y-2">
-          <Label htmlFor="password">كلمة المرور الجديدة</Label>
+          <Label htmlFor="password">كلمة السر الجديدة</Label>
           <Input
             id="password"
             name="password"
@@ -43,11 +43,11 @@ export default async function ResetPasswordPage({
             required
           />
           <p className="text-xs text-muted-foreground">
-            يجب أن تحتوي على الأقل 10 أحرف، حرف كبير، حرف صغير، ورقم.
+            أقلها ١٠ حروف—حرف كبير، حرف صغير، ورقم.
           </p>
         </div>
         <Button type="submit" className="w-full">
-          تحديث كلمة المرور
+          تحديث كلمة السر
         </Button>
       </form>
     </AuthShell>

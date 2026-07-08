@@ -152,7 +152,7 @@ export function SettingsClient({
             margin: "4px 0 0",
           }}
         >
-          معلومات الحساب والموقع الأساسية.
+          معلومات حسابك وموقعك.
         </p>
       </section>
 
@@ -268,7 +268,7 @@ export function SettingsClient({
               lineHeight: 1.5,
             }}
           >
-            يمكن تغيير الرابط مرة واحدة فقط. اختر رابطاً يعكس هوية أعمالك.
+            تقدر تغير الرابط مرة واحدة بس. اختار رابط يعبر عن شغلك.
           </p>
           <SlugEditor
             currentSlug={siteSlug}
@@ -289,7 +289,7 @@ export function SettingsClient({
               lineHeight: 1.5,
             }}
           >
-            سيتم حذف موقعك وجميع محتوياته بشكل نهائي. هذا الإجراء لا يمكن التراجع عنه.
+            هتحذف موقعك وكل محتوياته للأبد. مش هتقدر ترجع تاني.
           </p>
           <button
             disabled

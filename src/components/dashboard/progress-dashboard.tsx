@@ -98,7 +98,7 @@ export function ProgressDashboard({
               تقدم الموقع
             </h2>
             <p className="text-sm text-muted-foreground">
-              {doneCount} من {items.length} مكتملة
+              {doneCount} من {items.length} تمت
             </p>
           </div>
           <div className="flex flex-wrap gap-2 justify-center sm:justify-start">
@@ -112,7 +112,7 @@ export function ProgressDashboard({
             ) : isPublished ? (
               <span className="inline-flex items-center gap-2 rounded-[var(--radius-control)] border border-border bg-surface px-5 py-2.5 text-sm font-semibold text-muted-foreground">
                 <CheckCircle2 className="size-4" />
-                تم النشر
+                اتنشر
               </span>
             ) : (
               <>
@@ -133,7 +133,7 @@ export function ProgressDashboard({
                     className="inline-flex items-center gap-2 rounded-[var(--radius-control)] bg-champagne px-5 py-2.5 text-sm font-semibold text-ink transition hover:bg-champagne-strong"
                   >
                     <Send className="size-4" />
-                    نشر الموقع
+                    انشر الموقع
                   </button>
                 )}
               </>

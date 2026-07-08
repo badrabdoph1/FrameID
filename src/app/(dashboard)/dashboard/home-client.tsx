@@ -49,8 +49,8 @@ export function DashboardHomeClient({
     <main style={{ display: "grid", gap: 16, maxWidth: 980 }}>
       <BuilderPageHeader
         eyebrow={statusLabel}
-        title={`مرحباً، ${photographerName}`}
-        description="هذه لوحة بناء موقعك. اتبع الخطوات بالترتيب، وسنحفظ تغييراتك ونجهز الموقع للنشر."
+        title={`مرحباً بيك، ${photographerName}`}
+        description="دي لوحة بناء موقعك. اتبع الخطوات بالترتيب واحنا هنحفظ تغييراتك ونجهز الموقع للنشر."
         action={
           <Link
             href={`/p/${siteSlug}`}
@@ -58,7 +58,7 @@ export function DashboardHomeClient({
             className="inline-flex min-h-11 items-center justify-center gap-2 rounded-[var(--radius-control)] border border-border bg-surface px-4 text-sm font-semibold text-foreground"
           >
             <Eye className="size-4" aria-hidden />
-            معاينة الموقع
+            شوف الموقع
           </Link>
         }
       />
@@ -85,7 +85,7 @@ export function DashboardHomeClient({
           <CompletionRing percent={percent} />
           <div style={{ minWidth: 0 }}>
             <p style={{ margin: 0, color: "#f3cf73", fontSize: "0.78rem", fontWeight: 950 }}>
-              {doneCount} من {checklist.length} خطوات مكتملة
+              {doneCount} من {checklist.length} خطوات تمت
             </p>
             <h2 style={{ margin: "6px 0", color: "#fff7e8", fontSize: "1.25rem", fontWeight: 950 }}>
               {nextStepTitle}
@@ -111,7 +111,7 @@ export function DashboardHomeClient({
                 textDecoration: "none",
               }}
             >
-              {percent === 100 && isPublished ? "تم النشر" : `أكمل الخطوة التالية: ${nextStepLabel}`}
+              {percent === 100 && isPublished ? "تم النشر" : `كمل الخطوة الجاية: ${nextStepLabel}`}
               <ArrowLeft size={16} />
             </Link>
           </div>
@@ -119,7 +119,7 @@ export function DashboardHomeClient({
 
         <BuilderSectionCard
           title="ملخص الموقع"
-          description={`آخر تعديل ${lastModified}. القالب الحالي: ${currentTheme}.`}
+          description={`آخر تعديل: ${lastModified}. القالب: ${currentTheme}.`}
         >
           <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10 }}>
             {stats.map((stat) => (
@@ -156,7 +156,7 @@ export function DashboardHomeClient({
 
       <BuilderSectionCard
         title="خطوات بناء الموقع"
-        description="اتبعها كرحلة واحدة: بياناتك، أعمالك، أسعارك، الشكل، المراجعة، ثم النشر."
+        description="اتبعها بالترتيب: بياناتك، أعمالك، أسعارك، الشكل، المراجعة، ثم النشر."
       >
         <div style={{ display: "grid", gap: 8 }}>
           {checklist.map((item, index) => (
@@ -194,8 +194,8 @@ export function DashboardHomeClient({
 
       <BuilderNotice
         tone={isPublished ? "success" : "info"}
-        title={isPublished ? "موقعك منشور ويمكن مشاركته" : "موقعك ما زال مسودة"}
-        description={isPublished ? siteUrl : "أكمل الخطوات الأساسية ثم راجع صفحة النشر والمشاركة."}
+        title={isPublished ? "موقعك منشور وجاهز للمشاركة" : "موقعك لسه مسودة"}
+        description={isPublished ? siteUrl : "كمل الخطوات الأساسية وبعدين راجع صفحة النشر والمشاركة."}
       />
 
       <div style={{ display: "grid", gap: 10, gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))" }}>

@@ -41,14 +41,14 @@ export function AutoSaveIndicator({
       {status === "saving" && (
         <>
           <Loader2 className="size-3.5 animate-spin shrink-0" />
-          <span>{message ?? "جاري الحفظ..."}</span>
+          <span>{message ?? "بيحفظ..."}</span>
         </>
       )}
 
       {status === "saved" && (
         <>
           <CheckCircle2 className="size-3.5 shrink-0" />
-          <span>{message ?? "تم الحفظ"}</span>
+          <span>{message ?? "اتحفظ"}</span>
           {lastSaved && (
             <span className="opacity-70" dir="ltr">
               {formatTime(lastSaved)}
@@ -60,16 +60,16 @@ export function AutoSaveIndicator({
       {status === "error" && (
         <>
           <AlertTriangle className="size-3.5 shrink-0" />
-          <span>{message ?? "حدث خطأ في الحفظ"}</span>
+          <span>{message ?? "حصل خطأ في الحفظ"}</span>
           {onRetry && (
             <button
               type="button"
               onClick={onRetry}
               className="mr-1 inline-flex items-center gap-1 rounded-md border border-current/20 px-2 py-0.5 text-[12px] font-semibold transition hover:bg-current/10"
-              aria-label="إعادة المحاولة"
+              aria-label="جرب تاني"
             >
               <RefreshCw className="size-3" />
-              إعادة
+              جرب تاني
             </button>
           )}
         </>

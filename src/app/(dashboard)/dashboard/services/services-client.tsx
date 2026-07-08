@@ -257,7 +257,7 @@ function ExtraCard({
                 outline: "none",
                 width: "100%",
               }}
-              placeholder="اسم الخدمة"
+               placeholder="مثلاً: فيديو سينمائي"
             />
           </div>
 
@@ -354,7 +354,7 @@ function ExtraCard({
                 outline: "none",
                 width: "100%",
               }}
-              placeholder="album, reel, prints"
+               placeholder="مثلاً: ألبوم، فيديو، برنت"
             />
           </div>
         </div>
@@ -603,24 +603,24 @@ export function ServicesClient({
     <main className="space-y-5">
       <BuilderPageHeader
         eyebrow="الباقات والخدمات"
-        title="حوّل أسعارك إلى عروض واضحة"
-        description="أضف الباقات الأساسية والخدمات الإضافية كسطور سهلة القراءة بدلاً من نص طويل يربك العميل."
+        title="حدد أسعارك بطريقة واضحة"
+        description="ضيف الباقات الأساسية والخدمات الإضافية بشكل مرتب عشان العميل يقرر من غير ما يسأل."
       />
 
       {/* Banners */}
       {created ? (
         <BuilderNotice
           tone="success"
-          title="تم تحديث الخدمات"
-          description="ظهرت التغييرات على موقعك العام."
+          title="تم حفظ الخدمات"
+          description="التغييرات ظهرت على موقعك."
         />
       ) : null}
 
       {error ? (
         <BuilderNotice
           tone="error"
-          title="لم يتم حفظ الخدمة"
-          description="راجع الاسم والسعر ثم حاول مرة أخرى."
+          title="مقدرناش نحفظ الخدمة"
+          description="راجع الاسم والسعر وجرب تاني."
           errorId={error}
         />
       ) : null}
@@ -655,7 +655,7 @@ export function ServicesClient({
               }}
             >
               <CirclePlus size={16} style={{ color: "#f3cf73" }} />
-              إضافة باقة جديدة
+              ضيف باقة جديدة
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -789,7 +789,7 @@ export function ServicesClient({
           }}
         >
           <BriefcaseBusiness size={18} style={{ color: "#f3cf73" }} />
-          الخدمات الإضافية
+          إضافات
         </h2>
 
         {/* Add Extra Form */}
@@ -804,7 +804,7 @@ export function ServicesClient({
               }}
             >
               <CirclePlus size={16} style={{ color: "#f3cf73" }} />
-              إضافة خدمة إضافية
+              ضيف إضافة
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -817,7 +817,7 @@ export function ServicesClient({
                 }}
               >
                 <div className="space-y-1.5">
-                  <Label htmlFor="extra-name">اسم الخدمة</Label>
+                  <Label htmlFor="extra-name">اسم الخدمة الإضافية</Label>
                   <Input id="extra-name" name="name" required />
                 </div>
                 <div className="space-y-1.5">
@@ -840,7 +840,7 @@ export function ServicesClient({
               </div>
               <Button type="submit" variant="luxury">
                 <BriefcaseBusiness className="size-4" aria-hidden />
-                إضافة الخدمة
+                ضيف الخدمة
               </Button>
             </form>
           </CardContent>
@@ -858,7 +858,7 @@ export function ServicesClient({
               border: "1px dashed rgba(245, 234, 214, 0.08)",
             }}
           >
-            لا توجد خدمات إضافية بعد. أضف خدمتك الأولى أعلاه.
+            لسه مفيش خدمات إضافية. ضيف أول خدمة من فوق.
           </p>
         ) : (
           <div className="space-y-3">

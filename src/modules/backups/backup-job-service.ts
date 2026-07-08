@@ -3,6 +3,7 @@ import {
   createBackupManifest,
   addChecksumToManifest,
   type BackupType,
+  type BackupManifest,
 } from "@/modules/backups/backup-manifest";
 import { createDatabaseDumper } from "@/modules/backups/backup-database-dumper";
 import { createUploadsPackager } from "@/modules/backups/backup-uploads-packager";
@@ -10,6 +11,12 @@ import { createContentPackager } from "@/modules/backups/backup-content-packager
 import { createBackupPackage } from "@/modules/backups/backup-package-creator";
 import { createLocalBackupArtifactWriter } from "@/modules/backups/local-backup-artifact-writer";
 import { createRetentionService } from "@/modules/backups/backup-retention";
+import { createVerificationService } from "@/modules/backups/backup-verification-service";
+import { createAutoRestoreService } from "@/modules/backups/backup-auto-restore-service";
+import { createSnapshotService, type SnapshotResult } from "@/modules/backups/backup-snapshot-service";
+import { createBackupScheduler, type BackupScheduler } from "@/modules/backups/backup-scheduler";
+import type { VerificationResult } from "@/modules/backups/backup-verification-service";
+import type { AutoRestoreOptions } from "@/modules/backups/backup-auto-restore-service";
 
 export type BackupStats = {
   usersCount: number;
@@ -26,7 +33,7 @@ export type BackupJobRepository = {
     note?: string;
   }): Promise<{ id: string }>;
   collectStats(): Promise<BackupStats>;
-  saveManifest(input: Record<string, unknown>): Promise<void>;
+  saveManifest(input: BackupManifest): Promise<void>;
   markCompleted(input: {
     backupJobId: string;
     checksumSha256: string;
@@ -47,6 +54,56 @@ export type BackupJobRepository = {
     metadata?: Record<string, unknown>;
   }): Promise<void>;
 };
+
+export type BackupJobService = {
+  runManualBackup(input: {
+    type: BackupType;
+    initiatedById: string;
+    note?: string;
+  }): Promise<{ backupJobId: string; status: "COMPLETED"; backupId: string }>;
+  runScheduledBackup(type: BackupType): Promise<{
+    backupJobId: string;
+    status: "COMPLETED";
+    backupId: string;
+  } | null>;
+  createSnapshot(input: {
+    reason: string;
+    databaseUrl: string;
+    initiatedById: string;
+  }): Promise<SnapshotResult>;
+  verifyBackup(backupId: string): Promise<VerificationResult>;
+  verifyAllBackups(): Promise<{
+    results: VerificationResult[];
+    total: number;
+    valid: number;
+    invalid: number;
+  }>;
+  checkAndAutoRestore(options: AutoRestoreOptions): Promise<{
+    needed: boolean;
+    restored: boolean;
+    result: import("@/modules/backups/backup-restore-service").RestoreResult | null;
+    reason: string;
+  }>;
+  getScheduler(): BackupScheduler;
+};
+
+type ExecuteBackupInput = {
+  type: BackupType;
+  trigger: "MANUAL" | "AUTO";
+  initiatedById?: string;
+  note?: string;
+};
+
+type ExecuteBackupResult = {
+  backupJobId: string;
+  status: "COMPLETED";
+  backupId: string;
+  manifest: BackupManifest;
+};
+
+function isBackupType(t: string): t is BackupType {
+  return t === "DATABASE" || t === "UPLOADS" || t === "FULL";
+}
 
 export function createBackupJobService({
   repository,
@@ -69,7 +126,7 @@ export function createBackupJobService({
   platformVersion: string;
   gitCommitSha?: string;
   now?: () => Date;
-}) {
+}): BackupJobService {
   const root = backupRoot ?? join(process.cwd(), "backups");
   const uploadRoot = uploadsDir ?? join(process.cwd(), "public", "uploads");
   const contentRoot = contentDir ?? join(process.cwd(), "content");
@@ -79,171 +136,234 @@ export function createBackupJobService({
   const contentPkg = createContentPackager(contentRoot);
   const writer = createLocalBackupArtifactWriter({ backupRoot: root });
   const retention = createRetentionService();
+  const verification = createVerificationService();
+  const autoRestoreService = createAutoRestoreService();
+  const snapshotService = createSnapshotService();
+  const scheduler = createBackupScheduler(
+    { backupSettings: { findMany: () => Promise.resolve([]) } },
+    () => ({ runManualBackup: (input) => (service as BackupJobService).runManualBackup(input) })
+  );
 
-  return {
-    async runManualBackup(input: {
-      type: BackupType;
-      initiatedById: string;
-      note?: string;
-    }): Promise<{ backupJobId: string; status: "COMPLETED"; backupId: string }> {
-      const createdAt = now();
+  async function executeBackup(
+    input: ExecuteBackupInput
+  ): Promise<ExecuteBackupResult> {
+    const createdAt = now();
 
-      const job = await repository.createJob({
+    const job = await repository.createJob({
+      type: input.type,
+      trigger: input.trigger,
+      initiatedById: input.initiatedById,
+      note: input.note,
+    });
+
+    await repository.recordAudit({
+      actorUserId: input.initiatedById,
+      action: "BACKUP_STARTED",
+      entityType: "BackupJob",
+      entityId: job.id,
+      metadata: { type: input.type },
+    });
+
+    try {
+      const stats = await repository.collectStats();
+      const doFull = input.type === "FULL";
+      const doUploads = input.type === "UPLOADS" || doFull;
+
+      let databaseDumpPath: string | null = null;
+      let databaseSizeBytes = 0;
+      let uploadsArchivePath: string | null = null;
+      let uploadsSizeBytes = 0;
+      let contentArchivePath: string | null = null;
+      let contentSizeBytes = 0;
+
+      if (input.type === "DATABASE" || doFull) {
+        const dbResult = await dbDumper.dumpDatabase(root, job.id);
+        databaseDumpPath = dbResult.dumpPath;
+        databaseSizeBytes = dbResult.sizeBytes;
+      }
+
+      if (doUploads) {
+        const upResult = await uploadPkg.packageUploads(root, job.id);
+        uploadsArchivePath = upResult.archivePath;
+        uploadsSizeBytes = upResult.sizeBytes;
+      }
+
+      if (doFull) {
+        const ctResult = await contentPkg.packageContent(root, job.id);
+        contentArchivePath = ctResult.archivePath;
+        contentSizeBytes = ctResult.sizeBytes;
+      }
+
+      const migrationVersion = await dbDumper.getMigrationVersion();
+
+      const manifestInput = createBackupManifest({
+        backupJobId: job.id,
+        backupType: input.type,
+        appVersion: platformVersion,
+        gitCommitSha: gitCommitSha ?? "",
+        databaseVersion: migrationVersion,
+        usersCount: stats.usersCount,
+        tenantsCount: stats.tenantsCount,
+        sitesCount: stats.sitesCount,
+        mediaFilesCount: stats.mediaFilesCount,
+        databaseSizeBytes,
+        uploadsSizeBytes,
+        contentSizeBytes,
+        compressionAlgorithm: "gzip",
+        encryptionEnabled: !!backupEncryptionKey,
+        createdAt: createdAt.toISOString(),
+      });
+
+      const manifest = addChecksumToManifest(manifestInput);
+
+      const backupPackage = await createBackupPackage(
+        {
+          databaseDumpPath,
+          uploadsArchivePath,
+          contentArchivePath,
+          databaseSizeBytes,
+          uploadsSizeBytes,
+          contentSizeBytes,
+          manifest,
+        },
+        root,
+        createdAt
+      );
+
+      await writer.writeBackup({
+        backupId: backupPackage.backupId,
+        type: input.type,
+        databaseDumpPath: backupPackage.databaseDumpPath ?? "",
+        uploadsArchivePath: backupPackage.uploadsArchivePath,
+        contentArchivePath: backupPackage.contentArchivePath,
+        databaseSizeBytes: backupPackage.databaseSizeBytes,
+        uploadsSizeBytes: backupPackage.uploadsSizeBytes,
+        contentSizeBytes: backupPackage.contentSizeBytes,
+        manifest,
+        checksumSha256: backupPackage.checksumSha256,
+      });
+
+      await repository.saveManifest(manifest);
+
+      await repository.markCompleted({
+        backupJobId: job.id,
+        checksumSha256: backupPackage.checksumSha256,
+        sizeBytes: backupPackage.totalSizeBytes,
+        localPath: backupPackage.backupDir,
+        completedAt: createdAt,
+      });
+
+      await repository.recordAudit({
+        actorUserId: input.initiatedById,
+        action: "BACKUP_COMPLETED",
+        entityType: "BackupJob",
+        entityId: job.id,
+        metadata: {
+          checksum: backupPackage.checksumSha256,
+          backupId: backupPackage.backupId,
+          backupDir: backupPackage.backupDir,
+        },
+      });
+
+      const settings = await getBackupSettings(input.type);
+      if (settings && settings.retentionCount > 0) {
+        await retention.cleanup(root, settings.retentionCount);
+      }
+
+      return {
+        backupJobId: job.id,
+        status: "COMPLETED" as const,
+        backupId: backupPackage.backupId,
+        manifest,
+      };
+    } catch (error) {
+      const reason =
+        error instanceof Error ? error.message : "Unknown backup failure";
+
+      await repository.markFailed({ backupJobId: job.id, reason });
+      await repository.recordAudit({
+        actorUserId: input.initiatedById,
+        action: "BACKUP_FAILED",
+        entityType: "BackupJob",
+        entityId: job.id,
+        metadata: { reason },
+      });
+
+      throw error;
+    }
+  }
+
+  const service: BackupJobService = {
+    async runManualBackup(input) {
+      const result = await executeBackup({
         type: input.type,
         trigger: "MANUAL",
         initiatedById: input.initiatedById,
         note: input.note,
       });
 
-      await repository.recordAudit({
-        actorUserId: input.initiatedById,
-        action: "BACKUP_STARTED",
-        entityType: "BackupJob",
-        entityId: job.id,
-        metadata: { type: input.type },
-      });
+      return {
+        backupJobId: result.backupJobId,
+        status: result.status,
+        backupId: result.backupId,
+      };
+    },
 
+    async runScheduledBackup(type) {
       try {
-        const stats = await repository.collectStats();
-        const doFull = input.type === "FULL";
-        const doUploads = input.type === "UPLOADS" || doFull;
-
-        let databaseDumpPath: string | null = null;
-        let databaseSizeBytes = 0;
-        let uploadsArchivePath: string | null = null;
-        let uploadsSizeBytes = 0;
-        let contentArchivePath: string | null = null;
-        let contentSizeBytes = 0;
-
-        if (input.type === "DATABASE" || doFull) {
-          const dbResult = await dbDumper.dumpDatabase(root, job.id);
-          databaseDumpPath = dbResult.dumpPath;
-          databaseSizeBytes = dbResult.sizeBytes;
-        }
-
-        if (doUploads) {
-          const upResult = await uploadPkg.packageUploads(root, job.id);
-          uploadsArchivePath = upResult.archivePath;
-          uploadsSizeBytes = upResult.sizeBytes;
-        }
-
-        if (doFull) {
-          const ctResult = await contentPkg.packageContent(root, job.id);
-          contentArchivePath = ctResult.archivePath;
-          contentSizeBytes = ctResult.sizeBytes;
-        }
-
-        const migrationVersion = await dbDumper.getMigrationVersion();
-
-        const manifestInput = createBackupManifest({
-          backupJobId: job.id,
-          backupType: input.type,
-          appVersion: platformVersion,
-          gitCommitSha: gitCommitSha ?? "",
-          databaseVersion: migrationVersion,
-          usersCount: stats.usersCount,
-          tenantsCount: stats.tenantsCount,
-          sitesCount: stats.sitesCount,
-          mediaFilesCount: stats.mediaFilesCount,
-          databaseSizeBytes,
-          uploadsSizeBytes,
-          contentSizeBytes,
-          compressionAlgorithm: "gzip",
-          encryptionEnabled: !!backupEncryptionKey,
-          createdAt: createdAt.toISOString(),
+        const result = await executeBackup({
+          type,
+          trigger: "AUTO",
+          initiatedById: "scheduler",
+          note: "scheduled backup",
         });
-
-        const manifest = addChecksumToManifest(manifestInput);
-
-        const backupPackage = await createBackupPackage(
-          {
-            databaseDumpPath,
-            uploadsArchivePath,
-            contentArchivePath,
-            databaseSizeBytes,
-            uploadsSizeBytes,
-            contentSizeBytes,
-            manifest: manifest as unknown as Record<string, unknown>,
-          },
-          root,
-          createdAt
-        );
-
-        await writer.writeBackup({
-          backupId: backupPackage.backupId,
-          type: input.type,
-          databaseDumpPath: backupPackage.databaseDumpPath ?? "",
-          uploadsArchivePath: backupPackage.uploadsArchivePath,
-          contentArchivePath: backupPackage.contentArchivePath,
-          databaseSizeBytes: backupPackage.databaseSizeBytes,
-          uploadsSizeBytes: backupPackage.uploadsSizeBytes,
-          contentSizeBytes: backupPackage.contentSizeBytes,
-          manifest: manifest as unknown as Record<string, unknown>,
-          checksumSha256: backupPackage.checksumSha256,
-        });
-
-        await repository.saveManifest(
-          manifest as unknown as Record<string, unknown>
-        );
-
-        await repository.markCompleted({
-          backupJobId: job.id,
-          checksumSha256: backupPackage.checksumSha256,
-          sizeBytes: backupPackage.totalSizeBytes,
-          localPath: backupPackage.backupDir,
-          completedAt: createdAt,
-        });
-
-        await repository.recordAudit({
-          actorUserId: input.initiatedById,
-          action: "BACKUP_COMPLETED",
-          entityType: "BackupJob",
-          entityId: job.id,
-          metadata: {
-            checksum: backupPackage.checksumSha256,
-            backupId: backupPackage.backupId,
-            backupDir: backupPackage.backupDir,
-          },
-        });
-
-        const settings = await getBackupSettings(input.type);
-        if (settings && settings.retentionCount > 0) {
-          await retention.cleanup(root, settings.retentionCount);
-        }
 
         return {
-          backupJobId: job.id,
-          status: "COMPLETED",
-          backupId: backupPackage.backupId,
+          backupJobId: result.backupJobId,
+          status: result.status,
+          backupId: result.backupId,
         };
-      } catch (error) {
-        const reason =
-          error instanceof Error ? error.message : "Unknown backup failure";
-
-        await repository.markFailed({
-          backupJobId: job.id,
-          reason,
-        });
-        await repository.recordAudit({
-          actorUserId: input.initiatedById,
-          action: "BACKUP_FAILED",
-          entityType: "BackupJob",
-          entityId: job.id,
-          metadata: { reason },
-        });
-
-        throw error;
+      } catch {
+        return null;
       }
     },
 
-    async runScheduledBackup(_type: BackupType): Promise<{
-      backupJobId: string;
-      status: "COMPLETED";
-      backupId: string;
-    } | null> {
-      return null;
+    async createSnapshot(input) {
+      return snapshotService.createSnapshot({
+        reason: input.reason,
+        databaseUrl: input.databaseUrl,
+        uploadsDir: uploadRoot,
+        contentDir: contentRoot,
+        backupRoot: root,
+        platformVersion,
+        gitCommitSha,
+        initiatedById: input.initiatedById,
+      });
+    },
+
+    async verifyBackup(backupId: string) {
+      return verification.verifyBackup(backupId, root);
+    },
+
+    async verifyAllBackups() {
+      return verification.verifyAllBackups(root);
+    },
+
+    async checkAndAutoRestore(options) {
+      return autoRestoreService.checkAndRestore({
+        ...options,
+        backupRoot: root,
+        uploadsDir: uploadRoot,
+        contentDir: contentRoot,
+      });
+    },
+
+    getScheduler() {
+      return scheduler;
     },
   };
+
+  return service;
 }
 
 async function getBackupSettings(

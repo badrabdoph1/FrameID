@@ -9,7 +9,7 @@ import { signupAction } from "@/app/(marketing)/signup/actions";
 
 export const metadata: Metadata = {
   title: "إنشاء حساب",
-  description: "ابدأ تجربتك المجانية في FrameID واحصل على موقع احترافي ولوحة تحكم فوراً."
+  description: "جرب FrameID مجاناً وابدأ موقعك الاحترافي فوراً."
 };
 
 type SignupPageProps = {
@@ -24,8 +24,8 @@ export default async function SignupPage({ searchParams }: SignupPageProps) {
 
   return (
     <AuthShell
-      title="ابدأ التجربة المجانية"
-      description="سننشئ الحساب والموقع والرابط والبيانات الافتراضية تلقائيًا بعد التسجيل."
+      title="جرب مجاناً"
+      description="هانعمل الحساب والموقع والرابط تلقائي—كله جاهز بعد التسجيل."
     >
       {error ? (
         <p className="mb-4 rounded-[var(--radius-panel)] border border-warning/30 bg-warning/10 px-4 py-3 text-sm text-foreground">
@@ -35,7 +35,7 @@ export default async function SignupPage({ searchParams }: SignupPageProps) {
       <form action={signupAction} className="space-y-4">
         <input name="selectedTemplateCode" type="hidden" value={template ?? ""} />
         <div className="space-y-2">
-          <Label htmlFor="name">اسم المصور أو الاستوديو</Label>
+          <Label htmlFor="name">اسمك أو اسم الاستوديو</Label>
           <Input id="name" name="name" autoComplete="name" required />
         </div>
         <div className="space-y-2">
@@ -43,7 +43,7 @@ export default async function SignupPage({ searchParams }: SignupPageProps) {
           <Input id="email" name="email" type="email" autoComplete="email" required />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="password">كلمة المرور</Label>
+          <Label htmlFor="password">كلمة السر</Label>
           <Input
             id="password"
             name="password"
@@ -58,9 +58,9 @@ export default async function SignupPage({ searchParams }: SignupPageProps) {
         </Button>
       </form>
       <p className="mt-6 text-sm text-muted-foreground">
-        لديك حساب؟{" "}
+        عندك حساب؟{" "}
         <Link href="/login" className="font-semibold text-foreground">
-          تسجيل الدخول
+          سجل دخول
         </Link>
       </p>
     </AuthShell>

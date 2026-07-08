@@ -22,13 +22,13 @@ export default function GlobalError({
           <div className="mx-auto mb-6 flex size-16 items-center justify-center rounded-full bg-danger-soft">
             <AlertTriangle className="size-8 text-danger" />
           </div>
-          <h1 className="text-3xl font-bold">عذراً، حدث خطأ غير متوقع</h1>
+          <h1 className="text-3xl font-bold">آسفين، حصل خطأ غير متوقع</h1>
           <p className="mt-3 text-muted-foreground leading-7">
-            نواجه مشكلة تقنية حالياً. فريقنا يعمل على إصلاحها. حاول مرة أخرى لاحقاً.
+            في مشكلة تقنية حالياً. فريقنا بيشتغل على إصلاحها. جرب تاني بعد شوية.
           </p>
           {error.digest && (
             <p className="mt-2 text-xs text-muted-foreground/60">
-              رمز الخطأ: {error.digest}
+              كود الخطأ: {error.digest}
             </p>
           )}
           <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
@@ -37,7 +37,7 @@ export default function GlobalError({
               className="inline-flex min-h-11 items-center justify-center gap-2 rounded-[var(--radius-control)] bg-foreground px-6 text-sm font-semibold text-background transition hover:bg-foreground/90"
             >
               <RefreshCw className="size-4" />
-              إعادة المحاولة
+              جرب تاني
             </button>
             <Link
               href="/"

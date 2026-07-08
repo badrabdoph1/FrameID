@@ -36,11 +36,11 @@ export function SlugEditor({
 
   const helper = useMemo(() => {
     if (changed) {
-      return "تم تغيير الرابط بنجاح.";
+      return "اتغير الرابط بنجاح.";
     }
 
     if (disabled) {
-      return "تم استخدام فرصة تغيير الرابط.";
+      return "استخدمت فرصة تغيير الرابط.";
     }
 
     if (state.status === "available") {
@@ -49,15 +49,15 @@ export function SlugEditor({
 
     if (state.status === "unavailable") {
       return state.reason === "taken"
-        ? "هذا الرابط مستخدم بالفعل."
-        : "هذا الرابط غير صالح.";
+        ? "الرابط دا مستخدم قبل كده."
+        : "الرابط دا مش صالح.";
     }
 
     if (error) {
-      return "لم نتمكن من تغيير الرابط. جرّب رابطًا آخر.";
+      return "مقدرناش نغير الرابط. جرب رابط تاني.";
     }
 
-    return "يمكن تغيير الرابط مرة واحدة فقط.";
+    return "تقدر تغير الرابط مرة واحدة بس.";
   }, [changed, disabled, error, state]);
 
   function handleChange(nextValue: string) {

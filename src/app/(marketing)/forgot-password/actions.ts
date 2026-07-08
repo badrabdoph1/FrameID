@@ -19,7 +19,7 @@ export async function requestPasswordResetAction(formData: FormData) {
 
   const rateCheck = checkRateLimit(ipKey, 3, 15 * 60 * 1000);
   if (!rateCheck.allowed) {
-    redirect("/forgot-password?error=" + encodeURIComponent("طلبات استعادة كلمة المرور كثيرة جداً. حاول بعد 15 دقيقة."));
+    redirect("/forgot-password?error=" + encodeURIComponent("طلبات كتيرة أوي، استنى ١٥ دقيقة."));
   }
 
   const service = createPasswordResetService({

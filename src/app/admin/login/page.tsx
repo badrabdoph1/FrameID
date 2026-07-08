@@ -18,7 +18,7 @@ export default async function AdminLoginPage({ searchParams }: Props) {
             F
           </div>
           <h1 className="text-xl font-semibold text-white">لوحة الإدارة</h1>
-          <p className="mt-1 text-sm text-white/40">تسجيل الدخول للتحكم بالمنصة</p>
+          <p className="mt-1 text-sm text-white/40">ادخل عشان تتحكم في المنصة</p>
         </div>
 
         {error && (
@@ -38,7 +38,7 @@ export default async function AdminLoginPage({ searchParams }: Props) {
           </div>
 
           <div className="space-y-2">
-            <label htmlFor="password" className="block text-sm font-extrabold text-white/60">كلمة المرور</label>
+            <label htmlFor="password" className="block text-sm font-extrabold text-white/60">كلمة السر</label>
             <input
               id="password" name="password" type="password" autoComplete="current-password" required
               className="flex h-12 w-full rounded-xl border border-white/10 bg-white/5 px-4 text-sm text-white outline-none transition placeholder:text-white/30 focus:border-amber-500/50 focus:bg-white/8"

@@ -2,9 +2,17 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { createPrismaBackupJobRepository } from "@/modules/backups/prisma-backup-job-repository";
 import { createBackupJobService } from "@/modules/backups/backup-job-service";
+import { env } from "@/lib/env";
 
 export async function POST(request: NextRequest) {
   try {
+    const authHeader = request.headers.get("authorization");
+    const cronSecret = env.CRON_SECRET;
+
+    if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const body = await request.json().catch(() => ({}));
     const type = (body.type || "FULL") as "DATABASE" | "UPLOADS" | "FULL";
 
@@ -15,7 +23,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const databaseUrl = process.env.DATABASE_URL;
+    const databaseUrl = env.DATABASE_URL;
     if (!databaseUrl) {
       return NextResponse.json(
         { error: "DATABASE_URL is not configured" },
@@ -27,8 +35,6 @@ export async function POST(request: NextRequest) {
       repository: createPrismaBackupJobRepository(prisma as never),
       databaseUrl,
       platformVersion: process.env.npm_package_version ?? "0.1.0",
-      backupGitHubToken: process.env.BACKUP_GITHUB_TOKEN,
-      backupEncryptionKey: process.env.BACKUP_ENCRYPTION_KEY,
     });
 
     const result = await service.runManualBackup({

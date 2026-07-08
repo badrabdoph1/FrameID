@@ -1,11 +1,45 @@
-import { exec, execSync } from "node:child_process";
-import { promisify } from "node:util";
+import { execSync } from "node:child_process";
 import { existsSync } from "node:fs";
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, rm, mkdir } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
+import { spawn } from "node:child_process";
 
-const execAsync = promisify(exec);
+function getRepoSlug(repoPath?: string): string {
+  if (repoPath) return repoPath;
+  try {
+    const result = execSync("git remote get-url origin", {
+      encoding: "utf-8",
+    });
+    const url = result.toString().trim();
+    const match = url.match(/[:/]([^/]+\/[^/.]+)(\.git)?$/);
+    if (match) return match[1];
+    return "";
+  } catch {
+    return "";
+  }
+}
+
+function runGit(cwd: string, args: string[]): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const child = spawn("git", args, { cwd, stdio: "pipe" });
+    let stderr = "";
+    child.stderr?.on("data", (d: Buffer) => { stderr += d.toString(); });
+    child.on("close", (code) => {
+      if (code === 0) resolve();
+      else reject(new Error(`git ${args[0]}: ${stderr}`));
+    });
+    child.on("error", reject);
+  });
+}
+
+function createAuthenticatedUrl(repoSlug: string): string {
+  return `https://github.com/${repoSlug}.git`;
+}
+
+function writeGitCredentials(): void {
+  return;
+}
 
 export type GitHubStorage = {
   uploadBackup(backupDir: string, backupId: string, branch: string): Promise<string>;
@@ -17,21 +51,6 @@ export type GitHubStorage = {
 export function createGitHubStorage(token: string, repoPath?: string): GitHubStorage | null {
   if (!token) return null;
 
-  function getRepoSlug(): string {
-    if (repoPath) return repoPath;
-    try {
-      const result = execSync("git remote get-url origin", {
-        encoding: "utf-8",
-      });
-      const url = result.toString().trim();
-      const match = url.match(/[:/]([^/]+\/[^/.]+)(\.git)?$/);
-      if (match) return match[1];
-      return "";
-    } catch {
-      return "";
-    }
-  }
-
   return {
     async uploadBackup(
       backupDir: string,
@@ -39,47 +58,47 @@ export function createGitHubStorage(token: string, repoPath?: string): GitHubSto
       branch: string
     ): Promise<string> {
       const tmpDir = await mkdtemp(join(tmpdir(), "frameid-gh-backup-"));
-      const repoSlug = getRepoSlug();
+      const repoSlug = getRepoSlug(repoPath);
 
       try {
-        await execAsync(
-          `git init && git remote add origin "https://x-access-token:${token}@github.com/${repoSlug}.git"`,
-          { cwd: tmpDir }
-        );
+        writeGitCredentials();
+
+        await runGit(tmpDir, ["init"]);
+        await runGit(tmpDir, [
+          "remote", "add", "origin",
+          createAuthenticatedUrl(repoSlug),
+        ]);
 
         const backupPath = join(tmpDir, "backups", backupId);
-        await execAsync(`mkdir -p "${backupPath}"`, { cwd: tmpDir });
+        await mkdir(backupPath, { recursive: true });
 
-        await execAsync(`cp -r "${backupDir}/." "${backupPath}/"`, {
-          cwd: tmpDir,
-        });
+        await runGit(tmpDir, ["fetch", "origin", branch, "--depth=1"]).catch(() => {});
+        await runGit(tmpDir, ["checkout", branch]).catch(() =>
+          runGit(tmpDir, ["checkout", "--orphan", branch])
+        );
 
-        try {
-          await execAsync(`git fetch origin ${branch} 2>/dev/null || true`, {
+        await runGit(tmpDir, ["config", "user.email", "backup@frameid.app"]);
+        await runGit(tmpDir, ["config", "user.name", "FrameID Backup"]);
+
+        await runGit(tmpDir, ["add", "-A"]);
+        await runGit(tmpDir, ["commit", "-m", `backup: ${backupId}`, "--allow-empty"]);
+
+        const pushUrl = `https://x-access-token:${token}@github.com/${repoSlug}.git`;
+
+        await new Promise<void>((resolve, reject) => {
+          const child = spawn("git", ["push", pushUrl, `${branch}:${branch}`, "--force"], {
             cwd: tmpDir,
+            stdio: "pipe",
+            env: { ...process.env, GIT_ASKPASS: "echo", GIT_TERMINAL_PROMPT: "0" },
           });
-          await execAsync(
-            `git checkout ${branch} 2>/dev/null || git checkout --orphan ${branch}`,
-            { cwd: tmpDir }
-          );
-        } catch {
-          await execAsync(`git checkout --orphan ${branch}`, { cwd: tmpDir });
-        }
-
-        await execAsync('git config user.email "backup@frameid.app"', {
-          cwd: tmpDir,
+          let stderr = "";
+          child.stderr?.on("data", (d: Buffer) => { stderr += d.toString(); });
+          child.on("close", (code) => {
+            if (code === 0) resolve();
+            else reject(new Error(`git push: ${stderr}`));
+          });
+          child.on("error", reject);
         });
-        await execAsync('git config user.name "FrameID Backup"', { cwd: tmpDir });
-
-        await execAsync(`git add -A`, { cwd: tmpDir });
-        await execAsync(
-          `git commit -m "backup: ${backupId}" --allow-empty`,
-          { cwd: tmpDir }
-        );
-        await execAsync(
-          `git push origin ${branch} --force`,
-          { cwd: tmpDir, maxBuffer: 1024 * 1024 }
-        );
 
         return `https://github.com/${repoSlug}/tree/${branch}/backups/${backupId}`;
       } finally {
@@ -92,21 +111,38 @@ export function createGitHubStorage(token: string, repoPath?: string): GitHubSto
       destDir: string,
       branch: string
     ): Promise<string> {
-      const repoSlug = getRepoSlug();
+      const repoSlug = getRepoSlug(repoPath);
       const tmpDir = await mkdtemp(join(tmpdir(), "frameid-gh-restore-"));
 
       try {
-        await execAsync(
-          `git clone --depth 1 --branch ${branch} "https://x-access-token:${token}@github.com/${repoSlug}.git" "${tmpDir}"`,
-          { maxBuffer: 1024 * 1024 * 1024 }
-        );
+        writeGitCredentials();
+
+        const cloneUrl = `https://x-access-token:${token}@github.com/${repoSlug}.git`;
+
+        await new Promise<void>((resolve, reject) => {
+          const child = spawn("git", [
+            "clone", "--depth", "1", "--branch", branch,
+            cloneUrl, tmpDir,
+          ], {
+            stdio: "pipe",
+            env: { ...process.env, GIT_ASKPASS: "echo", GIT_TERMINAL_PROMPT: "0" },
+          });
+          let stderr = "";
+          child.stderr?.on("data", (d: Buffer) => { stderr += d.toString(); });
+          child.on("close", (code) => {
+            if (code === 0) resolve();
+            else reject(new Error(`git clone: ${stderr}`));
+          });
+          child.on("error", reject);
+        });
 
         const backupPath = join(tmpDir, "backups", backupId);
         if (!existsSync(backupPath)) {
           throw new Error(`Backup ${backupId} not found in GitHub branch ${branch}`);
         }
 
-        await execAsync(`cp -r "${backupPath}/." "${destDir}/"`);
+        await runGit(tmpDir, ["clone", "-c", `credential.helper=store --file ${tmpDir}/.git-credentials`]);
+        execSync(`cp -r "${backupPath}/." "${destDir}/"`);
         return destDir;
       } finally {
         await rm(tmpDir, { recursive: true, force: true });
@@ -114,22 +150,37 @@ export function createGitHubStorage(token: string, repoPath?: string): GitHubSto
     },
 
     async listBackups(branch: string): Promise<string[]> {
-      const repoSlug = getRepoSlug();
+      const repoSlug = getRepoSlug(repoPath);
       const tmpDir = await mkdtemp(join(tmpdir(), "frameid-gh-list-"));
 
       try {
-        await execAsync(
-          `git clone --depth 1 --branch ${branch} "https://x-access-token:${token}@github.com/${repoSlug}.git" "${tmpDir}"`,
-          { maxBuffer: 1024 * 1024 }
-        );
+        writeGitCredentials();
+        const cloneUrl = `https://x-access-token:${token}@github.com/${repoSlug}.git`;
+
+        await new Promise<void>((resolve, reject) => {
+          const child = spawn("git", [
+            "clone", "--depth", "1", "--branch", branch, cloneUrl, tmpDir,
+          ], {
+            stdio: "pipe",
+            env: { ...process.env, GIT_ASKPASS: "echo", GIT_TERMINAL_PROMPT: "0" },
+          });
+          let stderr = "";
+          child.stderr?.on("data", (d: Buffer) => { stderr += d.toString(); });
+          child.on("close", (code) => {
+            if (code === 0) resolve();
+            else reject(new Error(`git clone: ${stderr}`));
+          });
+          child.on("error", reject);
+        });
 
         const backupsDir = join(tmpDir, "backups");
         if (!existsSync(backupsDir)) return [];
 
-        const { stdout } = await execAsync(`ls -1 "${backupsDir}"`, {
+        const result = execSync(`ls -1 "${backupsDir}"`, {
           cwd: tmpDir,
+          encoding: "utf-8",
         });
-        return stdout
+        return result
           .trim()
           .split("\n")
           .filter(Boolean)
@@ -148,39 +199,31 @@ export function createGitHubStorage(token: string, repoPath?: string): GitHubSto
       if (backups.length <= retentionCount) return;
 
       const toDelete = backups.slice(retentionCount);
-      const repoSlug = getRepoSlug();
+      const repoSlug = getRepoSlug(repoPath);
       const tmpDir = await mkdtemp(join(tmpdir(), "frameid-gh-clean-"));
 
       try {
-        await execAsync(
-          `git clone --depth 1 --branch ${branch} "https://x-access-token:${token}@github.com/${repoSlug}.git" "${tmpDir}"`,
-          { maxBuffer: 1024 * 1024 }
-        );
+        writeGitCredentials();
+        const cloneUrl = `https://x-access-token:${token}@github.com/${repoSlug}.git`;
+
+        await runGit(tmpDir, [
+          "clone", "--depth", "1", "--branch", branch, cloneUrl, tmpDir,
+        ]);
 
         for (const backupId of toDelete) {
-          await execAsync(`rm -rf "${join(tmpDir, "backups", backupId)}"`, {
-            cwd: tmpDir,
-          });
+          execSync(`rm -rf "${join(tmpDir, "backups", backupId)}"`);
         }
 
-        await execAsync('git config user.email "backup@frameid.app"', {
-          cwd: tmpDir,
-        });
-        await execAsync('git config user.name "FrameID Backup"', { cwd: tmpDir });
-        await execAsync("git add -A", { cwd: tmpDir });
-        await execAsync(
-          'git commit -m "cleanup: remove old backups" --allow-empty',
-          { cwd: tmpDir }
-        );
-        await execAsync(`git push origin ${branch} --force`, {
-          cwd: tmpDir,
-          maxBuffer: 1024 * 1024,
-        });
+        await runGit(tmpDir, ["config", "user.email", "backup@frameid.app"]);
+        await runGit(tmpDir, ["config", "user.name", "FrameID Backup"]);
+        await runGit(tmpDir, ["add", "-A"]);
+        await runGit(tmpDir, ["commit", "-m", "cleanup: remove old backups", "--allow-empty"]);
+
+        const pushUrl = `https://x-access-token:${token}@github.com/${repoSlug}.git`;
+        await runGit(tmpDir, ["push", pushUrl, `${branch}:${branch}`, "--force"]);
       } finally {
         await rm(tmpDir, { recursive: true, force: true });
       }
     },
   };
 }
-
-

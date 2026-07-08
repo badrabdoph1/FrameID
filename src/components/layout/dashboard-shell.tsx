@@ -28,10 +28,10 @@ type NavItem = {
 const navItems: NavItem[] = [
   { href: "/dashboard", label: "الرئيسية", icon: LayoutDashboard },
   { href: "/dashboard/site-info", label: "بيانات الموقع", icon: UserCircle },
-  { href: "/dashboard/gallery", label: "الأعمال", icon: Images },
-  { href: "/dashboard/services", label: "الباقات والخدمات", icon: Package },
-  { href: "/dashboard/templates", label: "القوالب", icon: Palette },
-  { href: "/dashboard/publish", label: "النشر والمشاركة", icon: Globe2 },
+  { href: "/dashboard/gallery", label: "معرض الأعمال", icon: Images },
+  { href: "/dashboard/services", label: "الباقات والأسعار", icon: Package },
+  { href: "/dashboard/templates", label: "تغيير القالب", icon: Palette },
+  { href: "/dashboard/publish", label: "نشر ومشاركة", icon: Globe2 },
   { href: "/dashboard/settings", label: "الإعدادات", icon: Settings },
 ]
 
@@ -151,7 +151,7 @@ export function DashboardShell({
               }}
             >
               <ExternalLink size={13} />
-              <span className="hidden md:inline">معاينة</span>
+              <span className="hidden md:inline">شوف الموقع</span>
             </Link>
           )}
           <form action={logoutAction}>
@@ -170,7 +170,7 @@ export function DashboardShell({
                 cursor: "pointer",
                 transition: "background 0.15s, color 0.15s",
               }}
-              aria-label="تسجيل الخروج"
+              aria-label="خروج"
             >
               <LogOut size="14" />
             </button>
@@ -195,7 +195,7 @@ export function DashboardShell({
           className="lg:flex"
         >
           <div style={{ fontSize: "0.65rem", fontWeight: 950, color: "rgba(245, 234, 214, 0.3)", padding: "8px 10px 4px", textTransform: "uppercase", letterSpacing: "0.08em" }}>
-            بناء موقعك
+            أقسام الموقع
           </div>
           {navItems.map((item) => {
             const active = isActive(item.href)

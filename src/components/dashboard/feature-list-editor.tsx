@@ -20,8 +20,8 @@ export function FeatureListEditor({
   features,
   onChange,
   maxFeatures = 20,
-  placeholder = "أضف ميزة...",
-  addLabel = "إضافة ميزة",
+  placeholder = "ضيف ميزة...",
+  addLabel = "ضيف ميزة",
   disabled,
 }: FeatureListEditorProps) {
   const updateFeature = useCallback(
@@ -71,7 +71,7 @@ export function FeatureListEditor({
     <div className="space-y-2" role="group" aria-label="قائمة الميزات">
       {features.length === 0 && (
         <p className="py-4 text-center text-sm text-muted-foreground">
-          لا توجد ميزات مضافة بعد
+          لسه مفيش ميزات
         </p>
       )}
 

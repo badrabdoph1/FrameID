@@ -17,7 +17,7 @@ export async function resetPasswordAction(formData: FormData) {
 
   const rateCheck = checkRateLimit(ipKey, 5, 60 * 60 * 1000);
   if (!rateCheck.allowed) {
-    redirect("/reset-password?error=" + encodeURIComponent("طلبات كثيرة جداً. حاول بعد ساعة."));
+    redirect("/reset-password?error=" + encodeURIComponent("طلبات كتيرة، استنى ساعة."));
   }
 
   try {
@@ -36,5 +36,5 @@ export async function resetPasswordAction(formData: FormData) {
     );
   }
 
-  redirect("/login?message=تم تغيير كلمة المرور بنجاح. سجل الدخول بكلمتك الجديدة.");
+  redirect("/login?message=اتغيرت كلمة السر بنجاح. سجل دخولك بالكلمة الجديدة.");
 }

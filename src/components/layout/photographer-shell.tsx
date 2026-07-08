@@ -20,7 +20,7 @@ const dashboardNav = [
   { href: "/dashboard/gallery", label: "المعرض", icon: Images },
   { href: "/dashboard/services", label: "الخدمات", icon: BriefcaseBusiness },
   { href: "/dashboard/design", label: "التصميم", icon: WandSparkles },
-  { href: "/dashboard/billing", label: "التفعيل", icon: CreditCard },
+  { href: "/dashboard/billing", label: "الفواتير", icon: CreditCard },
   { href: "/dashboard/settings", label: "الإعدادات", icon: Settings }
 ];
 

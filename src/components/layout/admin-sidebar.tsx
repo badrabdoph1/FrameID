@@ -132,7 +132,7 @@ export function AdminSidebar() {
           className="mx-3 mb-2 mt-2 flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-extrabold text-white/60 no-underline transition hover:border-amber-500/20 hover:bg-amber-500/8 hover:text-white"
         >
           <Search size={15} />
-          ابحث في لوحة التحكم…
+          بحث في لوحة التحكم…
           <kbd className="mr-auto inline-flex h-5 min-w-[26px] items-center justify-center rounded-md border border-white/10 bg-white/5 px-1.5 text-[0.65rem] font-extrabold text-white/40">
             ⌘K
           </kbd>
@@ -193,7 +193,7 @@ export function AdminSidebar() {
         <div className="flex gap-2">
           <Link href="/" className="flex flex-1 items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 text-sm font-extrabold text-white no-underline transition hover:bg-white/10">
             <ExternalLink size={16} />
-            {!sidebarCollapsed && "العودة للموقع"}
+            {!sidebarCollapsed && "الرجوع للموقع"}
           </Link>
           <form action={adminLogoutAction}>
             <button className="flex size-[44px] items-center justify-center rounded-xl border border-white/10 bg-white/5 text-white/70 transition hover:bg-white/10 hover:text-white">
