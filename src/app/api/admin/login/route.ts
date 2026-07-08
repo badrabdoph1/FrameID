@@ -5,6 +5,33 @@ import { processError } from "@/lib/errors";
 import { createPrismaAdminAuthRepository } from "@/modules/admin/prisma-admin-auth-repository";
 import { createAdminLoginService } from "@/modules/admin/admin-auth-service";
 
+function wantsJsonResponse(request: Request): boolean {
+  return (
+    request.headers.get("x-admin-login-client") === "1" ||
+    request.headers.get("accept")?.includes("application/json") === true
+  );
+}
+
+function createLoginSuccessResponse(request: Request) {
+  if (wantsJsonResponse(request)) {
+    return NextResponse.json({ ok: true, redirectTo: "/admin" });
+  }
+
+  return NextResponse.redirect(new URL("/admin", request.url), { status: 303 });
+}
+
+function createLoginErrorResponse(request: Request, message: string) {
+  if (wantsJsonResponse(request)) {
+    return NextResponse.json({ ok: false, error: message }, { status: 401 });
+  }
+
+  const redirectUrl = new URL(
+    `/admin/login?error=${encodeURIComponent(message)}`,
+    request.url,
+  );
+  return NextResponse.redirect(redirectUrl, { status: 303 });
+}
+
 export async function POST(request: Request) {
   try {
     const text = await request.text();
@@ -17,8 +44,7 @@ export async function POST(request: Request) {
     );
     const result = await loginService.login({ email, password });
 
-    const redirectUrl = new URL("/admin", request.url);
-    const response = NextResponse.redirect(redirectUrl, { status: 303 });
+    const response = createLoginSuccessResponse(request);
 
     response.cookies.set(
       result.session.cookie.name,
@@ -32,10 +58,6 @@ export async function POST(request: Request) {
       metadata: { action: "adminLogin" },
     });
 
-    const redirectUrl = new URL(
-      `/admin/login?error=${encodeURIComponent(userError.message)}`,
-      request.url,
-    );
-    return NextResponse.redirect(redirectUrl, { status: 303 });
+    return createLoginErrorResponse(request, userError.message);
   }
 }
