@@ -359,12 +359,14 @@ function StatusPill({ status }: { status: string }) {
     ACTIVE: "bg-emerald-500/10 text-emerald-300",
     TRIAL: "bg-amber-500/10 text-amber-300",
     EXPIRED: "bg-red-500/10 text-red-300",
+    TRIAL_EXPIRED: "bg-red-500/10 text-red-300",
     SUSPENDED: "bg-red-500/10 text-red-300",
   };
   const labels: Record<string, string> = {
     ACTIVE: "نشط",
     TRIAL: "تجربة",
     EXPIRED: "منتهي",
+    TRIAL_EXPIRED: "منتهي",
     SUSPENDED: "موقف",
   };
 
