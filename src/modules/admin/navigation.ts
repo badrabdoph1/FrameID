@@ -49,6 +49,8 @@ export const adminNavigation: AdminNavGroup[] = [
     label: "الرئيسية",
     items: [
       { href: "/admin", label: "لوحة القيادة", icon: Home },
+      { href: "/admin/operations", label: "Operations", icon: Activity },
+      { href: "/admin/search", label: "البحث الشامل", icon: Activity },
     ],
   },
   {
@@ -56,6 +58,7 @@ export const adminNavigation: AdminNavGroup[] = [
     items: [
       { href: "/admin/customers", label: "العملاء", icon: Users },
       { href: "/admin/sites", label: "المواقع", icon: Globe },
+      { href: "/admin/plans", label: "الخطط", icon: BadgeCheck },
       { href: "/admin/subscriptions", label: "الاشتراكات", icon: BadgeCheck },
       { href: "/admin/payments", label: "المدفوعات", icon: CreditCard },
     ],
@@ -72,6 +75,7 @@ export const adminNavigation: AdminNavGroup[] = [
   {
     label: "التشغيل",
     items: [
+      { href: "/admin/operations", label: "Command Center", icon: Activity },
       { href: "/admin/backups", label: "النسخ الاحتياطي", icon: DatabaseBackup },
       { href: "/admin/analytics", label: "التحليلات", icon: BarChart3 },
       { href: "/admin/audit", label: "سجل التدقيق", icon: ClipboardList },
@@ -107,6 +111,7 @@ export const adminSections: AdminSection[] = [
     icon: Home,
     links: [
       { href: "/admin", label: "لوحة القيادة", icon: Home },
+      { href: "/admin/operations", label: "Operations", icon: Activity },
       { href: "/admin/search", label: "البحث الشامل", icon: Activity },
       { href: "/admin/analytics", label: "التحليلات", icon: BarChart3 },
       { href: "/admin/health", label: "صحة النظام", icon: Activity },
@@ -124,6 +129,7 @@ export const adminSections: AdminSection[] = [
     links: [
       { href: "/admin/customers", label: "العملاء", icon: UserCheck },
       { href: "/admin/sites", label: "المواقع", icon: Globe },
+      { href: "/admin/plans", label: "الخطط", icon: BadgeCheck },
       { href: "/admin/subscriptions", label: "الاشتراكات", icon: BadgeCheck },
       { href: "/admin/payments", label: "المدفوعات", icon: CreditCard },
     ],
@@ -152,6 +158,7 @@ export const adminSections: AdminSection[] = [
     badge: "الصيانة",
     icon: DatabaseBackup,
     links: [
+      { href: "/admin/operations", label: "Operations", icon: Activity },
       { href: "/admin/backups", label: "النسخ الاحتياطي", icon: DatabaseBackup },
       { href: "/admin/audit", label: "Audit Explorer", icon: ClipboardList },
       { href: "/admin/errors", label: "الأخطاء", icon: Activity },
