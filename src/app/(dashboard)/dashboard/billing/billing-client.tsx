@@ -193,7 +193,9 @@ function getSupportHref(receiptNumber: string): string {
 export function BillingClient({ session, plans, paymentMethods, paymentRequest, daysRemaining, requested, draftId, error: urlError }: BillingClientProps) {
   const subscriptionStatus = session.subscription?.status ?? session.tenant.status;
   const requestLocked = Boolean(paymentRequest && LOCKED_REQUEST_STATUSES.includes(paymentRequest.status));
+  const siteHref = session.site.slug ? `/${session.site.slug}` : "/dashboard";
 
+  const visiblePlans = useMemo(() => plans.filter((plan) => plan.isActive).slice(0, 2), [plans]);
   const initialMethod = useMemo(() => paymentMethods.find((method) => method.paymentMethod === paymentRequest?.method) ?? null, [paymentMethods, paymentRequest?.method]);
   const initialAccount = useMemo(() => initialMethod?.accounts.find((account) => account.id === paymentRequest?.paymentAccountId) ?? initialMethod?.accounts[0] ?? null, [initialMethod, paymentRequest?.paymentAccountId]);
 
@@ -331,17 +333,19 @@ export function BillingClient({ session, plans, paymentMethods, paymentRequest, 
           <div className="mt-4 rounded-2xl border border-white/[0.07] bg-black/15 p-4">
             {step === 1 ? (
               <CheckoutStage title="اختار الباقة" icon={<Package className="size-4" />}>
-                <div className="grid gap-3 md:grid-cols-3">
-                  {plans.map((plan) => (
-                    <PlanCard
-                      key={plan.id}
-                      plan={plan}
-                      selected={selectedPlanId === plan.id}
-                      disabled={Boolean(draftState || requestLocked)}
-                      onSelect={() => handlePlanSelect(plan.id)}
-                    />
-                  ))}
-                </div>
+                {visiblePlans.length > 0 ? (
+                  <div className="grid gap-3 md:grid-cols-2">
+                    {visiblePlans.map((plan) => (
+                      <PlanCard
+                        key={plan.id}
+                        plan={plan}
+                        selected={selectedPlanId === plan.id}
+                        disabled={Boolean(draftState || requestLocked)}
+                        onSelect={() => handlePlanSelect(plan.id)}
+                      />
+                    ))}
+                  </div>
+                ) : <Alert tone="warning" title="لا توجد باقات" text="لا توجد باقات مفعلة حاليًا. تواصل مع الدعم الفني." />}
                 <Actions>
                   <Button type="button" variant="luxury" disabled={!selectedPlan} onClick={() => setStep(2)}>متابعة</Button>
                 </Actions>
@@ -418,6 +422,8 @@ export function BillingClient({ session, plans, paymentMethods, paymentRequest, 
                     status={paymentRequest?.status ?? (isActionSuccess(completePaymentState) || isActionSuccess(submitState) ? "SUBMITTED" : "PENDING")}
                     rejectionReason={paymentRequest?.rejectionReason ?? null}
                     copied={copiedKey === "receipt"}
+                    dashboardHref="/dashboard"
+                    siteHref={siteHref}
                     onCopy={() => copyToClipboard(receiptNumber, "receipt")}
                   />
                 ) : (
@@ -586,7 +592,7 @@ function ProofSubmitCard({ draftId, proofFile, proofUploaded, pending, canSubmit
   );
 }
 
-function SuccessReceiptCard({ receiptNumber, status, rejectionReason, copied, onCopy }: { receiptNumber: string; status: string; rejectionReason: string | null; copied: boolean; onCopy: () => void }) {
+function SuccessReceiptCard({ receiptNumber, status, rejectionReason, copied, dashboardHref, siteHref, onCopy }: { receiptNumber: string; status: string; rejectionReason: string | null; copied: boolean; dashboardHref: string; siteHref: string; onCopy: () => void }) {
   const rejected = status === "REJECTED";
   return (
     <div className="grid gap-4">
@@ -605,20 +611,11 @@ function SuccessReceiptCard({ receiptNumber, status, rejectionReason, copied, on
         </button>
       </div>
 
-      <a href={getSupportHref(receiptNumber)} className="inline-flex h-11 items-center justify-center rounded-xl border border-white/[0.1] bg-white/[0.06] px-4 text-sm font-black text-[#fff7e8] transition hover:bg-white/[0.1]">تواصل مع الدعم الفني</a>
-    </div>
-  );
-}
-
-function SelectedAccountCard({ account, method, fallbackMethod }: { account: PaymentAccountData | null; method: PaymentMethodData | null | undefined; fallbackMethod?: string | null }) {
-  if (!account && !method && !fallbackMethod) return null;
-  return (
-    <div className="rounded-2xl border border-white/[0.06] bg-white/[0.025] p-3 text-sm">
-      <SummaryLine label="الطريقة" value={method ? (method.label ?? getPaymentMethodLabel(method.paymentMethod)) : fallbackMethod ? getPaymentMethodLabel(fallbackMethod) : "محفوظة"} />
-      {account ? <SummaryLine label="الحساب" value={account.label ?? account.accountName} /> : null}
-      {account?.phoneNumber ? <SummaryLine label="الهاتف" value={account.phoneNumber} ltr /> : null}
-      {account?.accountNumber ? <SummaryLine label="الرقم" value={account.accountNumber} ltr /> : null}
-      {account?.instructions ? <p className="m-0 mt-2 border-t border-white/[0.06] pt-2 text-xs leading-6 text-white/45">{account.instructions}</p> : null}
+      <div className="grid gap-2 sm:grid-cols-3">
+        <a href={dashboardHref} className="inline-flex h-11 items-center justify-center rounded-xl bg-[#f3cf73] px-4 text-sm font-black text-black transition hover:opacity-90">العودة للوحة التحكم</a>
+        <a href={siteHref} className="inline-flex h-11 items-center justify-center rounded-xl border border-emerald-400/25 bg-emerald-400/10 px-4 text-sm font-black text-emerald-100 transition hover:bg-emerald-400/15">فتح الموقع</a>
+        <a href={getSupportHref(receiptNumber)} className="inline-flex h-11 items-center justify-center rounded-xl border border-white/[0.1] bg-white/[0.06] px-4 text-sm font-black text-[#fff7e8] transition hover:bg-white/[0.1]">الدعم الفني</a>
+      </div>
     </div>
   );
 }
