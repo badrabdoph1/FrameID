@@ -39,6 +39,7 @@ export default async function BillingPage({
     prisma.plan.findMany({
       where: { isActive: true, deletedAt: null },
       orderBy: { priceAmount: "asc" },
+      take: 2,
     }),
     createBillingActivationService({
       repository: createPrismaBillingActivationRepository(prisma),
@@ -107,7 +108,9 @@ export default async function BillingPage({
         id: paymentRequest.id,
         status: paymentRequest.status,
         method: paymentRequest.method,
+        paymentAccountId: paymentRequest.paymentAccountId,
         amount: paymentRequest.amount,
+        currency: paymentRequest.currency,
         reference: paymentRequest.reference,
         proofAssetId: paymentRequest.proofAssetId,
         proofUrl,

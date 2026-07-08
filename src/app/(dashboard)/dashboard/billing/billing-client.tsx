@@ -1,30 +1,13 @@
 "use client";
 
-import { useActionState, useMemo, useState, type ChangeEvent, type ReactNode } from "react";
-import {
-  AlertTriangle,
-  Check,
-  CheckCircle2,
-  ChevronDown,
-  ChevronUp,
-  Clock,
-  CreditCard,
-  FileImage,
-  FileX,
-  Info,
-  Loader2,
-  Package,
-  ShieldCheck,
-  Upload,
-  X,
-} from "lucide-react";
+import { useActionState, useEffect, useMemo, useState, type ChangeEvent, type ReactNode } from "react";
+import { AlertTriangle, Check, CheckCircle2, CreditCard, Loader2, Package, Upload, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { BuilderPageHeader } from "@/components/dashboard/builder-primitives";
 import {
   cancelPaymentRequestAction,
   createPaymentDraftAction,
-  removeProofAction,
   submitPaymentRequestAction,
   uploadProofAction,
 } from "@/app/(dashboard)/dashboard/billing/actions";
@@ -40,6 +23,22 @@ type PlanData = {
   isActive: boolean;
 };
 
+type PaymentAccountData = {
+  id: string;
+  paymentSettingsId: string;
+  label: string | null;
+  accountName: string;
+  accountNumber: string;
+  bankName: string | null;
+  iban: string | null;
+  swift: string | null;
+  phoneNumber: string | null;
+  instructions: string | null;
+  notes: string | null;
+  isActive: boolean;
+  sortOrder: number;
+};
+
 type PaymentMethodData = {
   id: string;
   paymentMethod: string;
@@ -50,28 +49,16 @@ type PaymentMethodData = {
   qrCodeAssetId: string | null;
   qrCodeUrl: string | null;
   sortOrder: number;
-  accounts: Array<{
-    id: string;
-    paymentSettingsId: string;
-    label: string | null;
-    accountName: string;
-    accountNumber: string;
-    bankName: string | null;
-    iban: string | null;
-    swift: string | null;
-    phoneNumber: string | null;
-    instructions: string | null;
-    notes: string | null;
-    isActive: boolean;
-    sortOrder: number;
-  }>;
+  accounts: PaymentAccountData[];
 };
 
 type PaymentRequestData = {
   id: string;
   status: string;
   method: string;
+  paymentAccountId: string | null;
   amount: number;
+  currency: string;
   reference: string | null;
   proofAssetId: string | null;
   proofUrl: string | null;
@@ -120,78 +107,61 @@ type BillingClientProps = {
 };
 
 type ActionResult = { success: true; draftId?: string } | { success: false; error: string };
+type CheckoutStep = 1 | 2 | 3;
 
-const STATUS_INFO: Record<string, { label: string; color: string; bg: string }> = {
-  TRIAL: { label: "نسخة تجريبية", color: "#f3cf73", bg: "rgba(243,207,115,.1)" },
-  ACTIVE: { label: "مشترك", color: "#4ade80", bg: "rgba(74,222,128,.1)" },
-  EXPIRED: { label: "منتهي", color: "#f87171", bg: "rgba(248,113,113,.1)" },
-  TRIAL_EXPIRED: { label: "انتهت التجربة", color: "#f87171", bg: "rgba(248,113,113,.1)" },
-  PAST_DUE: { label: "متأخر", color: "#fb923c", bg: "rgba(251,146,60,.1)" },
-  CANCELLED: { label: "ملغي", color: "#a78bfa", bg: "rgba(167,139,250,.1)" },
-  SUSPENDED: { label: "موقوف", color: "#f87171", bg: "rgba(248,113,113,.1)" },
-  NONE: { label: "غير مفعل", color: "#f3cf73", bg: "rgba(243,207,115,.1)" },
+type StepConfig = {
+  step: CheckoutStep;
+  title: string;
+  done: boolean;
+  available: boolean;
 };
 
-const REQUEST_STATUS_INFO: Record<string, { label: string; color: string; bg: string }> = {
-  DRAFT: { label: "مسودة", color: "rgba(245,234,214,.72)", bg: "rgba(255,255,255,.05)" },
-  SUBMITTED: { label: "تم الإرسال", color: "#f3cf73", bg: "rgba(243,207,115,.1)" },
-  PENDING: { label: "قيد الانتظار", color: "#f3cf73", bg: "rgba(243,207,115,.1)" },
-  UNDER_REVIEW: { label: "قيد المراجعة", color: "#60a5fa", bg: "rgba(96,165,250,.1)" },
-  APPROVED: { label: "تمت الموافقة", color: "#4ade80", bg: "rgba(74,222,128,.1)" },
-  REJECTED: { label: "مرفوض", color: "#f87171", bg: "rgba(248,113,113,.1)" },
-  CANCELLED: { label: "ملغي", color: "#a78bfa", bg: "rgba(167,139,250,.1)" },
-};
-
-const LOG_LABELS: Record<string, string> = {
-  DRAFT_CREATED: "تم إنشاء المسودة",
-  DRAFT_UPDATED: "تم تحديث المسودة",
-  PROOF_UPLOADED: "تم رفع إثبات الدفع",
-  PROOF_REMOVED: "تم حذف إثبات الدفع",
-  SUBMITTED: "تم تقديم الطلب",
+const REQUEST_STATUS_LABELS: Record<string, string> = {
+  DRAFT: "مسودة",
+  SUBMITTED: "تم الإرسال",
+  PENDING: "قيد الانتظار",
+  UNDER_REVIEW: "قيد المراجعة",
   APPROVED: "تمت الموافقة",
-  REJECTED: "تم الرفض",
-  REUPLOAD_REQUESTED: "طلب إعادة رفع الإثبات",
-  NOTE_ADDED: "ملاحظة من الإدارة",
-  CANCELLED: "تم الإلغاء",
+  REJECTED: "مرفوض",
+  CANCELLED: "ملغي",
+  EXPIRED: "منتهي",
+  REFUNDED: "مسترد",
 };
 
-const FAQ_ITEMS = [
-  { q: "كيف أعرف أن الدفع تم بنجاح؟", a: "بعد تقديم الطلب ستظهر حالته داخل هذه الصفحة ولوحة التحكم. عند موافقة الإدارة يتم تفعيل الاشتراك تلقائياً." },
-  { q: "كم تستغرق مراجعة الطلب؟", a: "تتم مراجعة الطلبات يدوياً حسب سياسة الإدارة. حالة الطلب ستبقى واضحة أمامك طوال الوقت." },
-  { q: "هل أستطيع تعديل الطلب بعد الإرسال؟", a: "لا. بعد الإرسال يتم قفل الطلب لحماية بيانات الدفع. يستطيع الأدمن طلب إعادة رفع الإثبات إذا كانت الصورة غير واضحة." },
-  { q: "هل يمكن إضافة Stripe أو PayPal لاحقاً؟", a: "نعم. النظام مبني حول Payment Settings حتى يمكن إضافة وسائل دفع مستقبلية بدون تغيير رحلة العميل." },
-];
-
-const AFTER_PAYMENT_STEPS = [
-  { title: "مراجعة الطلب", description: "الأدمن يراجع بيانات العميل، الباقة، وسيلة الدفع، وإثبات الدفع." },
-  { title: "قبول أو رفض", description: "في حالة الرفض يظهر السبب للعميل. وفي حالة القبول يتم التفعيل مباشرة." },
-  { title: "تفعيل الموقع", description: "يتم تحديث الاشتراك وحالة الموقع وإرسال إشعار للعميل داخل النظام." },
-];
-
-function formatDate(d: Date | string | null | undefined): string {
-  if (!d) return "—";
-  return new Date(d).toLocaleDateString("ar-EG", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
+const LOCKED_REQUEST_STATUSES = ["SUBMITTED", "PENDING", "UNDER_REVIEW", "APPROVED"];
+const SUPPORT_EMAIL = "support@frameid.app";
 
 function getPaymentMethodLabel(method: string): string {
   return ({ INSTAPAY: "إنستا باي", VODAFONE_CASH: "فودافون كاش", STRIPE: "Stripe", PAYPAL: "PayPal" } as Record<string, string>)[method] ?? method;
 }
 
-function normalizeFeatures(features: unknown): string[] {
-  if (Array.isArray(features)) return features.map(String);
-  if (features && typeof features === "object") {
-    return Object.entries(features as Record<string, unknown>).map(([key, value]) => {
-      if (typeof value === "boolean") return `${key}: ${value ? "متاح" : "غير متاح"}`;
-      return `${key}: ${String(value)}`;
-    });
+function getBillingIntervalLabel(interval: string): string {
+  return ({ monthly: "شهري", yearly: "سنوي", annual: "سنوي", lifetime: "مدى الحياة" } as Record<string, string>)[interval] ?? interval;
+}
+
+function normalizePlanFeatures(features: unknown): string[] {
+  if (Array.isArray(features)) {
+    return features.filter((item): item is string => typeof item === "string" && item.trim().length > 0);
   }
-  return [];
+
+  if (!features || typeof features !== "object") return [];
+
+  const record = features as Record<string, unknown>;
+  const labels: string[] = [];
+
+  if (record.publicSite) labels.push("موقع عام جاهز للنشر");
+  if (record.dashboard) labels.push("لوحة تحكم كاملة");
+  if (typeof record.themes === "number") labels.push(`${record.themes} قالب متاح`);
+  if (typeof record.galleryImages === "number") labels.push(`حتى ${record.galleryImages.toLocaleString()} صورة`);
+  if (record.customDomain === true) labels.push("دومين مخصص");
+  if (record.customDomain === false) labels.push("بدون دومين مخصص");
+  if (record.storage) labels.push(`مساحة ${String(record.storage)}`);
+  if (record.priority === "vip") labels.push("دعم VIP");
+  else if (record.priority === "high") labels.push("دعم أولوية عالية");
+  else if (record.priority === "standard") labels.push("دعم عادي");
+  if (record.manualActivation) labels.push("تفعيل يدوي آمن");
+
+  return labels;
 }
 
 function isActionSuccess(state: unknown): state is Extract<ActionResult, { success: true }> {
@@ -208,278 +178,493 @@ function getActionError(state: unknown): string | null {
   return isActionFailure(state) ? state.error : null;
 }
 
-function Badge({ label, color, bg }: { label: string; color: string; bg: string }) {
-  return <span style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "4px 10px", borderRadius: 999, fontSize: "0.72rem", fontWeight: 950, color, background: bg }}>{label}</span>;
+function getInitialStep(paymentRequest: PaymentRequestData | null, hasDraft: boolean, hasProof: boolean): CheckoutStep {
+  if (paymentRequest && LOCKED_REQUEST_STATUSES.includes(paymentRequest.status)) return 3;
+  if (hasDraft || hasProof) return 2;
+  return 1;
 }
 
-function SectionCard({ title, description, icon, children }: { title: string; description?: string; icon?: ReactNode; children: ReactNode }) {
-  return (
-    <section className="overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.03]">
-      <div className="flex items-start gap-3 border-b border-white/[0.06] px-4 py-3">
-        {icon ? <div className="grid size-9 shrink-0 place-items-center rounded-xl bg-amber-500/10 text-[#f3cf73]">{icon}</div> : null}
-        <div className="min-w-0">
-          <h2 className="m-0 text-[0.95rem] font-black text-[#fff7e8]">{title}</h2>
-          {description ? <p className="m-0 mt-1 text-xs font-bold leading-6 text-white/45">{description}</p> : null}
-        </div>
-      </div>
-      <div className="p-4">{children}</div>
-    </section>
-  );
+function getSupportHref(receiptNumber: string): string {
+  const subject = encodeURIComponent("متابعة طلب تفعيل FrameID");
+  const body = encodeURIComponent(`مرحبًا، أحتاج مساعدة في متابعة طلب التفعيل.\nرقم الإيصال: ${receiptNumber}`);
+  return `mailto:${SUPPORT_EMAIL}?subject=${subject}&body=${body}`;
 }
 
-function SummaryRow({ label, value, muted }: { label: string; value: string; muted?: boolean }) {
-  return <div className="flex justify-between gap-3 text-sm"><span className="text-white/45">{label}</span><strong className={muted ? "text-white/30" : "text-[#fff7e8]"}>{value}</strong></div>;
-}
+export function BillingClient({ session, plans, paymentMethods, paymentRequest, daysRemaining, requested, draftId, error: urlError }: BillingClientProps) {
+  const subscriptionStatus = session.subscription?.status ?? session.tenant.status;
+  const requestLocked = Boolean(paymentRequest && LOCKED_REQUEST_STATUSES.includes(paymentRequest.status));
+  const siteHref = session.site.slug ? `/${session.site.slug}` : "/dashboard";
 
-function InfoRow({ label, value }: { label: string; value: string | null }) {
-  if (!value) return null;
-  return <div className="grid grid-cols-[88px,1fr] gap-2 text-xs leading-6"><span className="text-white/38">{label}</span><strong className="break-all font-mono text-white/75" dir="ltr">{value}</strong></div>;
-}
-
-export function BillingClient({ session, plans, paymentMethods, paymentRequest, logs, daysRemaining, requested, draftId, error: urlError }: BillingClientProps) {
-  const { subscription, tenant } = session;
-  const subStatus = subscription?.status ?? tenant.status ?? "NONE";
-  const statusInfo = STATUS_INFO[subStatus] ?? STATUS_INFO.NONE;
-  const existingPlan = subscription?.plan ?? null;
-  const activeRequestLocked = Boolean(paymentRequest && !["DRAFT", "REJECTED", "CANCELLED"].includes(paymentRequest.status));
+  const visiblePlans = useMemo(() => plans.filter((plan) => plan.isActive).slice(0, 2), [plans]);
+  const initialMethod = useMemo(() => paymentMethods.find((method) => method.paymentMethod === paymentRequest?.method) ?? null, [paymentMethods, paymentRequest?.method]);
+  const initialAccount = useMemo(() => initialMethod?.accounts.find((account) => account.id === paymentRequest?.paymentAccountId) ?? initialMethod?.accounts[0] ?? null, [initialMethod, paymentRequest?.paymentAccountId]);
 
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(paymentRequest?.planId ?? null);
-  const [selectedMethodId, setSelectedMethodId] = useState<string | null>(null);
-  const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null);
-  const [reference, setReference] = useState(paymentRequest?.reference ?? "");
+  const [selectedMethodId, setSelectedMethodId] = useState<string | null>(initialMethod?.id ?? null);
+  const [selectedAccountId, setSelectedAccountId] = useState<string | null>(initialAccount?.id ?? paymentRequest?.paymentAccountId ?? null);
   const [draftState, setDraftState] = useState<string | null>(paymentRequest?.id ?? draftId ?? null);
   const [proofFile, setProofFile] = useState<File | null>(null);
-  const [proofPreview, setProofPreview] = useState<string | null>(paymentRequest?.proofUrl ?? null);
   const [proofUploaded, setProofUploaded] = useState(Boolean(paymentRequest?.proofAssetId));
   const [fileError, setFileError] = useState<string | null>(null);
-  const [faqOpen, setFaqOpen] = useState<number | null>(0);
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const [step, setStep] = useState<CheckoutStep>(() => getInitialStep(paymentRequest, Boolean(paymentRequest?.id ?? draftId), Boolean(paymentRequest?.proofAssetId)));
 
-  const [createState, createAction, createPending] = useActionState<ActionResult | null, FormData>(async (_prev, fd) => {
-    const result = await createPaymentDraftAction(fd);
-    if (result.success && result.draftId) setDraftState(result.draftId);
-    return result;
-  }, null);
+  const [createState, createAction, createPending] = useActionState<ActionResult | null, FormData>(async (_prev, fd) => createPaymentDraftAction(fd), null);
+  const [completePaymentState, completePaymentAction, completePaymentPending] = useActionState<ActionResult | null, FormData>(async (_prev, fd) => {
+    const uploaded = await uploadProofAction(fd);
+    if (!uploaded.success) return uploaded;
 
-  const [uploadState, uploadAction, uploadPending] = useActionState<ActionResult | null, FormData>(async (_prev, fd) => {
-    const result = await uploadProofAction(fd);
-    if (result.success) {
+    const submittedForm = new FormData();
+    submittedForm.set("draftId", String(fd.get("draftId") ?? ""));
+    const submittedResult = await submitPaymentRequestAction(submittedForm);
+
+    if (submittedResult.success) {
       setProofUploaded(true);
       setProofFile(null);
+      setStep(3);
     }
-    return result;
-  }, null);
 
-  const [removeState, removeAction, removePending] = useActionState<ActionResult | null, FormData>(async (_prev, fd) => {
-    const result = await removeProofAction(fd);
-    if (result.success) {
-      setProofUploaded(false);
-      setProofFile(null);
-      setProofPreview(null);
-    }
-    return result;
+    return submittedResult;
   }, null);
-
   const [submitState, submitAction, submitPending] = useActionState<ActionResult | null, FormData>(async (_prev, fd) => submitPaymentRequestAction(fd), null);
+  const [cancelState, cancelAction, cancelPending] = useActionState<ActionResult | null, FormData>(async (_prev, fd) => cancelPaymentRequestAction(fd), null);
 
-  const [cancelState, cancelAction, cancelPending] = useActionState<ActionResult | null, FormData>(async (_prev, fd) => {
-    const result = await cancelPaymentRequestAction(fd);
-    if (result.success) {
+  const selectedPlan = useMemo(() => plans.find((plan) => plan.id === selectedPlanId), [plans, selectedPlanId]);
+  const selectedMethod = useMemo(() => paymentMethods.find((method) => method.id === selectedMethodId) ?? initialMethod, [paymentMethods, selectedMethodId, initialMethod]);
+  const selectedAccount = useMemo(() => selectedMethod?.accounts.find((account) => account.id === selectedAccountId) ?? selectedMethod?.accounts[0] ?? initialAccount, [selectedMethod, selectedAccountId, initialAccount]);
+
+  const uploadSucceeded = proofUploaded || isActionSuccess(completePaymentState);
+  const submitted = requested || requestLocked || isActionSuccess(submitState) || isActionSuccess(completePaymentState);
+  const canUploadAndSubmit = Boolean(draftState && proofFile && !requestLocked);
+  const canSubmitExistingProof = Boolean(draftState && uploadSucceeded && !requestLocked);
+  const receiptNumber = paymentRequest?.id ?? draftState ?? draftId ?? "FRAMEID-PENDING";
+  const stageKey = `${step}-${draftState ? "draft" : "select"}-${submitted ? "submitted" : "editing"}`;
+
+  const stepConfig: StepConfig[] = [
+    { step: 1, title: "الباقة", done: Boolean(selectedPlan || draftState), available: !requestLocked },
+    { step: 2, title: "الدفع", done: Boolean(draftState && uploadSucceeded), available: Boolean(selectedPlan || draftState) && !requestLocked },
+    { step: 3, title: "الإيصال", done: submitted, available: Boolean(draftState && uploadSucceeded) || submitted || requestLocked },
+  ];
+
+  useEffect(() => {
+    if (isActionSuccess(createState) && createState.draftId) {
+      setDraftState(createState.draftId);
+      setStep(2);
+    }
+  }, [createState]);
+
+  useEffect(() => {
+    if (isActionSuccess(submitState)) setStep(3);
+  }, [submitState]);
+
+  useEffect(() => {
+    if (isActionSuccess(cancelState)) {
       setDraftState(null);
       setProofUploaded(false);
       setProofFile(null);
-      setProofPreview(null);
+      setSelectedMethodId(null);
+      setSelectedAccountId(null);
+      setStep(1);
     }
-    return result;
-  }, null);
+  }, [cancelState]);
 
-  const selectedPlan = useMemo(() => plans.find((p) => p.id === selectedPlanId), [plans, selectedPlanId]);
-  const selectedMethod = useMemo(() => paymentMethods.find((m) => m.id === selectedMethodId), [paymentMethods, selectedMethodId]);
-  const selectedAccount = useMemo(() => selectedMethod?.accounts.find((a) => a.id === selectedAccountId) ?? null, [selectedMethod, selectedAccountId]);
-  const canCreateDraft = Boolean(selectedPlan && selectedMethod && selectedAccount && !draftState && !activeRequestLocked);
-  const canUploadProof = Boolean(draftState && proofFile && !activeRequestLocked);
-  const uploadSucceeded = proofUploaded || isActionSuccess(uploadState);
-  const canSubmit = Boolean(draftState && uploadSucceeded && !activeRequestLocked);
+  function goToStep(nextStep: CheckoutStep) {
+    const target = stepConfig.find((item) => item.step === nextStep);
+    if (target?.available) setStep(nextStep);
+  }
+
+  function handlePlanSelect(planId: string) {
+    if (draftState || requestLocked) return;
+    setSelectedPlanId(planId);
+  }
+
+  function handleMethodSelect(methodId: string) {
+    if (draftState || requestLocked) return;
+    const method = paymentMethods.find((item) => item.id === methodId) ?? null;
+    setSelectedMethodId(methodId);
+    setSelectedAccountId(method?.accounts[0]?.id ?? null);
+  }
+
+  async function copyToClipboard(value: string, key: string) {
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopiedKey(key);
+      window.setTimeout(() => setCopiedKey((current) => (current === key ? null : current)), 1600);
+    } catch {
+      setCopiedKey(null);
+    }
+  }
 
   function handleFileSelect(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
     if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
-      setFileError("نوع الملف غير مدعوم. اختر JPEG أو PNG أو WebP.");
+      setFileError("اختار صورة JPEG أو PNG أو WebP فقط.");
       e.target.value = "";
       return;
     }
     if (file.size > 5 * 1024 * 1024) {
-      setFileError("حجم الملف يتجاوز 5MB.");
+      setFileError("الصورة أكبر من 5MB.");
       e.target.value = "";
       return;
     }
     setFileError(null);
-    setProofFile(file);
     setProofUploaded(false);
-    const reader = new FileReader();
-    reader.onload = () => setProofPreview(reader.result as string);
-    reader.readAsDataURL(file);
+    setProofFile(file);
   }
 
-  const workflow = [
-    { title: "اختر الباقة", done: Boolean(selectedPlan), description: selectedPlan?.name ?? "اختر الخطة المناسبة" },
-    { title: "اختر وسيلة الدفع", done: Boolean(selectedMethod && selectedAccount), description: selectedMethod ? (selectedMethod.label ?? getPaymentMethodLabel(selectedMethod.paymentMethod)) : "InstaPay أو Vodafone Cash" },
-    { title: "أنشئ المسودة", done: Boolean(draftState), description: draftState ? "تم حفظ بيانات الطلب" : "يتم قفل السعر والباقة" },
-    { title: "ارفع إثبات الدفع", done: uploadSucceeded, description: uploadSucceeded ? "تم رفع الإثبات" : "صورة التحويل أو الإيصال" },
-    { title: "أرسل الطلب", done: Boolean(activeRequestLocked || isActionSuccess(submitState)), description: activeRequestLocked ? "قيد مراجعة الإدارة" : "بعد الإرسال لا يمكن التعديل" },
-  ];
-
   return (
-    <main className="space-y-5">
-      <BuilderPageHeader eyebrow="الاشتراك والتفعيل" title={subStatus === "ACTIVE" ? "اشتراكك نشط" : "فعّل موقعك باحتراف"} description={subStatus === "ACTIVE" ? "اشتراكك مفعل ويمكنك استخدام كل الميزات." : "رحلة تفعيل واضحة: اختر الباقة، ادفع، ارفع الإثبات، ثم يتم تفعيل الموقع بعد مراجعة الإدارة."} />
+    <main className="mx-auto max-w-4xl space-y-4">
+      <style>{`
+        .billing-step-motion {
+          animation: billingStepIn 260ms cubic-bezier(0.22, 1, 0.36, 1) both;
+        }
+        @keyframes billingStepIn {
+          from { opacity: 0; transform: translateY(14px) scale(0.985); filter: blur(5px); }
+          to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .billing-step-motion { animation: none; }
+        }
+      `}</style>
 
-      {urlError ? <AlertBox tone="danger" title="حدث خطأ" body={urlError === "no-subscription" ? "لا يوجد اشتراك نشط. يرجى إنشاء الموقع أولاً." : urlError} /> : null}
-      {requested || isActionSuccess(submitState) ? <AlertBox tone="success" title="تم إرسال الطلب" body="طلب التفعيل قيد المراجعة الآن. ستظهر الحالة هنا وفي لوحة التحكم." /> : null}
+      <BuilderPageHeader
+        eyebrow="التفعيل"
+        title={subscriptionStatus === "ACTIVE" ? "اشتراكك نشط" : "تفعيل الاشتراك"}
+        description={subscriptionStatus === "ACTIVE" ? "اشتراكك مفعل ويمكنك استخدام كل الميزات." : "اختار الباقة، حوّل المبلغ، ارفع إثبات الدفع، وسيتم مراجعة الطلب خلال 24 ساعة."}
+      />
 
-      <SectionCard title="حالة الاشتراك والموقع" icon={<ShieldCheck size={16} />}>
-        <div className="grid gap-4 md:grid-cols-[1.2fr,1fr]">
-          <div className="space-y-3">
-            <div className="flex flex-wrap items-center gap-3">
-              <Badge label={statusInfo.label} color={statusInfo.color} bg={statusInfo.bg} />
-              {existingPlan ? <span className="text-sm font-bold text-white/60">{existingPlan.name}</span> : <span className="text-sm font-bold text-white/40">لا توجد باقة مدفوعة حالياً</span>}
-            </div>
-            <p className="m-0 text-sm leading-7 text-white/55">
-              {subStatus === "ACTIVE" ? `اشتراكك نشط${subscription?.currentPeriodEnd ? ` حتى ${formatDate(subscription.currentPeriodEnd)}` : ""}.` : daysRemaining > 0 ? `متبقي ${daysRemaining} يوم في الفترة التجريبية.` : tenant.gracePeriodEndsAt ? `انتهت التجربة، وفترة السماح حتى ${formatDate(tenant.gracePeriodEndsAt)}.` : "انتهت الفترة التجريبية. فعّل الاشتراك لاستمرار الموقع."}
-            </p>
+      {urlError ? <Alert tone="danger" title="حدث خطأ" text={urlError === "no-subscription" ? "لا يوجد اشتراك نشط. يرجى إنشاء الموقع أولاً." : urlError} /> : null}
+      {subscriptionStatus === "ACTIVE" ? <Alert tone="success" title="تم التفعيل" text="الموقع مفعل بالفعل." /> : null}
+      {subscriptionStatus !== "ACTIVE" ? <TrialNotice daysRemaining={daysRemaining} submitted={submitted} status={paymentRequest?.status ?? null} /> : null}
+
+      {subscriptionStatus !== "ACTIVE" ? (
+        <section className="rounded-[28px] border border-white/[0.08] bg-white/[0.03] p-4">
+          <StepTabs steps={stepConfig} current={step} onSelect={goToStep} />
+
+          <div className="mt-4 rounded-2xl border border-white/[0.07] bg-black/15 p-4">
+            <AnimatedStepPanel stageKey={stageKey}>
+              {step === 1 ? (
+                <CheckoutStage title="اختار الباقة" icon={<Package className="size-4" />}>
+                  {visiblePlans.length > 0 ? (
+                    <div className="grid gap-3 md:grid-cols-2">
+                      {visiblePlans.map((plan) => (
+                        <PlanCard
+                          key={plan.id}
+                          plan={plan}
+                          selected={selectedPlanId === plan.id}
+                          disabled={Boolean(draftState || requestLocked)}
+                          onSelect={() => handlePlanSelect(plan.id)}
+                        />
+                      ))}
+                    </div>
+                  ) : <Alert tone="warning" title="لا توجد باقات" text="لا توجد باقات مفعلة حاليًا. تواصل مع الدعم الفني." />}
+                  <Actions>
+                    <Button type="button" variant="luxury" disabled={!selectedPlan} onClick={() => setStep(2)}>متابعة</Button>
+                  </Actions>
+                </CheckoutStage>
+              ) : null}
+
+              {step === 2 ? (
+                <CheckoutStage title={draftState ? "الدفع والإثبات" : "اختار وسيلة الدفع"} icon={<CreditCard className="size-4" />}>
+                  {!draftState ? (
+                    <>
+                      <PaymentMethodPicker
+                        methods={paymentMethods}
+                        selectedMethodId={selectedMethodId}
+                        selectedPlanId={selectedPlanId}
+                        pending={createPending}
+                        action={createAction}
+                        onMethodSelect={handleMethodSelect}
+                      />
+                      {getActionError(createState) ? <ErrorText text={getActionError(createState)!} /> : null}
+                    </>
+                  ) : (
+                    <>
+                      <PaymentInstructionCard
+                        account={selectedAccount}
+                        method={selectedMethod}
+                        plan={selectedPlan}
+                        fallbackMethod={paymentRequest?.method ?? null}
+                        copied={copiedKey === "pay-account"}
+                        onCopy={() => selectedAccount ? copyToClipboard(selectedAccount.phoneNumber ?? selectedAccount.accountNumber, "pay-account") : undefined}
+                      />
+                      <PaymentAmountCard plan={selectedPlan} request={paymentRequest} />
+                      <ProofSubmitCard
+                        draftId={draftState}
+                        proofFile={proofFile}
+                        proofUploaded={uploadSucceeded}
+                        pending={completePaymentPending}
+                        canSubmit={canUploadAndSubmit}
+                        action={completePaymentAction}
+                        onFileSelect={handleFileSelect}
+                      />
+                      {fileError ? <ErrorText text={fileError} /> : null}
+                      {getActionError(completePaymentState) ? <ErrorText text={getActionError(completePaymentState)!} /> : null}
+                      {uploadSucceeded && !submitted ? (
+                        <form action={submitAction}>
+                          <input type="hidden" name="draftId" value={draftState} />
+                          <Button type="submit" variant="luxury" disabled={!canSubmitExistingProof || submitPending}>{submitPending ? <Loader2 className="size-4 animate-spin" /> : <CheckCircle2 className="size-4" />}{submitPending ? "جاري تقديم الطلب..." : "تقديم الطلب الآن"}</Button>
+                        </form>
+                      ) : null}
+                    </>
+                  )}
+
+                  <Actions>
+                    {!draftState ? <Button type="button" variant="ghost" onClick={() => setStep(1)}>رجوع</Button> : null}
+                    {draftState && !requestLocked && !submitted ? <CancelDraftForm draftId={draftState} cancelAction={cancelAction} pending={cancelPending} /> : null}
+                  </Actions>
+                </CheckoutStage>
+              ) : null}
+
+              {step === 3 ? (
+                <CheckoutStage title="معلومات الدفع" icon={<CheckCircle2 className="size-4" />}>
+                  {submitted ? (
+                    <SuccessReceiptCard
+                      receiptNumber={receiptNumber}
+                      status={paymentRequest?.status ?? (isActionSuccess(completePaymentState) || isActionSuccess(submitState) ? "SUBMITTED" : "PENDING")}
+                      rejectionReason={paymentRequest?.rejectionReason ?? null}
+                      copied={copiedKey === "receipt"}
+                      dashboardHref="/dashboard"
+                      siteHref={siteHref}
+                      onCopy={() => copyToClipboard(receiptNumber, "receipt")}
+                    />
+                  ) : (
+                    <>
+                      <FinalSummary plan={selectedPlan} method={selectedMethod} account={selectedAccount} uploadSucceeded={uploadSucceeded} request={paymentRequest} />
+                      <form action={submitAction}>
+                        <input type="hidden" name="draftId" value={draftState ?? ""} />
+                        <Button type="submit" variant="luxury" disabled={!canSubmitExistingProof || submitPending}>{submitPending ? <Loader2 className="size-4 animate-spin" /> : <CheckCircle2 className="size-4" />}{submitPending ? "جاري تقديم الطلب..." : "تقديم الطلب"}</Button>
+                      </form>
+                    </>
+                  )}
+                  {getActionError(submitState) ? <ErrorText text={getActionError(submitState)!} /> : null}
+                  {getActionError(cancelState) ? <ErrorText text={getActionError(cancelState)!} /> : null}
+                  <Actions>{!requestLocked && !submitted ? <Button type="button" variant="ghost" onClick={() => setStep(2)}>رجوع</Button> : null}</Actions>
+                </CheckoutStage>
+              ) : null}
+            </AnimatedStepPanel>
           </div>
-          <div className="grid gap-2 rounded-xl border border-white/[0.06] bg-black/10 p-3">
-            <SummaryRow label="حالة الموقع" value={session.site.status} />
-            <SummaryRow label="بداية التجربة" value={formatDate(tenant.trialStartedAt)} />
-            <SummaryRow label="نهاية التجربة" value={formatDate(tenant.trialEndsAt)} />
-            <SummaryRow label="أيام التجربة" value={`${tenant.trialDays} يوم`} />
-          </div>
-        </div>
-      </SectionCard>
-
-      {paymentRequest ? <RequestStatusCard request={paymentRequest} logs={logs} /> : null}
-
-      {subStatus !== "ACTIVE" ? (
-        <SectionCard title="مراحل التفعيل" description="اتبع الخطوات بالترتيب حتى يصل الطلب للأدمن بشكل واضح." icon={<CheckCircle2 size={16} />}>
-          <div className="grid gap-3 md:grid-cols-5">{workflow.map((step, idx) => <StepCard key={step.title} index={idx + 1} {...step} />)}</div>
-        </SectionCard>
+        </section>
       ) : null}
-
-      {subStatus !== "ACTIVE" ? (
-        <SectionCard title="اختر الباقة" description="كل باقة يتم تسعيرها من لوحة الإدارة ولا يوجد سعر مكتوب داخل الكود." icon={<Package size={16} />}>
-          <div className="grid gap-3 md:grid-cols-3">{plans.map((plan) => <PlanCard key={plan.id} plan={plan} selected={selectedPlanId === plan.id} disabled={Boolean(draftState || activeRequestLocked)} onSelect={() => setSelectedPlanId(plan.id)} />)}</div>
-        </SectionCard>
-      ) : null}
-
-      {subStatus !== "ACTIVE" ? (
-        <SectionCard title="وسيلة الدفع" description="كل الأرقام والتعليمات تظهر من Payment Settings بدون Deploy." icon={<CreditCard size={16} />}>
-          {paymentMethods.length === 0 ? <AlertBox tone="warning" title="لا توجد وسائل دفع مفعلة" body="اطلب من الأدمن تفعيل InstaPay أو Vodafone Cash من Payment Settings." /> : (
-            <div className="grid gap-3">
-              {paymentMethods.map((method) => <PaymentMethodCard key={method.id} method={method} selected={selectedMethodId === method.id} selectedAccountId={selectedAccountId} disabled={Boolean(draftState || activeRequestLocked)} onSelectMethod={() => { setSelectedMethodId(method.id); setSelectedAccountId(null); }} onSelectAccount={setSelectedAccountId} />)}
-            </div>
-          )}
-        </SectionCard>
-      ) : null}
-
-      {subStatus !== "ACTIVE" ? (
-        <SectionCard title="إنشاء مسودة الطلب" description="بعد حفظ المسودة تستطيع رفع إثبات الدفع، ثم إرسال الطلب للمراجعة." icon={<Info size={16} />}>
-          <div className="grid gap-3">
-            <input value={reference} onChange={(e) => setReference(e.target.value)} disabled={Boolean(draftState || activeRequestLocked)} placeholder="رقم المرجع أو Transaction ID — اختياري" className="h-11 rounded-xl border border-white/10 bg-white/5 px-3 text-sm text-white outline-none placeholder:text-white/25" dir="ltr" />
-            {!draftState ? (
-              <form action={createAction}>
-                <input type="hidden" name="planId" value={selectedPlanId ?? ""} />
-                <input type="hidden" name="method" value={selectedMethod?.paymentMethod ?? ""} />
-                <input type="hidden" name="accountId" value={selectedAccountId ?? ""} />
-                <input type="hidden" name="reference" value={reference} />
-                <Button type="submit" variant="luxury" disabled={!canCreateDraft || createPending}>{createPending ? <Loader2 className="size-4 animate-spin" /> : <CheckCircle2 className="size-4" />}{createPending ? "جاري الحفظ..." : "حفظ مسودة طلب التفعيل"}</Button>
-              </form>
-            ) : <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-3 text-sm font-bold text-emerald-300">تم إنشاء مسودة الطلب. يمكنك الآن رفع إثبات الدفع.</div>}
-            {getActionError(createState) ? <ErrorText text={getActionError(createState)!} /> : null}
-          </div>
-        </SectionCard>
-      ) : null}
-
-      {subStatus !== "ACTIVE" ? (
-        <SectionCard title="إثبات الدفع" description="ارفع صورة التحويل. يمكنك المعاينة والاستبدال والحذف قبل الإرسال." icon={<FileImage size={16} />}>
-          <div className="space-y-3">
-            {proofPreview ? <div className="overflow-hidden rounded-xl border border-white/[0.08] bg-black/25"><img src={proofPreview} alt="إثبات الدفع" className="max-h-72 w-full object-contain" /></div> : null}
-            <form action={uploadAction} className="space-y-3">
-              <input type="hidden" name="draftId" value={draftState ?? ""} />
-              <input id="proof-input" name="proof" type="file" accept="image/jpeg,image/png,image/webp" onChange={handleFileSelect} className="hidden" />
-              <label htmlFor="proof-input" className="inline-flex min-h-10 cursor-pointer items-center justify-center gap-2 rounded-xl border border-white/10 px-4 text-sm font-black text-white/70 hover:bg-white/5"><Upload className="size-4" /> {proofPreview ? "استبدال الصورة" : "اختيار صورة الإثبات"}</label>
-              {proofFile ? <Button type="submit" variant="secondary" disabled={!canUploadProof || uploadPending}>{uploadPending ? <Loader2 className="size-4 animate-spin" /> : <Upload className="size-4" />}{uploadPending ? "جاري الرفع..." : "رفع الصورة إلى الخادم"}</Button> : null}
-            </form>
-            {draftState && proofUploaded ? <form action={removeAction}><input type="hidden" name="draftId" value={draftState} /><Button type="submit" variant="ghost" disabled={removePending} style={{ color: "#f87171" }}>{removePending ? <Loader2 className="size-4 animate-spin" /> : <FileX className="size-4" />}حذف الصورة</Button></form> : null}
-            {proofPreview && !proofUploaded ? <Button type="button" variant="ghost" onClick={() => { setProofFile(null); setProofPreview(null); setProofUploaded(false); }} style={{ color: "#f87171" }}><X className="size-4" /> حذف الصورة</Button> : null}
-            {fileError ? <ErrorText text={fileError} /> : null}
-            {getActionError(uploadState) ? <ErrorText text={getActionError(uploadState)!} /> : null}
-            {getActionError(removeState) ? <ErrorText text={getActionError(removeState)!} /> : null}
-          </div>
-        </SectionCard>
-      ) : null}
-
-      {subStatus !== "ACTIVE" && !activeRequestLocked ? (
-        <SectionCard title="ملخص الطلب والإرسال" description="بعد الإرسال لن يستطيع العميل تعديل الطلب إلا إذا طلب الأدمن إعادة رفع الإثبات." icon={<CheckCircle2 size={16} />}>
-          <div className="mb-4 grid gap-2 rounded-xl border border-white/[0.07] bg-black/10 p-3">
-            <SummaryRow label="الباقة المختارة" value={selectedPlan?.name ?? "لم يتم الاختيار"} muted={!selectedPlan} />
-            <SummaryRow label="السعر" value={selectedPlan ? `${selectedPlan.priceAmount.toLocaleString()} ${selectedPlan.currency}` : "لم يتم الاختيار"} muted={!selectedPlan} />
-            <SummaryRow label="وسيلة الدفع" value={selectedMethod ? (selectedMethod.label ?? getPaymentMethodLabel(selectedMethod.paymentMethod)) : "لم يتم الاختيار"} muted={!selectedMethod} />
-            <SummaryRow label="حساب الدفع" value={selectedAccount ? (selectedAccount.label ?? selectedAccount.accountName) : "لم يتم الاختيار"} muted={!selectedAccount} />
-            <SummaryRow label="إثبات الدفع" value={uploadSucceeded ? "تم الرفع" : "لم يتم الرفع"} muted={!uploadSucceeded} />
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <form action={submitAction}><input type="hidden" name="draftId" value={draftState ?? ""} /><Button type="submit" variant="luxury" disabled={!canSubmit || submitPending}>{submitPending ? <Loader2 className="size-4 animate-spin" /> : <CheckCircle2 className="size-4" />}{submitPending ? "جاري الإرسال..." : "إرسال طلب التفعيل"}</Button></form>
-            {draftState ? <form action={cancelAction}><input type="hidden" name="draftId" value={draftState} /><Button type="submit" variant="ghost" disabled={cancelPending} style={{ color: "#f87171" }}>{cancelPending ? <Loader2 className="size-4 animate-spin" /> : <X className="size-4" />}إلغاء المسودة</Button></form> : null}
-          </div>
-          {getActionError(submitState) ? <ErrorText text={getActionError(submitState)!} /> : null}
-          {getActionError(cancelState) ? <ErrorText text={getActionError(cancelState)!} /> : null}
-        </SectionCard>
-      ) : null}
-
-      <SectionCard title="ماذا يحدث بعد الدفع؟" icon={<Info size={16} />}><AfterPaymentSteps /></SectionCard>
-      <SectionCard title="أسئلة شائعة" icon={<Info size={16} />}><Faq faqOpen={faqOpen} setFaqOpen={setFaqOpen} /></SectionCard>
     </main>
   );
 }
 
-function RequestStatusCard({ request, logs }: { request: PaymentRequestData; logs: LogData[] }) {
-  return <SectionCard title="حالة طلب التفعيل الحالي" icon={<Clock size={16} />}><div className="space-y-4"><div className="flex flex-wrap items-center gap-3"><Badge label={REQUEST_STATUS_INFO[request.status]?.label ?? request.status} color={REQUEST_STATUS_INFO[request.status]?.color ?? "#f3cf73"} bg={REQUEST_STATUS_INFO[request.status]?.bg ?? "rgba(243,207,115,.1)"} />{request.submittedAt ? <span className="text-xs font-bold text-white/38">تم الإرسال: {formatDate(request.submittedAt)}</span> : null}</div>{request.status === "REJECTED" ? <div className="rounded-xl border border-red-500/20 bg-red-500/10 p-3 text-sm font-bold text-red-300">سبب الرفض: {request.rejectionReason ?? "لم يتم تحديد سبب الرفض"}</div> : null}{logs.length > 0 ? <Timeline logs={logs} /> : null}</div></SectionCard>;
+function AnimatedStepPanel({ stageKey, children }: { stageKey: string; children: ReactNode }) {
+  return <div key={stageKey} className="billing-step-motion">{children}</div>;
 }
 
-function StepCard({ index, title, description, done }: { index: number; title: string; description: string; done: boolean }) {
-  return <div className={`rounded-xl border p-3 ${done ? "border-emerald-500/20 bg-emerald-500/8" : "border-white/[0.07] bg-white/[0.02]"}`}><div className="mb-2 flex items-center justify-between gap-2"><span className="grid size-7 place-items-center rounded-full bg-white/8 text-xs font-black text-white/75">{index}</span>{done ? <CheckCircle2 className="size-4 text-emerald-400" /> : <Clock className="size-4 text-white/25" />}</div><strong className="block text-sm text-[#fff7e8]">{title}</strong><span className="mt-1 block text-xs leading-5 text-white/42">{description}</span></div>;
+function TrialNotice({ daysRemaining, submitted, status }: { daysRemaining: number; submitted: boolean; status: string | null }) {
+  if (submitted || status) return <Alert tone="success" title="طلب التفعيل" text={`الحالة: ${REQUEST_STATUS_LABELS[status ?? "SUBMITTED"] ?? status ?? "تم الإرسال"}`} />;
+  return <Alert tone="warning" title="الفترة التجريبية" text={daysRemaining > 0 ? `متبقي ${daysRemaining} يوم.` : "التجربة انتهت. فعّل الاشتراك للاستمرار."} />;
+}
+
+function StepTabs({ steps, current, onSelect }: { steps: StepConfig[]; current: CheckoutStep; onSelect: (step: CheckoutStep) => void }) {
+  return (
+    <div className="grid grid-cols-3 gap-2">
+      {steps.map((item) => (
+        <button key={item.step} type="button" disabled={!item.available} onClick={() => onSelect(item.step)} className={`rounded-2xl border px-2 py-3 text-center transition ${current === item.step ? "border-amber-400/50 bg-amber-500/10" : item.done ? "border-emerald-500/20 bg-emerald-500/10" : "border-white/[0.07] bg-black/10"} ${!item.available ? "cursor-not-allowed opacity-55" : "hover:border-white/20"}`}>
+          <span className={`mx-auto mb-1 grid size-6 place-items-center rounded-full text-xs font-black ${item.done ? "bg-emerald-400 text-black" : current === item.step ? "bg-[#f3cf73] text-black" : "bg-white/10 text-white/40"}`}>{item.done ? <Check size={13} /> : item.step}</span>
+          <strong className="block truncate text-[0.72rem] text-white/60">{item.title}</strong>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function CheckoutStage({ title, icon, children }: { title: string; icon: ReactNode; children: ReactNode }) {
+  return (
+    <section className="grid gap-4">
+      <div className="flex items-center gap-2">
+        <span className="grid size-9 place-items-center rounded-xl bg-amber-500/10 text-[#f3cf73]">{icon}</span>
+        <h2 className="m-0 text-lg font-black text-[#fff7e8]">{title}</h2>
+      </div>
+      {children}
+    </section>
+  );
 }
 
 function PlanCard({ plan, selected, disabled, onSelect }: { plan: PlanData; selected: boolean; disabled: boolean; onSelect: () => void }) {
-  const features = normalizeFeatures(plan.features).slice(0, 6);
-  return <button type="button" onClick={onSelect} disabled={disabled} className={`rounded-2xl border p-4 text-right transition ${selected ? "border-amber-400/60 bg-amber-500/10" : "border-white/[0.08] bg-white/[0.02] hover:border-white/20"}`}><div className="flex items-start justify-between gap-3"><div><h3 className="m-0 text-base font-black text-[#fff7e8]">{plan.name}</h3><p className="m-0 mt-1 text-xs font-bold text-white/35">{plan.code}</p></div>{selected ? <span className="grid size-7 place-items-center rounded-full bg-[#f3cf73] text-black"><Check size={15} /></span> : null}</div><p className="my-4 text-2xl font-black text-[#f3cf73]" dir="ltr">{plan.priceAmount.toLocaleString()} {plan.currency}</p><div className="grid gap-2">{features.map((feature) => <span key={feature} className="flex items-start gap-2 text-xs leading-5 text-white/55"><Check className="mt-1 size-3 shrink-0 text-emerald-400" />{feature}</span>)}</div></button>;
+  const features = normalizePlanFeatures(plan.features);
+  const visibleFeatures = features.slice(0, 6);
+  const remainingFeatures = Math.max(features.length - visibleFeatures.length, 0);
+
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={onSelect}
+      className={`flex min-h-[22rem] flex-col rounded-3xl border p-4 text-right transition ${selected ? "border-amber-400/70 bg-amber-500/10 shadow-2xl shadow-amber-950/20" : "border-white/[0.08] bg-white/[0.025] hover:border-white/20 hover:bg-white/[0.04]"} ${disabled ? "cursor-not-allowed opacity-60" : ""}`}
+    >
+      <span className="mb-3 flex items-center justify-between gap-2">
+        <span className="rounded-full border border-white/[0.08] bg-black/20 px-3 py-1 text-[0.68rem] font-black text-white/45" dir="ltr">{plan.code}</span>
+        {selected ? <span className="inline-flex items-center gap-1 rounded-full bg-emerald-400 px-2 py-1 text-[0.68rem] font-black text-black"><Check size={12} />مختارة</span> : <span className="rounded-full bg-white/[0.06] px-2 py-1 text-[0.68rem] font-black text-white/35">اختيار</span>}
+      </span>
+
+      <strong className="text-base font-black leading-7 text-[#fff7e8]">{plan.name}</strong>
+      <span className="mt-2 flex items-end gap-1 text-[#f3cf73]" dir="ltr">
+        <strong className="text-2xl font-black leading-none">{plan.priceAmount.toLocaleString()}</strong>
+        <small className="pb-0.5 text-xs font-bold">{plan.currency}</small>
+      </span>
+      <span className="mt-1 text-xs font-bold text-white/35">اشتراك {getBillingIntervalLabel(plan.billingInterval)}</span>
+
+      <span className="my-4 h-px w-full bg-white/[0.08]" />
+
+      <span className="grid flex-1 gap-2">
+        {visibleFeatures.length > 0 ? visibleFeatures.map((feature) => (
+          <span key={feature} className="flex items-start gap-2 text-xs leading-6 text-white/60">
+            <Check className="mt-1 size-3.5 shrink-0 text-emerald-300" />
+            <span>{feature}</span>
+          </span>
+        )) : <span className="text-xs leading-6 text-white/35">باقة مناسبة للبدء.</span>}
+        {remainingFeatures > 0 ? <span className="text-xs font-black text-[#f3cf73]">+ {remainingFeatures} ميزة إضافية</span> : null}
+      </span>
+
+      <span className={`mt-4 grid h-10 place-items-center rounded-xl text-xs font-black ${selected ? "bg-[#f3cf73] text-black" : "bg-white/[0.06] text-white/55"}`}>{selected ? "تم اختيار هذه الباقة" : "اختار هذه الباقة"}</span>
+    </button>
+  );
 }
 
-function PaymentMethodCard({ method, selected, selectedAccountId, disabled, onSelectMethod, onSelectAccount }: { method: PaymentMethodData; selected: boolean; selectedAccountId: string | null; disabled: boolean; onSelectMethod: () => void; onSelectAccount: (id: string) => void }) {
-  return <div className={`rounded-2xl border ${selected ? "border-amber-400/40 bg-amber-500/8" : "border-white/[0.08] bg-white/[0.02]"}`}><button type="button" disabled={disabled} onClick={onSelectMethod} className="flex w-full items-center gap-3 p-4 text-right"><span className={`grid size-5 place-items-center rounded-full border-2 ${selected ? "border-[#f3cf73]" : "border-white/20"}`}>{selected ? <span className="size-2 rounded-full bg-[#f3cf73]" /> : null}</span><div className="min-w-0 flex-1"><strong className="block text-sm text-[#fff7e8]">{method.label ?? getPaymentMethodLabel(method.paymentMethod)}</strong>{method.description ? <span className="mt-1 block text-xs text-white/45">{method.description}</span> : null}</div>{method.qrCodeUrl ? <img src={method.qrCodeUrl} alt="QR Code" className="size-12 rounded-lg object-cover" /> : null}</button>{selected ? <div className="grid gap-2 px-4 pb-4 md:grid-cols-2">{method.accounts.map((account) => <AccountCard key={account.id} account={account} selected={selectedAccountId === account.id} disabled={disabled} onSelect={() => onSelectAccount(account.id)} />)}</div> : null}</div>;
+function PaymentMethodPicker({ methods, selectedMethodId, selectedPlanId, pending, action, onMethodSelect }: { methods: PaymentMethodData[]; selectedMethodId: string | null; selectedPlanId: string | null; pending: boolean; action: (payload: FormData) => void; onMethodSelect: (id: string) => void }) {
+  if (methods.length === 0) return <Alert tone="warning" title="لا توجد وسائل دفع" text="الأدمن يحتاج يفعّل وسيلة دفع أولاً." />;
+
+  return (
+    <div className="grid gap-2 sm:grid-cols-2">
+      {methods.map((method) => {
+        const selected = selectedMethodId === method.id;
+        const account = method.accounts[0] ?? null;
+        const disabled = !selectedPlanId || !account || pending;
+        return (
+          <form key={method.id} action={action}>
+            <input type="hidden" name="planId" value={selectedPlanId ?? ""} />
+            <input type="hidden" name="method" value={method.paymentMethod} />
+            <input type="hidden" name="accountId" value={account?.id ?? ""} />
+            <button type="submit" disabled={disabled} onClick={() => onMethodSelect(method.id)} className={`min-h-28 w-full rounded-2xl border p-4 text-right transition ${selected ? "border-amber-400/60 bg-amber-500/10" : "border-white/[0.08] bg-white/[0.025] hover:border-white/20"} ${disabled ? "cursor-not-allowed opacity-60" : ""}`}>
+              <span className="flex items-center justify-between gap-3">
+                <strong className="text-sm font-black text-[#fff7e8]">{method.label ?? getPaymentMethodLabel(method.paymentMethod)}</strong>
+                {pending && selected ? <Loader2 className="size-5 animate-spin text-[#f3cf73]" /> : selected ? <CheckCircle2 className="size-5 text-emerald-300" /> : <CreditCard className="size-5 text-white/30" />}
+              </span>
+              <small className="mt-2 block text-xs leading-6 text-white/40">{!account ? "لا يوجد رقم دفع متاح" : pending && selected ? "جاري تجهيز الدفع..." : "اضغط للذهاب للدفع مباشرة"}</small>
+            </button>
+          </form>
+        );
+      })}
+    </div>
+  );
 }
 
-function AccountCard({ account, selected, disabled, onSelect }: { account: PaymentMethodData["accounts"][number]; selected: boolean; disabled: boolean; onSelect: () => void }) {
-  return <button type="button" disabled={disabled} onClick={onSelect} className={`rounded-xl border p-3 text-right ${selected ? "border-amber-400/50 bg-amber-500/10" : "border-white/[0.07] bg-black/10"}`}><div className="mb-2 flex items-center justify-between gap-2"><strong className="text-sm text-[#fff7e8]">{account.label ?? account.accountName}</strong>{selected ? <CheckCircle2 className="size-4 text-[#f3cf73]" /> : null}</div><InfoRow label="الاسم" value={account.accountName} /><InfoRow label="الرقم" value={account.accountNumber} /><InfoRow label="الهاتف" value={account.phoneNumber} /><InfoRow label="البنك" value={account.bankName} /><InfoRow label="IBAN" value={account.iban} /><InfoRow label="SWIFT" value={account.swift} />{account.instructions ? <p className="mt-2 border-t border-white/[0.06] pt-2 text-xs leading-6 text-white/50">{account.instructions}</p> : null}</button>;
+function PaymentInstructionCard({ account, method, plan, copied, onCopy, fallbackMethod }: { account: PaymentAccountData | null; method: PaymentMethodData | null | undefined; plan: PlanData | undefined; copied: boolean; onCopy: () => void; fallbackMethod?: string | null }) {
+  const methodLabel = method ? (method.label ?? getPaymentMethodLabel(method.paymentMethod)) : fallbackMethod ? getPaymentMethodLabel(fallbackMethod) : "وسيلة الدفع";
+  const number = account?.phoneNumber ?? account?.accountNumber ?? "";
+
+  return (
+    <div className="rounded-3xl border border-amber-400/30 bg-gradient-to-br from-amber-500/15 via-white/[0.04] to-emerald-500/10 p-4 shadow-2xl shadow-amber-950/20">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <span className="text-xs font-black text-[#f3cf73]">{methodLabel}</span>
+          <h3 className="m-0 mt-1 text-lg font-black text-[#fff7e8]">حوّل قيمة المبلغ على هذا الرقم</h3>
+          {plan ? <p className="m-0 mt-1 text-xs text-white/45">المبلغ المطلوب: {plan.priceAmount.toLocaleString()} {plan.currency}</p> : null}
+        </div>
+        <span className="rounded-full bg-emerald-400/15 px-3 py-1 text-xs font-black text-emerald-200">آمن ومباشر</span>
+      </div>
+
+      {number ? (
+        <button type="button" onClick={onCopy} className="mt-4 grid w-full gap-1 rounded-2xl border border-amber-300/30 bg-black/25 p-4 text-center shadow-inner transition hover:border-amber-300/60 hover:bg-black/35">
+          <strong className="text-2xl font-black tracking-wider text-[#f3cf73]" dir="ltr">{number}</strong>
+          <small className="text-xs font-bold text-white/45">{copied ? "تم النسخ ✅" : "👆 اضغط على الرقم للنسخ"}</small>
+        </button>
+      ) : <Alert tone="warning" title="لا يوجد رقم" text="لم يتم ربط رقم دفع بهذه الوسيلة." />}
+    </div>
+  );
 }
 
-function AlertBox({ tone, title, body }: { tone: "success" | "danger" | "warning"; title: string; body: string }) {
-  const toneClass = tone === "success" ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-300" : tone === "warning" ? "border-amber-500/20 bg-amber-500/10 text-amber-300" : "border-red-500/20 bg-red-500/10 text-red-300";
+function PaymentAmountCard({ plan, request }: { plan: PlanData | undefined; request: PaymentRequestData | null }) {
+  const amount = plan ? `${plan.priceAmount.toLocaleString()} ${plan.currency}` : request ? `${request.amount.toLocaleString()} ${request.currency}` : "محفوظ";
+  return (
+    <div className="grid gap-2 rounded-3xl border border-white/[0.08] bg-white/[0.025] p-4">
+      <span className="text-xs font-black text-white/35">تفاصيل الاشتراك</span>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <strong className="text-base font-black text-[#fff7e8]">{plan?.name ?? "الباقة المختارة"}</strong>
+        <strong className="rounded-2xl bg-[#f3cf73] px-4 py-2 text-sm font-black text-black" dir="ltr">{amount}</strong>
+      </div>
+    </div>
+  );
+}
+
+function ProofSubmitCard({ draftId, proofFile, proofUploaded, pending, canSubmit, action, onFileSelect }: { draftId: string; proofFile: File | null; proofUploaded: boolean; pending: boolean; canSubmit: boolean; action: (payload: FormData) => void; onFileSelect: (e: ChangeEvent<HTMLInputElement>) => void }) {
+  return (
+    <form action={action} className="grid gap-3 rounded-3xl border border-white/[0.08] bg-white/[0.025] p-4">
+      <input type="hidden" name="draftId" value={draftId} />
+      <input id="proof-input" name="proof" type="file" accept="image/jpeg,image/png,image/webp" onChange={onFileSelect} className="hidden" />
+      <label htmlFor="proof-input" className="flex min-h-28 cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-white/12 bg-black/20 px-4 text-center transition hover:bg-white/[0.04]">
+        <Upload className="size-6 text-[#f3cf73]" />
+        <strong className="text-sm text-[#fff7e8]">{proofFile ? proofFile.name : proofUploaded ? "تم رفع إثبات الدفع" : "ارفع سكرين صورة التحويل"}</strong>
+        <small className="text-white/35">JPEG / PNG / WebP — بحد أقصى 5MB</small>
+      </label>
+      <Button type="submit" variant="luxury" disabled={!canSubmit || pending}>{pending ? <Loader2 className="size-4 animate-spin" /> : <CheckCircle2 className="size-4" />}{pending ? "جاري تقديم الطلب..." : "تم الدفع ~ قدم طلب"}</Button>
+    </form>
+  );
+}
+
+function SuccessReceiptCard({ receiptNumber, status, rejectionReason, copied, dashboardHref, siteHref, onCopy }: { receiptNumber: string; status: string; rejectionReason: string | null; copied: boolean; dashboardHref: string; siteHref: string; onCopy: () => void }) {
+  const rejected = status === "REJECTED";
+  return (
+    <div className="grid gap-4">
+      <div className={`rounded-3xl border p-5 ${rejected ? "border-red-500/20 bg-red-500/10" : "border-emerald-500/20 bg-emerald-500/10"}`}>
+        <span className={rejected ? "text-xs font-black text-red-300" : "text-xs font-black text-emerald-300"}>{REQUEST_STATUS_LABELS[status] ?? status}</span>
+        <h3 className="m-0 mt-1 text-xl font-black text-[#fff7e8]">{rejected ? "الطلب يحتاج مراجعة" : "تم تقديم الطلب بنجاح"}</h3>
+        <p className="m-0 mt-2 text-sm leading-7 text-white/55">عادة يتم قبول طلبات التفعيل خلال أول 24 ساعة. إذا تأخر قبول الطلب، تواصل مع الدعم الفني وقدم رقم الإيصال المرفق.</p>
+        {rejected ? <p className="m-0 mt-2 text-xs font-bold text-red-300">سبب الرفض: {rejectionReason ?? "غير محدد"}</p> : null}
+      </div>
+
+      <div className="rounded-3xl border border-amber-400/30 bg-gradient-to-br from-amber-500/15 via-white/[0.04] to-black/20 p-4 shadow-2xl shadow-amber-950/20">
+        <span className="text-xs font-black text-[#f3cf73]">كارت الإيصال</span>
+        <button type="button" onClick={onCopy} className="mt-3 grid w-full gap-1 rounded-2xl border border-amber-300/30 bg-black/25 p-4 text-center transition hover:border-amber-300/60">
+          <strong className="break-all text-lg font-black text-[#fff7e8]" dir="ltr">{receiptNumber}</strong>
+          <small className="text-xs font-bold text-white/45">{copied ? "تم نسخ الإيصال ✅" : "👆 اضغط لنسخ رقم الإيصال"}</small>
+        </button>
+      </div>
+
+      <div className="grid gap-2 sm:grid-cols-3">
+        <a href={dashboardHref} className="inline-flex h-11 items-center justify-center rounded-xl bg-[#f3cf73] px-4 text-sm font-black text-black transition hover:opacity-90">العودة للوحة التحكم</a>
+        <a href={siteHref} className="inline-flex h-11 items-center justify-center rounded-xl border border-emerald-400/25 bg-emerald-400/10 px-4 text-sm font-black text-emerald-100 transition hover:bg-emerald-400/15">فتح الموقع</a>
+        <a href={getSupportHref(receiptNumber)} className="inline-flex h-11 items-center justify-center rounded-xl border border-white/[0.1] bg-white/[0.06] px-4 text-sm font-black text-[#fff7e8] transition hover:bg-white/[0.1]">الدعم الفني</a>
+      </div>
+    </div>
+  );
+}
+
+function FinalSummary({ plan, method, account, uploadSucceeded, request }: { plan: PlanData | undefined; method: PaymentMethodData | null | undefined; account: PaymentAccountData | null; uploadSucceeded: boolean; request: PaymentRequestData | null }) {
+  return (
+    <div className="grid gap-2 rounded-2xl border border-white/[0.06] bg-white/[0.025] p-3 text-sm">
+      <SummaryLine label="الباقة" value={plan?.name ?? "محفوظة في الطلب"} />
+      <SummaryLine label="المبلغ" value={plan ? `${plan.priceAmount.toLocaleString()} ${plan.currency}` : request ? `${request.amount.toLocaleString()} ${request.currency}` : "محفوظ"} ltr />
+      <SummaryLine label="الدفع" value={method ? (method.label ?? getPaymentMethodLabel(method.paymentMethod)) : request ? getPaymentMethodLabel(request.method) : "محفوظ"} />
+      <SummaryLine label="الإثبات" value={uploadSucceeded ? "تم الرفع" : "لم يرفع"} />
+      {account ? <SummaryLine label="الحساب" value={account.label ?? account.accountName} /> : null}
+    </div>
+  );
+}
+
+function CancelDraftForm({ draftId, cancelAction, pending }: { draftId: string; cancelAction: (payload: FormData) => void; pending: boolean }) {
+  return <form action={cancelAction}><input type="hidden" name="draftId" value={draftId} /><Button type="submit" variant="ghost" disabled={pending} style={{ color: "#f87171" }}>{pending ? <Loader2 className="size-4 animate-spin" /> : <X className="size-4" />}إلغاء الطلب</Button></form>;
+}
+
+function Actions({ children }: { children: ReactNode }) {
+  return <div className="flex flex-wrap items-center gap-2 border-t border-white/[0.06] pt-4">{children}</div>;
+}
+
+function SummaryLine({ label, value, ltr }: { label: string; value: string; ltr?: boolean }) {
+  return <div className="flex justify-between gap-3"><span className="text-white/35">{label}</span><strong className="truncate text-[#fff7e8]" dir={ltr ? "ltr" : undefined}>{value}</strong></div>;
+}
+
+function Alert({ tone, title, text }: { tone: "success" | "danger" | "warning"; title: string; text: string }) {
+  const className = tone === "success" ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-300" : tone === "warning" ? "border-amber-500/20 bg-amber-500/10 text-amber-300" : "border-red-500/20 bg-red-500/10 text-red-300";
   const Icon = tone === "success" ? CheckCircle2 : AlertTriangle;
-  return <div role="alert" className={`flex items-start gap-3 rounded-2xl border p-4 ${toneClass}`}><Icon className="mt-1 size-4 shrink-0" /><div><strong className="block text-sm">{title}</strong><p className="m-0 mt-1 text-xs leading-6 text-white/60">{body}</p></div></div>;
+  return <div className={`flex items-start gap-3 rounded-2xl border p-3 ${className}`}><Icon className="mt-1 size-4 shrink-0" /><div><strong className="block text-sm">{title}</strong><p className="m-0 mt-1 text-xs leading-6 text-white/60">{text}</p></div></div>;
 }
 
 function ErrorText({ text }: { text: string }) {
-  return <p className="m-0 mt-2 text-xs font-bold text-red-300">{text}</p>;
-}
-
-function Timeline({ logs }: { logs: LogData[] }) {
-  return <div className="grid gap-0">{logs.map((log, idx) => <div key={log.id} className="grid grid-cols-[24px,1fr] gap-3 border-b border-white/[0.05] py-3 last:border-0"><div className="flex flex-col items-center"><span className={`mt-1 size-3 rounded-full ${log.action === "APPROVED" ? "bg-emerald-400" : log.action === "REJECTED" ? "bg-red-400" : "bg-[#f3cf73]"}`} />{idx < logs.length - 1 ? <span className="mt-1 min-h-6 w-px flex-1 bg-white/[0.08]" /> : null}</div><div><strong className="block text-sm text-[#fff7e8]">{LOG_LABELS[log.action] ?? log.action}</strong>{log.note ? <p className="m-0 mt-1 text-xs leading-6 text-white/50">{log.note}</p> : null}<span className="mt-1 block text-[0.68rem] text-white/30">{formatDate(log.createdAt)}{log.actorName ? ` · ${log.actorName}` : ""}</span></div></div>)}</div>;
-}
-
-function AfterPaymentSteps() {
-  return <div className="grid gap-3 md:grid-cols-3">{AFTER_PAYMENT_STEPS.map((step, idx) => <div key={step.title} className="rounded-xl border border-white/[0.07] bg-white/[0.02] p-4 text-center"><span className="mx-auto mb-3 grid size-10 place-items-center rounded-full bg-amber-500/10 text-base font-black text-[#f3cf73]">{idx + 1}</span><strong className="block text-sm text-[#fff7e8]">{step.title}</strong><p className="m-0 mt-2 text-xs leading-6 text-white/45">{step.description}</p></div>)}</div>;
-}
-
-function Faq({ faqOpen, setFaqOpen }: { faqOpen: number | null; setFaqOpen: (value: number | null) => void }) {
-  return <div className="grid gap-2">{FAQ_ITEMS.map((item, idx) => { const open = faqOpen === idx; return <div key={item.q} className="overflow-hidden rounded-xl border border-white/[0.07]"><button type="button" onClick={() => setFaqOpen(open ? null : idx)} className="flex w-full items-center justify-between gap-3 px-4 py-3 text-right"><strong className="text-sm text-[#fff7e8]">{item.q}</strong>{open ? <ChevronUp className="size-4 text-white/35" /> : <ChevronDown className="size-4 text-white/35" />}</button>{open ? <p className="m-0 px-4 pb-4 text-xs leading-7 text-white/50">{item.a}</p> : null}</div>; })}</div>;
+  return <p className="m-0 text-xs font-bold text-red-300">{text}</p>;
 }

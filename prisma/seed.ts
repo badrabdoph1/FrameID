@@ -74,7 +74,7 @@ async function main() {
   }
 
   for (const paymentSettings of seedData.paymentSettings) {
-    await prisma.paymentSettings.upsert({
+    const settings = await prisma.paymentSettings.upsert({
       where: { paymentMethod: paymentSettings.paymentMethod },
       update: {
         isActive: paymentSettings.isActive,
@@ -91,7 +91,47 @@ async function main() {
         config: paymentSettings.config as Prisma.InputJsonValue,
         sortOrder: paymentSettings.sortOrder,
       },
+      select: { id: true },
     });
+
+    for (const account of paymentSettings.accounts) {
+      const existingAccount = await prisma.paymentAccount.findFirst({
+        where: {
+          paymentSettingsId: settings.id,
+          accountNumber: account.accountNumber,
+          deletedAt: null,
+        },
+        select: { id: true },
+      });
+
+      const data = {
+        label: account.label,
+        accountName: account.accountName,
+        accountNumber: account.accountNumber,
+        phoneNumber: account.phoneNumber,
+        instructions: account.instructions,
+        sortOrder: account.sortOrder,
+        bankName: null,
+        iban: null,
+        swift: null,
+        notes: null,
+        isActive: true,
+      };
+
+      if (existingAccount) {
+        await prisma.paymentAccount.update({
+          where: { id: existingAccount.id },
+          data,
+        });
+      } else {
+        await prisma.paymentAccount.create({
+          data: {
+            paymentSettingsId: settings.id,
+            ...data,
+          },
+        });
+      }
+    }
   }
 
   for (const settings of seedData.backupSettings) {

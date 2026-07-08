@@ -164,7 +164,7 @@ export function getPlatformSeedData() {
           manualActivation: true,
           storage: "20 GB",
         },
-        isActive: true
+        isActive: false
       },
     ],
     paymentSettings: [
@@ -172,17 +172,37 @@ export function getPlatformSeedData() {
         paymentMethod: "INSTAPAY" as const,
         isActive: true,
         label: "إنستا باي",
-        description: "تحويل فوري عبر تطبيق InstaPay. أضف الحسابات والـ QR من لوحة الإدارة.",
+        description: "تحويل فوري عبر تطبيق InstaPay ثم رفع صورة إثبات الدفع.",
         config: { providerType: "MANUAL_TRANSFER", proofRequired: true, supportsQrCode: true },
         sortOrder: 10,
+        accounts: [
+          {
+            label: "حساب إنستا باي الرئيسي",
+            accountName: "FrameID",
+            accountNumber: "01011511561",
+            phoneNumber: "01011511561",
+            instructions: "حوّل على رقم إنستا باي، ثم ارفع صورة إثبات الدفع من نفس الصفحة.",
+            sortOrder: 10,
+          },
+        ],
       },
       {
         paymentMethod: "VODAFONE_CASH" as const,
         isActive: true,
         label: "فودافون كاش",
-        description: "تحويل يدوي عبر Vodafone Cash. يمكن إدارة الأرقام والتعليمات من الأدمن.",
+        description: "تحويل يدوي عبر Vodafone Cash ثم رفع صورة إثبات الدفع.",
         config: { providerType: "MANUAL_WALLET", proofRequired: true, supportsQrCode: true },
         sortOrder: 20,
+        accounts: [
+          {
+            label: "محفظة فودافون كاش الرئيسية",
+            accountName: "FrameID",
+            accountNumber: "01038434472",
+            phoneNumber: "01038434472",
+            instructions: "حوّل على رقم فودافون كاش، ثم ارفع صورة إثبات الدفع من نفس الصفحة.",
+            sortOrder: 10,
+          },
+        ],
       },
       {
         paymentMethod: "STRIPE" as const,
@@ -191,6 +211,7 @@ export function getPlatformSeedData() {
         description: "جاهز للتفعيل مستقبلاً للبطاقات والمدفوعات الدولية.",
         config: { providerType: "HOSTED_CHECKOUT", proofRequired: false },
         sortOrder: 30,
+        accounts: [],
       },
       {
         paymentMethod: "PAYPAL" as const,
@@ -199,6 +220,7 @@ export function getPlatformSeedData() {
         description: "جاهز للتفعيل مستقبلاً للمحافظ العالمية.",
         config: { providerType: "HOSTED_CHECKOUT", proofRequired: false },
         sortOrder: 40,
+        accounts: [],
       },
     ],
     backupSettings: [
