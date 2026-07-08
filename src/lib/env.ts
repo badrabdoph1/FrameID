@@ -1,10 +1,3 @@
-const _requiredServerVars = [
-  "DATABASE_URL",
-  "SESSION_SECRET",
-] as const;
-
-const _requiredClientVars = [] as const;
-
 function getEnvVar(key: string): string {
   const value = process.env[key];
   if (!value) {

@@ -1,11 +1,9 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useState } from "react";
 import {
   Copy,
   DollarSign,
-  Eye,
-  EyeOff,
   Star,
   Trash2,
 } from "lucide-react";
@@ -94,6 +92,15 @@ export function PackageEditor({
                 {pkg.subtitle}
               </p>
             )}
+            <p
+              aria-live="polite"
+              className={cn(
+                "text-xs font-medium transition-opacity",
+                saving ? "text-champagne opacity-100" : "text-muted-foreground opacity-0",
+              )}
+            >
+              جاري الحفظ...
+            </p>
           </div>
 
           <div className="flex items-center gap-1">

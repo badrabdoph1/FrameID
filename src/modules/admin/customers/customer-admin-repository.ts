@@ -748,6 +748,7 @@ export function createCustomerAdminRepository(prisma: PrismaClient) {
   }
 
   async function getCustomerVisits(tenantId: string): Promise<number> {
+    void tenantId;
     return 0;
   }
 

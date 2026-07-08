@@ -1,6 +1,6 @@
 "use client"
 
-import { Image, FileText, Download, Search } from "lucide-react"
+import { Image as ImageIcon, FileText, Download, Search } from "lucide-react"
 import type { CustomerMediaAsset } from "./customer-types"
 
 export function CustomerMediaTab({ media, searchQuery, onSearchChange }: {
@@ -40,6 +40,7 @@ export function CustomerMediaTab({ media, searchQuery, onSearchChange }: {
             <div key={asset.id} className="group relative overflow-hidden rounded-xl border border-white/8 bg-white/3">
               {asset.mimeType.startsWith("image/") ? (
                 <div className="flex aspect-square items-center justify-center bg-white/5">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={asset.url} alt={asset.alt ?? ""} className="size-full object-cover" loading="lazy" />
                 </div>
               ) : (
@@ -61,7 +62,7 @@ export function CustomerMediaTab({ media, searchQuery, onSearchChange }: {
         </div>
       ) : (
         <div className="flex flex-col items-center justify-center rounded-xl border border-white/8 bg-white/3 px-6 py-12 text-center">
-          <Image size={32} className="mb-3 text-white/20" />
+          <ImageIcon size={32} className="mb-3 text-white/20" />
           <p className="text-sm text-white/40">لا توجد ملفات وسائط</p>
         </div>
       )}

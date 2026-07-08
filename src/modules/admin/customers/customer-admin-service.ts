@@ -120,8 +120,9 @@ export function createCustomerAdminService(repo: CustomerAdminRepository) {
     await repo.createAuditLog(actor.id, "", "ADMIN_NOTE_DELETED", "AdminNote", noteId);
   }
 
-  async function revokeSession(sessionId: string, _tenantId: string, _actor: AdminActor): Promise<void> {
+  async function revokeSession(sessionId: string, tenantId: string, actor: AdminActor): Promise<void> {
     await repo.revokeSession(sessionId);
+    await repo.createAuditLog(actor.id, tenantId, "SESSION_REVOKED", "Session", sessionId);
   }
 
   async function extendTrial(tenantId: string, days: number, actor: AdminActor): Promise<void> {
