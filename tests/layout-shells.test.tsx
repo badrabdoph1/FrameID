@@ -1,5 +1,5 @@
 import React from "react";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("next/navigation", () => ({
@@ -52,6 +52,18 @@ describe("application shells", () => {
     expect(adminElements.length).toBeGreaterThanOrEqual(1);
   });
 
+  it("keeps super admin mobile navigation compact with a full menu", () => {
+    render(
+      <AdminShell>
+        <p>Admin content</p>
+      </AdminShell>
+    );
+
+    const mobileNav = screen.getByRole("navigation", { name: "تنقل الأدمن للموبايل" });
+    expect(within(mobileNav).getAllByRole("link")).toHaveLength(4);
+    expect(within(mobileNav).getByRole("button", { name: "فتح كل أقسام الأدمن" })).toBeInTheDocument();
+  });
+
   it("keeps the customer dashboard shell on a dark readable surface", () => {
     const { container } = render(
       <DashboardShell siteSlug="demo">
@@ -69,5 +81,23 @@ describe("application shells", () => {
       width: "min(100%, 1120px)",
       marginInline: "auto",
     });
+  });
+
+  it("keeps customer dashboard mobile navigation compact with a full more menu", () => {
+    render(
+      <DashboardShell siteSlug="demo">
+        <p>Customer dashboard content</p>
+      </DashboardShell>
+    );
+
+    const mobileNav = screen.getByRole("navigation", { name: "تنقل لوحة العميل للموبايل" });
+    expect(within(mobileNav).getAllByRole("link")).toHaveLength(4);
+    expect(within(mobileNav).getByRole("button", { name: "فتح باقي أقسام لوحة العميل" })).toBeInTheDocument();
+
+    fireEvent.click(within(mobileNav).getByRole("button", { name: "فتح باقي أقسام لوحة العميل" }));
+
+    const moreMenu = screen.getByRole("dialog", { name: "كل أقسام لوحة العميل" });
+    expect(within(moreMenu).getByRole("link", { name: /الفواتير والاشتراك/ })).toBeInTheDocument();
+    expect(within(moreMenu).getByRole("link", { name: /الإعدادات/ })).toBeInTheDocument();
   });
 });

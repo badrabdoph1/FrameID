@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import type { ReactNode } from "react"
+import { useState, type ReactNode } from "react"
 import {
   LayoutDashboard,
   UserCircle,
@@ -15,6 +15,8 @@ import {
   LogOut,
   ExternalLink,
   ChevronLeft,
+  Menu,
+  X,
   type LucideIcon,
 } from "lucide-react"
 import { logoutAction } from "@/app/_actions/logout"
@@ -45,6 +47,13 @@ export function DashboardShell({
   siteSlug?: string
 }) {
   const pathname = usePathname()
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const mobilePrimaryNav = [
+    navItems[0],
+    navItems[1],
+    navItems[2],
+    navItems[5],
+  ].filter(Boolean) as NavItem[]
 
   const isActive = (href: string) => {
     if (href === "/dashboard") return pathname === "/dashboard"
@@ -252,12 +261,13 @@ export function DashboardShell({
 
       {/* Mobile Bottom Navigation */}
       <nav
+        aria-label="تنقل لوحة العميل للموبايل"
         style={{
-          display: "flex",
+          display: "grid",
+          gridTemplateColumns: "repeat(5, minmax(0, 1fr))",
           alignItems: "center",
-          justifyContent: "flex-start",
-          gap: 2,
-          padding: "4px 6px",
+          gap: 4,
+          padding: "6px 8px",
           borderTop: "1px solid rgba(245, 234, 214, 0.08)",
           background: "rgba(11, 13, 18, 0.96)",
           backdropFilter: "blur(12px)",
@@ -268,12 +278,10 @@ export function DashboardShell({
           right: 0,
           zIndex: 50,
           paddingBottom: "env(safe-area-inset-bottom, 4px)",
-          overflowX: "auto",
-          scrollbarWidth: "none",
         }}
         className="lg:hidden"
       >
-        {navItems.map((item) => {
+        {mobilePrimaryNav.map((item) => {
           const active = isActive(item.href)
           const Icon = item.icon
           return (
@@ -287,20 +295,136 @@ export function DashboardShell({
                 gap: 1,
                 padding: "6px 8px",
                 borderRadius: 8,
-                fontSize: "0.55rem",
+                fontSize: "0.58rem",
                 fontWeight: active ? 950 : 850,
                 textDecoration: "none",
                 color: active ? "#f3cf73" : "rgba(245, 234, 214, 0.45)",
+                background: active ? "rgba(243, 207, 115, 0.1)" : "transparent",
                 transition: "color 0.15s",
-                minWidth: 76,
+                minWidth: 0,
               }}
             >
               <Icon size={18} />
-              <span style={{ lineHeight: 1.2 }}>{item.label}</span>
+              <span style={{ lineHeight: 1.2, maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.label}</span>
             </Link>
           )
         })}
+        <button
+          type="button"
+          aria-label="فتح باقي أقسام لوحة العميل"
+          aria-expanded={mobileMenuOpen}
+          onClick={() => setMobileMenuOpen((open) => !open)}
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 1,
+            padding: "6px 8px",
+            borderRadius: 8,
+            border: 0,
+            background: mobileMenuOpen ? "rgba(243, 207, 115, 0.12)" : "transparent",
+            color: mobileMenuOpen ? "#f3cf73" : "rgba(245, 234, 214, 0.45)",
+            fontSize: "0.58rem",
+            fontWeight: 900,
+            fontFamily: "inherit",
+          }}
+        >
+          <Menu size={18} />
+          <span>المزيد</span>
+        </button>
       </nav>
+
+      {mobileMenuOpen ? (
+        <>
+          <button
+            type="button"
+            aria-label="إغلاق قائمة لوحة العميل"
+            onClick={() => setMobileMenuOpen(false)}
+            className="lg:hidden"
+            style={{
+              position: "fixed",
+              inset: 0,
+              zIndex: 48,
+              border: 0,
+              background: "rgba(0,0,0,0.48)",
+            }}
+          />
+          <section
+            role="dialog"
+            aria-label="كل أقسام لوحة العميل"
+            className="lg:hidden"
+            style={{
+              position: "fixed",
+              right: 10,
+              left: 10,
+              bottom: "calc(74px + env(safe-area-inset-bottom))",
+              zIndex: 49,
+              maxHeight: "68dvh",
+              overflowY: "auto",
+              borderRadius: 18,
+              border: "1px solid rgba(245, 234, 214, 0.13)",
+              background: "rgba(15, 18, 25, 0.98)",
+              boxShadow: "0 24px 70px rgba(0,0,0,0.45)",
+              padding: 14,
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 10 }}>
+              <div>
+                <p style={{ margin: 0, color: "#f3cf73", fontSize: "0.7rem", fontWeight: 950 }}>كل الأقسام</p>
+                <h2 style={{ margin: "2px 0 0", color: "#fff7e8", fontSize: "1rem", fontWeight: 950 }}>اختار الخطوة اللي محتاجها</h2>
+              </div>
+              <button
+                type="button"
+                aria-label="إغلاق"
+                onClick={() => setMobileMenuOpen(false)}
+                style={{
+                  display: "grid",
+                  placeItems: "center",
+                  width: 36,
+                  height: 36,
+                  borderRadius: 10,
+                  border: "1px solid rgba(245, 234, 214, 0.1)",
+                  background: "rgba(255,255,255,0.04)",
+                  color: "rgba(245, 234, 214, 0.65)",
+                }}
+              >
+                <X size={17} />
+              </button>
+            </div>
+            <div style={{ display: "grid", gap: 8 }}>
+              {navItems.map((item) => {
+                const active = isActive(item.href)
+                const Icon = item.icon
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={() => setMobileMenuOpen(false)}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 10,
+                      minHeight: 48,
+                      padding: "10px 12px",
+                      borderRadius: 12,
+                      border: active ? "1px solid rgba(243, 207, 115, 0.3)" : "1px solid rgba(245, 234, 214, 0.08)",
+                      background: active ? "rgba(243, 207, 115, 0.12)" : "rgba(255,255,255,0.035)",
+                      color: active ? "#f3cf73" : "rgba(245, 234, 214, 0.76)",
+                      textDecoration: "none",
+                      fontSize: "0.88rem",
+                      fontWeight: 900,
+                    }}
+                  >
+                    <Icon size={18} />
+                    <span>{item.label}</span>
+                    <ChevronLeft size={14} style={{ marginRight: "auto", opacity: 0.5 }} />
+                  </Link>
+                )
+              })}
+            </div>
+          </section>
+        </>
+      ) : null}
     </div>
   )
 }

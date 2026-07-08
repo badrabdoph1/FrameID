@@ -26,7 +26,7 @@ export function AdminMobileNav() {
     }
   }, [mobileMenuOpen])
 
-  const topLevelLinks = adminSections.map((s) => ({
+  const topLevelLinks = adminSections.slice(0, 4).map((s) => ({
     href: s.links[0]?.href ?? "/admin",
     label: s.title,
     Icon: s.icon,
@@ -37,7 +37,10 @@ export function AdminMobileNav() {
     <>
       {/* Bottom Navigation */}
       <div className="admin-mobile-nav-shell">
-        <nav className="flex items-center gap-1 rounded-2xl border border-white/10 bg-[#141825]/98 px-2 py-1.5 shadow-2xl backdrop-blur-lg">
+        <nav
+          aria-label="تنقل الأدمن للموبايل"
+          className="grid grid-cols-5 items-center gap-1 rounded-2xl border border-white/10 bg-[#141825]/98 px-2 py-1.5 shadow-2xl backdrop-blur-lg"
+        >
           {topLevelLinks.map((link) => {
             const isActive = pathname === link.href || pathname?.startsWith(link.href + "/")
             return (
@@ -57,6 +60,8 @@ export function AdminMobileNav() {
 
           <button
             onClick={toggleMobileMenu}
+            aria-label="فتح كل أقسام الأدمن"
+            aria-expanded={mobileMenuOpen}
             className={cn(
               "flex flex-col items-center gap-0.5 rounded-xl px-2 py-2 text-[0.6rem] font-extrabold text-white/60 transition min-w-0",
               mobileMenuOpen && "bg-gradient-to-br from-amber-500 to-amber-300 text-[#111827]",
@@ -74,12 +79,16 @@ export function AdminMobileNav() {
           "fixed inset-0 z-[2147482990] bg-black/50 transition-opacity duration-180",
           mobileMenuOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none",
         )}
+        aria-hidden={!mobileMenuOpen}
         onClick={toggleMobileMenu}
       />
 
       {/* Mobile Menu */}
       <div
         ref={menuRef}
+        role="dialog"
+        aria-label="كل أقسام الأدمن"
+        aria-hidden={!mobileMenuOpen}
         className={cn(
           "fixed right-2 bottom-[calc(88px+env(safe-area-inset-bottom))] left-2 z-[2147483010] grid max-h-[76dvh] gap-3 overflow-auto rounded-2xl border border-white/15 bg-[#121724]/98 p-4 shadow-2xl transition-transform duration-200 ease-out",
           mobileMenuOpen ? "translate-y-0 visible pointer-events-auto" : "translate-y-[calc(100%+120px)] invisible pointer-events-none",

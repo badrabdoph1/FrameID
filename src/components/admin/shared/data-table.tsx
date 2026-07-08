@@ -103,7 +103,72 @@ export function DataTable<T extends Record<string, unknown>>({
         </div>
       )}
 
-      <div className="overflow-x-auto rounded-xl border border-white/10">
+      <div
+        role="list"
+        aria-label="قائمة البيانات للموبايل"
+        className="grid gap-3 md:hidden"
+      >
+        {paginated.length === 0 ? (
+          <div className="rounded-xl border border-dashed border-white/10 bg-white/4 px-4 py-10 text-center text-sm font-bold text-white/42">
+            {emptyMessage}
+          </div>
+        ) : (
+          paginated.map((item) => {
+            const titleColumn = columns[0]
+            const title = titleColumn
+              ? item[titleColumn.key]
+              : item[keyField]
+
+            return (
+              <article
+                key={String(item[keyField])}
+                role="listitem"
+                aria-label={String(title ?? item[keyField])}
+                tabIndex={onRowClick ? 0 : undefined}
+                onClick={() => onRowClick?.(item)}
+                onKeyDown={(event) => {
+                  if (!onRowClick) return
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault()
+                    onRowClick(item)
+                  }
+                }}
+                className={cn(
+                  "rounded-2xl border border-white/10 bg-white/[0.035] p-4 shadow-[0_16px_40px_rgba(0,0,0,0.18)]",
+                  onRowClick && "cursor-pointer transition hover:border-amber-500/24 hover:bg-amber-500/7 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/55",
+                )}
+              >
+                <dl className="grid gap-3">
+                  {columns.map((col, index) => (
+                    <div
+                      key={col.key}
+                      className={cn(
+                        "grid gap-1 border-b border-white/6 pb-3 last:border-0 last:pb-0",
+                        index === 0 && "rounded-xl border border-amber-500/12 bg-amber-500/8 p-3",
+                      )}
+                    >
+                      <dt className="text-[0.68rem] font-black text-white/38">{col.header}</dt>
+                      <dd className={cn("min-w-0 text-sm font-bold leading-6 text-white/82", index === 0 && "text-base font-black text-[#fff7e8]")}>
+                        {col.render ? col.render(item) : (item[col.key] as ReactNode) ?? "—"}
+                      </dd>
+                    </div>
+                  ))}
+                </dl>
+                {actions && (
+                  <div
+                    className="mt-4 flex flex-wrap gap-2 border-t border-white/8 pt-3"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {actions(item)}
+                  </div>
+                )}
+              </article>
+            )
+          })
+        )}
+      </div>
+
+      <div className="hidden overflow-x-auto rounded-xl border border-white/10 md:block">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-white/10 bg-white/3">
