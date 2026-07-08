@@ -111,6 +111,7 @@ export function hasPermission(
 ): boolean {
   const roleDef = ROLES[role];
   if (!roleDef) return false;
+  if (role === "SUPER_ADMIN") return true;
   const perm = roleDef.permissions.find((p) => p.center === center);
   if (!perm) return false;
   return perm.actions.includes(action);

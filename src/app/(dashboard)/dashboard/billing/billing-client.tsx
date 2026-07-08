@@ -402,7 +402,12 @@ export function BillingClient({
   function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (!file.type.startsWith("image/")) return;
+    const allowed = ["image/jpeg", "image/png", "image/webp"];
+    if (!allowed.includes(file.type)) {
+      setFileError("نوع الملف غير مدعوم. يرجى اختيار صورة JPEG, PNG, أو WebP.");
+      e.target.value = "";
+      return;
+    }
     if (file.size > MAX_FILE_SIZE) {
       setFileError("حجم الملف يتجاوز 5 ميجابايت. يرجى اختيار صورة أصغر.");
       e.target.value = "";
@@ -1436,16 +1441,17 @@ export function BillingClient({
 
           <Button
             variant="luxury"
-            onClick={async () => {
-              if (paymentRequest?.id) {
-                const fd = new FormData();
-                fd.append("draftId", paymentRequest.id);
-                cancelAction(fd);
-              }
+            onClick={() => {
               setDraftState(null);
+              setSelectedPlanId(null);
+              setSelectedMethodId(null);
+              setSelectedAccountId(null);
+              setProofFile(null);
+              setProofPreview(null);
+              setReference("");
             }}
           >
-            إعادة التقديم
+            إنشاء طلب جديد
           </Button>
         </SectionCard>
       ) : null}

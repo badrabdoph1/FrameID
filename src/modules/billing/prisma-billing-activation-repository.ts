@@ -32,6 +32,9 @@ type PrismaBillingActivationClient = {
   subscriptionChange: {
     create(input: unknown): Promise<unknown>;
   };
+  plan: {
+    findUnique(input: unknown): Promise<unknown | null>;
+  };
 };
 
 type PaymentRequestUpdateResult = {
@@ -232,7 +235,16 @@ export function createPrismaBillingActivationRepository(
       });
     },
 
-    async activateSubscription(tenantId, subscriptionId, planId, activatedAt) {
+    async getPlan(planId: string) {
+      const plan = (await prisma.plan.findUnique({
+        where: { id: planId },
+        select: { id: true, billingInterval: true, priceAmount: true },
+      })) as { id: string; billingInterval: string; priceAmount: number } | null;
+
+      return plan;
+    },
+
+    async activateSubscription(tenantId, subscriptionId, planId, activatedAt, currentPeriodEnd) {
       await prisma.subscription.update({
         where: { id: subscriptionId },
         data: {
@@ -240,8 +252,8 @@ export function createPrismaBillingActivationRepository(
           planId: planId ?? undefined,
           activatedAt,
           currentPeriodStart: activatedAt,
-          currentPeriodEnd: null,
-          expiresAt: null
+          currentPeriodEnd: currentPeriodEnd ?? null,
+          expiresAt: currentPeriodEnd ?? null
         }
       });
 
@@ -279,7 +291,7 @@ export function createPrismaBillingActivationRepository(
       await prisma.tenant.update({
         where: { id: sub.tenantId },
         data: {
-          status: "TRIAL_EXPIRED"
+          status: "EXPIRED"
         }
       });
 

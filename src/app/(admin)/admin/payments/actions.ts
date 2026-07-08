@@ -31,6 +31,7 @@ export async function approvePaymentAction(formData: FormData) {
     await service.approvePayment({
       paymentRequestId,
       reviewerId: session.user.id,
+      adminName: session.user.name,
       adminNote:
         typeof adminNote === "string" && adminNote.trim()
           ? adminNote.trim()
@@ -69,6 +70,7 @@ export async function rejectPaymentAction(formData: FormData) {
     await service.rejectPayment({
       paymentRequestId,
       reviewerId: session.user.id,
+      adminName: session.user.name,
       reason: adminNote.trim()
     });
   } catch (error) {
@@ -104,6 +106,7 @@ export async function requestReuploadAction(formData: FormData) {
     await service.requestReupload({
       paymentRequestId,
       reviewerId: session.user.id,
+      adminName: session.user.name,
       note: note.trim()
     });
   } catch (error) {

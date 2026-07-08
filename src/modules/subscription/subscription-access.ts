@@ -120,27 +120,19 @@ export async function checkTenantAccess(
 }
 
 function maybeAutoExpire(tenant: TenantAccessData): void {
-  if (
-    tenant.status === "TRIAL_EXPIRED" ||
-    tenant.status === "EXPIRED"
-  ) {
-    return;
-  }
-
-  setImmediate(async () => {
-    try {
-      await prisma.tenant.update({
-        where: { id: tenant.id },
-        data: { status: "TRIAL_EXPIRED" }
-      });
+  // Fire-and-forget update; non-critical path
+  prisma.tenant
+    .update({
+      where: { id: tenant.id, status: { notIn: ["TRIAL_EXPIRED", "EXPIRED"] } },
+      data: { status: "TRIAL_EXPIRED" }
+    })
+    .then(() => {
       if (tenant.subscriptions[0]) {
-        await prisma.subscription.update({
+        return prisma.subscription.update({
           where: { id: tenant.subscriptions[0].id },
           data: { status: "EXPIRED" }
         });
       }
-    } catch {
-      // Fire-and-forget; failure is non-critical
-    }
-  });
+    })
+    .catch(() => {});
 }

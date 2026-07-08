@@ -31,6 +31,18 @@ async function getSessionWithSub() {
   return session as NonNullable<typeof session>;
 }
 
+async function getServiceWithOwnershipCheck(draftId: string, tenantId: string) {
+  const service = getService();
+  const request = await prisma.paymentRequest.findUnique({
+    where: { id: draftId },
+    select: { tenantId: true },
+  });
+  if (!request || request.tenantId !== tenantId) {
+    throw new Error("لا يمكن الوصول إلى طلب الدفع هذا");
+  }
+  return service;
+}
+
 /* ─── Create Draft Payment ─────────────────────── */
 
 export async function createPaymentDraftAction(formData: FormData): Promise<ActionResult> {
@@ -51,7 +63,7 @@ export async function createPaymentDraftAction(formData: FormData): Promise<Acti
 
   try {
     const plan = await prisma.plan.findUnique({ where: { id: planId } });
-    if (!plan) return { success: false, error: "الباقة غير موجودة" };
+    if (!plan || !plan.isActive) return { success: false, error: "الباقة غير موجودة" };
 
     const service = getService();
     const draft = await service.createDraftPayment({
@@ -96,7 +108,7 @@ export async function updatePaymentDraftAction(formData: FormData): Promise<Acti
   if (!draftId) return { success: false, error: "معرّف المسودة مطلوب" };
 
   try {
-    const service = getService();
+    const service = await getServiceWithOwnershipCheck(draftId, session.tenant.id);
     await service.updateDraftPayment(draftId, {
       method: typeof method === "string" && VALID_METHODS.includes(method as PaymentMethod)
         ? (method as PaymentMethod)
@@ -140,7 +152,7 @@ export async function uploadProofAction(formData: FormData): Promise<ActionResul
       alt: "إثبات دفع"
     }).then((asset) => asset.id);
 
-    const service = getService();
+    const service = await getServiceWithOwnershipCheck(draftId, session.tenant.id);
     await service.uploadPaymentProof(draftId, assetId);
 
     revalidatePath("/dashboard/billing");
@@ -164,7 +176,7 @@ export async function removeProofAction(formData: FormData): Promise<ActionResul
   if (!draftId) return { success: false, error: "معرّف المسودة مطلوب" };
 
   try {
-    const service = getService();
+    const service = await getServiceWithOwnershipCheck(draftId, session.tenant.id);
     await service.removePaymentProof(draftId);
     revalidatePath("/dashboard/billing");
     return { success: true };
@@ -187,7 +199,7 @@ export async function submitPaymentRequestAction(formData: FormData): Promise<Ac
   if (!draftId) return { success: false, error: "معرّف المسودة مطلوب" };
 
   try {
-    const service = getService();
+    const service = await getServiceWithOwnershipCheck(draftId, session.tenant.id);
     await service.submitPayment(draftId);
 
     revalidatePath("/dashboard/billing");
@@ -211,13 +223,14 @@ export async function cancelPaymentRequestAction(formData: FormData): Promise<Ac
   if (!draftId) return { success: false, error: "معرّف المسودة مطلوب" };
 
   try {
-    await prisma.paymentRequest.update({
-      where: { id: draftId },
-      data: { status: "CANCELLED", deletedAt: new Date() }
-    });
+    const service = await getServiceWithOwnershipCheck(draftId, session.tenant.id);
+    const result = await service.cancelPaymentRequest(draftId);
+    if (!result.success) {
+      return { success: false as const, error: result.error ?? "حدث خطأ" };
+    }
 
     revalidatePath("/dashboard/billing");
-    return { success: true };
+    return { success: true as const };
   } catch (error) {
     const { userError } = await processError(error, {
       userId: session.user.id,

@@ -13,15 +13,26 @@ type PaymentStatus =
 
 const VALID_TRANSITIONS: Record<PaymentStatus, PaymentStatus[]> = {
   DRAFT: ["SUBMITTED"],
-  SUBMITTED: ["UNDER_REVIEW", "CANCELLED"],
+  SUBMITTED: ["UNDER_REVIEW", "CANCELLED", "APPROVED", "REJECTED"],
   UNDER_REVIEW: ["APPROVED", "REJECTED", "DRAFT"],
   APPROVED: ["REFUNDED"],
-  REJECTED: [],
+  REJECTED: ["DRAFT"],
   CANCELLED: [],
   PENDING: ["SUBMITTED", "CANCELLED"],
   REFUNDED: [],
   EXPIRED: [],
 };
+
+function assertValidTransition(
+  current: PaymentStatus,
+  target: PaymentStatus,
+  errorCode: string,
+): void {
+  const allowed = VALID_TRANSITIONS[current];
+  if (!allowed?.includes(target)) {
+    throw new PaymentError(errorCode);
+  }
+}
 
 export type PaymentMethod = "INSTAPAY" | "VODAFONE_CASH" | "STRIPE" | "PAYPAL";
 
@@ -96,7 +107,8 @@ export type BillingActivationRepository = {
     tenantId: string,
     subscriptionId: string,
     planId: string | null,
-    activatedAt: Date
+    activatedAt: Date,
+    currentPeriodEnd?: Date
   ): Promise<void>;
 
   cancelSubscription(subscriptionId: string): Promise<void>;
@@ -165,6 +177,12 @@ export type BillingActivationRepository = {
     initiatedById?: string,
     reason?: string
   ): Promise<void>;
+
+  getPlan(planId: string): Promise<{
+    id: string;
+    billingInterval: string;
+    priceAmount: number;
+  } | null>;
 
   getTrialInfo(
     tenantId: string
@@ -267,6 +285,14 @@ export function createBillingActivationService({
         "تم تقديم طلب الدفع"
       );
 
+      await repository.createNotification(
+        result.tenantId,
+        "payment_submitted",
+        "تم تقديم طلب الدفع",
+        "تم تقديم طلب الدفع الخاص بك بنجاح. سيتم مراجعته من قبل فريق الإدارة.",
+        "normal"
+      );
+
       await repository.recordAudit(
         undefined,
         result.tenantId,
@@ -285,34 +311,78 @@ export function createBillingActivationService({
     async approvePayment(input: {
       paymentRequestId: string;
       reviewerId: string;
+      adminName?: string;
       adminNote?: string;
     }) {
+      const payment = await repository.getPaymentRequestById(input.paymentRequestId);
+      assertValidTransition(payment.status as PaymentStatus, "APPROVED", "FID-PAY-001");
+
       const reviewedAt = now();
-      const payment = await repository.approvePayment(
+
+      const approved = await repository.approvePayment(
         input.paymentRequestId,
         input.reviewerId,
         input.adminNote,
         reviewedAt
       );
 
+      let periodEnd: Date | undefined;
+      if (approved.planId) {
+        const plan = await repository.getPlan(approved.planId);
+        if (plan) {
+          const months = plan.billingInterval === "YEARLY" ? 12 : 1;
+          periodEnd = new Date(reviewedAt);
+          periodEnd.setMonth(periodEnd.getMonth() + months);
+        }
+      }
+
       await repository.activateSubscription(
-        payment.tenantId,
-        payment.subscriptionId,
-        payment.planId,
-        reviewedAt
+        approved.tenantId,
+        approved.subscriptionId,
+        approved.planId,
+        reviewedAt,
+        periodEnd
+      );
+
+      await repository.recordSubscriptionChange(
+        approved.subscriptionId,
+        null,
+        approved.planId,
+        payment.status,
+        "ACTIVE",
+        "ACTIVATE",
+        input.reviewerId,
+        "تم تفعيل الاشتراك بعد الموافقة على الدفع"
       );
 
       await repository.addLog(
         input.paymentRequestId,
         "APPROVED",
         input.reviewerId,
-        undefined,
+        input.adminName,
         input.adminNote || "تم قبول طلب الدفع"
+      );
+
+      await repository.createNotification(
+        approved.tenantId,
+        "payment_approved",
+        "تم قبول طلب الدفع",
+        "تمت الموافقة على طلب الدفع الخاص بك وتم تفعيل اشتراكك. يمكنك الآن استخدام جميع الميزات.",
+        "high"
+      );
+
+      await repository.createNotificationLog(
+        "payment_approved",
+        "تم قبول طلب الدفع",
+        `تمت الموافقة على طلب الدفع ${input.paymentRequestId.slice(0, 8)}...`,
+        "billing",
+        undefined,
+        approved.tenantId
       );
 
       await repository.recordAudit(
         input.reviewerId,
-        payment.tenantId,
+        approved.tenantId,
         "PAYMENT_APPROVED",
         "PaymentRequest",
         input.paymentRequestId
@@ -320,16 +390,17 @@ export function createBillingActivationService({
 
       await repository.recordAudit(
         input.reviewerId,
-        payment.tenantId,
+        approved.tenantId,
         "SUBSCRIPTION_ACTIVATED",
         "Subscription",
-        payment.subscriptionId
+        approved.subscriptionId
       );
     },
 
     async rejectPayment(input: {
       paymentRequestId: string;
       reviewerId: string;
+      adminName?: string;
       reason: string;
       adminNote?: string;
     }) {
@@ -337,8 +408,11 @@ export function createBillingActivationService({
         throw new ValidationError("FID-VAL-002", "سبب الرفض مطلوب");
       }
 
+      const payment = await repository.getPaymentRequestById(input.paymentRequestId);
+      assertValidTransition(payment.status as PaymentStatus, "REJECTED", "FID-PAY-002");
+
       const reviewedAt = now();
-      const payment = await repository.rejectPayment(
+      const rejected = await repository.rejectPayment(
         input.paymentRequestId,
         input.reviewerId,
         input.reason,
@@ -350,13 +424,30 @@ export function createBillingActivationService({
         input.paymentRequestId,
         "REJECTED",
         input.reviewerId,
-        undefined,
+        input.adminName,
         input.reason
+      );
+
+      await repository.createNotification(
+        rejected.tenantId,
+        "payment_rejected",
+        "تم رفض طلب الدفع",
+        `عذراً، تم رفض طلب الدفع الخاص بك. السبب: ${input.reason}. يرجى مراجعة البيانات وإعادة التقديم.`,
+        "high"
+      );
+
+      await repository.createNotificationLog(
+        "payment_rejected",
+        "تم رفض طلب الدفع",
+        `تم رفض طلب الدفع: ${input.reason}`,
+        "billing",
+        undefined,
+        rejected.tenantId
       );
 
       await repository.recordAudit(
         input.reviewerId,
-        payment.tenantId,
+        rejected.tenantId,
         "PAYMENT_REJECTED",
         "PaymentRequest",
         input.paymentRequestId
@@ -366,11 +457,15 @@ export function createBillingActivationService({
     async requestReupload(input: {
       paymentRequestId: string;
       reviewerId: string;
+      adminName?: string;
       note: string;
     }) {
       if (!input.note?.trim()) {
         throw new ValidationError("FID-VAL-002", "ملاحظة إعادة الرفع مطلوبة");
       }
+
+      const payment = await repository.getPaymentRequestById(input.paymentRequestId);
+      assertValidTransition(payment.status as PaymentStatus, "DRAFT", "FID-PAY-003");
 
       await repository.requestReupload(
         input.paymentRequestId,
@@ -382,8 +477,25 @@ export function createBillingActivationService({
         input.paymentRequestId,
         "REUPLOAD_REQUESTED",
         input.reviewerId,
-        undefined,
+        input.adminName,
         input.note
+      );
+
+      await repository.createNotification(
+        payment.tenantId,
+        "reupload_requested",
+        "مطلوب إعادة رفع إثبات الدفع",
+        `يرجى إعادة رفع صورة إثبات الدفع مع التعديلات المطلوبة. ملاحظة: ${input.note}`,
+        "high"
+      );
+
+      await repository.createNotificationLog(
+        "reupload_requested",
+        "مطلوب إعادة رفع إثبات الدفع",
+        `طلب إعادة رفع: ${input.note}`,
+        "billing",
+        undefined,
+        payment.tenantId
       );
     },
 
@@ -447,6 +559,14 @@ export function createBillingActivationService({
       }
 
       await repository.submitPaymentRequest(draft.id, now());
+
+      await repository.addLog(
+        draft.id,
+        "SUBMITTED",
+        undefined,
+        undefined,
+        "تم تقديم طلب الدفع (يدوي)"
+      );
 
       await repository.recordAudit(
         undefined,

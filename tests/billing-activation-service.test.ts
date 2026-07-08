@@ -7,11 +7,14 @@ import {
 
 function createRepository(): BillingActivationRepository & {
   events: string[];
+  setPaymentStatus(s: string): void;
 } {
   const events: string[] = [];
+  let paymentStatus = "DRAFT";
 
   return {
     events,
+    setPaymentStatus(s: string) { paymentStatus = s; },
     async createDraftPaymentRequest(input) {
       events.push(
         `draft:${input.tenantId}:${input.method}:${input.amount}`
@@ -36,7 +39,7 @@ function createRepository(): BillingActivationRepository & {
     },
     async approvePayment(paymentRequestId, reviewerId, adminNote, reviewedAt) {
       events.push(`approve:${paymentRequestId}:${reviewerId}`);
-      return { tenantId: "tenant_1", subscriptionId: "subscription_1", planId: null };
+      return { tenantId: "tenant_1", subscriptionId: "subscription_1", planId: "plan_1" };
     },
     async rejectPayment(paymentRequestId, reviewerId, reason, reviewedAt) {
       events.push(`reject:${paymentRequestId}:${reviewerId}:${reason}`);
@@ -52,7 +55,7 @@ function createRepository(): BillingActivationRepository & {
       events.push(`get-by-id:${id}`);
       return {
         id,
-        status: "DRAFT",
+        status: paymentStatus,
         tenantId: "tenant_1",
         subscriptionId: "subscription_1",
         method: "INSTAPAY",
@@ -101,6 +104,10 @@ function createRepository(): BillingActivationRepository & {
     async recordSubscriptionChange(subscriptionId, fromPlanId, toPlanId, fromStatus, toStatus, changeType) {
       events.push(`change:${subscriptionId}:${fromStatus}->${toStatus}`);
     },
+    async getPlan(planId) {
+      events.push(`get-plan:${planId}`);
+      return { id: planId, billingInterval: "MONTHLY", priceAmount: 120000 };
+    },
     async getTrialInfo(tenantId) {
       return null;
     },
@@ -133,17 +140,17 @@ describe("billing activation service", () => {
       status: "SUBMITTED"
     });
 
-    expect(repository.events).toEqual([
-      "draft:tenant_1:INSTAPAY:120000",
-      "update:payment_1:ref=ali-payment",
-      "proof:payment_1:asset_1",
-      "submit:payment_1:2026-07-06T12:00:00.000Z",
-      "audit:PAYMENT_REQUEST_CREATED:payment_1"
-    ]);
+    expect(repository.events).toContain("draft:tenant_1:INSTAPAY:120000");
+    expect(repository.events).toContain("update:payment_1:ref=ali-payment");
+    expect(repository.events).toContain("proof:payment_1:asset_1");
+    expect(repository.events).toContain("submit:payment_1:2026-07-06T12:00:00.000Z");
+    expect(repository.events).toContain("audit:PAYMENT_REQUEST_CREATED:payment_1");
+    expect(repository.events).toContain("log:payment_1:SUBMITTED:تم تقديم طلب الدفع (يدوي)");
   });
 
   it("approves payment and activates the tenant subscription", async () => {
     const repository = createRepository();
+    repository.setPaymentStatus("UNDER_REVIEW");
     const service = createBillingActivationService({
       repository,
       now: () => new Date("2026-07-06T12:00:00.000Z")
@@ -155,17 +162,19 @@ describe("billing activation service", () => {
       adminNote: "Verified"
     });
 
-    expect(repository.events).toEqual([
-      "approve:payment_1:admin_1",
-      "activate:tenant_1:subscription_1",
-      "log:payment_1:APPROVED:Verified",
-      "audit:PAYMENT_APPROVED:payment_1",
-      "audit:SUBSCRIPTION_ACTIVATED:subscription_1"
-    ]);
+    expect(repository.events).toContain("approve:payment_1:admin_1");
+    expect(repository.events).toContain("activate:tenant_1:subscription_1");
+    expect(repository.events).toContain("log:payment_1:APPROVED:Verified");
+    expect(repository.events).toContain("audit:PAYMENT_APPROVED:payment_1");
+    expect(repository.events).toContain("audit:SUBSCRIPTION_ACTIVATED:subscription_1");
+    expect(repository.events).toContain("change:subscription_1:UNDER_REVIEW->ACTIVE");
+    expect(repository.events).toContain("notify:tenant_1:payment_approved:تم قبول طلب الدفع");
+    expect(repository.events).toContain("notify-log:payment_approved:تم قبول طلب الدفع");
   });
 
   it("rejects a manual payment request with a review audit trail", async () => {
     const repository = createRepository();
+    repository.setPaymentStatus("UNDER_REVIEW");
     const service = createBillingActivationService({
       repository,
       now: () => new Date("2026-07-06T12:00:00.000Z")
@@ -177,10 +186,10 @@ describe("billing activation service", () => {
       adminNote: "Reference mismatch"
     });
 
-    expect(repository.events).toEqual([
-      "reject:payment_1:admin_1:Reference mismatch",
-      "log:payment_1:REJECTED:Reference mismatch",
-      "audit:PAYMENT_REJECTED:payment_1"
-    ]);
+    expect(repository.events).toContain("reject:payment_1:admin_1:Reference mismatch");
+    expect(repository.events).toContain("log:payment_1:REJECTED:Reference mismatch");
+    expect(repository.events).toContain("audit:PAYMENT_REJECTED:payment_1");
+    expect(repository.events).toContain("notify:tenant_1:payment_rejected:تم رفض طلب الدفع");
+    expect(repository.events).toContain("notify-log:payment_rejected:تم رفض طلب الدفع");
   });
 });

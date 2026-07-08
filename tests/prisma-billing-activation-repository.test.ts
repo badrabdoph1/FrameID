@@ -78,6 +78,11 @@ describe("prisma billing activation repository", () => {
           calls.push(`change:${args.data.subscriptionId}`);
           return {};
         }
+      },
+      plan: {
+        async findUnique(_args: { where: { id: string } }) {
+          return null;
+        }
       }
     };
     const repository = createPrismaBillingActivationRepository(prisma);
