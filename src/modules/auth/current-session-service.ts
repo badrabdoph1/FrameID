@@ -32,6 +32,8 @@ export type CurrentSession = {
   };
   subscription: {
     id: string;
+    planId: string | null;
+    plan: { code: string; name: string; priceAmount: number; currency: string } | null;
     status: "TRIAL" | "ACTIVE" | "EXPIRED" | "PAST_DUE" | "CANCELLED" | "SUSPENDED";
     currentPeriodEnd: Date | null;
   } | null;

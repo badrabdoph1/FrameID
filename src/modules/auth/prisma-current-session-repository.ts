@@ -30,6 +30,13 @@ type RawCurrentSessionRecord = {
       }>;
       subscriptions: Array<{
         id: string;
+        planId: string | null;
+        plan: {
+          code: string;
+          name: string;
+          priceAmount: number;
+          currency: string;
+        } | null;
         status: string;
         currentPeriodEnd: Date | null;
       }>;
@@ -135,8 +142,17 @@ export function createPrismaCurrentSessionRepository(
                     take: 1,
                     select: {
                       id: true,
+                      planId: true,
                       status: true,
-                      currentPeriodEnd: true
+                      currentPeriodEnd: true,
+                      plan: {
+                        select: {
+                          code: true,
+                          name: true,
+                          priceAmount: true,
+                          currency: true
+                        }
+                      }
                     }
                   }
                 }
@@ -172,9 +188,12 @@ export function createPrismaCurrentSessionRepository(
         },
         subscription: tenant.subscriptions[0]
           ? {
-              ...tenant.subscriptions[0],
+              id: tenant.subscriptions[0].id,
+              planId: tenant.subscriptions[0].planId,
+              plan: tenant.subscriptions[0].plan,
               status: tenant.subscriptions[0]
-                .status as NonNullable<CurrentSession["subscription"]>["status"]
+                .status as NonNullable<CurrentSession["subscription"]>["status"],
+              currentPeriodEnd: tenant.subscriptions[0].currentPeriodEnd
             }
           : null
       };

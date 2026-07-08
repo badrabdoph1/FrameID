@@ -120,20 +120,59 @@ export function getPlatformSeedData() {
     })),
     plans: [
       {
-        code: "starter",
-        name: "FrameID Starter",
-        priceAmount: 120000,
+        code: "basic",
+        name: "الباقة الأساسية",
+        priceAmount: 59900,
         currency: "EGP",
         billingInterval: "monthly",
         features: {
           publicSite: true,
           dashboard: true,
           themes: 1,
-          galleryImages: 250,
-          manualActivation: true
+          galleryImages: 100,
+          customDomain: false,
+          priority: "standard",
+          manualActivation: true,
+          storage: "1 GB",
         },
         isActive: true
-      }
+      },
+      {
+        code: "professional",
+        name: "الباقة الاحترافية",
+        priceAmount: 99900,
+        currency: "EGP",
+        billingInterval: "monthly",
+        features: {
+          publicSite: true,
+          dashboard: true,
+          themes: 3,
+          galleryImages: 500,
+          customDomain: true,
+          priority: "high",
+          manualActivation: true,
+          storage: "5 GB",
+        },
+        isActive: true
+      },
+      {
+        code: "premium",
+        name: "الباقة الماسية",
+        priceAmount: 169900,
+        currency: "EGP",
+        billingInterval: "monthly",
+        features: {
+          publicSite: true,
+          dashboard: true,
+          themes: 10,
+          galleryImages: 9999,
+          customDomain: true,
+          priority: "vip",
+          manualActivation: true,
+          storage: "20 GB",
+        },
+        isActive: true
+      },
     ],
     backupSettings: [
       {

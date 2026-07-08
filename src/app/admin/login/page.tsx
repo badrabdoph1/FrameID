@@ -1,5 +1,4 @@
 import type { Metadata } from "next"
-import { adminLoginAction } from "@/app/admin/login/actions"
 
 export const metadata: Metadata = {
   title: "تسجيل دخول الإدارة | FrameID",
@@ -27,7 +26,7 @@ export default async function AdminLoginPage({ searchParams }: Props) {
           </p>
         )}
 
-        <form action={adminLoginAction} className="space-y-4">
+        <form action="/api/admin/login" method="POST" className="space-y-4">
           <div className="space-y-2">
             <label htmlFor="email" className="block text-sm font-extrabold text-white/60">البريد الإلكتروني</label>
             <input

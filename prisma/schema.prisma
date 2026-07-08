@@ -60,10 +60,15 @@ enum PaymentMethod {
 }
 
 enum PaymentStatus {
+  DRAFT
+  SUBMITTED
   PENDING
+  UNDER_REVIEW
   APPROVED
   REJECTED
+  CANCELLED
   EXPIRED
+  REFUNDED
 }
 
 enum BackupType {
@@ -157,6 +162,8 @@ model Tenant {
   status         TenantStatus @default(TRIAL)
   trialStartedAt DateTime     @default(now())
   trialEndsAt    DateTime
+  trialDays      Int          @default(14)
+  gracePeriodEndsAt DateTime?
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
   deletedAt      DateTime?
@@ -381,6 +388,7 @@ model MediaAsset {
   paymentProofs PaymentRequest[] @relation("PaymentProof")
   contactAvatar ContactProfile[] @relation("ContactAvatar")
   contactCover  ContactProfile[] @relation("ContactCover")
+  paymentQRCodes PaymentSettings[] @relation("PaymentQRCode")
 
   @@index([tenantId, deletedAt, createdAt])
 }
@@ -476,7 +484,10 @@ model Plan {
   isActive        Boolean   @default(true)
   deletedAt       DateTime?
 
-  subscriptions Subscription[]
+  subscriptions     Subscription[]
+  paymentRequests   PaymentRequest[]
+  fromChanges       SubscriptionChange[] @relation("FromPlan")
+  toChanges         SubscriptionChange[] @relation("ToPlan")
 }
 
 model Subscription {
@@ -495,35 +506,44 @@ model Subscription {
   tenant   Tenant           @relation(fields: [tenantId], references: [id])
   plan     Plan?            @relation(fields: [planId], references: [id])
   payments PaymentRequest[]
+  changes  SubscriptionChange[]
 
   @@index([tenantId, status, deletedAt])
 }
 
 model PaymentRequest {
-  id             String        @id @default(cuid())
-  tenantId       String
-  subscriptionId String
-  method         PaymentMethod
-  amount         Int
-  currency       String        @default("EGP")
-  status         PaymentStatus @default(PENDING)
-  reference      String?
-  proofAssetId   String?
-  reviewedById   String?
-  adminNote      String?
-  createdAt      DateTime      @default(now())
-  reviewedAt     DateTime?
-  deletedAt      DateTime?
+  id               String        @id @default(cuid())
+  tenantId         String
+  subscriptionId   String
+  planId           String?
+  method           PaymentMethod
+  paymentAccountId String?
+  amount           Int
+  currency         String        @default("EGP")
+  status           PaymentStatus @default(DRAFT)
+  reference        String?
+  proofAssetId     String?
+  reviewedById     String?
+  adminNote        String?
+  rejectionReason  String?
+  submittedAt      DateTime?
+  reviewedAt       DateTime?
+  createdAt        DateTime      @default(now())
+  deletedAt        DateTime?
 
-  tenant       Tenant       @relation(fields: [tenantId], references: [id])
-  subscription Subscription @relation(fields: [subscriptionId], references: [id])
-  proofAsset   MediaAsset?  @relation("PaymentProof", fields: [proofAssetId], references: [id])
-  reviewedBy   User?        @relation("PaymentReviewer", fields: [reviewedById], references: [id])
+  tenant         Tenant           @relation(fields: [tenantId], references: [id])
+  subscription   Subscription     @relation(fields: [subscriptionId], references: [id])
+  plan           Plan?            @relation(fields: [planId], references: [id])
+  paymentAccount PaymentAccount?  @relation(fields: [paymentAccountId], references: [id])
+  proofAsset     MediaAsset?      @relation("PaymentProof", fields: [proofAssetId], references: [id])
+  reviewedBy     User?            @relation("PaymentReviewer", fields: [reviewedById], references: [id])
+  logs           PaymentRequestLog[]
 
   @@index([status, createdAt])
   @@index([tenantId])
   @@index([proofAssetId])
   @@index([reviewedById])
+  @@index([tenantId, status])
 }
 
 model Notification {
@@ -781,4 +801,81 @@ model NotificationLog {
   @@index([tenantId, createdAt])
   @@index([type, createdAt])
   @@index([createdAt])
+}
+
+model PaymentSettings {
+  id            String        @id @default(cuid())
+  paymentMethod PaymentMethod @unique
+  isActive      Boolean       @default(true)
+  label         String?
+  description   String?
+  config        Json          @default("{}")
+  qrCodeAssetId String?
+  sortOrder     Int           @default(0)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  qrCodeAsset MediaAsset?       @relation("PaymentQRCode", fields: [qrCodeAssetId], references: [id])
+  accounts    PaymentAccount[]
+
+  @@index([isActive, sortOrder])
+  @@index([qrCodeAssetId])
+}
+
+model PaymentAccount {
+  id                String          @id @default(cuid())
+  paymentSettingsId String
+  label             String?
+  accountName       String
+  accountNumber     String
+  bankName          String?
+  iban              String?
+  swift             String?
+  phoneNumber       String?
+  instructions      String?
+  notes             String?
+  isActive          Boolean         @default(true)
+  sortOrder         Int             @default(0)
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  paymentSettings  PaymentSettings @relation(fields: [paymentSettingsId], references: [id])
+  paymentRequests  PaymentRequest[]
+
+  @@index([paymentSettingsId, isActive])
+}
+
+model PaymentRequestLog {
+  id               String   @id @default(cuid())
+  paymentRequestId String
+  action           String
+  actorUserId      String?
+  actorName        String?
+  note             String?
+  metadata         Json?
+  createdAt        DateTime @default(now())
+
+  paymentRequest PaymentRequest @relation(fields: [paymentRequestId], references: [id])
+
+  @@index([paymentRequestId, createdAt])
+}
+
+model SubscriptionChange {
+  id              String             @id @default(cuid())
+  subscriptionId  String
+  fromPlanId      String?
+  toPlanId        String?
+  fromStatus      SubscriptionStatus
+  toStatus        SubscriptionStatus
+  changeType      String
+  reason          String?
+  initiatedById   String?
+  metadata        Json?
+  createdAt       DateTime           @default(now())
+
+  subscription Subscription @relation(fields: [subscriptionId], references: [id])
+  fromPlan     Plan?        @relation("FromPlan", fields: [fromPlanId], references: [id])
+  toPlan       Plan?        @relation("ToPlan", fields: [toPlanId], references: [id])
+
+  @@index([subscriptionId, createdAt])
 }

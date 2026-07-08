@@ -5,8 +5,15 @@ import { ADMIN_SESSION_COOKIE_NAME } from "@/modules/admin/admin-session-constan
 
 const PUBLIC_ADMIN_PATHS = new Set(["/admin/login"])
 
+function setSecurityHeaders(response: NextResponse): void {
+  response.headers.set("X-Content-Type-Options", "nosniff")
+  response.headers.set("X-Frame-Options", "DENY")
+  response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin")
+  response.headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=(), interest-cohort=()")
+}
+
 function isValidTokenFormat(token: string): boolean {
-  return /^[A-Za-z0-9_-]+$/.test(token)
+  return /^[A-Za-z0-9_-]{43}$/.test(token)
 }
 
 async function isTokenValid(rawToken: string | undefined, origin: string): Promise<boolean> {
@@ -49,6 +56,7 @@ export async function middleware(request: NextRequest) {
     response = NextResponse.next()
   }
 
+  setSecurityHeaders(response)
   return response
 }
 

@@ -39,6 +39,7 @@ export const ROLES: Record<string, RoleDefinition> = {
       { center: "support", actions: ALL_ACTIONS },
       { center: "audit", actions: ALL_ACTIONS },
       { center: "settings", actions: ALL_ACTIONS },
+      { center: "payment-settings", actions: ALL_ACTIONS },
     ],
   },
   OPERATIONS_ADMIN: {
@@ -63,6 +64,7 @@ export const ROLES: Record<string, RoleDefinition> = {
       { center: "dashboard", actions: ["view"] },
       { center: "customers", actions: ["view"] },
       { center: "payments", actions: ["view", "edit"] },
+      { center: "payment-settings", actions: ["view", "edit"] },
       { center: "subscriptions", actions: ALL_ACTIONS },
       { center: "analytics", actions: ["view"] },
     ],

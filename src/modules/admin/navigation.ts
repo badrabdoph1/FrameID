@@ -89,6 +89,7 @@ export const adminNavigation: AdminNavGroup[] = [
     label: "الإعدادات",
     items: [
       { href: "/admin/settings", label: "إعدادات المنصة", icon: Settings },
+      { href: "/admin/settings/payment", label: "إعدادات الدفع", icon: CreditCard },
     ],
   },
 ];
@@ -166,6 +167,7 @@ export const adminSections: AdminSection[] = [
       { href: "/admin/security", label: "الأمان", icon: ShieldCheck },
       { href: "/admin/support", label: "الدعم", icon: Headphones },
       { href: "/admin/settings", label: "إعدادات المنصة", icon: Settings },
+      { href: "/admin/settings/payment", label: "إعدادات الدفع", icon: CreditCard },
     ],
   },
 ];
