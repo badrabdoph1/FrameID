@@ -70,14 +70,7 @@ const DEMO_PREVIEW_DATA = {
       price: "8,500 جنيه",
       priceAmount: 8500,
       currency: "EGP",
-      features: [
-        "يوم كامل",
-        "تصوير العريس والعروسة",
-        "فيديو سينمائي",
-        "ألبوم فاخر",
-        "معرض إلكتروني",
-        "تسليم سريع"
-      ],
+      features: ["يوم كامل", "تصوير العريس والعروسة", "فيديو سينمائي", "ألبوم فاخر", "معرض إلكتروني", "تسليم سريع"],
       isHighlighted: false
     }
   ],
@@ -172,6 +165,40 @@ export function getPlatformSeedData() {
           storage: "20 GB",
         },
         isActive: true
+      },
+    ],
+    paymentSettings: [
+      {
+        paymentMethod: "INSTAPAY" as const,
+        isActive: true,
+        label: "إنستا باي",
+        description: "تحويل فوري عبر تطبيق InstaPay. أضف الحسابات والـ QR من لوحة الإدارة.",
+        config: { providerType: "MANUAL_TRANSFER", proofRequired: true, supportsQrCode: true },
+        sortOrder: 10,
+      },
+      {
+        paymentMethod: "VODAFONE_CASH" as const,
+        isActive: true,
+        label: "فودافون كاش",
+        description: "تحويل يدوي عبر Vodafone Cash. يمكن إدارة الأرقام والتعليمات من الأدمن.",
+        config: { providerType: "MANUAL_WALLET", proofRequired: true, supportsQrCode: true },
+        sortOrder: 20,
+      },
+      {
+        paymentMethod: "STRIPE" as const,
+        isActive: false,
+        label: "Stripe",
+        description: "جاهز للتفعيل مستقبلاً للبطاقات والمدفوعات الدولية.",
+        config: { providerType: "HOSTED_CHECKOUT", proofRequired: false },
+        sortOrder: 30,
+      },
+      {
+        paymentMethod: "PAYPAL" as const,
+        isActive: false,
+        label: "PayPal",
+        description: "جاهز للتفعيل مستقبلاً للمحافظ العالمية.",
+        config: { providerType: "HOSTED_CHECKOUT", proofRequired: false },
+        sortOrder: 40,
       },
     ],
     backupSettings: [
