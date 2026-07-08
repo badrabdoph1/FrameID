@@ -1,6 +1,19 @@
 import { env } from "@/lib/env";
-import { sendEmail } from "@/modules/email/resend-service";
+import { sendEmail, type SmtpConfig } from "@/modules/email/smtp-service";
 import { buildPasswordResetEmailHtml } from "@/modules/email/password-reset-email";
+
+function buildSmtpConfig(): SmtpConfig | null {
+  if (!env.SMTP_HOST) return null;
+  return {
+    host: env.SMTP_HOST,
+    port: env.SMTP_PORT,
+    secure: env.SMTP_SECURE,
+    username: env.SMTP_USERNAME,
+    password: env.SMTP_PASSWORD,
+    fromName: env.SMTP_FROM_NAME,
+    fromEmail: env.SMTP_FROM_EMAIL,
+  };
+}
 
 export async function sendPasswordResetLink(input: {
   email: string;
@@ -14,9 +27,11 @@ export async function sendPasswordResetLink(input: {
     return;
   }
 
-  if (env.PASSWORD_RESET_DELIVERY_MODE === "email" || !env.RESEND_API_KEY) {
-    if (!env.RESEND_API_KEY) {
-      console.info(`[Password Reset] Resend not configured. Would send to ${input.email}: ${input.resetUrl}`);
+  if (env.PASSWORD_RESET_DELIVERY_MODE === "email") {
+    const smtpConfig = buildSmtpConfig();
+
+    if (!smtpConfig) {
+      console.info(`[Password Reset] SMTP not configured. Would send to ${input.email}: ${input.resetUrl}`);
       return;
     }
 
@@ -26,7 +41,7 @@ export async function sendPasswordResetLink(input: {
       expiresInMinutes: input.expiresInMinutes,
     });
 
-    await sendEmail({
+    await sendEmail(smtpConfig, {
       to: input.email,
       subject: "استعادة كلمة المرور - FrameID",
       html,
