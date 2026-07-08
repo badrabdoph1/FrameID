@@ -28,6 +28,7 @@ export default async function DashboardPage() {
     contactProfile,
     heroSection,
     siteTheme,
+    pendingPayment,
   ] = await Promise.all([
     prisma.package.count({ where: { siteId: session.site.id, deletedAt: null } }),
     prisma.galleryImage.count({
@@ -46,6 +47,15 @@ export default async function DashboardPage() {
       where: { id: session.site.id },
       select: { theme: { select: { name: true } }, updatedAt: true },
     }),
+    prisma.paymentRequest.findFirst({
+      where: {
+        tenantId: session.tenant.id,
+        status: { in: ["SUBMITTED", "PENDING", "UNDER_REVIEW"] },
+        deletedAt: null,
+      },
+      orderBy: { createdAt: "desc" },
+      select: { status: true },
+    }),
   ]);
 
   const lastModified = siteTheme?.updatedAt ?? new Date()
@@ -61,6 +71,7 @@ export default async function DashboardPage() {
     hasCoverImage: !!(heroSection?.data && typeof heroSection.data === "object" && "imageUrl" in heroSection.data),
     currentThemeName: siteTheme?.theme.name ?? "بدون",
     lastModifiedAt: lastModified,
+    pendingRequestStatus: pendingPayment?.status ?? null,
   });
 
   return <DashboardHomeClient {...dashboard} />;

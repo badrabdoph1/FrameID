@@ -22,8 +22,9 @@ describe("platform seed data", () => {
       themeCode: "noir-gold",
       status: "PUBLISHED"
     });
+    expect(seedData.plans).toHaveLength(3);
     expect(seedData.plans[0]).toMatchObject({
-      code: "starter",
+      code: "basic",
       currency: "EGP",
       isActive: true
     });

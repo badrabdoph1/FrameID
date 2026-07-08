@@ -10,6 +10,7 @@ import {
   Package,
   Palette,
   Globe2,
+  CreditCard,
   Settings,
   LogOut,
   ExternalLink,
@@ -32,6 +33,7 @@ const navItems: NavItem[] = [
   { href: "/dashboard/services", label: "الباقات والأسعار", icon: Package },
   { href: "/dashboard/templates", label: "تغيير القالب", icon: Palette },
   { href: "/dashboard/publish", label: "نشر ومشاركة", icon: Globe2 },
+  { href: "/dashboard/billing", label: "الفواتير والاشتراك", icon: CreditCard },
   { href: "/dashboard/settings", label: "الإعدادات", icon: Settings },
 ]
 

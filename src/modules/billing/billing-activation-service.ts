@@ -330,6 +330,34 @@ export function createBillingActivationService({
       );
     },
 
+    async addPaymentNote(input: {
+      paymentRequestId: string;
+      adminId: string;
+      adminName?: string;
+      note: string;
+    }) {
+      if (!input.note?.trim()) {
+        throw new ValidationError("FID-VAL-002", "الملاحظة مطلوبة");
+      }
+
+      await repository.addLog(
+        input.paymentRequestId,
+        "NOTE_ADDED",
+        input.adminId,
+        input.adminName,
+        input.note
+      );
+
+      await repository.recordAudit(
+        input.adminId,
+        undefined,
+        "PAYMENT_NOTE_ADDED",
+        "PaymentRequest",
+        input.paymentRequestId,
+        { note: input.note }
+      );
+    },
+
     async requestManualActivation(input: {
       tenantId: string;
       subscriptionId: string;

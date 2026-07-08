@@ -7,6 +7,18 @@ type ChecklistItem = {
   href: string;
 };
 
+export type SubscriptionInfo = {
+  status: string;
+  planName: string | null;
+  trialEndsAt: string | null;
+  daysRemaining: number | null;
+  isExpired: boolean;
+  isActive: boolean;
+  isTrial: boolean;
+  hasPendingRequest: boolean;
+  pendingRequestStatus: string | null;
+};
+
 export type DashboardViewModel = {
   photographerName: string;
   siteTitle: string;
@@ -23,6 +35,7 @@ export type DashboardViewModel = {
   nextStepLabel: string;
   nextStepTitle: string;
   nextStepDescription: string;
+  subscription: SubscriptionInfo | null;
 };
 
 function calcPercent(done: number, total: number): number {
@@ -72,6 +85,43 @@ const nextStepCopy: Record<string, { title: string; description: string }> = {
   },
 };
 
+function calcDaysRemaining(endDate: Date, now: Date): number {
+  const diff = endDate.getTime() - now.getTime();
+  if (diff <= 0) return 0;
+  return Math.ceil(diff / (1000 * 60 * 60 * 24));
+}
+
+function buildSubscriptionInfo(
+  session: CurrentSession,
+  now: Date,
+  pendingRequestStatus: string | null,
+): SubscriptionInfo | null {
+  if (!session.subscription) return null;
+
+  const sub = session.subscription;
+  const tenant = session.tenant;
+  const isTrial = sub.status === "TRIAL" || tenant.status === "TRIAL";
+  const isActive = sub.status === "ACTIVE";
+  const isExpired = sub.status === "EXPIRED" || tenant.status === "EXPIRED";
+
+  const trialEndDate = tenant.trialEndsAt;
+  const periodEnd = sub.currentPeriodEnd;
+  const endDate = isTrial ? trialEndDate : (periodEnd ?? trialEndDate);
+  const daysRemaining = calcDaysRemaining(endDate, now);
+
+  return {
+    status: sub.status,
+    planName: sub.plan?.name ?? null,
+    trialEndsAt: trialEndDate.toISOString(),
+    daysRemaining,
+    isExpired,
+    isActive,
+    isTrial,
+    hasPendingRequest: pendingRequestStatus !== null,
+    pendingRequestStatus,
+  };
+}
+
 export function createDashboardViewModel({
   session,
   platformBaseUrl,
@@ -83,6 +133,7 @@ export function createDashboardViewModel({
   hasCoverImage,
   currentThemeName,
   lastModifiedAt,
+  pendingRequestStatus,
 }: {
   session: CurrentSession;
   platformBaseUrl: string;
@@ -94,6 +145,7 @@ export function createDashboardViewModel({
   hasCoverImage: boolean;
   currentThemeName: string;
   lastModifiedAt: Date;
+  pendingRequestStatus?: string | null;
 }): DashboardViewModel {
   const hasPackages = packagesCount > 0;
   const hasImages = imagesCount > 0;
@@ -144,5 +196,6 @@ export function createDashboardViewModel({
         : "نشر الموقع",
     nextStepTitle: activeCopy.title,
     nextStepDescription: activeCopy.description,
+    subscription: buildSubscriptionInfo(session, now, pendingRequestStatus ?? null),
   };
 }

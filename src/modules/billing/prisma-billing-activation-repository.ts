@@ -3,100 +3,202 @@ import type { BillingActivationRepository } from "@/modules/billing/billing-acti
 type PrismaBillingActivationClient = {
   paymentRequest: {
     create(input: unknown): Promise<unknown>;
-    update(input: unknown): Promise<{
-      tenantId: string;
-      subscriptionId: string;
-    }>;
+    update(input: unknown): Promise<unknown>;
+    findFirst(input: unknown): Promise<unknown>;
   };
   subscription: {
     update(input: unknown): Promise<unknown>;
   };
   tenant: {
     update(input: unknown): Promise<unknown>;
+    findUnique(input: unknown): Promise<unknown>;
   };
   site: {
     updateMany(input: unknown): Promise<{ count: number }>;
   };
+  paymentRequestLog: {
+    create(input: unknown): Promise<unknown>;
+    findMany(input: unknown): Promise<unknown>;
+  };
+  notification: {
+    create(input: unknown): Promise<unknown>;
+  };
+  notificationLog: {
+    create(input: unknown): Promise<unknown>;
+  };
   auditLog: {
     create(input: unknown): Promise<unknown>;
   };
+  subscriptionChange: {
+    create(input: unknown): Promise<unknown>;
+  };
+};
+
+type PaymentRequestUpdateResult = {
+  tenantId: string;
+  subscriptionId: string;
+  planId: string | null;
 };
 
 export function createPrismaBillingActivationRepository(
   prisma: PrismaBillingActivationClient
 ): BillingActivationRepository {
   return {
-    async createPaymentRequest(input) {
+    async createDraftPaymentRequest(input) {
       const payment = (await prisma.paymentRequest.create({
         data: {
           tenantId: input.tenantId,
           subscriptionId: input.subscriptionId,
+          planId: input.planId,
           method: input.method,
           amount: input.amount,
-          currency: input.currency,
-          reference: input.reference,
-          proofAssetId: input.proofAssetId,
-          status: "PENDING"
+          currency: input.currency ?? "EGP",
+          status: "DRAFT"
         },
         select: {
           id: true,
           status: true
         }
-      })) as { id: string; status: "PENDING" };
+      })) as { id: string; status: "DRAFT" };
 
       return payment;
     },
-    async approvePayment(input) {
-      return prisma.paymentRequest.update({
-        where: {
-          id: input.paymentRequestId
-        },
+
+    async updatePaymentRequest(id, data) {
+      await prisma.paymentRequest.update({
+        where: { id },
+        data
+      });
+    },
+
+    async uploadProof(id, proofAssetId) {
+      await prisma.paymentRequest.update({
+        where: { id },
+        data: { proofAssetId }
+      });
+    },
+
+    async removeProof(id) {
+      await prisma.paymentRequest.update({
+        where: { id },
+        data: { proofAssetId: null }
+      });
+    },
+
+    async submitPaymentRequest(id, submittedAt) {
+      const result = (await prisma.paymentRequest.update({
+        where: { id },
         data: {
-          status: "APPROVED",
-          reviewedById: input.reviewerId,
-          reviewedAt: input.reviewedAt,
-          adminNote: input.adminNote
+          status: "SUBMITTED",
+          submittedAt
         },
         select: {
           tenantId: true,
           subscriptionId: true
         }
-      });
+      })) as { tenantId: string; subscriptionId: string };
+
+      return result;
     },
-    async rejectPayment(input) {
-      return prisma.paymentRequest.update({
+
+    async getCustomerActivePaymentRequest(tenantId) {
+      const result = (await prisma.paymentRequest.findFirst({
         where: {
-          id: input.paymentRequestId
+          tenantId,
+          status: {
+            in: ["DRAFT", "SUBMITTED", "PENDING", "UNDER_REVIEW"]
+          },
+          deletedAt: null
         },
+        orderBy: { createdAt: "desc" },
+        select: {
+          id: true,
+          status: true,
+          method: true,
+          amount: true,
+          reference: true,
+          proofAssetId: true,
+          planId: true,
+          submittedAt: true,
+          rejectionReason: true
+        }
+      })) as {
+        id: string;
+        status: string;
+        method: string;
+        amount: number;
+        reference: string | null;
+        proofAssetId: string | null;
+        planId: string | null;
+        submittedAt: Date | null;
+        rejectionReason: string | null;
+      } | null;
+
+      return result;
+    },
+
+    async approvePayment(paymentRequestId, reviewerId, adminNote, reviewedAt) {
+      const result = (await prisma.paymentRequest.update({
+        where: { id: paymentRequestId },
+        data: {
+          status: "APPROVED",
+          reviewedById: reviewerId,
+          adminNote,
+          reviewedAt: reviewedAt ?? new Date()
+        },
+        select: {
+          tenantId: true,
+          subscriptionId: true,
+          planId: true
+        }
+      })) as PaymentRequestUpdateResult;
+
+      return result;
+    },
+
+    async rejectPayment(paymentRequestId, reviewerId, reason, reviewedAt) {
+      const result = (await prisma.paymentRequest.update({
+        where: { id: paymentRequestId },
         data: {
           status: "REJECTED",
-          reviewedById: input.reviewerId,
-          reviewedAt: input.reviewedAt,
-          adminNote: input.adminNote
+          reviewedById: reviewerId,
+          rejectionReason: reason,
+          reviewedAt: reviewedAt ?? new Date()
         },
         select: {
           tenantId: true
         }
+      })) as { tenantId: string };
+
+      return result;
+    },
+
+    async requestReupload(paymentRequestId, reviewerId, _note) {
+      await prisma.paymentRequest.update({
+        where: { id: paymentRequestId },
+        data: {
+          status: "DRAFT",
+          proofAssetId: null,
+          reviewedById: reviewerId
+        }
       });
     },
-    async activateSubscription(input) {
+
+    async activateSubscription(tenantId, subscriptionId, planId, activatedAt) {
       await prisma.subscription.update({
-        where: {
-          id: input.subscriptionId
-        },
+        where: { id: subscriptionId },
         data: {
           status: "ACTIVE",
-          activatedAt: input.activatedAt,
-          currentPeriodStart: input.activatedAt,
+          planId: planId ?? undefined,
+          activatedAt,
+          currentPeriodStart: activatedAt,
           currentPeriodEnd: null,
           expiresAt: null
         }
       });
 
       await prisma.tenant.update({
-        where: {
-          id: input.tenantId
-        },
+        where: { id: tenantId },
         data: {
           status: "ACTIVE"
         }
@@ -104,7 +206,7 @@ export function createPrismaBillingActivationRepository(
 
       await prisma.site.updateMany({
         where: {
-          tenantId: input.tenantId,
+          tenantId,
           deletedAt: null
         },
         data: {
@@ -113,17 +215,159 @@ export function createPrismaBillingActivationRepository(
         }
       });
     },
-    async recordAudit(input) {
-      await prisma.auditLog.create({
+
+    async cancelSubscription(subscriptionId) {
+      await prisma.subscription.update({
+        where: { id: subscriptionId },
         data: {
-          actorUserId: input.actorUserId,
-          tenantId: input.tenantId,
-          action: input.action,
-          entityType: input.entityType,
-          entityId: input.entityId,
-          metadata: input.metadata
+          status: "CANCELLED"
         }
       });
+    },
+
+    async extendTrial(tenantId, days) {
+      const tenant = (await prisma.tenant.update({
+        where: { id: tenantId },
+        data: {
+          trialEndsAt: { increment: days * 24 * 60 * 60 * 1000 }
+        },
+        select: {
+          trialEndsAt: true
+        }
+      })) as { trialEndsAt: Date };
+
+      return { newEndDate: tenant.trialEndsAt };
+    },
+
+    async endTrial(tenantId) {
+      await prisma.tenant.update({
+        where: { id: tenantId },
+        data: {
+          trialEndsAt: new Date(0)
+        }
+      });
+    },
+
+    async addLog(paymentRequestId, action, actorUserId, actorName, note, metadata) {
+      await prisma.paymentRequestLog.create({
+        data: {
+          paymentRequestId,
+          action,
+          actorUserId,
+          actorName,
+          note,
+          metadata
+        }
+      });
+    },
+
+    async getLogs(paymentRequestId) {
+      const logs = (await prisma.paymentRequestLog.findMany({
+        where: { paymentRequestId },
+        orderBy: { createdAt: "asc" },
+        select: {
+          id: true,
+          action: true,
+          actorName: true,
+          note: true,
+          createdAt: true
+        }
+      })) as Array<{
+        id: string;
+        action: string;
+        actorName: string | null;
+        note: string | null;
+        createdAt: Date;
+      }>;
+
+      return logs;
+    },
+
+    async createNotification(tenantId, type, title, body, priority) {
+      await prisma.notification.create({
+        data: {
+          tenantId,
+          type,
+          title,
+          body,
+          priority: priority ?? "info"
+        }
+      });
+    },
+
+    async createNotificationLog(type, title, body, category, userId, tenantId) {
+      await prisma.notificationLog.create({
+        data: {
+          type,
+          title,
+          body,
+          category,
+          userId,
+          tenantId
+        }
+      });
+    },
+
+    async recordAudit(actorUserId, tenantId, action, entityType, entityId, metadata) {
+      await prisma.auditLog.create({
+        data: {
+          actorUserId,
+          tenantId,
+          action: action ?? "UNKNOWN",
+          entityType: entityType ?? "Unknown",
+          entityId,
+          metadata
+        }
+      });
+    },
+
+    async recordSubscriptionChange(
+      subscriptionId,
+      fromPlanId,
+      toPlanId,
+      fromStatus,
+      toStatus,
+      changeType,
+      initiatedById,
+      reason
+    ) {
+      await prisma.subscriptionChange.create({
+        data: {
+          subscriptionId,
+          fromPlanId,
+          toPlanId,
+          fromStatus,
+          toStatus,
+          changeType,
+          initiatedById,
+          reason
+        }
+      });
+    },
+
+    async getTrialInfo(tenantId) {
+      const tenant = (await prisma.tenant.findUnique({
+        where: { id: tenantId },
+        select: {
+          trialStartedAt: true,
+          trialEndsAt: true,
+          trialDays: true,
+          gracePeriodEndsAt: true
+        }
+      })) as {
+        trialStartedAt: Date;
+        trialEndsAt: Date;
+        trialDays: number;
+        gracePeriodEndsAt: Date | null;
+      } | null;
+
+      return tenant;
+    },
+
+    daysRemaining(trialEndsAt) {
+      const now = new Date();
+      const diff = trialEndsAt.getTime() - now.getTime();
+      return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
     }
   };
 }

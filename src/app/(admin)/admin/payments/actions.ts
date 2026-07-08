@@ -9,29 +9,37 @@ import { requireSuperAdminSession } from "@/modules/admin/admin-page-guards";
 import { createBillingActivationService } from "@/modules/billing/billing-activation-service";
 import { createPrismaBillingActivationRepository } from "@/modules/billing/prisma-billing-activation-repository";
 
+function getService() {
+  return createBillingActivationService({
+    repository: createPrismaBillingActivationRepository(prisma)
+  });
+}
+
 export async function approvePaymentAction(formData: FormData) {
   const session = await requireSuperAdminSession();
 
   const paymentRequestId = formData.get("paymentRequestId");
+  const adminNote = formData.get("adminNote");
 
   if (typeof paymentRequestId !== "string" || !paymentRequestId) {
     redirect("/admin/payments?error=invalid-payment");
   }
 
   try {
-    const service = createBillingActivationService({
-      repository: createPrismaBillingActivationRepository(prisma),
-    });
+    const service = getService();
 
-    await service.approveManualPayment({
+    await service.approvePayment({
       paymentRequestId,
       reviewerId: session.user.id,
-      adminNote: "تم القبول من لوحة الإدارة العليا",
+      adminNote:
+        typeof adminNote === "string" && adminNote.trim()
+          ? adminNote.trim()
+          : undefined
     });
   } catch (error) {
     const { userError } = await processError(error, {
       userId: session.user.id,
-      metadata: { action: "approvePayment", paymentRequestId },
+      metadata: { action: "approvePayment", paymentRequestId }
     });
     redirect(`/admin/payments?error=${encodeURIComponent(userError.message)}`);
   }
@@ -51,23 +59,22 @@ export async function rejectPaymentAction(formData: FormData) {
     redirect("/admin/payments?error=invalid-payment");
   }
 
-  try {
-    const service = createBillingActivationService({
-      repository: createPrismaBillingActivationRepository(prisma),
-    });
+  if (typeof adminNote !== "string" || !adminNote.trim()) {
+    redirect("/admin/payments?error=missing-reason");
+  }
 
-    await service.rejectManualPayment({
+  try {
+    const service = getService();
+
+    await service.rejectPayment({
       paymentRequestId,
       reviewerId: session.user.id,
-      adminNote:
-        typeof adminNote === "string" && adminNote.trim()
-          ? adminNote.trim()
-          : "تم الرفض من لوحة الإدارة العليا",
+      reason: adminNote.trim()
     });
   } catch (error) {
     const { userError } = await processError(error, {
       userId: session.user.id,
-      metadata: { action: "rejectPayment", paymentRequestId },
+      metadata: { action: "rejectPayment", paymentRequestId }
     });
     redirect(`/admin/payments?error=${encodeURIComponent(userError.message)}`);
   }
@@ -75,4 +82,75 @@ export async function rejectPaymentAction(formData: FormData) {
   revalidatePath("/admin");
   revalidatePath("/admin/payments");
   redirect("/admin/payments?rejected=1");
+}
+
+export async function requestReuploadAction(formData: FormData) {
+  const session = await requireSuperAdminSession();
+
+  const paymentRequestId = formData.get("paymentRequestId");
+  const note = formData.get("note");
+
+  if (typeof paymentRequestId !== "string" || !paymentRequestId) {
+    redirect("/admin/payments?error=invalid-payment");
+  }
+
+  if (typeof note !== "string" || !note.trim()) {
+    redirect("/admin/payments?error=missing-note");
+  }
+
+  try {
+    const service = getService();
+
+    await service.requestReupload({
+      paymentRequestId,
+      reviewerId: session.user.id,
+      note: note.trim()
+    });
+  } catch (error) {
+    const { userError } = await processError(error, {
+      userId: session.user.id,
+      metadata: { action: "requestReupload", paymentRequestId }
+    });
+    redirect(`/admin/payments?error=${encodeURIComponent(userError.message)}`);
+  }
+
+  revalidatePath("/admin");
+  revalidatePath("/admin/payments");
+  redirect("/admin/payments?reupload=1");
+}
+
+export async function addPaymentNoteAction(formData: FormData) {
+  const session = await requireSuperAdminSession();
+
+  const paymentRequestId = formData.get("paymentRequestId");
+  const note = formData.get("note");
+
+  if (typeof paymentRequestId !== "string" || !paymentRequestId) {
+    redirect("/admin/payments?error=invalid-payment");
+  }
+
+  if (typeof note !== "string" || !note.trim()) {
+    redirect("/admin/payments?error=missing-note");
+  }
+
+  try {
+    const service = getService();
+
+    await service.addPaymentNote({
+      paymentRequestId,
+      adminId: session.user.id,
+      adminName: session.user.name,
+      note: note.trim()
+    });
+  } catch (error) {
+    const { userError } = await processError(error, {
+      userId: session.user.id,
+      metadata: { action: "addPaymentNote", paymentRequestId }
+    });
+    redirect(`/admin/payments?error=${encodeURIComponent(userError.message)}`);
+  }
+
+  revalidatePath("/admin");
+  revalidatePath("/admin/payments");
+  redirect("/admin/payments?note-added=1");
 }

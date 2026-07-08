@@ -24,6 +24,8 @@ function createSession(): CurrentSession {
     },
     subscription: {
       id: "subscription_1",
+      planId: null,
+      plan: null,
       status: "TRIAL",
       currentPeriodEnd: new Date("2026-07-20T12:00:00.000Z")
     }
