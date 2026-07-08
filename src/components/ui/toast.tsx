@@ -2,8 +2,8 @@
 
 import {
   AlertTriangle,
-  CheckCircle2,
   Check,
+  CheckCircle2,
   ClipboardCopy,
   Info,
   X,
@@ -31,7 +31,6 @@ const MAX_VISIBLE_TOASTS = 5;
 const EXIT_ANIMATION_MS = 250;
 
 type ExtendedNotification = NotificationType & {
-  _errorDetail?: ErrorDetail;
   _entered?: boolean;
 };
 
@@ -51,25 +50,55 @@ const iconMap = {
 };
 
 const bgMap: Record<string, string> = {
-  success: "border-success/20 bg-success/5 bg-success-soft/50",
-  error: "border-danger/20 bg-danger/5 bg-danger-soft/50",
-  warning: "border-warning/20 bg-warning/5 bg-warning-soft/50",
-  info: "border-signal/20 bg-signal/5",
+  success: "border-emerald-400/20 bg-emerald-500/10",
+  error: "border-red-400/25 bg-red-500/10",
+  warning: "border-amber-400/25 bg-amber-500/10",
+  info: "border-sky-400/20 bg-sky-500/10",
 };
 
 const iconColorMap: Record<string, string> = {
-  success: "text-success",
-  error: "text-danger",
-  warning: "text-warning",
-  info: "text-signal",
+  success: "text-emerald-300",
+  error: "text-red-300",
+  warning: "text-amber-300",
+  info: "text-sky-300",
 };
 
 const progressColorMap: Record<string, string> = {
-  success: "bg-success",
-  error: "bg-danger",
-  warning: "bg-warning",
-  info: "bg-signal",
+  success: "bg-emerald-300",
+  error: "bg-red-300",
+  warning: "bg-amber-300",
+  info: "bg-sky-300",
 };
+
+function getBrowser(): string {
+  if (typeof navigator === "undefined") return "unknown";
+  const ua = navigator.userAgent;
+  if (ua.includes("Edg")) return "Edge";
+  if (ua.includes("Chrome")) return "Chrome";
+  if (ua.includes("Firefox")) return "Firefox";
+  if (ua.includes("Safari")) return "Safari";
+  return "Unknown";
+}
+
+function getRoute(): string | undefined {
+  if (typeof window === "undefined") return undefined;
+  return `${window.location.pathname}${window.location.search}`;
+}
+
+function buildFallbackDetail(notification: ExtendedNotification): ErrorDetail {
+  return {
+    code: notification.error?.code ?? "FID-UNK-001",
+    message: notification.error?.message ?? notification.description ?? notification.title,
+    suggestion: notification.suggestion ?? notification.error?.suggestion,
+    requestId: notification.requestId ?? "client-only",
+    correlationId: notification.correlationId,
+    route: notification.route ?? getRoute(),
+    timestamp: notification.createdAt ?? new Date().toISOString(),
+    browser: getBrowser(),
+    platform: typeof navigator === "undefined" ? "unknown" : navigator.platform,
+    userAgent: typeof navigator === "undefined" ? undefined : navigator.userAgent,
+  };
+}
 
 function ToastIcon({ type }: { type: NotificationType["type"] }) {
   const Icon = iconMap[type];
@@ -83,22 +112,23 @@ function CopyButton({ detail }: { detail: ErrorDetail }) {
     const text = formatErrorForClipboard(detail);
     await navigator.clipboard.writeText(text);
     setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    window.setTimeout(() => setCopied(false), 2000);
   }, [detail]);
 
   return (
     <button
+      type="button"
       onClick={handleCopy}
       className={cn(
-        "mt-2 inline-flex items-center gap-1.5 rounded-[var(--radius-control)] border border-border/50 px-2.5 py-1 text-xs transition",
-        "text-muted-foreground hover:border-border hover:bg-muted hover:text-foreground",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-champagne/50",
+        "mt-3 inline-flex items-center gap-1.5 rounded-xl border border-white/10 px-2.5 py-1.5 text-xs font-bold transition",
+        "text-white/65 hover:border-white/20 hover:bg-white/10 hover:text-white",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300/50",
       )}
       aria-label="نسخ تفاصيل الخطأ"
     >
       {copied ? (
         <>
-          <Check className="size-3 text-success" aria-hidden />
+          <Check className="size-3 text-emerald-300" aria-hidden />
           <span>تم النسخ</span>
         </>
       ) : (
@@ -115,12 +145,10 @@ function ProgressBar({ duration, type }: { duration: number; type: NotificationT
   return (
     <span
       className={cn(
-        "absolute bottom-0 left-0 h-0.5 rounded-full",
+        "absolute bottom-0 left-0 h-0.5 rounded-full motion-reduce:hidden",
         progressColorMap[type],
       )}
-      style={{
-        animation: `toast-progress ${duration}ms linear forwards`,
-      }}
+      style={{ animation: `toast-progress ${duration}ms linear forwards` }}
     />
   );
 }
@@ -138,13 +166,13 @@ function SingleToast({
   const dismissRef = useRef(onDismiss);
   const touchStartRef = useRef(0);
   const [offsetX, setOffsetX] = useState(0);
-  const toastRef = useRef<HTMLDivElement>(null);
+  const detail = notification.detail ?? (notification.type === "error" ? buildFallbackDetail(notification) : null);
 
   dismissRef.current = onDismiss;
 
   const triggerDismiss = useCallback(() => {
     setExiting(true);
-    setTimeout(() => dismissRef.current(), EXIT_ANIMATION_MS);
+    window.setTimeout(() => dismissRef.current(), EXIT_ANIMATION_MS);
   }, []);
 
   useEffect(() => {
@@ -177,15 +205,12 @@ function SingleToast({
 
   return (
     <div
-      ref={toastRef}
       role="alert"
       aria-live={notification.type === "error" ? "assertive" : "polite"}
       className={cn(
-        "pointer-events-auto relative w-full max-w-sm overflow-hidden rounded-[var(--radius-panel)] border bg-surface p-4 shadow-lg backdrop-blur-xl",
-        "data-[state=entering]:animate-toast-enter",
-        "data-[state=exiting]:animate-toast-exit",
-        "data-[state=swiped]:animate-toast-swipe",
-        "dark:border-foreground/10 dark:bg-ink dark:shadow-2xl",
+        "pointer-events-auto relative w-full max-w-md overflow-hidden rounded-2xl border p-4 shadow-2xl backdrop-blur-xl",
+        "bg-[#0d0f14]/95 text-[#fff7e8]",
+        "data-[state=entering]:animate-toast-enter data-[state=exiting]:animate-toast-exit data-[state=swiped]:animate-toast-swipe motion-reduce:animate-none",
         bgMap[notification.type],
       )}
       data-state={swiped ? "swiped" : exiting ? "exiting" : "entering"}
@@ -203,63 +228,50 @@ function SingleToast({
 
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">
-            <p className="text-sm font-semibold text-foreground">
+            <p className="text-sm font-black text-[#fff7e8]">
               {notification.title}
               {notification.groupCount && notification.groupCount > 1 && (
-                <span
-                  className={cn(
-                    "mr-1.5 inline-flex size-5 items-center justify-center rounded-full text-[10px] font-bold leading-none text-white",
-                    iconColorMap[notification.type].replace("text-", "bg-"),
-                  )}
-                >
+                <span className="mr-1.5 inline-flex size-5 items-center justify-center rounded-full bg-white/10 text-[10px] font-black leading-none text-white/70">
                   {notification.groupCount}
                 </span>
               )}
             </p>
             <button
+              type="button"
               onClick={triggerDismiss}
-              className={cn(
-                "shrink-0 rounded-[var(--radius-control)] p-1 text-muted-foreground transition",
-                "hover:bg-muted hover:text-foreground",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-champagne/50",
-              )}
+              className="shrink-0 rounded-lg p-1 text-white/45 transition hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300/50"
               aria-label="إغلاق"
             >
               <X className="size-3.5" aria-hidden />
             </button>
           </div>
 
-          {notification.description && (
-            <p className="mt-1 text-sm text-muted-foreground">
-              {notification.description}
-            </p>
-          )}
+          {notification.description ? (
+            <p className="mt-1 text-sm leading-6 text-white/62">{notification.description}</p>
+          ) : null}
 
-          {notification.error?.suggestion && (
-            <p className="mt-1.5 flex items-center gap-1 text-xs text-muted-foreground/70">
-              <span className="inline-block rounded bg-muted/50 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground/60">
-                اقتراح
-              </span>
-              {notification.error.suggestion}
+          {(notification.suggestion || notification.error?.suggestion) ? (
+            <p className="mt-2 rounded-xl border border-white/8 bg-white/5 px-2.5 py-2 text-xs leading-5 text-white/58">
+              <span className="font-black text-[#f3cf73]">الحل المقترح: </span>
+              {notification.suggestion ?? notification.error?.suggestion}
             </p>
-          )}
+          ) : null}
 
-          {notification.type === "error" && notification.error && (
-            <CopyButton
-              detail={{
-                code: notification.error.code,
-                message: notification.error.message,
-                requestId: notification.requestId ?? "",
-                timestamp: new Date().toISOString(),
-              }}
-            />
-          )}
+          {notification.type === "error" && detail ? (
+            <div className="mt-2 grid gap-1.5 text-xs text-white/45">
+              <div className="flex flex-wrap gap-x-3 gap-y-1">
+                <span>Code: <b className="font-mono text-red-200">{detail.code}</b></span>
+                <span>Request: <b className="font-mono text-white/65">{detail.requestId}</b></span>
+              </div>
+              <CopyButton detail={detail} />
+            </div>
+          ) : null}
         </div>
       </div>
 
-      {notification.type !== "error" && notification.duration && notification.duration > 0 && (
+      {notification.type !== "error" && notification.duration && notification.duration > 0 ? (
         <ProgressBar duration={notification.duration} type={notification.type} />
-      )}
+      ) : null}
     </div>
   );
 }
@@ -274,15 +286,13 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 
     if (existing && key) {
       const updated = {
-        ...existing,
-        id: crypto.randomUUID(),
+        ...notification,
+        id: existing.id,
         groupCount: (existing.groupCount ?? 1) + 1,
         _entered: true,
       };
       toastMapRef.current.set(key, updated);
-      setToasts((prev) =>
-        prev.map((t) => (t.id === existing.id ? updated : t)),
-      );
+      setToasts((prev) => prev.map((toast) => (toast.id === existing.id ? updated : toast)));
       return;
     }
 
@@ -292,8 +302,8 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     setToasts((prev) => {
       const next = [withEnter, ...prev];
       if (next.length > MAX_VISIBLE_TOASTS) {
-        const removed = next.pop()!;
-        if (removed.groupKey) toastMapRef.current.delete(removed.groupKey);
+        const removed = next.pop();
+        if (removed?.groupKey) toastMapRef.current.delete(removed.groupKey);
       }
       return next;
     });
@@ -301,28 +311,28 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 
   const removeToast = useCallback((id: string) => {
     setToasts((prev) => {
-      const removed = prev.find((t) => t.id === id);
+      const removed = prev.find((toast) => toast.id === id);
       if (removed?.groupKey) toastMapRef.current.delete(removed.groupKey);
-      return prev.filter((t) => t.id !== id);
+      return prev.filter((toast) => toast.id !== id);
     });
   }, []);
 
   useEffect(() => {
-    const unsub = notify.subscribe((n) => {
-      addToast(n as ExtendedNotification);
+    const unsubscribe = notify.subscribe((notification) => {
+      addToast(notification as ExtendedNotification);
     });
-    return unsub;
+    return unsubscribe;
   }, [addToast]);
 
   return (
     <ToastContext.Provider value={{ toasts, addToast, removeToast }}>
       {children}
       <div
-        className="fixed left-1/2 top-4 z-[100] flex -translate-x-1/2 flex-col-reverse gap-2 sm:left-auto sm:right-4 sm:top-4 sm:translate-x-0 rtl:sm:left-4 rtl:sm:right-auto"
+        className="fixed left-1/2 top-4 z-[100] flex w-[calc(100%-1rem)] -translate-x-1/2 flex-col-reverse gap-2 sm:left-auto sm:right-4 sm:w-auto sm:translate-x-0 rtl:sm:left-4 rtl:sm:right-auto"
         aria-label="الإشعارات"
       >
-        {toasts.map((t) => (
-          <SingleToast key={t.id} notification={t} onDismiss={() => removeToast(t.id)} />
+        {toasts.map((toast) => (
+          <SingleToast key={toast.id} notification={toast} onDismiss={() => removeToast(toast.id)} />
         ))}
       </div>
     </ToastContext.Provider>
