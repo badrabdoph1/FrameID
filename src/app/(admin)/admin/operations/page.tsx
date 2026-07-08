@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import Link from "next/link";
 import {
   AlertTriangle,
@@ -125,12 +126,12 @@ export default async function AdminOperationsPage() {
   ]);
 
   const queueCards = [
-    { title: "مدفوعات تحتاج مراجعة", value: pendingPayments.length, href: "/admin/payments", icon: CreditCard, tone: "amber" },
-    { title: "Trials قريبة من الانتهاء", value: expiringTrials.length, href: "/admin/customers?status=TRIAL", icon: Clock3, tone: "blue" },
-    { title: "Backup / Restore failed", value: failedBackups.length + failedRestores.length, href: "/admin/backups", icon: DatabaseBackup, tone: "red" },
-    { title: "أخطاء مفتوحة حرجة", value: unresolvedErrors.length, href: "/admin/errors", icon: AlertTriangle, tone: "red" },
-    { title: "تذاكر دعم مفتوحة", value: openSupport.length, href: "/admin/support", icon: Headphones, tone: "green" },
-    { title: "Feature Flags مفعلة", value: enabledFlags.length, href: "/admin/feature-flags", icon: Flag, tone: "violet" },
+    { title: "مدفوعات تحتاج مراجعة", value: pendingPayments.length, href: "/admin/payments", icon: CreditCard },
+    { title: "Trials قريبة من الانتهاء", value: expiringTrials.length, href: "/admin/customers?status=TRIAL", icon: Clock3 },
+    { title: "Backup / Restore failed", value: failedBackups.length + failedRestores.length, href: "/admin/backups", icon: DatabaseBackup },
+    { title: "أخطاء مفتوحة حرجة", value: unresolvedErrors.length, href: "/admin/errors", icon: AlertTriangle },
+    { title: "تذاكر دعم مفتوحة", value: openSupport.length, href: "/admin/support", icon: Headphones },
+    { title: "Feature Flags مفعلة", value: enabledFlags.length, href: "/admin/feature-flags", icon: Flag },
   ];
 
   return (
@@ -195,7 +196,9 @@ export default async function AdminOperationsPage() {
   );
 }
 
-function QueuePanel({ title, icon: Icon, href, children }: { title: string; icon: typeof CreditCard; href: string; children: React.ReactNode }) {
+function QueuePanel({ title, icon: Icon, href, children }: { title: string; icon: typeof CreditCard; href: string; children: ReactNode }) {
+  const isEmpty = Array.isArray(children) && children.length === 0;
+
   return (
     <section className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.035]">
       <header className="flex items-center gap-3 border-b border-white/8 bg-black/16 px-4 py-3">
@@ -204,7 +207,7 @@ function QueuePanel({ title, icon: Icon, href, children }: { title: string; icon
         <Link href={href} className="mr-auto text-xs font-black text-amber-300/80 no-underline hover:text-amber-200">فتح</Link>
       </header>
       <div className="grid divide-y divide-white/6">
-        {Array.isArray(children) && children.length === 0 ? <p className="px-4 py-8 text-center text-sm font-bold text-white/35">لا توجد عناصر عاجلة.</p> : children}
+        {isEmpty ? <p className="px-4 py-8 text-center text-sm font-bold text-white/35">لا توجد عناصر عاجلة.</p> : children}
       </div>
     </section>
   );
