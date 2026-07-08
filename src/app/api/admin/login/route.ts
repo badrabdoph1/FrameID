@@ -18,7 +18,7 @@ export async function POST(request: Request) {
     const result = await loginService.login({ email, password });
 
     const redirectUrl = new URL("/admin", request.url);
-    const response = NextResponse.redirect(redirectUrl);
+    const response = NextResponse.redirect(redirectUrl, { status: 303 });
 
     response.cookies.set(
       result.session.cookie.name,
@@ -36,6 +36,6 @@ export async function POST(request: Request) {
       `/admin/login?error=${encodeURIComponent(userError.message)}`,
       request.url,
     );
-    return NextResponse.redirect(redirectUrl);
+    return NextResponse.redirect(redirectUrl, { status: 303 });
   }
 }
