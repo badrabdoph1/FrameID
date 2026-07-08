@@ -164,7 +164,7 @@ export function getPlatformSeedData() {
           manualActivation: true,
           storage: "20 GB",
         },
-        isActive: true
+        isActive: false
       },
     ],
     paymentSettings: [
