@@ -134,6 +134,35 @@ function getPaymentMethodLabel(method: string): string {
   return ({ INSTAPAY: "إنستا باي", VODAFONE_CASH: "فودافون كاش", STRIPE: "Stripe", PAYPAL: "PayPal" } as Record<string, string>)[method] ?? method;
 }
 
+function getBillingIntervalLabel(interval: string): string {
+  return ({ monthly: "شهري", yearly: "سنوي", annual: "سنوي", lifetime: "مدى الحياة" } as Record<string, string>)[interval] ?? interval;
+}
+
+function normalizePlanFeatures(features: unknown): string[] {
+  if (Array.isArray(features)) {
+    return features.filter((item): item is string => typeof item === "string" && item.trim().length > 0);
+  }
+
+  if (!features || typeof features !== "object") return [];
+
+  const record = features as Record<string, unknown>;
+  const labels: string[] = [];
+
+  if (record.publicSite) labels.push("موقع عام جاهز للنشر");
+  if (record.dashboard) labels.push("لوحة تحكم كاملة");
+  if (typeof record.themes === "number") labels.push(`${record.themes} قالب متاح`);
+  if (typeof record.galleryImages === "number") labels.push(`حتى ${record.galleryImages.toLocaleString()} صورة`);
+  if (record.customDomain === true) labels.push("دومين مخصص");
+  if (record.customDomain === false) labels.push("بدون دومين مخصص");
+  if (record.storage) labels.push(`مساحة ${String(record.storage)}`);
+  if (record.priority === "vip") labels.push("دعم VIP");
+  else if (record.priority === "high") labels.push("دعم أولوية عالية");
+  else if (record.priority === "standard") labels.push("دعم عادي");
+  if (record.manualActivation) labels.push("تفعيل يدوي آمن");
+
+  return labels;
+}
+
 function isActionSuccess(state: unknown): state is Extract<ActionResult, { success: true }> {
   return Boolean(state && typeof state === "object" && (state as Record<string, unknown>).success === true);
 }
@@ -259,7 +288,7 @@ export function BillingClient({ session, plans, paymentMethods, paymentRequest, 
   }
 
   return (
-    <main className="mx-auto max-w-2xl space-y-4">
+    <main className="mx-auto max-w-4xl space-y-4">
       <BuilderPageHeader
         eyebrow="التفعيل"
         title={subscriptionStatus === "ACTIVE" ? "اشتراكك نشط" : "تفعيل الاشتراك"}
@@ -277,15 +306,15 @@ export function BillingClient({ session, plans, paymentMethods, paymentRequest, 
           <div className="mt-4 rounded-2xl border border-white/[0.07] bg-black/15 p-4">
             {step === 1 ? (
               <CheckoutStage title="اختار الباقة" icon={<Package className="size-4" />}>
-                <div className="grid gap-2">
+                <div className="grid gap-3 md:grid-cols-3">
                   {plans.map((plan) => (
-                    <ChoiceButton key={plan.id} active={selectedPlanId === plan.id} disabled={Boolean(draftState || requestLocked)} onClick={() => handlePlanSelect(plan.id)}>
-                      <span className="min-w-0">
-                        <strong className="block truncate text-sm text-[#fff7e8]">{plan.name}</strong>
-                        <small className="text-white/35" dir="ltr">{plan.billingInterval}</small>
-                      </span>
-                      <strong className="shrink-0 text-sm text-[#f3cf73]" dir="ltr">{plan.priceAmount.toLocaleString()} {plan.currency}</strong>
-                    </ChoiceButton>
+                    <PlanCard
+                      key={plan.id}
+                      plan={plan}
+                      selected={selectedPlanId === plan.id}
+                      disabled={Boolean(draftState || requestLocked)}
+                      onSelect={() => handlePlanSelect(plan.id)}
+                    />
                   ))}
                 </div>
                 <Actions>
@@ -397,6 +426,47 @@ function CheckoutStage({ title, icon, children }: { title: string; icon: ReactNo
   );
 }
 
+function PlanCard({ plan, selected, disabled, onSelect }: { plan: PlanData; selected: boolean; disabled: boolean; onSelect: () => void }) {
+  const features = normalizePlanFeatures(plan.features);
+  const visibleFeatures = features.slice(0, 6);
+  const remainingFeatures = Math.max(features.length - visibleFeatures.length, 0);
+
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={onSelect}
+      className={`flex min-h-[22rem] flex-col rounded-3xl border p-4 text-right transition ${selected ? "border-amber-400/70 bg-amber-500/10 shadow-2xl shadow-amber-950/20" : "border-white/[0.08] bg-white/[0.025] hover:border-white/20 hover:bg-white/[0.04]"} ${disabled ? "cursor-not-allowed opacity-60" : ""}`}
+    >
+      <span className="mb-3 flex items-center justify-between gap-2">
+        <span className="rounded-full border border-white/[0.08] bg-black/20 px-3 py-1 text-[0.68rem] font-black text-white/45" dir="ltr">{plan.code}</span>
+        {selected ? <span className="inline-flex items-center gap-1 rounded-full bg-emerald-400 px-2 py-1 text-[0.68rem] font-black text-black"><Check size={12} />مختارة</span> : <span className="rounded-full bg-white/[0.06] px-2 py-1 text-[0.68rem] font-black text-white/35">اختيار</span>}
+      </span>
+
+      <strong className="text-base font-black leading-7 text-[#fff7e8]">{plan.name}</strong>
+      <span className="mt-2 flex items-end gap-1 text-[#f3cf73]" dir="ltr">
+        <strong className="text-2xl font-black leading-none">{plan.priceAmount.toLocaleString()}</strong>
+        <small className="pb-0.5 text-xs font-bold">{plan.currency}</small>
+      </span>
+      <span className="mt-1 text-xs font-bold text-white/35">اشتراك {getBillingIntervalLabel(plan.billingInterval)}</span>
+
+      <span className="my-4 h-px w-full bg-white/[0.08]" />
+
+      <span className="grid flex-1 gap-2">
+        {visibleFeatures.length > 0 ? visibleFeatures.map((feature) => (
+          <span key={feature} className="flex items-start gap-2 text-xs leading-6 text-white/60">
+            <Check className="mt-1 size-3.5 shrink-0 text-emerald-300" />
+            <span>{feature}</span>
+          </span>
+        )) : <span className="text-xs leading-6 text-white/35">باقة مناسبة للبدء.</span>}
+        {remainingFeatures > 0 ? <span className="text-xs font-black text-[#f3cf73]">+ {remainingFeatures} ميزة إضافية</span> : null}
+      </span>
+
+      <span className={`mt-4 grid h-10 place-items-center rounded-xl text-xs font-black ${selected ? "bg-[#f3cf73] text-black" : "bg-white/[0.06] text-white/55"}`}>{selected ? "تم اختيار هذه الباقة" : "اختار هذه الباقة"}</span>
+    </button>
+  );
+}
+
 function PaymentPicker({ methods, selectedMethodId, selectedAccountId, onMethodSelect, onAccountSelect }: { methods: PaymentMethodData[]; selectedMethodId: string | null; selectedAccountId: string | null; onMethodSelect: (id: string) => void; onAccountSelect: (id: string) => void }) {
   const selectedMethod = methods.find((method) => method.id === selectedMethodId) ?? null;
   if (methods.length === 0) return <Alert tone="warning" title="لا توجد وسائل دفع" text="الأدمن يحتاج يفعّل وسيلة دفع أولاً." />;
@@ -431,7 +501,7 @@ function SelectedAccountCard({ account, method, fallbackMethod }: { account: Pay
 
 function ChoiceButton({ active, disabled, onClick, children }: { active: boolean; disabled: boolean; onClick: () => void; children: ReactNode }) {
   return (
-    <button type="button" disabled={disabled} onClick={onClick} className={`flex min-h-13 items-center justify-between gap-3 rounded-2xl border px-4 py-3 text-right transition ${active ? "border-amber-400/60 bg-amber-500/10" : "border-white/[0.08] bg-white/[0.025] hover:border-white/20"} ${disabled ? "cursor-not-allowed opacity-60" : ""}`}>
+    <button type="button" disabled={disabled} onClick={onClick} className={`flex min-h-[3.25rem] items-center justify-between gap-3 rounded-2xl border px-4 py-3 text-right transition ${active ? "border-amber-400/60 bg-amber-500/10" : "border-white/[0.08] bg-white/[0.025] hover:border-white/20"} ${disabled ? "cursor-not-allowed opacity-60" : ""}`}>
       {children}
     </button>
   );
