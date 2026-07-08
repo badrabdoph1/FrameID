@@ -14,6 +14,8 @@ export const env = {
   NEXT_PUBLIC_GA_ID: process.env.NEXT_PUBLIC_GA_ID || "",
   BACKUP_GITHUB_TOKEN: process.env.BACKUP_GITHUB_TOKEN || "",
   BACKUP_ENCRYPTION_KEY: process.env.BACKUP_ENCRYPTION_KEY || "",
+  BACKUP_DIR: process.env.BACKUP_DIR || "",
+  CRON_SECRET: process.env.CRON_SECRET || "",
   SMTP_HOST: process.env.SMTP_HOST || "",
   SMTP_PORT: parseInt(process.env.SMTP_PORT || "587", 10),
   SMTP_SECURE: process.env.SMTP_SECURE === "true",

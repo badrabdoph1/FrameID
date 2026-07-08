@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 
 import {
   createBackupManifest,
-  createSha256Checksum
+  addChecksumToManifest,
+  createSha256Checksum,
+  validateBackupManifest,
 } from "@/modules/backups/backup-manifest";
 
 describe("backup manifest", () => {
@@ -16,25 +18,64 @@ describe("backup manifest", () => {
   it("builds a manifest with platform counts and verification metadata", () => {
     const manifest = createBackupManifest({
       backupJobId: "backup_1",
-      type: "DATABASE",
-      platformVersion: "0.1.0",
+      backupType: "DATABASE",
+      appVersion: "0.1.0",
+      gitCommitSha: "abc123",
+      databaseVersion: "20260708050000",
       usersCount: 12,
       tenantsCount: 10,
       sitesCount: 10,
       mediaFilesCount: 20,
-      compressedSizeBytes: 1024,
-      compressionAlgorithm: "zstd",
+      databaseSizeBytes: 1024,
+      uploadsSizeBytes: 0,
+      contentSizeBytes: 0,
+      compressionAlgorithm: "gzip",
       encryptionEnabled: true,
-      payloadChecksum: createSha256Checksum("payload"),
-      createdAt: new Date("2026-07-06T12:00:00.000Z")
+      createdAt: "2026-07-06T12:00:00.000Z",
     });
 
-    expect(manifest).toMatchObject({
-      backupJobId: "backup_1",
-      backupType: "DATABASE",
-      platformVersion: "0.1.0",
-      localVerificationStatus: "PASSED",
-      githubUploadStatus: "PENDING"
-    });
+    const completeManifest = addChecksumToManifest(manifest);
+
+    expect(completeManifest.version).toBe(1);
+    expect(completeManifest.schemaVersion).toBe(1);
+    expect(completeManifest.backupType).toBe("DATABASE");
+    expect(completeManifest.totalSizeBytes).toBe(1024);
+    expect(completeManifest.checksum).toHaveLength(64);
+    expect(completeManifest.files.database).toBe("database.sql.gz");
+    expect(completeManifest.files.manifest).toBe("manifest.json");
+  });
+
+  it("validates a correctly formed manifest", () => {
+    const manifest = addChecksumToManifest(
+      createBackupManifest({
+        backupJobId: "backup_1",
+        backupType: "FULL",
+        appVersion: "0.1.0",
+        gitCommitSha: "abc123",
+        databaseVersion: "20260708050000",
+        usersCount: 12,
+        tenantsCount: 10,
+        sitesCount: 10,
+        mediaFilesCount: 20,
+        databaseSizeBytes: 1024,
+        uploadsSizeBytes: 2048,
+        contentSizeBytes: 512,
+        compressionAlgorithm: "gzip",
+        encryptionEnabled: false,
+        createdAt: "2026-07-06T12:00:00.000Z",
+      })
+    );
+
+    const result = validateBackupManifest(manifest);
+    expect(result.valid).toBe(true);
+    expect(result.checks.manifestValid).toBe(true);
+    expect(result.checks.schemaCompatibility).toBe(true);
+    expect(result.checks.filesIntegrity).toBe(true);
+  });
+
+  it("rejects an invalid manifest", () => {
+    const result = validateBackupManifest(null);
+    expect(result.valid).toBe(false);
+    expect(result.errors.length).toBeGreaterThan(0);
   });
 });

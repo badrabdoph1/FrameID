@@ -111,6 +111,7 @@ model User {
   adminNotes            AdminNote[]            @relation("AdminNoteAuthor")
   reviewedPayments      PaymentRequest[]       @relation("PaymentReviewer")
   backupJobs            BackupJob[]            @relation("BackupInitiator")
+  backupRestores        RestoreJob[]           @relation("RestoreInitiator")
   impersonationSessions ImpersonationSession[] @relation("ImpersonationAdmin")
   sessions              Session[]
   passwordResetTokens   PasswordResetToken[]
@@ -682,6 +683,28 @@ model BackupManifest {
   createdAt                DateTime @default(now())
 
   backupJob BackupJob @relation(fields: [backupJobId], references: [id])
+}
+
+model RestoreJob {
+  id              String   @id @default(cuid())
+  backupId        String
+  backupJobId     String?
+  type            BackupType
+  status          String   @default("PENDING")
+  initiatedById   String?
+  manifest        Json?
+  validationJson  Json?
+  resultJson      Json?
+  postValidationJson Json?
+  startedAt       DateTime?
+  completedAt     DateTime?
+  errorMessage    String?
+  createdAt       DateTime @default(now())
+
+  initiatedBy User? @relation("RestoreInitiator", fields: [initiatedById], references: [id])
+
+  @@index([backupId, createdAt])
+  @@index([status, createdAt])
 }
 
 model AdminUser {

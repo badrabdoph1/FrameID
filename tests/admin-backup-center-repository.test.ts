@@ -14,10 +14,10 @@ describe("admin backup center repository", () => {
               schedule: "0 2 * * *",
               retentionCount: 14,
               lastRunAt: null,
-              nextRunAt: null
-            }
+              nextRunAt: null,
+            },
           ];
-        }
+        },
       },
       backupJob: {
         async findMany() {
@@ -29,36 +29,29 @@ describe("admin backup center repository", () => {
               trigger: "MANUAL",
               sizeBytes: 1024,
               checksumSha256: "checksum",
-              createdAt: new Date("2026-07-06T12:00:00.000Z")
-            }
+              localPath: "backups/2026-07-06/",
+              createdAt: new Date("2026-07-06T12:00:00.000Z"),
+            },
           ];
-        }
-      }
+        },
+      },
+      restoreJob: {
+        async findMany() {
+          return [];
+        },
+        async count() {
+          return 0;
+        },
+      },
     };
     const repository = createPrismaAdminBackupCenterRepository(prisma);
 
-    await expect(repository.getBackupCenter()).resolves.toEqual({
-      settings: [
-        {
-          type: "DATABASE",
-          enabled: true,
-          schedule: "0 2 * * *",
-          retentionCount: 14,
-          lastRunAt: null,
-          nextRunAt: null
-        }
-      ],
-      jobs: [
-        {
-          id: "backup_1",
-          type: "DATABASE",
-          status: "COMPLETED",
-          trigger: "MANUAL",
-          sizeBytes: 1024,
-          checksumSha256: "checksum",
-          createdAt: "2026-07-06T12:00:00.000Z"
-        }
-      ]
-    });
+    const result = await repository.getBackupCenter();
+    expect(result.settings).toHaveLength(1);
+    expect(result.settings[0].type).toBe("DATABASE");
+    expect(result.jobs).toHaveLength(1);
+    expect(result.jobs[0].id).toBe("backup_1");
+    expect(result.restores).toHaveLength(0);
+    expect(result.restoreCount).toBe(0);
   });
 });

@@ -1,43 +1,43 @@
 import { mkdtemp, readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { gunzip } from "node:zlib";
-import { promisify } from "node:util";
 
 import { describe, expect, it } from "vitest";
 
-import { createLocalBackupArtifactWriter } from "@/modules/backups/local-backup-artifact-writer";
-
-const unzip = promisify(gunzip);
+import { createLocalBackupArtifactWriter, generateBackupId } from "@/modules/backups/local-backup-artifact-writer";
 
 describe("local backup artifact writer", () => {
-  it("writes a compressed verified artifact to a dated backup folder", async () => {
-    const outputDir = await mkdtemp(join(tmpdir(), "frameid-backups-"));
-    const writer = createLocalBackupArtifactWriter({ outputDir });
+  it("writes a manifest and checksum to a dated backup folder", async () => {
+    const backupRoot = await mkdtemp(join(tmpdir(), "frameid-backups-"));
+    const writer = createLocalBackupArtifactWriter({ backupRoot });
 
-    const artifact = await writer.writeArtifact({
-      backupJobId: "backup_1",
+    const backupId = generateBackupId(new Date("2026-07-06T12:00:00.000Z"));
+    expect(backupId).toMatch(/^\d{4}-\d{2}-\d{2}_\d{2}-\d{2}$/);
+
+    const result = await writer.writeBackup({
+      backupId,
       type: "DATABASE",
-      stats: {
-        usersCount: 1,
-        tenantsCount: 1,
-        sitesCount: 1,
-        mediaFilesCount: 0
+      databaseDumpPath: "/tmp/test-dump.sql.gz",
+      uploadsArchivePath: null,
+      contentArchivePath: null,
+      databaseSizeBytes: 1024,
+      uploadsSizeBytes: 0,
+      contentSizeBytes: 0,
+      manifest: {
+        version: 1,
+        backupId,
+        createdAt: "2026-07-06T12:00:00.000Z",
       },
-      createdAt: new Date("2026-07-06T12:00:00.000Z")
+      checksumSha256:
+        "abc123def456abc123def456abc123def456abc123def456abc123def456abc1",
     });
 
-    expect(artifact.localPath).toContain("2026/07/DATABASE/backup_1.json.gz");
-    expect(artifact.sizeBytes).toBeGreaterThan(0);
-    expect(artifact.payloadChecksum).toHaveLength(64);
-    expect(artifact.compressionAlgorithm).toBe("gzip");
-    expect(artifact.localPath).toBeDefined();
+    expect(result.backupDir).toContain(backupId);
+    expect(result.manifestPath).toContain("manifest.json");
 
-    const compressed = await readFile(artifact.localPath as string);
-    const payload = JSON.parse((await unzip(compressed)).toString("utf8")) as {
-      backupJobId: string;
-    };
-
-    expect(payload.backupJobId).toBe("backup_1");
+    const manifestContent = await readFile(result.manifestPath, "utf-8");
+    const manifest = JSON.parse(manifestContent);
+    expect(manifest.version).toBe(1);
+    expect(manifest.backupId).toBe(backupId);
   });
 });

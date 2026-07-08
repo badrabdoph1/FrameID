@@ -1,92 +1,111 @@
-import { gzip } from "node:zlib";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
-import { promisify } from "node:util";
+import { mkdir, writeFile, readFile } from "node:fs/promises";
+import { join } from "node:path";
+import { existsSync } from "node:fs";
 
-import { createSha256Checksum, type BackupType } from "@/modules/backups/backup-manifest";
-import type { BackupStats } from "@/modules/backups/backup-job-service";
-
-const gzipAsync = promisify(gzip);
+import type { BackupType } from "@/modules/backups/backup-manifest";
 
 export type BackupArtifact = {
+  backupDir: string;
+  backupId: string;
+  databaseDumpPath: string;
+  uploadsArchivePath: string | null;
+  contentArchivePath: string | null;
+  databaseSizeBytes: number;
+  uploadsSizeBytes: number;
+  contentSizeBytes: number;
+  totalSizeBytes: number;
   payloadChecksum: string;
-  sizeBytes: number;
-  localPath?: string;
   compressionAlgorithm: string;
 };
 
 export type BackupArtifactWriter = {
-  writeArtifact(input: {
-    backupJobId: string;
+  writeBackup(input: {
+    backupId: string;
     type: BackupType;
-    stats: BackupStats;
-    createdAt: Date;
-  }): Promise<BackupArtifact>;
+    databaseDumpPath: string;
+    uploadsArchivePath: string | null;
+    contentArchivePath: string | null;
+    databaseSizeBytes: number;
+    uploadsSizeBytes: number;
+    contentSizeBytes: number;
+    manifest: Record<string, unknown>;
+    checksumSha256: string;
+  }): Promise<{ backupDir: string; manifestPath: string }>;
 };
 
-export function createInMemoryBackupArtifactWriter(): BackupArtifactWriter {
-  return {
-    async writeArtifact(input) {
-      const payload = createBackupPayload(input);
-
-      return {
-        payloadChecksum: createSha256Checksum(payload),
-        sizeBytes: Buffer.byteLength(payload),
-        compressionAlgorithm: "none"
-      };
-    }
-  };
-}
-
 export function createLocalBackupArtifactWriter({
-  outputDir = join(process.cwd(), ".frameid-backups")
+  backupRoot = join(process.cwd(), "backups"),
 }: {
-  outputDir?: string;
+  backupRoot?: string;
 } = {}): BackupArtifactWriter {
   return {
-    async writeArtifact(input) {
-      const payload = createBackupPayload(input);
-      const compressed = await gzipAsync(payload);
-      const year = String(input.createdAt.getUTCFullYear());
-      const month = String(input.createdAt.getUTCMonth() + 1).padStart(2, "0");
-      const localPath = join(
-        outputDir,
-        year,
-        month,
-        input.type,
-        `${input.backupJobId}.json.gz`
+    async writeBackup(input) {
+      const backupDir = join(backupRoot, input.backupId);
+      await mkdir(backupDir, { recursive: true });
+
+      const manifestPath = join(backupDir, "manifest.json");
+      await writeFile(
+        manifestPath,
+        JSON.stringify(input.manifest, null, 2)
       );
 
-      await mkdir(dirname(localPath), { recursive: true });
-      await writeFile(localPath, compressed);
+      const checksumPath = join(backupDir, "checksum.sha256");
+      await writeFile(checksumPath, input.checksumSha256);
 
-      const written = await readFile(localPath);
-      const payloadChecksum = createSha256Checksum(payload);
-
-      if (createSha256Checksum(await gzipAsync(payload)) !== createSha256Checksum(written)) {
-        throw new Error("Backup artifact verification failed");
-      }
-
-      return {
-        payloadChecksum,
-        sizeBytes: written.byteLength,
-        localPath,
-        compressionAlgorithm: "gzip"
-      };
-    }
+      return { backupDir, manifestPath };
+    },
   };
 }
 
-function createBackupPayload(input: {
-  backupJobId: string;
-  type: BackupType;
-  stats: BackupStats;
-  createdAt: Date;
-}): string {
-  return JSON.stringify({
-    backupJobId: input.backupJobId,
-    type: input.type,
-    stats: input.stats,
-    createdAt: input.createdAt.toISOString()
-  });
+function formatBackupId(date: Date): string {
+  const y = date.getUTCFullYear();
+  const m = String(date.getUTCMonth() + 1).padStart(2, "0");
+  const d = String(date.getUTCDate()).padStart(2, "0");
+  const h = String(date.getUTCHours()).padStart(2, "0");
+  const min = String(date.getUTCMinutes()).padStart(2, "0");
+  return `${y}-${m}-${d}_${h}-${min}`;
+}
+
+export function generateBackupId(now?: Date): string {
+  return formatBackupId(now ?? new Date());
+}
+
+export async function listBackupDirs(backupRoot?: string): Promise<string[]> {
+  const root = backupRoot ?? join(process.cwd(), "backups");
+  if (!existsSync(root)) return [];
+
+  const { readdir } = await import("node:fs/promises");
+  const { stat } = await import("node:fs/promises");
+
+  const entries = await readdir(root);
+  const dirs: string[] = [];
+
+  for (const entry of entries) {
+    const fullPath = join(root, entry);
+    try {
+      const stats = await stat(fullPath);
+      if (stats.isDirectory()) {
+        dirs.push(entry);
+      }
+    } catch {}
+  }
+
+  return dirs.sort().reverse();
+}
+
+export async function readBackupManifest(
+  backupId: string,
+  backupRoot?: string
+): Promise<Record<string, unknown> | null> {
+  const root = backupRoot ?? join(process.cwd(), "backups");
+  const manifestPath = join(root, backupId, "manifest.json");
+
+  if (!existsSync(manifestPath)) return null;
+
+  try {
+    const content = await readFile(manifestPath, "utf-8");
+    return JSON.parse(content);
+  } catch {
+    return null;
+  }
 }

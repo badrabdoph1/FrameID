@@ -14,13 +14,13 @@ describe("prisma backup job repository", () => {
         async update(args: { where: { id: string }; data: { status: string } }) {
           calls.push(`job-update:${args.where.id}:${args.data.status}`);
           return {};
-        }
+        },
       },
       backupManifest: {
         async create(args: { data: { backupJobId: string } }) {
           calls.push(`manifest:${args.data.backupJobId}`);
           return {};
-        }
+        },
       },
       user: { async count() { return 12; } },
       tenant: { async count() { return 10; } },
@@ -30,8 +30,8 @@ describe("prisma backup job repository", () => {
         async create(args: { data: { action: string; entityId: string } }) {
           calls.push(`audit:${args.data.action}:${args.data.entityId}`);
           return {};
-        }
-      }
+        },
+      },
     };
     const repository = createPrismaBackupJobRepository(prisma);
 
@@ -40,7 +40,7 @@ describe("prisma backup job repository", () => {
       usersCount: 12,
       tenantsCount: 10,
       sitesCount: 10,
-      mediaFilesCount: 4
+      mediaFilesCount: 4,
     });
     await repository.saveManifest({
       backupJobId: "backup_1",
@@ -56,26 +56,26 @@ describe("prisma backup job repository", () => {
       sha256Checksum: "checksum",
       localVerificationStatus: "PASSED",
       githubUploadStatus: "PENDING",
-      createdAt: new Date("2026-07-06T12:00:00.000Z")
+      createdAt: new Date("2026-07-06T12:00:00.000Z"),
     });
     await repository.markCompleted({
       backupJobId: "backup_1",
       checksumSha256: "checksum",
       sizeBytes: 100,
-      localPath: ".frameid-backups/backup_1.json.gz",
-      completedAt: new Date("2026-07-06T12:00:00.000Z")
+      localPath: "backups/2026-07-06/",
+      completedAt: new Date("2026-07-06T12:00:00.000Z"),
     });
     await repository.recordAudit({
       action: "BACKUP_COMPLETED",
       entityType: "BackupJob",
-      entityId: "backup_1"
+      entityId: "backup_1",
     });
 
     expect(calls).toEqual([
       "job:DATABASE:MANUAL",
       "manifest:backup_1",
       "job-update:backup_1:COMPLETED",
-      "audit:BACKUP_COMPLETED:backup_1"
+      "audit:BACKUP_COMPLETED:backup_1",
     ]);
   });
 });

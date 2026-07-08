@@ -5,6 +5,10 @@ type PrismaAdminBackupCenterClient = {
   backupJob: {
     findMany(input: unknown): Promise<unknown>;
   };
+  restoreJob: {
+    findMany(input: unknown): Promise<unknown>;
+    count(input: unknown): Promise<number>;
+  };
 };
 
 type RawBackupSetting = {
@@ -27,15 +31,24 @@ type RawBackupJob = {
   createdAt: Date;
 };
 
+type RawRestoreJob = {
+  id: string;
+  backupId: string;
+  type: string;
+  status: string;
+  errorMessage: string | null;
+  createdAt: Date;
+};
+
 export function createPrismaAdminBackupCenterRepository(
   prisma: PrismaAdminBackupCenterClient
 ) {
   return {
     async getBackupCenter() {
-      const [settings, jobs] = await Promise.all([
+      const [settings, jobs, restores, restoreCount] = await Promise.all([
         prisma.backupSettings.findMany({
           orderBy: {
-            type: "asc"
+            type: "asc",
           },
           select: {
             type: true,
@@ -43,12 +56,12 @@ export function createPrismaAdminBackupCenterRepository(
             schedule: true,
             retentionCount: true,
             lastRunAt: true,
-            nextRunAt: true
-          }
+            nextRunAt: true,
+          },
         }) as Promise<RawBackupSetting[]>,
         prisma.backupJob.findMany({
           orderBy: {
-            createdAt: "desc"
+            createdAt: "desc",
           },
           take: 20,
           select: {
@@ -59,18 +72,38 @@ export function createPrismaAdminBackupCenterRepository(
             sizeBytes: true,
             checksumSha256: true,
             localPath: true,
-            createdAt: true
-          }
-        }) as Promise<RawBackupJob[]>
+            createdAt: true,
+          },
+        }) as Promise<RawBackupJob[]>,
+        prisma.restoreJob.findMany({
+          orderBy: {
+            createdAt: "desc",
+          },
+          take: 20,
+          select: {
+            id: true,
+            backupId: true,
+            type: true,
+            status: true,
+            errorMessage: true,
+            createdAt: true,
+          },
+        }) as Promise<RawRestoreJob[]>,
+        prisma.restoreJob.count({}) as Promise<number>,
       ]);
 
       return {
         settings,
         jobs: jobs.map((job) => ({
           ...job,
-          createdAt: job.createdAt.toISOString()
-        }))
+          createdAt: job.createdAt.toISOString(),
+        })),
+        restores: restores.map((r) => ({
+          ...r,
+          createdAt: r.createdAt.toISOString(),
+        })),
+        restoreCount,
       };
-    }
+    },
   };
 }

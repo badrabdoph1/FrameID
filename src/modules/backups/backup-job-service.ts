@@ -1,11 +1,15 @@
+import { join } from "node:path";
 import {
   createBackupManifest,
-  type BackupType
+  addChecksumToManifest,
+  type BackupType,
 } from "@/modules/backups/backup-manifest";
-import {
-  createInMemoryBackupArtifactWriter,
-  type BackupArtifactWriter
-} from "@/modules/backups/local-backup-artifact-writer";
+import { createDatabaseDumper } from "@/modules/backups/backup-database-dumper";
+import { createUploadsPackager } from "@/modules/backups/backup-uploads-packager";
+import { createContentPackager } from "@/modules/backups/backup-content-packager";
+import { createBackupPackage } from "@/modules/backups/backup-package-creator";
+import { createLocalBackupArtifactWriter } from "@/modules/backups/local-backup-artifact-writer";
+import { createRetentionService } from "@/modules/backups/backup-retention";
 
 export type BackupStats = {
   usersCount: number;
@@ -22,12 +26,13 @@ export type BackupJobRepository = {
     note?: string;
   }): Promise<{ id: string }>;
   collectStats(): Promise<BackupStats>;
-  saveManifest(input: ReturnType<typeof createBackupManifest>): Promise<void>;
+  saveManifest(input: Record<string, unknown>): Promise<void>;
   markCompleted(input: {
     backupJobId: string;
     checksumSha256: string;
     sizeBytes: number;
     localPath?: string;
+    githubPath?: string;
     completedAt: Date;
   }): Promise<void>;
   markFailed(input: {
@@ -45,26 +50,49 @@ export type BackupJobRepository = {
 
 export function createBackupJobService({
   repository,
-  artifactWriter = createInMemoryBackupArtifactWriter(),
+  databaseUrl,
+  uploadsDir,
+  contentDir,
+  backupRoot,
+  backupEncryptionKey,
   platformVersion,
-  now = () => new Date()
+  gitCommitSha,
+  now = () => new Date(),
 }: {
   repository: BackupJobRepository;
-  artifactWriter?: BackupArtifactWriter;
+  databaseUrl: string;
+  uploadsDir?: string;
+  contentDir?: string;
+  backupRoot?: string;
+  backupGitHubToken?: string;
+  backupEncryptionKey?: string;
   platformVersion: string;
+  gitCommitSha?: string;
   now?: () => Date;
 }) {
+  const root = backupRoot ?? join(process.cwd(), "backups");
+  const uploadRoot = uploadsDir ?? join(process.cwd(), "public", "uploads");
+  const contentRoot = contentDir ?? join(process.cwd(), "content");
+
+  const dbDumper = createDatabaseDumper(databaseUrl);
+  const uploadPkg = createUploadsPackager(uploadRoot);
+  const contentPkg = createContentPackager(contentRoot);
+  const writer = createLocalBackupArtifactWriter({ backupRoot: root });
+  const retention = createRetentionService();
+
   return {
     async runManualBackup(input: {
       type: BackupType;
       initiatedById: string;
       note?: string;
-    }): Promise<{ backupJobId: string; status: "COMPLETED" }> {
+    }): Promise<{ backupJobId: string; status: "COMPLETED"; backupId: string }> {
+      const createdAt = now();
+
       const job = await repository.createJob({
         type: input.type,
         trigger: "MANUAL",
         initiatedById: input.initiatedById,
-        note: input.note
+        note: input.note,
       });
 
       await repository.recordAudit({
@@ -72,57 +100,121 @@ export function createBackupJobService({
         action: "BACKUP_STARTED",
         entityType: "BackupJob",
         entityId: job.id,
-        metadata: {
-          type: input.type
-        }
+        metadata: { type: input.type },
       });
 
       try {
         const stats = await repository.collectStats();
-        const createdAt = now();
-        const artifact = await artifactWriter.writeArtifact({
+        const doFull = input.type === "FULL";
+        const doUploads = input.type === "UPLOADS" || doFull;
+
+        let databaseDumpPath: string | null = null;
+        let databaseSizeBytes = 0;
+        let uploadsArchivePath: string | null = null;
+        let uploadsSizeBytes = 0;
+        let contentArchivePath: string | null = null;
+        let contentSizeBytes = 0;
+
+        if (input.type === "DATABASE" || doFull) {
+          const dbResult = await dbDumper.dumpDatabase(root, job.id);
+          databaseDumpPath = dbResult.dumpPath;
+          databaseSizeBytes = dbResult.sizeBytes;
+        }
+
+        if (doUploads) {
+          const upResult = await uploadPkg.packageUploads(root, job.id);
+          uploadsArchivePath = upResult.archivePath;
+          uploadsSizeBytes = upResult.sizeBytes;
+        }
+
+        if (doFull) {
+          const ctResult = await contentPkg.packageContent(root, job.id);
+          contentArchivePath = ctResult.archivePath;
+          contentSizeBytes = ctResult.sizeBytes;
+        }
+
+        const migrationVersion = await dbDumper.getMigrationVersion();
+
+        const manifestInput = createBackupManifest({
           backupJobId: job.id,
-          type: input.type,
-          stats,
-          createdAt
-        });
-        const manifest = createBackupManifest({
-          backupJobId: job.id,
-          type: input.type,
-          platformVersion,
+          backupType: input.type,
+          appVersion: platformVersion,
+          gitCommitSha: gitCommitSha ?? "",
+          databaseVersion: migrationVersion,
           usersCount: stats.usersCount,
           tenantsCount: stats.tenantsCount,
           sitesCount: stats.sitesCount,
           mediaFilesCount: stats.mediaFilesCount,
-          compressedSizeBytes: artifact.sizeBytes,
-          compressionAlgorithm: artifact.compressionAlgorithm,
-          encryptionEnabled: true,
-          payloadChecksum: artifact.payloadChecksum,
-          createdAt
+          databaseSizeBytes,
+          uploadsSizeBytes,
+          contentSizeBytes,
+          compressionAlgorithm: "gzip",
+          encryptionEnabled: !!backupEncryptionKey,
+          createdAt: createdAt.toISOString(),
         });
 
-        await repository.saveManifest(manifest);
+        const manifest = addChecksumToManifest(manifestInput);
+
+        const backupPackage = await createBackupPackage(
+          {
+            databaseDumpPath,
+            uploadsArchivePath,
+            contentArchivePath,
+            databaseSizeBytes,
+            uploadsSizeBytes,
+            contentSizeBytes,
+            manifest: manifest as unknown as Record<string, unknown>,
+          },
+          root,
+          createdAt
+        );
+
+        await writer.writeBackup({
+          backupId: backupPackage.backupId,
+          type: input.type,
+          databaseDumpPath: backupPackage.databaseDumpPath ?? "",
+          uploadsArchivePath: backupPackage.uploadsArchivePath,
+          contentArchivePath: backupPackage.contentArchivePath,
+          databaseSizeBytes: backupPackage.databaseSizeBytes,
+          uploadsSizeBytes: backupPackage.uploadsSizeBytes,
+          contentSizeBytes: backupPackage.contentSizeBytes,
+          manifest: manifest as unknown as Record<string, unknown>,
+          checksumSha256: backupPackage.checksumSha256,
+        });
+
+        await repository.saveManifest(
+          manifest as unknown as Record<string, unknown>
+        );
+
         await repository.markCompleted({
           backupJobId: job.id,
-          checksumSha256: artifact.payloadChecksum,
-          sizeBytes: artifact.sizeBytes,
-          localPath: artifact.localPath,
-          completedAt: createdAt
+          checksumSha256: backupPackage.checksumSha256,
+          sizeBytes: backupPackage.totalSizeBytes,
+          localPath: backupPackage.backupDir,
+          completedAt: createdAt,
         });
+
         await repository.recordAudit({
           actorUserId: input.initiatedById,
           action: "BACKUP_COMPLETED",
           entityType: "BackupJob",
           entityId: job.id,
           metadata: {
-            checksum: artifact.payloadChecksum,
-            localPath: artifact.localPath
-          }
+            checksum: backupPackage.checksumSha256,
+            backupId: backupPackage.backupId,
+            backupDir: backupPackage.backupDir,
+          },
         });
+
+        const settings = await getBackupSettings(input.type);
+        if (settings && settings.retentionCount > 0) {
+          await retention.cleanup(root, settings.retentionCount);
+        }
 
         return {
           backupJobId: job.id,
-          status: "COMPLETED"
+          status: "COMPLETED",
+          backupId: backupPackage.backupId,
         };
       } catch (error) {
         const reason =
@@ -130,20 +222,41 @@ export function createBackupJobService({
 
         await repository.markFailed({
           backupJobId: job.id,
-          reason
+          reason,
         });
         await repository.recordAudit({
           actorUserId: input.initiatedById,
           action: "BACKUP_FAILED",
           entityType: "BackupJob",
           entityId: job.id,
-          metadata: {
-            reason
-          }
+          metadata: { reason },
         });
 
         throw error;
       }
-    }
+    },
+
+    async runScheduledBackup(_type: BackupType): Promise<{
+      backupJobId: string;
+      status: "COMPLETED";
+      backupId: string;
+    } | null> {
+      return null;
+    },
   };
+}
+
+async function getBackupSettings(
+  backupType: BackupType
+): Promise<{ retentionCount: number } | null> {
+  try {
+    const { prisma } = await import("@/lib/prisma");
+    const settings = await prisma.backupSettings.findUnique({
+      where: { type: backupType },
+      select: { retentionCount: true },
+    });
+    return settings;
+  } catch {
+    return null;
+  }
 }

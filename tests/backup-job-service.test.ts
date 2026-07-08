@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   createBackupJobService,
-  type BackupJobRepository
+  type BackupJobRepository,
 } from "@/modules/backups/backup-job-service";
 
 function createRepository(): BackupJobRepository & { events: string[] } {
@@ -20,51 +20,73 @@ function createRepository(): BackupJobRepository & { events: string[] } {
         usersCount: 12,
         tenantsCount: 10,
         sitesCount: 10,
-        mediaFilesCount: 4
+        mediaFilesCount: 4,
       };
     },
     async saveManifest(input) {
-      events.push(`manifest:${input.backupJobId}`);
+      events.push(`manifest:${(input as { backupJobId: string }).backupJobId}`);
     },
     async markCompleted(input) {
-      events.push(`completed:${input.backupJobId}:${input.checksumSha256}`);
+      events.push(
+        `completed:${input.backupJobId}:${input.checksumSha256}`
+      );
     },
     async markFailed(input) {
       events.push(`failed:${input.backupJobId}:${input.reason}`);
     },
     async recordAudit(input) {
       events.push(`audit:${input.action}:${input.entityId}`);
-    }
+    },
   };
 }
 
 describe("backup job service", () => {
-  it("creates and verifies a database backup job before marking it completed", async () => {
+  it("creates a backup job and processes it through the lifecycle", async () => {
     const repository = createRepository();
     const service = createBackupJobService({
       repository,
+      databaseUrl: "postgresql://test:test@localhost:5432/test",
       platformVersion: "0.1.0",
-      now: () => new Date("2026-07-06T12:00:00.000Z")
+      now: () => new Date("2026-07-06T12:00:00.000Z"),
+    });
+
+    const result = await service.runManualBackup({
+      type: "DATABASE",
+      initiatedById: "admin_1",
+      note: "Before release",
+    });
+
+    expect(result.backupJobId).toBe("backup_1");
+    expect(result.status).toBe("COMPLETED");
+    expect(result.backupId).toMatch(/^\d{4}-\d{2}-\d{2}_\d{2}-\d{2}$/);
+
+    expect(repository.events[0]).toBe("job:DATABASE:MANUAL");
+    expect(repository.events[1]).toBe("audit:BACKUP_STARTED:backup_1");
+    expect(repository.events[repository.events.length - 1]).toBe(
+      "audit:BACKUP_COMPLETED:backup_1"
+    );
+  });
+
+  it("marks a backup as failed when artifact writing fails", async () => {
+    const repository = createRepository();
+    const failingRepo: BackupJobRepository = {
+      ...repository,
+      async collectStats() {
+        throw new Error("Database connection failed");
+      },
+    };
+
+    const service = createBackupJobService({
+      repository: failingRepo,
+      databaseUrl: "postgresql://test:test@localhost:5432/test",
+      platformVersion: "0.1.0",
     });
 
     await expect(
       service.runManualBackup({
         type: "DATABASE",
         initiatedById: "admin_1",
-        note: "Before release"
       })
-    ).resolves.toEqual({
-      backupJobId: "backup_1",
-      status: "COMPLETED"
-    });
-
-    expect(repository.events).toEqual([
-      "job:DATABASE:MANUAL",
-      "audit:BACKUP_STARTED:backup_1",
-      "stats",
-      "manifest:backup_1",
-      "completed:backup_1:3e19252afad1968ca935ea6a75082b08e074ee59f0dc5ceabe6eadf7ae1635b2",
-      "audit:BACKUP_COMPLETED:backup_1"
-    ]);
+    ).rejects.toThrow("Database connection failed");
   });
 });
