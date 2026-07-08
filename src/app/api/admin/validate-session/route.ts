@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { hashAdminSessionToken } from "@/modules/admin/admin-session-tokens";
+import { hashAdminSessionToken, verifySignedAdminSessionToken } from "@/modules/admin/admin-session-tokens";
 import { prisma } from "@/lib/prisma";
 
 export async function GET(request: Request) {
@@ -7,6 +7,11 @@ export async function GET(request: Request) {
 
   if (!rawToken) {
     return NextResponse.json({ valid: false }, { status: 401 });
+  }
+
+  const signedPayload = verifySignedAdminSessionToken(rawToken);
+  if (signedPayload) {
+    return NextResponse.json({ valid: true, mode: "stateless" });
   }
 
   const tokenHash = hashAdminSessionToken(rawToken);
@@ -24,5 +29,5 @@ export async function GET(request: Request) {
     return NextResponse.json({ valid: false }, { status: 401 });
   }
 
-  return NextResponse.json({ valid: true });
+  return NextResponse.json({ valid: true, mode: "database" });
 }
