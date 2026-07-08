@@ -29,6 +29,7 @@ export const ROLES: Record<string, RoleDefinition> = {
       { center: "media", actions: ALL_ACTIONS },
       { center: "marketing", actions: ALL_ACTIONS },
       { center: "seo", actions: ALL_ACTIONS },
+      { center: "plans", actions: ALL_ACTIONS },
       { center: "subscriptions", actions: ALL_ACTIONS },
       { center: "payments", actions: ALL_ACTIONS },
       { center: "notifications", actions: ALL_ACTIONS },
@@ -63,6 +64,7 @@ export const ROLES: Record<string, RoleDefinition> = {
     permissions: [
       { center: "dashboard", actions: ["view"] },
       { center: "customers", actions: ["view"] },
+      { center: "plans", actions: ["view", "create", "edit"] },
       { center: "payments", actions: ["view", "edit"] },
       { center: "payment-settings", actions: ["view", "edit"] },
       { center: "subscriptions", actions: ALL_ACTIONS },
