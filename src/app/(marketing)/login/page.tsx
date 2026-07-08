@@ -15,17 +15,23 @@ export const metadata: Metadata = {
 type LoginPageProps = {
   searchParams: Promise<{
     error?: string;
+    message?: string;
   }>;
 };
 
 export default async function LoginPage({ searchParams }: LoginPageProps) {
-  const { error } = await searchParams;
+  const { error, message } = await searchParams;
 
   return (
     <AuthShell
       title="تسجيل الدخول"
       description="ادخل إلى لوحة التحكم لإدارة موقعك، صورك، باقاتك، وحالة التفعيل."
     >
+      {message ? (
+        <p className="mb-4 rounded-[var(--radius-panel)] border border-success/20 bg-success-soft px-4 py-3 text-sm text-success">
+          {message}
+        </p>
+      ) : null}
       {error ? (
         <p className="mb-4 rounded-[var(--radius-panel)] border border-warning/30 bg-warning/10 px-4 py-3 text-sm text-foreground">
           {error}

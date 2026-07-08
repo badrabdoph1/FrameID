@@ -7,10 +7,18 @@ import { processError } from "@/lib/errors";
 import { readFormString } from "@/modules/auth/auth-action-utils";
 import { createPasswordResetService } from "@/modules/auth/password-reset-service";
 import { createPrismaPasswordResetRepository } from "@/modules/auth/prisma-password-reset-repository";
+import { checkRateLimit } from "@/lib/rate-limiter";
 
 export async function resetPasswordAction(formData: FormData) {
   const token = readFormString(formData, "token");
   const password = readFormString(formData, "password");
+
+  const ipKey = `reset-password:${token.slice(0, 16)}`;
+
+  const rateCheck = checkRateLimit(ipKey, 5, 60 * 60 * 1000);
+  if (!rateCheck.allowed) {
+    redirect("/reset-password?error=" + encodeURIComponent("طلبات كثيرة جداً. حاول بعد ساعة."));
+  }
 
   try {
     await createPasswordResetService({
@@ -24,9 +32,9 @@ export async function resetPasswordAction(formData: FormData) {
       metadata: { action: "resetPassword" },
     });
     redirect(
-      `/reset-password?error=${encodeURIComponent(userError.message)}`,
+      `/reset-password?token=${encodeURIComponent(token)}&error=${encodeURIComponent(userError.message)}`,
     );
   }
 
-  redirect("/login?error=تم تحديث كلمة المرور. سجل الدخول بكلمتك الجديدة.");
+  redirect("/login?message=تم تغيير كلمة المرور بنجاح. سجل الدخول بكلمتك الجديدة.");
 }

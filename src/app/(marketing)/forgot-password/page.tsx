@@ -6,6 +6,7 @@ import { AuthShell } from "@/components/layout/auth-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { CopyButton } from "@/components/ui/copy-button";
 
 export const metadata: Metadata = {
   title: "استعادة كلمة المرور",
@@ -30,15 +31,15 @@ export default async function ForgotPasswordPage({
       description="أدخل بريدك وسنرسل رابطًا آمنًا إذا كان الحساب موجودًا."
     >
       {sent ? (
-        <p className="mb-4 rounded-[var(--radius-panel)] border border-success/20 bg-success-soft px-4 py-3 text-sm text-success">
-          إذا كان البريد مسجلًا، تم تجهيز رابط الاستعادة عبر قناة الإرسال
-          المتاحة.
-        </p>
+        <div className="mb-4 rounded-[var(--radius-panel)] border border-success/20 bg-success-soft px-4 py-3 text-sm text-success">
+          إذا كان البريد مسجلًا، تم إرسال رابط الاستعادة.
+        </div>
       ) : null}
       {error ? (
-        <p className="mb-4 rounded-[var(--radius-panel)] border border-warning/30 bg-warning/10 px-4 py-3 text-sm text-foreground">
-          {error}
-        </p>
+        <div className="mb-4 rounded-[var(--radius-panel)] border border-warning/30 bg-warning/10 px-4 py-3 text-sm">
+          <span className="text-foreground">{error}</span>
+          {error ? <CopyButton value={error} /> : null}
+        </div>
       ) : null}
       <form action={requestPasswordResetAction} className="space-y-4">
         <div className="space-y-2">

@@ -4,6 +4,7 @@ import { AuthShell } from "@/components/layout/auth-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { CopyButton } from "@/components/ui/copy-button";
 import { resetPasswordAction } from "@/app/(marketing)/reset-password/actions";
 
 type ResetPasswordPageProps = {
@@ -24,9 +25,10 @@ export default async function ResetPasswordPage({
       description="اختر كلمة مرور قوية وسيتم إغلاق الجلسات القديمة بعد التحديث."
     >
       {error ? (
-        <p className="mb-4 rounded-[var(--radius-panel)] border border-warning/30 bg-warning/10 px-4 py-3 text-sm text-foreground">
-          {error}
-        </p>
+        <div className="mb-4 rounded-[var(--radius-panel)] border border-warning/30 bg-warning/10 px-4 py-3 text-sm">
+          <span className="text-foreground">{error}</span>
+          <CopyButton value={error} />
+        </div>
       ) : null}
       <form action={resetPasswordAction} className="space-y-4">
         <input type="hidden" name="token" value={token ?? ""} />
@@ -40,6 +42,9 @@ export default async function ResetPasswordPage({
             minLength={10}
             required
           />
+          <p className="text-xs text-muted-foreground">
+            يجب أن تحتوي على الأقل 10 أحرف، حرف كبير، حرف صغير، ورقم.
+          </p>
         </div>
         <Button type="submit" className="w-full">
           تحديث كلمة المرور

@@ -1,10 +1,12 @@
 import { createRawSessionToken, hashSessionToken } from "@/modules/auth/session-tokens";
 import { hashPassword } from "@/modules/auth/password-hashing";
+import { resetPasswordInputSchema } from "@/modules/auth/reset-password-validation";
+import { AppError } from "@/lib/errors";
 
 const RESET_TOKEN_TTL_MINUTES = 60;
 
 export type PasswordResetRepository = {
-  findUserByEmail(email: string): Promise<{ id: string; email: string } | null>;
+  findUserByEmail(email: string): Promise<{ id: string; email: string; name: string } | null>;
   createResetToken(input: {
     userId: string;
     tokenHash: string;
@@ -13,7 +15,7 @@ export type PasswordResetRepository = {
   findValidTokenByHash(
     tokenHash: string,
     now: Date
-  ): Promise<{ id: string; userId: string } | null>;
+  ): Promise<{ id: string; userId: string; usedAt: Date | null; expiresAt: Date } | null>;
   updateUserPassword(input: {
     userId: string;
     passwordHash: string;
@@ -46,6 +48,7 @@ export function createPasswordResetService({
       delivered: boolean;
       rawToken: string | null;
       userEmail: string | null;
+      userName: string | null;
     }> {
       const email = input.email.trim().toLowerCase();
       const user = await repository.findUserByEmail(email);
@@ -54,57 +57,65 @@ export function createPasswordResetService({
         return {
           delivered: false,
           rawToken: null,
-          userEmail: null
+          userEmail: null,
+          userName: null,
         };
       }
 
       const rawToken = createRawToken();
-      const expiresAt = new Date(now());
-      expiresAt.setUTCMinutes(expiresAt.getUTCMinutes() + RESET_TOKEN_TTL_MINUTES);
+      const expiresAt = new Date(now().getTime() + RESET_TOKEN_TTL_MINUTES * 60 * 1000);
 
       await repository.createResetToken({
         userId: user.id,
         tokenHash: hashToken(rawToken),
-        expiresAt
+        expiresAt,
       });
 
       return {
         delivered: true,
         rawToken,
-        userEmail: user.email
+        userEmail: user.email,
+        userName: user.name,
       };
     },
     async resetPassword(input: {
       rawToken: string;
       newPassword: string;
     }): Promise<void> {
-      if (input.newPassword.length < 10) {
-        throw new Error("Password must be at least 10 characters");
-      }
+      const parsed = resetPasswordInputSchema.parse({
+        token: input.rawToken,
+        password: input.newPassword,
+      });
 
-      const resetToken = await repository.findValidTokenByHash(
-        hashToken(input.rawToken),
-        now()
-      );
+      const tokenHash = hashToken(parsed.token);
+      const resetToken = await repository.findValidTokenByHash(tokenHash, now());
 
       if (!resetToken) {
-        throw new Error("Invalid or expired reset token");
+        throw new AppError("FID-AUTH-006");
+      }
+
+      if (resetToken.usedAt) {
+        throw new AppError("FID-AUTH-008");
+      }
+
+      if (resetToken.expiresAt < now()) {
+        throw new AppError("FID-AUTH-006");
       }
 
       const changedAt = now();
-      const passwordHash = await hashPassword(input.newPassword);
+      const passwordHash = await hashPassword(parsed.password);
 
       await repository.updateUserPassword({
         userId: resetToken.userId,
-        passwordHash
+        passwordHash,
       });
       await repository.markTokenUsed({
         tokenId: resetToken.id,
-        usedAt: changedAt
+        usedAt: changedAt,
       });
       await repository.revokeUserSessions({
         userId: resetToken.userId,
-        revokedAt: changedAt
+        revokedAt: changedAt,
       });
     }
   };

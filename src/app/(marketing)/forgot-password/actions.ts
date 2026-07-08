@@ -9,9 +9,19 @@ import { readFormString } from "@/modules/auth/auth-action-utils";
 import { sendPasswordResetLink } from "@/modules/auth/password-reset-delivery";
 import { createPasswordResetService } from "@/modules/auth/password-reset-service";
 import { createPrismaPasswordResetRepository } from "@/modules/auth/prisma-password-reset-repository";
+import { checkRateLimit } from "@/lib/rate-limiter";
+
+const RESET_TOKEN_TTL_MINUTES = 60;
 
 export async function requestPasswordResetAction(formData: FormData) {
   const email = readFormString(formData, "email");
+  const ipKey = `forgot-password:${email.toLowerCase().trim()}`;
+
+  const rateCheck = checkRateLimit(ipKey, 3, 15 * 60 * 1000);
+  if (!rateCheck.allowed) {
+    redirect("/forgot-password?error=" + encodeURIComponent("طلبات استعادة كلمة المرور كثيرة جداً. حاول بعد 15 دقيقة."));
+  }
+
   const service = createPasswordResetService({
     repository: createPrismaPasswordResetRepository(prisma),
   });
@@ -29,12 +39,14 @@ export async function requestPasswordResetAction(formData: FormData) {
     );
   }
 
-  if (result.rawToken && result.userEmail) {
+  if (result.rawToken && result.userEmail && result.userName) {
+    const resetUrl = `${getPlatformBaseUrl()}/reset-password?token=${encodeURIComponent(result.rawToken)}`;
+
     await sendPasswordResetLink({
       email: result.userEmail,
-      resetUrl: `${getPlatformBaseUrl()}/reset-password?token=${encodeURIComponent(
-        result.rawToken,
-      )}`,
+      userName: result.userName,
+      resetUrl,
+      expiresInMinutes: RESET_TOKEN_TTL_MINUTES,
     });
   }
 
