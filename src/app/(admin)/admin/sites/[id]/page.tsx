@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
@@ -55,7 +56,7 @@ export default async function AdminSiteWorkspacePage({ params }: Props) {
       sections: { where: { deletedAt: null }, orderBy: { order: "asc" } },
       packages: { where: { deletedAt: null }, orderBy: { sortOrder: "asc" } },
       extras: { where: { deletedAt: null }, orderBy: { sortOrder: "asc" } },
-      albums: { where: { deletedAt: null }, orderBy: { sortOrder: "asc" }, include: { items: { where: { deletedAt: null }, take: 3 } } },
+      albums: { where: { deletedAt: null }, orderBy: { sortOrder: "asc" }, include: { images: { where: { deletedAt: null }, take: 3 } } },
       contact: true,
       seoSettings: true,
       featureFlags: { orderBy: { updatedAt: "desc" } },
@@ -156,10 +157,10 @@ export default async function AdminSiteWorkspacePage({ params }: Props) {
           {site.sections.map((section) => <CompactItem key={section.id} title={section.type} subtitle={`Order ${section.order} · ${section.isVisible ? "visible" : "hidden"}`} />)}
         </CollectionPanel>
         <CollectionPanel title="Packages" icon={PackageCheck} count={site.packages.length}>
-          {site.packages.map((pkg) => <CompactItem key={pkg.id} title={pkg.title} subtitle={`${pkg.priceAmount.toLocaleString("ar-EG")} ${pkg.currency} · ${pkg.isFeatured ? "Featured" : "Standard"}`} />)}
+          {site.packages.map((pkg) => <CompactItem key={pkg.id} title={pkg.name} subtitle={`${pkg.priceAmount.toLocaleString("ar-EG")} ${pkg.currency} · ${pkg.isHighlighted ? "Highlighted" : "Standard"}`} />)}
         </CollectionPanel>
         <CollectionPanel title="Extras" icon={Boxes} count={site.extras.length}>
-          {site.extras.map((extra) => <CompactItem key={extra.id} title={extra.title} subtitle={`${extra.priceAmount.toLocaleString("ar-EG")} ${extra.currency} · ${extra.isActive ? "Active" : "Inactive"}`} />)}
+          {site.extras.map((extra) => <CompactItem key={extra.id} title={extra.name} subtitle={`${extra.priceAmount.toLocaleString("ar-EG")} ${extra.currency} · ${extra.isActive ? "Active" : "Inactive"}`} />)}
         </CollectionPanel>
       </section>
 
@@ -193,7 +194,7 @@ export default async function AdminSiteWorkspacePage({ params }: Props) {
             {site.albums.map((album) => (
               <div key={album.id} className="rounded-xl border border-white/8 bg-black/16 p-3">
                 <strong className="block truncate text-sm font-black text-white/82">{album.title}</strong>
-                <p className="mt-1 text-xs font-bold text-white/38">{album.items.length} عينات معروضة · {album.isVisible ? "visible" : "hidden"}</p>
+                <p className="mt-1 text-xs font-bold text-white/38">{album.images.length} عينات معروضة · {album.isVisible ? "visible" : "hidden"}</p>
               </div>
             ))}
           </div>
@@ -212,7 +213,7 @@ function Metric({ label, value, accent }: { label: string; value: string; accent
   );
 }
 
-function Panel({ title, icon: Icon, children }: { title: string; icon: typeof Globe; children: React.ReactNode }) {
+function Panel({ title, icon: Icon, children }: { title: string; icon: typeof Globe; children: ReactNode }) {
   return (
     <section className="rounded-2xl border border-white/10 bg-white/[0.035] p-4">
       <h2 className="mb-4 flex items-center gap-2 text-sm font-black text-[#fff7e8]"><Icon className="size-4 text-amber-300" /> {title}</h2>
@@ -221,7 +222,7 @@ function Panel({ title, icon: Icon, children }: { title: string; icon: typeof Gl
   );
 }
 
-function CollectionPanel({ title, icon: Icon, count, children }: { title: string; icon: typeof Layers3; count: number; children: React.ReactNode }) {
+function CollectionPanel({ title, icon: Icon, count, children }: { title: string; icon: typeof Layers3; count: number; children: ReactNode }) {
   return (
     <Panel title={`${title} · ${count.toLocaleString("ar-EG")}`} icon={Icon}>
       <div className="grid gap-2">
