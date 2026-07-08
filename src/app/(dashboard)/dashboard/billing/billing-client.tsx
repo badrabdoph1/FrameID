@@ -540,7 +540,7 @@ function PaymentMethodPicker({ methods, selectedMethodId, selectedPlanId, pendin
             <input type="hidden" name="planId" value={selectedPlanId ?? ""} />
             <input type="hidden" name="method" value={method.paymentMethod} />
             <input type="hidden" name="accountId" value={account?.id ?? ""} />
-            <button type="submit" disabled={disabled} onClick={() => onMethodSelect(method.id)} className={`min-h-28 w-full rounded-2xl border p-4 text-right transition ${selected ? "border-amber-400/60 bg-amber-500/10" : "border-white/[0.08] bg-white/[0.025] hover:border-white/20"} ${disabled ? "cursor-not-allowed opacity-60" : ""}`}>
+            <button type="submit" disabled={disabled} onMouseDown={() => onMethodSelect(method.id)} onTouchStart={() => onMethodSelect(method.id)} className={`min-h-28 w-full rounded-2xl border p-4 text-right transition ${selected ? "border-amber-400/60 bg-amber-500/10" : "border-white/[0.08] bg-white/[0.025] hover:border-white/20"} ${disabled ? "cursor-not-allowed opacity-60" : ""}`}>
               <span className="flex items-center justify-between gap-3">
                 <strong className="text-sm font-black text-[#fff7e8]">{method.label ?? getPaymentMethodLabel(method.paymentMethod)}</strong>
                 {pending && selected ? <Loader2 className="size-5 animate-spin text-[#f3cf73]" /> : selected ? <CheckCircle2 className="size-5 text-emerald-300" /> : <CreditCard className="size-5 text-white/30" />}
