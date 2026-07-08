@@ -120,6 +120,15 @@ type BillingClientProps = {
 };
 
 type ActionResult = { success: true; draftId?: string } | { success: false; error: string };
+type WizardStep = 1 | 2 | 3 | 4 | 5;
+
+type WizardStepConfig = {
+  step: WizardStep;
+  title: string;
+  hint: string;
+  done: boolean;
+  unlocked: boolean;
+};
 
 const STATUS_INFO: Record<string, { label: string; color: string; bg: string }> = {
   TRIAL: { label: "نسخة تجريبية", color: "#f3cf73", bg: "rgba(243,207,115,.1)" },
@@ -208,6 +217,13 @@ function getActionError(state: unknown): string | null {
   return isActionFailure(state) ? state.error : null;
 }
 
+function getInitialWizardStep(paymentRequest: PaymentRequestData | null, hasDraft: boolean, proofUploaded: boolean): WizardStep {
+  if (paymentRequest && !["DRAFT", "REJECTED", "CANCELLED"].includes(paymentRequest.status)) return 5;
+  if (hasDraft && proofUploaded) return 5;
+  if (hasDraft) return 4;
+  return 1;
+}
+
 function Badge({ label, color, bg }: { label: string; color: string; bg: string }) {
   return <span style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "4px 10px", borderRadius: 999, fontSize: "0.72rem", fontWeight: 950, color, background: bg }}>{label}</span>;
 }
@@ -241,7 +257,7 @@ export function BillingClient({ session, plans, paymentMethods, paymentRequest, 
   const subStatus = subscription?.status ?? tenant.status ?? "NONE";
   const statusInfo = STATUS_INFO[subStatus] ?? STATUS_INFO.NONE;
   const existingPlan = subscription?.plan ?? null;
-  const activeRequestLocked = Boolean(paymentRequest && !["DRAFT", "REJECTED", "CANCELLED"].includes(paymentRequest.status));
+  const requestLocked = Boolean(paymentRequest && !["DRAFT", "REJECTED", "CANCELLED"].includes(paymentRequest.status));
 
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(paymentRequest?.planId ?? null);
   const [selectedMethodId, setSelectedMethodId] = useState<string | null>(null);
@@ -253,10 +269,14 @@ export function BillingClient({ session, plans, paymentMethods, paymentRequest, 
   const [proofUploaded, setProofUploaded] = useState(Boolean(paymentRequest?.proofAssetId));
   const [fileError, setFileError] = useState<string | null>(null);
   const [faqOpen, setFaqOpen] = useState<number | null>(0);
+  const [activeStep, setActiveStep] = useState<WizardStep>(() => getInitialWizardStep(paymentRequest, Boolean(paymentRequest?.id ?? draftId), Boolean(paymentRequest?.proofAssetId)));
 
   const [createState, createAction, createPending] = useActionState<ActionResult | null, FormData>(async (_prev, fd) => {
     const result = await createPaymentDraftAction(fd);
-    if (result.success && result.draftId) setDraftState(result.draftId);
+    if (result.success && result.draftId) {
+      setDraftState(result.draftId);
+      setActiveStep(4);
+    }
     return result;
   }, null);
 
@@ -265,6 +285,7 @@ export function BillingClient({ session, plans, paymentMethods, paymentRequest, 
     if (result.success) {
       setProofUploaded(true);
       setProofFile(null);
+      setActiveStep(5);
     }
     return result;
   }, null);
@@ -275,11 +296,16 @@ export function BillingClient({ session, plans, paymentMethods, paymentRequest, 
       setProofUploaded(false);
       setProofFile(null);
       setProofPreview(null);
+      setActiveStep(4);
     }
     return result;
   }, null);
 
-  const [submitState, submitAction, submitPending] = useActionState<ActionResult | null, FormData>(async (_prev, fd) => submitPaymentRequestAction(fd), null);
+  const [submitState, submitAction, submitPending] = useActionState<ActionResult | null, FormData>(async (_prev, fd) => {
+    const result = await submitPaymentRequestAction(fd);
+    if (result.success) setActiveStep(5);
+    return result;
+  }, null);
 
   const [cancelState, cancelAction, cancelPending] = useActionState<ActionResult | null, FormData>(async (_prev, fd) => {
     const result = await cancelPaymentRequestAction(fd);
@@ -288,6 +314,7 @@ export function BillingClient({ session, plans, paymentMethods, paymentRequest, 
       setProofUploaded(false);
       setProofFile(null);
       setProofPreview(null);
+      setActiveStep(1);
     }
     return result;
   }, null);
@@ -295,10 +322,25 @@ export function BillingClient({ session, plans, paymentMethods, paymentRequest, 
   const selectedPlan = useMemo(() => plans.find((p) => p.id === selectedPlanId), [plans, selectedPlanId]);
   const selectedMethod = useMemo(() => paymentMethods.find((m) => m.id === selectedMethodId), [paymentMethods, selectedMethodId]);
   const selectedAccount = useMemo(() => selectedMethod?.accounts.find((a) => a.id === selectedAccountId) ?? null, [selectedMethod, selectedAccountId]);
-  const canCreateDraft = Boolean(selectedPlan && selectedMethod && selectedAccount && !draftState && !activeRequestLocked);
-  const canUploadProof = Boolean(draftState && proofFile && !activeRequestLocked);
+  const hasPaymentChoice = Boolean(selectedMethod && selectedAccount);
+  const canCreateDraft = Boolean(selectedPlan && selectedMethod && selectedAccount && !draftState && !requestLocked);
+  const canUploadProof = Boolean(draftState && proofFile && !requestLocked);
   const uploadSucceeded = proofUploaded || isActionSuccess(uploadState);
-  const canSubmit = Boolean(draftState && uploadSucceeded && !activeRequestLocked);
+  const canSubmit = Boolean(draftState && uploadSucceeded && !requestLocked);
+  const submitted = requested || requestLocked || isActionSuccess(submitState);
+
+  const wizardSteps: WizardStepConfig[] = [
+    { step: 1, title: "اختيار الباقة", hint: selectedPlan?.name ?? "اختر خطة مناسبة", done: Boolean(selectedPlan || draftState), unlocked: true },
+    { step: 2, title: "طريقة الدفع", hint: selectedMethod ? (selectedMethod.label ?? getPaymentMethodLabel(selectedMethod.paymentMethod)) : "اختر وسيلة وحساب", done: Boolean(hasPaymentChoice || draftState), unlocked: Boolean(selectedPlan || draftState) },
+    { step: 3, title: "تأكيد المسودة", hint: draftState ? "المسودة محفوظة" : "راجع واحفظ الطلب", done: Boolean(draftState), unlocked: Boolean((selectedPlan && hasPaymentChoice) || draftState) },
+    { step: 4, title: "إثبات الدفع", hint: uploadSucceeded ? "الإثبات مرفوع" : "ارفع صورة التحويل", done: uploadSucceeded, unlocked: Boolean(draftState) },
+    { step: 5, title: "الإرسال والمتابعة", hint: submitted ? "الطلب قيد المتابعة" : "أرسل الطلب", done: submitted, unlocked: Boolean(draftState && uploadSucceeded) || requestLocked },
+  ];
+
+  function goToStep(step: WizardStep) {
+    const target = wizardSteps.find((item) => item.step === step);
+    if (target?.unlocked) setActiveStep(step);
+  }
 
   function handleFileSelect(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -321,20 +363,16 @@ export function BillingClient({ session, plans, paymentMethods, paymentRequest, 
     reader.readAsDataURL(file);
   }
 
-  const workflow = [
-    { title: "اختر الباقة", done: Boolean(selectedPlan), description: selectedPlan?.name ?? "اختر الخطة المناسبة" },
-    { title: "اختر وسيلة الدفع", done: Boolean(selectedMethod && selectedAccount), description: selectedMethod ? (selectedMethod.label ?? getPaymentMethodLabel(selectedMethod.paymentMethod)) : "InstaPay أو Vodafone Cash" },
-    { title: "أنشئ المسودة", done: Boolean(draftState), description: draftState ? "تم حفظ بيانات الطلب" : "يتم قفل السعر والباقة" },
-    { title: "ارفع إثبات الدفع", done: uploadSucceeded, description: uploadSucceeded ? "تم رفع الإثبات" : "صورة التحويل أو الإيصال" },
-    { title: "أرسل الطلب", done: Boolean(activeRequestLocked || isActionSuccess(submitState)), description: activeRequestLocked ? "قيد مراجعة الإدارة" : "بعد الإرسال لا يمكن التعديل" },
-  ];
-
   return (
     <main className="space-y-5">
-      <BuilderPageHeader eyebrow="الاشتراك والتفعيل" title={subStatus === "ACTIVE" ? "اشتراكك نشط" : "فعّل موقعك باحتراف"} description={subStatus === "ACTIVE" ? "اشتراكك مفعل ويمكنك استخدام كل الميزات." : "رحلة تفعيل واضحة: اختر الباقة، ادفع، ارفع الإثبات، ثم يتم تفعيل الموقع بعد مراجعة الإدارة."} />
+      <BuilderPageHeader
+        eyebrow="الاشتراك والتفعيل"
+        title={subStatus === "ACTIVE" ? "اشتراكك نشط" : "فعّل موقعك خطوة بخطوة"}
+        description={subStatus === "ACTIVE" ? "اشتراكك مفعل ويمكنك استخدام كل الميزات." : "بدل ما كل البيانات تظهر مرة واحدة، اتبع 5 مراحل بسيطة وواضحة حتى إرسال طلب التفعيل."}
+      />
 
       {urlError ? <AlertBox tone="danger" title="حدث خطأ" body={urlError === "no-subscription" ? "لا يوجد اشتراك نشط. يرجى إنشاء الموقع أولاً." : urlError} /> : null}
-      {requested || isActionSuccess(submitState) ? <AlertBox tone="success" title="تم إرسال الطلب" body="طلب التفعيل قيد المراجعة الآن. ستظهر الحالة هنا وفي لوحة التحكم." /> : null}
+      {isActionSuccess(submitState) ? <AlertBox tone="success" title="تم إرسال الطلب" body="طلب التفعيل قيد المراجعة الآن. ستظهر الحالة هنا وفي لوحة التحكم." /> : null}
 
       <SectionCard title="حالة الاشتراك والموقع" icon={<ShieldCheck size={16} />}>
         <div className="grid gap-4 md:grid-cols-[1.2fr,1fr]">
@@ -356,83 +394,116 @@ export function BillingClient({ session, plans, paymentMethods, paymentRequest, 
         </div>
       </SectionCard>
 
-      {paymentRequest ? <RequestStatusCard request={paymentRequest} logs={logs} /> : null}
+      {paymentRequest && requestLocked ? <RequestStatusCard request={paymentRequest} logs={logs} /> : null}
 
       {subStatus !== "ACTIVE" ? (
-        <SectionCard title="مراحل التفعيل" description="اتبع الخطوات بالترتيب حتى يصل الطلب للأدمن بشكل واضح." icon={<CheckCircle2 size={16} />}>
-          <div className="grid gap-3 md:grid-cols-5">{workflow.map((step, idx) => <StepCard key={step.title} index={idx + 1} {...step} />)}</div>
-        </SectionCard>
-      ) : null}
+        <div className="grid gap-5 lg:grid-cols-[280px,1fr]">
+          <SectionCard title="المراحل" description="اضغط على أي مرحلة متاحة للرجوع لها." icon={<CheckCircle2 size={16} />}>
+            <WizardProgress steps={wizardSteps} activeStep={activeStep} onSelect={goToStep} />
+          </SectionCard>
 
-      {subStatus !== "ACTIVE" ? (
-        <SectionCard title="اختر الباقة" description="كل باقة يتم تسعيرها من لوحة الإدارة ولا يوجد سعر مكتوب داخل الكود." icon={<Package size={16} />}>
-          <div className="grid gap-3 md:grid-cols-3">{plans.map((plan) => <PlanCard key={plan.id} plan={plan} selected={selectedPlanId === plan.id} disabled={Boolean(draftState || activeRequestLocked)} onSelect={() => setSelectedPlanId(plan.id)} />)}</div>
-        </SectionCard>
-      ) : null}
+          <div className="space-y-4">
+            <ActivationSummary selectedPlan={selectedPlan} selectedMethod={selectedMethod} selectedAccount={selectedAccount} uploadSucceeded={uploadSucceeded} submitted={submitted} />
 
-      {subStatus !== "ACTIVE" ? (
-        <SectionCard title="وسيلة الدفع" description="كل الأرقام والتعليمات تظهر من Payment Settings بدون Deploy." icon={<CreditCard size={16} />}>
-          {paymentMethods.length === 0 ? <AlertBox tone="warning" title="لا توجد وسائل دفع مفعلة" body="اطلب من الأدمن تفعيل InstaPay أو Vodafone Cash من Payment Settings." /> : (
-            <div className="grid gap-3">
-              {paymentMethods.map((method) => <PaymentMethodCard key={method.id} method={method} selected={selectedMethodId === method.id} selectedAccountId={selectedAccountId} disabled={Boolean(draftState || activeRequestLocked)} onSelectMethod={() => { setSelectedMethodId(method.id); setSelectedAccountId(null); }} onSelectAccount={setSelectedAccountId} />)}
-            </div>
-          )}
-        </SectionCard>
-      ) : null}
+            {activeStep === 1 ? (
+              <StageShell title="المرحلة الأولى: اختار الباقة" description="اعرض الباقات فقط، والعميل يختار واحدة ثم يضغط التالي." icon={<Package size={16} />}>
+                <div className="grid gap-3 md:grid-cols-3">
+                  {plans.map((plan) => <PlanCard key={plan.id} plan={plan} selected={selectedPlanId === plan.id} disabled={Boolean(draftState || requestLocked)} onSelect={() => setSelectedPlanId(plan.id)} />)}
+                </div>
+                <StageActions>
+                  <Button type="button" variant="luxury" disabled={!selectedPlan} onClick={() => goToStep(2)}>التالي: طريقة الدفع</Button>
+                </StageActions>
+              </StageShell>
+            ) : null}
 
-      {subStatus !== "ACTIVE" ? (
-        <SectionCard title="إنشاء مسودة الطلب" description="بعد حفظ المسودة تستطيع رفع إثبات الدفع، ثم إرسال الطلب للمراجعة." icon={<Info size={16} />}>
-          <div className="grid gap-3">
-            <input value={reference} onChange={(e) => setReference(e.target.value)} disabled={Boolean(draftState || activeRequestLocked)} placeholder="رقم المرجع أو Transaction ID — اختياري" className="h-11 rounded-xl border border-white/10 bg-white/5 px-3 text-sm text-white outline-none placeholder:text-white/25" dir="ltr" />
-            {!draftState ? (
-              <form action={createAction}>
-                <input type="hidden" name="planId" value={selectedPlanId ?? ""} />
-                <input type="hidden" name="method" value={selectedMethod?.paymentMethod ?? ""} />
-                <input type="hidden" name="accountId" value={selectedAccountId ?? ""} />
-                <input type="hidden" name="reference" value={reference} />
-                <Button type="submit" variant="luxury" disabled={!canCreateDraft || createPending}>{createPending ? <Loader2 className="size-4 animate-spin" /> : <CheckCircle2 className="size-4" />}{createPending ? "جاري الحفظ..." : "حفظ مسودة طلب التفعيل"}</Button>
-              </form>
-            ) : <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-3 text-sm font-bold text-emerald-300">تم إنشاء مسودة الطلب. يمكنك الآن رفع إثبات الدفع.</div>}
-            {getActionError(createState) ? <ErrorText text={getActionError(createState)!} /> : null}
+            {activeStep === 2 ? (
+              <StageShell title="المرحلة الثانية: اختار طريقة الدفع" description="اختار وسيلة الدفع والحساب الذي سيحول عليه العميل." icon={<CreditCard size={16} />}>
+                {paymentMethods.length === 0 ? <AlertBox tone="warning" title="لا توجد وسائل دفع مفعلة" body="اطلب من الأدمن تفعيل InstaPay أو Vodafone Cash من Payment Settings." /> : (
+                  <div className="grid gap-3">
+                    {paymentMethods.map((method) => <PaymentMethodCard key={method.id} method={method} selected={selectedMethodId === method.id} selectedAccountId={selectedAccountId} disabled={Boolean(draftState || requestLocked)} onSelectMethod={() => { setSelectedMethodId(method.id); setSelectedAccountId(null); }} onSelectAccount={setSelectedAccountId} />)}
+                  </div>
+                )}
+                <StageActions>
+                  <Button type="button" variant="ghost" onClick={() => goToStep(1)}>السابق</Button>
+                  <Button type="button" variant="luxury" disabled={!hasPaymentChoice && !draftState} onClick={() => goToStep(3)}>التالي: تأكيد الطلب</Button>
+                </StageActions>
+              </StageShell>
+            ) : null}
+
+            {activeStep === 3 ? (
+              <StageShell title="المرحلة الثالثة: تأكيد البيانات" description="راجع الباقة والحساب، ثم احفظ مسودة طلب التفعيل." icon={<Info size={16} />}>
+                <div className="grid gap-3 rounded-xl border border-white/[0.07] bg-black/10 p-3">
+                  <SummaryRow label="الباقة" value={selectedPlan?.name ?? "لم يتم الاختيار"} muted={!selectedPlan} />
+                  <SummaryRow label="السعر" value={selectedPlan ? `${selectedPlan.priceAmount.toLocaleString()} ${selectedPlan.currency}` : "لم يتم الاختيار"} muted={!selectedPlan} />
+                  <SummaryRow label="وسيلة الدفع" value={selectedMethod ? (selectedMethod.label ?? getPaymentMethodLabel(selectedMethod.paymentMethod)) : "لم يتم الاختيار"} muted={!selectedMethod} />
+                  <SummaryRow label="الحساب" value={selectedAccount ? (selectedAccount.label ?? selectedAccount.accountName) : "لم يتم الاختيار"} muted={!selectedAccount} />
+                </div>
+                <input value={reference} onChange={(e) => setReference(e.target.value)} disabled={Boolean(draftState || requestLocked)} placeholder="رقم المرجع أو Transaction ID — اختياري" className="h-11 w-full rounded-xl border border-white/10 bg-white/5 px-3 text-sm text-white outline-none placeholder:text-white/25" dir="ltr" />
+                {!draftState ? (
+                  <form action={createAction}>
+                    <input type="hidden" name="planId" value={selectedPlanId ?? ""} />
+                    <input type="hidden" name="method" value={selectedMethod?.paymentMethod ?? ""} />
+                    <input type="hidden" name="accountId" value={selectedAccountId ?? ""} />
+                    <input type="hidden" name="reference" value={reference} />
+                    <Button type="submit" variant="luxury" disabled={!canCreateDraft || createPending}>{createPending ? <Loader2 className="size-4 animate-spin" /> : <CheckCircle2 className="size-4" />}{createPending ? "جاري الحفظ..." : "حفظ المسودة والمتابعة"}</Button>
+                  </form>
+                ) : <AlertBox tone="success" title="تم إنشاء المسودة" body="الطلب محفوظ. المرحلة التالية هي رفع إثبات الدفع." />}
+                {getActionError(createState) ? <ErrorText text={getActionError(createState)!} /> : null}
+                <StageActions>
+                  <Button type="button" variant="ghost" onClick={() => goToStep(2)}>السابق</Button>
+                  <Button type="button" variant="luxury" disabled={!draftState} onClick={() => goToStep(4)}>التالي: رفع الإثبات</Button>
+                </StageActions>
+              </StageShell>
+            ) : null}
+
+            {activeStep === 4 ? (
+              <StageShell title="المرحلة الرابعة: رفع إثبات الدفع" description="ارفع صورة التحويل فقط، ويمكنك استبدالها أو حذفها قبل الإرسال." icon={<FileImage size={16} />}>
+                {proofPreview ? <div className="overflow-hidden rounded-xl border border-white/[0.08] bg-black/25"><img src={proofPreview} alt="إثبات الدفع" className="max-h-72 w-full object-contain" /></div> : <div className="rounded-xl border border-dashed border-white/10 bg-black/10 p-6 text-center text-sm font-bold text-white/40">لم يتم اختيار صورة بعد</div>}
+                <form action={uploadAction} className="space-y-3">
+                  <input type="hidden" name="draftId" value={draftState ?? ""} />
+                  <input id="proof-input" name="proof" type="file" accept="image/jpeg,image/png,image/webp" onChange={handleFileSelect} className="hidden" />
+                  <label htmlFor="proof-input" className="inline-flex min-h-10 cursor-pointer items-center justify-center gap-2 rounded-xl border border-white/10 px-4 text-sm font-black text-white/70 hover:bg-white/5"><Upload className="size-4" /> {proofPreview ? "استبدال الصورة" : "اختيار صورة الإثبات"}</label>
+                  {proofFile ? <Button type="submit" variant="secondary" disabled={!canUploadProof || uploadPending}>{uploadPending ? <Loader2 className="size-4 animate-spin" /> : <Upload className="size-4" />}{uploadPending ? "جاري الرفع..." : "رفع الصورة"}</Button> : null}
+                </form>
+                {draftState && proofUploaded ? <form action={removeAction}><input type="hidden" name="draftId" value={draftState} /><Button type="submit" variant="ghost" disabled={removePending} style={{ color: "#f87171" }}>{removePending ? <Loader2 className="size-4 animate-spin" /> : <FileX className="size-4" />}حذف الصورة</Button></form> : null}
+                {proofPreview && !proofUploaded ? <Button type="button" variant="ghost" onClick={() => { setProofFile(null); setProofPreview(null); setProofUploaded(false); }} style={{ color: "#f87171" }}><X className="size-4" /> حذف الصورة المختارة</Button> : null}
+                {fileError ? <ErrorText text={fileError} /> : null}
+                {getActionError(uploadState) ? <ErrorText text={getActionError(uploadState)!} /> : null}
+                {getActionError(removeState) ? <ErrorText text={getActionError(removeState)!} /> : null}
+                <StageActions>
+                  <Button type="button" variant="ghost" onClick={() => goToStep(3)}>السابق</Button>
+                  <Button type="button" variant="luxury" disabled={!uploadSucceeded} onClick={() => goToStep(5)}>التالي: الإرسال</Button>
+                </StageActions>
+              </StageShell>
+            ) : null}
+
+            {activeStep === 5 ? (
+              <StageShell title="المرحلة الخامسة: إرسال الطلب والمتابعة" description="راجع الملخص النهائي، ثم أرسل الطلب للأدمن للمراجعة." icon={<CheckCircle2 size={16} />}>
+                {requestLocked && paymentRequest ? <RequestStatusCard request={paymentRequest} logs={logs} /> : null}
+                {!requestLocked ? (
+                  <div className="grid gap-3 rounded-xl border border-white/[0.07] bg-black/10 p-3">
+                    <SummaryRow label="الباقة" value={selectedPlan?.name ?? "محفوظة في الطلب"} />
+                    <SummaryRow label="السعر" value={selectedPlan ? `${selectedPlan.priceAmount.toLocaleString()} ${selectedPlan.currency}` : "محفوظ في الطلب"} />
+                    <SummaryRow label="وسيلة الدفع" value={selectedMethod ? (selectedMethod.label ?? getPaymentMethodLabel(selectedMethod.paymentMethod)) : paymentRequest?.method ? getPaymentMethodLabel(paymentRequest.method) : "محفوظة في الطلب"} />
+                    <SummaryRow label="إثبات الدفع" value={uploadSucceeded ? "تم الرفع" : "لم يتم الرفع"} muted={!uploadSucceeded} />
+                  </div>
+                ) : null}
+                {!requestLocked ? (
+                  <div className="flex flex-wrap gap-2">
+                    <form action={submitAction}><input type="hidden" name="draftId" value={draftState ?? ""} /><Button type="submit" variant="luxury" disabled={!canSubmit || submitPending}>{submitPending ? <Loader2 className="size-4 animate-spin" /> : <CheckCircle2 className="size-4" />}{submitPending ? "جاري الإرسال..." : "إرسال طلب التفعيل"}</Button></form>
+                    {draftState ? <form action={cancelAction}><input type="hidden" name="draftId" value={draftState} /><Button type="submit" variant="ghost" disabled={cancelPending} style={{ color: "#f87171" }}>{cancelPending ? <Loader2 className="size-4 animate-spin" /> : <X className="size-4" />}إلغاء المسودة</Button></form> : null}
+                  </div>
+                ) : null}
+                {isActionSuccess(submitState) ? <AlertBox tone="success" title="تم إرسال الطلب" body="الطلب قيد مراجعة الإدارة. سيتم تحديث الحالة هنا تلقائياً بعد إعادة تحميل الصفحة." /> : null}
+                {getActionError(submitState) ? <ErrorText text={getActionError(submitState)!} /> : null}
+                {getActionError(cancelState) ? <ErrorText text={getActionError(cancelState)!} /> : null}
+                <StageActions>
+                  <Button type="button" variant="ghost" disabled={requestLocked} onClick={() => goToStep(4)}>السابق</Button>
+                </StageActions>
+              </StageShell>
+            ) : null}
           </div>
-        </SectionCard>
-      ) : null}
-
-      {subStatus !== "ACTIVE" ? (
-        <SectionCard title="إثبات الدفع" description="ارفع صورة التحويل. يمكنك المعاينة والاستبدال والحذف قبل الإرسال." icon={<FileImage size={16} />}>
-          <div className="space-y-3">
-            {proofPreview ? <div className="overflow-hidden rounded-xl border border-white/[0.08] bg-black/25"><img src={proofPreview} alt="إثبات الدفع" className="max-h-72 w-full object-contain" /></div> : null}
-            <form action={uploadAction} className="space-y-3">
-              <input type="hidden" name="draftId" value={draftState ?? ""} />
-              <input id="proof-input" name="proof" type="file" accept="image/jpeg,image/png,image/webp" onChange={handleFileSelect} className="hidden" />
-              <label htmlFor="proof-input" className="inline-flex min-h-10 cursor-pointer items-center justify-center gap-2 rounded-xl border border-white/10 px-4 text-sm font-black text-white/70 hover:bg-white/5"><Upload className="size-4" /> {proofPreview ? "استبدال الصورة" : "اختيار صورة الإثبات"}</label>
-              {proofFile ? <Button type="submit" variant="secondary" disabled={!canUploadProof || uploadPending}>{uploadPending ? <Loader2 className="size-4 animate-spin" /> : <Upload className="size-4" />}{uploadPending ? "جاري الرفع..." : "رفع الصورة إلى الخادم"}</Button> : null}
-            </form>
-            {draftState && proofUploaded ? <form action={removeAction}><input type="hidden" name="draftId" value={draftState} /><Button type="submit" variant="ghost" disabled={removePending} style={{ color: "#f87171" }}>{removePending ? <Loader2 className="size-4 animate-spin" /> : <FileX className="size-4" />}حذف الصورة</Button></form> : null}
-            {proofPreview && !proofUploaded ? <Button type="button" variant="ghost" onClick={() => { setProofFile(null); setProofPreview(null); setProofUploaded(false); }} style={{ color: "#f87171" }}><X className="size-4" /> حذف الصورة</Button> : null}
-            {fileError ? <ErrorText text={fileError} /> : null}
-            {getActionError(uploadState) ? <ErrorText text={getActionError(uploadState)!} /> : null}
-            {getActionError(removeState) ? <ErrorText text={getActionError(removeState)!} /> : null}
-          </div>
-        </SectionCard>
-      ) : null}
-
-      {subStatus !== "ACTIVE" && !activeRequestLocked ? (
-        <SectionCard title="ملخص الطلب والإرسال" description="بعد الإرسال لن يستطيع العميل تعديل الطلب إلا إذا طلب الأدمن إعادة رفع الإثبات." icon={<CheckCircle2 size={16} />}>
-          <div className="mb-4 grid gap-2 rounded-xl border border-white/[0.07] bg-black/10 p-3">
-            <SummaryRow label="الباقة المختارة" value={selectedPlan?.name ?? "لم يتم الاختيار"} muted={!selectedPlan} />
-            <SummaryRow label="السعر" value={selectedPlan ? `${selectedPlan.priceAmount.toLocaleString()} ${selectedPlan.currency}` : "لم يتم الاختيار"} muted={!selectedPlan} />
-            <SummaryRow label="وسيلة الدفع" value={selectedMethod ? (selectedMethod.label ?? getPaymentMethodLabel(selectedMethod.paymentMethod)) : "لم يتم الاختيار"} muted={!selectedMethod} />
-            <SummaryRow label="حساب الدفع" value={selectedAccount ? (selectedAccount.label ?? selectedAccount.accountName) : "لم يتم الاختيار"} muted={!selectedAccount} />
-            <SummaryRow label="إثبات الدفع" value={uploadSucceeded ? "تم الرفع" : "لم يتم الرفع"} muted={!uploadSucceeded} />
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <form action={submitAction}><input type="hidden" name="draftId" value={draftState ?? ""} /><Button type="submit" variant="luxury" disabled={!canSubmit || submitPending}>{submitPending ? <Loader2 className="size-4 animate-spin" /> : <CheckCircle2 className="size-4" />}{submitPending ? "جاري الإرسال..." : "إرسال طلب التفعيل"}</Button></form>
-            {draftState ? <form action={cancelAction}><input type="hidden" name="draftId" value={draftState} /><Button type="submit" variant="ghost" disabled={cancelPending} style={{ color: "#f87171" }}>{cancelPending ? <Loader2 className="size-4 animate-spin" /> : <X className="size-4" />}إلغاء المسودة</Button></form> : null}
-          </div>
-          {getActionError(submitState) ? <ErrorText text={getActionError(submitState)!} /> : null}
-          {getActionError(cancelState) ? <ErrorText text={getActionError(cancelState)!} /> : null}
-        </SectionCard>
+        </div>
       ) : null}
 
       <SectionCard title="ماذا يحدث بعد الدفع؟" icon={<Info size={16} />}><AfterPaymentSteps /></SectionCard>
@@ -441,12 +512,28 @@ export function BillingClient({ session, plans, paymentMethods, paymentRequest, 
   );
 }
 
-function RequestStatusCard({ request, logs }: { request: PaymentRequestData; logs: LogData[] }) {
-  return <SectionCard title="حالة طلب التفعيل الحالي" icon={<Clock size={16} />}><div className="space-y-4"><div className="flex flex-wrap items-center gap-3"><Badge label={REQUEST_STATUS_INFO[request.status]?.label ?? request.status} color={REQUEST_STATUS_INFO[request.status]?.color ?? "#f3cf73"} bg={REQUEST_STATUS_INFO[request.status]?.bg ?? "rgba(243,207,115,.1)"} />{request.submittedAt ? <span className="text-xs font-bold text-white/38">تم الإرسال: {formatDate(request.submittedAt)}</span> : null}</div>{request.status === "REJECTED" ? <div className="rounded-xl border border-red-500/20 bg-red-500/10 p-3 text-sm font-bold text-red-300">سبب الرفض: {request.rejectionReason ?? "لم يتم تحديد سبب الرفض"}</div> : null}{logs.length > 0 ? <Timeline logs={logs} /> : null}</div></SectionCard>;
+function WizardProgress({ steps, activeStep, onSelect }: { steps: WizardStepConfig[]; activeStep: WizardStep; onSelect: (step: WizardStep) => void }) {
+  return <div className="grid gap-2">{steps.map((item) => <button key={item.step} type="button" disabled={!item.unlocked} onClick={() => onSelect(item.step)} className={`flex items-start gap-3 rounded-xl border p-3 text-right transition ${activeStep === item.step ? "border-amber-400/50 bg-amber-500/10" : item.done ? "border-emerald-500/20 bg-emerald-500/8" : "border-white/[0.07] bg-black/10"} ${!item.unlocked ? "cursor-not-allowed opacity-45" : "hover:border-white/20"}`}><span className={`grid size-7 shrink-0 place-items-center rounded-full text-xs font-black ${item.done ? "bg-emerald-400 text-black" : activeStep === item.step ? "bg-[#f3cf73] text-black" : "bg-white/8 text-white/55"}`}>{item.done ? <Check size={14} /> : item.step}</span><span className="min-w-0"><strong className="block text-sm text-[#fff7e8]">{item.title}</strong><small className="mt-1 block text-xs leading-5 text-white/42">{item.hint}</small></span></button>)}</div>;
 }
 
-function StepCard({ index, title, description, done }: { index: number; title: string; description: string; done: boolean }) {
-  return <div className={`rounded-xl border p-3 ${done ? "border-emerald-500/20 bg-emerald-500/8" : "border-white/[0.07] bg-white/[0.02]"}`}><div className="mb-2 flex items-center justify-between gap-2"><span className="grid size-7 place-items-center rounded-full bg-white/8 text-xs font-black text-white/75">{index}</span>{done ? <CheckCircle2 className="size-4 text-emerald-400" /> : <Clock className="size-4 text-white/25" />}</div><strong className="block text-sm text-[#fff7e8]">{title}</strong><span className="mt-1 block text-xs leading-5 text-white/42">{description}</span></div>;
+function StageShell({ title, description, icon, children }: { title: string; description: string; icon: ReactNode; children: ReactNode }) {
+  return <SectionCard title={title} description={description} icon={icon}><div className="grid gap-4">{children}</div></SectionCard>;
+}
+
+function StageActions({ children }: { children: ReactNode }) {
+  return <div className="flex flex-wrap items-center gap-2 border-t border-white/[0.06] pt-4">{children}</div>;
+}
+
+function ActivationSummary({ selectedPlan, selectedMethod, selectedAccount, uploadSucceeded, submitted }: { selectedPlan: PlanData | undefined; selectedMethod: PaymentMethodData | undefined; selectedAccount: PaymentMethodData["accounts"][number] | null; uploadSucceeded: boolean; submitted: boolean }) {
+  return <div className="grid gap-2 rounded-2xl border border-white/[0.08] bg-white/[0.025] p-4 md:grid-cols-4"><SummaryPill label="الباقة" value={selectedPlan?.name ?? "لم تختار"} done={Boolean(selectedPlan)} /><SummaryPill label="الدفع" value={selectedMethod ? (selectedMethod.label ?? getPaymentMethodLabel(selectedMethod.paymentMethod)) : "لم تختار"} done={Boolean(selectedMethod)} /><SummaryPill label="الحساب" value={selectedAccount?.label ?? selectedAccount?.accountName ?? "لم تختار"} done={Boolean(selectedAccount)} /><SummaryPill label="الحالة" value={submitted ? "تم الإرسال" : uploadSucceeded ? "جاهز للإرسال" : "قيد التجهيز"} done={submitted || uploadSucceeded} /></div>;
+}
+
+function SummaryPill({ label, value, done }: { label: string; value: string; done: boolean }) {
+  return <div className="rounded-xl border border-white/[0.06] bg-black/10 p-3"><span className="block text-[0.68rem] font-black text-white/30">{label}</span><strong className={done ? "mt-1 block truncate text-sm text-[#fff7e8]" : "mt-1 block truncate text-sm text-white/35"}>{value}</strong></div>;
+}
+
+function RequestStatusCard({ request, logs }: { request: PaymentRequestData; logs: LogData[] }) {
+  return <SectionCard title="حالة طلب التفعيل الحالي" icon={<Clock size={16} />}><div className="space-y-4"><div className="flex flex-wrap items-center gap-3"><Badge label={REQUEST_STATUS_INFO[request.status]?.label ?? request.status} color={REQUEST_STATUS_INFO[request.status]?.color ?? "#f3cf73"} bg={REQUEST_STATUS_INFO[request.status]?.bg ?? "rgba(243,207,115,.1)"} />{request.submittedAt ? <span className="text-xs font-bold text-white/38">تم الإرسال: {formatDate(request.submittedAt)}</span> : null}</div>{request.status === "REJECTED" ? <div className="rounded-xl border border-red-500/20 bg-red-500/10 p-3 text-sm font-bold text-red-300">سبب الرفض: {request.rejectionReason ?? "لم يتم تحديد سبب الرفض"}</div> : null}{logs.length > 0 ? <Timeline logs={logs} /> : null}</div></SectionCard>;
 }
 
 function PlanCard({ plan, selected, disabled, onSelect }: { plan: PlanData; selected: boolean; disabled: boolean; onSelect: () => void }) {
