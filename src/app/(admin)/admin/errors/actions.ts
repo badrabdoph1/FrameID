@@ -2,6 +2,7 @@
 
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { requireSuperAdminSession } from "@/modules/admin/admin-page-guards";
 
 export async function getErrorLogs(params?: {
   category?: string;
@@ -13,27 +14,25 @@ export async function getErrorLogs(params?: {
   from?: string;
   to?: string;
 }) {
+  await requireSuperAdminSession();
+
   const page = params?.page ?? 1;
   const pageSize = Math.min(params?.pageSize ?? 50, 100);
   const skip = (page - 1) * pageSize;
 
   const where: Record<string, unknown> = {};
 
-  if (params?.category) {
-    where.category = params.category;
-  }
-  if (params?.level) {
-    where.level = params.level;
-  }
-  if (params?.code) {
-    where.code = { contains: params.code };
-  }
+  if (params?.category) where.category = params.category;
+  if (params?.level) where.level = params.level;
+  if (params?.code) where.code = { contains: params.code };
   if (params?.search) {
     where.OR = [
-      { message: { contains: params.search } },
-      { code: { contains: params.search } },
-      { requestId: { contains: params.search } },
-      { userId: { contains: params.search } },
+      { message: { contains: params.search, mode: "insensitive" } },
+      { code: { contains: params.search, mode: "insensitive" } },
+      { requestId: { contains: params.search, mode: "insensitive" } },
+      { correlationId: { contains: params.search, mode: "insensitive" } },
+      { route: { contains: params.search, mode: "insensitive" } },
+      { userId: { contains: params.search, mode: "insensitive" } },
     ];
   }
   if (params?.from || params?.to) {
@@ -54,11 +53,11 @@ export async function getErrorLogs(params?: {
   ]);
 
   return {
-    entries: entries.map((e) => ({
-      ...e,
-      createdAt: e.createdAt.toISOString(),
-      resolvedAt: e.resolvedAt?.toISOString() ?? null,
-      metadata: e.metadata as Record<string, unknown> | null,
+    entries: entries.map((entry) => ({
+      ...entry,
+      createdAt: entry.createdAt.toISOString(),
+      resolvedAt: entry.resolvedAt?.toISOString() ?? null,
+      metadata: entry.metadata as Record<string, unknown> | null,
     })),
     total,
     page,
@@ -67,18 +66,23 @@ export async function getErrorLogs(params?: {
 }
 
 export async function resolveError(id: string, note?: string) {
+  const session = await requireSuperAdminSession();
+
   await prisma.errorLog.update({
     where: { id },
     data: {
       resolved: true,
       resolvedAt: new Date(),
-      resolutionNote: note ?? null,
+      resolvedBy: session.user.id,
+      resolutionNote: note ?? "تم الحل من مركز الأخطاء",
     },
   });
 }
 
 export async function getErrorStats() {
-  const [total, unresolved, byCategory] = await Promise.all([
+  await requireSuperAdminSession();
+
+  const [total, unresolved, byCategory, byLevel] = await Promise.all([
     prisma.errorLog.count(),
     prisma.errorLog.count({ where: { resolved: false } }),
     prisma.errorLog.groupBy({
@@ -86,14 +90,23 @@ export async function getErrorStats() {
       _count: true,
       orderBy: { _count: { category: "desc" } },
     }),
+    prisma.errorLog.groupBy({
+      by: ["level"],
+      _count: true,
+      orderBy: { _count: { level: "desc" } },
+    }),
   ]);
 
   return {
     total,
     unresolved,
-    byCategory: byCategory.map((c) => ({
-      category: c.category,
-      count: c._count,
+    byCategory: byCategory.map((category) => ({
+      category: category.category,
+      count: category._count,
+    })),
+    byLevel: byLevel.map((level) => ({
+      level: level.level,
+      count: level._count,
     })),
   };
 }
