@@ -6,6 +6,8 @@ import { prisma } from "@/lib/prisma";
 import { getPlatformBaseUrl } from "@/lib/platform-url";
 import { createPrismaPublicSiteRepository } from "@/modules/public-sites/prisma-public-site-repository";
 import { createPublicSiteViewModel } from "@/modules/public-sites/public-site-view-model";
+import { checkSiteAccessBySlug } from "@/modules/subscription/subscription-access";
+import { SiteExpiredPage } from "@/components/site-expired-page";
 
 type Props = {
   params: Promise<{ slug: string }>;
@@ -44,6 +46,12 @@ export default async function PublicSitePage({ params }: Props) {
 
   if (!site) {
     notFound();
+  }
+
+  const { result: access } = await checkSiteAccessBySlug(slug);
+
+  if (!access.allowed) {
+    return <SiteExpiredPage />;
   }
 
   const ThemeSiteComponent = getThemeSiteComponent(site.themeCode);

@@ -33,9 +33,7 @@ export default async function BillingPage({
 
   if (!session) redirect("/login");
 
-  if (!session.subscription) {
-    redirect("/dashboard/billing?error=no-subscription");
-  }
+  // Allow null subscription — the billing page handles it by showing the activation flow
 
   const [plans, paymentRequest, paymentMethods] = await Promise.all([
     prisma.plan.findMany({

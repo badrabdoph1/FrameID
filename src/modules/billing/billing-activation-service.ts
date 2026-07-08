@@ -1,5 +1,28 @@
 import { PaymentError, ValidationError } from "@/lib/errors";
 
+type PaymentStatus =
+  | "DRAFT"
+  | "SUBMITTED"
+  | "UNDER_REVIEW"
+  | "APPROVED"
+  | "REJECTED"
+  | "CANCELLED"
+  | "PENDING"
+  | "REFUNDED"
+  | "EXPIRED";
+
+const VALID_TRANSITIONS: Record<PaymentStatus, PaymentStatus[]> = {
+  DRAFT: ["SUBMITTED"],
+  SUBMITTED: ["UNDER_REVIEW", "CANCELLED"],
+  UNDER_REVIEW: ["APPROVED", "REJECTED", "DRAFT"],
+  APPROVED: ["REFUNDED"],
+  REJECTED: [],
+  CANCELLED: [],
+  PENDING: ["SUBMITTED", "CANCELLED"],
+  REFUNDED: [],
+  EXPIRED: [],
+};
+
 export type PaymentMethod = "INSTAPAY" | "VODAFONE_CASH" | "STRIPE" | "PAYPAL";
 
 export type BillingActivationRepository = {
@@ -59,7 +82,8 @@ export type BillingActivationRepository = {
     paymentRequestId: string,
     reviewerId: string,
     reason: string,
-    reviewedAt?: Date
+    reviewedAt?: Date,
+    adminNote?: string
   ): Promise<{ tenantId: string }>;
 
   requestReupload(
@@ -152,6 +176,32 @@ export type BillingActivationRepository = {
   } | null>;
 
   daysRemaining(trialEndsAt: Date): number;
+
+  getPaymentRequestById(
+    id: string
+  ): Promise<{
+    id: string;
+    status: string;
+    tenantId: string;
+    subscriptionId: string;
+    method: string;
+    amount: number;
+    planId: string | null;
+    reference: string | null;
+    proofAssetId: string | null;
+    submittedAt: Date | null;
+    adminNote: string | null;
+    rejectionReason: string | null;
+    tenant: { id: string; status: string };
+    plan: { id: string; name: string } | null;
+    paymentAccount: { id: string; accountName: string } | null;
+    proofAsset: { id: string; url: string } | null;
+  }>;
+
+  cancelPaymentRequest(
+    id: string,
+    cancelledAt: Date
+  ): Promise<{ tenantId: string; subscriptionId: string }>;
 };
 
 export function createBillingActivationService({
@@ -186,7 +236,12 @@ export function createBillingActivationService({
         reference?: string;
       }
     ) {
+      const current = await repository.getPaymentRequestById(id);
+      if (current.status !== "DRAFT") {
+        return { success: false, error: "الحالة الحالية لا تسمح بالتعديل" };
+      }
       await repository.updatePaymentRequest(id, data);
+      return { success: true };
     },
 
     async uploadPaymentProof(paymentRequestId: string, proofAssetId: string) {
@@ -213,8 +268,8 @@ export function createBillingActivationService({
       );
 
       await repository.recordAudit(
-        result.tenantId,
         undefined,
+        result.tenantId,
         "PAYMENT_REQUEST_SUBMITTED",
         "PaymentRequest",
         paymentRequestId
@@ -276,6 +331,7 @@ export function createBillingActivationService({
       paymentRequestId: string;
       reviewerId: string;
       reason: string;
+      adminNote?: string;
     }) {
       if (!input.reason?.trim()) {
         throw new ValidationError("FID-VAL-002", "سبب الرفض مطلوب");
@@ -286,7 +342,8 @@ export function createBillingActivationService({
         input.paymentRequestId,
         input.reviewerId,
         input.reason,
-        reviewedAt
+        reviewedAt,
+        input.adminNote
       );
 
       await repository.addLog(
@@ -406,7 +463,7 @@ export function createBillingActivationService({
 
       return {
         paymentRequestId: draft.id,
-        status: "DRAFT" as const
+        status: "SUBMITTED" as const
       };
     },
 
@@ -426,8 +483,42 @@ export function createBillingActivationService({
       await this.rejectPayment({
         paymentRequestId: input.paymentRequestId,
         reviewerId: input.reviewerId,
-        reason: input.adminNote || "تم الرفض من لوحة الإدارة العليا"
+        reason: input.adminNote || "تم الرفض من لوحة الإدارة العليا",
+        adminNote: input.adminNote
       });
+    },
+
+    async cancelPaymentRequest(paymentRequestId: string) {
+      const current = await repository.getPaymentRequestById(paymentRequestId);
+      const allowed = VALID_TRANSITIONS[current.status as PaymentStatus] ?? [];
+
+      if (!allowed.includes("CANCELLED")) {
+        return { success: false, error: "لا يمكن إلغاء الطلب في الحالة الحالية" };
+      }
+
+      const cancelledAt = now();
+      const result = await repository.cancelPaymentRequest(
+        paymentRequestId,
+        cancelledAt
+      );
+
+      await repository.addLog(
+        paymentRequestId,
+        "CANCELLED",
+        undefined,
+        undefined,
+        "تم إلغاء طلب الدفع"
+      );
+
+      await repository.recordAudit(
+        undefined,
+        result.tenantId,
+        "PAYMENT_REQUEST_CANCELLED",
+        "PaymentRequest",
+        paymentRequestId
+      );
+
+      return { success: true };
     }
   };
 }

@@ -37,7 +37,7 @@ export function createPrismaAdminPaymentReviewRepository(
     async listPending(): Promise<PendingPaymentReviewItem[]> {
       const payments = (await prisma.paymentRequest.findMany({
         where: {
-          status: "PENDING",
+          status: { in: ["SUBMITTED", "PENDING", "UNDER_REVIEW"] },
           deletedAt: null
         },
         orderBy: {

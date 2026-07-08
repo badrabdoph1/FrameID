@@ -101,6 +101,53 @@ export function createPrismaBillingActivationRepository(
       return result;
     },
 
+    async getPaymentRequestById(id) {
+      const result = (await prisma.paymentRequest.findFirst({
+        where: { id, deletedAt: null },
+        select: {
+          id: true,
+          status: true,
+          tenantId: true,
+          subscriptionId: true,
+          method: true,
+          amount: true,
+          planId: true,
+          reference: true,
+          proofAssetId: true,
+          submittedAt: true,
+          adminNote: true,
+          rejectionReason: true,
+          tenant: { select: { id: true, status: true } },
+          plan: { select: { id: true, name: true } },
+          paymentAccount: { select: { id: true, accountName: true } },
+          proofAsset: { select: { id: true, url: true } }
+        }
+      })) as {
+        id: string;
+        status: string;
+        tenantId: string;
+        subscriptionId: string;
+        method: string;
+        amount: number;
+        planId: string | null;
+        reference: string | null;
+        proofAssetId: string | null;
+        submittedAt: Date | null;
+        adminNote: string | null;
+        rejectionReason: string | null;
+        tenant: { id: string; status: string };
+        plan: { id: string; name: string } | null;
+        paymentAccount: { id: string; accountName: string } | null;
+        proofAsset: { id: string; url: string } | null;
+      } | null;
+
+      if (!result) {
+        throw new Error("Payment request not found");
+      }
+
+      return result;
+    },
+
     async getCustomerActivePaymentRequest(tenantId) {
       const result = (await prisma.paymentRequest.findFirst({
         where: {
@@ -156,13 +203,14 @@ export function createPrismaBillingActivationRepository(
       return result;
     },
 
-    async rejectPayment(paymentRequestId, reviewerId, reason, reviewedAt) {
+    async rejectPayment(paymentRequestId, reviewerId, reason, reviewedAt, adminNote) {
       const result = (await prisma.paymentRequest.update({
         where: { id: paymentRequestId },
         data: {
           status: "REJECTED",
           reviewedById: reviewerId,
           rejectionReason: reason,
+          adminNote: adminNote ?? null,
           reviewedAt: reviewedAt ?? new Date()
         },
         select: {
@@ -217,12 +265,46 @@ export function createPrismaBillingActivationRepository(
     },
 
     async cancelSubscription(subscriptionId) {
-      await prisma.subscription.update({
+      const sub = (await prisma.subscription.update({
         where: { id: subscriptionId },
         data: {
-          status: "CANCELLED"
+          status: "CANCELLED",
+          endsAt: new Date()
+        },
+        select: {
+          tenantId: true
+        }
+      })) as { tenantId: string };
+
+      await prisma.tenant.update({
+        where: { id: sub.tenantId },
+        data: {
+          status: "TRIAL_EXPIRED"
         }
       });
+
+      await prisma.site.updateMany({
+        where: { tenantId: sub.tenantId, deletedAt: null },
+        data: {
+          isActive: false
+        }
+      });
+    },
+
+    async cancelPaymentRequest(id, cancelledAt) {
+      const result = (await prisma.paymentRequest.update({
+        where: { id },
+        data: {
+          status: "CANCELLED",
+          cancelledAt
+        },
+        select: {
+          tenantId: true,
+          subscriptionId: true
+        }
+      })) as { tenantId: string; subscriptionId: string };
+
+      return result;
     },
 
     async extendTrial(tenantId, days) {

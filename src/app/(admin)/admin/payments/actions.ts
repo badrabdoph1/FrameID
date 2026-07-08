@@ -18,14 +18,14 @@ function getService() {
 export async function approvePaymentAction(formData: FormData) {
   const session = await requireSuperAdminSession();
 
-  const paymentRequestId = formData.get("paymentRequestId");
-  const adminNote = formData.get("adminNote");
-
-  if (typeof paymentRequestId !== "string" || !paymentRequestId) {
-    redirect("/admin/payments?error=invalid-payment");
-  }
-
   try {
+    const paymentRequestId = formData.get("paymentRequestId");
+    const adminNote = formData.get("adminNote");
+
+    if (typeof paymentRequestId !== "string" || !paymentRequestId) {
+      redirect("/admin/payments?error=invalid-payment");
+    }
+
     const service = getService();
 
     await service.approvePayment({
@@ -39,7 +39,7 @@ export async function approvePaymentAction(formData: FormData) {
   } catch (error) {
     const { userError } = await processError(error, {
       userId: session.user.id,
-      metadata: { action: "approvePayment", paymentRequestId }
+      metadata: { action: "approvePayment", paymentRequestId: formData.get("paymentRequestId") }
     });
     redirect(`/admin/payments?error=${encodeURIComponent(userError.message)}`);
   }
@@ -52,18 +52,18 @@ export async function approvePaymentAction(formData: FormData) {
 export async function rejectPaymentAction(formData: FormData) {
   const session = await requireSuperAdminSession();
 
-  const paymentRequestId = formData.get("paymentRequestId");
-  const adminNote = formData.get("adminNote");
-
-  if (typeof paymentRequestId !== "string" || !paymentRequestId) {
-    redirect("/admin/payments?error=invalid-payment");
-  }
-
-  if (typeof adminNote !== "string" || !adminNote.trim()) {
-    redirect("/admin/payments?error=missing-reason");
-  }
-
   try {
+    const paymentRequestId = formData.get("paymentRequestId");
+    const adminNote = formData.get("adminNote");
+
+    if (typeof paymentRequestId !== "string" || !paymentRequestId) {
+      redirect("/admin/payments?error=invalid-payment");
+    }
+
+    if (typeof adminNote !== "string" || !adminNote.trim()) {
+      redirect("/admin/payments?error=missing-reason");
+    }
+
     const service = getService();
 
     await service.rejectPayment({
@@ -74,7 +74,7 @@ export async function rejectPaymentAction(formData: FormData) {
   } catch (error) {
     const { userError } = await processError(error, {
       userId: session.user.id,
-      metadata: { action: "rejectPayment", paymentRequestId }
+      metadata: { action: "rejectPayment", paymentRequestId: formData.get("paymentRequestId") }
     });
     redirect(`/admin/payments?error=${encodeURIComponent(userError.message)}`);
   }
@@ -87,18 +87,18 @@ export async function rejectPaymentAction(formData: FormData) {
 export async function requestReuploadAction(formData: FormData) {
   const session = await requireSuperAdminSession();
 
-  const paymentRequestId = formData.get("paymentRequestId");
-  const note = formData.get("note");
-
-  if (typeof paymentRequestId !== "string" || !paymentRequestId) {
-    redirect("/admin/payments?error=invalid-payment");
-  }
-
-  if (typeof note !== "string" || !note.trim()) {
-    redirect("/admin/payments?error=missing-note");
-  }
-
   try {
+    const paymentRequestId = formData.get("paymentRequestId");
+    const note = formData.get("note");
+
+    if (typeof paymentRequestId !== "string" || !paymentRequestId) {
+      redirect("/admin/payments?error=invalid-payment");
+    }
+
+    if (typeof note !== "string" || !note.trim()) {
+      redirect("/admin/payments?error=missing-note");
+    }
+
     const service = getService();
 
     await service.requestReupload({
@@ -109,7 +109,7 @@ export async function requestReuploadAction(formData: FormData) {
   } catch (error) {
     const { userError } = await processError(error, {
       userId: session.user.id,
-      metadata: { action: "requestReupload", paymentRequestId }
+      metadata: { action: "requestReupload", paymentRequestId: formData.get("paymentRequestId") }
     });
     redirect(`/admin/payments?error=${encodeURIComponent(userError.message)}`);
   }
@@ -122,18 +122,18 @@ export async function requestReuploadAction(formData: FormData) {
 export async function addPaymentNoteAction(formData: FormData) {
   const session = await requireSuperAdminSession();
 
-  const paymentRequestId = formData.get("paymentRequestId");
-  const note = formData.get("note");
-
-  if (typeof paymentRequestId !== "string" || !paymentRequestId) {
-    redirect("/admin/payments?error=invalid-payment");
-  }
-
-  if (typeof note !== "string" || !note.trim()) {
-    redirect("/admin/payments?error=missing-note");
-  }
-
   try {
+    const paymentRequestId = formData.get("paymentRequestId");
+    const note = formData.get("note");
+
+    if (typeof paymentRequestId !== "string" || !paymentRequestId) {
+      redirect("/admin/payments?error=invalid-payment");
+    }
+
+    if (typeof note !== "string" || !note.trim()) {
+      redirect("/admin/payments?error=missing-note");
+    }
+
     const service = getService();
 
     await service.addPaymentNote({
@@ -145,7 +145,7 @@ export async function addPaymentNoteAction(formData: FormData) {
   } catch (error) {
     const { userError } = await processError(error, {
       userId: session.user.id,
-      metadata: { action: "addPaymentNote", paymentRequestId }
+      metadata: { action: "addPaymentNote", paymentRequestId: formData.get("paymentRequestId") }
     });
     redirect(`/admin/payments?error=${encodeURIComponent(userError.message)}`);
   }

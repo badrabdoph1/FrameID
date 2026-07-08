@@ -108,7 +108,10 @@ export default async function AdminPaymentsPage({ searchParams }: Props) {
       },
     }),
     prisma.paymentRequest.count({
-      where: { status: "PENDING", deletedAt: null },
+      where: {
+        status: { in: ["SUBMITTED", "PENDING", "UNDER_REVIEW"] },
+        deletedAt: null,
+      },
     }),
     prisma.paymentRequest.count({
       where: {

@@ -180,6 +180,65 @@ export async function deletePaymentAccountAction(formData: FormData) {
   redirect("/admin/settings/payment?success=account-deleted");
 }
 
+export async function movePaymentAccountAction(formData: FormData) {
+  const session = await requireSuperAdminSession();
+  const id = formData.get("accountId");
+  const direction = formData.get("direction");
+
+  if (typeof id !== "string" || !id) {
+    redirect("/admin/settings/payment?error=معرف الحساب مطلوب");
+  }
+
+  if (direction !== "up" && direction !== "down") {
+    redirect("/admin/settings/payment?error=اتجاه غير صالح");
+  }
+
+  try {
+    const current = await prisma.paymentAccount.findUnique({
+      where: { id },
+      select: { id: true, sortOrder: true, paymentSettingsId: true },
+    });
+
+    if (!current) {
+      redirect("/admin/settings/payment?error=الحساب غير موجود");
+    }
+
+    const adjacent = await prisma.paymentAccount.findFirst({
+      where: {
+        paymentSettingsId: current.paymentSettingsId,
+        isActive: true,
+        sortOrder: direction === "up"
+          ? { lt: current.sortOrder }
+          : { gt: current.sortOrder },
+      },
+      orderBy: { sortOrder: direction === "up" ? "desc" : "asc" },
+      select: { id: true, sortOrder: true },
+    });
+
+    if (adjacent) {
+      await prisma.paymentAccount.update({
+        where: { id: current.id },
+        data: { sortOrder: adjacent.sortOrder },
+      });
+      await prisma.paymentAccount.update({
+        where: { id: adjacent.id },
+        data: { sortOrder: current.sortOrder },
+      });
+    }
+  } catch (error) {
+    await processError(error, {
+      userId: session.user.id,
+      metadata: { action: "movePaymentAccount", accountId: id },
+    });
+    redirect(`/admin/settings/payment?error=${encodeURIComponent(
+      error instanceof Error ? error.message : "حدث خطأ",
+    )}`);
+  }
+
+  revalidatePath("/admin/settings/payment");
+  redirect("/admin/settings/payment?success=updated");
+}
+
 export async function uploadPaymentQRCodeAction(formData: FormData) {
   const session = await requireSuperAdminSession();
   const settingsId = formData.get("settingsId");

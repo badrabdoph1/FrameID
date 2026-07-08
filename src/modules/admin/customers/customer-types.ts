@@ -1,6 +1,7 @@
 export type CustomerStatus =
   | "TRIAL"
   | "ACTIVE"
+  | "TRIAL_EXPIRED"
   | "EXPIRED"
   | "SUSPENDED"
   | "ARCHIVED";

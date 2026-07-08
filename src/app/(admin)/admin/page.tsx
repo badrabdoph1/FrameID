@@ -49,7 +49,7 @@ export default async function AdminDashboardPage() {
         },
       }),
       prisma.paymentRequest.findMany({
-        where: { status: "PENDING", deletedAt: null },
+        where: { status: { in: ["SUBMITTED", "PENDING", "UNDER_REVIEW"] }, deletedAt: null },
         orderBy: { createdAt: "desc" },
         take: 5,
         select: {

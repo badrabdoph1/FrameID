@@ -211,6 +211,75 @@ export function DashboardHomeClient({
           );
         }
 
+        if (subscription.isPastDue) {
+          return (
+            <BuilderSectionCard
+              title="الاشتراك"
+              description=""
+              icon={<CreditCard size={16} />}
+              status={badge("متأخر عن السداد", "#f59e0b", "rgba(245, 158, 11, 0.12)")}
+            >
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+                <div>
+                  <p style={{ margin: 0, color: "#fff7e8", fontSize: "0.88rem", fontWeight: 950 }}>
+                    متأخر عن السداد
+                  </p>
+                  <p style={{ margin: "4px 0 0", color: "rgba(245, 234, 214, 0.5)", fontSize: "0.78rem" }}>
+                    يرجى سداد المستحقات لاستعادة الخدمة
+                  </p>
+                </div>
+                {actionBtn("سداد الآن", "linear-gradient(135deg, #f59e0b, #d97706)", "/dashboard/billing")}
+              </div>
+            </BuilderSectionCard>
+          );
+        }
+
+        if (subscription.isCancelled) {
+          return (
+            <BuilderSectionCard
+              title="الاشتراك"
+              description=""
+              icon={<CreditCard size={16} />}
+              status={badge("ملغي", "#ef4444", "rgba(239, 68, 68, 0.12)")}
+            >
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+                <div>
+                  <p style={{ margin: 0, color: "#fff7e8", fontSize: "0.88rem", fontWeight: 950 }}>
+                    تم إلغاء الاشتراك
+                  </p>
+                  <p style={{ margin: "4px 0 0", color: "rgba(245, 234, 214, 0.5)", fontSize: "0.78rem" }}>
+                    يمكنك الاشتراك في باقة جديدة للاستمرار
+                  </p>
+                </div>
+                {actionBtn("اشتراك جديد", "linear-gradient(135deg, #ef4444, #dc2626)", "/dashboard/billing")}
+              </div>
+            </BuilderSectionCard>
+          );
+        }
+
+        if (subscription.isSuspended) {
+          return (
+            <BuilderSectionCard
+              title="الاشتراك"
+              description=""
+              icon={<CreditCard size={16} />}
+              status={badge("موقوف", "#ef4444", "rgba(239, 68, 68, 0.12)")}
+            >
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+                <div>
+                  <p style={{ margin: 0, color: "#fff7e8", fontSize: "0.88rem", fontWeight: 950 }}>
+                    الاشتراك موقوف
+                  </p>
+                  <p style={{ margin: "4px 0 0", color: "rgba(245, 234, 214, 0.5)", fontSize: "0.78rem" }}>
+                    تم إيقاف الخدمة، يرجى التواصل مع الدعم
+                  </p>
+                </div>
+                {actionBtn("تواصل مع الدعم", "linear-gradient(135deg, #ef4444, #dc2626)", "mailto:support@frameid.app")}
+              </div>
+            </BuilderSectionCard>
+          );
+        }
+
         return null;
       })() : null}
 

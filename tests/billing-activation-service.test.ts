@@ -48,6 +48,31 @@ function createRepository(): BillingActivationRepository & {
     async activateSubscription(tenantId, subscriptionId, planId, activatedAt) {
       events.push(`activate:${tenantId}:${subscriptionId}`);
     },
+    async getPaymentRequestById(id) {
+      events.push(`get-by-id:${id}`);
+      return {
+        id,
+        status: "DRAFT",
+        tenantId: "tenant_1",
+        subscriptionId: "subscription_1",
+        method: "INSTAPAY",
+        amount: 120000,
+        planId: null,
+        reference: null,
+        proofAssetId: null,
+        submittedAt: null,
+        adminNote: null,
+        rejectionReason: null,
+        tenant: { id: "tenant_1", status: "TRIAL" },
+        plan: null,
+        paymentAccount: null,
+        proofAsset: null
+      };
+    },
+    async cancelPaymentRequest(id, cancelledAt) {
+      events.push(`cancel-request:${id}:${cancelledAt.toISOString()}`);
+      return { tenantId: "tenant_1", subscriptionId: "subscription_1" };
+    },
     async cancelSubscription(subscriptionId) {
       events.push(`cancel:${subscriptionId}`);
     },
@@ -105,7 +130,7 @@ describe("billing activation service", () => {
       })
     ).resolves.toEqual({
       paymentRequestId: "payment_1",
-      status: "DRAFT"
+      status: "SUBMITTED"
     });
 
     expect(repository.events).toEqual([

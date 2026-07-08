@@ -22,7 +22,7 @@ function getService() {
   });
 }
 
-type ActionResult = { success: true } | { success: false; error: string };
+type ActionResult = { success: true; draftId?: string } | { success: false; error: string };
 
 async function getSessionWithSub() {
   const session = await getCurrentRequestSession();
@@ -40,6 +40,7 @@ export async function createPaymentDraftAction(formData: FormData): Promise<Acti
   const planId = formData.get("planId");
   const method = formData.get("method");
   const accountId = formData.get("accountId");
+  const reference = formData.get("reference");
 
   if (typeof planId !== "string" || !planId) {
     return { success: false, error: "يرجى اختيار الباقة" };
@@ -66,8 +67,12 @@ export async function createPaymentDraftAction(formData: FormData): Promise<Acti
       await service.updateDraftPayment(draft.id, { paymentAccountId: accountId });
     }
 
+    if (typeof reference === "string" && reference.trim()) {
+      await service.updateDraftPayment(draft.id, { reference: reference.trim() });
+    }
+
     revalidatePath("/dashboard/billing");
-    return { success: true };
+    return { success: true, draftId: draft.id };
   } catch (error) {
     const { userError } = await processError(error, {
       userId: session.user.id,

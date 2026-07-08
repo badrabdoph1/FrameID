@@ -7,10 +7,11 @@ import {
   togglePaymentMethodAction,
   addPaymentAccountAction,
   updatePaymentAccountAction,
-  deletePaymentAccountAction,
-  uploadPaymentQRCodeAction,
 } from "@/app/(admin)/admin/settings/payment/actions";
-import { CreditCard, QrCode, Plus, Pencil, Trash2, Banknote, Smartphone, Globe } from "lucide-react";
+import { CreditCard, Plus, Pencil, Banknote, Smartphone, Globe } from "lucide-react";
+import { DeleteAccountButton } from "./delete-account-button";
+import { QRCodeSection } from "./qr-code-section";
+import { MoveAccountButtons } from "./move-account-buttons";
 
 export const dynamic = "force-dynamic";
 
@@ -73,6 +74,8 @@ function ToggleForm({ id, isActive }: { id: string; isActive: boolean }) {
 
 function AccountCard({
   account,
+  isFirst,
+  isLast,
 }: {
   account: {
     id: string;
@@ -87,9 +90,11 @@ function AccountCard({
     notes: string | null;
     isActive: boolean;
   };
+  isFirst: boolean;
+  isLast: boolean;
 }) {
   return (
-    <div className="group rounded-xl border border-white/[0.06] bg-white/[0.02] p-4 transition hover:border-white/[0.1]">
+    <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4 transition hover:border-white/[0.1]">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           {account.label && (
@@ -102,22 +107,15 @@ function AccountCard({
             {account.accountNumber}
           </p>
         </div>
-        <div className="flex shrink-0 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+        <div className="flex shrink-0 items-center gap-1">
+          <MoveAccountButtons accountId={account.id} first={isFirst} last={isLast} />
           <a
             href={`/admin/settings/payment?editAccount=${account.id}`}
             className="flex size-8 items-center justify-center rounded-lg border border-white/10 text-white/40 transition hover:border-white/20 hover:bg-white/5 hover:text-white/70"
           >
             <Pencil size={14} />
           </a>
-          <form action={deletePaymentAccountAction}>
-            <input type="hidden" name="accountId" value={account.id} />
-            <button
-              type="submit"
-              className="flex size-8 items-center justify-center rounded-lg border border-red-500/10 text-red-400/50 transition hover:border-red-500/20 hover:bg-red-500/10 hover:text-red-400"
-            >
-              <Trash2 size={14} />
-            </button>
-          </form>
+          <DeleteAccountButton accountId={account.id} />
         </div>
       </div>
 
@@ -151,6 +149,12 @@ function AccountCard({
       {account.instructions && (
         <p className="mt-2 border-t border-white/[0.04] pt-2 text-xs text-white/40">
           {account.instructions}
+        </p>
+      )}
+
+      {account.notes && (
+        <p className="mt-2 border-t border-white/[0.04] pt-2 text-xs text-white/30 italic leading-relaxed">
+          {account.notes}
         </p>
       )}
     </div>
@@ -262,6 +266,19 @@ function AddAccountForm({ settingsId }: { settingsId: string }) {
             name="instructions"
             rows={2}
             placeholder="أي تعليمات إضافية للعميل عند الدفع..."
+            className="h-20 w-full resize-y rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none transition focus-visible:ring-2 focus-visible:ring-champagne placeholder:text-white/20"
+          />
+        </div>
+
+        <div>
+          <label htmlFor="notes" className="mb-1.5 block text-xs font-extrabold text-white/50">
+            ملاحظات داخلية
+          </label>
+          <textarea
+            id="notes"
+            name="notes"
+            rows={2}
+            placeholder="ملاحظات الإدارة (لن تظهر للعميل)..."
             className="h-20 w-full resize-y rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none transition focus-visible:ring-2 focus-visible:ring-champagne placeholder:text-white/20"
           />
         </div>
@@ -409,6 +426,19 @@ function EditAccountForm({
           />
         </div>
 
+        <div>
+          <label htmlFor="edit-notes" className="mb-1.5 block text-xs font-extrabold text-white/50">
+            ملاحظات داخلية
+          </label>
+          <textarea
+            id="edit-notes"
+            name="notes"
+            rows={2}
+            defaultValue={account.notes ?? ""}
+            className="h-20 w-full resize-y rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none transition focus-visible:ring-2 focus-visible:ring-champagne"
+          />
+        </div>
+
         <div className="flex items-center gap-3">
           <button
             type="submit"
@@ -424,49 +454,6 @@ function EditAccountForm({
           </a>
         </div>
       </form>
-    </div>
-  );
-}
-
-function QRCodeSection({
-  settingsId,
-  qrCodeUrl,
-}: {
-  settingsId: string;
-  qrCodeUrl: string | null;
-}) {
-  return (
-    <div>
-      <h5 className="mb-2 text-xs font-extrabold text-white/40 uppercase tracking-wider">
-        رمز QR
-      </h5>
-      <form action={uploadPaymentQRCodeAction} className="flex items-center gap-3">
-        <input type="hidden" name="settingsId" value={settingsId} />
-        <input
-          name="assetId"
-          defaultValue={qrCodeUrl ?? ""}
-          placeholder="معرف الأصل (Asset ID)"
-          className="h-9 flex-1 rounded-lg border border-white/10 bg-white/5 px-3 text-xs text-white outline-none transition focus-visible:ring-2 focus-visible:ring-champagne placeholder:text-white/20"
-        />
-        <button
-          type="submit"
-          className="flex h-9 items-center gap-1.5 rounded-lg bg-champagne/10 px-3 text-xs font-extrabold text-champagne transition hover:bg-champagne/20"
-        >
-          <QrCode size={14} />
-          حفظ
-        </button>
-      </form>
-      {qrCodeUrl && (
-        <div className="mt-3 flex items-center gap-3 rounded-lg border border-white/[0.06] bg-white/[0.02] p-3">
-          <div className="size-12 shrink-0 rounded-lg bg-white/10 flex items-center justify-center overflow-hidden">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={qrCodeUrl} alt="QR Code" className="size-full object-contain" />
-          </div>
-          <div className="min-w-0">
-            <p className="truncate text-xs text-white/60">{qrCodeUrl}</p>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
@@ -579,11 +566,18 @@ function PaymentMethodCard({
       {/* Accounts */}
       {method.isActive && accountCount > 0 && (
         <div className="mt-4 space-y-2">
-          {method.accounts.map((account) => {
+          {method.accounts.map((account, idx) => {
             if (showEditAccount === account.id && editAccountData) {
               return <EditAccountForm key={account.id} account={editAccountData} />;
             }
-            return <AccountCard key={account.id} account={account} />;
+            return (
+              <AccountCard
+                key={account.id}
+                account={account}
+                isFirst={idx === 0}
+                isLast={idx === method.accounts.length - 1}
+              />
+            );
           })}
         </div>
       )}

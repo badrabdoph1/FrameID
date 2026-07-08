@@ -112,7 +112,7 @@ type BillingClientProps = {
       plan: { code: string; name: string; priceAmount: number; currency: string } | null;
       status: string;
       currentPeriodEnd: Date | null;
-    };
+    } | null;
   };
   plans: PlanData[];
   paymentMethods: PaymentMethodData[];
@@ -294,10 +294,10 @@ export function BillingClient({
   error: urlError,
 }: BillingClientProps) {
   const { subscription, tenant } = session;
-  const subStatus = subscription.status;
+  const subStatus = subscription?.status ?? "NONE";
   const statusInfo = STATUS_INFO[subStatus] ?? STATUS_INFO.TRIAL;
 
-  const existingPlan = subscription.plan;
+  const existingPlan = subscription?.plan ?? null;
 
   /* ── State ── */
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(
@@ -314,13 +314,14 @@ export function BillingClient({
     paymentRequest?.id ?? draftId ?? null,
   );
   const [faqOpen, setFaqOpen] = useState<number | null>(null);
+  const [fileError, setFileError] = useState<string | null>(null);
 
   /* ── useActionState Hooks ── */
   const [createState, createAction, createPending] = useActionState(
     async (_prev: unknown, fd: FormData) => {
       const result = await createPaymentDraftAction(fd);
-      if (result.success) {
-        setDraftState("pending-refresh");
+      if (result.success && result.draftId) {
+        setDraftState(result.draftId);
       }
       return result;
     },
@@ -337,6 +338,9 @@ export function BillingClient({
   const [uploadState, uploadAction, uploadPending] = useActionState(
     async (_prev: unknown, fd: FormData) => {
       const result = await uploadProofAction(fd);
+      if (result.success) {
+        setProofFile(null);
+      }
       return result;
     },
     null,
@@ -376,7 +380,7 @@ export function BillingClient({
   );
 
   /* ── Handlers ── */
-  const hasDraft = !!draftState && draftState !== "pending-refresh";
+  const hasDraft = !!draftState;
 
   const isPlanSelected = !!selectedPlanId;
   const isMethodSelected = !!selectedMethodId;
@@ -393,10 +397,18 @@ export function BillingClient({
     !["DRAFT", "REJECTED", "CANCELLED"].includes(paymentRequest.status);
 
   /* ── File Handler ── */
+  const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+
   function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
     if (!file.type.startsWith("image/")) return;
+    if (file.size > MAX_FILE_SIZE) {
+      setFileError("حجم الملف يتجاوز 5 ميجابايت. يرجى اختيار صورة أصغر.");
+      e.target.value = "";
+      return;
+    }
+    setFileError(null);
     setProofFile(file);
     const reader = new FileReader();
     reader.onload = () => setProofPreview(reader.result as string);
@@ -405,13 +417,7 @@ export function BillingClient({
 
   function handleRemoveFile() {
     setProofFile(null);
-    if (paymentRequest?.proofAssetId && hasDraft) {
-      const fd = new FormData();
-      fd.append("draftId", draftState!);
-      const form = document.createElement("form");
-      // We'll use the removeAction directly
-    }
-    setProofPreview(null);
+    setProofPreview(paymentRequest?.proofUrl ?? null);
   }
 
   /* ── Submit Handlers ── */
@@ -421,6 +427,7 @@ export function BillingClient({
     fd.append("planId", selectedPlanId ?? "");
     fd.append("method", selectedMethod?.paymentMethod ?? "");
     fd.append("accountId", selectedAccountId ?? "");
+    fd.append("reference", reference ?? "");
     createAction(fd);
   }
 
@@ -582,7 +589,7 @@ export function BillingClient({
               }}
             >
               <CheckCircle2 size={16} />
-              {subscription.currentPeriodEnd
+              {subscription?.currentPeriodEnd
                 ? `مشترك حتى ${formatDate(subscription.currentPeriodEnd)}`
                 : "اشتراكك نشط"}
             </div>
@@ -1108,7 +1115,7 @@ export function BillingClient({
                   اضغط لاختيار صورة الإثبات
                 </p>
                 <p style={{ color: "rgba(245, 234, 214, 0.4)", fontSize: "0.72rem", margin: "4px 0 0" }}>
-                  JPEG, PNG, WebP فقط — حد أقصى 16MB
+                  JPEG, PNG, WebP فقط — حد أقصى 5MB
                 </p>
               </div>
             </label>
@@ -1121,6 +1128,12 @@ export function BillingClient({
             onChange={handleFileSelect}
             style={{ display: "none" }}
           />
+
+          {fileError ? (
+            <p style={{ color: "#f87171", fontSize: "0.78rem", marginTop: 8 }}>
+              {fileError}
+            </p>
+          ) : null}
 
           {proofFile && hasDraft ? (
             <form action={handleUploadProof} style={{ marginTop: 12 }}>
@@ -1423,9 +1436,13 @@ export function BillingClient({
 
           <Button
             variant="luxury"
-            onClick={() => {
+            onClick={async () => {
+              if (paymentRequest?.id) {
+                const fd = new FormData();
+                fd.append("draftId", paymentRequest.id);
+                cancelAction(fd);
+              }
               setDraftState(null);
-              // Also cancel the old request in background
             }}
           >
             إعادة التقديم

@@ -20,8 +20,9 @@ export type CurrentSession = {
   tenant: {
     id: string;
     displayName: string;
-    status: "TRIAL" | "ACTIVE" | "EXPIRED" | "SUSPENDED";
+    status: "TRIAL" | "ACTIVE" | "TRIAL_EXPIRED" | "EXPIRED" | "SUSPENDED";
     trialEndsAt: Date;
+    gracePeriodEndsAt: Date | null;
   };
   site: {
     id: string;

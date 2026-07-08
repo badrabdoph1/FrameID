@@ -13,7 +13,7 @@ export default async function AdminHealthPage() {
       prisma.tenant.count({ where: { deletedAt: null } }),
       prisma.site.count({ where: { deletedAt: null } }),
       prisma.backupJob.count(),
-      prisma.paymentRequest.count({ where: { status: "PENDING", deletedAt: null } }),
+      prisma.paymentRequest.count({ where: { status: { in: ["SUBMITTED", "PENDING", "UNDER_REVIEW"] }, deletedAt: null } }),
       prisma.supportCase.count({ where: { deletedAt: null, status: "OPEN" } }),
     ]);
 

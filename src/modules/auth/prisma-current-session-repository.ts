@@ -21,6 +21,7 @@ type RawCurrentSessionRecord = {
       displayName: string;
       status: string;
       trialEndsAt: Date;
+      gracePeriodEndsAt: Date | null;
       sites: Array<{
         id: string;
         slug: string;
@@ -116,6 +117,7 @@ export function createPrismaCurrentSessionRepository(
                   displayName: true,
                   status: true,
                   trialEndsAt: true,
+                  gracePeriodEndsAt: true,
                   sites: {
                     where: {
                       deletedAt: null
@@ -180,7 +182,8 @@ export function createPrismaCurrentSessionRepository(
           id: tenant.id,
           displayName: tenant.displayName,
           status: tenant.status as CurrentSession["tenant"]["status"],
-          trialEndsAt: tenant.trialEndsAt
+          trialEndsAt: tenant.trialEndsAt,
+          gracePeriodEndsAt: tenant.gracePeriodEndsAt as Date | null
         },
         site: {
           ...site,

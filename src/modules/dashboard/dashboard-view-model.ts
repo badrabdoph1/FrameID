@@ -15,6 +15,9 @@ export type SubscriptionInfo = {
   isExpired: boolean;
   isActive: boolean;
   isTrial: boolean;
+  isPastDue: boolean;
+  isCancelled: boolean;
+  isSuspended: boolean;
   hasPendingRequest: boolean;
   pendingRequestStatus: string | null;
 };
@@ -103,20 +106,26 @@ function buildSubscriptionInfo(
   const isTrial = sub.status === "TRIAL" || tenant.status === "TRIAL";
   const isActive = sub.status === "ACTIVE";
   const isExpired = sub.status === "EXPIRED" || tenant.status === "EXPIRED";
+  const isPastDue = sub.status === "PAST_DUE";
+  const isCancelled = sub.status === "CANCELLED";
+  const isSuspended = sub.status === "SUSPENDED" || tenant.status === "SUSPENDED";
 
   const trialEndDate = tenant.trialEndsAt;
   const periodEnd = sub.currentPeriodEnd;
   const endDate = isTrial ? trialEndDate : (periodEnd ?? trialEndDate);
-  const daysRemaining = calcDaysRemaining(endDate, now);
+  const daysRemaining = endDate ? calcDaysRemaining(endDate, now) : null;
 
   return {
     status: sub.status,
     planName: sub.plan?.name ?? null,
-    trialEndsAt: trialEndDate.toISOString(),
+    trialEndsAt: trialEndDate ? trialEndDate.toISOString() : null,
     daysRemaining,
     isExpired,
     isActive,
     isTrial,
+    isPastDue,
+    isCancelled,
+    isSuspended,
     hasPendingRequest: pendingRequestStatus !== null,
     pendingRequestStatus,
   };

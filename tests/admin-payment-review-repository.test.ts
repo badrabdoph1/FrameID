@@ -6,8 +6,8 @@ describe("admin payment review repository", () => {
   it("loads pending payment requests with customer context", async () => {
     const prisma = {
       paymentRequest: {
-        async findMany(args: { where: { status: "PENDING" }; take: number }) {
-          expect(args.where.status).toBe("PENDING");
+        async findMany(args: { where: { status: { in: string[] } }; take: number }) {
+          expect(args.where.status).toMatchObject({ in: ["SUBMITTED", "PENDING", "UNDER_REVIEW"] });
           expect(args.take).toBe(50);
 
           return [

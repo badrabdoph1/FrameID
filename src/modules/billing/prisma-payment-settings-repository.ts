@@ -54,7 +54,7 @@ function transformSettings(
 
 const settingsInclude = {
   accounts: {
-    where: { deletedAt: null },
+    where: { isActive: true },
     orderBy: { sortOrder: "asc" as const },
   },
   qrCodeAsset: {

@@ -13,7 +13,8 @@ function createSession(): CurrentSession {
       id: "tenant_1",
       displayName: "Ali Studio",
       status: "TRIAL",
-      trialEndsAt: new Date("2026-07-20T12:00:00.000Z")
+      trialEndsAt: new Date("2026-07-20T12:00:00.000Z"),
+      gracePeriodEndsAt: null
     },
     site: {
       id: "site_1",
