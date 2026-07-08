@@ -15,12 +15,12 @@ describe("dashboard site actions", () => {
 
     render(<DashboardSiteActions siteUrl="https://frameid.app/p/ali" />);
 
-    fireEvent.click(screen.getByRole("button", { name: "نسخ الرابط" }));
+    fireEvent.click(screen.getByRole("button", { name: "انسخ الرابط" }));
 
     await waitFor(() => {
       expect(writeText).toHaveBeenCalledWith("https://frameid.app/p/ali");
     });
-    expect(screen.getByRole("button", { name: "تم النسخ" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "اتنسخ" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "تعديل الموقع" })).toHaveAttribute(
       "href",
       "/dashboard/content"

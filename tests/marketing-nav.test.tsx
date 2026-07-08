@@ -16,11 +16,11 @@ describe("marketing nav", () => {
       "href",
       "/templates"
     );
-    expect(within(mobileMenu).getByRole("link", { name: "دخول" })).toHaveAttribute(
+    expect(within(mobileMenu).getByRole("link", { name: "تسجيل دخول" })).toHaveAttribute(
       "href",
       "/login"
     );
-    expect(within(mobileMenu).getByRole("link", { name: "إنشاء حساب" })).toHaveAttribute(
+    expect(within(mobileMenu).getByRole("link", { name: "جرب مجاناً" })).toHaveAttribute(
       "href",
       "/signup"
     );

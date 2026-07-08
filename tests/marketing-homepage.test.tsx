@@ -10,12 +10,17 @@ describe("marketing homepage", () => {
 
     expect(
       screen.getByRole("heading", {
-        name: /بدل ما تتوه أعمالك/i
+        name: /محتاج موقع يلم شغلك كله في مكان واحد؟/i
       })
     ).toBeInTheDocument();
     expect(
       screen.getByRole("heading", {
-        name: /موقع واحد يضم كل شيء/i
+        name: /كده هيبقي شكل موقعك\./i
+      })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", {
+        name: /إيه اللي هيتغير في شغلك لما يبقى ليك موقع؟/i
       })
     ).toBeInTheDocument();
   });
@@ -23,16 +28,16 @@ describe("marketing homepage", () => {
   it("shows trust signals below hero CTAs", () => {
     render(<HomePage />);
 
-    expect(screen.getByText("تجربة مجانية ١٤ يوم")).toBeInTheDocument();
-    expect(screen.getByText("بدون بطاقة بنكية")).toBeInTheDocument();
-    expect(screen.getByText("موقع جاهز خلال دقائق")).toBeInTheDocument();
+    expect(screen.getByText("١٤ يوم تجربة مجانية")).toBeInTheDocument();
+    expect(screen.getByText("مش محتاج بطاقة بنكية")).toBeInTheDocument();
+    expect(screen.getByText("موقعك جاهز في دقايق")).toBeInTheDocument();
   });
 
   it("has limited strategic CTAs not 7+", () => {
     render(<HomePage />);
 
     const signupLinks = screen.getAllByRole("link", {
-      name: /ابدأ التجربة المجانية/u
+      name: /جرب مجاناً/u
     });
     expect(signupLinks.length).toBeGreaterThanOrEqual(1);
     expect(signupLinks.length).toBeLessThanOrEqual(3);
@@ -45,7 +50,7 @@ describe("marketing homepage", () => {
     render(<HomePage />);
 
     const templateLinks = screen.getAllByRole("link", {
-      name: /شاهد القوالب/u
+      name: /شوف القوالب/u
     });
     expect(templateLinks.length).toBeGreaterThanOrEqual(1);
     expect(
@@ -58,10 +63,10 @@ describe("marketing homepage", () => {
 
     expect(
       screen.getByRole("heading", {
-        name: /هذا شكل موقعك/i
+        name: /كده هيبقي شكل موقعك\./i
       })
     ).toBeInTheDocument();
-    expect(screen.getAllByText(/frameid.app/i).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText(/frameid\.app/i).length).toBeGreaterThanOrEqual(1);
   });
 
   it("shows photographer-focused benefit cards with بدل ما", () => {
@@ -69,7 +74,7 @@ describe("marketing homepage", () => {
 
     expect(
       screen.getByRole("heading", {
-        name: /وش تتغير في شغلك/i
+        name: /إيه اللي هيتغير في شغلك لما يبقى ليك موقع؟/i
       })
     ).toBeInTheDocument();
     expect(screen.getAllByText(/بدل ما/i).length).toBeGreaterThanOrEqual(6);
@@ -94,7 +99,7 @@ describe("marketing homepage", () => {
     render(<HomePage />);
 
     expect(
-      screen.getByText(/FrameID لسه جديد/i)
+      screen.getByText(/ليه تثق في FrameID؟/i)
     ).toBeInTheDocument();
   });
 
@@ -102,7 +107,7 @@ describe("marketing homepage", () => {
     render(<HomePage />);
 
     expect(
-      screen.getByText(/كيف تبدا/i)
+      screen.getByText(/إزاي تبدا؟/i)
     ).toBeInTheDocument();
   });
 
@@ -114,7 +119,7 @@ describe("marketing homepage", () => {
     ).toBeInTheDocument();
     expect(
       screen.getByRole("heading", {
-        name: /وش تتغير في شغلك/i
+        name: /إيه اللي هيتغير في شغلك لما يبقى ليك موقع؟/i
       })
     ).toBeInTheDocument();
   });
@@ -123,14 +128,14 @@ describe("marketing homepage", () => {
     render(<HomePage />);
 
     expect(
-      screen.getByText(/هل أحتاج بطاقة ائتمان/i)
+      screen.getByText(/هل أحتاج بطاقة بنكية عشان أجرب؟/i)
     ).toBeInTheDocument();
   });
 
   it("shows photographer type badges in templates section", () => {
     render(<HomePage />);
 
-    expect(screen.getByText("مصوري الزفاف")).toBeInTheDocument();
-    expect(screen.getByText("الاستوديوهات")).toBeInTheDocument();
+    expect(screen.getByText("مصورين زفاف")).toBeInTheDocument();
+    expect(screen.getByText("استوديوهات تصوير")).toBeInTheDocument();
   });
 });

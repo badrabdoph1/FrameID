@@ -10,17 +10,17 @@ describe("marketing templates page", () => {
 
     expect(
       screen.getByRole("heading", {
-        name: "اختر قالبًا كأنه موقع عميل حقيقي."
+        name: "اختار قالب—كأنه موقع عميل حقيقي."
       })
     ).toBeInTheDocument();
     expect(
       screen.getByText(
-        "المعاينة الحية تفتح نفس القالب الذي سيحصل عليه المصور، ثم يحمل زر استخدام القالب اختياره إلى التسجيل."
+        "المعاينة الحية بتفتح نفس القالب اللي هياخده المصور، وزير استخدم القالب بياخد اختيارك للتسجيل."
       )
     ).toBeInTheDocument();
-    const previewLinks = screen.getAllByRole("link", { name: /معاينة/u });
+    const previewLinks = screen.getAllByRole("link", { name: /معاينة القالب/u });
     expect(previewLinks[0]).toHaveAttribute("href", "/templates/noir-gold/preview");
-    const useLinks = screen.getAllByRole("link", { name: /استخدام القالب/u });
+    const useLinks = screen.getAllByRole("link", { name: /استخدم القالب ده/u });
     expect(useLinks[0]).toHaveAttribute("href", "/signup?template=noir-gold");
   });
 });

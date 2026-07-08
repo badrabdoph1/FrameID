@@ -30,10 +30,10 @@ describe("auth action utils", () => {
 
   it("maps internal auth errors to safe user-facing messages", () => {
     expect(getAuthActionErrorMessage(new Error("Email already exists"))).toBe(
-      "هذا البريد مستخدم بالفعل."
+      "البريد دا مستخدم قبل كده."
     );
     expect(getAuthActionErrorMessage(new Error("Invalid email or password"))).toBe(
-      "البريد أو كلمة المرور غير صحيحة."
+      "البريد أو كلمة السر غلط."
     );
     expect(
       getAuthActionErrorMessage(
@@ -45,20 +45,20 @@ describe("auth action utils", () => {
           }
         ])
       )
-    ).toBe("راجع البيانات وحاول مرة أخرى.");
+    ).toBe("راجع البيانات وجرب تاني.");
     expect(
       getAuthActionErrorMessage(
         new Error("Can't reach database server at `localhost:5432`")
       )
     ).toBe(
-      "قاعدة البيانات غير متصلة حاليًا. تأكد من DATABASE_URL وتشغيل قاعدة البيانات ثم حاول مرة أخرى."
+      "قاعدة البيانات مش متصلة دلوقتي. تأكد من DATABASE_URL وشغل قاعدة البيانات وجرب تاني."
     );
     expect(
       getAuthActionErrorMessage(
         new Error("Environment variable not found: DATABASE_URL")
       )
     ).toBe(
-      "قاعدة البيانات غير متصلة حاليًا. تأكد من DATABASE_URL وتشغيل قاعدة البيانات ثم حاول مرة أخرى."
+      "قاعدة البيانات مش متصلة دلوقتي. تأكد من DATABASE_URL وشغل قاعدة البيانات وجرب تاني."
     );
   });
 });
