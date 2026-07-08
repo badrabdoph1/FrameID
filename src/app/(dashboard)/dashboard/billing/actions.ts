@@ -15,11 +15,13 @@ import { createPrismaMediaUploadRepository } from "@/modules/media/prisma-media-
 import type { PaymentMethod } from "@/modules/billing/billing-activation-service";
 
 const VALID_METHODS: PaymentMethod[] = ["INSTAPAY", "VODAFONE_CASH", "STRIPE", "PAYPAL"];
+const EDITABLE_PAYMENT_STATUSES = ["DRAFT"];
+const ACTIVE_PAYMENT_STATUSES = ["DRAFT", "SUBMITTED", "PENDING", "UNDER_REVIEW"];
+const MAX_PROOF_SIZE_BYTES = 5 * 1024 * 1024;
+const ALLOWED_PROOF_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
 function getService() {
-  return createBillingActivationService({
-    repository: createPrismaBillingActivationRepository(prisma)
-  });
+  return createBillingActivationService({ repository: createPrismaBillingActivationRepository(prisma) });
 }
 
 type ActionResult = { success: true; draftId?: string } | { success: false; error: string };
@@ -31,57 +33,101 @@ async function getSessionWithSub() {
   return session as NonNullable<typeof session>;
 }
 
-async function getServiceWithOwnershipCheck(draftId: string, tenantId: string) {
-  const service = getService();
-  const request = await prisma.paymentRequest.findUnique({
-    where: { id: draftId },
-    select: { tenantId: true },
-  });
-  if (!request || request.tenantId !== tenantId) {
-    throw new Error("لا يمكن الوصول إلى طلب الدفع هذا");
-  }
-  return service;
+function cleanString(value: FormDataEntryValue | null): string | null {
+  return typeof value === "string" && value.trim() ? value.trim() : null;
 }
 
-/* ─── Create Draft Payment ─────────────────────── */
+async function getOwnedPaymentRequest(draftId: string, tenantId: string) {
+  const request = await prisma.paymentRequest.findFirst({
+    where: { id: draftId, tenantId, deletedAt: null },
+    select: { id: true, tenantId: true, status: true, proofAssetId: true },
+  });
+  if (!request) throw new Error("لا يمكن الوصول إلى طلب الدفع هذا");
+  return request;
+}
+
+async function assertEditableOwnedDraft(draftId: string, tenantId: string) {
+  const request = await getOwnedPaymentRequest(draftId, tenantId);
+  if (!EDITABLE_PAYMENT_STATUSES.includes(request.status)) {
+    throw new Error("لا يمكن تعديل الطلب بعد إرساله للمراجعة");
+  }
+  return request;
+}
+
+async function validatePlan(planId: string) {
+  const plan = await prisma.plan.findFirst({
+    where: { id: planId, isActive: true, deletedAt: null },
+    select: { id: true, priceAmount: true, currency: true },
+  });
+  if (!plan) throw new Error("الباقة غير موجودة أو غير مفعلة");
+  return plan;
+}
+
+async function validatePaymentAccount(method: PaymentMethod, accountId: string) {
+  const account = await prisma.paymentAccount.findFirst({
+    where: {
+      id: accountId,
+      isActive: true,
+      deletedAt: null,
+      paymentSettings: { paymentMethod: method, isActive: true },
+    },
+    select: { id: true },
+  });
+  if (!account) throw new Error("حساب الدفع غير موجود أو غير تابع لوسيلة الدفع المختارة");
+  return account;
+}
+
+async function assertNoDuplicateActiveRequest(tenantId: string, exceptId?: string) {
+  const existing = await prisma.paymentRequest.findFirst({
+    where: {
+      tenantId,
+      deletedAt: null,
+      status: { in: ACTIVE_PAYMENT_STATUSES },
+      ...(exceptId ? { id: { not: exceptId } } : {}),
+    },
+    select: { id: true, status: true },
+  });
+  if (existing) {
+    throw new Error("يوجد طلب تفعيل حالي بالفعل. أكمل الطلب الحالي أو ألغِه قبل إنشاء طلب جديد.");
+  }
+}
+
+function validateProofFile(file: File) {
+  if (!ALLOWED_PROOF_TYPES.includes(file.type)) {
+    throw new Error("نوع الملف غير مدعوم. يرجى رفع صورة JPEG أو PNG أو WebP.");
+  }
+  if (file.size > MAX_PROOF_SIZE_BYTES) {
+    throw new Error("حجم صورة الإثبات أكبر من 5MB.");
+  }
+}
 
 export async function createPaymentDraftAction(formData: FormData): Promise<ActionResult> {
   const session = await getSessionWithSub();
   const sid = session.subscription!.id;
+  const planId = cleanString(formData.get("planId"));
+  const method = cleanString(formData.get("method"));
+  const accountId = cleanString(formData.get("accountId"));
+  const reference = cleanString(formData.get("reference"));
 
-  const planId = formData.get("planId");
-  const method = formData.get("method");
-  const accountId = formData.get("accountId");
-  const reference = formData.get("reference");
-
-  if (typeof planId !== "string" || !planId) {
-    return { success: false, error: "يرجى اختيار الباقة" };
-  }
-  if (typeof method !== "string" || !VALID_METHODS.includes(method as PaymentMethod)) {
-    return { success: false, error: "يرجى اختيار وسيلة دفع صحيحة" };
-  }
+  if (!planId) return { success: false, error: "يرجى اختيار الباقة" };
+  if (!method || !VALID_METHODS.includes(method as PaymentMethod)) return { success: false, error: "يرجى اختيار وسيلة دفع صحيحة" };
+  if (!accountId) return { success: false, error: "يرجى اختيار حساب الدفع" };
 
   try {
-    const plan = await prisma.plan.findUnique({ where: { id: planId } });
-    if (!plan || !plan.isActive) return { success: false, error: "الباقة غير موجودة" };
+    const plan = await validatePlan(planId);
+    await validatePaymentAccount(method as PaymentMethod, accountId);
+    await assertNoDuplicateActiveRequest(session.tenant.id);
 
-    const service = getService();
-    const draft = await service.createDraftPayment({
+    const draft = await getService().createDraftPayment({
       tenantId: session.tenant.id,
       subscriptionId: sid,
       planId,
       method: method as PaymentMethod,
+      paymentAccountId: accountId,
       amount: plan.priceAmount,
-      currency: plan.currency
+      currency: plan.currency,
+      reference,
     });
-
-    if (typeof accountId === "string" && accountId) {
-      await service.updateDraftPayment(draft.id, { paymentAccountId: accountId });
-    }
-
-    if (typeof reference === "string" && reference.trim()) {
-      await service.updateDraftPayment(draft.id, { reference: reference.trim() });
-    }
 
     revalidatePath("/dashboard/billing");
     return { success: true, draftId: draft.id };
@@ -89,242 +135,137 @@ export async function createPaymentDraftAction(formData: FormData): Promise<Acti
     const { userError } = await processError(error, {
       userId: session.user.id,
       tenantId: session.tenant.id,
-      metadata: { action: "createPaymentDraft" }
+      metadata: { action: "createPaymentDraft" },
     });
     return { success: false, error: userError.message };
   }
 }
-
-/* ─── Update Payment Draft ─────────────────────── */
 
 export async function updatePaymentDraftAction(formData: FormData): Promise<ActionResult> {
   const session = await getSessionWithSub();
-
-  const draftId = formData.get("draftId") as string;
-  const method = formData.get("method");
-  const accountId = formData.get("accountId");
-  const reference = formData.get("reference");
+  const draftId = cleanString(formData.get("draftId"));
+  const method = cleanString(formData.get("method"));
+  const accountId = cleanString(formData.get("accountId"));
+  const reference = cleanString(formData.get("reference"));
 
   if (!draftId) return { success: false, error: "معرّف المسودة مطلوب" };
 
   try {
-    const service = await getServiceWithOwnershipCheck(draftId, session.tenant.id);
-    await service.updateDraftPayment(draftId, {
-      method: typeof method === "string" && VALID_METHODS.includes(method as PaymentMethod)
-        ? (method as PaymentMethod)
-        : undefined,
-      paymentAccountId: typeof accountId === "string" ? accountId : undefined,
-      reference: typeof reference === "string" ? reference : undefined
+    await assertEditableOwnedDraft(draftId, session.tenant.id);
+    if (method && !VALID_METHODS.includes(method as PaymentMethod)) throw new Error("وسيلة الدفع غير صالحة");
+    if (method && accountId) await validatePaymentAccount(method as PaymentMethod, accountId);
+    await getService().updateDraftPayment(draftId, {
+      method: method ? (method as PaymentMethod) : undefined,
+      paymentAccountId: accountId ?? undefined,
+      reference,
     });
-
     revalidatePath("/dashboard/billing");
     return { success: true };
   } catch (error) {
     const { userError } = await processError(error, {
       userId: session.user.id,
       tenantId: session.tenant.id,
-      metadata: { action: "updatePaymentDraft" }
+      metadata: { action: "updatePaymentDraft", draftId },
     });
     return { success: false, error: userError.message };
   }
 }
-
-/* ─── Upload Proof Image ────────────────────────── */
 
 export async function uploadProofAction(formData: FormData): Promise<ActionResult> {
   const session = await getSessionWithSub();
-
-  const draftId = formData.get("draftId") as string;
+  const draftId = cleanString(formData.get("draftId"));
   const proof = formData.get("proof");
-
   if (!draftId) return { success: false, error: "معرّف المسودة مطلوب" };
-  if (!(proof instanceof File) || proof.size === 0) {
-    return { success: false, error: "يرجى اختيار صورة الإثبات" };
-  }
+  if (!(proof instanceof File) || proof.size === 0) return { success: false, error: "يرجى اختيار صورة الإثبات" };
 
   try {
+    await assertEditableOwnedDraft(draftId, session.tenant.id);
+    validateProofFile(proof);
+
     const assetId = await createMediaUploadService({
       storage: createLocalMediaStorage(),
-      repository: createPrismaMediaUploadRepository(prisma)
-    }).uploadImage({
-      tenantId: session.tenant.id,
-      file: proof,
-      alt: "إثبات دفع"
-    }).then((asset) => asset.id);
+      repository: createPrismaMediaUploadRepository(prisma),
+    }).uploadImage({ tenantId: session.tenant.id, file: proof, alt: "إثبات دفع" }).then((asset) => asset.id);
 
-    const service = await getServiceWithOwnershipCheck(draftId, session.tenant.id);
-    await service.uploadPaymentProof(draftId, assetId);
-
+    await getService().uploadPaymentProof(draftId, assetId);
     revalidatePath("/dashboard/billing");
     return { success: true };
   } catch (error) {
     const { userError } = await processError(error, {
       userId: session.user.id,
       tenantId: session.tenant.id,
-      metadata: { action: "uploadProof" }
+      metadata: { action: "uploadProof", draftId },
     });
     return { success: false, error: userError.message };
   }
 }
-
-/* ─── Remove Proof Image ────────────────────────── */
 
 export async function removeProofAction(formData: FormData): Promise<ActionResult> {
   const session = await getSessionWithSub();
-
-  const draftId = formData.get("draftId") as string;
+  const draftId = cleanString(formData.get("draftId"));
   if (!draftId) return { success: false, error: "معرّف المسودة مطلوب" };
 
   try {
-    const service = await getServiceWithOwnershipCheck(draftId, session.tenant.id);
-    await service.removePaymentProof(draftId);
+    await assertEditableOwnedDraft(draftId, session.tenant.id);
+    await getService().removePaymentProof(draftId);
     revalidatePath("/dashboard/billing");
     return { success: true };
   } catch (error) {
     const { userError } = await processError(error, {
       userId: session.user.id,
       tenantId: session.tenant.id,
-      metadata: { action: "removeProof" }
+      metadata: { action: "removeProof", draftId },
     });
     return { success: false, error: userError.message };
   }
 }
-
-/* ─── Submit Payment Request ───────────────────── */
 
 export async function submitPaymentRequestAction(formData: FormData): Promise<ActionResult> {
   const session = await getSessionWithSub();
-
-  const draftId = formData.get("draftId") as string;
+  const draftId = cleanString(formData.get("draftId"));
   if (!draftId) return { success: false, error: "معرّف المسودة مطلوب" };
 
   try {
-    const service = await getServiceWithOwnershipCheck(draftId, session.tenant.id);
-    await service.submitPayment(draftId);
-
+    const request = await assertEditableOwnedDraft(draftId, session.tenant.id);
+    if (!request.proofAssetId) throw new Error("يرجى رفع إثبات الدفع قبل إرسال الطلب");
+    await getService().submitPayment(draftId);
+    revalidatePath("/dashboard");
     revalidatePath("/dashboard/billing");
     return { success: true };
   } catch (error) {
     const { userError } = await processError(error, {
       userId: session.user.id,
       tenantId: session.tenant.id,
-      metadata: { action: "submitPaymentRequest" }
+      metadata: { action: "submitPaymentRequest", draftId },
     });
     return { success: false, error: userError.message };
   }
 }
-
-/* ─── Cancel Payment Request ───────────────────── */
 
 export async function cancelPaymentRequestAction(formData: FormData): Promise<ActionResult> {
   const session = await getSessionWithSub();
-
-  const draftId = formData.get("draftId") as string;
+  const draftId = cleanString(formData.get("draftId"));
   if (!draftId) return { success: false, error: "معرّف المسودة مطلوب" };
 
   try {
-    const service = await getServiceWithOwnershipCheck(draftId, session.tenant.id);
-    const result = await service.cancelPaymentRequest(draftId);
-    if (!result.success) {
-      return { success: false as const, error: result.error ?? "حدث خطأ" };
-    }
-
+    await getOwnedPaymentRequest(draftId, session.tenant.id);
+    const result = await getService().cancelPaymentRequest(draftId);
+    if (!result.success) return { success: false, error: result.error ?? "حدث خطأ" };
+    revalidatePath("/dashboard");
     revalidatePath("/dashboard/billing");
-    return { success: true as const };
+    return { success: true };
   } catch (error) {
     const { userError } = await processError(error, {
       userId: session.user.id,
       tenantId: session.tenant.id,
-      metadata: { action: "cancelPaymentRequest" }
+      metadata: { action: "cancelPaymentRequest", draftId },
     });
     return { success: false, error: userError.message };
   }
 }
 
-/* ─── Legacy Action (kept for backward compat) ─── */
-
 export async function requestActivationAction(formData: FormData) {
-  const session = await getCurrentRequestSession();
-
-  if (!session) {
-    redirect("/login");
-  }
-
-  if (!session.subscription) {
-    redirect("/dashboard/billing?error=no-subscription");
-  }
-
-  const method = formData.get("method");
-  const reference = formData.get("reference");
-  const proof = formData.get("proof");
-  const draftId = formData.get("draftId");
-  const submit = formData.get("submit") === "true";
-
-  if (typeof method !== "string" || !VALID_METHODS.includes(method as PaymentMethod)) {
-    redirect("/dashboard/billing?error=invalid-method");
-  }
-
-  try {
-    const service = getService();
-
-    let paymentRequestId: string;
-
-    if (draftId && typeof draftId === "string") {
-      paymentRequestId = draftId;
-
-      await service.updateDraftPayment(paymentRequestId, {
-        method: method as PaymentMethod,
-        reference: typeof reference === "string" ? reference : undefined
-      });
-    } else {
-      const draft = await service.createDraftPayment({
-        tenantId: session.tenant.id,
-        subscriptionId: session.subscription.id,
-        method: method as PaymentMethod,
-        amount: 120000,
-        currency: "EGP"
-      });
-
-      paymentRequestId = draft.id;
-
-      if (typeof reference === "string" && reference.trim()) {
-        await service.updateDraftPayment(paymentRequestId, {
-          reference: reference.trim()
-        });
-      }
-    }
-
-    if (proof instanceof File && proof.size > 0) {
-      const assetId = await createMediaUploadService({
-        storage: createLocalMediaStorage(),
-        repository: createPrismaMediaUploadRepository(prisma)
-      }).uploadImage({
-        tenantId: session.tenant.id,
-        file: proof,
-        alt: "إثبات دفع"
-      }).then((asset) => asset.id);
-
-      if (assetId) {
-        await service.uploadPaymentProof(paymentRequestId, assetId);
-      }
-    }
-
-    if (submit) {
-      await service.submitPayment(paymentRequestId);
-    }
-
-    revalidatePath("/dashboard/billing");
-    if (submit) {
-      redirect("/dashboard/billing?requested=1");
-    } else {
-      redirect(`/dashboard/billing?draft=${paymentRequestId}`);
-    }
-  } catch (error) {
-    const { userError } = await processError(error, {
-      userId: session.user.id,
-      tenantId: session.tenant.id,
-      metadata: { action: "requestActivation" }
-    });
-    redirect(`/dashboard/billing?error=${encodeURIComponent(userError.message)}`);
-  }
+  const result = await createPaymentDraftAction(formData);
+  if (!result.success) redirect(`/dashboard/billing?error=${encodeURIComponent(result.error)}`);
+  redirect(`/dashboard/billing?draft=${result.draftId}`);
 }
