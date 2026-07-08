@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useMemo, useState, type ReactNode } from "react";
+import { useActionState, useMemo, useState, type ChangeEvent, type ReactNode } from "react";
 import {
   AlertTriangle,
   Check,
@@ -119,6 +119,8 @@ type BillingClientProps = {
   error?: string;
 };
 
+type ActionResult = { success: true; draftId?: string } | { success: false; error: string };
+
 const STATUS_INFO: Record<string, { label: string; color: string; bg: string }> = {
   TRIAL: { label: "نسخة تجريبية", color: "#f3cf73", bg: "rgba(243,207,115,.1)" },
   ACTIVE: { label: "مشترك", color: "#4ade80", bg: "rgba(74,222,128,.1)" },
@@ -153,7 +155,20 @@ const LOG_LABELS: Record<string, string> = {
   CANCELLED: "تم الإلغاء",
 };
 
-function formatDate(d: Date | string | null): string {
+const FAQ_ITEMS = [
+  { q: "كيف أعرف أن الدفع تم بنجاح؟", a: "بعد تقديم الطلب ستظهر حالته داخل هذه الصفحة ولوحة التحكم. عند موافقة الإدارة يتم تفعيل الاشتراك تلقائياً." },
+  { q: "كم تستغرق مراجعة الطلب؟", a: "تتم مراجعة الطلبات يدوياً حسب سياسة الإدارة. حالة الطلب ستبقى واضحة أمامك طوال الوقت." },
+  { q: "هل أستطيع تعديل الطلب بعد الإرسال؟", a: "لا. بعد الإرسال يتم قفل الطلب لحماية بيانات الدفع. يستطيع الأدمن طلب إعادة رفع الإثبات إذا كانت الصورة غير واضحة." },
+  { q: "هل يمكن إضافة Stripe أو PayPal لاحقاً؟", a: "نعم. النظام مبني حول Payment Settings حتى يمكن إضافة وسائل دفع مستقبلية بدون تغيير رحلة العميل." },
+];
+
+const AFTER_PAYMENT_STEPS = [
+  { title: "مراجعة الطلب", description: "الأدمن يراجع بيانات العميل، الباقة، وسيلة الدفع، وإثبات الدفع." },
+  { title: "قبول أو رفض", description: "في حالة الرفض يظهر السبب للعميل. وفي حالة القبول يتم التفعيل مباشرة." },
+  { title: "تفعيل الموقع", description: "يتم تحديث الاشتراك وحالة الموقع وإرسال إشعار للعميل داخل النظام." },
+];
+
+function formatDate(d: Date | string | null | undefined): string {
   if (!d) return "—";
   return new Date(d).toLocaleDateString("ar-EG", {
     day: "numeric",
@@ -179,15 +194,18 @@ function normalizeFeatures(features: unknown): string[] {
   return [];
 }
 
-function getActionError(state: unknown): string | null {
-  if (state && typeof state === "object" && "success" in state && !(state as { success: boolean }).success) {
-    return (state as { error: string }).error;
-  }
-  return null;
+function isActionSuccess(state: unknown): state is Extract<ActionResult, { success: true }> {
+  return Boolean(state && typeof state === "object" && (state as Record<string, unknown>).success === true);
 }
 
-function getActionSuccess(state: unknown): boolean {
-  return Boolean(state && typeof state === "object" && "success" in state && (state as { success: boolean }).success);
+function isActionFailure(state: unknown): state is Extract<ActionResult, { success: false }> {
+  if (!state || typeof state !== "object") return false;
+  const record = state as Record<string, unknown>;
+  return record.success === false && typeof record.error === "string";
+}
+
+function getActionError(state: unknown): string | null {
+  return isActionFailure(state) ? state.error : null;
 }
 
 function Badge({ label, color, bg }: { label: string; color: string; bg: string }) {
@@ -236,13 +254,13 @@ export function BillingClient({ session, plans, paymentMethods, paymentRequest, 
   const [fileError, setFileError] = useState<string | null>(null);
   const [faqOpen, setFaqOpen] = useState<number | null>(0);
 
-  const [createState, createAction, createPending] = useActionState(async (_prev: unknown, fd: FormData) => {
+  const [createState, createAction, createPending] = useActionState<ActionResult | null, FormData>(async (_prev, fd) => {
     const result = await createPaymentDraftAction(fd);
     if (result.success && result.draftId) setDraftState(result.draftId);
     return result;
   }, null);
 
-  const [uploadState, uploadAction, uploadPending] = useActionState(async (_prev: unknown, fd: FormData) => {
+  const [uploadState, uploadAction, uploadPending] = useActionState<ActionResult | null, FormData>(async (_prev, fd) => {
     const result = await uploadProofAction(fd);
     if (result.success) {
       setProofUploaded(true);
@@ -251,7 +269,7 @@ export function BillingClient({ session, plans, paymentMethods, paymentRequest, 
     return result;
   }, null);
 
-  const [removeState, removeAction, removePending] = useActionState(async (_prev: unknown, fd: FormData) => {
+  const [removeState, removeAction, removePending] = useActionState<ActionResult | null, FormData>(async (_prev, fd) => {
     const result = await removeProofAction(fd);
     if (result.success) {
       setProofUploaded(false);
@@ -261,8 +279,9 @@ export function BillingClient({ session, plans, paymentMethods, paymentRequest, 
     return result;
   }, null);
 
-  const [submitState, submitAction, submitPending] = useActionState(async (_prev: unknown, fd: FormData) => submitPaymentRequestAction(fd), null);
-  const [cancelState, cancelAction, cancelPending] = useActionState(async (_prev: unknown, fd: FormData) => {
+  const [submitState, submitAction, submitPending] = useActionState<ActionResult | null, FormData>(async (_prev, fd) => submitPaymentRequestAction(fd), null);
+
+  const [cancelState, cancelAction, cancelPending] = useActionState<ActionResult | null, FormData>(async (_prev, fd) => {
     const result = await cancelPaymentRequestAction(fd);
     if (result.success) {
       setDraftState(null);
@@ -278,9 +297,10 @@ export function BillingClient({ session, plans, paymentMethods, paymentRequest, 
   const selectedAccount = useMemo(() => selectedMethod?.accounts.find((a) => a.id === selectedAccountId) ?? null, [selectedMethod, selectedAccountId]);
   const canCreateDraft = Boolean(selectedPlan && selectedMethod && selectedAccount && !draftState && !activeRequestLocked);
   const canUploadProof = Boolean(draftState && proofFile && !activeRequestLocked);
-  const canSubmit = Boolean(draftState && (proofUploaded || getActionSuccess(uploadState)) && !activeRequestLocked);
+  const uploadSucceeded = proofUploaded || isActionSuccess(uploadState);
+  const canSubmit = Boolean(draftState && uploadSucceeded && !activeRequestLocked);
 
-  function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
+  function handleFileSelect(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
     if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
@@ -305,8 +325,8 @@ export function BillingClient({ session, plans, paymentMethods, paymentRequest, 
     { title: "اختر الباقة", done: Boolean(selectedPlan), description: selectedPlan?.name ?? "اختر الخطة المناسبة" },
     { title: "اختر وسيلة الدفع", done: Boolean(selectedMethod && selectedAccount), description: selectedMethod ? (selectedMethod.label ?? getPaymentMethodLabel(selectedMethod.paymentMethod)) : "InstaPay أو Vodafone Cash" },
     { title: "أنشئ المسودة", done: Boolean(draftState), description: draftState ? "تم حفظ بيانات الطلب" : "يتم قفل السعر والباقة" },
-    { title: "ارفع إثبات الدفع", done: Boolean(proofUploaded || getActionSuccess(uploadState)), description: proofUploaded || getActionSuccess(uploadState) ? "تم رفع الإثبات" : "صورة التحويل أو الإيصال" },
-    { title: "أرسل الطلب", done: Boolean(activeRequestLocked || getActionSuccess(submitState)), description: activeRequestLocked ? "قيد مراجعة الإدارة" : "بعد الإرسال لا يمكن التعديل" },
+    { title: "ارفع إثبات الدفع", done: uploadSucceeded, description: uploadSucceeded ? "تم رفع الإثبات" : "صورة التحويل أو الإيصال" },
+    { title: "أرسل الطلب", done: Boolean(activeRequestLocked || isActionSuccess(submitState)), description: activeRequestLocked ? "قيد مراجعة الإدارة" : "بعد الإرسال لا يمكن التعديل" },
   ];
 
   return (
@@ -314,7 +334,7 @@ export function BillingClient({ session, plans, paymentMethods, paymentRequest, 
       <BuilderPageHeader eyebrow="الاشتراك والتفعيل" title={subStatus === "ACTIVE" ? "اشتراكك نشط" : "فعّل موقعك باحتراف"} description={subStatus === "ACTIVE" ? "اشتراكك مفعل ويمكنك استخدام كل الميزات." : "رحلة تفعيل واضحة: اختر الباقة، ادفع، ارفع الإثبات، ثم يتم تفعيل الموقع بعد مراجعة الإدارة."} />
 
       {urlError ? <AlertBox tone="danger" title="حدث خطأ" body={urlError === "no-subscription" ? "لا يوجد اشتراك نشط. يرجى إنشاء الموقع أولاً." : urlError} /> : null}
-      {requested || getActionSuccess(submitState) ? <AlertBox tone="success" title="تم إرسال الطلب" body="طلب التفعيل قيد المراجعة الآن. ستظهر الحالة هنا وفي لوحة التحكم." /> : null}
+      {requested || isActionSuccess(submitState) ? <AlertBox tone="success" title="تم إرسال الطلب" body="طلب التفعيل قيد المراجعة الآن. ستظهر الحالة هنا وفي لوحة التحكم." /> : null}
 
       <SectionCard title="حالة الاشتراك والموقع" icon={<ShieldCheck size={16} />}>
         <div className="grid gap-4 md:grid-cols-[1.2fr,1fr]">
@@ -340,17 +360,13 @@ export function BillingClient({ session, plans, paymentMethods, paymentRequest, 
 
       {subStatus !== "ACTIVE" ? (
         <SectionCard title="مراحل التفعيل" description="اتبع الخطوات بالترتيب حتى يصل الطلب للأدمن بشكل واضح." icon={<CheckCircle2 size={16} />}>
-          <div className="grid gap-3 md:grid-cols-5">
-            {workflow.map((step, idx) => <StepCard key={step.title} index={idx + 1} {...step} />)}
-          </div>
+          <div className="grid gap-3 md:grid-cols-5">{workflow.map((step, idx) => <StepCard key={step.title} index={idx + 1} {...step} />)}</div>
         </SectionCard>
       ) : null}
 
       {subStatus !== "ACTIVE" ? (
         <SectionCard title="اختر الباقة" description="كل باقة يتم تسعيرها من لوحة الإدارة ولا يوجد سعر مكتوب داخل الكود." icon={<Package size={16} />}>
-          <div className="grid gap-3 md:grid-cols-3">
-            {plans.map((plan) => <PlanCard key={plan.id} plan={plan} selected={selectedPlanId === plan.id} disabled={Boolean(draftState || activeRequestLocked)} onSelect={() => setSelectedPlanId(plan.id)} />)}
-          </div>
+          <div className="grid gap-3 md:grid-cols-3">{plans.map((plan) => <PlanCard key={plan.id} plan={plan} selected={selectedPlanId === plan.id} disabled={Boolean(draftState || activeRequestLocked)} onSelect={() => setSelectedPlanId(plan.id)} />)}</div>
         </SectionCard>
       ) : null}
 
@@ -389,9 +405,7 @@ export function BillingClient({ session, plans, paymentMethods, paymentRequest, 
             <form action={uploadAction} className="space-y-3">
               <input type="hidden" name="draftId" value={draftState ?? ""} />
               <input id="proof-input" name="proof" type="file" accept="image/jpeg,image/png,image/webp" onChange={handleFileSelect} className="hidden" />
-              <label htmlFor="proof-input" className="inline-flex min-h-10 cursor-pointer items-center justify-center gap-2 rounded-xl border border-white/10 px-4 text-sm font-black text-white/70 hover:bg-white/5">
-                <Upload className="size-4" /> {proofPreview ? "استبدال الصورة" : "اختيار صورة الإثبات"}
-              </label>
+              <label htmlFor="proof-input" className="inline-flex min-h-10 cursor-pointer items-center justify-center gap-2 rounded-xl border border-white/10 px-4 text-sm font-black text-white/70 hover:bg-white/5"><Upload className="size-4" /> {proofPreview ? "استبدال الصورة" : "اختيار صورة الإثبات"}</label>
               {proofFile ? <Button type="submit" variant="secondary" disabled={!canUploadProof || uploadPending}>{uploadPending ? <Loader2 className="size-4 animate-spin" /> : <Upload className="size-4" />}{uploadPending ? "جاري الرفع..." : "رفع الصورة إلى الخادم"}</Button> : null}
             </form>
             {draftState && proofUploaded ? <form action={removeAction}><input type="hidden" name="draftId" value={draftState} /><Button type="submit" variant="ghost" disabled={removePending} style={{ color: "#f87171" }}>{removePending ? <Loader2 className="size-4 animate-spin" /> : <FileX className="size-4" />}حذف الصورة</Button></form> : null}
@@ -410,7 +424,7 @@ export function BillingClient({ session, plans, paymentMethods, paymentRequest, 
             <SummaryRow label="السعر" value={selectedPlan ? `${selectedPlan.priceAmount.toLocaleString()} ${selectedPlan.currency}` : "لم يتم الاختيار"} muted={!selectedPlan} />
             <SummaryRow label="وسيلة الدفع" value={selectedMethod ? (selectedMethod.label ?? getPaymentMethodLabel(selectedMethod.paymentMethod)) : "لم يتم الاختيار"} muted={!selectedMethod} />
             <SummaryRow label="حساب الدفع" value={selectedAccount ? (selectedAccount.label ?? selectedAccount.accountName) : "لم يتم الاختيار"} muted={!selectedAccount} />
-            <SummaryRow label="إثبات الدفع" value={proofUploaded || getActionSuccess(uploadState) ? "تم الرفع" : "لم يتم الرفع"} muted={!(proofUploaded || getActionSuccess(uploadState))} />
+            <SummaryRow label="إثبات الدفع" value={uploadSucceeded ? "تم الرفع" : "لم يتم الرفع"} muted={!uploadSucceeded} />
           </div>
           <div className="flex flex-wrap gap-2">
             <form action={submitAction}><input type="hidden" name="draftId" value={draftState ?? ""} /><Button type="submit" variant="luxury" disabled={!canSubmit || submitPending}>{submitPending ? <Loader2 className="size-4 animate-spin" /> : <CheckCircle2 className="size-4" />}{submitPending ? "جاري الإرسال..." : "إرسال طلب التفعيل"}</Button></form>
@@ -469,16 +483,3 @@ function AfterPaymentSteps() {
 function Faq({ faqOpen, setFaqOpen }: { faqOpen: number | null; setFaqOpen: (value: number | null) => void }) {
   return <div className="grid gap-2">{FAQ_ITEMS.map((item, idx) => { const open = faqOpen === idx; return <div key={item.q} className="overflow-hidden rounded-xl border border-white/[0.07]"><button type="button" onClick={() => setFaqOpen(open ? null : idx)} className="flex w-full items-center justify-between gap-3 px-4 py-3 text-right"><strong className="text-sm text-[#fff7e8]">{item.q}</strong>{open ? <ChevronUp className="size-4 text-white/35" /> : <ChevronDown className="size-4 text-white/35" />}</button>{open ? <p className="m-0 px-4 pb-4 text-xs leading-7 text-white/50">{item.a}</p> : null}</div>; })}</div>;
 }
-
-const FAQ_ITEMS = [
-  { q: "كيف أعرف أن الدفع تم بنجاح؟", a: "بعد تقديم الطلب ستظهر حالته داخل هذه الصفحة ولوحة التحكم. عند موافقة الإدارة يتم تفعيل الاشتراك تلقائياً." },
-  { q: "كم تستغرق مراجعة الطلب؟", a: "تتم مراجعة الطلبات يدوياً حسب سياسة الإدارة. حالة الطلب ستبقى واضحة أمامك طوال الوقت." },
-  { q: "هل أستطيع تعديل الطلب بعد الإرسال؟", a: "لا. بعد الإرسال يتم قفل الطلب لحماية بيانات الدفع. يستطيع الأدمن طلب إعادة رفع الإثبات إذا كانت الصورة غير واضحة." },
-  { q: "هل يمكن إضافة Stripe أو PayPal لاحقاً؟", a: "نعم. النظام مبني حول Payment Settings حتى يمكن إضافة وسائل دفع مستقبلية بدون تغيير رحلة العميل." },
-];
-
-const AFTER_PAYMENT_STEPS = [
-  { title: "مراجعة الطلب", description: "الأدمن يراجع بيانات العميل، الباقة، وسيلة الدفع، وإثبات الدفع." },
-  { title: "قبول أو رفض", description: "في حالة الرفض يظهر السبب للعميل. وفي حالة القبول يتم التفعيل مباشرة." },
-  { title: "تفعيل الموقع", description: "يتم تحديث الاشتراك وحالة الموقع وإرسال إشعار للعميل داخل النظام." },
-];
