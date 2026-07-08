@@ -118,8 +118,8 @@ function NavLink({ item, active, compact = false, onClick }: { item: NavItem; ac
           : "border-white/8 bg-white/[0.035] text-white/65 hover:border-amber-300/18 hover:bg-amber-300/8 hover:text-white",
       )}
     >
-      <span className={cn("grid shrink-0 place-items-center rounded-xl", compact ? "size-9" : "size-10", active ? "bg-amber-300/14" : "bg-white/[0.045]") }>
-        <Icon className="size-4.5" aria-hidden />
+      <span className={cn("grid shrink-0 place-items-center rounded-xl", compact ? "size-9" : "size-10", active ? "bg-amber-300/14" : "bg-white/[0.045]")}>
+        <Icon className="size-4" aria-hidden />
       </span>
       <span className="min-w-0 flex-1">
         <strong className="block truncate text-sm font-black">{item.label}</strong>
