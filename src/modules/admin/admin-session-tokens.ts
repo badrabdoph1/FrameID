@@ -1,5 +1,5 @@
 import "server-only";
-import { createHash, randomBytes } from "node:crypto";
+import { createHash, randomBytes } from "crypto";
 
 import {
   ADMIN_SESSION_COOKIE_NAME,

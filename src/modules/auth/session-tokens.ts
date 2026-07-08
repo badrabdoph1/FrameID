@@ -1,5 +1,5 @@
 import "server-only";
-import { createHash, randomBytes } from "node:crypto";
+import { createHash, randomBytes } from "crypto";
 
 export const SESSION_COOKIE_NAME = "frameid_session";
 export const SESSION_TTL_DAYS = 30;
