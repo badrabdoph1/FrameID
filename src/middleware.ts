@@ -5,29 +5,8 @@ import { ADMIN_SESSION_COOKIE_NAME } from "@/modules/admin/admin-session-constan
 
 const PUBLIC_ADMIN_PATHS = new Set(["/admin/login"])
 
-const CSP_HEADER = [
-  `default-src 'self'`,
-  `script-src 'self' 'unsafe-inline'`,
-  `style-src 'self' 'unsafe-inline'`,
-  `img-src 'self' data: blob: https://images.unsplash.com https://i.ibb.co`,
-  `font-src 'self'`,
-  `connect-src 'self'`,
-  `frame-ancestors 'none'`,
-  `base-uri 'self'`,
-  `form-action 'self'`,
-  `block-all-mixed-content`,
-].join("; ")
-
-function setSecurityHeaders(response: NextResponse): void {
-  response.headers.set("Content-Security-Policy", CSP_HEADER)
-  response.headers.set("X-Content-Type-Options", "nosniff")
-  response.headers.set("X-Frame-Options", "DENY")
-  response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin")
-  response.headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=(), interest-cohort=()")
-}
-
 function isValidTokenFormat(token: string): boolean {
-  return /^[A-Za-z0-9_-]{43}$/.test(token)
+  return /^[A-Za-z0-9_-]+$/.test(token)
 }
 
 async function isTokenValid(rawToken: string | undefined, origin: string): Promise<boolean> {
@@ -36,7 +15,7 @@ async function isTokenValid(rawToken: string | undefined, origin: string): Promi
   try {
     const res = await fetch(`${origin}/api/admin/validate-session`, {
       headers: { "x-admin-session-token": rawToken },
-      signal: AbortSignal.timeout(3000),
+      signal: AbortSignal.timeout(5000),
     })
     return res.ok
   } catch {
@@ -70,7 +49,6 @@ export async function middleware(request: NextRequest) {
     response = NextResponse.next()
   }
 
-  setSecurityHeaders(response)
   return response
 }
 
