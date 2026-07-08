@@ -536,7 +536,7 @@ function PaymentMethodPicker({ methods, selectedMethodId, selectedPlanId, pendin
         const account = method.accounts[0] ?? null;
         const disabled = !selectedPlanId || !account || pending;
         return (
-          <form key={method.id} action={action} onSubmit={() => onMethodSelect(method.id)}>
+          <form key={method.id} action={action} onSubmitCapture={() => onMethodSelect(method.id)}>
             <input type="hidden" name="planId" value={selectedPlanId ?? ""} />
             <input type="hidden" name="method" value={method.paymentMethod} />
             <input type="hidden" name="accountId" value={account?.id ?? ""} />
