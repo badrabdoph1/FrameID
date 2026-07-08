@@ -21,6 +21,7 @@ function setSecurityHeaders(response: NextResponse): void {
 }
 
 function isValidTokenFormat(token: string): boolean {
+  if (token.startsWith("stateless.")) return true
   return /^[A-Za-z0-9_-]{43}$/.test(token)
 }
 
