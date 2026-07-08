@@ -1,9 +1,8 @@
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import type { ErrorLevel, ErrorLogEntry, Logger } from "./types";
+import type { ErrorCategory, ErrorLevel, ErrorLogEntry, Logger } from "./types";
 
 const isDev = process.env.NODE_ENV === "development";
-
 const inMemoryBuffer: ErrorLogEntry[] = [];
 const MAX_BUFFER = 500;
 
@@ -48,7 +47,43 @@ function productionLog(
     metadata: meta?.metadata,
   };
 
-  console.error(`[${formatTimestamp()}] [${level}] [${code}] ${message}`, safeMeta);
+  const line = `[${formatTimestamp()}] [${level}] [${code}] ${message}`;
+  if (level === "ERROR" || level === "FATAL") console.error(line, safeMeta);
+  else if (level === "WARN") console.warn(line, safeMeta);
+  else console.log(line, safeMeta);
+}
+
+function normalizeCategory(meta?: Record<string, unknown>): ErrorCategory {
+  return (meta?.category as ErrorCategory | undefined) ?? "UNKNOWN";
+}
+
+function createEntry(
+  level: ErrorLevel,
+  code: string,
+  message: string,
+  meta?: Record<string, unknown>,
+): ErrorLogEntry {
+  return {
+    id: crypto.randomUUID(),
+    code,
+    message,
+    category: normalizeCategory(meta),
+    level,
+    requestId: meta?.requestId as string | undefined,
+    correlationId: meta?.correlationId as string | undefined,
+    route: meta?.route as string | undefined,
+    method: meta?.method as string | undefined,
+    userId: meta?.userId as string | undefined,
+    tenantId: meta?.tenantId as string | undefined,
+    userAgent: meta?.userAgent as string | undefined,
+    platform: meta?.platform as string | undefined,
+    browser: meta?.browser as string | undefined,
+    stack: meta?.stack as string | undefined,
+    cause: meta?.cause as string | undefined,
+    metadata: meta?.metadata as Record<string, unknown> | undefined,
+    resolved: level === "INFO" || level === "DEBUG",
+    createdAt: formatTimestamp(),
+  };
 }
 
 async function persistErrorLog(entry: ErrorLogEntry): Promise<void> {
@@ -76,102 +111,50 @@ async function persistErrorLog(entry: ErrorLogEntry): Promise<void> {
         stack: entry.stack || null,
         cause: entry.cause || null,
         metadata: entry.metadata as Prisma.InputJsonValue | undefined,
+        resolved: entry.resolved,
       },
     });
   } catch {
     if (isDev) {
-      console.error("[logger] Failed to persist error log to DB");
+      console.error("[logger] Failed to persist log entry to DB");
     }
+  }
+}
+
+function writeLog(level: ErrorLevel, code: string, message: string, meta?: Record<string, unknown>) {
+  const entry = createEntry(level, code, message, meta);
+
+  if (isDev) {
+    devLog(level, code, message, meta);
+    if (entry.stack) console.error("  Stack:", entry.stack);
+  } else {
+    productionLog(level, code, message, meta);
+  }
+
+  if (level !== "DEBUG" || isDev) {
+    void persistErrorLog(entry);
   }
 }
 
 export const logger: Logger = {
   debug(message: string, meta?: Record<string, unknown>) {
-    if (isDev) {
-      devLog("DEBUG", "DBG", message, meta);
-    }
+    if (isDev) writeLog("DEBUG", (meta?.code as string | undefined) ?? "FID-LOG-DEBUG", message, meta);
   },
 
   info(message: string, meta?: Record<string, unknown>) {
-    if (isDev) {
-      devLog("INFO", "INF", message, meta);
-    }
+    writeLog("INFO", (meta?.code as string | undefined) ?? "FID-LOG-INFO", message, meta);
   },
 
   warn(message: string, meta?: Record<string, unknown>) {
-    if (isDev) {
-      devLog("WARN", "WRN", message, meta);
-    }
+    writeLog("WARN", (meta?.code as string | undefined) ?? "FID-LOG-WARN", message, meta);
   },
 
   error(code: string, message: string, meta?: Record<string, unknown>) {
-    const entry: ErrorLogEntry = {
-      id: crypto.randomUUID(),
-      code,
-      message,
-      category: (meta?.category as ErrorLogEntry["category"]) ?? "UNKNOWN",
-      level: "ERROR",
-      requestId: meta?.requestId as string | undefined,
-      correlationId: meta?.correlationId as string | undefined,
-      route: meta?.route as string | undefined,
-      method: meta?.method as string | undefined,
-      userId: meta?.userId as string | undefined,
-      tenantId: meta?.tenantId as string | undefined,
-      userAgent: meta?.userAgent as string | undefined,
-      platform: meta?.platform as string | undefined,
-      browser: meta?.browser as string | undefined,
-      stack: meta?.stack as string | undefined,
-      cause: meta?.cause as string | undefined,
-      metadata: meta?.metadata as Record<string, unknown> | undefined,
-      resolved: false,
-      createdAt: formatTimestamp(),
-    };
-
-    if (isDev) {
-      devLog("ERROR", code, message, meta);
-      if (entry.stack) {
-        console.error("  Stack:", entry.stack);
-      }
-    } else {
-      productionLog("ERROR", code, message, meta);
-    }
-
-    persistErrorLog(entry);
+    writeLog("ERROR", code, message, meta);
   },
 
   fatal(code: string, message: string, meta?: Record<string, unknown>) {
-    const entry: ErrorLogEntry = {
-      id: crypto.randomUUID(),
-      code,
-      message,
-      category: (meta?.category as ErrorLogEntry["category"]) ?? "UNKNOWN",
-      level: "FATAL",
-      requestId: meta?.requestId as string | undefined,
-      correlationId: meta?.correlationId as string | undefined,
-      route: meta?.route as string | undefined,
-      method: meta?.method as string | undefined,
-      userId: meta?.userId as string | undefined,
-      tenantId: meta?.tenantId as string | undefined,
-      userAgent: meta?.userAgent as string | undefined,
-      platform: meta?.platform as string | undefined,
-      browser: meta?.browser as string | undefined,
-      stack: meta?.stack as string | undefined,
-      cause: meta?.cause as string | undefined,
-      metadata: meta?.metadata as Record<string, unknown> | undefined,
-      resolved: false,
-      createdAt: formatTimestamp(),
-    };
-
-    if (isDev) {
-      devLog("FATAL", code, message, meta);
-      if (entry.stack) {
-        console.error("  Stack:", entry.stack);
-      }
-    } else {
-      productionLog("FATAL", code, message, meta);
-    }
-
-    persistErrorLog(entry);
+    writeLog("FATAL", code, message, meta);
   },
 };
 

@@ -13,11 +13,24 @@ const SYSTEM_API_PREFIXES = new Set([
   "/api/admin",
 ])
 
+function createTraceId(): string {
+  return crypto.randomUUID().slice(0, 12)
+}
+
 function setSecurityHeaders(response: NextResponse): void {
   response.headers.set("X-Content-Type-Options", "nosniff")
   response.headers.set("X-Frame-Options", "DENY")
   response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin")
   response.headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=(), interest-cohort=()")
+}
+
+function setTraceHeaders(response: NextResponse, requestId: string, correlationId: string): void {
+  response.headers.set("x-request-id", requestId)
+  response.headers.set("x-correlation-id", correlationId)
+}
+
+function nextWithTrace(headers: Headers): NextResponse {
+  return NextResponse.next({ request: { headers } })
 }
 
 function isValidTokenFormat(token: string): boolean {
@@ -88,6 +101,14 @@ async function checkSiteAccess(request: NextRequest): Promise<"ALLOW" | "DENY" |
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
   const isAdminPath = pathname.startsWith("/admin")
+  const requestId = request.headers.get("x-request-id") ?? createTraceId()
+  const correlationId = request.headers.get("x-correlation-id") ?? requestId
+  const requestHeaders = new Headers(request.headers)
+  requestHeaders.set("x-request-id", requestId)
+  requestHeaders.set("x-correlation-id", correlationId)
+  requestHeaders.set("x-pathname", pathname)
+  requestHeaders.set("x-method", request.method)
+  requestHeaders.set("x-url", request.url)
 
   let response: NextResponse
 
@@ -98,38 +119,39 @@ export async function middleware(request: NextRequest) {
       if (await isTokenValid(rawToken, request.nextUrl.origin)) {
         response = NextResponse.redirect(new URL("/admin", request.url))
       } else {
-        response = NextResponse.next()
+        response = nextWithTrace(requestHeaders)
       }
     } else {
       if (!(await isTokenValid(rawToken, request.nextUrl.origin))) {
         response = NextResponse.redirect(new URL("/admin/login", request.url))
       } else {
-        response = NextResponse.next()
+        response = nextWithTrace(requestHeaders)
       }
     }
   } else if (pathname.startsWith("/api/") && !isSystemApiPath(pathname)) {
     const access = await checkApiAccess(request)
     if (access === "DENY") {
-      response = new NextResponse(JSON.stringify({ error: "الاشتراك منتهي. يرجى تجديد الاشتراك." }), {
+      response = new NextResponse(JSON.stringify({ error: "الاشتراك منتهي. يرجى تجديد الاشتراك.", requestId, correlationId }), {
         status: 403,
         headers: { "content-type": "application/json" },
       })
     } else {
-      response = NextResponse.next()
+      response = nextWithTrace(requestHeaders)
     }
   } else if (pathname.startsWith("/p/")) {
     const access = await checkSiteAccess(request)
     if (access === "DENY") {
       const url = new URL("/expired", request.url)
-      response = NextResponse.rewrite(url)
+      response = NextResponse.rewrite(url, { request: { headers: requestHeaders } })
     } else {
-      response = NextResponse.next()
+      response = nextWithTrace(requestHeaders)
     }
   } else {
-    response = NextResponse.next()
+    response = nextWithTrace(requestHeaders)
   }
 
   setSecurityHeaders(response)
+  setTraceHeaders(response, requestId, correlationId)
   return response
 }
 

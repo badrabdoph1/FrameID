@@ -41,13 +41,14 @@ export function createAction<TArgs extends unknown[], T>(
         throw error;
       }
 
-      const { userError } = await processError(error, {
+      const { userError, detail } = await processError(error, {
         metadata: { route, userAgent },
       });
 
       return {
         success: false,
         error: userError,
+        detail,
         requestId,
         correlationId,
       };
@@ -68,7 +69,7 @@ export async function handleActionResult<T>(
   if (result.success) {
     if (options?.successMessage) {
       const { notify } = await import("./notification-service");
-      notify.success(options.successMessage, undefined, undefined, result.requestId);
+      notify.success(options.successMessage, undefined, { requestId: result.requestId, correlationId: result.correlationId });
     }
     if (options?.successRedirect) {
       redirect(options.successRedirect);
@@ -76,13 +77,15 @@ export async function handleActionResult<T>(
     options?.onSuccess?.(result.data);
     return result.data;
   } else {
-    if (options?.errorMessage) {
-      const { notify } = await import("./notification-service");
-      notify.error(options.errorMessage, result.error.message, result.error, undefined, result.requestId);
-    } else {
-      const { notify } = await import("./notification-service");
-      notify.error(result.error.message, undefined, result.error, undefined, result.requestId);
-    }
+    const { notify } = await import("./notification-service");
+    notify.error({
+      title: options?.errorMessage ?? result.error.message,
+      description: options?.errorMessage ? result.error.message : undefined,
+      error: result.error,
+      detail: result.detail,
+      requestId: result.requestId,
+      correlationId: result.correlationId,
+    });
     options?.onError?.(result.error);
     return undefined;
   }

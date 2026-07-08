@@ -1,6 +1,7 @@
 import { ZodError } from "zod";
 import { getErrorCodeDef } from "./error-codes";
 import { logger } from "./logger";
+import { formatErrorForClipboard as formatDiagnosticForClipboard } from "./format-error";
 import type {
   ErrorCategory,
   ErrorCodeDef,
@@ -90,7 +91,7 @@ function extractPrismaMessage(error: Error): string | undefined {
   const msg = error.message;
 
   if (msg.includes("P1001") || msg.includes("Can't reach database server")) {
-    return "تعذر الاتصال بقاعدة البيانات. تأكد من DATABASE_URL وتشغيل قاعدة البيانات ثم حاول مرة أخرى.";
+    return "تعذر الاتصال بقاعدة البيانات. حاول مرة أخرى بعد قليل.";
   }
   if (msg.includes("P2002")) {
     return "البيانات موجودة مسبقاً.";
@@ -134,62 +135,32 @@ function getPrismaUniqueTarget(error: PrismaKnownError): string {
 }
 
 function classifyErrorCode(error: unknown): ErrorCodeDef {
-  if (error instanceof ZodError) {
-    return getErrorCodeDef("FID-VAL-001");
-  }
-
-  if (error instanceof AppError) {
-    return getErrorCodeDef(error.code);
-  }
+  if (error instanceof ZodError) return getErrorCodeDef("FID-VAL-001");
+  if (error instanceof AppError) return getErrorCodeDef(error.code);
 
   if (error instanceof Error) {
     const msg = error.message;
 
     if (isPrismaUniqueError(error)) {
       const target = getPrismaUniqueTarget(error);
-
-      if (target.includes("email")) {
-        return getErrorCodeDef("FID-AUTH-002");
-      }
-
-      if (target.includes("slug")) {
-        return getErrorCodeDef("FID-SITE-001");
-      }
+      if (target.includes("email")) return getErrorCodeDef("FID-AUTH-002");
+      if (target.includes("slug")) return getErrorCodeDef("FID-SITE-001");
     }
 
-    if (
-      msg.includes("fetch failed") ||
-      msg.includes("NetworkError") ||
-      msg.includes("network")
-    ) {
+    if (msg.includes("fetch failed") || msg.includes("NetworkError") || msg.includes("network")) {
       return getErrorCodeDef("FID-DB-001");
     }
 
-    if (
-      msg.includes("P1001") ||
-      msg.includes("Can't reach database server") ||
-      msg.includes("DATABASE_URL")
-    ) {
+    if (msg.includes("P1001") || msg.includes("Can't reach database server") || msg.includes("DATABASE_URL")) {
       return getErrorCodeDef("FID-DB-003");
     }
 
-    if (
-      msg.includes("Prisma") ||
-      msg.includes("prisma") ||
-      msg.includes("P2002") ||
-      msg.includes("P2025") ||
-      msg.includes("P2003")
-    ) {
+    if (msg.includes("Prisma") || msg.includes("prisma") || msg.includes("P2002") || msg.includes("P2025") || msg.includes("P2003")) {
       return getErrorCodeDef("FID-DB-002");
     }
 
-    if (msg.includes("email already exists") || msg.includes("Email already exists")) {
-      return getErrorCodeDef("FID-AUTH-002");
-    }
-
-    if (msg.includes("Invalid email or password")) {
-      return getErrorCodeDef("FID-AUTH-001");
-    }
+    if (msg.includes("email already exists") || msg.includes("Email already exists")) return getErrorCodeDef("FID-AUTH-002");
+    if (msg.includes("Invalid email or password")) return getErrorCodeDef("FID-AUTH-001");
   }
 
   return getErrorCodeDef("FID-UNK-001");
@@ -206,41 +177,34 @@ export type ClassifiedError = {
 
 export function classifyError(error: unknown): ClassifiedError {
   const def = classifyErrorCode(error);
-
   let message = def.message;
   let suggestion = def.suggestion;
   let stack: string | undefined;
   let cause: string | undefined;
+  let metadata: Record<string, unknown> | undefined;
 
   if (error instanceof ZodError) {
+    metadata = { issues: error.issues };
     if (isDev) {
-      const issues = error.issues
-        .map((i) => `  - ${i.path.join(".")}: ${i.message}`)
-        .join("\n");
+      const issues = error.issues.map((issue) => `  - ${issue.path.join(".")}: ${issue.message}`).join("\n");
       stack = `Validation Issues:\n${issues}`;
     }
   }
 
   if (error instanceof AppError) {
-    if (error.message !== def.message) {
-      message = error.message;
-    }
+    if (error.message !== def.message) message = error.message;
     suggestion = error.suggestion ?? suggestion;
     cause = error.cause?.message;
+    metadata = error.metadata;
   }
 
   if (error instanceof Error && !(error instanceof AppError)) {
     const prismaMsg = extractPrismaMessage(error);
-    if (prismaMsg && isDev) {
-      cause = error.message;
-    }
-
-    if (isDev) {
-      stack = error.stack;
-    }
+    if (prismaMsg && isDev) cause = error.message;
+    if (isDev) stack = error.stack;
   }
 
-  return { def, message, suggestion, stack, cause };
+  return { def, message, suggestion, stack, cause, metadata };
 }
 
 export function sanitizeForUser(classified: ClassifiedError): UserError {
@@ -270,6 +234,7 @@ export async function processError(
     requestId: ctx.requestId,
     correlationId: ctx.correlationId,
     route: ctx.route,
+    method: ctx.method,
     timestamp: new Date().toISOString(),
     userId: context?.userId,
     tenantId: context?.tenantId,
@@ -293,37 +258,5 @@ export async function processError(
 }
 
 export function formatErrorForClipboard(detail: ErrorDetail): string {
-  const lines = [
-    `=== Error Details ===`,
-    `Code: ${detail.code}`,
-    `Message: ${detail.message}`,
-    `Timestamp: ${detail.timestamp}`,
-    `Request ID: ${detail.requestId}`,
-    `Correlation ID: ${detail.correlationId ?? "N/A"}`,
-    `Route: ${detail.route ?? "N/A"}`,
-    `User ID: ${detail.userId ?? "N/A"}`,
-    `Browser: ${detail.browser ?? "N/A"}`,
-    `Platform: ${detail.platform ?? "N/A"}`,
-    ``,
-  ];
-
-  if (detail.suggestion) {
-    lines.push(`Suggestion: ${detail.suggestion}`);
-    lines.push(``);
-  }
-
-  if (detail.cause && isDev) {
-    lines.push(`Cause: ${detail.cause}`);
-    lines.push(``);
-  }
-
-  if (detail.stack && isDev) {
-    lines.push(`Stack:`);
-    lines.push(detail.stack);
-    lines.push(``);
-  }
-
-  lines.push(`---`);
-
-  return lines.join("\n");
+  return formatDiagnosticForClipboard(detail);
 }
