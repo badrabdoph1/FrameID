@@ -25,12 +25,6 @@ import {
 import type { DashboardViewModel } from "@/modules/dashboard/dashboard-view-model";
 import { BuilderNotice, CompletionRing } from "@/components/dashboard/builder-primitives";
 
-const surface = "rgba(255, 255, 255, 0.035)";
-const border = "rgba(245, 234, 214, 0.09)";
-const muted = "rgba(245, 234, 214, 0.58)";
-const text = "#fff7e8";
-const gold = "#f3cf73";
-
 type WorkspaceCard = {
   title: string;
   description: string;
