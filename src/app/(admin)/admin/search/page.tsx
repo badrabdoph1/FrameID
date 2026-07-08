@@ -19,11 +19,10 @@ import {
 import { AdminPageShell } from "@/components/layout/admin-page-shell";
 import { prisma } from "@/lib/prisma";
 import { requireAdminCenter } from "@/modules/admin/admin-permission-guards";
-import { cn } from "@/lib/utils/cn";
 
 export const dynamic = "force-dynamic";
 
-const PAGE_LIMIT = 8;
+const RESULT_LIMIT = 8;
 
 type Props = {
   searchParams: Promise<{ q?: string }>;
@@ -45,6 +44,10 @@ type ResultGroup = {
   results: SearchResult[];
 };
 
+function normalizeQuery(value: string | undefined): string {
+  return (value ?? "").trim().slice(0, 120);
+}
+
 function toDateLabel(value: Date | string | null | undefined): string {
   if (!value) return "—";
   return new Date(value).toLocaleDateString("ar-EG", {
@@ -54,12 +57,16 @@ function toDateLabel(value: Date | string | null | undefined): string {
   });
 }
 
-function normalizeQuery(value: string | undefined): string {
-  return (value ?? "").trim().slice(0, 120);
+function bytesLabel(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 async function getSearchGroups(query: string): Promise<ResultGroup[]> {
   if (query.length < 2) return [];
+
+  const contains = { contains: query, mode: "insensitive" };
 
   const [
     customers,
@@ -81,14 +88,14 @@ async function getSearchGroups(query: string): Promise<ResultGroup[]> {
       where: {
         deletedAt: null,
         OR: [
-          { id: { contains: query, mode: "insensitive" } },
-          { displayName: { contains: query, mode: "insensitive" } },
-          { owner: { name: { contains: query, mode: "insensitive" } } },
-          { owner: { email: { contains: query, mode: "insensitive" } } },
+          { id: contains },
+          { displayName: contains },
+          { owner: { name: contains } },
+          { owner: { email: contains } },
         ],
-      },
+      } as never,
       orderBy: { createdAt: "desc" },
-      take: PAGE_LIMIT,
+      take: RESULT_LIMIT,
       select: {
         id: true,
         displayName: true,
@@ -101,30 +108,30 @@ async function getSearchGroups(query: string): Promise<ResultGroup[]> {
       where: {
         deletedAt: null,
         OR: [
-          { id: { contains: query, mode: "insensitive" } },
-          { name: { contains: query, mode: "insensitive" } },
-          { email: { contains: query, mode: "insensitive" } },
-          { phone: { contains: query, mode: "insensitive" } },
+          { id: contains },
+          { name: contains },
+          { email: contains },
+          { phone: contains },
         ],
-      },
+      } as never,
       orderBy: { createdAt: "desc" },
-      take: PAGE_LIMIT,
+      take: RESULT_LIMIT,
       select: { id: true, name: true, email: true, role: true, createdAt: true },
     }),
     prisma.site.findMany({
       where: {
         deletedAt: null,
         OR: [
-          { id: { contains: query, mode: "insensitive" } },
-          { slug: { contains: query, mode: "insensitive" } },
-          { title: { contains: query, mode: "insensitive" } },
-          { description: { contains: query, mode: "insensitive" } },
-          { tenant: { displayName: { contains: query, mode: "insensitive" } } },
-          { domains: { some: { domain: { contains: query, mode: "insensitive" } } } },
+          { id: contains },
+          { slug: contains },
+          { title: contains },
+          { description: contains },
+          { tenant: { displayName: contains } },
+          { domains: { some: { domain: contains } } },
         ],
-      },
+      } as never,
       orderBy: { createdAt: "desc" },
-      take: PAGE_LIMIT,
+      take: RESULT_LIMIT,
       select: {
         id: true,
         slug: true,
@@ -138,16 +145,16 @@ async function getSearchGroups(query: string): Promise<ResultGroup[]> {
       where: {
         deletedAt: null,
         OR: [
-          { id: { contains: query, mode: "insensitive" } },
-          { reference: { contains: query, mode: "insensitive" } },
-          { status: { contains: query, mode: "insensitive" } },
-          { method: { contains: query, mode: "insensitive" } },
-          { tenant: { displayName: { contains: query, mode: "insensitive" } } },
-          { tenant: { owner: { email: { contains: query, mode: "insensitive" } } } },
+          { id: contains },
+          { reference: contains },
+          { tenant: { displayName: contains } },
+          { tenant: { owner: { email: contains } } },
+          { paymentAccount: { accountName: contains } },
+          { paymentAccount: { accountNumber: contains } },
         ],
-      },
+      } as never,
       orderBy: { createdAt: "desc" },
-      take: PAGE_LIMIT,
+      take: RESULT_LIMIT,
       select: {
         id: true,
         amount: true,
@@ -162,16 +169,15 @@ async function getSearchGroups(query: string): Promise<ResultGroup[]> {
       where: {
         deletedAt: null,
         OR: [
-          { id: { contains: query, mode: "insensitive" } },
-          { status: { contains: query, mode: "insensitive" } },
-          { tenant: { displayName: { contains: query, mode: "insensitive" } } },
-          { tenant: { owner: { email: { contains: query, mode: "insensitive" } } } },
-          { plan: { name: { contains: query, mode: "insensitive" } } },
-          { plan: { code: { contains: query, mode: "insensitive" } } },
+          { id: contains },
+          { tenant: { displayName: contains } },
+          { tenant: { owner: { email: contains } } },
+          { plan: { name: contains } },
+          { plan: { code: contains } },
         ],
-      },
+      } as never,
       orderBy: { createdAt: "desc" },
-      take: PAGE_LIMIT,
+      take: RESULT_LIMIT,
       select: {
         id: true,
         status: true,
@@ -185,95 +191,100 @@ async function getSearchGroups(query: string): Promise<ResultGroup[]> {
       where: {
         deletedAt: null,
         OR: [
-          { id: { contains: query, mode: "insensitive" } },
-          { code: { contains: query, mode: "insensitive" } },
-          { name: { contains: query, mode: "insensitive" } },
-          { status: { contains: query, mode: "insensitive" } },
-          { theme: { name: { contains: query, mode: "insensitive" } } },
-          { theme: { code: { contains: query, mode: "insensitive" } } },
+          { id: contains },
+          { code: contains },
+          { name: contains },
+          { theme: { name: contains } },
+          { theme: { code: contains } },
         ],
-      },
+      } as never,
       orderBy: { updatedAt: "desc" },
-      take: PAGE_LIMIT,
+      take: RESULT_LIMIT,
       select: { id: true, code: true, name: true, status: true, showroomOrder: true, theme: { select: { name: true } } },
     }),
     prisma.theme.findMany({
       where: {
         deletedAt: null,
         OR: [
-          { id: { contains: query, mode: "insensitive" } },
-          { code: { contains: query, mode: "insensitive" } },
-          { name: { contains: query, mode: "insensitive" } },
-          { category: { contains: query, mode: "insensitive" } },
-          { status: { contains: query, mode: "insensitive" } },
+          { id: contains },
+          { code: contains },
+          { name: contains },
+          { category: contains },
         ],
-      },
+      } as never,
       orderBy: { updatedAt: "desc" },
-      take: PAGE_LIMIT,
+      take: RESULT_LIMIT,
       select: { id: true, code: true, name: true, status: true, category: true, version: true },
     }),
     prisma.mediaAsset.findMany({
       where: {
         deletedAt: null,
         OR: [
-          { id: { contains: query, mode: "insensitive" } },
-          { storageKey: { contains: query, mode: "insensitive" } },
-          { url: { contains: query, mode: "insensitive" } },
-          { mimeType: { contains: query, mode: "insensitive" } },
-          { alt: { contains: query, mode: "insensitive" } },
-          { tenant: { displayName: { contains: query, mode: "insensitive" } } },
+          { id: contains },
+          { storageKey: contains },
+          { url: contains },
+          { mimeType: contains },
+          { alt: contains },
+          { tenant: { displayName: contains } },
         ],
-      },
+      } as never,
       orderBy: { createdAt: "desc" },
-      take: PAGE_LIMIT,
-      select: { id: true, url: true, mimeType: true, sizeBytes: true, alt: true, tenant: { select: { id: true, displayName: true } } },
+      take: RESULT_LIMIT,
+      select: {
+        id: true,
+        storageKey: true,
+        url: true,
+        mimeType: true,
+        sizeBytes: true,
+        alt: true,
+        tenant: { select: { id: true, displayName: true } },
+      },
     }),
     prisma.supportCase.findMany({
       where: {
         deletedAt: null,
         OR: [
-          { id: { contains: query, mode: "insensitive" } },
-          { subject: { contains: query, mode: "insensitive" } },
-          { status: { contains: query, mode: "insensitive" } },
-          { priority: { contains: query, mode: "insensitive" } },
-          { tenant: { displayName: { contains: query, mode: "insensitive" } } },
+          { id: contains },
+          { subject: contains },
+          { priority: contains },
+          { tenant: { displayName: contains } },
         ],
-      },
+      } as never,
       orderBy: { createdAt: "desc" },
-      take: PAGE_LIMIT,
+      take: RESULT_LIMIT,
       select: { id: true, subject: true, status: true, priority: true, createdAt: true, tenant: { select: { id: true, displayName: true } } },
     }),
     prisma.errorLog.findMany({
       where: {
         OR: [
-          { id: { contains: query, mode: "insensitive" } },
-          { code: { contains: query, mode: "insensitive" } },
-          { message: { contains: query, mode: "insensitive" } },
-          { category: { contains: query, mode: "insensitive" } },
-          { level: { contains: query, mode: "insensitive" } },
-          { route: { contains: query, mode: "insensitive" } },
-          { requestId: { contains: query, mode: "insensitive" } },
-          { correlationId: { contains: query, mode: "insensitive" } },
+          { id: contains },
+          { code: contains },
+          { message: contains },
+          { category: contains },
+          { level: contains },
+          { route: contains },
+          { requestId: contains },
+          { correlationId: contains },
         ],
-      },
+      } as never,
       orderBy: { createdAt: "desc" },
-      take: PAGE_LIMIT,
+      take: RESULT_LIMIT,
       select: { id: true, code: true, message: true, category: true, level: true, resolved: true, createdAt: true },
     }),
     prisma.auditLog.findMany({
       where: {
         OR: [
-          { id: { contains: query, mode: "insensitive" } },
-          { action: { contains: query, mode: "insensitive" } },
-          { entityType: { contains: query, mode: "insensitive" } },
-          { entityId: { contains: query, mode: "insensitive" } },
-          { actor: { email: { contains: query, mode: "insensitive" } } },
-          { actor: { name: { contains: query, mode: "insensitive" } } },
-          { tenant: { displayName: { contains: query, mode: "insensitive" } } },
+          { id: contains },
+          { action: contains },
+          { entityType: contains },
+          { entityId: contains },
+          { actor: { email: contains } },
+          { actor: { name: contains } },
+          { tenant: { displayName: contains } },
         ],
-      },
+      } as never,
       orderBy: { createdAt: "desc" },
-      take: PAGE_LIMIT,
+      take: RESULT_LIMIT,
       select: {
         id: true,
         action: true,
@@ -287,30 +298,29 @@ async function getSearchGroups(query: string): Promise<ResultGroup[]> {
     prisma.backupJob.findMany({
       where: {
         OR: [
-          { id: { contains: query, mode: "insensitive" } },
-          { type: { contains: query, mode: "insensitive" } },
-          { status: { contains: query, mode: "insensitive" } },
-          { trigger: { contains: query, mode: "insensitive" } },
-          { note: { contains: query, mode: "insensitive" } },
+          { id: contains },
+          { trigger: contains },
+          { note: contains },
+          { githubPath: contains },
+          { localPath: contains },
         ],
-      },
+      } as never,
       orderBy: { createdAt: "desc" },
-      take: PAGE_LIMIT,
+      take: RESULT_LIMIT,
       select: { id: true, type: true, status: true, trigger: true, createdAt: true, completedAt: true },
     }),
     prisma.featureFlag.findMany({
       where: {
         OR: [
-          { id: { contains: query, mode: "insensitive" } },
-          { key: { contains: query, mode: "insensitive" } },
-          { scope: { contains: query, mode: "insensitive" } },
-          { tenant: { displayName: { contains: query, mode: "insensitive" } } },
-          { site: { title: { contains: query, mode: "insensitive" } } },
-          { site: { slug: { contains: query, mode: "insensitive" } } },
+          { id: contains },
+          { key: contains },
+          { tenant: { displayName: contains } },
+          { site: { title: contains } },
+          { site: { slug: contains } },
         ],
-      },
+      } as never,
       orderBy: { updatedAt: "desc" },
-      take: PAGE_LIMIT,
+      take: RESULT_LIMIT,
       select: {
         id: true,
         key: true,
@@ -325,22 +335,22 @@ async function getSearchGroups(query: string): Promise<ResultGroup[]> {
       where: {
         deletedAt: null,
         OR: [
-          { id: { contains: query, mode: "insensitive" } },
-          { type: { contains: query, mode: "insensitive" } },
-          { title: { contains: query, mode: "insensitive" } },
-          { body: { contains: query, mode: "insensitive" } },
-          { category: { contains: query, mode: "insensitive" } },
-          { tenantId: { contains: query, mode: "insensitive" } },
-          { userId: { contains: query, mode: "insensitive" } },
+          { id: contains },
+          { type: contains },
+          { title: contains },
+          { body: contains },
+          { category: contains },
+          { tenantId: contains },
+          { userId: contains },
         ],
-      },
+      } as never,
       orderBy: { createdAt: "desc" },
-      take: PAGE_LIMIT,
+      take: RESULT_LIMIT,
       select: { id: true, type: true, title: true, category: true, tenantId: true, userId: true, createdAt: true },
     }),
   ]);
 
-  return [
+  const groups: ResultGroup[] = [
     {
       id: "customers",
       title: "العملاء",
@@ -441,7 +451,7 @@ async function getSearchGroups(query: string): Promise<ResultGroup[]> {
         id: asset.id,
         title: asset.alt || asset.storageKey || asset.id,
         subtitle: `${asset.tenant.displayName} · ${asset.mimeType}`,
-        meta: `${Math.round(asset.sizeBytes / 1024)} KB`,
+        meta: bytesLabel(asset.sizeBytes),
         href: `/admin/customers/${asset.tenant.id}`,
       })),
     },
@@ -523,7 +533,9 @@ async function getSearchGroups(query: string): Promise<ResultGroup[]> {
         href: "/admin/notifications",
       })),
     },
-  ].filter((group) => group.results.length > 0);
+  ];
+
+  return groups.filter((group) => group.results.length > 0);
 }
 
 export default async function AdminSearchPage({ searchParams }: Props) {
@@ -581,7 +593,7 @@ export default async function AdminSearchPage({ searchParams }: Props) {
 function SearchStart() {
   const examples = [
     { label: "عميل", value: "studio@email.com" },
-    { label: "مدفوعات", value: "UNDER_REVIEW" },
+    { label: "مدفوعات", value: "payment-reference" },
     { label: "موقع", value: "wedding" },
     { label: "أخطاء", value: "FID-PAY" },
     { label: "Audit", value: "PAYMENT_APPROVED" },
@@ -641,9 +653,7 @@ function SearchGroup({ group }: { group: ResultGroup }) {
           <Link
             key={`${group.id}-${result.id}`}
             href={result.href}
-            className={cn(
-              "grid gap-1 px-4 py-3 no-underline transition hover:bg-amber-500/[0.06] sm:grid-cols-[1fr_auto] sm:items-center",
-            )}
+            className="grid gap-1 px-4 py-3 no-underline transition hover:bg-amber-500/[0.06] sm:grid-cols-[1fr_auto] sm:items-center"
           >
             <span className="min-w-0">
               <strong className="block truncate text-sm font-black text-white/84">{result.title}</strong>
