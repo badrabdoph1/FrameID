@@ -233,13 +233,12 @@ export function BillingClient({ session, plans, paymentMethods, paymentRequest, 
   const selectedMethod = useMemo(() => paymentMethods.find((method) => method.id === selectedMethodId) ?? initialMethod, [paymentMethods, selectedMethodId, initialMethod]);
   const selectedAccount = useMemo(() => selectedMethod?.accounts.find((account) => account.id === selectedAccountId) ?? selectedMethod?.accounts[0] ?? initialAccount, [selectedMethod, selectedAccountId, initialAccount]);
 
-  const hasPaymentChoice = Boolean(selectedMethod && selectedAccount);
   const uploadSucceeded = proofUploaded || isActionSuccess(completePaymentState);
   const submitted = requested || requestLocked || isActionSuccess(submitState) || isActionSuccess(completePaymentState);
-  const canCreateDraft = Boolean(selectedPlan && hasPaymentChoice && !draftState && !requestLocked);
   const canUploadAndSubmit = Boolean(draftState && proofFile && !requestLocked);
   const canSubmitExistingProof = Boolean(draftState && uploadSucceeded && !requestLocked);
   const receiptNumber = paymentRequest?.id ?? draftState ?? draftId ?? "FRAMEID-PENDING";
+  const stageKey = `${step}-${draftState ? "draft" : "select"}-${submitted ? "submitted" : "editing"}`;
 
   const stepConfig: StepConfig[] = [
     { step: 1, title: "الباقة", done: Boolean(selectedPlan || draftState), available: !requestLocked },
@@ -316,6 +315,19 @@ export function BillingClient({ session, plans, paymentMethods, paymentRequest, 
 
   return (
     <main className="mx-auto max-w-4xl space-y-4">
+      <style>{`
+        .billing-step-motion {
+          animation: billingStepIn 260ms cubic-bezier(0.22, 1, 0.36, 1) both;
+        }
+        @keyframes billingStepIn {
+          from { opacity: 0; transform: translateY(14px) scale(0.985); filter: blur(5px); }
+          to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .billing-step-motion { animation: none; }
+        }
+      `}</style>
+
       <BuilderPageHeader
         eyebrow="التفعيل"
         title={subscriptionStatus === "ACTIVE" ? "اشتراكك نشط" : "تفعيل الاشتراك"}
@@ -331,120 +343,116 @@ export function BillingClient({ session, plans, paymentMethods, paymentRequest, 
           <StepTabs steps={stepConfig} current={step} onSelect={goToStep} />
 
           <div className="mt-4 rounded-2xl border border-white/[0.07] bg-black/15 p-4">
-            {step === 1 ? (
-              <CheckoutStage title="اختار الباقة" icon={<Package className="size-4" />}>
-                {visiblePlans.length > 0 ? (
-                  <div className="grid gap-3 md:grid-cols-2">
-                    {visiblePlans.map((plan) => (
-                      <PlanCard
-                        key={plan.id}
-                        plan={plan}
-                        selected={selectedPlanId === plan.id}
-                        disabled={Boolean(draftState || requestLocked)}
-                        onSelect={() => handlePlanSelect(plan.id)}
-                      />
-                    ))}
-                  </div>
-                ) : <Alert tone="warning" title="لا توجد باقات" text="لا توجد باقات مفعلة حاليًا. تواصل مع الدعم الفني." />}
-                <Actions>
-                  <Button type="button" variant="luxury" disabled={!selectedPlan} onClick={() => setStep(2)}>متابعة</Button>
-                </Actions>
-              </CheckoutStage>
-            ) : null}
-
-            {step === 2 ? (
-              <CheckoutStage title={draftState ? "الدفع والإثبات" : "اختار وسيلة الدفع"} icon={<CreditCard className="size-4" />}>
-                {!draftState ? (
-                  <>
-                    <PaymentMethodPicker methods={paymentMethods} selectedMethodId={selectedMethodId} onMethodSelect={handleMethodSelect} />
-                    {selectedMethod && selectedAccount ? (
-                      <>
-                        <PaymentInstructionCard
-                          account={selectedAccount}
-                          method={selectedMethod}
-                          plan={selectedPlan}
-                          copied={copiedKey === "pay-account"}
-                          onCopy={() => copyToClipboard(selectedAccount.phoneNumber ?? selectedAccount.accountNumber, "pay-account")}
+            <AnimatedStepPanel stageKey={stageKey}>
+              {step === 1 ? (
+                <CheckoutStage title="اختار الباقة" icon={<Package className="size-4" />}>
+                  {visiblePlans.length > 0 ? (
+                    <div className="grid gap-3 md:grid-cols-2">
+                      {visiblePlans.map((plan) => (
+                        <PlanCard
+                          key={plan.id}
+                          plan={plan}
+                          selected={selectedPlanId === plan.id}
+                          disabled={Boolean(draftState || requestLocked)}
+                          onSelect={() => handlePlanSelect(plan.id)}
                         />
-                        <form action={createAction}>
-                          <input type="hidden" name="planId" value={selectedPlanId ?? ""} />
-                          <input type="hidden" name="method" value={selectedMethod.paymentMethod} />
-                          <input type="hidden" name="accountId" value={selectedAccount.id} />
-                          <Button type="submit" variant="luxury" disabled={!canCreateDraft || createPending}>{createPending ? <Loader2 className="size-4 animate-spin" /> : <CreditCard className="size-4" />}{createPending ? "جاري تجهيز الدفع..." : "ذهاب للدفع"}</Button>
+                      ))}
+                    </div>
+                  ) : <Alert tone="warning" title="لا توجد باقات" text="لا توجد باقات مفعلة حاليًا. تواصل مع الدعم الفني." />}
+                  <Actions>
+                    <Button type="button" variant="luxury" disabled={!selectedPlan} onClick={() => setStep(2)}>متابعة</Button>
+                  </Actions>
+                </CheckoutStage>
+              ) : null}
+
+              {step === 2 ? (
+                <CheckoutStage title={draftState ? "الدفع والإثبات" : "اختار وسيلة الدفع"} icon={<CreditCard className="size-4" />}>
+                  {!draftState ? (
+                    <>
+                      <PaymentMethodPicker
+                        methods={paymentMethods}
+                        selectedMethodId={selectedMethodId}
+                        selectedPlanId={selectedPlanId}
+                        pending={createPending}
+                        action={createAction}
+                        onMethodSelect={handleMethodSelect}
+                      />
+                      {getActionError(createState) ? <ErrorText text={getActionError(createState)!} /> : null}
+                    </>
+                  ) : (
+                    <>
+                      <PaymentInstructionCard
+                        account={selectedAccount}
+                        method={selectedMethod}
+                        plan={selectedPlan}
+                        fallbackMethod={paymentRequest?.method ?? null}
+                        copied={copiedKey === "pay-account"}
+                        onCopy={() => selectedAccount ? copyToClipboard(selectedAccount.phoneNumber ?? selectedAccount.accountNumber, "pay-account") : undefined}
+                      />
+                      <PaymentAmountCard plan={selectedPlan} request={paymentRequest} />
+                      <ProofSubmitCard
+                        draftId={draftState}
+                        proofFile={proofFile}
+                        proofUploaded={uploadSucceeded}
+                        pending={completePaymentPending}
+                        canSubmit={canUploadAndSubmit}
+                        action={completePaymentAction}
+                        onFileSelect={handleFileSelect}
+                      />
+                      {fileError ? <ErrorText text={fileError} /> : null}
+                      {getActionError(completePaymentState) ? <ErrorText text={getActionError(completePaymentState)!} /> : null}
+                      {uploadSucceeded && !submitted ? (
+                        <form action={submitAction}>
+                          <input type="hidden" name="draftId" value={draftState} />
+                          <Button type="submit" variant="luxury" disabled={!canSubmitExistingProof || submitPending}>{submitPending ? <Loader2 className="size-4 animate-spin" /> : <CheckCircle2 className="size-4" />}{submitPending ? "جاري تقديم الطلب..." : "تقديم الطلب الآن"}</Button>
                         </form>
-                      </>
-                    ) : selectedMethod ? <Alert tone="warning" title="لا يوجد حساب" text="وسيلة الدفع مفعلة لكن لا يوجد رقم دفع مرتبط بها." /> : null}
-                    {getActionError(createState) ? <ErrorText text={getActionError(createState)!} /> : null}
-                  </>
-                ) : (
-                  <>
-                    <PaymentInstructionCard
-                      account={selectedAccount}
-                      method={selectedMethod}
-                      plan={selectedPlan}
-                      fallbackMethod={paymentRequest?.method ?? null}
-                      copied={copiedKey === "pay-account"}
-                      onCopy={() => selectedAccount ? copyToClipboard(selectedAccount.phoneNumber ?? selectedAccount.accountNumber, "pay-account") : undefined}
+                      ) : null}
+                    </>
+                  )}
+
+                  <Actions>
+                    {!draftState ? <Button type="button" variant="ghost" onClick={() => setStep(1)}>رجوع</Button> : null}
+                    {draftState && !requestLocked && !submitted ? <CancelDraftForm draftId={draftState} cancelAction={cancelAction} pending={cancelPending} /> : null}
+                  </Actions>
+                </CheckoutStage>
+              ) : null}
+
+              {step === 3 ? (
+                <CheckoutStage title="معلومات الدفع" icon={<CheckCircle2 className="size-4" />}>
+                  {submitted ? (
+                    <SuccessReceiptCard
+                      receiptNumber={receiptNumber}
+                      status={paymentRequest?.status ?? (isActionSuccess(completePaymentState) || isActionSuccess(submitState) ? "SUBMITTED" : "PENDING")}
+                      rejectionReason={paymentRequest?.rejectionReason ?? null}
+                      copied={copiedKey === "receipt"}
+                      dashboardHref="/dashboard"
+                      siteHref={siteHref}
+                      onCopy={() => copyToClipboard(receiptNumber, "receipt")}
                     />
-                    <PaymentAmountCard plan={selectedPlan} request={paymentRequest} />
-                    <ProofSubmitCard
-                      draftId={draftState}
-                      proofFile={proofFile}
-                      proofUploaded={uploadSucceeded}
-                      pending={completePaymentPending}
-                      canSubmit={canUploadAndSubmit}
-                      action={completePaymentAction}
-                      onFileSelect={handleFileSelect}
-                    />
-                    {fileError ? <ErrorText text={fileError} /> : null}
-                    {getActionError(completePaymentState) ? <ErrorText text={getActionError(completePaymentState)!} /> : null}
-                    {uploadSucceeded && !submitted ? (
+                  ) : (
+                    <>
+                      <FinalSummary plan={selectedPlan} method={selectedMethod} account={selectedAccount} uploadSucceeded={uploadSucceeded} request={paymentRequest} />
                       <form action={submitAction}>
-                        <input type="hidden" name="draftId" value={draftState} />
-                        <Button type="submit" variant="luxury" disabled={!canSubmitExistingProof || submitPending}>{submitPending ? <Loader2 className="size-4 animate-spin" /> : <CheckCircle2 className="size-4" />}{submitPending ? "جاري تقديم الطلب..." : "تقديم الطلب الآن"}</Button>
+                        <input type="hidden" name="draftId" value={draftState ?? ""} />
+                        <Button type="submit" variant="luxury" disabled={!canSubmitExistingProof || submitPending}>{submitPending ? <Loader2 className="size-4 animate-spin" /> : <CheckCircle2 className="size-4" />}{submitPending ? "جاري تقديم الطلب..." : "تقديم الطلب"}</Button>
                       </form>
-                    ) : null}
-                  </>
-                )}
-
-                <Actions>
-                  {!draftState ? <Button type="button" variant="ghost" onClick={() => setStep(1)}>رجوع</Button> : null}
-                  {draftState && !requestLocked && !submitted ? <CancelDraftForm draftId={draftState} cancelAction={cancelAction} pending={cancelPending} /> : null}
-                </Actions>
-              </CheckoutStage>
-            ) : null}
-
-            {step === 3 ? (
-              <CheckoutStage title="معلومات الدفع" icon={<CheckCircle2 className="size-4" />}>
-                {submitted ? (
-                  <SuccessReceiptCard
-                    receiptNumber={receiptNumber}
-                    status={paymentRequest?.status ?? (isActionSuccess(completePaymentState) || isActionSuccess(submitState) ? "SUBMITTED" : "PENDING")}
-                    rejectionReason={paymentRequest?.rejectionReason ?? null}
-                    copied={copiedKey === "receipt"}
-                    dashboardHref="/dashboard"
-                    siteHref={siteHref}
-                    onCopy={() => copyToClipboard(receiptNumber, "receipt")}
-                  />
-                ) : (
-                  <>
-                    <FinalSummary plan={selectedPlan} method={selectedMethod} account={selectedAccount} uploadSucceeded={uploadSucceeded} request={paymentRequest} />
-                    <form action={submitAction}>
-                      <input type="hidden" name="draftId" value={draftState ?? ""} />
-                      <Button type="submit" variant="luxury" disabled={!canSubmitExistingProof || submitPending}>{submitPending ? <Loader2 className="size-4 animate-spin" /> : <CheckCircle2 className="size-4" />}{submitPending ? "جاري تقديم الطلب..." : "تقديم الطلب"}</Button>
-                    </form>
-                  </>
-                )}
-                {getActionError(submitState) ? <ErrorText text={getActionError(submitState)!} /> : null}
-                {getActionError(cancelState) ? <ErrorText text={getActionError(cancelState)!} /> : null}
-                <Actions>{!requestLocked && !submitted ? <Button type="button" variant="ghost" onClick={() => setStep(2)}>رجوع</Button> : null}</Actions>
-              </CheckoutStage>
-            ) : null}
+                    </>
+                  )}
+                  {getActionError(submitState) ? <ErrorText text={getActionError(submitState)!} /> : null}
+                  {getActionError(cancelState) ? <ErrorText text={getActionError(cancelState)!} /> : null}
+                  <Actions>{!requestLocked && !submitted ? <Button type="button" variant="ghost" onClick={() => setStep(2)}>رجوع</Button> : null}</Actions>
+                </CheckoutStage>
+              ) : null}
+            </AnimatedStepPanel>
           </div>
         </section>
       ) : null}
     </main>
   );
+}
+
+function AnimatedStepPanel({ stageKey, children }: { stageKey: string; children: ReactNode }) {
+  return <div key={stageKey} className="billing-step-motion">{children}</div>;
 }
 
 function TrialNotice({ daysRemaining, submitted, status }: { daysRemaining: number; submitted: boolean; status: string | null }) {
@@ -518,21 +526,28 @@ function PlanCard({ plan, selected, disabled, onSelect }: { plan: PlanData; sele
   );
 }
 
-function PaymentMethodPicker({ methods, selectedMethodId, onMethodSelect }: { methods: PaymentMethodData[]; selectedMethodId: string | null; onMethodSelect: (id: string) => void }) {
+function PaymentMethodPicker({ methods, selectedMethodId, selectedPlanId, pending, action, onMethodSelect }: { methods: PaymentMethodData[]; selectedMethodId: string | null; selectedPlanId: string | null; pending: boolean; action: (payload: FormData) => void; onMethodSelect: (id: string) => void }) {
   if (methods.length === 0) return <Alert tone="warning" title="لا توجد وسائل دفع" text="الأدمن يحتاج يفعّل وسيلة دفع أولاً." />;
 
   return (
     <div className="grid gap-2 sm:grid-cols-2">
       {methods.map((method) => {
         const selected = selectedMethodId === method.id;
+        const account = method.accounts[0] ?? null;
+        const disabled = !selectedPlanId || !account || pending;
         return (
-          <button key={method.id} type="button" onClick={() => onMethodSelect(method.id)} className={`rounded-2xl border p-4 text-right transition ${selected ? "border-amber-400/60 bg-amber-500/10" : "border-white/[0.08] bg-white/[0.025] hover:border-white/20"}`}>
-            <span className="flex items-center justify-between gap-3">
-              <strong className="text-sm font-black text-[#fff7e8]">{method.label ?? getPaymentMethodLabel(method.paymentMethod)}</strong>
-              {selected ? <CheckCircle2 className="size-5 text-emerald-300" /> : <CreditCard className="size-5 text-white/30" />}
-            </span>
-            <small className="mt-2 block text-xs leading-6 text-white/40">اضغط لعرض رقم الدفع مباشرة.</small>
-          </button>
+          <form key={method.id} action={action}>
+            <input type="hidden" name="planId" value={selectedPlanId ?? ""} />
+            <input type="hidden" name="method" value={method.paymentMethod} />
+            <input type="hidden" name="accountId" value={account?.id ?? ""} />
+            <button type="submit" disabled={disabled} onClick={() => onMethodSelect(method.id)} className={`min-h-28 w-full rounded-2xl border p-4 text-right transition ${selected ? "border-amber-400/60 bg-amber-500/10" : "border-white/[0.08] bg-white/[0.025] hover:border-white/20"} ${disabled ? "cursor-not-allowed opacity-60" : ""}`}>
+              <span className="flex items-center justify-between gap-3">
+                <strong className="text-sm font-black text-[#fff7e8]">{method.label ?? getPaymentMethodLabel(method.paymentMethod)}</strong>
+                {pending && selected ? <Loader2 className="size-5 animate-spin text-[#f3cf73]" /> : selected ? <CheckCircle2 className="size-5 text-emerald-300" /> : <CreditCard className="size-5 text-white/30" />}
+              </span>
+              <small className="mt-2 block text-xs leading-6 text-white/40">{!account ? "لا يوجد رقم دفع متاح" : pending && selected ? "جاري تجهيز الدفع..." : "اضغط للذهاب للدفع مباشرة"}</small>
+            </button>
+          </form>
         );
       })}
     </div>
@@ -587,7 +602,7 @@ function ProofSubmitCard({ draftId, proofFile, proofUploaded, pending, canSubmit
         <strong className="text-sm text-[#fff7e8]">{proofFile ? proofFile.name : proofUploaded ? "تم رفع إثبات الدفع" : "ارفع سكرين صورة التحويل"}</strong>
         <small className="text-white/35">JPEG / PNG / WebP — بحد أقصى 5MB</small>
       </label>
-      <Button type="submit" variant="luxury" disabled={!canSubmit || pending}>{pending ? <Loader2 className="size-4 animate-spin" /> : <CheckCircle2 className="size-4" />}{pending ? "جاري تقديم الطلب..." : "تم، قدم الطلب"}</Button>
+      <Button type="submit" variant="luxury" disabled={!canSubmit || pending}>{pending ? <Loader2 className="size-4 animate-spin" /> : <CheckCircle2 className="size-4" />}{pending ? "جاري تقديم الطلب..." : "تم الدفع ~ قدم طلب"}</Button>
     </form>
   );
 }
