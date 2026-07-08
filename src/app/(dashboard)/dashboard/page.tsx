@@ -6,6 +6,7 @@ import { getCurrentRequestSession } from "@/modules/auth/request-session";
 import { createDashboardViewModel } from "@/modules/dashboard/dashboard-view-model";
 import { DashboardHomeClient } from "./home-client";
 import { prisma } from "@/lib/prisma";
+import { hasMeaningfulContactInfo } from "@/modules/dashboard/contact-completion";
 
 export const metadata: Metadata = {
   title: "لوحة التحكم | FrameID"
@@ -56,7 +57,7 @@ export default async function DashboardPage() {
     packagesCount,
     imagesCount,
     albumsCount,
-    hasContactInfo: !!contactProfile,
+    hasContactInfo: hasMeaningfulContactInfo(contactProfile),
     hasCoverImage: !!(heroSection?.data && typeof heroSection.data === "object" && "imageUrl" in heroSection.data),
     currentThemeName: siteTheme?.theme.name ?? "بدون",
     lastModifiedAt: lastModified,

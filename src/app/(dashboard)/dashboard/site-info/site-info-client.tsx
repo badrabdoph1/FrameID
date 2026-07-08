@@ -783,6 +783,7 @@ export function SiteInfoClient(props: SiteInfoClientProps) {
                   border: "1px solid rgba(245, 234, 214, 0.08)",
                 }}
               >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={coverPreview}
                   alt="الغلاف"
@@ -841,6 +842,7 @@ export function SiteInfoClient(props: SiteInfoClientProps) {
                   border: "2px solid rgba(243, 207, 115, 0.2)",
                 }}
               >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={avatarPreview}
                   alt="الصورة الشخصية"

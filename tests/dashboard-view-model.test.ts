@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { createDashboardViewModel } from "@/modules/dashboard/dashboard-view-model";
 import type { CurrentSession } from "@/modules/auth/current-session-service";
 
-function createSession(): CurrentSession {
+function createSession(status: "DRAFT" | "PUBLISHED" = "PUBLISHED"): CurrentSession {
   return {
     user: {
       id: "user_1",
@@ -21,7 +21,7 @@ function createSession(): CurrentSession {
       id: "site_1",
       slug: "ali-ahmed",
       title: "Ali Ahmed",
-      status: "PUBLISHED",
+      status,
       slugChangeUsed: false
     },
     subscription: {
@@ -50,8 +50,8 @@ describe("dashboard view model", () => {
     expect(viewModel.siteUrl).toBe("https://frameid.app/p/ali-ahmed");
     expect(viewModel.statusLabel).toBe("منشور");
     expect(viewModel.photographerName).toBe("Ali Ahmed Studio");
-    expect(viewModel.percent).toBe(83);
-    expect(viewModel.checklist).toHaveLength(6);
+    expect(viewModel.percent).toBe(100);
+    expect(viewModel.checklist).toHaveLength(7);
     expect(viewModel.stats).toEqual([
       { label: "الصور", value: "15", tone: "success" },
       { label: "الألبومات", value: "2", tone: "success" },
@@ -60,13 +60,14 @@ describe("dashboard view model", () => {
     ]);
     expect(viewModel.currentTheme).toBe("Rose Blush");
     expect(viewModel.isPublished).toBe(true);
-    expect(viewModel.nextStepTitle).toBe("راجع موقعك قبل النشر");
-    expect(viewModel.nextStepDescription).toBe("افتح الموقع كما سيراه العميل وتأكد أن الصور والباقات وطرق التواصل واضحة.");
+    expect(viewModel.nextStepLabel).toBe("تم النشر ✓");
+    expect(viewModel.nextStepTitle).toBe("انشر وشارك الرابط");
+    expect(viewModel.nextStepDescription).toBe("انسخ الرابط أو شاركه بعد التأكد من العنوان والمعاينات.");
   });
 
   it("shows empty state for new sites", () => {
     const viewModel = createDashboardViewModel({
-      session: createSession(),
+      session: createSession("DRAFT"),
       platformBaseUrl: "https://frameid.app",
       now: new Date("2026-07-06T12:00:00.000Z"),
       packagesCount: 0,
@@ -78,18 +79,18 @@ describe("dashboard view model", () => {
       lastModifiedAt: new Date(),
     });
 
-    expect(viewModel.percent).toBe(17);
+    expect(viewModel.percent).toBe(0);
     expect(viewModel.currentTheme).toBe("بدون");
     expect(viewModel.stats[0]).toEqual({ label: "الصور", value: "0", tone: "neutral" });
-    expect(viewModel.nextStepLabel).toBe("رفع صورة الغلاف");
-    expect(viewModel.nextStepTitle).toBe("ابدأ بصورة الغلاف");
-    expect(viewModel.nextStepDescription).toBe("اختر صورة قوية تظهر في أول شاشة من موقعك.");
+    expect(viewModel.nextStepLabel).toBe("إكمال بيانات التواصل");
+    expect(viewModel.nextStepTitle).toBe("أكمل بيانات التواصل");
+    expect(viewModel.nextStepDescription).toBe("أضف الهاتف وواتساب والمدينة حتى يعرف العميل كيف يحجز معك.");
   });
 
   it("calculates completion correctly", () => {
-    const session = createSession();
+    const session = createSession("DRAFT");
 
-    // 4 out of 6 items done
+    // 4 out of 7 items done
     const viewModel = createDashboardViewModel({
       session,
       platformBaseUrl: "https://frameid.app",
@@ -103,7 +104,7 @@ describe("dashboard view model", () => {
       lastModifiedAt: new Date(),
     });
 
-    expect(viewModel.percent).toBe(83);
-    expect(viewModel.checklist.filter((i) => i.done)).toHaveLength(5);
+    expect(viewModel.percent).toBe(57);
+    expect(viewModel.checklist.filter((i) => i.done)).toHaveLength(4);
   });
 });

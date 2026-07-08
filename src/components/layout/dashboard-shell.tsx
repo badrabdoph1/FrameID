@@ -17,7 +17,6 @@ import {
   type LucideIcon,
 } from "lucide-react"
 import { logoutAction } from "@/app/_actions/logout"
-import { cn } from "@/lib/utils/cn"
 import "@/app/admin.css"
 
 type NavItem = {
@@ -241,8 +240,9 @@ export function DashboardShell({
         style={{
           display: "flex",
           alignItems: "center",
-          justifyContent: "space-around",
-          padding: "4px 4px",
+          justifyContent: "flex-start",
+          gap: 2,
+          padding: "4px 6px",
           borderTop: "1px solid rgba(245, 234, 214, 0.08)",
           background: "rgba(11, 13, 18, 0.96)",
           backdropFilter: "blur(12px)",
@@ -253,10 +253,12 @@ export function DashboardShell({
           right: 0,
           zIndex: 50,
           paddingBottom: "env(safe-area-inset-bottom, 4px)",
+          overflowX: "auto",
+          scrollbarWidth: "none",
         }}
         className="lg:hidden"
       >
-        {navItems.slice(0, 5).map((item) => {
+        {navItems.map((item) => {
           const active = isActive(item.href)
           const Icon = item.icon
           return (
@@ -275,7 +277,7 @@ export function DashboardShell({
                 textDecoration: "none",
                 color: active ? "#f3cf73" : "rgba(245, 234, 214, 0.45)",
                 transition: "color 0.15s",
-                minWidth: 0,
+                minWidth: 76,
               }}
             >
               <Icon size={18} />
@@ -283,26 +285,6 @@ export function DashboardShell({
             </Link>
           )
         })}
-        <Link
-          href="/dashboard/settings"
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            gap: 1,
-            padding: "6px 8px",
-            borderRadius: 8,
-            fontSize: "0.55rem",
-            fontWeight: isActive("/dashboard/settings") ? 950 : 850,
-            textDecoration: "none",
-            color: isActive("/dashboard/settings") ? "#f3cf73" : "rgba(245, 234, 214, 0.45)",
-            transition: "color 0.15s",
-            minWidth: 0,
-          }}
-        >
-          <Settings size={18} />
-          <span style={{ lineHeight: 1.2 }}>الإعدادات</span>
-        </Link>
       </nav>
     </div>
   )

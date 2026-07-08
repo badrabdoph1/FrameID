@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -36,6 +37,13 @@ export function DashboardHomeClient({
 }: DashboardViewModel) {
   const doneCount = checklist.filter((i) => i.done).length;
   const nextIsExternal = nextStepHref.startsWith("/p/");
+  const [copied, setCopied] = useState(false);
+
+  const copySiteUrl = async () => {
+    await navigator.clipboard?.writeText(siteUrl);
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 1800);
+  };
 
   return (
     <main style={{ display: "grid", gap: 16, maxWidth: 980 }}>
@@ -197,11 +205,11 @@ export function DashboardHomeClient({
         </Link>
         <button
           type="button"
-          onClick={() => navigator.clipboard?.writeText(siteUrl)}
+          onClick={copySiteUrl}
           className="inline-flex min-h-11 items-center justify-center gap-2 rounded-[var(--radius-control)] border border-border bg-surface px-4 text-sm font-semibold text-foreground"
         >
-          <Copy className="size-4" aria-hidden />
-          نسخ الرابط
+          {copied ? <CheckCircle2 className="size-4 text-success" aria-hidden /> : <Copy className="size-4" aria-hidden />}
+          {copied ? "تم نسخ الرابط" : "نسخ الرابط"}
         </button>
       </div>
     </main>

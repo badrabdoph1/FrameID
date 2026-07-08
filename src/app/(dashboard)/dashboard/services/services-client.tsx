@@ -10,7 +10,6 @@ import {
   Eye,
   EyeOff,
   Package,
-  Star,
   Trash2,
 } from "lucide-react";
 
@@ -62,12 +61,6 @@ type ServicesClientProps = {
 
 /* ─── Helpers ──────────────────────────────────── */
 
-function formatMoney(amount: number, currency: string): string {
-  return `${new Intl.NumberFormat("en-US", {
-    maximumFractionDigits: 0,
-  }).format(amount)} ${currency === "EGP" ? "جنيه" : currency}`;
-}
-
 /* ─── Extra Card ───────────────────────────────── */
 
 function ExtraCard({
@@ -91,18 +84,12 @@ function ExtraCard({
   isLast: boolean;
   disabled?: boolean;
 }) {
-  const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   const update = useCallback(
     async (partial: Partial<ExtraData>) => {
-      setSaving(true);
-      try {
-        await onUpdate({ ...extra, ...partial });
-      } finally {
-        setSaving(false);
-      }
+      await onUpdate({ ...extra, ...partial });
     },
     [extra, onUpdate],
   );
@@ -843,11 +830,11 @@ export function ServicesClient({
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="extra-icon">رمز داخلي</Label>
+                  <Label htmlFor="extra-icon">نوع الخدمة أو الأيقونة</Label>
                   <Input
                     id="extra-icon"
                     name="iconKey"
-                    placeholder="album, reel, prints"
+                    placeholder="مثلاً: ألبوم، فيديو، مطبوعات"
                   />
                 </div>
               </div>

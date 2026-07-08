@@ -336,6 +336,7 @@ export function ImageUploader({
                 className="group relative aspect-square overflow-hidden rounded-[var(--radius-control)] border border-border bg-surface"
                 role="listitem"
               >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={f.preview}
                   alt={f.file.name}

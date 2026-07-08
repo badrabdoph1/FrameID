@@ -25,16 +25,6 @@ export type DashboardViewModel = {
   nextStepDescription: string;
 };
 
-function daysRemaining(targetDate: Date, now: Date): number {
-  const msPerDay = 24 * 60 * 60 * 1000;
-  const diff = targetDate.getTime() - now.getTime();
-  return Math.max(0, Math.ceil(diff / msPerDay));
-}
-
-function formatStatus(s: string): string {
-  return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
-}
-
 function calcPercent(done: number, total: number): number {
   if (total === 0) return 0;
   return Math.round((done / total) * 100);
@@ -55,6 +45,10 @@ const nextStepCopy: Record<string, { title: string; description: string }> = {
   cover: {
     title: "ابدأ بصورة الغلاف",
     description: "اختر صورة قوية تظهر في أول شاشة من موقعك.",
+  },
+  contact: {
+    title: "أكمل بيانات التواصل",
+    description: "أضف الهاتف وواتساب والمدينة حتى يعرف العميل كيف يحجز معك.",
   },
   album: {
     title: "ارفع أول ألبوم",
@@ -106,11 +100,12 @@ export function createDashboardViewModel({
   const hasAlbums = albumsCount > 0;
 
   const items: ChecklistItem[] = [
+    { id: "contact", label: "إكمال بيانات التواصل", done: hasContactInfo, href: "/dashboard/site-info" },
     { id: "cover", label: "رفع صورة الغلاف", done: hasCoverImage, href: "/dashboard/site-info" },
     { id: "album", label: "رفع أول ألبوم", done: hasImages && hasAlbums, href: "/dashboard/gallery" },
     { id: "package", label: "إضافة أول باقة", done: hasPackages, href: "/dashboard/services" },
     { id: "template", label: "اختيار قالب", done: currentThemeName !== "بدون", href: "/dashboard/templates" },
-    { id: "review", label: "مراجعة الموقع", done: false, href: `/p/${session.site.slug}` },
+    { id: "review", label: "مراجعة الموقع", done: session.site.status === "PUBLISHED", href: `/p/${session.site.slug}` },
     { id: "publish", label: "نشر الموقع", done: session.site.status === "PUBLISHED", href: "/dashboard/publish" },
   ];
 

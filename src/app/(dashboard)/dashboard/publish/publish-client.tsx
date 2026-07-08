@@ -233,6 +233,7 @@ export function PublishClient({
             QR Code
           </h2>
           <div className="grid justify-items-center gap-3">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={qrUrl}
               alt="QR Code لرابط الموقع"
@@ -371,7 +372,7 @@ export function PublishClient({
                 gap: 6,
               }}
             >
-              <Label htmlFor="canonical-url">الرابط الأساسي (Canonical URL)</Label>
+              <Label htmlFor="canonical-url">الرابط الأساسي للموقع</Label>
               <Input
                 id="canonical-url"
                 name="canonicalUrl"
@@ -569,7 +570,8 @@ export function PublishClient({
                   overflow: "hidden",
                 }}
               >
-                <img
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
                   src={ogUrl}
                   alt=""
                   style={{

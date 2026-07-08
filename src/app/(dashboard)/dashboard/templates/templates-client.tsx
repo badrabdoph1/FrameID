@@ -1,6 +1,5 @@
 "use client";
 
-import React from "react";
 import Link from "next/link";
 import { CheckCircle2, Eye, Monitor, Smartphone, WandSparkles } from "lucide-react";
 
