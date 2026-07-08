@@ -6,7 +6,12 @@ import { SESSION_COOKIE_NAME } from "@/modules/auth/session-tokens"
 
 const PUBLIC_ADMIN_PATHS = new Set(["/admin/login"])
 
-const SYSTEM_API_PREFIXES = new Set(["/api/health", "/api/rate-limit", "/api/internal"])
+const SYSTEM_API_PREFIXES = new Set([
+  "/api/health",
+  "/api/rate-limit",
+  "/api/internal",
+  "/api/admin",
+])
 
 function setSecurityHeaders(response: NextResponse): void {
   response.headers.set("X-Content-Type-Options", "nosniff")
