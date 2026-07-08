@@ -55,10 +55,6 @@ type PreviewFile = {
   size: number;
 };
 
-function formatSizeError(maxSizeMB: number): string {
-  return `الحد الأقصى ${maxSizeMB} MB`;
-}
-
 function DropZone({
   onFiles,
   multiple,
@@ -172,7 +168,7 @@ export function ImageUploader({
   onUpload,
   multiple = true,
   maxFiles = 20,
-  maxSizeMB = 10,
+  maxSizeMB = 30,
   accept,
   className,
   children,
@@ -186,6 +182,7 @@ export function ImageUploader({
   const compressedRef = useRef<Map<string, CompressedImage>>(new Map());
 
   const maxBytes = maxSizeMB * 1024 * 1024;
+  const rawMaxBytes = Math.max(maxBytes, 50 * 1024 * 1024);
 
   const addFiles = useCallback(
     (incoming: File[]) => {
@@ -197,8 +194,8 @@ export function ImageUploader({
           setError(`"${f.name}" ليس بصيغة صورة مدعومة`);
           continue;
         }
-        if (f.size > maxBytes) {
-          setError(`"${f.name}" ${formatSizeError(maxSizeMB)}`);
+        if (f.size > rawMaxBytes) {
+          setError(`"${f.name}" كبير جداً. جرّب صورة أقل من ${formatFileSize(rawMaxBytes)}.`);
           continue;
         }
         valid.push(f);
@@ -220,7 +217,7 @@ export function ImageUploader({
         return [...prev, ...newFiles];
       });
     },
-    [maxBytes, maxSizeMB, maxFiles],
+    [rawMaxBytes, maxFiles],
   );
 
   const removeFile = useCallback((id: string) => {
@@ -307,7 +304,7 @@ export function ImageUploader({
           <div className="flex items-center justify-between gap-3">
             <p className="text-sm text-muted-foreground">
               {files.length} {files.length === 1 ? "صورة" : "صور"} &mdash;{" "}
-              {formatFileSize(totalSize)}
+              {formatFileSize(totalSize)} قبل التحسين
             </p>
             <div className="flex items-center gap-2">
               {uploading && (
@@ -404,7 +401,7 @@ export function ImageUploader({
       {files.length === 0 && !error && (
         <p className="text-center text-xs text-muted-foreground">
           <CheckCircle2 className="ml-1 inline size-3.5 align-text-top text-champagne" />
-          {" "}لم يتم اختيار أي صور بعد
+          {" "}سنضغط الصور ونحولها تلقائياً عند الحاجة
         </p>
       )}
     </div>

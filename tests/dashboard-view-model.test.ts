@@ -60,6 +60,8 @@ describe("dashboard view model", () => {
     ]);
     expect(viewModel.currentTheme).toBe("Rose Blush");
     expect(viewModel.isPublished).toBe(true);
+    expect(viewModel.nextStepTitle).toBe("راجع موقعك قبل النشر");
+    expect(viewModel.nextStepDescription).toBe("افتح الموقع كما سيراه العميل وتأكد أن الصور والباقات وطرق التواصل واضحة.");
   });
 
   it("shows empty state for new sites", () => {
@@ -80,6 +82,8 @@ describe("dashboard view model", () => {
     expect(viewModel.currentTheme).toBe("بدون");
     expect(viewModel.stats[0]).toEqual({ label: "الصور", value: "0", tone: "neutral" });
     expect(viewModel.nextStepLabel).toBe("رفع صورة الغلاف");
+    expect(viewModel.nextStepTitle).toBe("ابدأ بصورة الغلاف");
+    expect(viewModel.nextStepDescription).toBe("اختر صورة قوية تظهر في أول شاشة من موقعك.");
   });
 
   it("calculates completion correctly", () => {

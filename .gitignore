@@ -11,3 +11,4 @@ public/uploads/
 *.log
 tsconfig.tsbuildinfo
 prisma/migrations/*/migration_lock.toml
+.vercel

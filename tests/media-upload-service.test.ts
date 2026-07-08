@@ -75,6 +75,26 @@ describe("media upload service", () => {
       })
     ).rejects.toThrow("Unsupported media type");
   });
+
+  it("accepts processed photographer images up to the expanded dashboard limit", async () => {
+    const { storage, repository } = createAdapters();
+    const service = createMediaUploadService({
+      storage,
+      repository,
+      createId: () => "large-key"
+    });
+    const file = createSizedTestFile(11 * 1024 * 1024, "processed.webp", "image/webp");
+
+    await expect(
+      service.uploadImage({
+        tenantId: "tenant_1",
+        file
+      })
+    ).resolves.toEqual({
+      id: "asset_1",
+      url: "/uploads/tenant_1/large-key-processed.webp"
+    });
+  });
 });
 
 function createTestFile(content: string, name: string, type: string): File {
@@ -84,6 +104,17 @@ function createTestFile(content: string, name: string, type: string): File {
     size: content.length,
     async arrayBuffer() {
       return new TextEncoder().encode(content).buffer;
+    }
+  } as File;
+}
+
+function createSizedTestFile(size: number, name: string, type: string): File {
+  return {
+    name,
+    type,
+    size,
+    async arrayBuffer() {
+      return new Uint8Array(size).buffer;
     }
   } as File;
 }

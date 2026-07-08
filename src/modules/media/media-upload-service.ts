@@ -1,5 +1,5 @@
 const ALLOWED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
-const DEFAULT_MAX_SIZE_BYTES = 8 * 1024 * 1024;
+const DEFAULT_MAX_SIZE_BYTES = 16 * 1024 * 1024;
 
 export type MediaStorageAdapter = {
   save(input: {

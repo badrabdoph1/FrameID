@@ -16,11 +16,14 @@ import {
   X,
 } from "lucide-react";
 
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { ImageUploader } from "@/components/dashboard/image-uploader";
+import {
+  BuilderNotice,
+  BuilderPageHeader,
+} from "@/components/dashboard/builder-primitives";
 
 import {
   createAlbumAction,
@@ -81,6 +84,33 @@ function getCoverUrl(album: AlbumWithImages): string | null {
   return null;
 }
 
+function getGalleryNotice(messages: Messages):
+  | { tone: "success" | "error"; title: string; description?: string; errorId?: string }
+  | null {
+  if (messages.error) {
+    return {
+      tone: "error",
+      title: "تعذر تنفيذ العملية",
+      description: "حاول مرة أخرى، وإذا استمرت المشكلة انسخ رقم الخطأ للدعم.",
+      errorId: messages.error,
+    };
+  }
+  if (messages.uploaded) {
+    return {
+      tone: "success",
+      title: `تم رفع ${messages.uploaded} ${messages.uploaded === "1" ? "صورة" : "صور"}`,
+      description: "يمكنك الآن ترتيب الصور واختيار الغلاف والصور المميزة.",
+    };
+  }
+  if (messages.created) return { tone: "success", title: "تم إنشاء الألبوم" };
+  if (messages.deleted) return { tone: "success", title: "تم الحذف" };
+  if (messages.renamed) return { tone: "success", title: "تم تعديل اسم الألبوم" };
+  if (messages.coverSet) return { tone: "success", title: "تم اختيار صورة الغلاف" };
+  if (messages.featuredToggled) return { tone: "success", title: "تم تحديث الصورة المميزة" };
+  if (messages.reordered) return { tone: "success", title: "تم ترتيب الصور" };
+  return null;
+}
+
 export function GalleryClient({
   albums,
   selectedAlbumId: initialAlbumId,
@@ -103,6 +133,7 @@ export function GalleryClient({
   const selectedAlbum = currentAlbumId
     ? albums.find((a) => a.id === currentAlbumId)
     : null;
+  const notice = getGalleryNotice(messages);
 
   const selectAlbum = (id: string) => {
     setCurrentAlbumId(id);
@@ -173,60 +204,19 @@ export function GalleryClient({
 
   return (
     <main className="space-y-5">
-      <section>
-        <Badge tone="luxury">المعرض</Badge>
-        <h1 className="mt-4 text-3xl font-semibold">معرض الصور</h1>
-        <p className="mt-2 max-w-2xl text-muted-foreground">
-          نظّم صورك في ألبومات وعرضها في موقعك.
-        </p>
-      </section>
+      <BuilderPageHeader
+        eyebrow="الأعمال"
+        title="نظّم صورك كألبومات جاهزة للعرض"
+        description="ابدأ بألبوم واحد، ارفع عدة صور معاً، ثم اختر الغلاف والصور المميزة التي تظهر أولاً."
+      />
 
-      {messages.uploaded ? (
-        <div className="rounded-[var(--radius-panel)] border border-success/20 bg-success-soft px-4 py-3 text-sm text-success">
-          ✅ تم رفع {messages.uploaded} {messages.uploaded === "1" ? "صورة" : "صور"} بنجاح
-        </div>
-      ) : null}
-
-      {messages.created ? (
-        <div className="rounded-[var(--radius-panel)] border border-success/20 bg-success-soft px-4 py-3 text-sm text-success">
-          ✅ تم إنشاء الألبوم بنجاح
-        </div>
-      ) : null}
-
-      {messages.deleted ? (
-        <div className="rounded-[var(--radius-panel)] border border-success/20 bg-success-soft px-4 py-3 text-sm text-success">
-          ✅ تم الحذف بنجاح
-        </div>
-      ) : null}
-
-      {messages.renamed ? (
-        <div className="rounded-[var(--radius-panel)] border border-success/20 bg-success-soft px-4 py-3 text-sm text-success">
-          ✅ تم تعديل الاسم بنجاح
-        </div>
-      ) : null}
-
-      {messages.coverSet ? (
-        <div className="rounded-[var(--radius-panel)] border border-success/20 bg-success-soft px-4 py-3 text-sm text-success">
-          ✅ تم تعيين صورة الغلاف بنجاح
-        </div>
-      ) : null}
-
-      {messages.featuredToggled ? (
-        <div className="rounded-[var(--radius-panel)] border border-success/20 bg-success-soft px-4 py-3 text-sm text-success">
-          ✅ تم تغيير حالة التميز
-        </div>
-      ) : null}
-
-      {messages.reordered ? (
-        <div className="rounded-[var(--radius-panel)] border border-success/20 bg-success-soft px-4 py-3 text-sm text-success">
-          ✅ تم إعادة الترتيب بنجاح
-        </div>
-      ) : null}
-
-      {messages.error ? (
-        <div className="rounded-[var(--radius-panel)] border border-danger/20 bg-danger-soft px-4 py-3 text-sm text-danger">
-          ❌ {messages.error}
-        </div>
+      {notice ? (
+        <BuilderNotice
+          tone={notice.tone}
+          title={notice.title}
+          description={notice.description}
+          errorId={notice.errorId}
+        />
       ) : null}
 
       {selectedAlbum ? (
@@ -296,7 +286,7 @@ export function GalleryClient({
                         </div>
                       ) : null}
                     </div>
-                    <div className="absolute inset-0 flex items-end justify-center bg-gradient-to-t from-black/70 via-transparent to-transparent p-1.5 opacity-0 transition-opacity group-hover:opacity-100 sm:opacity-0 sm:group-hover:opacity-100">
+                    <div className="absolute inset-0 flex items-end justify-center bg-gradient-to-t from-black/70 via-transparent to-transparent p-1.5 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100">
                       <div className="flex flex-wrap items-center justify-center gap-1">
                         <button
                           type="button"
@@ -546,7 +536,7 @@ export function GalleryClient({
                             {album.images.length === 1 ? "صورة" : "صور"}
                           </p>
                         </div>
-                        <div className="absolute left-2 top-2 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                        <div className="absolute left-2 top-2 flex gap-1 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100">
                           <button
                             type="button"
                             onClick={(e) => {

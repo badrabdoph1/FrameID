@@ -14,7 +14,6 @@ import {
   Trash2,
 } from "lucide-react";
 
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -24,10 +23,14 @@ import {
   PackageEditor,
   type PackageData,
 } from "@/components/dashboard/package-editor";
+import { NewPackageForm } from "@/components/dashboard/new-package-form";
+import {
+  BuilderNotice,
+  BuilderPageHeader,
+} from "@/components/dashboard/builder-primitives";
 
 import {
   addExtraAction,
-  addPackageAction,
   deleteExtraAction,
   deletePackageAction,
   duplicateExtraAction,
@@ -611,44 +614,28 @@ export function ServicesClient({
 
   return (
     <main className="space-y-5">
-      {/* Header */}
-      <section>
-        <Badge tone="luxury">الخدمات</Badge>
-        <h1 className="mt-4 text-3xl font-semibold">الباقات والخدمات</h1>
-        <p className="mt-2 max-w-2xl text-muted-foreground">
-          أضف عروض التصوير والخدمات الإضافية التي تظهر داخل موقعك.
-        </p>
-      </section>
+      <BuilderPageHeader
+        eyebrow="الباقات والخدمات"
+        title="حوّل أسعارك إلى عروض واضحة"
+        description="أضف الباقات الأساسية والخدمات الإضافية كسطور سهلة القراءة بدلاً من نص طويل يربك العميل."
+      />
 
       {/* Banners */}
       {created ? (
-        <p
-          style={{
-            borderRadius: 16,
-            border: "1px solid rgba(74, 222, 128, 0.2)",
-            background: "rgba(74, 222, 128, 0.06)",
-            padding: "12px 18px",
-            fontSize: "0.85rem",
-            color: "#4ade80",
-          }}
-        >
-          تم تحديث الخدمات على موقعك.
-        </p>
+        <BuilderNotice
+          tone="success"
+          title="تم تحديث الخدمات"
+          description="ظهرت التغييرات على موقعك العام."
+        />
       ) : null}
 
       {error ? (
-        <p
-          style={{
-            borderRadius: 16,
-            border: "1px solid rgba(248, 113, 113, 0.2)",
-            background: "rgba(248, 113, 113, 0.06)",
-            padding: "12px 18px",
-            fontSize: "0.85rem",
-            color: "#f87171",
-          }}
-        >
-          راجع الاسم والسعر ثم حاول مرة أخرى.
-        </p>
+        <BuilderNotice
+          tone="error"
+          title="لم يتم حفظ الخدمة"
+          description="راجع الاسم والسعر ثم حاول مرة أخرى."
+          errorId={error}
+        />
       ) : null}
 
       {/* ─── Packages Section ─── */}
@@ -685,60 +672,7 @@ export function ServicesClient({
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <form action={addPackageAction} className="grid gap-4">
-              <div
-                style={{
-                  display: "grid",
-                  gap: 12,
-                  gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
-                }}
-              >
-                <div className="space-y-1.5">
-                  <Label htmlFor="pkg-name">اسم الباقة</Label>
-                  <Input id="pkg-name" name="name" required />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="pkg-subtitle">وصف مختصر</Label>
-                  <Input id="pkg-subtitle" name="subtitle" />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="pkg-price">السعر بالجنيه</Label>
-                  <Input
-                    id="pkg-price"
-                    name="priceAmount"
-                    inputMode="numeric"
-                    required
-                  />
-                </div>
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="pkg-features">المميزات (ميزة في كل سطر)</Label>
-                <textarea
-                  id="pkg-features"
-                  name="features"
-                  rows={3}
-                  className="w-full rounded-[var(--radius-control)] border border-border bg-surface px-3 py-3 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  placeholder="ميزة في كل سطر"
-                />
-              </div>
-              <label
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 8,
-                  fontSize: "0.82rem",
-                  color: "rgba(245, 234, 214, 0.7)",
-                  cursor: "pointer",
-                }}
-              >
-                <input type="checkbox" name="isHighlighted" />
-                تمييز هذه الباقة
-              </label>
-              <Button type="submit" variant="luxury">
-                <CirclePlus className="size-4" aria-hidden />
-                إضافة الباقة
-              </Button>
-            </form>
+            <NewPackageForm />
           </CardContent>
         </Card>
 

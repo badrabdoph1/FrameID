@@ -1,12 +1,25 @@
-"use client"
+"use client";
 
-import { CheckCircle2, Circle, ExternalLink, Eye, Send, ArrowLeft } from "lucide-react"
-import Link from "next/link"
-import type { DashboardViewModel } from "@/modules/dashboard/dashboard-view-model"
+import Link from "next/link";
+import {
+  ArrowLeft,
+  CheckCircle2,
+  Circle,
+  Copy,
+  Eye,
+  Send,
+} from "lucide-react";
+
+import type { DashboardViewModel } from "@/modules/dashboard/dashboard-view-model";
+import {
+  BuilderNotice,
+  BuilderPageHeader,
+  BuilderSectionCard,
+  CompletionRing,
+} from "@/components/dashboard/builder-primitives";
 
 export function DashboardHomeClient({
   photographerName,
-  siteTitle,
   siteSlug,
   siteUrl,
   statusLabel,
@@ -18,143 +31,127 @@ export function DashboardHomeClient({
   isPublished,
   nextStepHref,
   nextStepLabel,
+  nextStepTitle,
+  nextStepDescription,
 }: DashboardViewModel) {
-  const doneCount = checklist.filter((i) => i.done).length
+  const doneCount = checklist.filter((i) => i.done).length;
+  const nextIsExternal = nextStepHref.startsWith("/p/");
 
   return (
-    <div style={{ display: "grid", gap: 20, maxWidth: 900 }}>
-      {/* Welcome */}
-      <div
-        style={{
-          padding: "20px 24px",
-          borderRadius: 16,
-          border: "1px solid rgba(245, 234, 214, 0.1)",
-          background: "linear-gradient(135deg, rgba(243, 207, 115, 0.08), transparent 60%)",
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
-          <div>
-            <span style={{ color: "#f3cf73", fontSize: "0.75rem", fontWeight: 950 }}>
-              {statusLabel}
-            </span>
-            <h1 style={{ color: "#fff7e8", fontSize: "1.4rem", fontWeight: 950, margin: "4px 0 2px" }}>
-              مرحباً، {photographerName}
-            </h1>
-            <p style={{ color: "rgba(245, 234, 214, 0.65)", fontSize: "0.85rem", margin: 0 }}>
-              أكمل الخطوات التالية لنشر موقعك.
-            </p>
-          </div>
+    <main style={{ display: "grid", gap: 16, maxWidth: 980 }}>
+      <BuilderPageHeader
+        eyebrow={statusLabel}
+        title={`مرحباً، ${photographerName}`}
+        description="هذه لوحة بناء موقعك. اتبع الخطوات بالترتيب، وسنحفظ تغييراتك ونجهز الموقع للنشر."
+        action={
           <Link
             href={`/p/${siteSlug}`}
             target="_blank"
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 6,
-              padding: "8px 14px",
-              borderRadius: 10,
-              border: "1px solid rgba(245, 234, 214, 0.12)",
-              color: "rgba(245, 234, 214, 0.8)",
-              fontSize: "0.8rem",
-              fontWeight: 900,
-              textDecoration: "none",
-              transition: "background 0.15s",
-            }}
+            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-[var(--radius-control)] border border-border bg-surface px-4 text-sm font-semibold text-foreground"
           >
-            <Eye size={15} />
-            معاينة
+            <Eye className="size-4" aria-hidden />
+            معاينة الموقع
           </Link>
-        </div>
-      </div>
+        }
+      />
 
-      {/* Progress Section */}
-      <div
+      <section
         style={{
-          padding: "20px",
-          borderRadius: 16,
-          border: "1px solid rgba(245, 234, 214, 0.08)",
-          background: "rgba(255, 255, 255, 0.03)",
+          display: "grid",
+          gap: 16,
+          gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
+          alignItems: "stretch",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: 20, flexWrap: "wrap" }}>
-          {/* Circular Progress */}
-          <div style={{ position: "relative", width: 100, height: 100, flexShrink: 0 }}>
-            <svg width="100" height="100" viewBox="0 0 100 100" style={{ transform: "rotate(-90deg)" }}>
-              <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(245, 234, 214, 0.08)" strokeWidth="8" />
-              <circle
-                cx="50" cy="50" r="42"
-                fill="none"
-                stroke="url(#progressGradient)"
-                strokeWidth="8"
-                strokeLinecap="round"
-                strokeDasharray={`${2 * Math.PI * 42}`}
-                strokeDashoffset={`${2 * Math.PI * 42 * (1 - percent / 100)}`}
-                style={{ transition: "stroke-dashoffset 0.8s ease" }}
-              />
-              <defs>
-                <linearGradient id="progressGradient" x1="0" y1="0" x2="1" y2="1">
-                  <stop offset="0%" stopColor="#f3cf73" />
-                  <stop offset="100%" stopColor="#d4af37" />
-                </linearGradient>
-              </defs>
-            </svg>
-            <span style={{
-              position: "absolute", inset: 0,
-              display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: "1.5rem", fontWeight: 950, color: "#fff7e8",
-            }}>
-              {percent}%
-            </span>
-          </div>
-
-          <div style={{ flex: 1, minWidth: 200 }}>
-            <h2 style={{ color: "#fff7e8", fontSize: "1rem", fontWeight: 950, margin: 0 }}>
-              تقدم الموقع
+        <div
+          style={{
+            display: "flex",
+            gap: 16,
+            alignItems: "center",
+            borderRadius: 18,
+            border: "1px solid rgba(243, 207, 115, 0.16)",
+            background: "linear-gradient(135deg, rgba(243, 207, 115, 0.12), rgba(255,255,255,0.03))",
+            padding: 18,
+          }}
+        >
+          <CompletionRing percent={percent} />
+          <div style={{ minWidth: 0 }}>
+            <p style={{ margin: 0, color: "#f3cf73", fontSize: "0.78rem", fontWeight: 950 }}>
+              {doneCount} من {checklist.length} خطوات مكتملة
+            </p>
+            <h2 style={{ margin: "6px 0", color: "#fff7e8", fontSize: "1.25rem", fontWeight: 950 }}>
+              {nextStepTitle}
             </h2>
-            <p style={{ color: "rgba(245, 234, 214, 0.55)", fontSize: "0.82rem", margin: "4px 0 12px" }}>
-              {doneCount} من {checklist.length} مكتملة &middot; آخر تعديل {lastModified}
+            <p style={{ margin: "0 0 14px", color: "rgba(245, 234, 214, 0.62)", fontSize: "0.85rem", lineHeight: 1.7 }}>
+              {nextStepDescription}
             </p>
             <Link
               href={nextStepHref}
+              target={nextIsExternal ? "_blank" : undefined}
               style={{
                 display: "inline-flex",
                 alignItems: "center",
+                justifyContent: "center",
                 gap: 8,
-                padding: "10px 20px",
+                minHeight: 44,
+                width: "100%",
                 borderRadius: 12,
-                border: "none",
                 background: "linear-gradient(135deg, #f3cf73, #d4af37)",
                 color: "#17120a",
-                fontSize: "0.88rem",
+                fontSize: "0.9rem",
                 fontWeight: 950,
                 textDecoration: "none",
-                cursor: "pointer",
-                transition: "transform 0.15s, box-shadow 0.15s",
               }}
             >
-              {percent === 100 && isPublished ? "✓ تم النشر" : `أكمل: ${nextStepLabel}`}
+              {percent === 100 && isPublished ? "تم النشر" : `أكمل الخطوة التالية: ${nextStepLabel}`}
               <ArrowLeft size={16} />
             </Link>
           </div>
         </div>
-      </div>
 
-      {/* Checklist */}
-      <div
-        style={{
-          borderRadius: 16,
-          border: "1px solid rgba(245, 234, 214, 0.08)",
-          background: "rgba(255, 255, 255, 0.03)",
-          overflow: "hidden",
-        }}
+        <BuilderSectionCard
+          title="ملخص الموقع"
+          description={`آخر تعديل ${lastModified}. القالب الحالي: ${currentTheme}.`}
+        >
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10 }}>
+            {stats.map((stat) => (
+              <div
+                key={stat.label}
+                style={{
+                  padding: 12,
+                  borderRadius: 12,
+                  border: "1px solid rgba(245, 234, 214, 0.07)",
+                  background: "rgba(0,0,0,0.14)",
+                }}
+              >
+                <p style={{ margin: 0, color: "rgba(245, 234, 214, 0.48)", fontSize: "0.72rem", fontWeight: 900 }}>
+                  {stat.label}
+                </p>
+                <p
+                  style={{
+                    margin: "5px 0 0",
+                    color: stat.tone === "success" ? "#4ade80" : stat.tone === "warning" ? "#f3cf73" : "#fff7e8",
+                    fontSize: "1.1rem",
+                    fontWeight: 950,
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {stat.value}
+                </p>
+              </div>
+            ))}
+          </div>
+        </BuilderSectionCard>
+      </section>
+
+      <BuilderSectionCard
+        title="خطوات بناء الموقع"
+        description="اتبعها كرحلة واحدة: بياناتك، أعمالك، أسعارك، الشكل، المراجعة، ثم النشر."
       >
-        <div style={{ padding: "14px 18px", borderBottom: "1px solid rgba(245, 234, 214, 0.06)" }}>
-          <h3 style={{ color: "#fff7e8", fontSize: "0.9rem", fontWeight: 950, margin: 0 }}>
-            قائمة المهام
-          </h3>
-        </div>
-        <div>
-          {checklist.map((item) => (
+        <div style={{ display: "grid", gap: 8 }}>
+          {checklist.map((item, index) => (
             <Link
               key={item.id}
               href={item.href}
@@ -162,114 +159,51 @@ export function DashboardHomeClient({
               style={{
                 display: "flex",
                 alignItems: "center",
-                gap: 12,
-                padding: "12px 18px",
-                borderBottom: "1px solid rgba(245, 234, 214, 0.04)",
+                gap: 11,
+                minHeight: 48,
+                padding: "10px 12px",
+                borderRadius: 12,
+                border: "1px solid rgba(245, 234, 214, 0.06)",
+                background: item.done ? "rgba(74, 222, 128, 0.045)" : "rgba(255,255,255,0.025)",
+                color: item.done ? "rgba(245, 234, 214, 0.55)" : "#fff7e8",
                 textDecoration: "none",
-                color: item.done ? "rgba(245, 234, 214, 0.5)" : "rgba(245, 234, 214, 0.85)",
-                fontSize: "0.85rem",
-                fontWeight: item.done ? 850 : 900,
-                transition: "background 0.1s",
               }}
             >
-              {item.done ? (
-                <CheckCircle2 size={18} style={{ color: "#4ade80", flexShrink: 0 }} />
-              ) : (
-                <Circle size={18} style={{ color: "rgba(245, 234, 214, 0.15)", flexShrink: 0 }} />
-              )}
-              <span style={{ textDecoration: item.done ? "line-through" : "none" }}>
+              <span style={{ color: item.done ? "#4ade80" : "rgba(245, 234, 214, 0.22)", flexShrink: 0 }}>
+                {item.done ? <CheckCircle2 size={20} /> : <Circle size={20} />}
+              </span>
+              <span style={{ color: "rgba(245, 234, 214, 0.38)", fontSize: "0.72rem", fontWeight: 950 }}>
+                {index + 1}
+              </span>
+              <span style={{ fontSize: "0.88rem", fontWeight: 920 }}>
                 {item.label}
               </span>
-              <ExternalLink size={12} style={{ marginRight: "auto", color: "rgba(245, 234, 214, 0.2)", flexShrink: 0 }} />
+              <ArrowLeft size={14} style={{ marginRight: "auto", color: "rgba(245, 234, 214, 0.25)" }} />
             </Link>
           ))}
         </div>
-      </div>
+      </BuilderSectionCard>
 
-      {/* Stats */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10 }}>
-        {stats.map((stat) => (
-          <div
-            key={stat.label}
-            style={{
-              padding: "14px 16px",
-              borderRadius: 14,
-              border: "1px solid rgba(245, 234, 214, 0.08)",
-              background: "rgba(255, 255, 255, 0.03)",
-            }}
-          >
-            <p style={{ color: "rgba(245, 234, 214, 0.5)", fontSize: "0.72rem", fontWeight: 950, margin: 0 }}>
-              {stat.label}
-            </p>
-            <p style={{
-              color: stat.tone === "success" ? "#4ade80" : stat.tone === "warning" ? "#f3cf73" : "#fff7e8",
-              fontSize: "1.3rem",
-              fontWeight: 950,
-              margin: "4px 0 0",
-            }}>
-              {stat.value}
-            </p>
-          </div>
-        ))}
-      </div>
+      <BuilderNotice
+        tone={isPublished ? "success" : "info"}
+        title={isPublished ? "موقعك منشور ويمكن مشاركته" : "موقعك ما زال مسودة"}
+        description={isPublished ? siteUrl : "أكمل الخطوات الأساسية ثم راجع صفحة النشر والمشاركة."}
+      />
 
-      {/* Site URL + Quick Actions */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: 12,
-          padding: "14px 18px",
-          borderRadius: 14,
-          border: "1px solid rgba(245, 234, 214, 0.08)",
-          background: "rgba(255, 255, 255, 0.03)",
-          flexWrap: "wrap",
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0, flex: 1 }}>
-          <span style={{ color: "rgba(245, 234, 214, 0.5)", fontSize: "0.78rem", fontWeight: 950, flexShrink: 0 }}>
-            رابطك:
-          </span>
-          <Link
-            href={siteUrl}
-            target="_blank"
-            dir="ltr"
-            style={{
-              color: "#f3cf73",
-              fontSize: "0.82rem",
-              fontWeight: 900,
-              textDecoration: "none",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
-            }}
-          >
-            {siteUrl}
-          </Link>
-        </div>
-        <div style={{ display: "flex", gap: 8 }}>
-          <Link
-            href="/dashboard/publish"
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 6,
-              padding: "8px 14px",
-              borderRadius: 10,
-              border: "1px solid rgba(245, 234, 214, 0.12)",
-              color: "rgba(245, 234, 214, 0.8)",
-              fontSize: "0.78rem",
-              fontWeight: 900,
-              textDecoration: "none",
-              transition: "background 0.15s",
-            }}
-          >
-            <Send size={14} />
-            نشر
-          </Link>
-        </div>
+      <div style={{ display: "grid", gap: 10, gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))" }}>
+        <Link href="/dashboard/publish" className="inline-flex min-h-11 items-center justify-center gap-2 rounded-[var(--radius-control)] bg-champagne px-4 text-sm font-bold text-amber-950">
+          <Send className="size-4" aria-hidden />
+          نشر ومشاركة
+        </Link>
+        <button
+          type="button"
+          onClick={() => navigator.clipboard?.writeText(siteUrl)}
+          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-[var(--radius-control)] border border-border bg-surface px-4 text-sm font-semibold text-foreground"
+        >
+          <Copy className="size-4" aria-hidden />
+          نسخ الرابط
+        </button>
       </div>
-    </div>
-  )
+    </main>
+  );
 }

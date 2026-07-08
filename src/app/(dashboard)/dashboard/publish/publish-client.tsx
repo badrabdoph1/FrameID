@@ -11,12 +11,20 @@ import {
   RefreshCw,
 } from "lucide-react";
 
-import { updatePublishSeoAction } from "@/app/(dashboard)/dashboard/publish/actions";
+import {
+  updatePublishSeoAction,
+  uploadShareImageAction,
+} from "@/app/(dashboard)/dashboard/publish/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
+import { ImageUploader } from "@/components/dashboard/image-uploader";
+import {
+  BuilderNotice,
+  BuilderPageHeader,
+} from "@/components/dashboard/builder-primitives";
 
 type PublishClientProps = {
   siteTitle: string;
@@ -44,6 +52,8 @@ export function PublishClient({
   const [copied, setCopied] = useState(false);
   const [robots, setRobots] = useState(initialRobots);
   const [ogUrl, setOgUrl] = useState(ogImageUrl ?? "");
+  const [shareImageState, setShareImageState] = useState<string | null>(null);
+  const [shareImageOk, setShareImageOk] = useState(false);
 
   const handleCopy = async () => {
     try {
@@ -62,64 +72,42 @@ export function PublishClient({
       ? `${seoTitle} — موقع تصوير فوتوغرافي احترافي.`
       : `${siteTitle} — موقع تصوير فوتوغرافي احترافي.`);
 
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(siteUrl)}`;
+
+  const handleShareImageUpload = async (files: File[]) => {
+    const file = files[0];
+    if (!file) return;
+    const fd = new FormData();
+    fd.append("image", file);
+    const result = await uploadShareImageAction(fd);
+    setShareImageState(result.message);
+    setShareImageOk(result.ok);
+    if (result.ok && result.url) setOgUrl(result.url);
+  };
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20, maxWidth: 900 }}>
-      <section>
-        <h1
-          style={{
-            color: "#fff7e8",
-            fontSize: "1.4rem",
-            fontWeight: 950,
-            margin: 0,
-          }}
-        >
-          النشر والمشاركة
-        </h1>
-        <p
-          style={{
-            color: "rgba(245, 234, 214, 0.65)",
-            fontSize: "0.85rem",
-            margin: "4px 0 0",
-          }}
-        >
-          شارك موقعك مع العالم.
-        </p>
-      </section>
+      <BuilderPageHeader
+        eyebrow="النشر والمشاركة"
+        title="جهّز رابطك قبل إرساله للعميل"
+        description="انسخ الرابط، حمّل QR، واضبط عنوان الموقع وصورة المشاركة كما ستظهر في Google وواتساب وفيسبوك."
+      />
 
       {updated ? (
-        <div
-          style={{
-            padding: "12px 16px",
-            borderRadius: 12,
-            border: "1px solid rgba(74, 222, 128, 0.2)",
-            background: "rgba(74, 222, 128, 0.06)",
-            color: "#4ade80",
-            fontSize: "0.85rem",
-            fontWeight: 600,
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
-          }}
-        >
-          <CheckCircle2 size={16} />
-          تم تحديث إعدادات النشر.
-        </div>
+        <BuilderNotice
+          tone="success"
+          title="تم تحديث إعدادات النشر"
+          description="ستظهر التغييرات في معاينات المشاركة."
+        />
       ) : null}
 
       {error ? (
-        <div
-          style={{
-            padding: "12px 16px",
-            borderRadius: 12,
-            border: "1px solid rgba(239, 68, 68, 0.2)",
-            background: "rgba(239, 68, 68, 0.06)",
-            color: "#ef4444",
-            fontSize: "0.85rem",
-            fontWeight: 600,
-          }}
-        >
-          راجع البيانات المطلوبة ثم حاول مرة أخرى.
-        </div>
+        <BuilderNotice
+          tone="error"
+          title="لم يتم حفظ إعدادات النشر"
+          description="راجع البيانات المطلوبة ثم حاول مرة أخرى."
+          errorId={error}
+        />
       ) : null}
 
       {/* ─── 1. الرابط ─── */}
@@ -226,6 +214,68 @@ export function PublishClient({
         </div>
       </div>
 
+      <div
+        style={{
+          display: "grid",
+          gap: 14,
+          gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+        }}
+      >
+        <div
+          style={{
+            padding: "20px",
+            borderRadius: 16,
+            border: "1px solid rgba(245, 234, 214, 0.08)",
+            background: "rgba(255, 255, 255, 0.03)",
+          }}
+        >
+          <h2 style={{ color: "#fff7e8", fontSize: "0.95rem", fontWeight: 950, margin: "0 0 12px" }}>
+            QR Code
+          </h2>
+          <div className="grid justify-items-center gap-3">
+            <img
+              src={qrUrl}
+              alt="QR Code لرابط الموقع"
+              width={180}
+              height={180}
+              style={{ borderRadius: 12, background: "#fff", padding: 10 }}
+            />
+            <a
+              href={qrUrl}
+              download="frameid-qr.png"
+              className="inline-flex min-h-10 items-center justify-center rounded-[var(--radius-control)] border border-border bg-surface px-4 text-sm font-semibold text-foreground"
+            >
+              تحميل QR
+            </a>
+          </div>
+        </div>
+
+        <div
+          style={{
+            padding: "20px",
+            borderRadius: 16,
+            border: "1px solid rgba(245, 234, 214, 0.08)",
+            background: "rgba(255, 255, 255, 0.03)",
+          }}
+        >
+          <h2 style={{ color: "#fff7e8", fontSize: "0.95rem", fontWeight: 950, margin: "0 0 6px" }}>
+            صورة المشاركة
+          </h2>
+          <p style={{ color: "rgba(245, 234, 214, 0.55)", fontSize: "0.8rem", lineHeight: 1.6, margin: "0 0 12px" }}>
+            ارفع صورة تظهر عند مشاركة الرابط. سنجهزها تلقائياً.
+          </p>
+          {shareImageState ? (
+            <BuilderNotice tone={shareImageOk ? "success" : "error"} title={shareImageState} />
+          ) : null}
+          <ImageUploader
+            onUpload={handleShareImageUpload}
+            multiple={false}
+            maxFiles={1}
+            maxSizeMB={30}
+          />
+        </div>
+      </div>
+
       {/* ─── 2. SEO الأساسي ─── */}
       <form action={updatePublishSeoAction}>
         <div
@@ -312,23 +362,7 @@ export function PublishClient({
               />
             </div>
 
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: 6,
-              }}
-            >
-              <Label htmlFor="og-image">رابط صورة المعاينة (OG Image)</Label>
-              <Input
-                id="og-image"
-                name="ogImageUrl"
-                dir="ltr"
-                value={ogUrl}
-                onChange={(e) => setOgUrl(e.target.value)}
-                placeholder="https://example.com/image.jpg"
-              />
-            </div>
+            <input type="hidden" name="ogImageUrl" value={ogUrl} />
 
             <div
               style={{

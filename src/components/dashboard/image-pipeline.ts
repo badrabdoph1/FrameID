@@ -17,6 +17,7 @@ export async function compressImage(
 
   const img = await createImageBitmap(file);
 
+  const originalWidth = img.width;
   let { width, height } = img;
   if (width > maxWidth) {
     height = Math.round(height * (maxWidth / width));
@@ -36,12 +37,11 @@ export async function compressImage(
 
   img.close();
 
+  const targetType = supportsWebP() ? "image/webp" : file.type;
   const blob = await new Promise<Blob>((resolve, reject) => {
-    const mimeType =
-      file.type === "image/webp" || !supportsWebP() ? "image/webp" : "image/webp";
     canvas.toBlob(
       (b) => (b ? resolve(b) : reject(new Error("Canvas toBlob returned null"))),
-      mimeType,
+      targetType,
       quality,
     );
   });
@@ -49,9 +49,27 @@ export async function compressImage(
   canvas.width = 0;
   canvas.height = 0;
 
+  const resized = originalWidth > maxWidth;
+  const meaningfulSavings = blob.size < originalSize * 0.95;
+  if (!resized && file.type === "image/webp" && !meaningfulSavings) {
+    return {
+      blob: file,
+      file,
+      preview: URL.createObjectURL(file),
+      width,
+      height,
+      originalSize,
+      compressedSize: originalSize,
+    };
+  }
+
+  const extension = targetType === "image/webp" ? "webp" : file.name.split(".").pop() || "jpg";
+  const outputName = file.name.replace(/\.[^.]+$/u, "") + `.${extension}`;
+  const outputFile = new File([blob], outputName, { type: targetType });
+
   return {
     blob,
-    file,
+    file: outputFile,
     preview: URL.createObjectURL(blob),
     width,
     height,

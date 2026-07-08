@@ -29,6 +29,8 @@ import {
   type SocialLinks,
 } from "@/components/dashboard/social-links-editor";
 import { ImageUploader } from "@/components/dashboard/image-uploader";
+import { WorkingHoursEditor } from "@/components/dashboard/working-hours-editor";
+import { BuilderPageHeader } from "@/components/dashboard/builder-primitives";
 
 import {
   updateSiteInfoAction,
@@ -362,27 +364,11 @@ export function SiteInfoClient(props: SiteInfoClientProps) {
     <main
       style={{ display: "flex", flexDirection: "column", gap: 16, maxWidth: 800 }}
     >
-      <section>
-        <h1
-          style={{
-            color: "#fff7e8",
-            fontSize: "1.4rem",
-            fontWeight: 950,
-            margin: 0,
-          }}
-        >
-          معلومات الموقع
-        </h1>
-        <p
-          style={{
-            color: "rgba(245, 234, 214, 0.55)",
-            fontSize: "0.82rem",
-            margin: "4px 0 0",
-          }}
-        >
-          اسم الاستوديو، معلومات الاتصال، وروابط التواصل الاجتماعي.
-        </p>
-      </section>
+      <BuilderPageHeader
+        eyebrow="بيانات الموقع"
+        title="عرّف العملاء عليك في مكان واحد"
+        description="أضف اسمك وصورك وطرق التواصل وساعات العمل. كل تعديل يُحفظ تلقائياً عند خروجك من الحقل."
+      />
 
       {/* Photographer Info */}
       <FormCard
@@ -693,42 +679,10 @@ export function SiteInfoClient(props: SiteInfoClientProps) {
         sectionStates={sectionStates}
         onSave={saveForm}
       >
-        <div style={{ display: "grid", gap: 12 }}>
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            <Label
-              htmlFor="workingHours"
-              style={{
-                fontSize: "0.78rem",
-                fontWeight: 950,
-                color: "rgba(245, 234, 214, 0.6)",
-              }}
-            >
-              JSON
-            </Label>
-            <Textarea
-              id="workingHours"
-              name="workingHours"
-              defaultValue={
-                props.workingHours
-                  ? JSON.stringify(props.workingHours, null, 2)
-                  : ""
-              }
-              placeholder='{"السبت": "9:00 - 17:00", "الأحد": "مغلق"}'
-              rows={5}
-              dir="ltr"
-              {...fieldAttrs("hours-form", "hours")}
-            />
-          </div>
-          <p
-            style={{
-              fontSize: "0.72rem",
-              color: "rgba(245, 234, 214, 0.4)",
-              margin: 0,
-            }}
-          >
-            استخدم صيغة JSON: {`{"اليوم": "ساعات العمل"}`}
-          </p>
-        </div>
+        <WorkingHoursEditor
+          value={props.workingHours}
+          onBlur={makeBlurHandler("hours-form", "hours")}
+        />
       </FormCard>
 
       {/* Booking Button */}

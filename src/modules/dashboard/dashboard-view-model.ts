@@ -21,6 +21,8 @@ export type DashboardViewModel = {
   isPublished: boolean;
   nextStepHref: string;
   nextStepLabel: string;
+  nextStepTitle: string;
+  nextStepDescription: string;
 };
 
 function daysRemaining(targetDate: Date, now: Date): number {
@@ -48,6 +50,33 @@ function formatRelativeTime(date: Date, now: Date): string {
   const days = Math.floor(hours / 24);
   return `منذ ${days} ي`;
 }
+
+const nextStepCopy: Record<string, { title: string; description: string }> = {
+  cover: {
+    title: "ابدأ بصورة الغلاف",
+    description: "اختر صورة قوية تظهر في أول شاشة من موقعك.",
+  },
+  album: {
+    title: "ارفع أول ألبوم",
+    description: "اجمع أفضل أعمالك في ألبوم واحد ليسهل على العميل فهم أسلوبك.",
+  },
+  package: {
+    title: "أضف أول باقة",
+    description: "حوّل الأسعار من محادثات متكررة إلى عروض واضحة قابلة للمقارنة.",
+  },
+  template: {
+    title: "اختر شكل الموقع",
+    description: "فعّل القالب الأقرب لهوية تصويرك ويمكنك تغييره لاحقاً.",
+  },
+  review: {
+    title: "راجع موقعك قبل النشر",
+    description: "افتح الموقع كما سيراه العميل وتأكد أن الصور والباقات وطرق التواصل واضحة.",
+  },
+  publish: {
+    title: "انشر وشارك الرابط",
+    description: "انسخ الرابط أو شاركه بعد التأكد من العنوان والمعاينات.",
+  },
+};
 
 export function createDashboardViewModel({
   session,
@@ -89,6 +118,11 @@ export function createDashboardViewModel({
   const percent = calcPercent(doneCount, items.length);
 
   const incomplete = items.find((i) => !i.done);
+  const activeStep = incomplete ?? items.find((i) => i.id === "publish") ?? items[0];
+  const activeCopy = nextStepCopy[activeStep.id] ?? {
+    title: activeStep.label,
+    description: "أكمل هذه الخطوة للانتقال للخطوة التالية.",
+  };
 
   return {
     photographerName: session.tenant.displayName,
@@ -107,11 +141,13 @@ export function createDashboardViewModel({
     lastModified: formatRelativeTime(lastModifiedAt, now),
     currentTheme: currentThemeName,
     isPublished: session.site.status === "PUBLISHED",
-    nextStepHref: incomplete?.href ?? "/dashboard/publish",
+    nextStepHref: activeStep.href,
     nextStepLabel: incomplete
       ? incomplete.label
       : session.site.status === "PUBLISHED"
         ? "تم النشر ✓"
         : "نشر الموقع",
+    nextStepTitle: activeCopy.title,
+    nextStepDescription: activeCopy.description,
   };
 }

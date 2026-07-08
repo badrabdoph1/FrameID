@@ -9,6 +9,7 @@ import { getCurrentRequestSession } from "@/modules/auth/request-session";
 import { createMediaUploadService } from "@/modules/media/media-upload-service";
 import { createPrismaMediaUploadRepository } from "@/modules/media/prisma-media-upload-repository";
 import { createLocalMediaStorage } from "@/modules/media/local-media-storage";
+import { parseWorkingHoursFields } from "@/modules/dashboard/working-hours";
 
 export type AutosaveState = { ok: boolean; message: string };
 
@@ -60,8 +61,8 @@ export async function updateSiteInfoAction(
     }
   }
 
-  let workingHours: Record<string, string> | null = null;
-  if (formData.has("workingHours")) {
+  let workingHours = parseWorkingHoursFields(formData);
+  if (!workingHours && formData.has("workingHours")) {
     const raw = readString(formData, "workingHours");
     if (raw) {
       try {
@@ -76,7 +77,8 @@ export async function updateSiteInfoAction(
     }
   }
 
-  const hasWorkingHours = formData.has("workingHours");
+  const hasWorkingHours =
+    workingHours !== null || formData.has("workingHours");
   if (!hasWorkingHours && Object.keys(fields).length === 0) {
     return { ok: true, message: "لا توجد تغييرات" };
   }
