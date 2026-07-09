@@ -1,29 +1,13 @@
 import { prisma } from "@/lib/prisma";
+import { DEFAULT_SUPPORT_WHATSAPP_NUMBER, normalizeEgyptianWhatsappNumber } from "@/modules/support/support-utils";
 
-export const DEFAULT_SUPPORT_WHATSAPP_NUMBER = "01038434472";
+export { DEFAULT_SUPPORT_WHATSAPP_NUMBER, normalizeEgyptianWhatsappNumber, toWhatsappHref } from "@/modules/support/support-utils";
+
 export const SUPPORT_SETTINGS_KEY = "platform.support.whatsapp";
 
 type SupportSettingsValue = {
   phone?: unknown;
 };
-
-export function normalizeEgyptianWhatsappNumber(value: string) {
-  const digits = value.replace(/\D/gu, "");
-  if (!digits) return DEFAULT_SUPPORT_WHATSAPP_NUMBER;
-  if (digits.startsWith("20")) return `0${digits.slice(2)}`;
-  if (digits.startsWith("0")) return digits;
-  if (digits.startsWith("10") || digits.startsWith("11") || digits.startsWith("12") || digits.startsWith("15")) {
-    return `0${digits}`;
-  }
-  return digits;
-}
-
-export function toWhatsappHref(phone: string, message = "مرحبًا، أحتاج دعم فني في FrameID.") {
-  const normalized = normalizeEgyptianWhatsappNumber(phone);
-  const digits = normalized.replace(/\D/gu, "");
-  const international = digits.startsWith("0") ? `20${digits.slice(1)}` : digits;
-  return `https://wa.me/${international}?text=${encodeURIComponent(message)}`;
-}
 
 function parseSupportSettingsValue(value: unknown) {
   if (!value || typeof value !== "object") return { phone: DEFAULT_SUPPORT_WHATSAPP_NUMBER };
