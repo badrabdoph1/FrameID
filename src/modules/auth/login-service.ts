@@ -35,11 +35,13 @@ export type LoginResult = {
 type LoginServiceOptions = {
   repository: LoginRepository;
   now?: () => Date;
+  cookieSecure?: boolean;
 };
 
 export function createLoginService({
   repository,
-  now = () => new Date()
+  now = () => new Date(),
+  cookieSecure
 }: LoginServiceOptions) {
   return {
     async login(input: unknown): Promise<LoginResult> {
@@ -65,7 +67,8 @@ export function createLoginService({
       const session = await createSessionForUser({
         repository,
         userId: user.id,
-        now
+        now,
+        cookieSecure
       });
 
       return {
