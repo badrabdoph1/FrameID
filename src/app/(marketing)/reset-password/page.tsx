@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import React from "react";
 
 import { AuthShell } from "@/components/layout/auth-shell";
@@ -6,6 +7,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { CopyButton } from "@/components/ui/copy-button";
 import { resetPasswordAction } from "@/app/(marketing)/reset-password/actions";
+
+export const metadata: Metadata = {
+  title: "تعيين كلمة سر جديدة",
+  description: "تحديث كلمة المرور لحساب FrameID.",
+  robots: {
+    index: false,
+    follow: false
+  }
+};
 
 type ResetPasswordPageProps = {
   searchParams: Promise<{
