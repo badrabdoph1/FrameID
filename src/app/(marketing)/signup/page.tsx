@@ -9,7 +9,11 @@ import { signupAction } from "@/app/(marketing)/signup/actions";
 
 export const metadata: Metadata = {
   title: "إنشاء حساب",
-  description: "جرب FrameID مجاناً وابدأ موقعك الاحترافي فوراً."
+  description: "أنشئ حسابك على FrameID وابدأ تجهيز موقعك ورابطك الخاص.",
+  robots: {
+    index: false,
+    follow: false
+  }
 };
 
 type SignupPageProps = {
@@ -24,8 +28,8 @@ export default async function SignupPage({ searchParams }: SignupPageProps) {
 
   return (
     <AuthShell
-      title="جرب مجاناً"
-      description="هانعمل الحساب والموقع والرابط تلقائي—كله جاهز بعد التسجيل."
+      title="أنشئ حسابك"
+      description="هنجهز الحساب والموقع والرابط تلقائيًا بعد التسجيل."
     >
       {error ? (
         <p className="mb-4 rounded-[var(--radius-panel)] border border-warning/30 bg-warning/10 px-4 py-3 text-sm text-foreground">
