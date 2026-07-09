@@ -6,6 +6,7 @@
     "links": [
       { "label": "القوالب", "href": "/templates" },
       { "label": "تسجيل دخول", "href": "/login" },
+      { "label": "الدعم الفني", "href": "mailto:support@frameid.app" },
       { "label": "إنشاء حساب", "href": "/signup" }
     ],
     "cta": { "label": "جرب مجاناً", "href": "/signup" }

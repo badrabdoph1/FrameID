@@ -16,6 +16,7 @@ interface MarketingNavProps {
 const defaultLinks: NavLink[] = [
   { href: "/templates", label: "القوالب" },
   { href: "/login", label: "تسجيل دخول" },
+  { href: "mailto:support@frameid.app", label: "الدعم الفني" },
   { href: "/signup", label: "جرب مجاناً" }
 ];
 
