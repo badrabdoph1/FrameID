@@ -14,6 +14,7 @@ type RawCurrentSessionRecord = {
   user: {
     id: string;
     email: string;
+    phone: string | null;
     name: string;
     role: string;
     ownedTenants: Array<{
@@ -75,6 +76,7 @@ export function createPrismaCurrentSessionRepository(
             select: {
               id: true,
               email: true,
+              phone: true,
               name: true,
               role: true
             }
@@ -102,6 +104,7 @@ export function createPrismaCurrentSessionRepository(
             select: {
               id: true,
               email: true,
+              phone: true,
               name: true,
               role: true,
               ownedTenants: {
@@ -175,6 +178,7 @@ export function createPrismaCurrentSessionRepository(
         user: {
           id: session.user.id,
           email: session.user.email,
+          phone: session.user.phone,
           name: session.user.name,
           role: session.user.role
         },
