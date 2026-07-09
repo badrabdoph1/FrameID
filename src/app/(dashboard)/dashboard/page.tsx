@@ -65,6 +65,7 @@ export default async function DashboardPage() {
 
   const lastModified = siteTheme?.updatedAt ?? new Date();
   const hasSeoSettings = Boolean(seoSettings?.title && (seoSettings.description || seoSettings.ogAssetId));
+  const hasHeroCover = !!(heroSection?.data && typeof heroSection.data === "object" && "imageUrl" in heroSection.data);
 
   const dashboard = createDashboardViewModel({
     session,
@@ -74,7 +75,7 @@ export default async function DashboardPage() {
     imagesCount,
     albumsCount,
     hasContactInfo: hasMeaningfulContactInfo(contactProfile),
-    hasCoverImage: !!(heroSection?.data && typeof heroSection.data === "object" && "imageUrl" in heroSection.data),
+    hasCoverImage: Boolean(contactProfile?.coverAssetId) || hasHeroCover,
     hasAvatarImage: Boolean(contactProfile?.avatarAssetId),
     currentThemeName: siteTheme?.theme.name ?? "بدون",
     lastModifiedAt: lastModified,
