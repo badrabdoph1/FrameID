@@ -1,5 +1,6 @@
 "use server";
 
+import type { Prisma } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -26,10 +27,10 @@ function redirectWithError(code: string): never {
   redirect(`/admin/feature-flags?error=${encodeURIComponent(code)}`);
 }
 
-function compactMetadata(input: Record<string, unknown>): Record<string, unknown> {
+function compactMetadata(input: Record<string, unknown>): Prisma.InputJsonObject {
   return Object.fromEntries(
     Object.entries(input).filter(([, value]) => value !== undefined),
-  );
+  ) as Prisma.InputJsonObject;
 }
 
 async function auditFeatureFlagChange(input: {
