@@ -59,3 +59,24 @@ export function validateMessageTone(value: string): CustomerMessageTone {
 export function getActivationTemplateDefinition(key: string) {
   return activationTemplateDefinitions.find((template) => template.key === key);
 }
+
+export function encodeActivationTemplatePayload(input: { title: string; body: string }) {
+  return JSON.stringify({ title: input.title, body: input.body });
+}
+
+export function parseActivationTemplatePayload(raw: string | null | undefined, fallback: { title: string; body: string }) {
+  if (!raw) return fallback;
+
+  try {
+    const parsed = JSON.parse(raw) as { title?: unknown; body?: unknown };
+    return {
+      title: typeof parsed.title === "string" && parsed.title.trim() ? parsed.title : fallback.title,
+      body: typeof parsed.body === "string" && parsed.body.trim() ? parsed.body : fallback.body,
+    };
+  } catch {
+    return {
+      title: fallback.title,
+      body: raw || fallback.body,
+    };
+  }
+}
