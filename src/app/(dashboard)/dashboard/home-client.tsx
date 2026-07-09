@@ -24,10 +24,12 @@ export function DashboardHomeClient({
   nextStepHref,
   nextStepLabel,
   subscription,
+  customerMessages,
+  activationMessages,
 }: DashboardViewModel) {
   const doneCount = checklist.filter((item) => item.done).length;
   const [copied, setCopied] = useState(false);
-  const activation = getActivationBanner(subscription);
+  const activation = getActivationBanner(subscription, activationMessages);
 
   const copySiteUrl = async () => {
     await navigator.clipboard?.writeText(siteUrl);
@@ -39,14 +41,25 @@ export function DashboardHomeClient({
     <main className="mx-auto grid w-full max-w-5xl gap-3 pb-4 sm:gap-4">
       <section className={activationNoticeClass(activation.tone)}>
         <span className={activationGlowClass(activation.tone)} aria-hidden />
-        <div className="flex min-w-0 items-center gap-2">
+        <div className="flex min-w-0 items-start gap-2">
           <span className={activationDotClass(activation.tone)} aria-hidden />
-          <p className="truncate text-xs font-black sm:text-sm">{activation.message}</p>
+          <span className="min-w-0">
+            <strong className="block truncate text-xs font-black sm:text-sm">{activation.message}</strong>
+            {activation.description ? <small className="mt-0.5 block truncate text-[0.68rem] font-bold opacity-70">{activation.description}</small> : null}
+          </span>
         </div>
         <Link href="/dashboard/billing" className={activationLinkClass(activation.tone)}>
           {activation.action}
         </Link>
       </section>
+
+      {customerMessages.length > 0 ? (
+        <section className="grid gap-2">
+          {customerMessages.map((message) => (
+            <CustomerMessageBanner key={message.id} message={message} />
+          ))}
+        </section>
+      ) : null}
 
       <button
         type="button"
@@ -96,18 +109,38 @@ export function DashboardHomeClient({
   );
 }
 
-function getActivationBanner(subscription: DashboardViewModel["subscription"]) {
+function getActivationBanner(subscription: DashboardViewModel["subscription"], templates: DashboardViewModel["activationMessages"]) {
   if (subscription?.hasPendingRequest) {
-    return { tone: "warning" as const, message: "طلب التفعيل قيد المراجعة — تابع حالة الطلب", action: "متابعة" };
+    const template = templates["pending-review"];
+    return { tone: template?.tone ?? "warning" as const, message: template?.title ?? "طلب التفعيل قيد المراجعة", description: template?.body ?? "تم إرسال إثبات الدفع. تابع حالة الطلب", action: "متابعة" };
+  }
+  if (subscription?.latestPaymentRequestStatus === "REJECTED") {
+    const template = templates.rejected;
+    return { tone: template?.tone ?? "danger" as const, message: template?.title ?? "تم رفض طلب التفعيل", description: template?.body ?? "برجاء مراجعة بيانات الدفع أو إرسال إثبات صحيح.", action: "إعادة الإرسال" };
   }
   if (subscription?.isActive) {
-    return { tone: "success" as const, message: "اشتراكك مفعل والموقع جاهز للتشغيل", action: "إدارة" };
+    const template = templates.active;
+    return { tone: template?.tone ?? "success" as const, message: template?.title ?? "اشتراكك مفعل", description: template?.body ?? "اشتراكك مفعل والموقع جاهز للتشغيل", action: "إدارة" };
   }
   if (subscription?.isTrial) {
+    const template = templates.trial;
     const days = subscription.daysRemaining !== null ? ` · متبقي ${subscription.daysRemaining} يوم` : "";
-    return { tone: subscription.daysRemaining !== null && subscription.daysRemaining <= 3 ? "danger" as const : "warning" as const, message: `حسابك تجريبي برجاء التأكد من التفعيل${days}`, action: "زر التفعيل" };
+    return { tone: template?.tone ?? (subscription.daysRemaining !== null && subscription.daysRemaining <= 3 ? "danger" as const : "warning" as const), message: `${template?.title ?? "حسابك تجريبي برجاء التأكد من التفعيل"}${days}`, description: template?.body ?? "فعّل الاشتراك قبل نهاية الفترة التجريبية.", action: "زر التفعيل" };
   }
-  return { tone: "danger" as const, message: "حسابك يحتاج مراجعة الاشتراك برجاء التفعيل", action: "تفعيل" };
+  const template = templates.expired;
+  return { tone: template?.tone ?? "danger" as const, message: template?.title ?? "الاشتراك يحتاج إجراء", description: template?.body ?? "راجع الاشتراك حتى يظل الموقع شغال للعملاء.", action: "تفعيل" };
+}
+
+function CustomerMessageBanner({ message }: { message: DashboardViewModel["customerMessages"][number] }) {
+  return (
+    <section className={customerMessageClass(message.tone)}>
+      <span className={activationDotClass(message.tone === "info" ? "warning" : message.tone)} aria-hidden />
+      <span className="min-w-0">
+        <strong className="block truncate text-xs font-black sm:text-sm">{message.title}</strong>
+        {message.body ? <small className="mt-0.5 block truncate text-[0.68rem] font-bold opacity-70">{message.body}</small> : null}
+      </span>
+    </section>
+  );
 }
 
 function SetupStepRow({ item, index }: { item: DashboardViewModel["checklist"][number]; index: number }) {
@@ -131,43 +164,60 @@ function SetupStepRow({ item, index }: { item: DashboardViewModel["checklist"][n
   );
 }
 
-function activationNoticeClass(tone: "success" | "warning" | "danger") {
-  const base = "relative flex min-h-8 items-center justify-between gap-2 overflow-hidden px-1 py-1";
+function activationNoticeClass(tone: "success" | "warning" | "danger" | "info") {
+  const base = "relative flex min-h-10 items-center justify-between gap-2 overflow-hidden px-1 py-1";
   if (tone === "success") {
     return `${base} text-emerald-100 drop-shadow-[0_0_10px_rgba(110,231,183,0.22)]`;
   }
   if (tone === "danger") {
     return `${base} text-red-100 drop-shadow-[0_0_10px_rgba(248,113,113,0.24)]`;
   }
+  if (tone === "info") {
+    return `${base} text-sky-100 drop-shadow-[0_0_10px_rgba(125,211,252,0.22)]`;
+  }
   return `${base} text-amber-100 drop-shadow-[0_0_10px_rgba(243,207,115,0.24)]`;
 }
 
-function activationGlowClass(tone: "success" | "warning" | "danger") {
+function customerMessageClass(tone: "success" | "warning" | "danger" | "info") {
+  const base = "flex min-h-11 items-start gap-2 rounded-2xl border px-3 py-2";
+  if (tone === "success") return `${base} border-emerald-300/18 bg-emerald-300/[0.07] text-emerald-100`;
+  if (tone === "danger") return `${base} border-red-300/18 bg-red-300/[0.07] text-red-100`;
+  if (tone === "warning") return `${base} border-amber-300/18 bg-amber-300/[0.07] text-amber-100`;
+  return `${base} border-sky-300/18 bg-sky-300/[0.07] text-sky-100`;
+}
+
+function activationGlowClass(tone: "success" | "warning" | "danger" | "info") {
   if (tone === "success") {
     return "pointer-events-none absolute inset-x-0 bottom-0 h-px bg-gradient-to-l from-transparent via-emerald-300/55 to-transparent shadow-[0_0_18px_rgba(110,231,183,0.5)]";
   }
   if (tone === "danger") {
     return "pointer-events-none absolute inset-x-0 bottom-0 h-px bg-gradient-to-l from-transparent via-red-300/55 to-transparent shadow-[0_0_18px_rgba(248,113,113,0.5)]";
   }
+  if (tone === "info") {
+    return "pointer-events-none absolute inset-x-0 bottom-0 h-px bg-gradient-to-l from-transparent via-sky-300/55 to-transparent shadow-[0_0_18px_rgba(125,211,252,0.45)]";
+  }
   return "pointer-events-none absolute inset-x-0 bottom-0 h-px bg-gradient-to-l from-transparent via-amber-300/60 to-transparent shadow-[0_0_18px_rgba(243,207,115,0.55)]";
 }
 
 function activationDotClass(tone: "success" | "warning" | "danger") {
   if (tone === "success") {
-    return "size-1.5 shrink-0 rounded-full bg-emerald-300 shadow-[0_0_12px_rgba(110,231,183,0.8)]";
+    return "mt-1.5 size-1.5 shrink-0 rounded-full bg-emerald-300 shadow-[0_0_12px_rgba(110,231,183,0.8)]";
   }
   if (tone === "danger") {
-    return "size-1.5 shrink-0 rounded-full bg-red-300 shadow-[0_0_12px_rgba(248,113,113,0.8)]";
+    return "mt-1.5 size-1.5 shrink-0 rounded-full bg-red-300 shadow-[0_0_12px_rgba(248,113,113,0.8)]";
   }
-  return "size-1.5 shrink-0 animate-pulse rounded-full bg-[#f3cf73] shadow-[0_0_12px_rgba(243,207,115,0.85)]";
+  return "mt-1.5 size-1.5 shrink-0 animate-pulse rounded-full bg-[#f3cf73] shadow-[0_0_12px_rgba(243,207,115,0.85)]";
 }
 
-function activationLinkClass(tone: "success" | "warning" | "danger") {
+function activationLinkClass(tone: "success" | "warning" | "danger" | "info") {
   if (tone === "success") {
     return "shrink-0 text-xs font-black text-emerald-200 no-underline underline-offset-4 transition hover:text-white hover:underline";
   }
   if (tone === "danger") {
     return "shrink-0 text-xs font-black text-red-200 no-underline underline-offset-4 transition hover:text-white hover:underline";
+  }
+  if (tone === "info") {
+    return "shrink-0 text-xs font-black text-sky-200 no-underline underline-offset-4 transition hover:text-white hover:underline";
   }
   return "shrink-0 text-xs font-black text-[#f3cf73] no-underline underline-offset-4 transition hover:text-white hover:underline";
 }
