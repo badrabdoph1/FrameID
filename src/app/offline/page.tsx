@@ -23,14 +23,13 @@ export default function OfflinePage() {
             سيتم مزامنة البيانات عند عودة الاتصال. يمكنك الرجوع للتطبيق، وعند توفر الإنترنت سيتم تحميل أحدث بيانات تلقائيًا.
           </p>
           <div className="mt-6 grid gap-2 sm:grid-cols-2">
-            <button
-              type="button"
-              onClick={() => window.location.reload()}
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-amber-300 px-4 text-sm font-black text-[#17120a]"
+            <a
+              href="."
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-amber-300 px-4 text-sm font-black text-[#17120a] no-underline"
             >
               <RefreshCw className="size-4" aria-hidden />
               إعادة المحاولة
-            </button>
+            </a>
             <Link
               href="/dashboard"
               className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.045] px-4 text-sm font-black text-white/74 no-underline"
