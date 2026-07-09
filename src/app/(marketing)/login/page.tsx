@@ -9,7 +9,11 @@ import { loginAction } from "@/app/(marketing)/login/actions";
 
 export const metadata: Metadata = {
   title: "تسجيل الدخول",
-  description: "ادخل عشان تدير موقعك، صورك، وباقاتك من لوحة تحكم FrameID."
+  description: "ادخل لإدارة موقعك وصورك وباقاتك من لوحة تحكم FrameID.",
+  robots: {
+    index: false,
+    follow: false
+  }
 };
 
 type LoginPageProps = {
