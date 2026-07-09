@@ -24,6 +24,25 @@ function currentSection(pathname: string | null) {
   return adminSections.find((section) => isSectionActive(pathname, section.id)) ?? adminSections[0]
 }
 
+function MobileSectionLinks({ pathname, title, links, onNavigate }: { pathname: string | null; title: string; links: typeof adminSections[number]["links"]; onNavigate?: () => void }) {
+  if (links.length <= 1) return null
+
+  return (
+    <nav className="admin-mobile-subnav" aria-label={`صفحات ${title}`}>
+      {links.map((link) => {
+        const LinkIcon = link.icon
+        const active = isAdminLinkActive(pathname, link.href)
+        return (
+          <Link key={link.href} href={link.href} onClick={onNavigate} className={cn("admin-mobile-subnav-link", active && "is-active")}> 
+            {LinkIcon ? <LinkIcon className="size-3.5" /> : null}
+            <span>{link.label}</span>
+          </Link>
+        )
+      })}
+    </nav>
+  )
+}
+
 export function AdminMobileNav() {
   const pathname = usePathname()
   const { mobileMenuOpen, toggleMobileMenu } = useAdmin()
@@ -79,46 +98,34 @@ export function AdminMobileNav() {
             </Link>
           </div>
         </div>
-
-        {activeLinks.length > 1 ? (
-          <nav className="admin-mobile-subnav" aria-label={`صفحات ${title}`}>
-            {activeLinks.map((link) => {
-              const LinkIcon = link.icon
-              const active = isAdminLinkActive(pathname, link.href)
-              return (
-                <Link key={link.href} href={link.href} className={cn("admin-mobile-subnav-link", active && "is-active")}> 
-                  {LinkIcon ? <LinkIcon className="size-4" /> : null}
-                  <span>{link.label}</span>
-                </Link>
-              )
-            })}
-          </nav>
-        ) : null}
       </header>
 
       <div className="admin-mobile-nav-shell lg:hidden">
-        <nav aria-label="تنقل الأدمن للموبايل" className="admin-mobile-bottom-bar">
-          {primarySections.map((section) => {
-            const Icon = section.icon
-            const href = section.links[0]?.href ?? "/admin"
-            const isActive = isSectionActive(pathname, section.id)
-            return (
-              <Link key={section.id} href={href} className={cn("admin-mobile-bottom-link", isActive && "is-active")}> 
-                <Icon className="size-5" />
-                <span>{section.title}</span>
-              </Link>
-            )
-          })}
-          <button
-            onClick={toggleMobileMenu}
-            className={cn("admin-mobile-bottom-link", (mobileMenuOpen || overflowActive) && "is-active")}
-            aria-label="فتح كل الأقسام"
-            aria-expanded={mobileMenuOpen}
-          >
-            <Menu className="size-5" />
-            <span>القائمة</span>
-          </button>
-        </nav>
+        <div className="admin-mobile-bottom-stack">
+          <MobileSectionLinks pathname={pathname} title={title} links={activeLinks} />
+          <nav aria-label="تنقل الأدمن للموبايل" className="admin-mobile-bottom-bar">
+            {primarySections.map((section) => {
+              const Icon = section.icon
+              const href = section.links[0]?.href ?? "/admin"
+              const isActive = isSectionActive(pathname, section.id)
+              return (
+                <Link key={section.id} href={href} className={cn("admin-mobile-bottom-link", isActive && "is-active")}> 
+                  <Icon className="size-5" />
+                  <span>{section.title}</span>
+                </Link>
+              )
+            })}
+            <button
+              onClick={toggleMobileMenu}
+              className={cn("admin-mobile-bottom-link", (mobileMenuOpen || overflowActive) && "is-active")}
+              aria-label="فتح كل الأقسام"
+              aria-expanded={mobileMenuOpen}
+            >
+              <Menu className="size-5" />
+              <span>القائمة</span>
+            </button>
+          </nav>
+        </div>
       </div>
 
       <div
