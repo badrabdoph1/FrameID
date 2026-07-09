@@ -46,7 +46,10 @@ export function AdminMobileNav() {
     }
   }, [mobileMenuOpen, pathname])
 
-  const topLevelLinks = adminSections.slice(0, 4).map((s) => ({
+  const topLevelSections = adminSections.slice(0, 4)
+  const overflowSections = adminSections.slice(4)
+  const overflowActive = overflowSections.some((section) => isSectionActive(pathname, section.id))
+  const topLevelLinks = topLevelSections.map((s) => ({
     href: s.links[0]?.href ?? "/admin",
     label: s.title,
     Icon: s.icon,
@@ -85,7 +88,7 @@ export function AdminMobileNav() {
             aria-expanded={mobileMenuOpen}
             className={cn(
               "flex flex-col items-center gap-0.5 rounded-xl px-2 py-2 text-[0.6rem] font-extrabold text-white/60 transition min-w-0",
-              mobileMenuOpen && "bg-gradient-to-br from-amber-500 to-amber-300 text-[#111827]",
+              (mobileMenuOpen || overflowActive) && "bg-gradient-to-br from-amber-500 to-amber-300 text-[#111827]",
             )}
           >
             <Menu size={20} />
