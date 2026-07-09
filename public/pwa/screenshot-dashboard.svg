@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" role="img" aria-label="لوحة تحكم FrameID">
+  <rect width="1280" height="720" fill="#0b0d12"/>
+  <rect x="48" y="48" width="1184" height="624" rx="44" fill="#111720" stroke="#2d3340"/>
+  <rect x="84" y="86" width="240" height="548" rx="32" fill="#0f131b"/>
+  <circle cx="130" cy="132" r="24" fill="#f3cf73"/>
+  <rect x="172" y="116" width="98" height="18" rx="9" fill="#fff7e8" opacity="0.86"/>
+  <rect x="116" y="196" width="172" height="44" rx="22" fill="#f3cf73" opacity="0.16"/>
+  <rect x="116" y="266" width="172" height="16" rx="8" fill="#fff7e8" opacity="0.34"/>
+  <rect x="116" y="306" width="150" height="16" rx="8" fill="#fff7e8" opacity="0.24"/>
+  <rect x="374" y="86" width="760" height="118" rx="34" fill="#171d27"/>
+  <rect x="414" y="124" width="260" height="28" rx="14" fill="#fff7e8" opacity="0.9"/>
+  <rect x="414" y="164" width="384" height="18" rx="9" fill="#fff7e8" opacity="0.38"/>
+  <rect x="374" y="236" width="230" height="144" rx="30" fill="#f3cf73" opacity="0.18"/>
+  <rect x="632" y="236" width="230" height="144" rx="30" fill="#ffffff" opacity="0.06"/>
+  <rect x="890" y="236" width="230" height="144" rx="30" fill="#ffffff" opacity="0.06"/>
+  <rect x="374" y="416" width="746" height="176" rx="32" fill="#ffffff" opacity="0.05"/>
+  <rect x="414" y="456" width="292" height="20" rx="10" fill="#fff7e8" opacity="0.82"/>
+  <rect x="414" y="500" width="610" height="14" rx="7" fill="#fff7e8" opacity="0.24"/>
+  <rect x="414" y="532" width="520" height="14" rx="7" fill="#fff7e8" opacity="0.18"/>
+</svg>
