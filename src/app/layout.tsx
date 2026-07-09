@@ -29,13 +29,26 @@ export const metadata: Metadata = {
   description:
     "منصة بتدي المصور موقع احترافي ولوحة تحكم ورابط خاص في دقايق.",
   metadataBase: new URL(seoBaseUrl),
-  applicationName: "FrameID"
+  applicationName: "FrameID",
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    title: "FrameID",
+    statusBarStyle: "black-translucent",
+  },
+  icons: {
+    icon: [
+      { url: "/icon.svg", type: "image/svg+xml" },
+      { url: "/icon-512x512.svg", sizes: "512x512", type: "image/svg+xml" },
+    ],
+    apple: [{ url: "/icon-512x512.svg", sizes: "512x512", type: "image/svg+xml" }],
+  },
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#f7f4ee"
+  themeColor: "#0b0d12"
 };
 
 export default function RootLayout({
