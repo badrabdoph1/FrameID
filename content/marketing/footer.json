@@ -1,13 +1,14 @@
 {
   "$schema": "marketing/footer",
-  "version": 3,
+  "version": 4,
   "updatedAt": "2026-07-09T00:00:00.000Z",
   "data": {
     "description": "منصة عربية بتقدم للمصورين موقع احترافي جاهز للرابط والمشاركة، مع لوحة بسيطة لتعديل الصور والباقات في أي وقت.",
     "quickLinks": [
       { "label": "القوالب", "href": "/templates" },
       { "label": "سياسة الخصوصية", "href": "/privacy" },
-      { "label": "الشروط والأحكام", "href": "/terms" }
+      { "label": "شروط الاستخدام", "href": "/terms" },
+      { "label": "ملفات الارتباط", "href": "/cookies" }
     ],
     "cta": {
       "title": "ابدأ دلوقتي",
