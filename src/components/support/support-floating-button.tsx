@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
 import { Headphones, MessageCircle, Phone, X } from "lucide-react";
 
-import { DEFAULT_SUPPORT_WHATSAPP_NUMBER, toWhatsappHref } from "@/modules/support/support-settings";
+import { DEFAULT_SUPPORT_WHATSAPP_NUMBER, toWhatsappHref } from "@/modules/support/support-utils";
 
 type SupportSettingsResponse = {
   phone?: string;
