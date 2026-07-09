@@ -32,11 +32,11 @@ export default async function ForgotPasswordPage({
   return (
     <AuthShell
       title="نسيت كلمة السر"
-      description="ادخل بريدك وهنرسلك رابط آمن لو الحساب موجود."
+      description="ادخل رقم الهاتف أو البريد. لو الحساب مربوط ببريد، هنرسل رابط استعادة آمن."
     >
       {sent ? (
         <div className="mb-4 rounded-[var(--radius-panel)] border border-success/20 bg-success-soft px-4 py-3 text-sm text-success">
-          لو البريد مسجل عندنا، تم إرسال رابط الاستعادة.
+          لو الحساب مسجل ببريد إلكتروني، تم إرسال رابط الاستعادة.
         </div>
       ) : null}
       {error ? (
@@ -47,8 +47,16 @@ export default async function ForgotPasswordPage({
       ) : null}
       <form action={requestPasswordResetAction} className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="email">البريد الإلكتروني</Label>
-          <Input id="email" name="email" type="email" autoComplete="email" required />
+          <Label htmlFor="identifier">رقم الهاتف أو البريد الإلكتروني</Label>
+          <Input
+            id="identifier"
+            name="identifier"
+            type="text"
+            inputMode="email"
+            autoComplete="username"
+            placeholder="01000000000 أو name@example.com"
+            required
+          />
         </div>
         <Button type="submit" className="w-full">
           أرسل رابط الاستعادة
