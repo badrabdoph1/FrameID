@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import React from "react";
-import { ArrowLeft, Camera, CheckCircle2, Eye, WandSparkles } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Eye, WandSparkles } from "lucide-react";
 
 import { MarketingFooter } from "@/components/layout/marketing-footer";
 import { MarketingNav } from "@/components/layout/marketing-nav";
@@ -15,7 +15,9 @@ export default function HomePage() {
   const faq = getContent("marketing/faq");
   const nav = getContent("marketing/navigation");
   const templates = getPublishedTemplates();
-  const { hero, benefits, howItWorks, templateSection, trustSection, finalCta, mobileStickyCta, photographerTypes } = homepage;
+  const previewTemplates = templates.slice(0, 1);
+  const featuredTemplate = previewTemplates[0];
+  const { hero, benefits, howItWorks, templateSection, trustSection, finalCta, mobileStickyCta } = homepage;
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -78,36 +80,44 @@ export default function HomePage() {
               <Badge tone="luxury" className="mb-4 border-white/20 bg-white/10 text-white md:mb-5">
                 {hero.badge}
               </Badge>
-              <h1 className="text-balance text-[clamp(1.75rem,5vw,4.5rem)] font-semibold leading-[1.08]">
+              <h1 className="text-balance text-[clamp(2rem,5.4vw,4.6rem)] font-semibold leading-[1.08]">
                 {hero.headline}
                 <br />
-                <span className="text-champagne">{hero.headlineHighlight}</span>
+                <span className="text-champagne drop-shadow-[0_0_24px_rgba(230,196,120,0.28)]">{hero.headlineHighlight}</span>
               </h1>
-              <p className="mt-4 max-w-2xl text-base leading-7 text-white/72 md:mt-5 md:text-lg md:leading-8">
+              <p className="mt-4 max-w-2xl text-base leading-7 text-white/78 md:mt-5 md:text-lg md:leading-8">
                 {hero.subheadline}
               </p>
               <div className="mt-6 flex flex-col gap-3 sm:flex-row md:mt-8">
                 <Link
                   href={hero.cta.href}
-                  className="inline-flex min-h-12 items-center justify-center gap-2 rounded-[var(--radius-control)] bg-champagne px-7 text-sm font-semibold text-ink transition-[background-color] hover:bg-champagne/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-champagne"
+                  className="inline-flex min-h-12 items-center justify-center gap-2 rounded-[var(--radius-control)] bg-champagne px-7 text-sm font-semibold text-ink transition-[background-color,box-shadow,transform] hover:-translate-y-0.5 hover:bg-champagne/90 hover:shadow-[0_12px_35px_rgba(230,196,120,0.22)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-champagne"
                 >
                   {hero.cta.label}
                 </Link>
                 <Link
                   href={hero.secondaryCta.href}
-                  className="inline-flex min-h-12 items-center justify-center gap-2 rounded-[var(--radius-control)] border border-white/20 bg-white/5 px-6 text-sm font-semibold text-white transition-[background-color,border-color] hover:border-white/40 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+                  className="inline-flex min-h-12 items-center justify-center gap-2 rounded-[var(--radius-control)] border border-white/20 bg-white/5 px-6 text-sm font-semibold text-white transition-[background-color,border-color,transform] hover:-translate-y-0.5 hover:border-white/40 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
                 >
                   {hero.secondaryCta.label}
                   <ArrowLeft className="size-4" aria-hidden />
                 </Link>
               </div>
-              <div className="mt-5 flex flex-wrap gap-x-5 gap-y-2 text-sm text-white/70 md:mt-6">
-                {hero.trustPoints.map((point: { text: string }, i: number) => (
-                  <span key={i} className="inline-flex items-center gap-2">
-                    <CheckCircle2 className="size-4 text-champagne" aria-hidden />
-                    {point.text}
-                  </span>
-                ))}
+              <div className="mt-7 max-w-3xl rounded-[var(--radius-panel)] border border-white/10 bg-white/[0.055] p-3 shadow-[0_0_45px_rgba(230,196,120,0.14)] backdrop-blur md:mt-8 md:p-4">
+                <p className="mb-3 text-xs font-semibold text-champagne">
+                  كل اللي محتاجه موقعك في مكان واحد
+                </p>
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                  {hero.trustPoints.map((point: { text: string }, i: number) => (
+                    <span
+                      key={i}
+                      className="group inline-flex min-h-10 items-center gap-2 rounded-2xl border border-white/10 bg-black/20 px-3 text-xs font-semibold text-white/86 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] transition hover:border-champagne/40 hover:bg-champagne/10 hover:text-white"
+                    >
+                      <CheckCircle2 className="size-3.5 shrink-0 text-champagne drop-shadow-[0_0_10px_rgba(230,196,120,0.55)]" aria-hidden />
+                      {point.text}
+                    </span>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
@@ -115,7 +125,7 @@ export default function HomePage() {
 
         <section className="bg-surface py-10 md:py-22">
           <div className="container-page">
-            <div className="text-center">
+            <div className="mx-auto max-w-2xl text-center">
               <p className="text-sm font-semibold text-champagne-strong">
                 {templateSection.badge}
               </p>
@@ -125,20 +135,20 @@ export default function HomePage() {
               <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-muted-foreground md:mt-4 md:text-base md:leading-7">
                 {templateSection.subtitle}
               </p>
+              {featuredTemplate ? (
+                <div className="mt-5">
+                  <Link
+                    href={`/templates/${featuredTemplate.code}/preview`}
+                    className="inline-flex min-h-11 items-center justify-center gap-2 rounded-[var(--radius-control)] bg-foreground px-5 text-sm font-semibold text-background shadow-soft transition hover:-translate-y-0.5 hover:bg-foreground/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    ادخل شوفه
+                    <ArrowLeft className="size-4" aria-hidden />
+                  </Link>
+                </div>
+              ) : null}
             </div>
-            <div className="mt-5 flex flex-wrap justify-center gap-2 md:mt-6 md:gap-3">
-              {photographerTypes.map((t: { label: string }) => (
-                <span
-                  key={t.label}
-                  className="inline-flex items-center gap-1.5 rounded-full border border-border bg-white px-3 py-1.5 text-xs font-medium text-muted-foreground shadow-soft md:gap-2 md:px-4 md:py-2 md:text-sm"
-                >
-                  <Camera className="size-3.5 text-champagne-strong md:size-4" aria-hidden />
-                  {t.label}
-                </span>
-              ))}
-            </div>
-            <div className="mt-5 grid gap-6 md:mt-8 md:grid-cols-2">
-              {templates.map((template) => (
+            <div className="mx-auto mt-6 grid max-w-3xl gap-6 md:mt-8">
+              {previewTemplates.map((template) => (
                 <article
                   key={template.code}
                   className="group overflow-hidden rounded-[var(--radius-panel)] border border-border bg-white shadow-soft transition hover:shadow-champagne"
@@ -156,7 +166,7 @@ export default function HomePage() {
                       src={getTemplatePreviewImage(template)}
                       alt={`معاينة قالب ${template.name}`}
                       fill
-                      sizes="(max-width: 768px) 100vw, 50vw"
+                      sizes="(max-width: 768px) 100vw, 768px"
                       className="object-cover transition duration-700 group-hover:scale-105"
                     />
                   </div>
@@ -188,15 +198,6 @@ export default function HomePage() {
                   </div>
                 </article>
               ))}
-            </div>
-            <div className="mt-5 text-center md:mt-6">
-              <Link
-                href="/templates"
-                className="inline-flex items-center gap-2 text-sm font-semibold text-champagne-strong underline underline-offset-4 transition hover:text-champagne"
-              >
-                شوف كل القوالب
-                <ArrowLeft className="size-4" aria-hidden />
-              </Link>
             </div>
           </div>
         </section>
