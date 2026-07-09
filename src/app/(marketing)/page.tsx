@@ -58,38 +58,73 @@ export default function HomePage() {
   const homepage = getContent("marketing/homepage");
   const faq = getContent("marketing/faq");
   const nav = getContent("marketing/navigation");
+  const platform = getContent("settings/platform") as {
+    name: string;
+    tagline: string;
+    logo: string;
+    supportEmail?: string;
+    supportPhone?: string;
+    socialLinks?: string[];
+  };
   const templates = getPublishedTemplates();
   const previewTemplates = templates.slice(0, 1);
   const featuredTemplate = previewTemplates[0];
   const { hero, benefits, howItWorks, templateSection, trustSection, finalCta, mobileStickyCta } = homepage;
   const featuredPreviewHref = featuredTemplate ? `/templates/${featuredTemplate.code}/preview` : hero.secondaryCta.href;
+  const organizationId = "https://frameid.app/#organization";
+  const websiteId = "https://frameid.app/#website";
+  const applicationId = "https://frameid.app/#software";
+  const contactPoint = platform.supportEmail || platform.supportPhone
+    ? {
+        "@type": "ContactPoint",
+        contactType: "customer support",
+        availableLanguage: ["ar"],
+        ...(platform.supportEmail ? { email: platform.supportEmail } : {}),
+        ...(platform.supportPhone ? { telephone: platform.supportPhone } : {})
+      }
+    : undefined;
 
   const jsonLd = {
     "@context": "https://schema.org",
     "@graph": [
       {
         "@type": "Organization",
-        name: "FrameID",
-        url: "https://frameid.app"
+        "@id": organizationId,
+        name: platform.name,
+        url: "https://frameid.app",
+        logo: "https://frameid.app/icon-512x512.svg",
+        description: platform.tagline,
+        ...(contactPoint ? { contactPoint } : {}),
+        ...(platform.socialLinks?.length ? { sameAs: platform.socialLinks } : {})
       },
       {
         "@type": "WebSite",
-        name: "FrameID",
+        "@id": websiteId,
+        name: platform.name,
         url: "https://frameid.app",
-        inLanguage: "ar"
+        inLanguage: "ar-EG",
+        publisher: { "@id": organizationId },
+        potentialAction: {
+          "@type": "SearchAction",
+          target: "https://frameid.app/templates?search={search_term_string}",
+          "query-input": "required name=search_term_string"
+        }
       },
       {
         "@type": "SoftwareApplication",
-        name: "FrameID",
+        "@id": applicationId,
+        name: platform.name,
         applicationCategory: "BusinessApplication",
         operatingSystem: "Web",
         url: "https://frameid.app",
-        description: "منصة بتقدم للمصورين مواقع احترافية بقوالب جاهزة وروابط خاصة.",
+        inLanguage: "ar-EG",
+        publisher: { "@id": organizationId },
+        description: "منصة SaaS للمصورين لإنشاء موقع احترافي ورابط واحد يجمع الصور والباقات والأسعار وبيانات التواصل.",
         offers: {
           "@type": "Offer",
           price: "0",
           priceCurrency: "EGP",
-          description: "تجربة مجانية"
+          description: "إنشاء حساب مجاني. أي مزايا مدفوعة لا يتم تفعيلها إلا بعد مراجعة الدفع."
         }
       },
       {
