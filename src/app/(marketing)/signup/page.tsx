@@ -32,7 +32,7 @@ export default async function SignupPage({ searchParams }: SignupPageProps) {
       description="هنجهز الحساب والموقع والرابط تلقائيًا بعد التسجيل."
     >
       {error ? (
-        <p className="mb-4 rounded-[var(--radius-panel)] border border-warning/30 bg-warning/10 px-4 py-3 text-sm text-foreground">
+        <p className="mb-4 rounded-[var(--radius-panel)] border border-warning/30 bg-warning/10 px-4 py-3 text-sm leading-6 text-foreground">
           {error}
         </p>
       ) : null}
@@ -53,17 +53,23 @@ export default async function SignupPage({ searchParams }: SignupPageProps) {
             placeholder="01000000000 أو name@example.com"
             required
           />
+          <p className="text-xs leading-5 text-muted-foreground">
+            يمكنك التسجيل برقم هاتف مصري أو بريد إلكتروني صحيح.
+          </p>
         </div>
         <div className="space-y-2">
-          <Label htmlFor="password">كلمة السر</Label>
+          <Label htmlFor="password">كلمة المرور</Label>
           <Input
             id="password"
             name="password"
             type="password"
             autoComplete="new-password"
-            minLength={10}
+            minLength={8}
             required
           />
+          <p className="text-xs leading-5 text-muted-foreground">
+            اكتب 8 أحرف على الأقل. يمكنك استخدام حروف وأرقام ورموز.
+          </p>
         </div>
         <Button type="submit" variant="luxury" className="w-full">
           إنشاء موقعي
