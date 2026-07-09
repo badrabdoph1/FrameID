@@ -5,6 +5,7 @@ export type CurrentUserSession = {
   user: {
     id: string;
     email: string;
+    phone: string | null;
     name: string;
     role: string;
   };
@@ -14,6 +15,7 @@ export type CurrentSession = {
   user: {
     id: string;
     email: string;
+    phone: string | null;
     name: string;
     role: string;
   };
