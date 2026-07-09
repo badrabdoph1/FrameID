@@ -32,18 +32,27 @@ function ShellContent({ children }: { children: React.ReactNode }) {
   useEffect(() => { setMounted(true) }, [])
 
   return (
-    <div className="flex min-h-screen bg-[#0b0d12] text-[#f5ead6] color-scheme-dark">
+    <div className="admin-dark-shell min-h-screen overflow-x-hidden bg-[#0b0d12] text-[#f5ead6] color-scheme-dark">
       <RouteChangeProgress />
-      <AdminSidebar />
-      <div className={cn(
-        "flex min-w-0 flex-1 flex-col transition-all duration-200",
-        mounted && !sidebarCollapsed ? "lg:mr-[310px]" : "lg:mr-0",
-      )}>
-        <main className="flex-1 overflow-x-hidden p-4 lg:p-6 admin-scrollbar">
-          <AdminTopbar />
-          <div className="mt-4">{children}</div>
+
+      <div className="hidden lg:block">
+        <AdminSidebar />
+      </div>
+
+      <div
+        className={cn(
+          "min-w-0 transition-all duration-200",
+          mounted && !sidebarCollapsed ? "lg:mr-[310px]" : "lg:mr-0",
+        )}
+      >
+        <main className="min-h-screen overflow-x-hidden px-3 pb-[calc(112px+env(safe-area-inset-bottom))] pt-[calc(82px+env(safe-area-inset-top))] sm:px-4 lg:p-6">
+          <div className="hidden lg:block">
+            <AdminTopbar />
+          </div>
+          <div className="lg:mt-4">{children}</div>
         </main>
       </div>
+
       <AdminMobileNav />
     </div>
   )
