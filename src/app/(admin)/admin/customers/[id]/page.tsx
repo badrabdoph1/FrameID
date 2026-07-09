@@ -1,4 +1,6 @@
 import { notFound } from "next/navigation";
+import { Activity } from "lucide-react";
+
 import { prisma } from "@/lib/prisma";
 import { requireSuperAdminSession } from "@/modules/admin/admin-page-guards";
 import { createCustomerAdminRepository } from "@/modules/admin/customers/customer-admin-repository";
@@ -36,6 +38,7 @@ export default async function AdminCustomerDetailPage({ params }: Props) {
       description={`${customer.owner.email}`}
       backHref="/admin/customers"
       backLabel="العملاء"
+      actions={[{ label: "Customer 360", href: `/admin/customers/${customer.id}/workspace`, icon: Activity }]}
     >
       <CustomerDetailClient
         customer={customer}
