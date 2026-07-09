@@ -15,6 +15,8 @@ import {
 import type { DashboardViewModel } from "@/modules/dashboard/dashboard-view-model";
 import { CompletionRing } from "@/components/dashboard/builder-primitives";
 
+type BannerTone = "success" | "warning" | "danger" | "info";
+
 export function DashboardHomeClient({
   siteUrl,
   statusLabel,
@@ -112,29 +114,29 @@ export function DashboardHomeClient({
 function getActivationBanner(subscription: DashboardViewModel["subscription"], templates: DashboardViewModel["activationMessages"]) {
   if (subscription?.hasPendingRequest) {
     const template = templates["pending-review"];
-    return { tone: template?.tone ?? "warning" as const, message: template?.title ?? "طلب التفعيل قيد المراجعة", description: template?.body ?? "تم إرسال إثبات الدفع. تابع حالة الطلب", action: "متابعة" };
+    return { tone: template?.tone ?? "warning" as BannerTone, message: template?.title ?? "طلب التفعيل قيد المراجعة", description: template?.body ?? "تم إرسال إثبات الدفع. تابع حالة الطلب", action: "متابعة" };
   }
   if (subscription?.latestPaymentRequestStatus === "REJECTED") {
     const template = templates.rejected;
-    return { tone: template?.tone ?? "danger" as const, message: template?.title ?? "تم رفض طلب التفعيل", description: template?.body ?? "برجاء مراجعة بيانات الدفع أو إرسال إثبات صحيح.", action: "إعادة الإرسال" };
+    return { tone: template?.tone ?? "danger" as BannerTone, message: template?.title ?? "تم رفض طلب التفعيل", description: template?.body ?? "برجاء مراجعة بيانات الدفع أو إرسال إثبات صحيح.", action: "إعادة الإرسال" };
   }
   if (subscription?.isActive) {
     const template = templates.active;
-    return { tone: template?.tone ?? "success" as const, message: template?.title ?? "اشتراكك مفعل", description: template?.body ?? "اشتراكك مفعل والموقع جاهز للتشغيل", action: "إدارة" };
+    return { tone: template?.tone ?? "success" as BannerTone, message: template?.title ?? "اشتراكك مفعل", description: template?.body ?? "اشتراكك مفعل والموقع جاهز للتشغيل", action: "إدارة" };
   }
   if (subscription?.isTrial) {
     const template = templates.trial;
     const days = subscription.daysRemaining !== null ? ` · متبقي ${subscription.daysRemaining} يوم` : "";
-    return { tone: template?.tone ?? (subscription.daysRemaining !== null && subscription.daysRemaining <= 3 ? "danger" as const : "warning" as const), message: `${template?.title ?? "حسابك تجريبي برجاء التأكد من التفعيل"}${days}`, description: template?.body ?? "فعّل الاشتراك قبل نهاية الفترة التجريبية.", action: "زر التفعيل" };
+    return { tone: template?.tone ?? (subscription.daysRemaining !== null && subscription.daysRemaining <= 3 ? "danger" as BannerTone : "warning" as BannerTone), message: `${template?.title ?? "حسابك تجريبي برجاء التأكد من التفعيل"}${days}`, description: template?.body ?? "فعّل الاشتراك قبل نهاية الفترة التجريبية.", action: "زر التفعيل" };
   }
   const template = templates.expired;
-  return { tone: template?.tone ?? "danger" as const, message: template?.title ?? "الاشتراك يحتاج إجراء", description: template?.body ?? "راجع الاشتراك حتى يظل الموقع شغال للعملاء.", action: "تفعيل" };
+  return { tone: template?.tone ?? "danger" as BannerTone, message: template?.title ?? "الاشتراك يحتاج إجراء", description: template?.body ?? "راجع الاشتراك حتى يظل الموقع شغال للعملاء.", action: "تفعيل" };
 }
 
 function CustomerMessageBanner({ message }: { message: DashboardViewModel["customerMessages"][number] }) {
   return (
     <section className={customerMessageClass(message.tone)}>
-      <span className={activationDotClass(message.tone === "info" ? "warning" : message.tone)} aria-hidden />
+      <span className={activationDotClass(message.tone)} aria-hidden />
       <span className="min-w-0">
         <strong className="block truncate text-xs font-black sm:text-sm">{message.title}</strong>
         {message.body ? <small className="mt-0.5 block truncate text-[0.68rem] font-bold opacity-70">{message.body}</small> : null}
@@ -164,7 +166,7 @@ function SetupStepRow({ item, index }: { item: DashboardViewModel["checklist"][n
   );
 }
 
-function activationNoticeClass(tone: "success" | "warning" | "danger" | "info") {
+function activationNoticeClass(tone: BannerTone) {
   const base = "relative flex min-h-10 items-center justify-between gap-2 overflow-hidden px-1 py-1";
   if (tone === "success") {
     return `${base} text-emerald-100 drop-shadow-[0_0_10px_rgba(110,231,183,0.22)]`;
@@ -178,7 +180,7 @@ function activationNoticeClass(tone: "success" | "warning" | "danger" | "info") 
   return `${base} text-amber-100 drop-shadow-[0_0_10px_rgba(243,207,115,0.24)]`;
 }
 
-function customerMessageClass(tone: "success" | "warning" | "danger" | "info") {
+function customerMessageClass(tone: BannerTone) {
   const base = "flex min-h-11 items-start gap-2 rounded-2xl border px-3 py-2";
   if (tone === "success") return `${base} border-emerald-300/18 bg-emerald-300/[0.07] text-emerald-100`;
   if (tone === "danger") return `${base} border-red-300/18 bg-red-300/[0.07] text-red-100`;
@@ -186,7 +188,7 @@ function customerMessageClass(tone: "success" | "warning" | "danger" | "info") {
   return `${base} border-sky-300/18 bg-sky-300/[0.07] text-sky-100`;
 }
 
-function activationGlowClass(tone: "success" | "warning" | "danger" | "info") {
+function activationGlowClass(tone: BannerTone) {
   if (tone === "success") {
     return "pointer-events-none absolute inset-x-0 bottom-0 h-px bg-gradient-to-l from-transparent via-emerald-300/55 to-transparent shadow-[0_0_18px_rgba(110,231,183,0.5)]";
   }
@@ -199,17 +201,20 @@ function activationGlowClass(tone: "success" | "warning" | "danger" | "info") {
   return "pointer-events-none absolute inset-x-0 bottom-0 h-px bg-gradient-to-l from-transparent via-amber-300/60 to-transparent shadow-[0_0_18px_rgba(243,207,115,0.55)]";
 }
 
-function activationDotClass(tone: "success" | "warning" | "danger") {
+function activationDotClass(tone: BannerTone) {
   if (tone === "success") {
     return "mt-1.5 size-1.5 shrink-0 rounded-full bg-emerald-300 shadow-[0_0_12px_rgba(110,231,183,0.8)]";
   }
   if (tone === "danger") {
     return "mt-1.5 size-1.5 shrink-0 rounded-full bg-red-300 shadow-[0_0_12px_rgba(248,113,113,0.8)]";
   }
+  if (tone === "info") {
+    return "mt-1.5 size-1.5 shrink-0 rounded-full bg-sky-300 shadow-[0_0_12px_rgba(125,211,252,0.75)]";
+  }
   return "mt-1.5 size-1.5 shrink-0 animate-pulse rounded-full bg-[#f3cf73] shadow-[0_0_12px_rgba(243,207,115,0.85)]";
 }
 
-function activationLinkClass(tone: "success" | "warning" | "danger" | "info") {
+function activationLinkClass(tone: BannerTone) {
   if (tone === "success") {
     return "shrink-0 text-xs font-black text-emerald-200 no-underline underline-offset-4 transition hover:text-white hover:underline";
   }
