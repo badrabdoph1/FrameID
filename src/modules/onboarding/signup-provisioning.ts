@@ -20,6 +20,7 @@ export type AccountCreationInput = {
   user: {
     name: string;
     email: string;
+    phone: string | null;
     passwordHash: string;
   };
   tenant: {
@@ -67,7 +68,7 @@ export type AccountCreationInput = {
 };
 
 export type SignupProvisioningRepository = {
-  emailExists(email: string): Promise<boolean>;
+  identifierExists(input: { email: string; phone: string | null }): Promise<boolean>;
   getUnavailableSlugs(): Promise<ReadonlySet<string>>;
   createAccountWithSite(
     input: AccountCreationInput
@@ -103,8 +104,8 @@ export function createSignupProvisioningService({
         throw new Error("Selected template is not available");
       }
 
-      if (await repository.emailExists(input.email)) {
-        throw new Error("Email already exists");
+      if (await repository.identifierExists({ email: input.email, phone: input.phone })) {
+        throw new Error("رقم الهاتف أو البريد الإلكتروني مستخدم بالفعل");
       }
 
       const unavailableSlugs = await repository.getUnavailableSlugs();
@@ -117,6 +118,7 @@ export function createSignupProvisioningService({
         user: {
           name: input.name,
           email: input.email,
+          phone: input.phone,
           passwordHash
         },
         tenant: {
