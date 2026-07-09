@@ -28,11 +28,13 @@ export type CreatedSession = {
 export async function createSessionForUser({
   repository,
   userId,
-  now = () => new Date()
+  now = () => new Date(),
+  cookieSecure
 }: {
   repository: SessionRepository;
   userId: string;
   now?: () => Date;
+  cookieSecure?: boolean;
 }): Promise<CreatedSession> {
   const rawToken = createRawSessionToken();
   const tokenHash = hashSessionToken(rawToken);
@@ -47,6 +49,6 @@ export async function createSessionForUser({
     id: session.id,
     userId: session.userId,
     expiresAt: session.expiresAt,
-    cookie: buildSessionCookie(rawToken, session.expiresAt)
+    cookie: buildSessionCookie(rawToken, session.expiresAt, { secure: cookieSecure })
   };
 }
