@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 
 import { Analytics } from "@/components/analytics";
 import { ToastRootProvider } from "@/components/errors/toast-root-provider";
+import { HomepageTemplateLinkNormalizer } from "@/components/marketing/homepage-template-link-normalizer";
 import { SupportFloatingButton } from "@/components/support/support-floating-button";
 import "./globals.css";
 
@@ -123,6 +124,7 @@ export default function RootLayout({
       <body>
         <Analytics />
         <ToastRootProvider>{children}</ToastRootProvider>
+        <HomepageTemplateLinkNormalizer />
         <SupportFloatingButton />
       </body>
     </html>
