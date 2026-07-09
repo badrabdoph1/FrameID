@@ -2,13 +2,13 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "FrameID - لوحة مواقع المصورين",
+    name: "FrameID - موقع احترافي للمصورين",
     short_name: "FrameID",
-    description: "لوحة تحكم وموقع احترافي للمصورين في رابط واحد.",
+    description: "منصة عربية للمصورين لإنشاء موقع احترافي ورابط واحد يجمع الصور والباقات وبيانات التواصل.",
     lang: "ar",
     dir: "rtl",
-    id: "/dashboard",
-    start_url: "/dashboard?source=pwa",
+    id: "/",
+    start_url: "/?source=pwa",
     scope: "/",
     display: "standalone",
     display_override: ["standalone", "minimal-ui", "browser"],
@@ -19,7 +19,7 @@ export default function manifest(): MetadataRoute.Manifest {
     icons: [
       { src: "/icon.svg", sizes: "any", type: "image/svg+xml", purpose: "any" },
       { src: "/icon-512x512.svg", sizes: "512x512", type: "image/svg+xml", purpose: "any" },
-      { src: "/pwa/icon-maskable.svg", sizes: "any", type: "image/svg+xml", purpose: "maskable" },
+      { src: "/pwa/icon-maskable.svg", sizes: "any", type: "image/svg+xml", purpose: "maskable" }
     ],
     shortcuts: [
       {
@@ -27,15 +27,8 @@ export default function manifest(): MetadataRoute.Manifest {
         short_name: "العميل",
         description: "افتح لوحة تحكم العميل",
         url: "/dashboard?source=pwa-shortcut",
-        icons: [{ src: "/icon.svg", sizes: "any", type: "image/svg+xml" }],
-      },
-      {
-        name: "لوحة الأدمن",
-        short_name: "الأدمن",
-        description: "افتح لوحة إدارة FrameID",
-        url: "/admin?source=pwa-shortcut",
-        icons: [{ src: "/icon.svg", sizes: "any", type: "image/svg+xml" }],
-      },
+        icons: [{ src: "/icon.svg", sizes: "any", type: "image/svg+xml" }]
+      }
     ],
     screenshots: [
       {
@@ -43,15 +36,15 @@ export default function manifest(): MetadataRoute.Manifest {
         sizes: "1280x720",
         type: "image/svg+xml",
         form_factor: "wide",
-        label: "لوحة تحكم FrameID",
+        label: "لوحة تحكم FrameID"
       },
       {
         src: "/pwa/screenshot-mobile.svg",
         sizes: "390x844",
         type: "image/svg+xml",
         form_factor: "narrow",
-        label: "FrameID على الهاتف",
-      },
-    ],
+        label: "FrameID على الهاتف"
+      }
+    ]
   } as MetadataRoute.Manifest;
 }
