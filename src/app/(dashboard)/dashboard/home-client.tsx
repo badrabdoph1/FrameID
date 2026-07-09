@@ -1,9 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
 import {
+  AlertTriangle,
   ArrowLeft,
+  BadgeCheck,
   Camera,
   CheckCircle2,
   Circle,
@@ -14,6 +16,7 @@ import {
   Images,
   LayoutTemplate,
   Package,
+  Rocket,
   Send,
   Share2,
   Sparkles,
@@ -41,10 +44,13 @@ export function DashboardHomeClient({
   statusLabel,
   percent,
   checklist,
+  phases,
+  operatingAlerts,
   stats,
   lastModified,
   currentTheme,
   isPublished,
+  isReadyToPublish,
   nextStepHref,
   nextStepLabel,
   nextStepTitle,
@@ -59,6 +65,7 @@ export function DashboardHomeClient({
   const photos = statMap.get("الصور")?.value ?? "0";
   const albums = statMap.get("الألبومات")?.value ?? "0";
   const packages = statMap.get("الباقات")?.value ?? "0";
+  const shareState = statMap.get("المشاركة")?.value ?? "ناقص SEO";
 
   const copySiteUrl = async () => {
     await navigator.clipboard?.writeText(siteUrl);
@@ -68,42 +75,42 @@ export function DashboardHomeClient({
 
   const workspaces: WorkspaceCard[] = [
     {
-      title: "بياناتك وطرق التواصل",
-      description: "الاسم، صورة الغلاف، واتساب، المدينة، وروابط السوشيال.",
+      title: "استوديو المصور",
+      description: "الاسم، الغلاف، التواصل، المكان، وروابط السوشيال في Workspace واحد.",
       href: "/dashboard/site-info",
       icon: UserRound,
       state: checklist.find((item) => item.id === "contact")?.done && checklist.find((item) => item.id === "cover")?.done ? "done" : "needs-work",
       metric: checklist.find((item) => item.id === "contact")?.done ? "التواصل جاهز" : "ناقص بيانات",
     },
     {
-      title: "معرض الأعمال",
-      description: "ارفع أفضل صورك في ألبومات واضحة وسهلة التصفح.",
+      title: "Portfolio Workspace",
+      description: "ارفع أفضل أعمالك كألبومات واضحة بدل صور متفرقة.",
       href: "/dashboard/gallery",
       icon: Images,
       state: Number(photos) > 0 ? "done" : "needs-work",
       metric: `${photos} صورة · ${albums} ألبوم`,
     },
     {
-      title: "الباقات والأسعار",
-      description: "حوّل أسعارك لعروض مفهومة تساعد العميل يختار بسرعة.",
+      title: "Sales Workspace",
+      description: "حوّل خدماتك لباقات وأسعار تساعد العميل يقرر ويحجز بسرعة.",
       href: "/dashboard/services",
       icon: Package,
       state: Number(packages) > 0 ? "done" : "needs-work",
       metric: `${packages} باقة`,
     },
     {
-      title: "شكل الموقع",
-      description: "اختار قالب مناسب لهويتك وغيّره في أي وقت.",
-      href: "/dashboard/templates",
-      icon: LayoutTemplate,
-      state: currentTheme !== "بدون" ? "done" : "needs-work",
-      metric: currentTheme,
+      title: "Launch Workspace",
+      description: "راجع المعاينة، جهّز SEO، انشر الرابط، وتابع الاشتراك.",
+      href: "/dashboard/publish",
+      icon: Rocket,
+      state: isPublished ? "done" : isReadyToPublish ? "ready" : "needs-work",
+      metric: isPublished ? "منشور" : isReadyToPublish ? "جاهز للنشر" : shareState,
     },
   ];
 
   return (
     <main className="mx-auto grid w-full max-w-6xl gap-4 pb-4 sm:gap-5">
-      <section className="grid gap-3 rounded-[1.6rem] border border-white/10 bg-[radial-gradient(circle_at_top_right,rgba(243,207,115,0.16),transparent_38%),linear-gradient(135deg,rgba(255,255,255,0.06),rgba(255,255,255,0.025))] p-4 shadow-2xl sm:p-5 lg:grid-cols-[1.25fr_0.75fr] lg:items-stretch">
+      <section className="grid gap-3 rounded-[1.6rem] border border-white/10 bg-[radial-gradient(circle_at_top_right,rgba(243,207,115,0.16),transparent_38%),linear-gradient(135deg,rgba(255,255,255,0.06),rgba(255,255,255,0.025))] p-4 shadow-2xl sm:p-5 lg:grid-cols-[1.28fr_0.72fr] lg:items-stretch">
         <div className="grid gap-4">
           <div className="flex flex-wrap items-center gap-2">
             <span className="inline-flex w-fit items-center gap-1.5 rounded-full border border-amber-300/20 bg-amber-300/10 px-3 py-1 text-[0.72rem] font-black text-[#f3cf73]">
@@ -113,14 +120,20 @@ export function DashboardHomeClient({
             <span className="inline-flex w-fit items-center rounded-full border border-white/10 bg-black/15 px-3 py-1 text-[0.72rem] font-black text-white/45">
               آخر تعديل {lastModified}
             </span>
+            {isReadyToPublish ? (
+              <span className="inline-flex w-fit items-center gap-1.5 rounded-full border border-emerald-300/20 bg-emerald-300/10 px-3 py-1 text-[0.72rem] font-black text-emerald-300">
+                <BadgeCheck className="size-3.5" aria-hidden />
+                جاهز للإطلاق
+              </span>
+            ) : null}
           </div>
 
           <div>
             <h1 className="text-balance text-2xl font-black leading-tight text-[#fff7e8] sm:text-3xl lg:text-4xl">
-              أهلاً يا {photographerName} 👋
+              مركز تشغيل {photographerName} اليومي
             </h1>
             <p className="mt-2 max-w-2xl text-sm font-bold leading-7 text-white/60 sm:text-[0.95rem]">
-              دي غرفة التحكم اليومية لموقعك. من هنا تعرف الناقص، تعدّل صورك وأسعارك، وتنشر الرابط للعملاء من غير خطوات معقدة.
+              من هنا تبدأ الرحلة: جهّز الاستوديو، ارفع أعمالك، اعرض الباقات، راجع الموقع كعميل، انشر الرابط، وفعّل الاشتراك من مسار واحد واضح.
             </p>
           </div>
 
@@ -139,7 +152,7 @@ export function DashboardHomeClient({
               className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-4 text-sm font-black text-white/75 no-underline transition hover:bg-white/[0.075] hover:text-white"
             >
               <Eye className="size-4" aria-hidden />
-              معاينة
+              معاينة كعميل
             </Link>
             <button
               type="button"
@@ -155,7 +168,7 @@ export function DashboardHomeClient({
         <div className="grid gap-3 rounded-[1.35rem] border border-white/10 bg-black/20 p-4">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <p className="text-xs font-black text-white/40">جاهزية الموقع</p>
+              <p className="text-xs font-black text-white/40">جاهزية مركز التشغيل</p>
               <h2 className="mt-1 text-xl font-black text-[#fff7e8]">{doneCount} من {checklist.length} خطوات</h2>
             </div>
             <CompletionRing percent={percent} />
@@ -167,6 +180,24 @@ export function DashboardHomeClient({
         </div>
       </section>
 
+      <section className="grid gap-3 lg:grid-cols-[1fr_0.85fr]">
+        <Panel title="مسار التشغيل" description="رحلة العميل من أول تسجيل حتى النشر والتفعيل." icon={Wand2}>
+          <div className="grid gap-2">
+            {phases.map((phase, index) => (
+              <PhaseRow key={phase.id} phase={phase} index={index + 1} />
+            ))}
+          </div>
+        </Panel>
+
+        <Panel title="تنبيهات تشغيلية" description="ما يحتاج انتباهك الآن قبل إرسال الرابط للعملاء." icon={AlertTriangle}>
+          <div className="grid gap-2">
+            {operatingAlerts.map((alert) => (
+              <OperatingAlert key={`${alert.title}-${alert.href}`} alert={alert} />
+            ))}
+          </div>
+        </Panel>
+      </section>
+
       {subscription ? <SubscriptionCard subscription={subscription} /> : null}
 
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -176,7 +207,7 @@ export function DashboardHomeClient({
       </section>
 
       <section className="grid gap-4 lg:grid-cols-[1fr_0.85fr]">
-        <Panel title="خطة اليوم" description="أهم الحاجات اللي تفرق في موقعك الآن." icon={Wand2}>
+        <Panel title="خطة اليوم" description="خطوات عملية مرتبة حسب أهميتها، مش حسب الصفحات." icon={Wand2}>
           <div className="grid gap-2">
             {checklist.map((item, index) => (
               <Link
@@ -189,14 +220,17 @@ export function DashboardHomeClient({
                   {item.done ? <CheckCircle2 className="size-5" aria-hidden /> : <Circle className="size-5" aria-hidden />}
                 </span>
                 <span className="text-[0.7rem] font-black text-white/32">{index + 1}</span>
-                <span className={item.done ? "text-sm font-black text-white/45" : "text-sm font-black text-[#fff7e8]"}>{item.label}</span>
+                <span className="min-w-0">
+                  <span className={item.done ? "block truncate text-sm font-black text-white/45" : "block truncate text-sm font-black text-[#fff7e8]"}>{item.label}</span>
+                  <span className="mt-0.5 hidden truncate text-[0.68rem] font-bold text-white/32 sm:block">{item.description}</span>
+                </span>
                 <ArrowLeft className="size-4 text-white/25 transition group-hover:text-[#f3cf73]" aria-hidden />
               </Link>
             ))}
           </div>
         </Panel>
 
-        <Panel title="ملخص سريع" description="أرقام تساعدك تعرف موقعك جاهز ولا محتاج شغل." icon={Sparkles}>
+        <Panel title="ملخص سريع" description="أرقام توضح جاهزية الموقع كمركز بيع وحجز." icon={Sparkles}>
           <div className="grid grid-cols-2 gap-2">
             {stats.map((stat) => (
               <div key={stat.label} className="rounded-2xl border border-white/8 bg-black/15 p-3">
@@ -215,15 +249,15 @@ export function DashboardHomeClient({
       </section>
 
       <BuilderNotice
-        tone={isPublished ? "success" : "info"}
-        title={isPublished ? "موقعك منشور وجاهز للمشاركة" : "موقعك لسه مسودة"}
-        description={isPublished ? "شارك الرابط مع عملائك أو ضيفه على السوشيال ميديا." : "كمل الخطوات الأساسية وبعدها انشر الموقع من صفحة النشر والمشاركة."}
+        tone={isPublished ? "success" : isReadyToPublish ? "info" : "warning"}
+        title={isPublished ? "موقعك منشور وجاهز للمشاركة" : isReadyToPublish ? "موقعك جاهز للنشر" : "موقعك لسه مسودة"}
+        description={isPublished ? "شارك الرابط مع عملائك أو ضيفه على السوشيال ميديا." : isReadyToPublish ? "راجع المعاينة واضغط نشر من Launch Workspace." : "كمّل الخطوات الأساسية وبعدها انشر الموقع من Launch Workspace."}
       />
 
       <div className="grid gap-2 sm:grid-cols-2">
         <Link href="/dashboard/publish" className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-[#f3cf73] px-4 text-sm font-black text-[#17120a] no-underline">
           <Send className="size-4" aria-hidden />
-          نشر ومشاركة
+          Launch Workspace
         </Link>
         <Link href={`/p/${siteSlug}`} target="_blank" className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-4 text-sm font-black text-white/75 no-underline">
           <Share2 className="size-4" aria-hidden />
@@ -313,17 +347,58 @@ function getSubscriptionState(subscription: NonNullable<DashboardViewModel["subs
   };
 }
 
+function PhaseRow({ phase, index }: { phase: DashboardViewModel["phases"][number]; index: number }) {
+  const isDone = phase.state === "done";
+  const isActive = phase.state === "active";
+  return (
+    <Link href={phase.href} className="group grid gap-2 rounded-2xl border border-white/8 bg-white/[0.03] p-3 no-underline transition hover:border-amber-300/20 hover:bg-amber-300/8 sm:grid-cols-[auto_1fr_auto] sm:items-center">
+      <span className={isDone ? "grid size-9 place-items-center rounded-2xl bg-emerald-300/10 text-emerald-300" : isActive ? "grid size-9 place-items-center rounded-2xl bg-amber-300/10 text-[#f3cf73]" : "grid size-9 place-items-center rounded-2xl bg-white/[0.04] text-white/28"}>
+        {isDone ? <CheckCircle2 className="size-4" aria-hidden /> : <span className="text-xs font-black">{index}</span>}
+      </span>
+      <span className="min-w-0">
+        <strong className={phase.state === "locked" ? "block truncate text-sm font-black text-white/36" : "block truncate text-sm font-black text-[#fff7e8]"}>{phase.title}</strong>
+        <span className="mt-0.5 block truncate text-xs font-bold text-white/38">{phase.description}</span>
+      </span>
+      <span className="flex items-center justify-between gap-2 text-xs font-black text-white/35 sm:justify-end">
+        {phase.done}/{phase.total}
+        <ArrowLeft className="size-4 transition group-hover:text-[#f3cf73]" aria-hidden />
+      </span>
+    </Link>
+  );
+}
+
+function OperatingAlert({ alert }: { alert: DashboardViewModel["operatingAlerts"][number] }) {
+  return (
+    <Link href={alert.href} className={`grid gap-2 rounded-2xl border p-3 no-underline transition hover:-translate-y-0.5 ${alertToneClass(alert.tone)}`}>
+      <strong className="text-sm font-black">{alert.title}</strong>
+      <span className="text-xs font-bold leading-6 opacity-75">{alert.description}</span>
+      <span className="mt-1 inline-flex items-center gap-1 text-xs font-black">
+        {alert.actionLabel}
+        <ArrowLeft className="size-3.5" aria-hidden />
+      </span>
+    </Link>
+  );
+}
+
+function alertToneClass(tone: DashboardViewModel["operatingAlerts"][number]["tone"]): string {
+  if (tone === "success") return "border-emerald-300/20 bg-emerald-300/10 text-emerald-200";
+  if (tone === "danger") return "border-red-400/24 bg-red-400/10 text-red-200";
+  if (tone === "warning") return "border-amber-300/24 bg-amber-300/10 text-amber-100";
+  return "border-sky-300/20 bg-sky-300/10 text-sky-100";
+}
+
 function WorkspaceTile({ workspace }: { workspace: WorkspaceCard }) {
   const Icon = workspace.icon;
   const done = workspace.state === "done";
+  const ready = workspace.state === "ready";
   return (
     <Link href={workspace.href} className="group grid min-h-[10.5rem] gap-3 rounded-[1.35rem] border border-white/10 bg-white/[0.035] p-4 no-underline transition hover:-translate-y-0.5 hover:border-amber-300/24 hover:bg-amber-300/8">
       <div className="flex items-center justify-between gap-3">
         <span className="grid size-11 place-items-center rounded-2xl bg-amber-300/10 text-[#f3cf73]">
           <Icon className="size-5" aria-hidden />
         </span>
-        <span className={done ? "rounded-full bg-emerald-300/10 px-2.5 py-1 text-[0.68rem] font-black text-emerald-300" : "rounded-full bg-amber-300/10 px-2.5 py-1 text-[0.68rem] font-black text-[#f3cf73]"}>
-          {done ? "جاهز" : "محتاج إكمال"}
+        <span className={done ? "rounded-full bg-emerald-300/10 px-2.5 py-1 text-[0.68rem] font-black text-emerald-300" : ready ? "rounded-full bg-sky-300/10 px-2.5 py-1 text-[0.68rem] font-black text-sky-200" : "rounded-full bg-amber-300/10 px-2.5 py-1 text-[0.68rem] font-black text-[#f3cf73]"}>
+          {done ? "جاهز" : ready ? "جاهز للخطوة" : "محتاج إكمال"}
         </span>
       </div>
       <div>
@@ -338,7 +413,7 @@ function WorkspaceTile({ workspace }: { workspace: WorkspaceCard }) {
   );
 }
 
-function Panel({ title, description, icon: Icon, children }: { title: string; description: string; icon: LucideIcon; children: React.ReactNode }) {
+function Panel({ title, description, icon: Icon, children }: { title: string; description: string; icon: LucideIcon; children: ReactNode }) {
   return (
     <section className="overflow-hidden rounded-[1.35rem] border border-white/10 bg-white/[0.035]">
       <header className="flex items-start gap-3 border-b border-white/8 p-4">

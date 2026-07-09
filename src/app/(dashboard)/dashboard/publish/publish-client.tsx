@@ -1,13 +1,40 @@
 "use client";
 
-import { useState } from "react";
-import { CheckCircle2, Copy, ExternalLink, Globe2, QrCode, Search, Share2, UploadCloud } from "lucide-react";
+import { useState, type ReactNode } from "react";
+import Link from "next/link";
+import {
+  AlertTriangle,
+  CheckCircle2,
+  Circle,
+  Copy,
+  ExternalLink,
+  Globe2,
+  PauseCircle,
+  QrCode,
+  Rocket,
+  Search,
+  Share2,
+  UploadCloud,
+  type LucideIcon,
+} from "lucide-react";
 
-import { updatePublishSeoAction, uploadShareImageAction } from "@/app/(dashboard)/dashboard/publish/actions";
+import {
+  publishSiteAction,
+  unpublishSiteAction,
+  updatePublishSeoAction,
+  uploadShareImageAction,
+} from "@/app/(dashboard)/dashboard/publish/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ImageUploader } from "@/components/dashboard/image-uploader";
 import { BuilderNotice } from "@/components/dashboard/builder-primitives";
+
+type ReadinessItem = {
+  id: string;
+  label: string;
+  done: boolean;
+  href: string;
+};
 
 type PublishClientProps = {
   siteTitle: string;
@@ -19,6 +46,10 @@ type PublishClientProps = {
   canonicalUrl: string | null;
   updated?: string;
   error?: string;
+  isPublished: boolean;
+  publishedVersion: number;
+  readinessItems: ReadinessItem[];
+  canPublish: boolean;
 };
 
 export function PublishClient({
@@ -31,6 +62,10 @@ export function PublishClient({
   canonicalUrl,
   updated,
   error,
+  isPublished,
+  publishedVersion,
+  readinessItems,
+  canPublish,
 }: PublishClientProps) {
   const [copied, setCopied] = useState(false);
   const [robots, setRobots] = useState(initialRobots);
@@ -41,6 +76,7 @@ export function PublishClient({
   const displayTitle = seoTitle || siteTitle;
   const displayDescription = seoDescription || `${siteTitle} — موقع تصوير فوتوغرافي احترافي.`;
   const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(siteUrl)}`;
+  const doneCount = readinessItems.filter((item) => item.done).length;
 
   async function copyLink() {
     await navigator.clipboard?.writeText(siteUrl);
@@ -64,10 +100,10 @@ export function PublishClient({
       <section className="rounded-[1.6rem] border border-white/10 bg-[radial-gradient(circle_at_top_right,rgba(243,207,115,0.14),transparent_36%),rgba(255,255,255,0.035)] p-4 sm:p-5">
         <div className="grid gap-4 lg:grid-cols-[1fr_auto] lg:items-end">
           <div>
-            <p className="text-[0.72rem] font-black text-[#f3cf73]">النشر والمشاركة</p>
-            <h1 className="mt-1 text-2xl font-black text-[#fff7e8] sm:text-3xl">جهّز الرابط قبل ما تبعته للعميل</h1>
+            <p className="text-[0.72rem] font-black text-[#f3cf73]">Launch Workspace</p>
+            <h1 className="mt-1 text-2xl font-black text-[#fff7e8] sm:text-3xl">راجع، انشر، وشارك موقعك من مكان واحد</h1>
             <p className="mt-2 max-w-2xl text-sm font-bold leading-7 text-white/58">
-              انسخ الرابط، افتح الموقع كعميل، واضبط شكل المعاينة اللي بتظهر في واتساب وفيسبوك وجوجل.
+              دي آخر محطة في رحلة العميل: تأكد من الجاهزية، اضبط شكل المشاركة، انشر الموقع، ثم انسخ الرابط أو QR لعملائك.
             </p>
           </div>
           <div className="grid gap-2 sm:flex">
@@ -83,8 +119,61 @@ export function PublishClient({
         </div>
       </section>
 
-      {updated ? <BuilderNotice tone="success" title="تم تحديث إعدادات المشاركة" description="التغييرات هتظهر في معاينات المشاركة ومحركات البحث." /> : null}
-      {error ? <BuilderNotice tone="error" title="مقدرناش نحفظ إعدادات النشر" description="راجع البيانات وجرب تاني." errorId={error} /> : null}
+      {updated === "published" ? <BuilderNotice tone="success" title="تم نشر الموقع" description="الرابط أصبح جاهزاً للمشاركة مع العملاء." /> : null}
+      {updated === "unpublished" ? <BuilderNotice tone="info" title="تم إرجاع الموقع لمسودة" description="يمكنك تعديله ثم نشره مرة أخرى من نفس الصفحة." /> : null}
+      {updated === "seo" ? <BuilderNotice tone="success" title="تم تحديث إعدادات المشاركة" description="التغييرات هتظهر في معاينات المشاركة ومحركات البحث." /> : null}
+      {error === "readiness" ? <BuilderNotice tone="warning" title="لا يمكن النشر قبل اكتمال الأساسيات" description="أكمل بيانات التواصل، المعرض، الباقات، وشكل المشاركة أولاً." /> : null}
+      {error && error !== "readiness" ? <BuilderNotice tone="error" title="مقدرناش نحفظ إعدادات النشر" description="راجع البيانات وجرب تاني." errorId={error} /> : null}
+
+      <section className="grid gap-3 lg:grid-cols-[1fr_0.82fr]">
+        <Panel icon={Rocket} title={isPublished ? "الموقع منشور" : "جاهزية النشر"} description="المنصة تمنع النشر قبل وجود أساسيات تجعل الرابط مفيداً للعميل.">
+          <div className="grid gap-3">
+            <div className="rounded-2xl border border-white/10 bg-black/18 p-3">
+              <p className={isPublished ? "text-lg font-black text-emerald-300" : canPublish ? "text-lg font-black text-[#f3cf73]" : "text-lg font-black text-white/78"}>
+                {isPublished ? `منشور · الإصدار ${publishedVersion}` : canPublish ? "جاهز للنشر" : `${doneCount} من ${readinessItems.length} جاهز`}
+              </p>
+              <p className="mt-1 text-xs font-bold leading-6 text-white/45">
+                {isPublished ? "يمكنك نسخ الرابط أو إرجاعه لمسودة لو محتاج تعديل كبير." : canPublish ? "كل المتطلبات الأساسية مكتملة. اضغط نشر بعد مراجعة المعاينة." : "اضغط على أي خطوة ناقصة لإكمالها قبل النشر."}
+              </p>
+            </div>
+
+            <div className="grid gap-2">
+              {readinessItems.map((item) => (
+                <Link key={item.id} href={item.href} className="grid min-h-11 grid-cols-[auto_1fr_auto] items-center gap-2 rounded-2xl border border-white/8 bg-white/[0.03] px-3 py-2 no-underline transition hover:border-amber-300/20 hover:bg-amber-300/8">
+                  <span className={item.done ? "text-emerald-300" : "text-white/25"}>{item.done ? <CheckCircle2 className="size-5" /> : <Circle className="size-5" />}</span>
+                  <span className={item.done ? "text-sm font-black text-white/45" : "text-sm font-black text-[#fff7e8]"}>{item.label}</span>
+                  <ExternalLink className="size-3.5 text-white/22" />
+                </Link>
+              ))}
+            </div>
+
+            {isPublished ? (
+              <form action={unpublishSiteAction}>
+                <button type="submit" className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl border border-red-400/24 bg-red-400/10 px-4 text-sm font-black text-red-200 transition hover:bg-red-400/16">
+                  <PauseCircle className="size-4" />
+                  إرجاع لمسودة
+                </button>
+              </form>
+            ) : (
+              <form action={publishSiteAction}>
+                <button type="submit" disabled={!canPublish} className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-[#f3cf73] px-4 text-sm font-black text-[#17120a] transition enabled:hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-45">
+                  <Rocket className="size-4" />
+                  نشر الموقع الآن
+                </button>
+              </form>
+            )}
+          </div>
+        </Panel>
+
+        <Panel icon={AlertTriangle} title="قبل إرسال الرابط" description="مراجعة سريعة تمنع أغلب مشاكل أول انطباع.">
+          <div className="grid gap-2 text-sm font-bold leading-7 text-white/58">
+            <p>افتح الموقع كعميل وتأكد أن أول شاشة واضحة.</p>
+            <p>تأكد أن واتساب أو الهاتف موجودان للحجز السريع.</p>
+            <p>اختبر شكل الرابط في واتساب بعد حفظ صورة المشاركة.</p>
+            <p>لو الاشتراك Trial، فعّل الاشتراك قبل نهاية التجربة.</p>
+          </div>
+        </Panel>
+      </section>
 
       <section className="grid gap-3 lg:grid-cols-[1fr_0.7fr]">
         <Panel icon={Globe2} title="رابط الموقع" description="ده الرابط اللي هتبعته للعملاء أو تحطه في السوشيال.">
@@ -169,7 +258,7 @@ export function PublishClient({
   );
 }
 
-function Panel({ icon: Icon, title, description, children }: { icon: typeof Globe2; title: string; description: string; children: React.ReactNode }) {
+function Panel({ icon: Icon, title, description, children }: { icon: LucideIcon; title: string; description: string; children: ReactNode }) {
   return (
     <section className="overflow-hidden rounded-[1.35rem] border border-white/10 bg-white/[0.035]">
       <header className="flex items-start gap-3 border-b border-white/8 p-4">
@@ -181,6 +270,6 @@ function Panel({ icon: Icon, title, description, children }: { icon: typeof Glob
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({ label, children }: { label: string; children: ReactNode }) {
   return <label className="grid gap-1.5"><span className="text-xs font-black text-white/55">{label}</span>{children}</label>;
 }
