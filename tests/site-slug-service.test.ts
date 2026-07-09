@@ -11,6 +11,7 @@ function createSession(slugChangeUsed = false): CurrentSession {
     user: {
       id: "user_1",
       email: "ali@example.com",
+      phone: null,
       name: "Ali Ahmed",
       role: "USER"
     },
