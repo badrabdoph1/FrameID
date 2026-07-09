@@ -8,6 +8,7 @@ import { prisma } from "@/lib/prisma";
 import { processError } from "@/lib/errors";
 import { readFormString } from "@/modules/auth/auth-action-utils";
 import { createPrismaLoginRepository } from "@/modules/auth/prisma-login-repository";
+import { shouldUseSecureSessionCookie } from "@/modules/auth/request-cookie-security";
 import { createSessionForUser } from "@/modules/auth/session-service";
 import { createPrismaSignupProvisioningRepository } from "@/modules/onboarding/prisma-signup-repository";
 import { createSignupProvisioningService } from "@/modules/onboarding/signup-provisioning";
@@ -26,6 +27,7 @@ function getSignupErrorMessage(error: unknown) {
     if (error.message === "البريد الإلكتروني غير صحيح.") return error.message;
     if (error.message === "رقم الهاتف غير صحيح.") return "رقم الهاتف غير صحيح. اكتب رقم مصري مثل 01000000000 أو بريد إلكتروني صحيح.";
     if (error.message === "Email already exists") return "هذا الحساب موجود بالفعل. سجل دخول بدل إنشاء حساب جديد.";
+    if (error.message === "رقم الهاتف أو البريد الإلكتروني مستخدم بالفعل") return "رقم الهاتف أو البريد الإلكتروني مستخدم بالفعل. سجل دخول بدل إنشاء حساب جديد.";
     if (error.message === "Selected template is not available") return "القالب المحدد غير متاح حاليًا. اختر قالبًا آخر من صفحة القوالب.";
   }
 
@@ -39,6 +41,7 @@ export async function signupAction(formData: FormData) {
   let redirectTo = "/dashboard";
 
   try {
+    const cookieSecure = await shouldUseSecureSessionCookie();
     const provisioningService = createSignupProvisioningService({
       repository: createPrismaSignupProvisioningRepository(prisma),
     });
@@ -52,6 +55,7 @@ export async function signupAction(formData: FormData) {
     const session = await createSessionForUser({
       repository: createPrismaLoginRepository(prisma),
       userId: result.userId,
+      cookieSecure,
     });
 
     cookieToSet = session.cookie;
