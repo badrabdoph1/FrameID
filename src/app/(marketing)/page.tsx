@@ -79,7 +79,7 @@ export default function HomePage() {
           "@type": "Offer",
           price: "0",
           priceCurrency: "EGP",
-          description: "تجربة مجانية ١٤ يوم من غير بطاقة بنكية"
+          description: "تجربة مجانية"
         }
       },
       {
@@ -369,35 +369,39 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section className="bg-ink py-14 text-white md:py-22">
-          <div className="container-page text-center">
-            <h2 className="text-balance text-2xl font-semibold md:text-5xl">
-              {finalCta.title}
-            </h2>
-            <p className="mx-auto mt-3 max-w-xl text-sm leading-7 text-white/65 md:mt-4 md:text-base md:leading-8">
-              {finalCta.subtext}
-            </p>
-            <div className="mt-6 flex flex-col items-center justify-center gap-3 md:mt-8 md:flex-row">
+        <section className="border-y border-border bg-surface py-5 md:py-7">
+          <div className="container-page">
+            <div className="flex flex-col gap-3 rounded-[1.35rem] border border-border bg-white p-4 shadow-soft md:flex-row md:items-center md:justify-between md:p-5">
+              <div className="min-w-0">
+                <h2 className="text-lg font-semibold text-ink md:text-2xl">
+                  {finalCta.title}
+                </h2>
+                <p className="mt-1 max-w-2xl text-sm leading-6 text-muted-foreground">
+                  {finalCta.subtext}
+                </p>
+              </div>
               <Link
                 href={finalCta.cta.href}
-                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-[var(--radius-control)] bg-champagne px-7 text-sm font-semibold text-ink transition-[background-color] hover:bg-champagne/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-champagne"
+                className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-[var(--radius-control)] bg-ink px-5 text-sm font-semibold text-white transition hover:-translate-y-0.5 hover:bg-ink/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 {finalCta.cta.label}
+                <ArrowLeft className="size-4" aria-hidden />
               </Link>
             </div>
           </div>
         </section>
 
-        <section className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-white/95 backdrop-blur-md md:hidden">
-          <div className="container-page flex items-center gap-3 px-4 py-3">
-            <span className="text-sm font-semibold">{mobileStickyCta.label}</span>
-            <Link
-              href={mobileStickyCta.href}
-              className="mr-auto inline-flex min-h-11 items-center justify-center rounded-[var(--radius-control)] bg-foreground px-4 text-sm font-semibold text-background transition hover:bg-foreground/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground"
-            >
+        <section className="fixed inset-x-3 bottom-3 z-40 md:hidden">
+          <Link
+            href={mobileStickyCta.href}
+            className="flex min-h-12 items-center justify-between gap-3 rounded-full border border-white/14 bg-ink/95 px-4 text-white shadow-[0_18px_45px_rgba(0,0,0,0.28)] backdrop-blur-md transition active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-champagne"
+          >
+            <span className="truncate text-xs font-semibold text-white/72">{mobileStickyCta.label}</span>
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-champagne px-3 py-1.5 text-xs font-semibold text-ink">
               {mobileStickyCta.buttonText}
-            </Link>
-          </div>
+              <ArrowLeft className="size-3.5" aria-hidden />
+            </span>
+          </Link>
         </section>
 
         <MarketingFooter />
