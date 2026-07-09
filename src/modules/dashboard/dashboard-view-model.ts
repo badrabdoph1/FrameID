@@ -1,4 +1,5 @@
 import type { CurrentSession } from "@/modules/auth/current-session-service";
+import type { ActivationTemplateKey, CustomerMessageTone } from "@/modules/messages/customer-message-config";
 
 type ChecklistItem = {
   id: string;
@@ -22,6 +23,7 @@ export type SubscriptionInfo = {
   isSuspended: boolean;
   hasPendingRequest: boolean;
   pendingRequestStatus: string | null;
+  latestPaymentRequestStatus: string | null;
 };
 
 export type DashboardWorkspacePhase = {
@@ -41,6 +43,20 @@ export type DashboardOperatingAlert = {
   href: string;
   actionLabel: string;
 };
+
+export type DashboardCustomerMessage = {
+  id: string;
+  tone: CustomerMessageTone;
+  title: string;
+  body: string;
+  createdAt: string;
+};
+
+export type DashboardActivationMessages = Partial<Record<ActivationTemplateKey, {
+  title: string;
+  body: string;
+  tone: CustomerMessageTone;
+}>>;
 
 export type DashboardViewModel = {
   photographerName: string;
@@ -62,6 +78,8 @@ export type DashboardViewModel = {
   nextStepTitle: string;
   nextStepDescription: string;
   subscription: SubscriptionInfo | null;
+  customerMessages: DashboardCustomerMessage[];
+  activationMessages: DashboardActivationMessages;
 };
 
 function calcPercent(done: number, total: number): number {
@@ -121,6 +139,7 @@ function buildSubscriptionInfo(
   session: CurrentSession,
   now: Date,
   pendingRequestStatus: string | null,
+  latestPaymentRequestStatus: string | null,
 ): SubscriptionInfo | null {
   if (!session.subscription) return null;
 
@@ -148,6 +167,7 @@ function buildSubscriptionInfo(
     isSuspended,
     hasPendingRequest: pendingRequestStatus !== null,
     pendingRequestStatus,
+    latestPaymentRequestStatus,
   };
 }
 
@@ -265,8 +285,11 @@ export function createDashboardViewModel({
   currentThemeName,
   lastModifiedAt,
   pendingRequestStatus,
+  latestPaymentRequestStatus,
   hasSeoSettings,
   hasAvatarImage,
+  customerMessages,
+  activationMessages,
 }: {
   session: CurrentSession;
   platformBaseUrl: string;
@@ -279,8 +302,11 @@ export function createDashboardViewModel({
   currentThemeName: string;
   lastModifiedAt: Date;
   pendingRequestStatus?: string | null;
+  latestPaymentRequestStatus?: string | null;
   hasSeoSettings?: boolean;
   hasAvatarImage?: boolean;
+  customerMessages?: DashboardCustomerMessage[];
+  activationMessages?: DashboardActivationMessages;
 }): DashboardViewModel {
   const hasPackages = packagesCount > 0;
   const hasImages = imagesCount > 0;
@@ -348,7 +374,7 @@ export function createDashboardViewModel({
 
   const doneCount = items.filter((i) => i.done).length;
   const percent = calcPercent(doneCount, items.length);
-  const subscription = buildSubscriptionInfo(session, now, pendingRequestStatus ?? null);
+  const subscription = buildSubscriptionInfo(session, now, pendingRequestStatus ?? null, latestPaymentRequestStatus ?? null);
   const requiredBeforePublish = items.filter((item) => item.id !== "publish");
   const isReadyToPublish = requiredBeforePublish.every((item) => item.done);
   const incomplete = items.find((i) => !i.done);
@@ -385,5 +411,7 @@ export function createDashboardViewModel({
     nextStepTitle: activeCopy.title,
     nextStepDescription: activeCopy.description,
     subscription,
+    customerMessages: customerMessages ?? [],
+    activationMessages: activationMessages ?? {},
   };
 }
