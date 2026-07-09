@@ -8,6 +8,7 @@ import { getCurrentRequestSession } from "@/modules/auth/request-session";
 
 export const metadata: Metadata = {
   title: "لوحة التحكم",
+  manifest: "/manifest-dashboard.webmanifest",
   robots: {
     index: false,
     follow: false
