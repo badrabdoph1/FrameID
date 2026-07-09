@@ -1,0 +1,60 @@
+{
+  "name": "FrameID - لوحة الأدمن",
+  "short_name": "FrameID Admin",
+  "description": "لوحة إدارة FrameID الرئيسية للأدمن.",
+  "lang": "ar",
+  "dir": "rtl",
+  "id": "/admin",
+  "start_url": "/admin?source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui", "browser"],
+  "orientation": "portrait-primary",
+  "theme_color": "#0b0d12",
+  "background_color": "#0b0d12",
+  "categories": ["business", "productivity"],
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "/icon-512x512.svg", "sizes": "512x512", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "/pwa/icon-maskable.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    {
+      "name": "لوحة الأدمن",
+      "short_name": "الأدمن",
+      "description": "افتح لوحة إدارة FrameID",
+      "url": "/admin?source=pwa-shortcut",
+      "icons": [{ "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+    },
+    {
+      "name": "العملاء",
+      "short_name": "العملاء",
+      "description": "إدارة العملاء والمواقع",
+      "url": "/admin/customers?source=pwa-shortcut",
+      "icons": [{ "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+    },
+    {
+      "name": "الرسائل",
+      "short_name": "الرسائل",
+      "description": "إرسال رسائل للعملاء",
+      "url": "/admin/messages?source=pwa-shortcut",
+      "icons": [{ "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/pwa/screenshot-dashboard.svg",
+      "sizes": "1280x720",
+      "type": "image/svg+xml",
+      "form_factor": "wide",
+      "label": "لوحة إدارة FrameID"
+    },
+    {
+      "src": "/pwa/screenshot-mobile.svg",
+      "sizes": "390x844",
+      "type": "image/svg+xml",
+      "form_factor": "narrow",
+      "label": "FrameID Admin على الهاتف"
+    }
+  ]
+}
