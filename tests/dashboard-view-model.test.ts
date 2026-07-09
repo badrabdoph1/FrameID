@@ -8,6 +8,7 @@ function createSession(status: "DRAFT" | "PUBLISHED" = "PUBLISHED"): CurrentSess
     user: {
       id: "user_1",
       email: "ali@example.com",
+      phone: null,
       name: "Ali Ahmed",
       role: "USER"
     },
