@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import Link from "next/link";
 import {
   AlertTriangle,
@@ -15,6 +15,7 @@ import {
   Search,
   Share2,
   UploadCloud,
+  type LucideIcon,
 } from "lucide-react";
 
 import {
@@ -257,7 +258,7 @@ export function PublishClient({
   );
 }
 
-function Panel({ icon: Icon, title, description, children }: { icon: typeof Globe2; title: string; description: string; children: React.ReactNode }) {
+function Panel({ icon: Icon, title, description, children }: { icon: LucideIcon; title: string; description: string; children: ReactNode }) {
   return (
     <section className="overflow-hidden rounded-[1.35rem] border border-white/10 bg-white/[0.035]">
       <header className="flex items-start gap-3 border-b border-white/8 p-4">
@@ -269,6 +270,6 @@ function Panel({ icon: Icon, title, description, children }: { icon: typeof Glob
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({ label, children }: { label: string; children: ReactNode }) {
   return <label className="grid gap-1.5"><span className="text-xs font-black text-white/55">{label}</span>{children}</label>;
 }
