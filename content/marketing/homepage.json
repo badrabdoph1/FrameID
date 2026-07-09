@@ -9,7 +9,7 @@
       "headlineHighlight": "في رابط واحد",
       "subheadline": "ابعت أسعارك وباقاتك بشكل احترافي بدل ملفات PDF والصور، وخلي عميلك يوصل لكل حاجة عنك من رابط واحد.",
       "heroImage": "https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?auto=format&fit=crop&w=1800&q=85",
-      "cta": { "label": "ابدأ مجانًا", "href": "/signup" },
+      "cta": { "label": "ابدأ مجانًا", "href": "/templates" },
       "secondaryCta": { "label": "شاهد مثال لموقع مصور", "href": "/templates" },
       "trustPoints": [
         { "text": "تجربة مجانية" },
@@ -52,12 +52,12 @@
     "finalCta": {
       "title": "خلّي شغلك كله في رابط واحد",
       "subtext": "ابدأ مجانًا وخلي عميلك يشوف صورك وباقاتك ويتواصل معاك بسهولة.",
-      "cta": { "label": "ابدأ مجانًا", "href": "/signup" }
+      "cta": { "label": "ابدأ مجانًا", "href": "/templates" }
     },
     "mobileStickyCta": {
       "label": "موقعك في رابط واحد",
       "buttonText": "ابدأ مجانًا",
-      "href": "/signup"
+      "href": "/templates"
     },
     "photographerTypes": [
       { "label": "مصورين زفاف" },
