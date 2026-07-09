@@ -48,6 +48,10 @@ function daysLeft(value: Date | null | undefined): string {
   return `${days} يوم متبقي`;
 }
 
+function mediaAssetTitle(storageKey: string): string {
+  return storageKey.split("/").pop() ?? storageKey;
+}
+
 export default async function AdminCustomer360Page({ params }: Props) {
   await requireAdminPermission("customers", "view");
   const { id } = await params;
@@ -185,7 +189,7 @@ export default async function AdminCustomer360Page({ params }: Props) {
         </Panel>
         <Panel title={`Media · ${allMediaCount.toLocaleString("ar-EG")}`} icon={Image}>
           <div className="grid gap-2">
-            {customer.mediaAssets.length === 0 ? <Empty text="لا توجد وسائط." /> : customer.mediaAssets.map((asset) => <CompactItem key={asset.id} title={asset.alt ?? asset.storageKey} subtitle={`${asset.mimeType} · ${Math.round(asset.sizeBytes / 1024)} KB · ${dateLabel(asset.createdAt)}`} />)}
+            {customer.mediaAssets.length === 0 ? <Empty text="لا توجد وسائط." /> : customer.mediaAssets.map((asset) => <CompactItem key={asset.id} title={mediaAssetTitle(asset.storageKey)} subtitle={`${asset.mimeType} · ${Math.round(asset.sizeBytes / 1024)} KB · ${dateLabel(asset.createdAt)}`} />)}
           </div>
         </Panel>
       </section>
@@ -243,5 +247,5 @@ function CompactItem({ title, subtitle }: { title: string; subtitle: string }) {
 }
 
 function Empty({ text }: { text: string }) {
-  return <p className="rounded-xl border border-dashed border-white/10 bg-black/12 px-3 py-5 text-center text-sm font-bold text-white/35">{text}</p>;
+  return <div className="rounded-xl border border-dashed border-white/10 bg-black/12 p-5 text-center text-sm font-bold text-white/35">{text}</div>;
 }
