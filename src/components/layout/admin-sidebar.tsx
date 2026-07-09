@@ -2,12 +2,34 @@
 
 import { useState, useCallback, useRef, useEffect } from "react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { Search, LogOut, ExternalLink, PanelLeftClose, PanelLeft } from "lucide-react"
 import { adminSections, type AdminSection } from "@/modules/admin/navigation"
 import { adminLogoutAction } from "@/app/_actions/admin-logout"
 import { useAdmin } from "@/components/layout/admin-context"
 import { cn } from "@/lib/utils/cn"
+
+function isAdminLinkActive(pathname: string | null, href: string): boolean {
+  if (!pathname) return false
+  if (href === "/admin") return pathname === "/admin"
+  return pathname === href || pathname.startsWith(`${href}/`)
+}
+
+function findActiveAdminSection(pathname: string | null): AdminSection | undefined {
+  if (!pathname) return undefined
+
+  const candidates = adminSections
+    .map((section) => {
+      const bestMatch = section.links
+        .filter((link) => isAdminLinkActive(pathname, link.href))
+        .sort((a, b) => b.href.length - a.href.length)[0]
+      return bestMatch ? { section, matchLength: bestMatch.href.length } : null
+    })
+    .filter((item): item is { section: AdminSection; matchLength: number } => Boolean(item))
+    .sort((a, b) => b.matchLength - a.matchLength)
+
+  return candidates[0]?.section
+}
 
 function SecondaryPanel({ sections, collapsed }: { sections: AdminSection[]; collapsed: boolean }) {
   const pathname = usePathname()
@@ -31,7 +53,7 @@ function SecondaryPanel({ sections, collapsed }: { sections: AdminSection[]; col
           </div>
           <nav className="mt-1 grid gap-0.5">
             {section.links.map((link) => {
-              const isActive = pathname === link.href || pathname?.startsWith(link.href + "/")
+              const isActive = isAdminLinkActive(pathname, link.href)
               return (
                 <Link
                   key={link.href}
@@ -60,16 +82,13 @@ function SecondaryPanel({ sections, collapsed }: { sections: AdminSection[]; col
 
 export function AdminSidebar() {
   const pathname = usePathname()
+  const router = useRouter()
   const { sidebarCollapsed, toggleSidebarCollapsed } = useAdmin()
   const [activeSection, setActiveSection] = useState<string | null>(null)
   const sectionRefs = useRef<Map<string, HTMLButtonElement>>(new Map())
 
   useEffect(() => {
-    const found = adminSections.find((section) =>
-      section.links.some(
-        (link) => pathname === link.href || pathname?.startsWith(link.href + "/")
-      )
-    )
+    const found = findActiveAdminSection(pathname)
     setActiveSection(found?.id ?? adminSections[0]?.id ?? null)
   }, [pathname])
 
@@ -78,9 +97,18 @@ export function AdminSidebar() {
     else sectionRefs.current.delete(id)
   }, [])
 
-  const handleKeyDown = useCallback((e: React.KeyboardEvent, sectionId: string) => {
-    const idx = adminSections.findIndex((s) => s.id === sectionId)
-    if (e.key === "ArrowDown") {
+  const goToSection = useCallback((section: AdminSection) => {
+    setActiveSection(section.id)
+    const firstHref = section.links[0]?.href
+    if (firstHref && pathname !== firstHref) router.push(firstHref)
+  }, [pathname, router])
+
+  const handleKeyDown = useCallback((e: React.KeyboardEvent, section: AdminSection) => {
+    const idx = adminSections.findIndex((s) => s.id === section.id)
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault()
+      goToSection(section)
+    } else if (e.key === "ArrowDown") {
       e.preventDefault()
       const next = adminSections[idx + 1]
       if (next) sectionRefs.current.get(next.id)?.focus()
@@ -89,7 +117,7 @@ export function AdminSidebar() {
       const prev = adminSections[idx - 1]
       if (prev) sectionRefs.current.get(prev.id)?.focus()
     }
-  }, [])
+  }, [goToSection])
 
   const currentSections = adminSections.filter((s) => s.id === activeSection)
 
@@ -153,9 +181,9 @@ export function AdminSidebar() {
                   key={section.id}
                   ref={(el) => setSectionRef(section.id, el)}
                   data-accent={section.accent ?? "gold"}
-                  onClick={() => setActiveSection(section.id)}
-                  onKeyDown={(e) => handleKeyDown(e, section.id)}
-                  title={section.description}
+                  onClick={() => goToSection(section)}
+                  onKeyDown={(e) => handleKeyDown(e, section)}
+                  title={`${section.title} · فتح ${section.links[0]?.label ?? "القسم"}`}
                   aria-pressed={isSelected}
                   className={cn(
                     "group relative grid gap-1 rounded-xl border p-2 text-start font-inherit transition",
