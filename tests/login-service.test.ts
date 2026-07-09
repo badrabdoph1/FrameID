@@ -11,16 +11,17 @@ function createRepository(passwordHash: string): LoginRepository & {
 
   return {
     calls,
-    async findUserByEmail(email) {
-      calls.push(`find:${email}`);
+    async findUserByIdentifier({ email, phone }) {
+      calls.push(`find:${email}:${phone ?? "none"}`);
 
-      if (email !== "ali@example.com") {
+      if (email !== "ali@example.com" && phone !== "+201000000000") {
         return null;
       }
 
       return {
         id: "user_1",
         email,
+        phone,
         name: "Ali Ahmed",
         passwordHash,
         role: "USER"
@@ -49,14 +50,15 @@ describe("login service", () => {
     });
 
     const result = await service.login({
-      email: "  ALI@Example.COM ",
+      identifier: "  ALI@Example.COM ",
       password: "StrongPass123!"
     });
 
-    expect(repository.calls).toEqual(["find:ali@example.com", "session:user_1"]);
+    expect(repository.calls).toEqual(["find:ali@example.com:none", "session:user_1"]);
     expect(result.user).toEqual({
       id: "user_1",
       email: "ali@example.com",
+      phone: null,
       name: "Ali Ahmed",
       role: "USER"
     });
@@ -71,11 +73,11 @@ describe("login service", () => {
 
     await expect(
       service.login({
-        email: "ali@example.com",
+        identifier: "ali@example.com",
         password: "WrongPass123!"
       })
-    ).rejects.toThrow("Invalid email or password");
+    ).rejects.toThrow("Invalid phone/email or password");
 
-    expect(repository.calls).toEqual(["find:ali@example.com"]);
+    expect(repository.calls).toEqual(["find:ali@example.com:none"]);
   });
 });
