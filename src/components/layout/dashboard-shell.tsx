@@ -37,32 +37,40 @@ const navItems: NavItem[] = [
     href: "/dashboard",
     label: "الرئيسية",
     shortLabel: "الرئيسية",
-    description: "الخطوة التالية، حالة الموقع، والرابط.",
+    description: "الرابط، التفعيل، وخطة اليوم.",
     icon: LayoutDashboard,
     priority: "primary",
   },
   {
+    href: "/dashboard/services",
+    label: "الباقات",
+    shortLabel: "الباقات",
+    description: "أول خطوة: أسعارك وعروضك.",
+    icon: Package,
+    priority: "primary",
+  },
+  {
     href: "/dashboard/site-info",
-    label: "بيانات الموقع",
-    shortLabel: "بياناتك",
-    description: "الاسم، الغلاف، التواصل، والسوشيال.",
+    label: "التواصل",
+    shortLabel: "التواصل",
+    description: "اسم المصور، واتساب، وروابطك.",
     icon: UserCircle,
     priority: "primary",
   },
   {
     href: "/dashboard/gallery",
-    label: "معرض الأعمال",
+    label: "الصور",
     shortLabel: "الصور",
-    description: "الألبومات وأفضل صور شغلك.",
+    description: "الصورة الشخصية، الغلاف، والألبومات.",
     icon: Images,
     priority: "primary",
   },
   {
-    href: "/dashboard/services",
-    label: "الباقات والأسعار",
-    shortLabel: "الباقات",
-    description: "أسعارك وخدماتك بشكل واضح للعميل.",
-    icon: Package,
+    href: "/dashboard/publish",
+    label: "النشر",
+    shortLabel: "النشر",
+    description: "انسخ الرابط وانشر الموقع.",
+    icon: Globe2,
     priority: "primary",
   },
   {
@@ -74,17 +82,9 @@ const navItems: NavItem[] = [
     priority: "secondary",
   },
   {
-    href: "/dashboard/publish",
-    label: "النشر والمشاركة",
-    shortLabel: "النشر",
-    description: "معاينة الموقع ونسخ الرابط ومشاركته.",
-    icon: Globe2,
-    priority: "primary",
-  },
-  {
     href: "/dashboard/billing",
-    label: "الاشتراك والدفع",
-    shortLabel: "الدفع",
+    label: "التفعيل والدفع",
+    shortLabel: "التفعيل",
     description: "التجربة المجانية، الاشتراك، وإثبات الدفع.",
     icon: CreditCard,
     priority: "secondary",
@@ -181,17 +181,17 @@ export function DashboardShell({ children, siteSlug }: { children: ReactNode; si
             <BrandMark large />
             <span>
               <strong className="block text-base font-black text-[#fff7e8]">FrameID</strong>
-              <small className="block text-xs font-bold text-white/40">لوحة تحكم المصور</small>
+              <small className="block text-xs font-bold text-white/40">رحلة تجهيز موقعك</small>
             </span>
           </Link>
 
           <div className="mt-4 grid gap-2 overflow-y-auto pb-4 pr-0.5 admin-scrollbar">
-            <p className="px-2 text-[0.68rem] font-black uppercase tracking-wider text-white/28">العمل اليومي</p>
-            {navItems.filter((item) => item.priority === "primary").map((item) => (
+            <p className="px-2 text-[0.68rem] font-black uppercase tracking-wider text-white/28">خطوات العمل</p>
+            {primaryNav.map((item) => (
               <NavLink key={item.href} item={item} active={isActivePath(pathname, item.href)} />
             ))}
 
-            <p className="mt-3 px-2 text-[0.68rem] font-black uppercase tracking-wider text-white/28">الإعدادات والنظام</p>
+            <p className="mt-3 px-2 text-[0.68rem] font-black uppercase tracking-wider text-white/28">أدوات إضافية</p>
             {secondaryNav.map((item) => (
               <NavLink key={item.href} item={item} active={isActivePath(pathname, item.href)} compact />
             ))}
