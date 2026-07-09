@@ -492,6 +492,29 @@ model Subscription {
   @@index([tenantId, status, deletedAt])
 }
 
+model SubscriptionChange {
+  id             String              @id @default(cuid())
+  subscriptionId String
+  fromPlanId     String?
+  toPlanId       String?
+  fromStatus     SubscriptionStatus?
+  toStatus       SubscriptionStatus?
+  reason         String?
+  note           String?
+  requestedById  String?
+  effectiveAt    DateTime?
+  createdAt      DateTime            @default(now())
+  deletedAt      DateTime?
+
+  subscription Subscription @relation(fields: [subscriptionId], references: [id])
+  fromPlan     Plan?        @relation("FromPlan", fields: [fromPlanId], references: [id])
+  toPlan       Plan?        @relation("ToPlan", fields: [toPlanId], references: [id])
+
+  @@index([subscriptionId, createdAt])
+  @@index([fromPlanId])
+  @@index([toPlanId])
+}
+
 model PaymentRequest {
   id               String        @id @default(cuid())
   tenantId         String
