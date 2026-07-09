@@ -16,7 +16,7 @@ export function Input({ className, error, id, ref, ...props }: InputProps) {
         aria-invalid={Boolean(error)}
         aria-describedby={error && id ? `${id}-error` : undefined}
         className={cn(
-          "min-h-11 w-full rounded-[var(--radius-control)] border border-border bg-surface px-3 text-sm text-foreground outline-none transition focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50",
+          "min-h-11 w-full rounded-[var(--radius-control)] border border-border bg-surface px-3 text-base text-foreground outline-none transition focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
           error && "border-danger focus-visible:ring-danger",
           className
         )}
