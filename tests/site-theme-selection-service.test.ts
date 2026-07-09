@@ -8,7 +8,7 @@ import {
 
 function createSession(): CurrentSession {
   return {
-    user: { id: "user_1", email: "ali@example.com", name: "Ali", role: "USER" },
+    user: { id: "user_1", email: "ali@example.com", phone: null, name: "Ali", role: "USER" },
     tenant: {
       id: "tenant_1",
       displayName: "Ali Studio",
