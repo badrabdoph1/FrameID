@@ -53,6 +53,7 @@ export default function HomePage() {
   const previewTemplates = templates.slice(0, 1);
   const featuredTemplate = previewTemplates[0];
   const { hero, benefits, howItWorks, templateSection, trustSection, finalCta, mobileStickyCta } = homepage;
+  const featuredPreviewHref = featuredTemplate ? `/templates/${featuredTemplate.code}/preview` : hero.secondaryCta.href;
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -123,19 +124,20 @@ export default function HomePage() {
               <p className="mt-4 max-w-2xl text-base leading-7 text-white/78 md:mt-5 md:text-lg md:leading-8">
                 {hero.subheadline}
               </p>
-              <div className="mt-6 flex flex-col gap-3 sm:flex-row md:mt-8">
+              <div className="mt-6 flex flex-col items-start gap-2 md:mt-8">
                 <Link
                   href={hero.cta.href}
-                  className="inline-flex min-h-12 items-center justify-center gap-2 rounded-[var(--radius-control)] bg-champagne px-7 text-sm font-semibold text-ink transition-[background-color,box-shadow,transform] hover:-translate-y-0.5 hover:bg-champagne/90 hover:shadow-[0_12px_35px_rgba(230,196,120,0.22)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-champagne"
+                  className="inline-flex min-h-12 items-center justify-center gap-2 rounded-[var(--radius-control)] bg-champagne px-8 text-sm font-semibold text-ink transition-[background-color,box-shadow,transform] hover:-translate-y-0.5 hover:bg-champagne/90 hover:shadow-[0_12px_35px_rgba(230,196,120,0.22)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-champagne"
                 >
                   {hero.cta.label}
+                  <ArrowLeft className="size-4" aria-hidden />
                 </Link>
                 <Link
-                  href={hero.secondaryCta.href}
-                  className="inline-flex min-h-12 items-center justify-center gap-2 rounded-[var(--radius-control)] border border-white/20 bg-white/5 px-6 text-sm font-semibold text-white transition-[background-color,border-color,transform] hover:-translate-y-0.5 hover:border-white/40 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+                  href={featuredPreviewHref}
+                  className="inline-flex items-center gap-1.5 px-1 py-1 text-xs font-semibold text-white/70 underline-offset-4 transition hover:text-champagne hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-champagne md:text-sm"
                 >
                   {hero.secondaryCta.label}
-                  <ArrowLeft className="size-4" aria-hidden />
+                  <ArrowLeft className="size-3.5" aria-hidden />
                 </Link>
               </div>
               <div className="mt-7 max-w-3xl rounded-[var(--radius-panel)] border border-white/10 bg-white/[0.055] p-3 shadow-[0_0_45px_rgba(230,196,120,0.14)] backdrop-blur md:mt-8 md:p-4">
@@ -173,10 +175,10 @@ export default function HomePage() {
               {featuredTemplate ? (
                 <div className="mt-5">
                   <Link
-                    href={`/templates/${featuredTemplate.code}/preview`}
+                    href={featuredPreviewHref}
                     className="inline-flex min-h-11 items-center justify-center gap-2 rounded-[var(--radius-control)] bg-foreground px-5 text-sm font-semibold text-background shadow-soft transition hover:-translate-y-0.5 hover:bg-foreground/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   >
-                    ادخل شوفه
+                    شوف مثال لموقع مصور
                     <ArrowLeft className="size-4" aria-hidden />
                   </Link>
                 </div>
@@ -218,7 +220,7 @@ export default function HomePage() {
                         className="inline-flex shrink-0 items-center gap-1.5 rounded-[var(--radius-control)] border border-border bg-surface px-3 py-1.5 text-xs font-semibold transition hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:gap-2 md:px-4 md:py-2 md:text-sm"
                       >
                         <Eye className="size-3.5 md:size-4" aria-hidden />
-                        شوف القالب
+                        شوف المثال
                       </Link>
                     </div>
                     <div className="mt-4">
