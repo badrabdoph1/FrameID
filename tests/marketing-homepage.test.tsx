@@ -58,6 +58,24 @@ describe("marketing homepage", () => {
     ).toBe(true);
   });
 
+  it("routes homepage start and example CTAs to the templates index", () => {
+    render(<HomePage />);
+
+    const startLinks = screen.getAllByRole("link", {
+      name: /ابدأ/u
+    });
+    expect(
+      startLinks.every((link) => link.getAttribute("href") === "/templates")
+    ).toBe(true);
+
+    const exampleLinks = screen.getAllByRole("link", {
+      name: /شوف مثال|شوف المثال/u
+    });
+    expect(
+      exampleLinks.every((link) => link.getAttribute("href") === "/templates")
+    ).toBe(true);
+  });
+
   it("shows template showcase with browser frame", () => {
     render(<HomePage />);
 

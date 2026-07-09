@@ -76,7 +76,7 @@ export default function HomePage() {
   const previewTemplates = templates.slice(0, 1);
   const featuredTemplate = previewTemplates[0];
   const { hero, benefits, howItWorks, templateSection, trustSection, finalCta, mobileStickyCta } = homepage;
-  const featuredPreviewHref = featuredTemplate ? `/templates/${featuredTemplate.code}/preview` : hero.secondaryCta.href;
+  const featuredPreviewHref = hero.secondaryCta.href;
   const organizationId = "https://frameid.app/#organization";
   const websiteId = "https://frameid.app/#website";
   const applicationId = "https://frameid.app/#software";
@@ -321,7 +321,7 @@ export default function HomePage() {
                         </p>
                       </div>
                       <Link
-                        href={`/templates/${template.code}/preview`}
+                        href="/templates"
                         className="inline-flex shrink-0 items-center gap-1.5 rounded-[var(--radius-control)] border border-border bg-surface px-3 py-1.5 text-xs font-semibold transition hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:gap-2 md:px-4 md:py-2 md:text-sm"
                       >
                         <Eye className="size-3.5 md:size-4" aria-hidden />
