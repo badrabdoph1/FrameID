@@ -24,6 +24,12 @@ function readString(formData: FormData, key: string): string {
   return typeof value === "string" ? value.trim() : "";
 }
 
+function revalidateGallery(siteSlug: string) {
+  revalidatePath("/dashboard");
+  revalidatePath("/dashboard/gallery");
+  revalidatePath(`/p/${siteSlug}`);
+}
+
 export async function createAlbumAction(formData: FormData) {
   const session = await getCurrentRequestSession();
 
@@ -32,6 +38,7 @@ export async function createAlbumAction(formData: FormData) {
   }
 
   const title = readString(formData, "title");
+  const description = readString(formData, "description");
 
   if (!title) {
     redirect("/dashboard/gallery?error=empty-album-title");
@@ -50,6 +57,7 @@ export async function createAlbumAction(formData: FormData) {
       data: {
         siteId: session.site.id,
         title,
+        description: description || null,
         slug,
         sortOrder: (maxOrder._max.sortOrder ?? -1) + 1,
         isVisible: true,
@@ -64,7 +72,7 @@ export async function createAlbumAction(formData: FormData) {
     redirect(`/dashboard/gallery?error=${encodeURIComponent(userError.message)}`);
   }
 
-  revalidatePath("/dashboard/gallery");
+  revalidateGallery(session.site.slug);
   redirect("/dashboard/gallery?created=1");
 }
 
@@ -77,6 +85,7 @@ export async function renameAlbumAction(formData: FormData) {
 
   const albumId = readString(formData, "albumId");
   const title = readString(formData, "title");
+  const description = readString(formData, "description");
 
   if (!albumId || !title) {
     redirect(`/dashboard/gallery?albumId=${encodeURIComponent(albumId)}&error=invalid-rename`);
@@ -85,7 +94,7 @@ export async function renameAlbumAction(formData: FormData) {
   try {
     await prisma.galleryAlbum.update({
       where: { id: albumId, siteId: session.site.id },
-      data: { title },
+      data: { title, description: description || null },
     });
   } catch (error) {
     const { userError } = await processError(error, {
@@ -96,7 +105,7 @@ export async function renameAlbumAction(formData: FormData) {
     redirect(`/dashboard/gallery?albumId=${encodeURIComponent(albumId)}&error=${encodeURIComponent(userError.message)}`);
   }
 
-  revalidatePath("/dashboard/gallery");
+  revalidateGallery(session.site.slug);
   redirect(`/dashboard/gallery?albumId=${encodeURIComponent(albumId)}&renamed=1`);
 }
 
@@ -127,7 +136,7 @@ export async function deleteAlbumAction(formData: FormData) {
     redirect(`/dashboard/gallery?error=${encodeURIComponent(userError.message)}`);
   }
 
-  revalidatePath("/dashboard/gallery");
+  revalidateGallery(session.site.slug);
   redirect("/dashboard/gallery?deleted=1");
 }
 
@@ -145,7 +154,15 @@ export async function uploadToAlbumAction(formData: FormData) {
     redirect("/dashboard/gallery?error=invalid-album");
   }
 
-  const validFiles = images.filter((f): f is File => f instanceof File && f.size > 0);
+  const existingImages = await prisma.galleryImage.count({
+    where: { albumId, deletedAt: null },
+  });
+
+  const validFiles = images.filter((f): f is File => f instanceof File && f.size > 0).slice(0, Math.max(0, 5 - existingImages));
+
+  if (existingImages >= 5) {
+    redirect(`/dashboard/gallery?albumId=${encodeURIComponent(albumId)}&error=max-five-images`);
+  }
 
   if (validFiles.length === 0) {
     redirect(`/dashboard/gallery?albumId=${encodeURIComponent(albumId)}&error=no-images`);
@@ -170,13 +187,24 @@ export async function uploadToAlbumAction(formData: FormData) {
         _max: { sortOrder: true },
       });
 
-      await prisma.galleryImage.create({
+      const image = await prisma.galleryImage.create({
         data: {
           albumId,
           assetId: asset.id,
           sortOrder: (maxOrder._max.sortOrder ?? -1) + 1,
         },
       });
+
+      const album = await prisma.galleryAlbum.findUnique({
+        where: { id: albumId },
+        select: { coverAssetId: true },
+      });
+      if (!album?.coverAssetId) {
+        await prisma.galleryAlbum.update({
+          where: { id: albumId, siteId: session.site.id },
+          data: { coverAssetId: image.assetId },
+        });
+      }
 
       uploaded++;
     }
@@ -189,7 +217,7 @@ export async function uploadToAlbumAction(formData: FormData) {
     redirect(`/dashboard/gallery?albumId=${encodeURIComponent(albumId)}&error=${encodeURIComponent(userError.message)}`);
   }
 
-  revalidatePath("/dashboard/gallery");
+  revalidateGallery(session.site.slug);
   redirect(`/dashboard/gallery?albumId=${encodeURIComponent(albumId)}&uploaded=${uploaded}`);
 }
 
@@ -221,7 +249,7 @@ export async function deleteImageAction(formData: FormData) {
     redirect(`/dashboard/gallery?albumId=${encodeURIComponent(albumId)}&error=${encodeURIComponent(userError.message)}`);
   }
 
-  revalidatePath("/dashboard/gallery");
+  revalidateGallery(session.site.slug);
   redirect(`/dashboard/gallery?albumId=${encodeURIComponent(albumId)}&deleted=1`);
 }
 
@@ -285,7 +313,7 @@ export async function reorderImageAction(formData: FormData) {
     redirect(`/dashboard/gallery?albumId=${encodeURIComponent(albumId)}&error=${encodeURIComponent(userError.message)}`);
   }
 
-  revalidatePath("/dashboard/gallery");
+  revalidateGallery(session.site.slug);
   redirect(`/dashboard/gallery?albumId=${encodeURIComponent(albumId)}&reordered=1`);
 }
 
@@ -326,7 +354,7 @@ export async function setCoverImageAction(formData: FormData) {
     redirect(`/dashboard/gallery?albumId=${encodeURIComponent(albumId)}&error=${encodeURIComponent(userError.message)}`);
   }
 
-  revalidatePath("/dashboard/gallery");
+  revalidateGallery(session.site.slug);
   redirect(`/dashboard/gallery?albumId=${encodeURIComponent(albumId)}&coverSet=1`);
 }
 
@@ -367,6 +395,6 @@ export async function toggleFeaturedAction(formData: FormData) {
     redirect(`/dashboard/gallery?albumId=${encodeURIComponent(albumId)}&error=${encodeURIComponent(userError.message)}`);
   }
 
-  revalidatePath("/dashboard/gallery");
+  revalidateGallery(session.site.slug);
   redirect(`/dashboard/gallery?albumId=${encodeURIComponent(albumId)}&featuredToggled=1`);
 }
