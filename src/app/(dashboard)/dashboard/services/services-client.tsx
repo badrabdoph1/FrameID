@@ -1,35 +1,29 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   ArrowDown,
   ArrowUp,
   BriefcaseBusiness,
-  CirclePlus,
+  CheckCircle2,
   Copy,
   Eye,
   EyeOff,
   Package,
+  Plus,
+  Search,
+  Sparkles,
   Trash2,
+  X,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import {
-  PackageEditor,
-  type PackageData,
-} from "@/components/dashboard/package-editor";
-import { NewPackageForm } from "@/components/dashboard/new-package-form";
-import {
-  BuilderNotice,
-  BuilderPageHeader,
-} from "@/components/dashboard/builder-primitives";
-
+import { BuilderNotice } from "@/components/dashboard/builder-primitives";
+import type { PackageData } from "@/components/dashboard/package-editor";
 import {
   addExtraAction,
+  addPackageAction,
   deleteExtraAction,
   deletePackageAction,
   duplicateExtraAction,
@@ -39,8 +33,6 @@ import {
   updateExtraAction,
   updatePackageAction,
 } from "@/app/(dashboard)/dashboard/services/actions";
-
-/* ─── Types ────────────────────────────────────── */
 
 type ExtraData = {
   id: string;
@@ -59,820 +51,204 @@ type ServicesClientProps = {
   error?: string;
 };
 
-/* ─── Helpers ──────────────────────────────────── */
-
-/* ─── Extra Card ───────────────────────────────── */
-
-function ExtraCard({
-  extra,
-  onUpdate,
-  onDelete,
-  onDuplicate,
-  onReorderUp,
-  onReorderDown,
-  isFirst,
-  isLast,
-  disabled,
-}: {
-  extra: ExtraData;
-  onUpdate: (data: ExtraData) => Promise<void>;
-  onDelete: (id: string) => Promise<void>;
-  onDuplicate: (id: string) => Promise<void>;
-  onReorderUp: (id: string) => Promise<void>;
-  onReorderDown: (id: string) => Promise<void>;
-  isFirst: boolean;
-  isLast: boolean;
-  disabled?: boolean;
-}) {
-  const [deleting, setDeleting] = useState(false);
-  const [confirmDelete, setConfirmDelete] = useState(false);
-
-  const update = useCallback(
-    async (partial: Partial<ExtraData>) => {
-      await onUpdate({ ...extra, ...partial });
-    },
-    [extra, onUpdate],
-  );
-
-  const handleDelete = useCallback(async () => {
-    setDeleting(true);
-    try {
-      await onDelete(extra.id);
-    } finally {
-      setDeleting(false);
-    }
-  }, [extra.id, onDelete]);
-
-  const iconDisplay = extra.iconKey ? (
-    <span
-      style={{
-        display: "inline-flex",
-        width: 28,
-        height: 28,
-        alignItems: "center",
-        justifyContent: "center",
-        borderRadius: 8,
-        background: "rgba(243, 207, 115, 0.1)",
-        color: "#f3cf73",
-        fontSize: "0.75rem",
-        fontWeight: 600,
-        flexShrink: 0,
-      }}
-    >
-      {extra.iconKey.charAt(0).toUpperCase()}
-    </span>
-  ) : (
-    <BriefcaseBusiness
-      size={18}
-      style={{ color: "rgba(245, 234, 214, 0.35)", flexShrink: 0 }}
-    />
-  );
-
-  return (
-    <div
-      style={{
-        borderRadius: 16,
-        border: "1px solid rgba(245, 234, 214, 0.08)",
-        background: extra.isActive
-          ? "rgba(255, 255, 255, 0.03)"
-          : "rgba(255, 255, 255, 0.015)",
-        opacity: extra.isActive ? 1 : 0.5,
-        overflow: "hidden",
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          alignItems: "flex-start",
-          gap: 12,
-          padding: "14px 16px",
-          flexWrap: "wrap",
-        }}
-      >
-        {/* Reorder */}
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: 2,
-            paddingTop: 2,
-          }}
-        >
-          <button
-            type="button"
-            onClick={() => onReorderUp(extra.id)}
-            disabled={isFirst || disabled}
-            aria-label="تحريك لأعلى"
-            style={{
-              display: "flex",
-              width: 22,
-              height: 18,
-              alignItems: "center",
-              justifyContent: "center",
-              borderRadius: 4,
-              border: "none",
-              background: "transparent",
-              color: isFirst ? "rgba(245,234,214,0.2)" : "rgba(245,234,214,0.4)",
-              cursor: isFirst ? "not-allowed" : "pointer",
-              fontSize: 0,
-              transition: "color 0.15s",
-            }}
-            onMouseEnter={(e) => {
-              if (!isFirst) e.currentTarget.style.color = "#f3cf73";
-            }}
-            onMouseLeave={(e) => {
-              if (!isFirst)
-                e.currentTarget.style.color = "rgba(245,234,214,0.4)";
-            }}
-          >
-            <ArrowUp size={14} />
-          </button>
-          <button
-            type="button"
-            onClick={() => onReorderDown(extra.id)}
-            disabled={isLast || disabled}
-            aria-label="تحريك لأسفل"
-            style={{
-              display: "flex",
-              width: 22,
-              height: 18,
-              alignItems: "center",
-              justifyContent: "center",
-              borderRadius: 4,
-              border: "none",
-              background: "transparent",
-              color: isLast ? "rgba(245,234,214,0.2)" : "rgba(245,234,214,0.4)",
-              cursor: isLast ? "not-allowed" : "pointer",
-              fontSize: 0,
-              transition: "color 0.15s",
-            }}
-            onMouseEnter={(e) => {
-              if (!isLast) e.currentTarget.style.color = "#f3cf73";
-            }}
-            onMouseLeave={(e) => {
-              if (!isLast)
-                e.currentTarget.style.color = "rgba(245,234,214,0.4)";
-            }}
-          >
-            <ArrowDown size={14} />
-          </button>
-        </div>
-
-        {/* Icon */}
-        {iconDisplay}
-
-        {/* Fields */}
-        <div
-          style={{
-            flex: 1,
-            display: "grid",
-            gap: 10,
-            gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
-            minWidth: 0,
-          }}
-        >
-          {/* Name */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-            <Label
-              style={{
-                fontSize: "0.7rem",
-                fontWeight: 700,
-                color: "rgba(245, 234, 214, 0.5)",
-              }}
-            >
-              الاسم
-            </Label>
-            <input
-              value={extra.name}
-              onChange={(e) => update({ name: e.target.value })}
-              disabled={disabled}
-              style={{
-                minHeight: 36,
-                padding: "0 10px",
-                borderRadius: 8,
-                border: "1px solid rgba(245, 234, 214, 0.06)",
-                background: "rgba(255, 255, 255, 0.04)",
-                color: "#fff7e8",
-                fontSize: "0.82rem",
-                outline: "none",
-                width: "100%",
-              }}
-               placeholder="مثلاً: فيديو سينمائي"
-            />
-          </div>
-
-          {/* Price */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-            <Label
-              style={{
-                fontSize: "0.7rem",
-                fontWeight: 700,
-                color: "rgba(245, 234, 214, 0.5)",
-              }}
-            >
-              السعر
-            </Label>
-            <input
-              type="number"
-              min={0}
-              value={extra.priceAmount || ""}
-              onChange={(e) =>
-                update({ priceAmount: Number.parseInt(e.target.value) || 0 })
-              }
-              disabled={disabled}
-              style={{
-                minHeight: 36,
-                padding: "0 10px",
-                borderRadius: 8,
-                border: "1px solid rgba(245, 234, 214, 0.06)",
-                background: "rgba(255, 255, 255, 0.04)",
-                color: "#fff7e8",
-                fontSize: "0.82rem",
-                outline: "none",
-                width: "100%",
-              }}
-              placeholder="0"
-            />
-          </div>
-
-          {/* Currency */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-            <Label
-              style={{
-                fontSize: "0.7rem",
-                fontWeight: 700,
-                color: "rgba(245, 234, 214, 0.5)",
-              }}
-            >
-              العملة
-            </Label>
-            <input
-              value={extra.currency}
-              onChange={(e) => update({ currency: e.target.value })}
-              disabled={disabled}
-              style={{
-                minHeight: 36,
-                padding: "0 10px",
-                borderRadius: 8,
-                border: "1px solid rgba(245, 234, 214, 0.06)",
-                background: "rgba(255, 255, 255, 0.04)",
-                color: "#fff7e8",
-                fontSize: "0.82rem",
-                outline: "none",
-                width: "100%",
-                fontFamily: "monospace",
-              }}
-              placeholder="EGP"
-            />
-          </div>
-
-          {/* Icon Key */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-            <Label
-              style={{
-                fontSize: "0.7rem",
-                fontWeight: 700,
-                color: "rgba(245, 234, 214, 0.5)",
-              }}
-            >
-              الرمز
-            </Label>
-            <input
-              value={extra.iconKey ?? ""}
-              onChange={(e) =>
-                update({ iconKey: e.target.value || null })
-              }
-              disabled={disabled}
-              style={{
-                minHeight: 36,
-                padding: "0 10px",
-                borderRadius: 8,
-                border: "1px solid rgba(245, 234, 214, 0.06)",
-                background: "rgba(255, 255, 255, 0.04)",
-                color: "#fff7e8",
-                fontSize: "0.82rem",
-                outline: "none",
-                width: "100%",
-              }}
-               placeholder="مثلاً: ألبوم، فيديو، برنت"
-            />
-          </div>
-        </div>
-
-        {/* Actions */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 6,
-            flexShrink: 0,
-          }}
-        >
-          <button
-            type="button"
-            onClick={() => onDuplicate(extra.id)}
-            disabled={disabled}
-            aria-label="تكرار الخدمة"
-            style={{
-              display: "flex",
-              width: 32,
-              height: 32,
-              alignItems: "center",
-              justifyContent: "center",
-              borderRadius: 8,
-              border: "none",
-              background: "transparent",
-              color: "rgba(245, 234, 214, 0.35)",
-              cursor: disabled ? "not-allowed" : "pointer",
-              transition: "all 0.15s",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = "rgba(245, 234, 214, 0.06)";
-              e.currentTarget.style.color = "#f3cf73";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = "transparent";
-              e.currentTarget.style.color = "rgba(245, 234, 214, 0.35)";
-            }}
-          >
-            <Copy size={14} />
-          </button>
-
-          {confirmDelete ? (
-            <div style={{ display: "flex", gap: 4 }}>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setConfirmDelete(false)}
-                disabled={disabled || deleting}
-                style={{ height: 32, paddingInline: 8, fontSize: "0.72rem" }}
-              >
-                إلغاء
-              </Button>
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={handleDelete}
-                disabled={disabled || deleting}
-                style={{
-                  height: 32,
-                  paddingInline: 8,
-                  fontSize: "0.72rem",
-                  background: "#ef4444",
-                  color: "#fff",
-                }}
-              >
-                {deleting ? "..." : "تأكيد"}
-              </Button>
-            </div>
-          ) : (
-            <button
-              type="button"
-              onClick={() => setConfirmDelete(true)}
-              disabled={disabled}
-              aria-label={`حذف ${extra.name}`}
-              style={{
-                display: "flex",
-                width: 32,
-                height: 32,
-                alignItems: "center",
-                justifyContent: "center",
-                borderRadius: 8,
-                border: "none",
-                background: "transparent",
-                color: "rgba(245, 234, 214, 0.35)",
-                cursor: disabled ? "not-allowed" : "pointer",
-                transition: "all 0.15s",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = "rgba(239, 68, 68, 0.1)";
-                e.currentTarget.style.color = "#ef4444";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = "transparent";
-                e.currentTarget.style.color = "rgba(245, 234, 214, 0.35)";
-              }}
-            >
-              <Trash2 size={14} />
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* Footer toggles */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 16,
-          padding: "8px 16px",
-          borderTop: "1px solid rgba(245, 234, 214, 0.04)",
-        }}
-      >
-        <Switch
-          checked={extra.isActive}
-          onCheckedChange={(checked) => update({ isActive: checked })}
-          disabled={disabled}
-          label="ظاهر"
-        />
-        {extra.isActive ? (
-          <Eye size={13} style={{ color: "rgba(74, 222, 128, 0.6)" }} />
-        ) : (
-          <EyeOff size={13} style={{ color: "rgba(245, 234, 214, 0.25)" }} />
-        )}
-      </div>
-    </div>
-  );
+function money(amount: number, currency: string): string {
+  return `${amount.toLocaleString("ar-EG")} ${currency || "EGP"}`;
 }
 
-/* ─── Main Component ──────────────────────────── */
+function normalize(value: string): string {
+  return value.trim().toLowerCase();
+}
 
-export function ServicesClient({
-  packages: initialPackages,
-  extras: initialExtras,
-  created,
-  error,
-}: ServicesClientProps) {
-  const [packages, setPackages] = useState(initialPackages);
-  const [extras, setExtras] = useState(initialExtras);
+function featuresToText(features: string[]): string {
+  return features.join("\n");
+}
 
-  /* ── Package handlers ── */
+function featuresToJson(formData: FormData): void {
+  const raw = String(formData.get("featuresText") ?? "");
+  const features = raw.split("\n").map((item) => item.trim()).filter(Boolean);
+  formData.set("features", JSON.stringify(features));
+}
 
-  const handlePackageUpdate = useCallback(
-    async (pkg: PackageData) => {
-      const fd = new FormData();
-      fd.append("id", pkg.id);
-      fd.append("name", pkg.name);
-      fd.append("subtitle", pkg.subtitle ?? "");
-      fd.append("priceAmount", String(pkg.priceAmount));
-      fd.append("currency", pkg.currency);
-      fd.append("features", JSON.stringify(pkg.features));
-      fd.append("isHighlighted", pkg.isHighlighted ? "on" : "off");
-      fd.append("isActive", pkg.isActive ? "on" : "off");
-      await updatePackageAction(fd);
-      setPackages((prev) =>
-        prev.map((p) => (p.id === pkg.id ? { ...p, ...pkg } : p)),
-      );
-    },
-    [],
-  );
+export function ServicesClient({ packages, extras, created, error }: ServicesClientProps) {
+  const [query, setQuery] = useState("");
+  const [showPackageForm, setShowPackageForm] = useState(false);
+  const [showExtraForm, setShowExtraForm] = useState(false);
+  const [editingPackageId, setEditingPackageId] = useState<string | null>(null);
+  const [editingExtraId, setEditingExtraId] = useState<string | null>(null);
+  const [confirmDeletePackageId, setConfirmDeletePackageId] = useState<string | null>(null);
+  const [confirmDeleteExtraId, setConfirmDeleteExtraId] = useState<string | null>(null);
 
-  const handlePackageDelete = useCallback(async (id: string) => {
+  const q = normalize(query);
+  const filteredPackages = useMemo(() => {
+    if (!q) return packages;
+    return packages.filter((pkg) => normalize(`${pkg.name} ${pkg.subtitle ?? ""} ${pkg.features.join(" ")}`).includes(q));
+  }, [packages, q]);
+  const filteredExtras = useMemo(() => {
+    if (!q) return extras;
+    return extras.filter((extra) => normalize(`${extra.name} ${extra.iconKey ?? ""}`).includes(q));
+  }, [extras, q]);
+
+  const activePackages = packages.filter((pkg) => pkg.isActive).length;
+  const activeExtras = extras.filter((extra) => extra.isActive).length;
+  const highlighted = packages.filter((pkg) => pkg.isHighlighted).length;
+  const notice = error
+    ? { tone: "error" as const, title: "مقدرناش نحفظ التعديل", description: decodeURIComponent(error) }
+    : created
+      ? { tone: "success" as const, title: created === "package" ? "تم إنشاء الباقة" : "تم إنشاء الخدمة الإضافية", description: "راجع الترتيب والتفعيل قبل ما تشارك الموقع." }
+      : null;
+
+  function submitPackageUpdate(formData: FormData) {
+    featuresToJson(formData);
+    updatePackageAction(formData);
+    setEditingPackageId(null);
+  }
+
+  function duplicatePackage(id: string) {
     const fd = new FormData();
-    fd.append("id", id);
-    await deletePackageAction(fd);
-    setPackages((prev) => prev.filter((p) => p.id !== id));
-  }, []);
+    fd.set("id", id);
+    duplicatePackageAction(fd);
+  }
 
-  const handlePackageDuplicate = useCallback(async (id: string) => {
+  function deletePackage(id: string) {
     const fd = new FormData();
-    fd.append("id", id);
-    await duplicatePackageAction(fd);
-  }, []);
+    fd.set("id", id);
+    deletePackageAction(fd);
+    setConfirmDeletePackageId(null);
+  }
 
-  const handlePackageReorder = useCallback(
-    (direction: "up" | "down") => async (id: string) => {
-      const fd = new FormData();
-      fd.append("id", id);
-      fd.append("direction", direction);
-      await reorderPackageAction(fd);
-      setPackages((prev) => {
-        const idx = prev.findIndex((p) => p.id === id);
-        if (idx === -1) return prev;
-        const swapIdx = direction === "up" ? idx - 1 : idx + 1;
-        if (swapIdx < 0 || swapIdx >= prev.length) return prev;
-        const next = [...prev];
-        [next[idx], next[swapIdx]] = [next[swapIdx], next[idx]];
-        return next;
-      });
-    },
-    [],
-  );
-
-  /* ── Extra handlers ── */
-
-  const handleExtraUpdate = useCallback(async (data: ExtraData) => {
+  function reorderPackage(id: string, direction: "up" | "down") {
     const fd = new FormData();
-    fd.append("id", data.id);
-    fd.append("name", data.name);
-    fd.append("priceAmount", String(data.priceAmount));
-    fd.append("currency", data.currency);
-    fd.append("iconKey", data.iconKey ?? "");
-    fd.append("isActive", data.isActive ? "on" : "off");
-    await updateExtraAction(fd);
-    setExtras((prev) =>
-      prev.map((e) => (e.id === data.id ? { ...e, ...data } : e)),
-    );
-  }, []);
+    fd.set("id", id);
+    fd.set("direction", direction);
+    reorderPackageAction(fd);
+  }
 
-  const handleExtraDelete = useCallback(async (id: string) => {
+  function submitExtraUpdate(formData: FormData) {
+    updateExtraAction(formData);
+    setEditingExtraId(null);
+  }
+
+  function duplicateExtra(id: string) {
     const fd = new FormData();
-    fd.append("id", id);
-    await deleteExtraAction(fd);
-    setExtras((prev) => prev.filter((e) => e.id !== id));
-  }, []);
+    fd.set("id", id);
+    duplicateExtraAction(fd);
+  }
 
-  const handleExtraDuplicate = useCallback(async (id: string) => {
+  function deleteExtra(id: string) {
     const fd = new FormData();
-    fd.append("id", id);
-    await duplicateExtraAction(fd);
-  }, []);
+    fd.set("id", id);
+    deleteExtraAction(fd);
+    setConfirmDeleteExtraId(null);
+  }
 
-  const handleExtraReorder = useCallback(
-    (direction: "up" | "down") => async (id: string) => {
-      const fd = new FormData();
-      fd.append("id", id);
-      fd.append("direction", direction);
-      await reorderExtraAction(fd);
-      setExtras((prev) => {
-        const idx = prev.findIndex((e) => e.id === id);
-        if (idx === -1) return prev;
-        const swapIdx = direction === "up" ? idx - 1 : idx + 1;
-        if (swapIdx < 0 || swapIdx >= prev.length) return prev;
-        const next = [...prev];
-        [next[idx], next[swapIdx]] = [next[swapIdx], next[idx]];
-        return next;
-      });
-    },
-    [],
-  );
-
-  /* ── Render ── */
+  function reorderExtra(id: string, direction: "up" | "down") {
+    const fd = new FormData();
+    fd.set("id", id);
+    fd.set("direction", direction);
+    reorderExtraAction(fd);
+  }
 
   return (
-    <main className="space-y-5">
-      <BuilderPageHeader
-        eyebrow="الباقات والخدمات"
-        title="حدد أسعارك بطريقة واضحة"
-        description="ضيف الباقات الأساسية والخدمات الإضافية بشكل مرتب عشان العميل يقرر من غير ما يسأل."
-      />
+    <main className="mx-auto grid w-full max-w-6xl gap-4 pb-4">
+      <section className="rounded-[1.6rem] border border-white/10 bg-[radial-gradient(circle_at_top_right,rgba(243,207,115,0.14),transparent_36%),rgba(255,255,255,0.035)] p-4 sm:p-5">
+        <div className="grid gap-4 lg:grid-cols-[1fr_auto] lg:items-end">
+          <div>
+            <p className="text-[0.72rem] font-black text-[#f3cf73]">الباقات والأسعار</p>
+            <h1 className="mt-1 text-2xl font-black text-[#fff7e8] sm:text-3xl">خلي أسعارك واضحة بدل الرسائل المتكررة</h1>
+            <p className="mt-2 max-w-2xl text-sm font-bold leading-7 text-white/58">
+              اعمل باقات سهلة المقارنة، وضيف خدمات اختيارية زي الفيديو، الألبوم المطبوع، أو جلسة إضافية.
+            </p>
+          </div>
+          <div className="grid gap-2 sm:flex">
+            <Button variant="luxury" className="min-h-11 rounded-2xl font-black" onClick={() => setShowPackageForm(true)}>
+              <Plus className="size-4" aria-hidden />
+              باقة جديدة
+            </Button>
+            <Button variant="secondary" className="min-h-11 rounded-2xl border-white/10 bg-white/[0.04] font-black text-white" onClick={() => setShowExtraForm(true)}>
+              <Sparkles className="size-4" aria-hidden />
+              خدمة إضافية
+            </Button>
+          </div>
+        </div>
 
-      {/* Banners */}
-      {created ? (
-        <BuilderNotice
-          tone="success"
-          title="تم حفظ الخدمات"
-          description="التغييرات ظهرت على موقعك."
-        />
-      ) : null}
+        <div className="mt-4 grid grid-cols-3 gap-2">
+          <StatCard label="باقات مفعلة" value={activePackages} />
+          <StatCard label="خدمات إضافية" value={activeExtras} />
+          <StatCard label="مميزة" value={highlighted} />
+        </div>
+      </section>
 
-      {error ? (
-        <BuilderNotice
-          tone="error"
-          title="مقدرناش نحفظ الخدمة"
-          description="راجع الاسم والسعر وجرب تاني."
-          errorId={error}
-        />
-      ) : null}
+      {notice ? <BuilderNotice tone={notice.tone} title={notice.title} description={notice.description} /> : null}
 
-      {/* ─── Packages Section ─── */}
+      <section className="grid gap-3 rounded-[1.35rem] border border-white/10 bg-white/[0.035] p-3 sm:p-4">
+        <label className="relative block">
+          <Search className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-white/35" aria-hidden />
+          <input
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="ابحث في الباقات أو الخدمات..."
+            className="h-11 w-full rounded-2xl border border-white/10 bg-black/20 pr-10 pl-3 text-sm font-bold text-white outline-none placeholder:text-white/30 focus:border-amber-300/40"
+          />
+        </label>
 
-      <section className="space-y-4">
-        <h2
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 10,
-            color: "#fff7e8",
-            fontSize: "1.05rem",
-            fontWeight: 800,
-            margin: 0,
-          }}
-        >
-          <Package size={18} style={{ color: "#f3cf73" }} />
-          الباقات
-        </h2>
+        {showPackageForm ? <NewPackagePanel onCancel={() => setShowPackageForm(false)} /> : null}
+        {showExtraForm ? <NewExtraPanel onCancel={() => setShowExtraForm(false)} /> : null}
+      </section>
 
-        {/* Add Package Form */}
-        <Card>
-          <CardHeader>
-            <CardTitle
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 8,
-                fontSize: "0.9rem",
-              }}
-            >
-              <CirclePlus size={16} style={{ color: "#f3cf73" }} />
-              ضيف باقة جديدة
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <NewPackageForm />
-          </CardContent>
-        </Card>
-
-        {/* Package List */}
+      <section className="grid gap-3 rounded-[1.35rem] border border-white/10 bg-white/[0.035] p-3 sm:p-4">
+        <SectionTitle icon={Package} title="الباقات الأساسية" description="دي العروض الرئيسية اللي العميل يختار منها." />
         {packages.length === 0 ? (
-          <p
-            style={{
-              textAlign: "center",
-              padding: "32px 16px",
-              color: "rgba(245, 234, 214, 0.4)",
-              fontSize: "0.85rem",
-              borderRadius: 16,
-              border: "1px dashed rgba(245, 234, 214, 0.08)",
-            }}
-          >
-            لا توجد باقات بعد. أضف باقتك الأولى أعلاه.
-          </p>
+          <EmptyState title="ابدأ بأول باقة" description="مثلاً: باقة خطوبة، باقة زفاف، باقة منتجات. خلي الاسم والسعر واضحين." action="إنشاء باقة" onClick={() => setShowPackageForm(true)} />
+        ) : filteredPackages.length === 0 ? (
+          <NoResults />
         ) : (
-          <div className="space-y-3">
-            {packages.map((pkg, idx) => (
-              <div key={pkg.id} style={{ position: "relative" }}>
-                {/* Reorder buttons */}
-                <div
-                  style={{
-                    position: "absolute",
-                    right: 8,
-                    top: 8,
-                    zIndex: 10,
-                    display: "flex",
-                    gap: 2,
-                    opacity: 0.6,
-                  }}
-                >
-                  <button
-                    type="button"
-                    onClick={() => handlePackageReorder("up")(pkg.id)}
-                    disabled={idx === 0}
-                    aria-label="تحريك لأعلى"
-                    style={{
-                      display: "flex",
-                      width: 26,
-                      height: 24,
-                      alignItems: "center",
-                      justifyContent: "center",
-                      borderRadius: 6,
-                      border: "none",
-                      background: "rgba(0,0,0,0.4)",
-                      color:
-                        idx === 0
-                          ? "rgba(245,234,214,0.2)"
-                          : "rgba(245,234,214,0.6)",
-                      cursor: idx === 0 ? "not-allowed" : "pointer",
-                      backdropFilter: "blur(4px)",
-                    }}
-                    onMouseEnter={(e) => {
-                      if (idx !== 0) e.currentTarget.style.color = "#f3cf73";
-                    }}
-                    onMouseLeave={(e) => {
-                      if (idx !== 0)
-                        e.currentTarget.style.color =
-                          "rgba(245,234,214,0.6)";
-                    }}
-                  >
-                    <ArrowUp size={13} />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handlePackageReorder("down")(pkg.id)}
-                    disabled={idx === packages.length - 1}
-                    aria-label="تحريك لأسفل"
-                    style={{
-                      display: "flex",
-                      width: 26,
-                      height: 24,
-                      alignItems: "center",
-                      justifyContent: "center",
-                      borderRadius: 6,
-                      border: "none",
-                      background: "rgba(0,0,0,0.4)",
-                      color:
-                        idx === packages.length - 1
-                          ? "rgba(245,234,214,0.2)"
-                          : "rgba(245,234,214,0.6)",
-                      cursor:
-                        idx === packages.length - 1
-                          ? "not-allowed"
-                          : "pointer",
-                      backdropFilter: "blur(4px)",
-                    }}
-                    onMouseEnter={(e) => {
-                      if (idx !== packages.length - 1)
-                        e.currentTarget.style.color = "#f3cf73";
-                    }}
-                    onMouseLeave={(e) => {
-                      if (idx !== packages.length - 1)
-                        e.currentTarget.style.color =
-                          "rgba(245,234,214,0.6)";
-                    }}
-                  >
-                    <ArrowDown size={13} />
-                  </button>
-                </div>
-                <PackageEditor
-                  pkg={pkg}
-                  onUpdate={handlePackageUpdate}
-                  onDelete={handlePackageDelete}
-                  onDuplicate={handlePackageDuplicate}
-                />
-              </div>
+          <div className="grid gap-3 lg:grid-cols-2">
+            {filteredPackages.map((pkg, index) => (
+              <PackageCard
+                key={pkg.id}
+                pkg={pkg}
+                editing={editingPackageId === pkg.id}
+                confirmingDelete={confirmDeletePackageId === pkg.id}
+                isFirst={index === 0}
+                isLast={index === filteredPackages.length - 1}
+                onEdit={() => setEditingPackageId(pkg.id)}
+                onCancelEdit={() => setEditingPackageId(null)}
+                onSubmitUpdate={submitPackageUpdate}
+                onDuplicate={() => duplicatePackage(pkg.id)}
+                onDelete={() => setConfirmDeletePackageId(pkg.id)}
+                onCancelDelete={() => setConfirmDeletePackageId(null)}
+                onConfirmDelete={() => deletePackage(pkg.id)}
+                onReorder={(direction) => reorderPackage(pkg.id, direction)}
+              />
             ))}
           </div>
         )}
       </section>
 
-      {/* ─── Extra Services Section ─── */}
-
-      <section className="space-y-4">
-        <h2
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 10,
-            color: "#fff7e8",
-            fontSize: "1.05rem",
-            fontWeight: 800,
-            margin: 0,
-          }}
-        >
-          <BriefcaseBusiness size={18} style={{ color: "#f3cf73" }} />
-          إضافات
-        </h2>
-
-        {/* Add Extra Form */}
-        <Card>
-          <CardHeader>
-            <CardTitle
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 8,
-                fontSize: "0.9rem",
-              }}
-            >
-              <CirclePlus size={16} style={{ color: "#f3cf73" }} />
-              ضيف إضافة
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form action={addExtraAction} className="grid gap-4">
-              <div
-                style={{
-                  display: "grid",
-                  gap: 12,
-                  gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
-                }}
-              >
-                <div className="space-y-1.5">
-                  <Label htmlFor="extra-name">اسم الخدمة الإضافية</Label>
-                  <Input id="extra-name" name="name" required />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="extra-price">السعر بالجنيه</Label>
-                  <Input
-                    id="extra-price"
-                    name="priceAmount"
-                    inputMode="numeric"
-                    required
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="extra-icon">نوع الخدمة أو الأيقونة</Label>
-                  <Input
-                    id="extra-icon"
-                    name="iconKey"
-                    placeholder="مثلاً: ألبوم، فيديو، مطبوعات"
-                  />
-                </div>
-              </div>
-              <Button type="submit" variant="luxury">
-                <BriefcaseBusiness className="size-4" aria-hidden />
-                ضيف الخدمة
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
-
-        {/* Extra List */}
+      <section className="grid gap-3 rounded-[1.35rem] border border-white/10 bg-white/[0.035] p-3 sm:p-4">
+        <SectionTitle icon={BriefcaseBusiness} title="الخدمات الإضافية" description="خدمات اختيارية يضيفها العميل فوق الباقة الأساسية." />
         {extras.length === 0 ? (
-          <p
-            style={{
-              textAlign: "center",
-              padding: "32px 16px",
-              color: "rgba(245, 234, 214, 0.4)",
-              fontSize: "0.85rem",
-              borderRadius: 16,
-              border: "1px dashed rgba(245, 234, 214, 0.08)",
-            }}
-          >
-            لسه مفيش خدمات إضافية. ضيف أول خدمة من فوق.
-          </p>
+          <EmptyState title="ضيف أول خدمة إضافية" description="زي ألبوم مطبوع، فيديو قصير، ساعة تصوير إضافية، أو طباعة صور." action="إضافة خدمة" onClick={() => setShowExtraForm(true)} />
+        ) : filteredExtras.length === 0 ? (
+          <NoResults />
         ) : (
-          <div className="space-y-3">
-            {extras.map((extra, idx) => (
-              <ExtraCard
+          <div className="grid gap-2">
+            {filteredExtras.map((extra, index) => (
+              <ExtraRow
                 key={extra.id}
                 extra={extra}
-                onUpdate={handleExtraUpdate}
-                onDelete={handleExtraDelete}
-                onDuplicate={handleExtraDuplicate}
-                onReorderUp={handleExtraReorder("up")}
-                onReorderDown={handleExtraReorder("down")}
-                isFirst={idx === 0}
-                isLast={idx === extras.length - 1}
+                editing={editingExtraId === extra.id}
+                confirmingDelete={confirmDeleteExtraId === extra.id}
+                isFirst={index === 0}
+                isLast={index === filteredExtras.length - 1}
+                onEdit={() => setEditingExtraId(extra.id)}
+                onCancelEdit={() => setEditingExtraId(null)}
+                onSubmitUpdate={submitExtraUpdate}
+                onDuplicate={() => duplicateExtra(extra.id)}
+                onDelete={() => setConfirmDeleteExtraId(extra.id)}
+                onCancelDelete={() => setConfirmDeleteExtraId(null)}
+                onConfirmDelete={() => deleteExtra(extra.id)}
+                onReorder={(direction) => reorderExtra(extra.id, direction)}
               />
             ))}
           </div>
@@ -880,4 +256,231 @@ export function ServicesClient({
       </section>
     </main>
   );
+}
+
+function NewPackagePanel({ onCancel }: { onCancel: () => void }) {
+  return (
+    <form action={addPackageAction} className="grid gap-3 rounded-2xl border border-amber-300/18 bg-amber-300/8 p-3 lg:grid-cols-2">
+      <Field label="اسم الباقة"><Input name="name" placeholder="مثلاً: باقة الزفاف الأساسية" required /></Field>
+      <Field label="السعر"><Input name="priceAmount" type="number" min={1} placeholder="15000" required /></Field>
+      <Field label="وصف قصير"><Input name="subtitle" placeholder="مناسبة لتغطية يوم الزفاف" /></Field>
+      <label className="grid gap-1.5 lg:row-span-2">
+        <span className="text-xs font-black text-white/55">مميزات الباقة — كل ميزة في سطر</span>
+        <textarea name="features" rows={5} placeholder="تصوير 6 ساعات&#10;تسليم 300 صورة معدلة&#10;ألبوم Online" className="min-h-28 rounded-2xl border border-white/10 bg-black/20 px-3 py-2 text-sm font-bold text-white outline-none placeholder:text-white/28 focus:border-amber-300/40" />
+      </label>
+      <label className="flex min-h-11 items-center gap-2 rounded-2xl border border-white/10 bg-black/15 px-3 text-sm font-black text-white/65">
+        <input type="checkbox" name="isHighlighted" className="size-4 accent-[#f3cf73]" />
+        خليها الباقة المميزة
+      </label>
+      <div className="grid grid-cols-2 gap-2 lg:col-span-2">
+        <Button type="submit" variant="luxury" className="rounded-2xl font-black">حفظ الباقة</Button>
+        <Button type="button" variant="ghost" className="rounded-2xl" onClick={onCancel}>إلغاء</Button>
+      </div>
+    </form>
+  );
+}
+
+function NewExtraPanel({ onCancel }: { onCancel: () => void }) {
+  return (
+    <form action={addExtraAction} className="grid gap-3 rounded-2xl border border-white/10 bg-black/18 p-3 sm:grid-cols-[1fr_0.5fr_0.5fr_auto] sm:items-end">
+      <Field label="اسم الخدمة"><Input name="name" placeholder="مثلاً: فيديو Reel" required /></Field>
+      <Field label="السعر"><Input name="priceAmount" type="number" min={1} placeholder="2500" required /></Field>
+      <Field label="رمز اختياري"><Input name="iconKey" placeholder="video" /></Field>
+      <div className="grid grid-cols-2 gap-2 sm:flex">
+        <Button type="submit" variant="luxury" className="rounded-2xl font-black">إضافة</Button>
+        <Button type="button" variant="ghost" className="rounded-2xl" onClick={onCancel}>إلغاء</Button>
+      </div>
+    </form>
+  );
+}
+
+function PackageCard({
+  pkg,
+  editing,
+  confirmingDelete,
+  isFirst,
+  isLast,
+  onEdit,
+  onCancelEdit,
+  onSubmitUpdate,
+  onDuplicate,
+  onDelete,
+  onCancelDelete,
+  onConfirmDelete,
+  onReorder,
+}: {
+  pkg: PackageData & { sortOrder: number };
+  editing: boolean;
+  confirmingDelete: boolean;
+  isFirst: boolean;
+  isLast: boolean;
+  onEdit: () => void;
+  onCancelEdit: () => void;
+  onSubmitUpdate: (formData: FormData) => void;
+  onDuplicate: () => void;
+  onDelete: () => void;
+  onCancelDelete: () => void;
+  onConfirmDelete: () => void;
+  onReorder: (direction: "up" | "down") => void;
+}) {
+  if (confirmingDelete) {
+    return <ConfirmDelete title={`تحذف باقة “${pkg.name}”؟`} onConfirm={onConfirmDelete} onCancel={onCancelDelete} />;
+  }
+
+  if (editing) {
+    return (
+      <form action={onSubmitUpdate} className="grid gap-3 rounded-2xl border border-amber-300/18 bg-amber-300/8 p-3">
+        <input type="hidden" name="id" value={pkg.id} />
+        <input type="hidden" name="features" value="[]" />
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Field label="اسم الباقة"><Input name="name" defaultValue={pkg.name} required /></Field>
+          <Field label="السعر"><Input name="priceAmount" type="number" min={0} defaultValue={pkg.priceAmount} /></Field>
+          <Field label="العملة"><Input name="currency" defaultValue={pkg.currency} /></Field>
+          <Field label="وصف قصير"><Input name="subtitle" defaultValue={pkg.subtitle ?? ""} /></Field>
+        </div>
+        <label className="grid gap-1.5">
+          <span className="text-xs font-black text-white/55">المميزات — كل ميزة في سطر</span>
+          <textarea name="featuresText" rows={5} defaultValue={featuresToText(pkg.features)} className="min-h-28 rounded-2xl border border-white/10 bg-black/20 px-3 py-2 text-sm font-bold text-white outline-none focus:border-amber-300/40" />
+        </label>
+        <div className="grid gap-2 sm:grid-cols-2">
+          <label className="flex min-h-11 items-center gap-2 rounded-2xl border border-white/10 bg-black/15 px-3 text-sm font-black text-white/65"><input type="checkbox" name="isHighlighted" defaultChecked={pkg.isHighlighted} className="size-4 accent-[#f3cf73]" /> مميزة</label>
+          <label className="flex min-h-11 items-center gap-2 rounded-2xl border border-white/10 bg-black/15 px-3 text-sm font-black text-white/65"><input type="checkbox" name="isActive" defaultChecked={pkg.isActive} className="size-4 accent-[#f3cf73]" /> ظاهرة للعميل</label>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <Button type="submit" variant="luxury" className="rounded-2xl font-black">حفظ</Button>
+          <Button type="button" variant="ghost" className="rounded-2xl" onClick={onCancelEdit}>إلغاء</Button>
+        </div>
+      </form>
+    );
+  }
+
+  return (
+    <article className={pkg.isActive ? "grid gap-3 rounded-2xl border border-white/10 bg-black/16 p-4" : "grid gap-3 rounded-2xl border border-white/8 bg-black/10 p-4 opacity-60"}>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <div className="flex flex-wrap items-center gap-2">
+            <h3 className="text-lg font-black text-[#fff7e8]">{pkg.name}</h3>
+            {pkg.isHighlighted ? <span className="rounded-full bg-amber-300/12 px-2.5 py-1 text-[0.68rem] font-black text-[#f3cf73]">مميزة</span> : null}
+            <span className={pkg.isActive ? "rounded-full bg-emerald-300/10 px-2.5 py-1 text-[0.68rem] font-black text-emerald-300" : "rounded-full bg-white/8 px-2.5 py-1 text-[0.68rem] font-black text-white/45"}>{pkg.isActive ? "ظاهرة" : "مخفية"}</span>
+          </div>
+          {pkg.subtitle ? <p className="mt-1 text-sm font-bold leading-6 text-white/48">{pkg.subtitle}</p> : null}
+        </div>
+        <p className="shrink-0 rounded-2xl bg-amber-300/10 px-3 py-2 text-sm font-black text-[#f3cf73]">{money(pkg.priceAmount, pkg.currency)}</p>
+      </div>
+
+      {pkg.features.length > 0 ? (
+        <ul className="grid gap-1.5 text-sm font-bold text-white/58">
+          {pkg.features.slice(0, 5).map((feature) => <li key={feature} className="flex gap-2"><CheckCircle2 className="mt-0.5 size-4 shrink-0 text-emerald-300" />{feature}</li>)}
+        </ul>
+      ) : <p className="rounded-2xl border border-white/8 bg-white/[0.03] p-3 text-sm font-bold text-white/38">مفيش مميزات مكتوبة. ضيف نقاط واضحة تساعد العميل يختار.</p>}
+
+      <ActionBar>
+        <MiniButton onClick={onEdit} label="تعديل" icon={Eye} />
+        <MiniButton onClick={onDuplicate} label="نسخ" icon={Copy} />
+        <MiniButton onClick={() => onReorder("up")} label="فوق" icon={ArrowUp} disabled={isFirst} />
+        <MiniButton onClick={() => onReorder("down")} label="تحت" icon={ArrowDown} disabled={isLast} />
+        <MiniButton onClick={onDelete} label="حذف" icon={Trash2} danger />
+      </ActionBar>
+    </article>
+  );
+}
+
+function ExtraRow({
+  extra,
+  editing,
+  confirmingDelete,
+  isFirst,
+  isLast,
+  onEdit,
+  onCancelEdit,
+  onSubmitUpdate,
+  onDuplicate,
+  onDelete,
+  onCancelDelete,
+  onConfirmDelete,
+  onReorder,
+}: {
+  extra: ExtraData;
+  editing: boolean;
+  confirmingDelete: boolean;
+  isFirst: boolean;
+  isLast: boolean;
+  onEdit: () => void;
+  onCancelEdit: () => void;
+  onSubmitUpdate: (formData: FormData) => void;
+  onDuplicate: () => void;
+  onDelete: () => void;
+  onCancelDelete: () => void;
+  onConfirmDelete: () => void;
+  onReorder: (direction: "up" | "down") => void;
+}) {
+  if (confirmingDelete) return <ConfirmDelete title={`تحذف خدمة “${extra.name}”؟`} onConfirm={onConfirmDelete} onCancel={onCancelDelete} />;
+
+  if (editing) {
+    return (
+      <form action={onSubmitUpdate} className="grid gap-2 rounded-2xl border border-amber-300/18 bg-amber-300/8 p-3 sm:grid-cols-[1fr_0.5fr_0.5fr_0.5fr_auto] sm:items-end">
+        <input type="hidden" name="id" value={extra.id} />
+        <Field label="الاسم"><Input name="name" defaultValue={extra.name} required /></Field>
+        <Field label="السعر"><Input name="priceAmount" type="number" min={0} defaultValue={extra.priceAmount} /></Field>
+        <Field label="العملة"><Input name="currency" defaultValue={extra.currency} /></Field>
+        <Field label="الرمز"><Input name="iconKey" defaultValue={extra.iconKey ?? ""} /></Field>
+        <label className="flex min-h-11 items-center gap-2 rounded-2xl border border-white/10 bg-black/15 px-3 text-sm font-black text-white/65"><input type="checkbox" name="isActive" defaultChecked={extra.isActive} className="size-4 accent-[#f3cf73]" /> ظاهرة</label>
+        <div className="grid grid-cols-2 gap-2 sm:col-span-full">
+          <Button type="submit" variant="luxury" className="rounded-2xl font-black">حفظ</Button>
+          <Button type="button" variant="ghost" className="rounded-2xl" onClick={onCancelEdit}>إلغاء</Button>
+        </div>
+      </form>
+    );
+  }
+
+  return (
+    <article className={extra.isActive ? "grid gap-3 rounded-2xl border border-white/10 bg-black/16 p-3 sm:grid-cols-[1fr_auto] sm:items-center" : "grid gap-3 rounded-2xl border border-white/8 bg-black/10 p-3 opacity-60 sm:grid-cols-[1fr_auto] sm:items-center"}>
+      <div className="flex items-center gap-3">
+        <span className="grid size-10 shrink-0 place-items-center rounded-2xl bg-amber-300/10 text-[#f3cf73]"><BriefcaseBusiness className="size-4" /></span>
+        <div className="min-w-0">
+          <h3 className="truncate text-sm font-black text-[#fff7e8]">{extra.name}</h3>
+          <p className="text-xs font-bold text-white/42">{money(extra.priceAmount, extra.currency)} {extra.iconKey ? `· ${extra.iconKey}` : ""}</p>
+        </div>
+      </div>
+      <ActionBar compact>
+        <MiniButton onClick={onEdit} label="تعديل" icon={extra.isActive ? Eye : EyeOff} />
+        <MiniButton onClick={onDuplicate} label="نسخ" icon={Copy} />
+        <MiniButton onClick={() => onReorder("up")} label="فوق" icon={ArrowUp} disabled={isFirst} />
+        <MiniButton onClick={() => onReorder("down")} label="تحت" icon={ArrowDown} disabled={isLast} />
+        <MiniButton onClick={onDelete} label="حذف" icon={Trash2} danger />
+      </ActionBar>
+    </article>
+  );
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return <label className="grid gap-1.5"><span className="text-xs font-black text-white/55">{label}</span>{children}</label>;
+}
+
+function SectionTitle({ icon: Icon, title, description }: { icon: typeof Package; title: string; description: string }) {
+  return <div className="flex items-start gap-3"><span className="grid size-10 shrink-0 place-items-center rounded-2xl bg-amber-300/10 text-[#f3cf73]"><Icon className="size-5" /></span><div><h2 className="text-base font-black text-[#fff7e8]">{title}</h2><p className="mt-1 text-xs font-bold leading-6 text-white/45">{description}</p></div></div>;
+}
+
+function StatCard({ label, value }: { label: string; value: number }) {
+  return <div className="rounded-2xl border border-white/8 bg-black/18 p-3"><p className="text-xl font-black text-[#fff7e8]">{value}</p><p className="text-[0.72rem] font-black text-white/38">{label}</p></div>;
+}
+
+function EmptyState({ title, description, action, onClick }: { title: string; description: string; action: string; onClick: () => void }) {
+  return <div className="grid justify-items-center gap-3 rounded-2xl border border-dashed border-white/14 bg-black/15 p-8 text-center"><Package className="size-10 text-white/28" /><div><h3 className="text-base font-black text-[#fff7e8]">{title}</h3><p className="mt-1 max-w-sm text-sm font-bold leading-7 text-white/45">{description}</p></div><Button variant="luxury" className="rounded-2xl font-black" onClick={onClick}><Plus className="size-4" />{action}</Button></div>;
+}
+
+function NoResults() {
+  return <div className="rounded-2xl border border-white/10 bg-black/15 p-8 text-center text-sm font-bold text-white/45">مفيش نتائج بالبحث ده. جرّب كلمة تانية.</div>;
+}
+
+function ConfirmDelete({ title, onConfirm, onCancel }: { title: string; onConfirm: () => void; onCancel: () => void }) {
+  return <div className="grid gap-3 rounded-2xl border border-red-300/20 bg-red-500/10 p-4 text-center"><p className="text-sm font-black text-[#fff7e8]">{title}</p><p className="text-xs font-bold text-white/45">التغيير هيختفي من الموقع بعد الحفظ.</p><div className="grid grid-cols-2 gap-2"><Button variant="luxury" onClick={onConfirm}>حذف</Button><Button variant="ghost" onClick={onCancel}>إلغاء</Button></div></div>;
+}
+
+function ActionBar({ children, compact }: { children: React.ReactNode; compact?: boolean }) {
+  return <div className={compact ? "grid grid-cols-5 gap-1 sm:flex" : "grid grid-cols-5 gap-1"}>{children}</div>;
+}
+
+function MiniButton({ label, icon: Icon, onClick, disabled, danger }: { label: string; icon: typeof Eye; onClick: () => void; disabled?: boolean; danger?: boolean }) {
+  return <button type="button" onClick={onClick} disabled={disabled} className={danger ? "inline-flex min-h-9 items-center justify-center gap-1 rounded-xl bg-red-500/10 px-2 text-xs font-black text-red-200 transition hover:bg-red-500/20 disabled:opacity-25" : "inline-flex min-h-9 items-center justify-center gap-1 rounded-xl bg-white/[0.055] px-2 text-xs font-black text-white/65 transition hover:bg-amber-300/15 hover:text-[#f3cf73] disabled:opacity-25"}><Icon className="size-3.5" /> <span className="hidden sm:inline">{label}</span></button>;
 }
