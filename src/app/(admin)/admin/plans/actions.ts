@@ -1,5 +1,6 @@
 "use server";
 
+import type { Prisma } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -12,10 +13,15 @@ function redirectPlanError(code: string): never {
   redirect(`/admin/plans?error=${encodeURIComponent(code)}`);
 }
 
-function parseFeatures(raw: string): unknown {
-  const trimmed = raw.trim();
-  if (!trimmed) return [];
-  return JSON.parse(trimmed);
+function slugifyPlanCode(value: string): string {
+  const slug = value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9\u0600-\u06ff]+/gi, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 42);
+
+  return slug || `plan-${Date.now().toString(36)}`;
 }
 
 function readAmount(formData: FormData): number {
@@ -24,13 +30,53 @@ function readAmount(formData: FormData): number {
   return Math.round(amount);
 }
 
+function readPlanFeatures(formData: FormData): Prisma.InputJsonObject {
+  const legacyJson = readFormString(formData, "features").trim();
+  if (legacyJson) {
+    return JSON.parse(legacyJson) as Prisma.InputJsonObject;
+  }
+
+  const featureLines = formData
+    .getAll("featureLines")
+    .map((value) => String(value).trim())
+    .filter(Boolean);
+
+  return {
+    description: readFormString(formData, "description").trim(),
+    badgeLabel: readFormString(formData, "badgeLabel").trim(),
+    isPopular: formData.get("isPopular") === "on" || formData.get("isPopular") === "true",
+    storageLabel: readFormString(formData, "storageLabel").trim(),
+    photoLimitLabel: readFormString(formData, "photoLimitLabel").trim(),
+    ctaLabel: readFormString(formData, "ctaLabel").trim() || "اختيار الباقة",
+    highlightText: readFormString(formData, "highlightText").trim(),
+    featureLines,
+  };
+}
+
+async function resolvePlanCode(input: { id?: string; name: string; requestedCode?: string }) {
+  if (input.requestedCode?.trim()) return input.requestedCode.trim().toLowerCase();
+
+  if (input.id) {
+    const existing = await prisma.plan.findUnique({ where: { id: input.id }, select: { code: true } });
+    if (existing?.code) return existing.code;
+  }
+
+  const baseCode = slugifyPlanCode(input.name);
+  const existingCode = await prisma.plan.findUnique({ where: { code: baseCode }, select: { id: true } });
+  if (!existingCode) return baseCode;
+
+  return `${baseCode}-${Date.now().toString(36).slice(-4)}`;
+}
+
 async function auditPlan(input: { adminId: string; adminEmail?: string; action: string; planId?: string; code?: string; metadata?: Record<string, unknown> }) {
   await prisma.auditLog.create({
     data: {
       action: input.action,
       entityType: "Plan",
       entityId: input.planId,
-      metadata: Object.fromEntries(Object.entries({ adminId: input.adminId, adminEmail: input.adminEmail, code: input.code, ...(input.metadata ?? {}) }).filter(([, value]) => value !== undefined)),
+      metadata: Object.fromEntries(
+        Object.entries({ adminId: input.adminId, adminEmail: input.adminEmail, code: input.code, ...(input.metadata ?? {}) }).filter(([, value]) => value !== undefined),
+      ) as Prisma.InputJsonObject,
     },
   });
 }
@@ -38,18 +84,19 @@ async function auditPlan(input: { adminId: string; adminEmail?: string; action: 
 export async function savePlanAction(formData: FormData) {
   const admin = await requireAdminPermission("plans", "edit");
   const id = readFormString(formData, "id");
-  const code = readFormString(formData, "code").trim().toLowerCase();
   const name = readFormString(formData, "name").trim();
   const currency = readFormString(formData, "currency").trim().toUpperCase() || "EGP";
   const billingInterval = readFormString(formData, "billingInterval").trim() || "monthly";
   const isActive = formData.get("isActive") === "on" || formData.get("isActive") === "true";
   const priceAmount = readAmount(formData);
 
-  if (!code || code.length < 2) redirectPlanError("invalid-code");
   if (!name || name.length < 2) redirectPlanError("invalid-name");
 
   try {
-    const features = parseFeatures(readFormString(formData, "features"));
+    const code = await resolvePlanCode({ id, name, requestedCode: readFormString(formData, "code") });
+    if (!code || code.length < 2) redirectPlanError("invalid-code");
+
+    const features = readPlanFeatures(formData);
     const existing = id ? await prisma.plan.findUnique({ where: { id } }) : await prisma.plan.findUnique({ where: { code } });
     const saved = existing
       ? await prisma.plan.update({
@@ -66,14 +113,21 @@ export async function savePlanAction(formData: FormData) {
       action: existing ? "PLAN_UPDATED" : "PLAN_CREATED",
       planId: saved.id,
       code: saved.code,
-      metadata: { priceAmount, currency, billingInterval, isActive },
+      metadata: {
+        priceAmount,
+        currency,
+        billingInterval,
+        isActive,
+        isPopular: Boolean(features.isPopular),
+      },
     });
   } catch (error) {
-    const { userError } = await processError(error, { metadata: { action: "savePlan", code } });
+    const { userError } = await processError(error, { metadata: { action: "savePlan", name } });
     redirect(`/admin/plans?error=${encodeURIComponent(userError.message)}`);
   }
 
   revalidatePath("/admin/plans");
+  revalidatePath("/admin/billing");
   revalidatePath("/admin/search");
   redirect("/admin/plans?saved=1");
 }
@@ -100,6 +154,7 @@ export async function togglePlanAction(formData: FormData) {
   }
 
   revalidatePath("/admin/plans");
+  revalidatePath("/admin/billing");
   revalidatePath("/admin/search");
   redirect("/admin/plans?toggled=1");
 }
@@ -125,6 +180,7 @@ export async function archivePlanAction(formData: FormData) {
   }
 
   revalidatePath("/admin/plans");
+  revalidatePath("/admin/billing");
   revalidatePath("/admin/search");
   redirect("/admin/plans?archived=1");
 }
