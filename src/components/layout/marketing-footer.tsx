@@ -44,7 +44,7 @@ export function MarketingFooter() {
 
           <div className="mx-auto w-full max-w-md md:max-w-none">
             <h4 className="text-center text-sm font-semibold text-white/84 md:text-start">روابط مهمة</h4>
-            <ul className="mt-3 grid grid-cols-3 gap-2 md:mt-4 md:grid-cols-1 md:gap-3">
+            <ul className="mt-3 grid grid-cols-2 gap-2 md:mt-4 md:grid-cols-1 md:gap-3">
               {footer.quickLinks.map((link: { label: string; href: string }) => (
                 <li key={link.href}>
                   <Link
