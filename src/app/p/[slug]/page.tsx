@@ -33,7 +33,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   if (!site) {
     return {
-      title: "الموقع مش موجود"
+      title: "الموقع غير موجود",
+      robots: {
+        index: false,
+        follow: false
+      }
     };
   }
 
