@@ -1,4 +1,4 @@
-const CACHE_VERSION = "frameid-pwa-v2";
+const CACHE_VERSION = "frameid-pwa-v3";
 const OFFLINE_URL = "/offline";
 const PRECACHE_URLS = [
   OFFLINE_URL,
@@ -11,6 +11,14 @@ const PRECACHE_URLS = [
   "/pwa/screenshot-dashboard.svg",
   "/pwa/screenshot-mobile.svg",
 ];
+
+const NETWORK_ONLY_NAVIGATION_PATHS = new Set([
+  "/login",
+  "/signup",
+  "/forgot-password",
+  "/reset-password",
+  "/admin/login",
+]);
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -41,6 +49,11 @@ self.addEventListener("fetch", (event) => {
   if (url.origin !== self.location.origin) return;
 
   if (request.mode === "navigate") {
+    if (NETWORK_ONLY_NAVIGATION_PATHS.has(url.pathname)) {
+      event.respondWith(fetch(request));
+      return;
+    }
+
     event.respondWith(
       fetch(request).catch(async () => {
         const cache = await caches.open(CACHE_VERSION);
