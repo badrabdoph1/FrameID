@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
-import { CheckCircle2, Download, Share2, Smartphone, X } from "lucide-react";
+import { CheckCircle2, Download, RefreshCw, Share2, Smartphone, X } from "lucide-react";
 
 type BeforeInstallPromptChoice = {
   outcome: "accepted" | "dismissed";
@@ -28,7 +28,6 @@ type PwaInstallButtonProps = {
   context: "dashboard" | "admin";
 };
 
-const INSTALLED_KEY = "frameid:pwa-installed";
 const DISMISSED_UNTIL_KEY = "frameid:pwa-dismissed-until";
 const FIRST_SEEN_KEY = "frameid:pwa-install-first-seen";
 const DISMISS_DELAY_MS = 7 * 24 * 60 * 60 * 1000;
@@ -73,15 +72,9 @@ function rememberDismissal() {
   window.localStorage.setItem(DISMISSED_UNTIL_KEY, String(Date.now() + DISMISS_DELAY_MS));
 }
 
-function rememberInstalled() {
+function clearDismissal() {
   if (!canUseStorage()) return;
-  window.localStorage.setItem(INSTALLED_KEY, "1");
   window.localStorage.removeItem(DISMISSED_UNTIL_KEY);
-}
-
-function alreadyRememberedInstalled() {
-  if (!canUseStorage()) return false;
-  return window.localStorage.getItem(INSTALLED_KEY) === "1";
 }
 
 function shouldAnimateFirstAppearance() {
@@ -94,11 +87,15 @@ function shouldAnimateFirstAppearance() {
 export function PwaInstallButton({ context }: PwaInstallButtonProps) {
   const pathname = usePathname();
   const deferredPromptRef = useRef<BeforeInstallPromptEvent | null>(null);
+  const waitingWorkerRef = useRef<ServiceWorker | null>(null);
+  const installedInCurrentTabRef = useRef(false);
+  const reloadingForUpdateRef = useRef(false);
   const [ready, setReady] = useState(false);
   const [nativePromptReady, setNativePromptReady] = useState(false);
   const [iosPromptReady, setIosPromptReady] = useState(false);
   const [showIosSheet, setShowIosSheet] = useState(false);
   const [showSuccessToast, setShowSuccessToast] = useState(false);
+  const [showUpdateToast, setShowUpdateToast] = useState(false);
   const [entered, setEntered] = useState(false);
   const [shouldAnimate, setShouldAnimate] = useState(false);
 
@@ -110,7 +107,7 @@ export function PwaInstallButton({ context }: PwaInstallButtonProps) {
     return false;
   }, [context, pathname]);
 
-  const hideEverything = useCallback(() => {
+  const hideInstallButton = useCallback(() => {
     setReady(false);
     setNativePromptReady(false);
     setIosPromptReady(false);
@@ -121,12 +118,12 @@ export function PwaInstallButton({ context }: PwaInstallButtonProps) {
   const evaluateInstallState = useCallback(async () => {
     if (typeof window === "undefined") return;
     if (!allowedInThisRoute) {
-      hideEverything();
+      hideInstallButton();
       return;
     }
 
-    if (isStandaloneMode() || alreadyRememberedInstalled() || isDismissedRecently()) {
-      hideEverything();
+    if (installedInCurrentTabRef.current || isStandaloneMode() || isDismissedRecently()) {
+      hideInstallButton();
       return;
     }
 
@@ -135,8 +132,7 @@ export function PwaInstallButton({ context }: PwaInstallButtonProps) {
       try {
         const relatedApps = await nav.getInstalledRelatedApps();
         if (relatedApps.length > 0) {
-          rememberInstalled();
-          hideEverything();
+          hideInstallButton();
           return;
         }
       } catch {
@@ -158,8 +154,8 @@ export function PwaInstallButton({ context }: PwaInstallButtonProps) {
       return;
     }
 
-    hideEverything();
-  }, [allowedInThisRoute, hideEverything]);
+    hideInstallButton();
+  }, [allowedInThisRoute, hideInstallButton]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -179,18 +175,57 @@ export function PwaInstallButton({ context }: PwaInstallButtonProps) {
 
   useEffect(() => {
     if (typeof window === "undefined" || !("serviceWorker" in navigator)) return;
-    const registerWorker = () => {
-      navigator.serviceWorker.register("/sw.js", { scope: "/" }).catch(() => {
-        // Installation should never break the interface if registration fails.
+
+    const onControllerChange = () => {
+      if (reloadingForUpdateRef.current) return;
+      reloadingForUpdateRef.current = true;
+      window.location.reload();
+    };
+
+    const watchRegistration = (registration: ServiceWorkerRegistration) => {
+      if (registration.waiting && navigator.serviceWorker.controller) {
+        waitingWorkerRef.current = registration.waiting;
+        setShowUpdateToast(true);
+      }
+
+      registration.addEventListener("updatefound", () => {
+        const installing = registration.installing;
+        if (!installing) return;
+        installing.addEventListener("statechange", () => {
+          if (installing.state === "installed" && navigator.serviceWorker.controller) {
+            waitingWorkerRef.current = installing;
+            setShowUpdateToast(true);
+          }
+        });
       });
     };
+
+    const registerWorker = () => {
+      navigator.serviceWorker
+        .register("/sw.js", { scope: "/" })
+        .then((registration) => {
+          watchRegistration(registration);
+          return registration.update().catch(() => undefined);
+        })
+        .catch(() => {
+          // Installation should never break the interface if registration fails.
+        });
+    };
+
+    navigator.serviceWorker.addEventListener("controllerchange", onControllerChange);
     const win = window as WindowWithIdleCallback;
     if (typeof win.requestIdleCallback === "function") {
       const id = win.requestIdleCallback(registerWorker, { timeout: 2500 });
-      return () => win.cancelIdleCallback?.(id);
+      return () => {
+        win.cancelIdleCallback?.(id);
+        navigator.serviceWorker.removeEventListener("controllerchange", onControllerChange);
+      };
     }
     const id = window.setTimeout(registerWorker, 1200);
-    return () => window.clearTimeout(id);
+    return () => {
+      window.clearTimeout(id);
+      navigator.serviceWorker.removeEventListener("controllerchange", onControllerChange);
+    };
   }, []);
 
   useEffect(() => {
@@ -203,8 +238,9 @@ export function PwaInstallButton({ context }: PwaInstallButtonProps) {
     };
 
     const handleInstalled = () => {
-      rememberInstalled();
-      hideEverything();
+      installedInCurrentTabRef.current = true;
+      clearDismissal();
+      hideInstallButton();
       setShowSuccessToast(true);
       window.setTimeout(() => setShowSuccessToast(false), 2600);
     };
@@ -215,7 +251,7 @@ export function PwaInstallButton({ context }: PwaInstallButtonProps) {
       window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
       window.removeEventListener("appinstalled", handleInstalled);
     };
-  }, [evaluateInstallState, hideEverything]);
+  }, [evaluateInstallState, hideInstallButton]);
 
   const handleInstallClick = async () => {
     if (nativePromptReady && deferredPromptRef.current) {
@@ -224,11 +260,12 @@ export function PwaInstallButton({ context }: PwaInstallButtonProps) {
       await promptEvent.prompt();
       const choice = await promptEvent.userChoice;
       if (choice.outcome === "accepted") {
-        rememberInstalled();
-        hideEverything();
+        installedInCurrentTabRef.current = true;
+        clearDismissal();
+        hideInstallButton();
       } else {
         rememberDismissal();
-        hideEverything();
+        hideInstallButton();
       }
       return;
     }
@@ -240,7 +277,13 @@ export function PwaInstallButton({ context }: PwaInstallButtonProps) {
 
   const dismissForNow = () => {
     rememberDismissal();
-    hideEverything();
+    hideInstallButton();
+  };
+
+  const updateNow = () => {
+    const waitingWorker = waitingWorkerRef.current;
+    if (!waitingWorker) return;
+    waitingWorker.postMessage({ type: "SKIP_WAITING" });
   };
 
   if (!allowedInThisRoute) return null;
@@ -294,6 +337,16 @@ export function PwaInstallButton({ context }: PwaInstallButtonProps) {
       {showSuccessToast ? (
         <div className="fixed bottom-[calc(1rem+env(safe-area-inset-bottom))] left-1/2 z-[2147483000] -translate-x-1/2 rounded-full border border-emerald-300/20 bg-[#0f1f19] px-4 py-2 text-xs font-black text-emerald-200 shadow-2xl">
           تم تثبيت التطبيق بنجاح.
+        </div>
+      ) : null}
+
+      {showUpdateToast ? (
+        <div className="fixed bottom-[calc(1rem+env(safe-area-inset-bottom))] left-1/2 z-[2147483000] grid w-[calc(100vw-2rem)] max-w-sm -translate-x-1/2 grid-cols-[1fr_auto] items-center gap-3 rounded-3xl border border-amber-300/20 bg-[#111720] px-4 py-3 text-[#fff7e8] shadow-2xl">
+          <span className="min-w-0 text-xs font-black leading-5">يتوفر تحديث جديد للتطبيق.</span>
+          <button type="button" onClick={updateNow} className="inline-flex min-h-9 items-center gap-1.5 rounded-2xl bg-amber-300 px-3 text-xs font-black text-[#17120a]">
+            <RefreshCw className="size-3.5" aria-hidden />
+            تحديث الآن
+          </button>
         </div>
       ) : null}
     </>
