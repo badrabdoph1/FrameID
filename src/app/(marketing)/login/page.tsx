@@ -29,7 +29,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   return (
     <AuthShell
       title="تسجيل الدخول"
-      description="ادخل عشان تدير موقعك، صورك، باقاتك، وكل حاجة."
+      description="ادخل برقم الهاتف أو البريد عشان تدير موقعك، صورك، وباقاتك."
     >
       {message ? (
         <p className="mb-4 rounded-[var(--radius-panel)] border border-success/20 bg-success-soft px-4 py-3 text-sm text-success">
@@ -43,8 +43,16 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
       ) : null}
       <form action={loginAction} className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="email">البريد الإلكتروني</Label>
-          <Input id="email" name="email" type="email" autoComplete="email" required />
+          <Label htmlFor="identifier">رقم الهاتف أو البريد الإلكتروني</Label>
+          <Input
+            id="identifier"
+            name="identifier"
+            type="text"
+            inputMode="email"
+            autoComplete="username"
+            placeholder="01000000000 أو name@example.com"
+            required
+          />
         </div>
         <div className="space-y-2">
           <Label htmlFor="password">كلمة المرور</Label>
