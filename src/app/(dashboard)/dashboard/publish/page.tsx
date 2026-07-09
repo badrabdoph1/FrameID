@@ -29,9 +29,27 @@ export default async function DashboardPublishPage({
     redirect("/login");
   }
 
-  const seo = await prisma.sEOSettings.findUnique({
-    where: { siteId: session.site.id }
-  });
+  const [seo, site, packagesCount, imagesCount, contactProfile] = await Promise.all([
+    prisma.sEOSettings.findUnique({
+      where: { siteId: session.site.id }
+    }),
+    prisma.site.findUnique({
+      where: { id: session.site.id },
+      select: { status: true, isPublished: true, publishedVersion: true },
+    }),
+    prisma.package.count({ where: { siteId: session.site.id, deletedAt: null } }),
+    prisma.galleryImage.count({
+      where: {
+        deletedAt: null,
+        album: { siteId: session.site.id, deletedAt: null },
+        asset: { deletedAt: null },
+      },
+    }),
+    prisma.contactProfile.findUnique({
+      where: { siteId: session.site.id },
+      select: { phone: true, whatsapp: true, email: true },
+    }),
+  ]);
 
   let ogImageUrl: string | null = null;
   if (seo?.ogAssetId) {
@@ -43,6 +61,17 @@ export default async function DashboardPublishPage({
   }
 
   const siteUrl = `${getPlatformBaseUrl()}/p/${session.site.slug}`;
+  const hasContact = Boolean(contactProfile?.phone || contactProfile?.whatsapp || contactProfile?.email);
+  const hasPortfolio = imagesCount > 0;
+  const hasPackages = packagesCount > 0;
+  const hasSeo = Boolean(seo?.title && (seo.description || seo.ogAssetId));
+  const readinessItems = [
+    { id: "contact", label: "بيانات تواصل قابلة للحجز", done: hasContact, href: "/dashboard/site-info" },
+    { id: "portfolio", label: "معرض أعمال يحتوي صور", done: hasPortfolio, href: "/dashboard/gallery" },
+    { id: "packages", label: "باقة واحدة على الأقل", done: hasPackages, href: "/dashboard/services" },
+    { id: "seo", label: "عنوان ووصف أو صورة مشاركة", done: hasSeo, href: "/dashboard/publish" },
+  ];
+  const canPublish = readinessItems.every((item) => item.done);
 
   return (
     <PublishClient
@@ -55,6 +84,10 @@ export default async function DashboardPublishPage({
       canonicalUrl={seo?.canonicalUrl ?? null}
       updated={updated}
       error={error}
+      isPublished={site?.status === "PUBLISHED" || site?.isPublished === true}
+      publishedVersion={site?.publishedVersion ?? 0}
+      readinessItems={readinessItems}
+      canPublish={canPublish}
     />
   );
 }
