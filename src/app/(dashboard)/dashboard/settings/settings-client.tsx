@@ -6,10 +6,12 @@ import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 import { SlugEditor } from "@/components/dashboard/slug-editor";
+import { getPublicAccountIdentifier, isPhoneStorageEmail } from "@/modules/auth/auth-identifier";
 
 type SettingsClientProps = {
   userName: string;
   userEmail: string;
+  userPhone: string | null;
   userRole: string;
   siteTitle: string;
   siteSlug: string;
@@ -31,10 +33,12 @@ const roleLabel: Record<string, string> = {
   SUPER_ADMIN: "مدير عام",
 };
 
-export function SettingsClient({ userName, userEmail, userRole, siteTitle, siteSlug, siteStatus, siteUrl, slugChangeUsed }: SettingsClientProps) {
+export function SettingsClient({ userName, userEmail, userPhone, userRole, siteTitle, siteSlug, siteStatus, siteUrl, slugChangeUsed }: SettingsClientProps) {
   const [copied, setCopied] = useState(false);
   const badge = statusBadge[siteStatus] ?? { label: siteStatus, color: "rgba(245, 234, 214, 0.5)", bg: "rgba(245, 234, 214, 0.05)", icon: ShieldCheck };
   const StatusIcon = badge.icon;
+  const loginIdentifier = getPublicAccountIdentifier({ email: userEmail, phone: userPhone });
+  const showRealEmail = !isPhoneStorageEmail(userEmail);
 
   async function copyUrl() {
     await navigator.clipboard?.writeText(siteUrl);
@@ -70,7 +74,9 @@ export function SettingsClient({ userName, userEmail, userRole, siteTitle, siteS
         <Panel icon={User} title="حسابك" description="البيانات الأساسية للدخول وإدارة الموقع.">
           <div className="grid gap-2">
             <InfoRow label="الاسم" value={userName} />
-            <InfoRow label="البريد" value={userEmail} dir="ltr" />
+            <InfoRow label="بيانات الدخول" value={loginIdentifier} dir="ltr" />
+            {showRealEmail && userPhone ? <InfoRow label="رقم الهاتف" value={userPhone} dir="ltr" /> : null}
+            {showRealEmail ? <InfoRow label="البريد" value={userEmail} dir="ltr" /> : null}
             <InfoRow label="الدور" value={roleLabel[userRole] ?? userRole} />
           </div>
         </Panel>
