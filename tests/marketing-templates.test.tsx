@@ -5,22 +5,24 @@ import { describe, expect, it } from "vitest";
 import TemplatesPage from "@/app/(marketing)/templates/page";
 
 describe("marketing templates page", () => {
-  it("explains live preview and selected-template signup", () => {
+  it("keeps template selection direct and uncluttered", () => {
     render(<TemplatesPage />);
 
     expect(
       screen.getByRole("heading", {
-        name: "اختار قالب—كأنه موقع عميل حقيقي."
+        name: "اختار شكل موقعك"
       })
     ).toBeInTheDocument();
-    expect(
-      screen.getByText(
-        "المعاينة الحية بتفتح نفس القالب اللي هياخده المصور، وزير استخدم القالب بياخد اختيارك للتسجيل."
-      )
-    ).toBeInTheDocument();
-    const previewLinks = screen.getAllByRole("link", { name: /معاينة القالب/u });
+
+    expect(screen.queryByText("شوف الشكل")).not.toBeInTheDocument();
+    expect(screen.queryByText("اختار اللي يعجبك")).not.toBeInTheDocument();
+    expect(screen.queryByText("كمّل حسابك")).not.toBeInTheDocument();
+    expect(screen.queryByText("لقيت الشكل المناسب؟")).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "ابدأ مجانًا" })).not.toBeInTheDocument();
+
+    const previewLinks = screen.getAllByRole("link", { name: /شوف القالب/u });
     expect(previewLinks[0]).toHaveAttribute("href", "/templates/noir-gold/preview");
-    const useLinks = screen.getAllByRole("link", { name: /استخدم القالب ده/u });
+    const useLinks = screen.getAllByRole("link", { name: /استخدمه لموقعي/u });
     expect(useLinks[0]).toHaveAttribute("href", "/signup?template=noir-gold");
   });
 });
