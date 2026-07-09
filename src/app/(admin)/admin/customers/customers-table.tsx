@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, ExternalLink } from "lucide-react";
+import { ChevronLeft, ChevronRight, ExternalLink, Settings2 } from "lucide-react";
 import { AdminStatusBadge } from "@/components/layout/admin-status-badge";
 
 export type CustomerRow = {
@@ -31,6 +31,14 @@ const toneMap: Record<string, "success" | "warning" | "danger" | "neutral"> = {
   EXPIRED: "danger",
   SUSPENDED: "danger",
 };
+
+function customerWorkspaceHref(id: string) {
+  return `/admin/customers/${id}/workspace`;
+}
+
+function customerLegacyHref(id: string) {
+  return `/admin/customers/${id}`;
+}
 
 export function CustomersTable({ data, page, totalPages, basePath, search, statusFilter }: Props) {
   const buildPageLink = (p: number) => {
@@ -103,13 +111,22 @@ export function CustomersTable({ data, page, totalPages, basePath, search, statu
                 </div>
               </dl>
 
-              <Link
-                href={`/admin/customers/${row.id}`}
-                className="mt-4 flex min-h-11 items-center justify-center gap-2 rounded-xl border border-amber-500/25 bg-amber-500/10 text-sm font-black text-[#f3cf73] no-underline transition hover:bg-amber-500/15"
-              >
-                فتح ملف العميل
-                <ExternalLink className="size-4" />
-              </Link>
+              <div className="mt-4 grid grid-cols-[1fr_auto] gap-2">
+                <Link
+                  href={customerWorkspaceHref(row.id)}
+                  className="flex min-h-11 items-center justify-center gap-2 rounded-xl border border-amber-500/25 bg-amber-500/10 text-sm font-black text-[#f3cf73] no-underline transition hover:bg-amber-500/15"
+                >
+                  <Settings2 className="size-4" />
+                  إدارة العميل
+                </Link>
+                <Link
+                  href={customerLegacyHref(row.id)}
+                  className="grid min-h-11 place-items-center rounded-xl border border-white/[0.08] bg-white/[0.04] px-3 text-white/45 no-underline transition hover:bg-white/[0.08] hover:text-white/70"
+                  aria-label="فتح التفاصيل القديمة"
+                >
+                  <ExternalLink className="size-4" />
+                </Link>
+              </div>
             </article>
           ))
         )}
@@ -132,7 +149,9 @@ export function CustomersTable({ data, page, totalPages, basePath, search, statu
             {data.map((row) => (
               <tr key={row.id} className="border-b border-white/[0.06] last:border-0 hover:bg-white/[0.02]">
                 <td className="px-4 py-3">
-                  <span className="font-medium text-white/80">{row.displayName}</span>
+                  <Link href={customerWorkspaceHref(row.id)} className="font-medium text-white/80 no-underline hover:text-[#f3cf73]">
+                    {row.displayName}
+                  </Link>
                 </td>
                 <td className="px-4 py-3">
                   <div className="text-white/80">{row.ownerName}</div>
@@ -153,13 +172,22 @@ export function CustomersTable({ data, page, totalPages, basePath, search, statu
                   {new Date(row.createdAt).toLocaleDateString("ar-EG")}
                 </td>
                 <td className="px-4 py-3">
-                  <Link
-                    href={`/admin/customers/${row.id}`}
-                    className="flex items-center gap-1 text-xs text-champagne/70 hover:text-champagne transition"
-                  >
-                    فتح
-                    <ExternalLink className="size-3" />
-                  </Link>
+                  <div className="flex items-center gap-2">
+                    <Link
+                      href={customerWorkspaceHref(row.id)}
+                      className="inline-flex items-center gap-1 rounded-lg border border-amber-500/20 bg-amber-500/10 px-3 py-1.5 text-xs font-black text-[#f3cf73] no-underline transition hover:bg-amber-500/15"
+                    >
+                      <Settings2 className="size-3" />
+                      إدارة
+                    </Link>
+                    <Link
+                      href={customerLegacyHref(row.id)}
+                      className="flex items-center gap-1 text-xs text-white/35 transition hover:text-champagne"
+                    >
+                      تفاصيل
+                      <ExternalLink className="size-3" />
+                    </Link>
+                  </div>
                 </td>
               </tr>
             ))}
