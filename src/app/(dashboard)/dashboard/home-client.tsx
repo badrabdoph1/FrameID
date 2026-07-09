@@ -25,6 +25,8 @@ export function DashboardHomeClient({
   lastModified,
   nextStepHref,
   nextStepLabel,
+  nextStepTitle,
+  nextStepDescription,
   subscription,
   customerMessages,
   activationMessages,
@@ -78,7 +80,7 @@ export function DashboardHomeClient({
         </span>
       </button>
 
-      <section className="rounded-[1.2rem] border border-white/12 bg-[linear-gradient(135deg,rgba(243,207,115,0.10),rgba(255,255,255,0.045)),#10151d] p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+      <section className="grid gap-2 rounded-[1.2rem] border border-white/12 bg-[linear-gradient(135deg,rgba(243,207,115,0.10),rgba(255,255,255,0.045)),#10151d] p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">
             <p className="text-xs font-black text-[#f3cf73]">جاهزية الموقع</p>
@@ -87,6 +89,10 @@ export function DashboardHomeClient({
           </div>
           <div className="scale-75 rounded-full bg-black/18 p-1"><CompletionRing percent={percent} /></div>
         </div>
+        <Link href={nextStepHref} className="rounded-2xl border border-amber-300/16 bg-[#151a24] px-3 py-2 no-underline transition hover:border-amber-300/30 hover:bg-[#1a202b]">
+          <p className="truncate text-sm font-black text-[#fff7e8]">{nextStepTitle}</p>
+          <p className="mt-0.5 line-clamp-2 text-xs font-bold leading-5 text-white/64">{nextStepDescription}</p>
+        </Link>
       </section>
 
       <Panel title="اكمل بيانات موقعك" description="الخطوات الأساسية في مكان واحد، من غير تكرار ولا دوشة." icon={Wand2}>
