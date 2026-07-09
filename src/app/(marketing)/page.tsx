@@ -10,11 +10,15 @@ import {
   Eye,
   HelpCircle,
   Images,
+  LayoutDashboard,
   Link2,
+  LogIn,
   MessageCircle,
+  Palette,
   PencilLine,
   Share2,
   Smartphone,
+  UserPlus,
   WandSparkles
 } from "lucide-react";
 
@@ -37,6 +41,9 @@ const benefitIcons = [
   Smartphone,
   Share2
 ];
+
+const journeyIcons = [Palette, UserPlus, LayoutDashboard, LogIn];
+const journeyFallbackHrefs = ["/templates", "/signup", "/dashboard", "/login"];
 
 export default function HomePage() {
   const homepage = getContent("marketing/homepage");
@@ -269,38 +276,52 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section className="container-page py-10 md:py-22">
-          <div className="max-w-2xl text-center md:mx-auto">
+        <section className="relative overflow-hidden bg-[radial-gradient(circle_at_top_left,rgba(230,196,120,0.16),transparent_32%),linear-gradient(180deg,#fffaf0_0%,#f7f2e8_100%)] py-10 md:py-22">
+          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-l from-transparent via-champagne-strong/50 to-transparent" aria-hidden />
+          <div className="container-page relative">
+            <div className="mx-auto max-w-2xl text-center">
               <p className="text-sm font-semibold text-champagne-strong">
-                ٤ خطوات بس
+                البداية أسهل من ما تتخيل
               </p>
-              <h2 className="mt-2 text-2xl font-semibold md:text-5xl">
-                إزاي تبدا؟
+              <h2 className="mt-2 text-balance text-2xl font-semibold text-ink md:text-5xl">
+                ابدأ موقعك في ٤ خطوات بسيطة
               </h2>
-          </div>
-          <div className="mt-8 grid gap-3 md:mt-10 md:grid-cols-4 md:gap-4">
-            {howItWorks.map((step: { title: string; body: string }, index: number) => (
-              <div
-                key={step.title}
-                className="relative rounded-[var(--radius-card)] border border-border bg-card p-4 text-center md:p-5"
-              >
-                <span className="mx-auto flex size-10 items-center justify-center rounded-full bg-ink text-base font-semibold text-white md:size-12 md:text-lg">
-                  {index + 1}
-                </span>
-                <h3 className="mt-3 font-semibold md:mt-4">{step.title}</h3>
-                <p className="mt-1 text-sm leading-6 text-muted-foreground md:mt-2 md:leading-7">
-                  {step.body}
-                </p>
-                {index < howItWorks.length - 1 && (
-                  <span
-                    className="absolute -left-2 top-1/2 hidden -translate-y-1/2 text-champagne-strong/30 md:block"
-                    aria-hidden
+              <p className="mx-auto mt-3 max-w-xl text-sm leading-7 text-muted-foreground md:text-base md:leading-8">
+                اختار الشكل، اعمل حسابك، ادخل لوحة التحكم، وعدّل موقعك في أي وقت.
+              </p>
+            </div>
+            <div className="mt-7 grid gap-3 md:mt-10 md:grid-cols-4">
+              {howItWorks.map((step: { title: string; body: string; href?: string }, index: number) => {
+                const JourneyIcon = journeyIcons[index % journeyIcons.length];
+                const href = step.href ?? journeyFallbackHrefs[index] ?? "/templates";
+                return (
+                  <Link
+                    key={step.title}
+                    href={href}
+                    className="group relative grid min-h-[12rem] overflow-hidden rounded-[1.45rem] border border-ink/10 bg-white/82 p-4 text-start no-underline shadow-[0_18px_45px_rgba(20,20,20,0.08),inset_0_1px_0_rgba(255,255,255,0.75)] backdrop-blur transition active:scale-[0.98] hover:-translate-y-1 hover:border-champagne-strong/35 hover:bg-white hover:shadow-[0_24px_60px_rgba(20,20,20,0.12)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-champagne-strong md:p-5"
                   >
-                    <ArrowLeft className="size-5" />
-                  </span>
-                )}
-              </div>
-            ))}
+                    <span className="pointer-events-none absolute inset-x-4 top-0 h-px bg-gradient-to-l from-transparent via-champagne-strong/60 to-transparent opacity-70" aria-hidden />
+                    <span className="mb-5 flex items-center justify-between gap-3">
+                      <span className="inline-flex size-11 items-center justify-center rounded-2xl border border-champagne-strong/18 bg-champagne-strong/10 text-champagne-strong shadow-[0_0_24px_rgba(181,137,61,0.16)] transition group-hover:bg-champagne-strong/15 group-hover:shadow-[0_0_30px_rgba(181,137,61,0.26)]">
+                        <JourneyIcon className="size-5" aria-hidden />
+                      </span>
+                      <span className="inline-flex size-9 items-center justify-center rounded-full border border-ink/10 bg-ink text-white shadow-soft transition group-hover:-translate-x-1 group-hover:bg-champagne-strong group-hover:text-ink">
+                        <ArrowLeft className="size-4" aria-hidden />
+                      </span>
+                    </span>
+                    <span className="mb-2 inline-flex w-fit rounded-full bg-ink/5 px-2.5 py-1 text-[0.68rem] font-semibold text-ink/55">
+                      خطوة {index + 1}
+                    </span>
+                    <h3 className="text-base font-semibold leading-6 text-ink">
+                      {step.title}
+                    </h3>
+                    <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                      {step.body}
+                    </p>
+                  </Link>
+                );
+              })}
+            </div>
           </div>
         </section>
 
