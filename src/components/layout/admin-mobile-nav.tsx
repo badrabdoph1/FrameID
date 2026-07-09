@@ -8,6 +8,18 @@ import { useAdmin } from "@/components/layout/admin-context"
 import { adminSections } from "@/modules/admin/navigation"
 import { cn } from "@/lib/utils/cn"
 
+function isAdminLinkActive(pathname: string | null, href: string): boolean {
+  if (!pathname) return false
+  if (href === "/admin") return pathname === "/admin"
+  return pathname === href || pathname.startsWith(`${href}/`)
+}
+
+function isSectionActive(pathname: string | null, sectionId: string): boolean {
+  const section = adminSections.find((item) => item.id === sectionId)
+  if (!section) return false
+  return section.links.some((link) => isAdminLinkActive(pathname, link.href))
+}
+
 export function AdminMobileNav() {
   const pathname = usePathname()
   const { mobileMenuOpen, toggleMobileMenu } = useAdmin()
@@ -26,11 +38,20 @@ export function AdminMobileNav() {
     }
   }, [mobileMenuOpen])
 
+  useEffect(() => {
+    if (!mobileMenuOpen) return
+    for (const section of adminSections) {
+      const details = detailsRefs.current.get(section.id)
+      if (details) details.open = isSectionActive(pathname, section.id)
+    }
+  }, [mobileMenuOpen, pathname])
+
   const topLevelLinks = adminSections.slice(0, 4).map((s) => ({
     href: s.links[0]?.href ?? "/admin",
     label: s.title,
     Icon: s.icon,
     accent: s.accent,
+    sectionId: s.id,
   }))
 
   return (
@@ -42,7 +63,7 @@ export function AdminMobileNav() {
           className="grid grid-cols-5 items-center gap-1 rounded-2xl border border-white/10 bg-[#141825]/98 px-2 py-1.5 shadow-2xl backdrop-blur-lg"
         >
           {topLevelLinks.map((link) => {
-            const isActive = pathname === link.href || pathname?.startsWith(link.href + "/")
+            const isActive = isSectionActive(pathname, link.sectionId)
             return (
               <Link
                 key={link.href}
@@ -123,11 +144,15 @@ export function AdminMobileNav() {
         <div className="grid gap-2">
           {adminSections.map((section) => {
             const Icon = section.icon
+            const sectionActive = isSectionActive(pathname, section.id)
             return (
               <details
                 key={section.id}
                 ref={(el) => setDetailsRef(section.id, el)}
-                className="overflow-hidden rounded-xl border border-white/10 bg-white/4"
+                className={cn(
+                  "overflow-hidden rounded-xl border bg-white/4",
+                  sectionActive ? "border-amber-500/30" : "border-white/10",
+                )}
               >
                 <summary
                   data-accent={section.accent ?? "gold"}
@@ -146,7 +171,7 @@ export function AdminMobileNav() {
                 </summary>
                 <div className="grid gap-1.5 px-3 pb-3">
                   {section.links.map((link) => {
-                    const isActive = pathname === link.href || pathname?.startsWith(link.href + "/")
+                    const isActive = isAdminLinkActive(pathname, link.href)
                     return (
                       <Link
                         key={link.href}
