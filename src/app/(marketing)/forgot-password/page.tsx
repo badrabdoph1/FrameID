@@ -10,7 +10,11 @@ import { CopyButton } from "@/components/ui/copy-button";
 
 export const metadata: Metadata = {
   title: "نسيت كلمة السر",
-  description: "ادخل بريدك عشان نرسلك رابط استعادة كلمة السر."
+  description: "استعادة الوصول إلى حساب FrameID.",
+  robots: {
+    index: false,
+    follow: false
+  }
 };
 
 type ForgotPasswordPageProps = {
