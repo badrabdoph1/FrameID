@@ -45,7 +45,7 @@ function ShellContent({ children }: { children: React.ReactNode }) {
           mounted && !sidebarCollapsed ? "lg:mr-[310px]" : "lg:mr-0",
         )}
       >
-        <main className="min-h-screen overflow-x-hidden px-3 pb-[calc(112px+env(safe-area-inset-bottom))] pt-[calc(82px+env(safe-area-inset-top))] sm:px-4 lg:p-6">
+        <main className="min-h-screen overflow-x-hidden px-3 pb-[calc(112px+env(safe-area-inset-bottom))] pt-[calc(128px+env(safe-area-inset-top))] sm:px-4 lg:p-6">
           <div className="hidden lg:block">
             <AdminTopbar />
           </div>
