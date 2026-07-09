@@ -8,62 +8,17 @@ import { prisma } from "@/lib/prisma";
 import { processError } from "@/lib/errors";
 import { requireAdminPermission } from "@/modules/admin/admin-permission-guards";
 import { readFormString } from "@/modules/auth/auth-action-utils";
-
-export const CUSTOMER_BROADCAST_CATEGORY = "CUSTOMER_BROADCAST";
-export const ACTIVATION_TEMPLATE_CATEGORY = "ACTIVATION_MESSAGE_TEMPLATE";
-
-export const activationTemplateDefinitions = [
-  {
-    key: "trial",
-    label: "رسالة طلب التفعيل / الحساب التجريبي",
-    defaultTitle: "حسابك تجريبي برجاء التأكد من التفعيل",
-    defaultBody: "فعّل الاشتراك قبل نهاية الفترة التجريبية حتى يظل موقعك متاحًا للعملاء.",
-    tone: "warning",
-  },
-  {
-    key: "pending-review",
-    label: "رسالة انتظار المراجعة",
-    defaultTitle: "طلب التفعيل قيد المراجعة",
-    defaultBody: "تم إرسال إثبات الدفع. سنراجع الطلب ونفعّل الاشتراك فور التأكد.",
-    tone: "warning",
-  },
-  {
-    key: "active",
-    label: "رسالة التفعيل الناجح",
-    defaultTitle: "اشتراكك مفعل",
-    defaultBody: "اشتراكك مفعل والموقع جاهز للتشغيل والمشاركة مع عملائك.",
-    tone: "success",
-  },
-  {
-    key: "rejected",
-    label: "رسالة الرفض",
-    defaultTitle: "تم رفض طلب التفعيل",
-    defaultBody: "برجاء مراجعة بيانات الدفع أو إرسال إثبات صحيح من صفحة الاشتراك.",
-    tone: "danger",
-  },
-  {
-    key: "expired",
-    label: "رسالة انتهاء أو إيقاف الاشتراك",
-    defaultTitle: "الاشتراك يحتاج إجراء",
-    defaultBody: "راجع الاشتراك حتى يظل الموقع شغال للعملاء.",
-    tone: "danger",
-  },
-] as const;
-
-type TemplateKey = (typeof activationTemplateDefinitions)[number]["key"];
+import {
+  ACTIVATION_TEMPLATE_CATEGORY,
+  CUSTOMER_BROADCAST_CATEGORY,
+  type ActivationTemplateKey,
+  getActivationTemplateDefinition,
+  validateMessageTone,
+} from "@/modules/messages/customer-message-config";
 
 function redirectWithMessage(params: Record<string, string | number>): never {
   const query = new URLSearchParams(Object.entries(params).map(([key, value]) => [key, String(value)]));
   redirect(`/admin/messages?${query.toString()}`);
-}
-
-function validateTone(value: string): "info" | "success" | "warning" | "danger" {
-  if (value === "success" || value === "warning" || value === "danger") return value;
-  return "info";
-}
-
-function templateDefinitionFor(key: string) {
-  return activationTemplateDefinitions.find((template) => template.key === key);
 }
 
 export async function sendCustomerMessageAction(formData: FormData) {
@@ -71,7 +26,7 @@ export async function sendCustomerMessageAction(formData: FormData) {
   const audience = readFormString(formData, "audience") || "selected";
   const title = readFormString(formData, "title").trim();
   const body = readFormString(formData, "body").trim();
-  const tone = validateTone(readFormString(formData, "tone"));
+  const tone = validateMessageTone(readFormString(formData, "tone"));
   const selectedTenantIds = formData.getAll("tenantIds").map((value) => String(value)).filter(Boolean);
 
   if (!title || title.length < 2) redirectWithMessage({ error: "اكتب عنوان الرسالة." });
@@ -130,11 +85,11 @@ export async function sendCustomerMessageAction(formData: FormData) {
 
 export async function saveActivationTemplateAction(formData: FormData) {
   const admin = await requireAdminPermission("messages", "edit");
-  const key = readFormString(formData, "key").trim() as TemplateKey;
+  const key = readFormString(formData, "key").trim() as ActivationTemplateKey;
   const title = readFormString(formData, "title").trim();
   const body = readFormString(formData, "body").trim();
-  const tone = validateTone(readFormString(formData, "tone"));
-  const definition = templateDefinitionFor(key);
+  const tone = validateMessageTone(readFormString(formData, "tone"));
+  const definition = getActivationTemplateDefinition(key);
 
   if (!definition) redirectWithMessage({ error: "نوع الرسالة غير صحيح." });
   if (!title || title.length < 2) redirectWithMessage({ error: "اكتب عنوان قالب الرسالة." });
