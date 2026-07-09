@@ -7,6 +7,7 @@ import "@/app/admin.css";
 
 export const metadata: Metadata = {
   title: "إدارة FrameID",
+  manifest: "/manifest-admin.webmanifest",
   robots: {
     index: false,
     follow: false
