@@ -1,4 +1,5 @@
 import { verifyPassword } from "@/modules/auth/password-hashing";
+import { parseEmailOrPhoneIdentifier } from "@/modules/auth/auth-identifier";
 import {
   buildAdminSessionCookie,
   createRawAdminSessionToken,
@@ -10,6 +11,7 @@ import {
 export type AdminAuthenticatedUser = {
   id: string;
   email: string;
+  phone: string | null;
   name: string;
   role: string;
 };
@@ -21,7 +23,7 @@ export type AdminSessionRecord = {
 };
 
 export type AdminLoginRepository = {
-  findAdminByEmail(email: string): Promise<
+  findAdminByIdentifier(input: { email: string; phone: string | null }): Promise<
     | (AdminAuthenticatedUser & { passwordHash: string | null })
     | null
   >;
@@ -43,16 +45,20 @@ export type AdminLoginResult = {
 
 export function createAdminLoginService(repository: AdminLoginRepository) {
   return {
-    async login(input: { email: string; password: string }): Promise<AdminLoginResult> {
-      const admin = await repository.findAdminByEmail(input.email);
+    async login(input: { identifier?: string; email?: string; password: string }): Promise<AdminLoginResult> {
+      const identifier = parseEmailOrPhoneIdentifier(input.identifier || input.email || "");
+      const admin = await repository.findAdminByIdentifier({
+        email: identifier.storageEmail,
+        phone: identifier.phone
+      });
 
       if (!admin?.passwordHash) {
-        throw new Error("Invalid email or password");
+        throw new Error("Invalid phone/email or password");
       }
 
       const isValid = await verifyPassword(input.password, admin.passwordHash);
       if (!isValid) {
-        throw new Error("Invalid email or password");
+        throw new Error("Invalid phone/email or password");
       }
 
       const rawToken = createRawAdminSessionToken();
@@ -66,7 +72,7 @@ export function createAdminLoginService(repository: AdminLoginRepository) {
       });
 
       return {
-        admin: { id: admin.id, email: admin.email, name: admin.name, role: admin.role },
+        admin: { id: admin.id, email: admin.email, phone: admin.phone, name: admin.name, role: admin.role },
         session: {
           id: session.id,
           expiresAt: session.expiresAt,
