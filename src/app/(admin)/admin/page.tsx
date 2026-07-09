@@ -5,14 +5,11 @@ import {
   CheckCircle2,
   CreditCard,
   DatabaseBackup,
-  ExternalLink,
   Globe,
   Plus,
   Search,
-  ShieldCheck,
   Sparkles,
   TriangleAlert,
-  UserCheck,
   Users,
   WalletCards,
   type LucideIcon,
@@ -119,17 +116,74 @@ export default async function AdminDashboardPage() {
 
   const monthRevenueAmount = monthRevenue._sum.amount ?? 0;
   const urgentItems = [
-    pendingPayments > 0 ? { label: "راجع المدفوعات المعلقة", description: `${pendingPayments} طلب دفع ينتظر القرار`, href: "/admin/payments", tone: "warning" as const } : null,
-    expiringTrials > 0 ? { label: "تابع التجارب القريبة", description: `${expiringTrials} تجربة تنتهي خلال 7 أيام`, href: "/admin/customers?status=TRIAL", tone: "warning" as const } : null,
-    unresolvedErrors > 0 ? { label: "حل أخطاء النظام", description: `${unresolvedErrors} خطأ غير محلول`, href: "/admin/errors", tone: "danger" as const } : null,
-    failedBackups > 0 ? { label: "راجع النسخ الاحتياطي", description: `${failedBackups} عملية نسخ فاشلة`, href: "/admin/backups", tone: "danger" as const } : null,
+    pendingPayments > 0 ? { label: "راجع المدفوعات", description: `${pendingPayments} طلب ينتظر القرار`, href: "/admin/payments", tone: "warning" as const } : null,
+    expiringTrials > 0 ? { label: "تابع التجارب", description: `${expiringTrials} تجربة تنتهي قريبًا`, href: "/admin/customers?status=TRIAL", tone: "warning" as const } : null,
+    unresolvedErrors > 0 ? { label: "حل الأخطاء", description: `${unresolvedErrors} خطأ مفتوح`, href: "/admin/errors", tone: "danger" as const } : null,
+    failedBackups > 0 ? { label: "راجع النسخ", description: `${failedBackups} نسخة فاشلة`, href: "/admin/backups", tone: "danger" as const } : null,
   ].filter(Boolean) as Array<{ label: string; description: string; href: string; tone: "warning" | "danger" }>;
 
-  const primaryAction = urgentItems[0] ?? { label: "المنصة مستقرة", description: "لا توجد مهام حرجة الآن. راجع آخر العملاء أو المدفوعات عند الحاجة.", href: "/admin/customers", tone: "success" as const };
+  const primaryAction = urgentItems[0] ?? { label: "المنصة مستقرة", description: "لا توجد مهام حرجة الآن.", href: "/admin/customers", tone: "success" as const };
 
   return (
-    <main className="grid gap-5">
-      <section className="grid gap-4 rounded-2xl border border-amber-500/15 bg-[radial-gradient(circle_at_top_left,rgba(243,207,115,0.16),transparent_35%),linear-gradient(135deg,#181b22,#0d0f14)] p-5 shadow-2xl sm:p-7">
+    <main className="grid gap-4 lg:gap-5">
+      <section className="grid gap-3 lg:hidden">
+        <div className="rounded-3xl border border-amber-500/15 bg-[radial-gradient(circle_at_top_right,rgba(243,207,115,0.18),transparent_38%),rgba(255,255,255,0.04)] p-4">
+          <p className="text-xs font-black text-[#f3cf73]">مركز القيادة</p>
+          <h1 className="mt-1 truncate text-xl font-black text-[#fff7e8]">أهلاً، {session.user.name}</h1>
+          <Link
+            href={primaryAction.href}
+            className={cn(
+              "mt-3 flex items-center justify-between gap-3 rounded-2xl border p-3 no-underline",
+              primaryAction.tone === "danger"
+                ? "border-red-400/25 bg-red-500/10"
+                : primaryAction.tone === "warning"
+                  ? "border-amber-400/25 bg-amber-500/10"
+                  : "border-emerald-400/20 bg-emerald-500/10",
+            )}
+          >
+            <span className="min-w-0">
+              <strong className="block truncate text-sm font-black text-[#fff7e8]">{primaryAction.label}</strong>
+              <small className="mt-1 block truncate text-xs font-bold text-white/48">{primaryAction.description}</small>
+            </span>
+            <ArrowLeft className="size-4 shrink-0 text-[#f3cf73]" />
+          </Link>
+        </div>
+
+        <div className="grid grid-cols-2 gap-2">
+          <MobileMetric label="عملاء" value={totalCustomers} icon={Users} href="/admin/customers" />
+          <MobileMetric label="دفع" value={pendingPayments} icon={CreditCard} href="/admin/payments" urgent={pendingPayments > 0} />
+          <MobileMetric label="مواقع" value={activeSites} icon={Globe} href="/admin/customers" />
+          <MobileMetric label="أخطاء" value={unresolvedErrors} icon={TriangleAlert} href="/admin/errors" urgent={unresolvedErrors > 0} />
+        </div>
+
+        <div className="grid grid-cols-3 gap-2">
+          <MobileAction href="/admin/customers/new" icon={Plus} label="عميل" />
+          <MobileAction href="/admin/billing" icon={WalletCards} label="المال" />
+          <MobileAction href="/admin/search" icon={Search} label="بحث" />
+        </div>
+
+        <MobilePanel title="تحتاج تدخل" href={urgentItems.length ? urgentItems[0].href : "/admin/system"}>
+          {urgentItems.length === 0 ? (
+            <CompactEmpty text="كل شيء مستقر الآن." />
+          ) : (
+            urgentItems.slice(0, 3).map((item) => <CompactLink key={item.href} href={item.href} title={item.label} meta={item.description} danger={item.tone === "danger"} />)
+          )}
+        </MobilePanel>
+
+        <MobilePanel title="مدفوعات معلقة" href="/admin/payments">
+          {reviewPayments.length === 0 ? <CompactEmpty text="لا توجد مدفوعات معلقة." /> : reviewPayments.slice(0, 3).map((payment) => (
+            <CompactLink key={payment.id} href="/admin/payments" title={payment.tenant.displayName} meta={`${formatMoney(payment.amount, payment.currency)} · ${payment.plan?.name ?? "بدون خطة"}`} />
+          ))}
+        </MobilePanel>
+
+        <MobilePanel title="آخر العملاء" href="/admin/customers">
+          {recentCustomers.length === 0 ? <CompactEmpty text="لا يوجد عملاء بعد." /> : recentCustomers.slice(0, 3).map((customer) => (
+            <CompactLink key={customer.id} href={`/admin/customers/${customer.id}/workspace`} title={customer.displayName} meta={`${customer._count.sites} مواقع · ${customer.status}`} />
+          ))}
+        </MobilePanel>
+      </section>
+
+      <section className="hidden gap-4 rounded-2xl border border-amber-500/15 bg-[radial-gradient(circle_at_top_left,rgba(243,207,115,0.16),transparent_35%),linear-gradient(135deg,#181b22,#0d0f14)] p-5 shadow-2xl sm:p-7 lg:grid">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div className="min-w-0">
             <span className="inline-flex w-fit items-center gap-1.5 rounded-md border border-amber-500/20 bg-amber-500/10 px-2 py-0.5 text-[0.68rem] font-extrabold text-[#f3cf73]">
@@ -180,7 +234,7 @@ export default async function AdminDashboardPage() {
         </div>
       </section>
 
-      <section className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+      <section className="hidden grid-cols-2 gap-3 lg:grid xl:grid-cols-4">
         <MetricCard label="العملاء" value={totalCustomers} icon={Users} href="/admin/customers" />
         <MetricCard label="المواقع المنشورة" value={activeSites} icon={Globe} href="/admin/customers" />
         <MetricCard label="مدفوعات معلقة" value={pendingPayments} icon={CreditCard} href="/admin/payments" urgent={pendingPayments > 0} />
@@ -188,12 +242,12 @@ export default async function AdminDashboardPage() {
       </section>
 
       {urgentItems.length > 0 ? (
-        <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+        <section className="hidden gap-3 lg:grid md:grid-cols-2 xl:grid-cols-4">
           {urgentItems.map((item) => <StartCard key={item.href} label={item.label} desc={item.description} href={item.href} urgent={item.tone === "danger"} />)}
         </section>
       ) : null}
 
-      <section className="grid gap-4 xl:grid-cols-[1fr_1fr]">
+      <section className="hidden gap-4 lg:grid xl:grid-cols-[1fr_1fr]">
         <Panel title="مدفوعات تنتظر المراجعة" description="افتح الطلب، راجع الإثبات، ثم فعّل أو ارفض." href="/admin/payments" cta="مراجعة المدفوعات" highlighted={reviewPayments.length > 0}>
           {reviewPayments.length === 0 ? (
             <EmptyState icon={CheckCircle2} title="مفيش مدفوعات معلقة" description="كل طلبات الدفع الحالية متراجعة." />
@@ -234,7 +288,7 @@ export default async function AdminDashboardPage() {
         </Panel>
       </section>
 
-      <section className="grid gap-4 xl:grid-cols-[1fr_1fr]">
+      <section className="hidden gap-4 lg:grid xl:grid-cols-[1fr_1fr]">
         <Panel title="آخر العملاء" description="أحدث الحسابات التي دخلت المنصة." href="/admin/customers" cta="فتح Workspace العملاء">
           {recentCustomers.length > 0 ? (
             <div className="grid gap-2">
@@ -288,6 +342,53 @@ export default async function AdminDashboardPage() {
       </section>
     </main>
   );
+}
+
+function MobileMetric({ label, value, icon: Icon, href, urgent }: { label: string; value: number; icon: LucideIcon; href: string; urgent?: boolean }) {
+  return (
+    <Link href={href} className="rounded-2xl border border-white/8 bg-white/[0.04] p-3 no-underline">
+      <Icon className={urgent ? "size-4 text-red-300" : "size-4 text-[#f3cf73]"} />
+      <p className="mt-2 text-[0.68rem] font-black text-white/38">{label}</p>
+      <p className={urgent ? "mt-0.5 text-xl font-black text-red-300" : "mt-0.5 text-xl font-black text-[#fff7e8]"}>{value.toLocaleString("ar-EG")}</p>
+    </Link>
+  );
+}
+
+function MobileAction({ href, icon: Icon, label }: { href: string; icon: LucideIcon; label: string }) {
+  return (
+    <Link href={href} className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-2xl border border-amber-500/20 bg-amber-500/10 text-xs font-black text-[#f3cf73] no-underline">
+      <Icon className="size-4" />
+      {label}
+    </Link>
+  );
+}
+
+function MobilePanel({ title, href, children }: { title: string; href: string; children: React.ReactNode }) {
+  return (
+    <section className="rounded-2xl border border-white/8 bg-white/[0.035] p-3">
+      <div className="mb-2 flex items-center justify-between gap-3">
+        <h2 className="text-sm font-black text-[#fff7e8]">{title}</h2>
+        <Link href={href} className="text-xs font-black text-[#f3cf73] no-underline">فتح</Link>
+      </div>
+      <div className="grid gap-2">{children}</div>
+    </section>
+  );
+}
+
+function CompactLink({ href, title, meta, danger }: { href: string; title: string; meta: string; danger?: boolean }) {
+  return (
+    <Link href={href} className={cn("grid grid-cols-[1fr_auto] items-center gap-2 rounded-xl border px-3 py-2 no-underline", danger ? "border-red-300/15 bg-red-500/8" : "border-white/6 bg-black/12")}> 
+      <span className="min-w-0">
+        <strong className="block truncate text-sm font-black text-white/82">{title}</strong>
+        <small className="block truncate text-xs font-bold text-white/38">{meta}</small>
+      </span>
+      <ArrowLeft className={danger ? "size-4 text-red-300" : "size-4 text-[#f3cf73]"} />
+    </Link>
+  );
+}
+
+function CompactEmpty({ text }: { text: string }) {
+  return <div className="rounded-xl border border-dashed border-white/8 bg-black/10 px-3 py-4 text-center text-xs font-bold text-white/35">{text}</div>;
 }
 
 function ActionButton({ href, icon: Icon, label, variant }: { href: string; icon: LucideIcon; label: string; variant?: "primary" }) {
