@@ -20,29 +20,80 @@ const playfair = Playfair_Display({
 });
 
 const seoBaseUrl = "https://frameid.app";
+const defaultDescription =
+  "FrameID منصة عربية للمصورين تساعدك تنشئ موقعًا احترافيًا ورابطًا واحدًا يجمع صورك وباقاتك وأسعارك وبيانات التواصل.";
 
 export const metadata: Metadata = {
+  metadataBase: new URL(seoBaseUrl),
   title: {
     default: "FrameID | موقع احترافي لكل مصور",
     template: "%s | FrameID"
   },
-  description:
-    "منصة بتدي المصور موقع احترافي ولوحة تحكم ورابط خاص في دقايق.",
-  metadataBase: new URL(seoBaseUrl),
+  description: defaultDescription,
   applicationName: "FrameID",
+  referrer: "origin-when-cross-origin",
+  keywords: [
+    "FrameID",
+    "موقع مصور",
+    "مواقع للمصورين",
+    "باقات تصوير",
+    "معرض صور",
+    "رابط مصور",
+    "موقع استوديو تصوير"
+  ],
+  authors: [{ name: "FrameID" }],
+  creator: "FrameID",
+  publisher: "FrameID",
+  category: "SaaS",
+  alternates: {
+    canonical: "/"
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1
+    }
+  },
+  openGraph: {
+    type: "website",
+    locale: "ar_EG",
+    siteName: "FrameID",
+    url: seoBaseUrl,
+    title: "FrameID | موقع احترافي لكل مصور",
+    description: defaultDescription,
+    images: [
+      {
+        url: "/opengraph-image",
+        width: 1200,
+        height: 630,
+        alt: "FrameID - موقع احترافي للمصورين في رابط واحد"
+      }
+    ]
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "FrameID | موقع احترافي لكل مصور",
+    description: defaultDescription,
+    images: ["/opengraph-image"]
+  },
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
     title: "FrameID",
-    statusBarStyle: "black-translucent",
+    statusBarStyle: "black-translucent"
   },
   icons: {
     icon: [
       { url: "/icon.svg", type: "image/svg+xml" },
-      { url: "/icon-512x512.svg", sizes: "512x512", type: "image/svg+xml" },
+      { url: "/icon-512x512.svg", sizes: "512x512", type: "image/svg+xml" }
     ],
-    apple: [{ url: "/icon-512x512.svg", sizes: "512x512", type: "image/svg+xml" }],
-  },
+    apple: [{ url: "/icon-512x512.svg", sizes: "512x512", type: "image/svg+xml" }]
+  }
 };
 
 export const viewport: Viewport = {
@@ -70,9 +121,7 @@ export default function RootLayout({
       </head>
       <body>
         <Analytics />
-        <ToastRootProvider>
-          {children}
-        </ToastRootProvider>
+        <ToastRootProvider>{children}</ToastRootProvider>
       </body>
     </html>
   );
