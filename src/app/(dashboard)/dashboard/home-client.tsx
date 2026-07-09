@@ -24,8 +24,6 @@ export function DashboardHomeClient({
   lastModified,
   nextStepHref,
   nextStepLabel,
-  nextStepTitle,
-  nextStepDescription,
   subscription,
 }: DashboardViewModel) {
   const doneCount = checklist.filter((item) => item.done).length;
@@ -65,7 +63,7 @@ export function DashboardHomeClient({
         </span>
       </button>
 
-      <section className="grid gap-2 rounded-[1.2rem] border border-white/12 bg-[linear-gradient(135deg,rgba(243,207,115,0.10),rgba(255,255,255,0.045)),#10151d] p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+      <section className="rounded-[1.2rem] border border-white/12 bg-[linear-gradient(135deg,rgba(243,207,115,0.10),rgba(255,255,255,0.045)),#10151d] p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">
             <p className="text-xs font-black text-[#f3cf73]">جاهزية الموقع</p>
@@ -73,10 +71,6 @@ export function DashboardHomeClient({
             <p className="mt-1 truncate text-[0.72rem] font-bold text-white/55">آخر تعديل {lastModified}</p>
           </div>
           <div className="scale-75 rounded-full bg-black/18 p-1"><CompletionRing percent={percent} /></div>
-        </div>
-        <div className="rounded-2xl border border-amber-300/16 bg-[#151a24] px-3 py-2">
-          <p className="truncate text-sm font-black text-[#fff7e8]">{nextStepTitle}</p>
-          <p className="mt-0.5 line-clamp-2 text-xs font-bold leading-5 text-white/64">{nextStepDescription}</p>
         </div>
       </section>
 
