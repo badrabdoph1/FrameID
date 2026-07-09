@@ -1,10 +1,9 @@
 import Link from "next/link";
 import {
   ArrowLeft,
-  FileText,
   HelpCircle,
   Home,
-  Image,
+  Image as ImageIcon,
   Layout,
   Navigation,
   Palette,
@@ -41,10 +40,10 @@ export default async function AdminContentPage() {
   const manifest = getManifest();
 
   const [templatesCount, themesCount, mediaCount, publishedThemes, recentMedia] = await Promise.all([
-    prisma.template.count({ where: { deletedAt: null } }),
-    prisma.theme.count({ where: { deletedAt: null } }),
+    prisma.template.count(),
+    prisma.theme.count(),
     prisma.mediaAsset.count({ where: { deletedAt: null } }),
-    prisma.theme.count({ where: { status: "PUBLISHED", deletedAt: null } }),
+    prisma.theme.count({ where: { status: "PUBLISHED" } }),
     prisma.mediaAsset.findMany({
       where: { deletedAt: null },
       orderBy: { createdAt: "desc" },
@@ -63,7 +62,7 @@ export default async function AdminContentPage() {
       breadcrumbs={[{ label: "القيادة", href: "/admin" }, { label: "المحتوى" }]}
       actions={[
         { label: "القوالب", href: "/admin/templates", icon: Layout },
-        { label: "الوسائط", href: "/admin/media", icon: Image },
+        { label: "الوسائط", href: "/admin/media", icon: ImageIcon },
       ]}
     >
       <div className="grid gap-4">
@@ -71,7 +70,7 @@ export default async function AdminContentPage() {
           <MetricCard label="القوالب" value={templatesCount} icon={Layout} href="/admin/templates" />
           <MetricCard label="الثيمات" value={themesCount} icon={Palette} href="/admin/themes" />
           <MetricCard label="ثيمات منشورة" value={publishedThemes} icon={Sparkles} href="/admin/themes" />
-          <MetricCard label="ملفات الوسائط" value={mediaCount} icon={Image} href="/admin/media" />
+          <MetricCard label="ملفات الوسائط" value={mediaCount} icon={ImageIcon} href="/admin/media" />
         </section>
 
         <section className="grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
@@ -79,7 +78,7 @@ export default async function AdminContentPage() {
             <div className="grid gap-2 sm:grid-cols-2">
               <PrimaryLink href="/admin/templates" icon={Layout} label="القوالب" description="قوالب مواقع المصورين" />
               <PrimaryLink href="/admin/themes" icon={Palette} label="الثيمات" description="ألوان وإعدادات القوالب" />
-              <PrimaryLink href="/admin/media" icon={Image} label="الوسائط" description="الصور والملفات المشتركة" />
+              <PrimaryLink href="/admin/media" icon={ImageIcon} label="الوسائط" description="الصور والملفات المشتركة" />
               <PrimaryLink href="/admin/content/templates/registry" icon={Puzzle} label="سجل القوالب" description="بيانات القوالب المسجلة" />
             </div>
           </WorkspacePanel>
@@ -108,7 +107,7 @@ export default async function AdminContentPage() {
           <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
             {recentMedia.length === 0 ? <EmptyState text="لا توجد وسائط مرفوعة بعد." /> : recentMedia.map((asset) => (
               <Link key={asset.id} href="/admin/media" className="flex items-center gap-3 rounded-2xl border border-white/8 bg-white/[0.035] p-3 no-underline transition hover:border-amber-300/24 hover:bg-amber-300/8">
-                <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-amber-300/10 text-[#f3cf73]"><Image className="size-5" /></span>
+                <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-amber-300/10 text-[#f3cf73]"><ImageIcon className="size-5" aria-hidden /></span>
                 <span className="min-w-0">
                   <strong className="block truncate text-sm font-black text-[#fff7e8]">{asset.alt ?? asset.storageKey.split("/").pop() ?? asset.storageKey}</strong>
                   <small className="mt-1 block truncate text-xs font-bold text-white/38">{asset.mimeType} · {Math.round(asset.sizeBytes / 1024)} KB · {new Date(asset.createdAt).toLocaleDateString("ar-EG")}</small>
@@ -125,7 +124,7 @@ export default async function AdminContentPage() {
 function MetricCard({ label, value, icon: Icon, href }: { label: string; value: number; icon: LucideIcon; href: string }) {
   return (
     <Link href={href} className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 no-underline transition hover:-translate-y-0.5 hover:border-amber-300/24 hover:bg-amber-300/8">
-      <Icon className="size-5 text-[#f3cf73]" />
+      <Icon className="size-5 text-[#f3cf73]" aria-hidden />
       <p className="mt-3 text-xs font-black text-white/42">{label}</p>
       <p className="mt-1 truncate text-2xl font-black text-[#fff7e8]">{value.toLocaleString("ar-EG")}</p>
     </Link>
@@ -142,7 +141,7 @@ function WorkspacePanel({ title, description, href, cta, children }: { title: st
         </div>
         <Link href={href} className="inline-flex shrink-0 items-center gap-1 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs font-black text-white/62 no-underline transition hover:bg-white/[0.08] hover:text-white">
           {cta}
-          <ArrowLeft className="size-3.5" />
+          <ArrowLeft className="size-3.5" aria-hidden />
         </Link>
       </header>
       <div className="p-4">{children}</div>
@@ -153,7 +152,7 @@ function WorkspacePanel({ title, description, href, cta, children }: { title: st
 function PrimaryLink({ href, icon: Icon, label, description }: { href: string; icon: LucideIcon; label: string; description: string }) {
   return (
     <Link href={href} className="grid gap-2 rounded-2xl border border-white/8 bg-white/[0.035] p-4 no-underline transition hover:border-amber-300/24 hover:bg-amber-300/8">
-      <Icon className="size-5 text-[#f3cf73]" />
+      <Icon className="size-5 text-[#f3cf73]" aria-hidden />
       <strong className="text-sm font-black text-[#fff7e8]">{label}</strong>
       <span className="text-xs font-bold leading-5 text-white/42">{description}</span>
     </Link>
