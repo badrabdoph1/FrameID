@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { processError } from "@/lib/errors";
 import { createPrismaAdminAuthRepository } from "@/modules/admin/prisma-admin-auth-repository";
 import { createAdminLoginService, type AdminLoginResult } from "@/modules/admin/admin-auth-service";
+import { parseEmailOrPhoneIdentifier } from "@/modules/auth/auth-identifier";
 import {
   buildAdminSessionCookie,
   createSignedAdminSessionToken,
@@ -65,17 +66,24 @@ function createStatelessAdminLoginResult(
   };
 }
 
-function getEnvAdminLogin(email: string, password: string): EnvAdminLoginResult | null {
+function getEnvAdminLogin(identifierValue: string, password: string): EnvAdminLoginResult | null {
   const envEmail = process.env.SEED_SUPER_ADMIN_EMAIL?.trim().toLowerCase();
+  const envPhone = process.env.SEED_SUPER_ADMIN_PHONE?.trim();
   const envPassword = process.env.SEED_SUPER_ADMIN_PASSWORD;
-  const normalizedEmail = email.trim().toLowerCase();
+  const identifier = parseEmailOrPhoneIdentifier(identifierValue);
 
-  if (!envEmail || !envPassword) return null;
-  if (normalizedEmail !== envEmail || password !== envPassword) return null;
+  if (!envPassword) return null;
+
+  const emailMatches = identifier.kind === "email" && envEmail && identifier.email === envEmail;
+  const phoneMatches = identifier.kind === "phone" && envPhone && identifier.phone === parseEmailOrPhoneIdentifier(envPhone).phone;
+
+  if (!emailMatches && !phoneMatches) return null;
+  if (password !== envPassword) return null;
 
   return createStatelessAdminLoginResult({
-    id: `env-super-admin:${envEmail}`,
-    email: envEmail,
+    id: `env-super-admin:${envEmail ?? envPhone}`,
+    email: envEmail ?? identifier.storageEmail,
+    phone: envPhone ? parseEmailOrPhoneIdentifier(envPhone).phone : null,
     name: "FrameID Admin",
     role: "SUPER_ADMIN",
   });
@@ -94,16 +102,16 @@ export async function POST(request: Request) {
   try {
     const text = await request.text();
     const params = new URLSearchParams(text);
-    const email = params.get("email") ?? "";
+    const identifier = params.get("identifier") ?? params.get("email") ?? "";
     const password = params.get("password") ?? "";
 
-    if (!email.trim() || !password) {
-      return createLoginErrorResponse(request, "اكتب البريد الإلكتروني وكلمة السر.", 400);
+    if (!identifier.trim() || !password) {
+      return createLoginErrorResponse(request, "اكتب رقم الهاتف أو البريد الإلكتروني وكلمة السر.", 400);
     }
 
-    const resultFromEnv = getEnvAdminLogin(email, password);
+    const resultFromEnv = getEnvAdminLogin(identifier, password);
     const result = resultFromEnv ?? await withTimeout(
-      createAdminLoginService(createPrismaAdminAuthRepository(prisma)).login({ email, password }),
+      createAdminLoginService(createPrismaAdminAuthRepository(prisma)).login({ identifier, password }),
       8000,
     );
     const statelessResult = resultFromEnv ?? createStatelessAdminLoginResult(
