@@ -12,6 +12,7 @@ import {
   ACTIVATION_TEMPLATE_CATEGORY,
   CUSTOMER_BROADCAST_CATEGORY,
   type ActivationTemplateKey,
+  encodeActivationTemplatePayload,
   getActivationTemplateDefinition,
   validateMessageTone,
 } from "@/modules/messages/customer-message-config";
@@ -105,7 +106,7 @@ export async function saveActivationTemplateAction(formData: FormData) {
       data: {
         type: tone,
         title: key,
-        body,
+        body: encodeActivationTemplatePayload({ title, body }),
         category: ACTIVATION_TEMPLATE_CATEGORY,
         userId: admin.id.startsWith("env-super-admin:") ? null : admin.id,
       },
