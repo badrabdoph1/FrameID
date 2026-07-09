@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Menu, X } from "lucide-react";
 
 interface NavLink {
@@ -22,6 +22,26 @@ const defaultLinks: NavLink[] = [
 export function MarketingNav({ links = defaultLinks }: MarketingNavProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const primaryLink = links.find((l) => l.href === "/signup");
+
+  useEffect(() => {
+    if (!menuOpen) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setMenuOpen(false);
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [menuOpen]);
 
   return (
     <>
@@ -73,6 +93,7 @@ export function MarketingNav({ links = defaultLinks }: MarketingNavProps) {
             <button
               type="button"
               aria-label="القائمة"
+              aria-controls="marketing-mobile-menu"
               aria-expanded={menuOpen}
               onClick={() => setMenuOpen((open) => !open)}
               className="inline-flex size-10 items-center justify-center rounded-full border border-white/15 bg-white/5 text-white transition hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
@@ -83,10 +104,11 @@ export function MarketingNav({ links = defaultLinks }: MarketingNavProps) {
         </nav>
         {menuOpen ? (
           <nav
+            id="marketing-mobile-menu"
             aria-label="قائمة الموقع"
             className="border-t border-white/10 bg-ink/95 px-4 py-3 text-white shadow-soft md:hidden"
           >
-            <div className="container-page grid gap-2 px-0">
+            <div className="container-page grid max-h-[calc(100dvh-5rem)] gap-2 overflow-y-auto px-0 pb-[env(safe-area-inset-bottom)]">
               {links.map((item) => (
                 <Link
                   key={item.href}
