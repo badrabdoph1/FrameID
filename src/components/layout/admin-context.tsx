@@ -6,6 +6,7 @@ import {
   useState,
   useCallback,
   useEffect,
+  useRef,
   type ReactNode,
 } from "react"
 
@@ -30,6 +31,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
+  const previousBodyOverflow = useRef<string | null>(null)
 
   const toggleSidebar = useCallback(() => setSidebarOpen((v) => !v), [])
   const toggleSidebarCollapsed = useCallback(() => setSidebarCollapsed((v) => !v), [])
@@ -37,11 +39,21 @@ export function AdminProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (mobileMenuOpen) {
+      if (previousBodyOverflow.current === null) {
+        previousBodyOverflow.current = document.body.style.overflow
+      }
       document.body.style.overflow = "hidden"
-    } else {
-      document.body.style.overflow = ""
+    } else if (previousBodyOverflow.current !== null) {
+      document.body.style.overflow = previousBodyOverflow.current
+      previousBodyOverflow.current = null
     }
-    return () => { document.body.style.overflow = "" }
+
+    return () => {
+      if (previousBodyOverflow.current !== null) {
+        document.body.style.overflow = previousBodyOverflow.current
+        previousBodyOverflow.current = null
+      }
+    }
   }, [mobileMenuOpen])
 
   return (
