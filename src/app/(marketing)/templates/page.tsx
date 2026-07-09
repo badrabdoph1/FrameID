@@ -12,12 +12,39 @@ import { getTemplatePreviewImage } from "@/modules/marketing/platform-content";
 import { getPublishedTemplates } from "@/modules/themes/theme-registry";
 
 export const metadata: Metadata = {
-  title: "معرض القوالب",
-  description: "تصفح قوالب مواقع المصورين الاحترافية. اختار قالب وجربه قبل ما تسجل."
+  title: "قوالب مواقع المصورين",
+  description: "شاهد قوالب FrameID الجاهزة للمصورين قبل التسجيل: تصميمات تعرض الصور والباقات والأسعار وبيانات التواصل في رابط واحد.",
+  alternates: {
+    canonical: "/templates"
+  },
+  openGraph: {
+    title: "قوالب مواقع المصورين | FrameID",
+    description: "استعرض مثالًا لموقع مصور واختر التصميم المناسب لشغلك.",
+    url: "/templates",
+    type: "website"
+  }
 };
 
 export default function TemplatesPage() {
   const templates = getPublishedTemplates();
+  const breadcrumbJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "الرئيسية",
+        item: "https://frameid.app/"
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: "القوالب",
+        item: "https://frameid.app/templates"
+      }
+    ]
+  };
 
   return (
     <>
@@ -29,13 +56,13 @@ export default function TemplatesPage() {
             اختار قالب—كأنه موقع عميل حقيقي.
           </h1>
           <p className="mt-5 max-w-2xl leading-8 text-muted-foreground">
-            المعاينة الحية بتفتح نفس القالب اللي هياخده المصور، وزير استخدم القالب بياخد اختيارك للتسجيل.
+            المعاينة الحية بتفتح نفس القالب اللي هياخده المصور، وزر استخدم القالب بياخد اختيارك للتسجيل.
           </p>
           <div className="mt-8 grid gap-3 md:grid-cols-3">
             {[
               ["معاينة", "افتح القالب كموقع حقيقي قبل ما تختار."],
               ["استخدام", "القالب اللي اخترته بينتقل لصفحة إنشاء الحساب."],
-              ["إنشاء تلقائي", "المصور بياخد الحساب والموقع والرابط والتجربة."]
+              ["إنشاء تلقائي", "المصور بياخد الحساب والموقع والرابط بعد التسجيل."]
             ].map(([title, body]) => (
               <div
                 key={title}
@@ -54,7 +81,7 @@ export default function TemplatesPage() {
                 <div className="relative aspect-[4/3]">
                   <Image
                     src={getTemplatePreviewImage(template)}
-                    alt={`معاينة قالب ${template.name}`}
+                    alt={`معاينة قالب ${template.name} لموقع مصور`}
                     fill
                     sizes="(max-width: 768px) 100vw, 50vw"
                     className="object-cover"
@@ -93,6 +120,11 @@ export default function TemplatesPage() {
         </section>
         <MarketingFooter />
       </main>
+      <script
+        id="frameid-templates-breadcrumb"
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+      />
     </>
   );
 }
