@@ -14,8 +14,8 @@ import { checkRateLimit } from "@/lib/rate-limiter";
 const RESET_TOKEN_TTL_MINUTES = 60;
 
 export async function requestPasswordResetAction(formData: FormData) {
-  const email = readFormString(formData, "email");
-  const ipKey = `forgot-password:${email.toLowerCase().trim()}`;
+  const identifier = readFormString(formData, "identifier") || readFormString(formData, "email");
+  const ipKey = `forgot-password:${identifier.toLowerCase().trim()}`;
 
   const rateCheck = checkRateLimit(ipKey, 3, 15 * 60 * 1000);
   if (!rateCheck.allowed) {
@@ -29,10 +29,10 @@ export async function requestPasswordResetAction(formData: FormData) {
   let result: Awaited<ReturnType<typeof service.requestPasswordReset>>;
 
   try {
-    result = await service.requestPasswordReset({ email });
+    result = await service.requestPasswordReset({ identifier });
   } catch (error) {
     const { userError } = await processError(error, {
-      metadata: { action: "requestPasswordReset", email },
+      metadata: { action: "requestPasswordReset", identifier },
     });
     redirect(
       `/forgot-password?error=${encodeURIComponent(userError.message)}`,
