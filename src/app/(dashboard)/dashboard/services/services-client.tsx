@@ -6,7 +6,6 @@ import {
   ArrowDown,
   ArrowLeft,
   ArrowUp,
-  BadgeCheck,
   CheckCircle2,
   Copy,
   Eye,
@@ -78,7 +77,7 @@ export function ServicesClient({ packages, extras, created, error }: ServicesCli
   const [confirmDeletePackageId, setConfirmDeletePackageId] = useState<string | null>(null);
   const [confirmDeleteExtraId, setConfirmDeleteExtraId] = useState<string | null>(null);
 
-  const completePercent = Math.round(((packages.length > 0 ? 1 : 0) + (extras.length > 0 ? 1 : 0)) / 2 * 100);
+  const completePercent = Math.round((((packages.length > 0 ? 1 : 0) + (extras.length > 0 ? 1 : 0)) / 2) * 100);
   const notice = error
     ? { tone: "error" as const, title: "مقدرناش نحفظ التعديل", description: decodeURIComponent(error) }
     : created
