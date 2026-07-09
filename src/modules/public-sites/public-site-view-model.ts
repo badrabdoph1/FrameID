@@ -125,6 +125,9 @@ export function createPublicSiteViewModel({
     site.description ??
     `موقع ${site.tenant.displayName} على FrameID.`;
   const canonical = site.seoSettings?.canonicalUrl ?? publicUrl;
+  const heroImageUrl = readString(heroSection?.data.imageUrl, FALLBACK_HERO_IMAGE);
+  const socialImageUrl = site.seoSettings?.ogImageUrl ?? heroImageUrl;
+  const shouldIndex = site.seoSettings?.robotsIndex ?? site.isPublished;
 
   return {
     siteId: site.id,
@@ -137,16 +140,28 @@ export function createPublicSiteViewModel({
         canonical
       },
       robots: {
-        index: site.seoSettings?.robotsIndex ?? site.isPublished,
-        follow: site.seoSettings?.robotsIndex ?? site.isPublished
+        index: shouldIndex,
+        follow: shouldIndex
       },
       openGraph: {
+        type: "website",
         title: metadataTitle,
         description: metadataDescription,
         url: canonical,
-        images: site.seoSettings?.ogImageUrl
-          ? [{ url: site.seoSettings.ogImageUrl }]
+        images: socialImageUrl
+          ? [
+              {
+                url: socialImageUrl,
+                alt: metadataTitle
+              }
+            ]
           : undefined
+      },
+      twitter: {
+        card: "summary_large_image",
+        title: metadataTitle,
+        description: metadataDescription,
+        images: socialImageUrl ? [socialImageUrl] : undefined
       }
     },
     structuredData:
@@ -164,7 +179,7 @@ export function createPublicSiteViewModel({
         heroSection?.data.subheadline,
         site.description ?? `تصوير احترافي مع ${site.tenant.displayName}.`
       ),
-      imageUrl: readString(heroSection?.data.imageUrl, FALLBACK_HERO_IMAGE)
+      imageUrl: heroImageUrl
     },
     contact: {
       callToAction: readString(
