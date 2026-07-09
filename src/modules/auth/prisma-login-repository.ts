@@ -5,6 +5,7 @@ type PrismaLoginClient = {
     findFirst(input: unknown): Promise<{
       id: string;
       email: string;
+      phone: string | null;
       name: string;
       role: string;
       passwordHash: string | null;
@@ -23,15 +24,19 @@ export function createPrismaLoginRepository(
   prisma: PrismaLoginClient
 ): LoginRepository {
   return {
-    async findUserByEmail(email) {
+    async findUserByIdentifier({ email, phone }) {
       return prisma.user.findFirst({
         where: {
-          email: email.trim().toLowerCase(),
-          deletedAt: null
+          deletedAt: null,
+          OR: [
+            { email: email.trim().toLowerCase() },
+            ...(phone ? [{ phone }] : [])
+          ]
         },
         select: {
           id: true,
           email: true,
+          phone: true,
           name: true,
           role: true,
           passwordHash: true
