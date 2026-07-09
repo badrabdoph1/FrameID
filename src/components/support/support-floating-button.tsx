@@ -30,6 +30,21 @@ function supportBottomClass(pathname: string | null) {
   return "bottom-[calc(5.25rem+env(safe-area-inset-bottom))] md:bottom-5";
 }
 
+function isPublicMarketingPath(pathname: string) {
+  return (
+    pathname === "/" ||
+    pathname === "/templates" ||
+    pathname.startsWith("/templates/") ||
+    pathname === "/login" ||
+    pathname === "/signup" ||
+    pathname === "/forgot-password" ||
+    pathname === "/reset-password" ||
+    pathname === "/privacy" ||
+    pathname === "/terms" ||
+    pathname === "/cookies"
+  );
+}
+
 export function SupportFloatingButton() {
   const pathname = usePathname();
   const [settings, setSettings] = useState(() => normalizeResponse(null));
@@ -39,6 +54,7 @@ export function SupportFloatingButton() {
   const allowed = useMemo(() => {
     if (!pathname) return false;
     if (pathname === "/offline") return false;
+    if (isPublicMarketingPath(pathname)) return false;
     return !pathname.startsWith("/p/");
   }, [pathname]);
 

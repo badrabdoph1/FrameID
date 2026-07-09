@@ -16,13 +16,7 @@ describe("support floating button", () => {
   beforeEach(() => {
     vi.stubGlobal(
       "fetch",
-      vi.fn(() => Promise.resolve({
-        ok: true,
-        json: () => Promise.resolve({
-          phone: "201000000000",
-          whatsappHref: "https://wa.me/201000000000",
-        }),
-      }))
+      vi.fn(() => new Promise(() => {}))
     );
   });
 
