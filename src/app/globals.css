@@ -34,17 +34,23 @@
 }
 
 @layer base {
-  * {
+  *,
+  *::before,
+  *::after {
     border-color: var(--color-border);
+    box-sizing: border-box;
   }
 
   html {
     scroll-behavior: smooth;
     overflow-x: hidden;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
   }
 
   body {
     min-height: 100vh;
+    min-height: 100dvh;
     background: var(--color-background);
     color: var(--color-foreground);
     font-family: var(--font-sans);
@@ -52,6 +58,30 @@
     text-rendering: optimizeLegibility;
     overflow-x: hidden;
     -webkit-tap-highlight-color: rgb(216 180 106 / 0.18);
+    overscroll-behavior-x: none;
+  }
+
+  button,
+  a,
+  input,
+  select,
+  textarea,
+  summary {
+    touch-action: manipulation;
+  }
+
+  img,
+  svg,
+  video,
+  canvas {
+    max-width: 100%;
+  }
+
+  input,
+  textarea,
+  select,
+  button {
+    font: inherit;
   }
 
   ::selection {
@@ -76,7 +106,7 @@
 
   @media (width < 768px) {
     body {
-      padding-bottom: 4rem;
+      padding-bottom: calc(4rem + env(safe-area-inset-bottom));
     }
   }
 
@@ -95,6 +125,10 @@
 
   .text-balance {
     text-wrap: balance;
+  }
+
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
   }
 }
 
