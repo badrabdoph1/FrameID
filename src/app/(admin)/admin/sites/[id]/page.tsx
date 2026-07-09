@@ -53,7 +53,7 @@ export default async function AdminSiteWorkspacePage({ params }: Props) {
       theme: { select: { id: true, code: true, name: true, status: true, category: true, version: true } },
       domains: { where: { deletedAt: null }, orderBy: { createdAt: "desc" } },
       themeConfig: true,
-      sections: { where: { deletedAt: null }, orderBy: { order: "asc" } },
+      sections: { where: { deletedAt: null }, orderBy: { sortOrder: "asc" } },
       packages: { where: { deletedAt: null }, orderBy: { sortOrder: "asc" } },
       extras: { where: { deletedAt: null }, orderBy: { sortOrder: "asc" } },
       albums: { where: { deletedAt: null }, orderBy: { sortOrder: "asc" }, include: { images: { where: { deletedAt: null }, take: 3 } } },
@@ -154,7 +154,7 @@ export default async function AdminSiteWorkspacePage({ params }: Props) {
 
       <section className="grid gap-4 xl:grid-cols-3">
         <CollectionPanel title="Sections" icon={Layers3} count={site.sections.length}>
-          {site.sections.map((section) => <CompactItem key={section.id} title={section.type} subtitle={`Order ${section.order} · ${section.isVisible ? "visible" : "hidden"}`} />)}
+          {site.sections.map((section) => <CompactItem key={section.id} title={section.type} subtitle={`Order ${section.sortOrder} · ${section.isVisible ? "visible" : "hidden"}`} />)}
         </CollectionPanel>
         <CollectionPanel title="Packages" icon={PackageCheck} count={site.packages.length}>
           {site.packages.map((pkg) => <CompactItem key={pkg.id} title={pkg.name} subtitle={`${pkg.priceAmount.toLocaleString("ar-EG")} ${pkg.currency} · ${pkg.isHighlighted ? "Highlighted" : "Standard"}`} />)}
