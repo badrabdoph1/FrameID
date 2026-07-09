@@ -7,6 +7,13 @@ import { createDashboardViewModel } from "@/modules/dashboard/dashboard-view-mod
 import { DashboardHomeClient } from "./home-client";
 import { prisma } from "@/lib/prisma";
 import { hasMeaningfulContactInfo } from "@/modules/dashboard/contact-completion";
+import {
+  ACTIVATION_TEMPLATE_CATEGORY,
+  CUSTOMER_BROADCAST_CATEGORY,
+  activationTemplateDefinitions,
+  parseActivationTemplatePayload,
+  validateMessageTone,
+} from "@/modules/messages/customer-message-config";
 
 export const metadata: Metadata = {
   title: "لوحة التحكم | FrameID"
@@ -28,8 +35,10 @@ export default async function DashboardPage() {
     contactProfile,
     heroSection,
     siteTheme,
-    pendingPayment,
+    latestPaymentRequest,
     seoSettings,
+    customerMessages,
+    activationTemplateRows,
   ] = await Promise.all([
     prisma.package.count({ where: { siteId: session.site.id, deletedAt: null } }),
     prisma.galleryImage.count({
@@ -51,7 +60,6 @@ export default async function DashboardPage() {
     prisma.paymentRequest.findFirst({
       where: {
         tenantId: session.tenant.id,
-        status: { in: ["SUBMITTED", "PENDING", "UNDER_REVIEW"] },
         deletedAt: null,
       },
       orderBy: { createdAt: "desc" },
@@ -61,11 +69,31 @@ export default async function DashboardPage() {
       where: { siteId: session.site.id },
       select: { title: true, description: true, ogAssetId: true },
     }),
+    prisma.notificationLog.findMany({
+      where: {
+        tenantId: session.tenant.id,
+        category: CUSTOMER_BROADCAST_CATEGORY,
+        deletedAt: null,
+      },
+      orderBy: { createdAt: "desc" },
+      take: 3,
+      select: { id: true, type: true, title: true, body: true, createdAt: true },
+    }),
+    prisma.notificationLog.findMany({
+      where: {
+        category: ACTIVATION_TEMPLATE_CATEGORY,
+        deletedAt: null,
+        title: { in: activationTemplateDefinitions.map((template) => template.key) },
+      },
+      orderBy: { createdAt: "desc" },
+      select: { id: true, type: true, title: true, body: true },
+    }),
   ]);
 
   const lastModified = siteTheme?.updatedAt ?? new Date();
   const hasSeoSettings = Boolean(seoSettings?.title && (seoSettings.description || seoSettings.ogAssetId));
   const hasHeroCover = !!(heroSection?.data && typeof heroSection.data === "object" && "imageUrl" in heroSection.data);
+  const templateRowsByKey = new Map(activationTemplateRows.map((row) => [row.title, row]));
 
   const dashboard = createDashboardViewModel({
     session,
@@ -79,8 +107,26 @@ export default async function DashboardPage() {
     hasAvatarImage: Boolean(contactProfile?.avatarAssetId),
     currentThemeName: siteTheme?.theme.name ?? "بدون",
     lastModifiedAt: lastModified,
-    pendingRequestStatus: pendingPayment?.status ?? null,
+    pendingRequestStatus: ["SUBMITTED", "PENDING", "UNDER_REVIEW"].includes(latestPaymentRequest?.status ?? "") ? latestPaymentRequest?.status ?? null : null,
+    latestPaymentRequestStatus: latestPaymentRequest?.status ?? null,
     hasSeoSettings,
+    customerMessages: customerMessages.map((message) => ({
+      id: message.id,
+      tone: validateMessageTone(message.type),
+      title: message.title,
+      body: message.body ?? "",
+      createdAt: message.createdAt.toISOString(),
+    })),
+    activationMessages: Object.fromEntries(
+      activationTemplateDefinitions.map((definition) => {
+        const row = templateRowsByKey.get(definition.key);
+        const payload = parseActivationTemplatePayload(row?.body, {
+          title: definition.defaultTitle,
+          body: definition.defaultBody,
+        });
+        return [definition.key, { ...payload, tone: validateMessageTone(row?.type ?? definition.tone) }];
+      }),
+    ),
   });
 
   return <DashboardHomeClient {...dashboard} />;
