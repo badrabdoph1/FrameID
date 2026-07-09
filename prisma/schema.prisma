@@ -244,13 +244,9 @@ model Theme {
   contentSchema Json
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
-  deletedAt     DateTime?
 
-  sites       Site[]
-  templates   Template[]
-  siteConfigs SiteThemeConfig[]
-
-  @@index([status, deletedAt])
+  templates Template[]
+  sites     Site[]
 }
 
 model Template {
@@ -259,32 +255,27 @@ model Template {
   code          String      @unique
   name          String
   status        ThemeStatus @default(DRAFT)
-  showroomOrder Int         @default(100)
+  showroomOrder Int         @default(0)
   previewData   Json
   settings      Json
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
-  deletedAt     DateTime?
 
   theme Theme @relation(fields: [themeId], references: [id])
 
   @@index([themeId])
-  @@index([status, showroomOrder, deletedAt])
+  @@index([status, showroomOrder])
 }
 
 model SiteThemeConfig {
-  id        String    @id @default(cuid())
-  siteId    String    @unique
+  id        String   @id @default(cuid())
+  siteId    String   @unique
   themeId   String
   config    Json
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  deletedAt DateTime?
+  updatedAt DateTime @updatedAt
 
   site  Site  @relation(fields: [siteId], references: [id])
   theme Theme @relation(fields: [themeId], references: [id])
-
-  @@index([themeId])
 }
 
 model SiteSection {
@@ -292,16 +283,15 @@ model SiteSection {
   siteId    String
   type      String
   title     String?
-  data      Json
   sortOrder Int       @default(0)
+  data      Json
   isVisible Boolean   @default(true)
-  createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 
   site Site @relation(fields: [siteId], references: [id])
 
-  @@index([siteId, deletedAt, sortOrder])
+  @@index([siteId, type, sortOrder])
 }
 
 model Package {
@@ -312,86 +302,52 @@ model Package {
   priceAmount   Int
   currency      String    @default("EGP")
   features      Json
-  imageAssetId  String?
   isHighlighted Boolean   @default(false)
-  sortOrder     Int       @default(0)
   isActive      Boolean   @default(true)
+  sortOrder     Int       @default(0)
   deletedAt     DateTime?
 
-  site       Site        @relation(fields: [siteId], references: [id])
-  imageAsset MediaAsset? @relation("PackageImage", fields: [imageAssetId], references: [id])
+  site Site @relation(fields: [siteId], references: [id])
 
-  @@index([siteId, deletedAt, sortOrder])
-  @@index([imageAssetId])
+  @@index([siteId, isActive, sortOrder])
 }
 
 model ExtraService {
   id          String    @id @default(cuid())
   siteId      String
   name        String
+  description String?
   priceAmount Int
   currency    String    @default("EGP")
   iconKey     String?
-  description String?
-  imageAssetId String?
-  sortOrder   Int       @default(0)
   isActive    Boolean   @default(true)
   isHighlighted Boolean @default(false)
+  sortOrder   Int       @default(0)
   deletedAt   DateTime?
 
-  site       Site        @relation(fields: [siteId], references: [id])
-  imageAsset MediaAsset? @relation("ExtraImage", fields: [imageAssetId], references: [id])
+  site Site @relation(fields: [siteId], references: [id])
 
-  @@index([siteId, sortOrder])
+  @@index([siteId, isActive, sortOrder])
 }
 
 model GalleryAlbum {
-  id           String    @id @default(cuid())
-  siteId       String
-  title        String
-  slug         String
-  description  String?
+  id          String    @id @default(cuid())
+  siteId      String
+  title       String
+  description String?
   coverAssetId String?
-  sortOrder    Int       @default(0)
-  isVisible    Boolean   @default(true)
-  deletedAt    DateTime?
+  isVisible   Boolean   @default(true)
+  sortOrder   Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
 
-  site       Site           @relation(fields: [siteId], references: [id])
-  coverAsset MediaAsset?    @relation("AlbumCover", fields: [coverAssetId], references: [id])
-  images     GalleryImage[]
+  site        Site         @relation(fields: [siteId], references: [id])
+  coverAsset  MediaAsset?  @relation("AlbumCover", fields: [coverAssetId], references: [id])
+  images      GalleryImage[]
 
-  @@unique([siteId, slug])
   @@index([siteId, sortOrder])
   @@index([coverAssetId])
-}
-
-model MediaAsset {
-  id            String    @id @default(cuid())
-  tenantId      String
-  storageKey    String    @unique
-  url           String
-  mimeType      String
-  width         Int?
-  height        Int?
-  sizeBytes     Int
-  blurHash      String?
-  dominantColor String?
-  alt           String?
-  createdAt     DateTime  @default(now())
-  deletedAt     DateTime?
-
-  tenant        Tenant           @relation(fields: [tenantId], references: [id])
-  packageImages Package[]        @relation("PackageImage")
-  extraImages   ExtraService[]   @relation("ExtraImage")
-  albumCovers   GalleryAlbum[]   @relation("AlbumCover")
-  galleryImages GalleryImage[]
-  seoImages     SEOSettings[]    @relation("SEOOgImage")
-  paymentProofs PaymentRequest[] @relation("PaymentProof")
-  contactAvatar ContactProfile[] @relation("ContactAvatar")
-  contactCover  ContactProfile[] @relation("ContactCover")
-  paymentQRCodes PaymentSettings[] @relation("PaymentQRCode")
-
-  @@index([tenantId, deletedAt, createdAt])
 }
 
 model GalleryImage {
@@ -399,6 +355,7 @@ model GalleryImage {
   albumId   String
   assetId   String
   caption   String?
+  alt       String?
   sortOrder Int       @default(0)
   isFeatured Boolean  @default(false)
   deletedAt DateTime?
@@ -410,21 +367,44 @@ model GalleryImage {
   @@index([assetId])
 }
 
+model MediaAsset {
+  id           String    @id @default(cuid())
+  tenantId     String
+  kind         String
+  url          String
+  storageKey   String
+  mimeType     String
+  sizeBytes    Int
+  width        Int?
+  height       Int?
+  checksumSha256 String?
+  metadata     Json?
+  createdAt    DateTime  @default(now())
+  deletedAt    DateTime?
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  paymentProofs PaymentRequest[] @relation("PaymentProof")
+  galleryImages GalleryImage[]
+  albumCovers   GalleryAlbum[] @relation("AlbumCover")
+  contactAvatars ContactProfile[] @relation("ContactAvatar")
+  contactCovers  ContactProfile[] @relation("ContactCover")
+  seoOgImages    SEOSettings[] @relation("SEOOgImage")
+
+  @@index([tenantId, kind, createdAt])
+}
+
 model ContactProfile {
   id                     String    @id @default(cuid())
   siteId                 String    @unique
+  studioName             String?
+  bio                    String?
+  longDescription        String?
   phone                  String?
   whatsapp               String?
   email                  String?
   instagram              String?
   facebook               String?
-  locationLabel          String?
   bookingMessageTemplate String?
-
-  // New extended fields
-  studioName             String?
-  bio                    String?
-  longDescription        String?
   city                   String?
   country                String?
   address                String?
@@ -731,6 +711,7 @@ model RestoreJob {
 model AdminUser {
   id           String    @id @default(cuid())
   email        String    @unique
+  phone        String?   @unique
   name         String
   passwordHash String?
   role         String    @default("SUPER_ADMIN")
@@ -818,31 +799,21 @@ model PaymentSettings {
 
   qrCodeAsset MediaAsset?       @relation("PaymentQRCode", fields: [qrCodeAssetId], references: [id])
   accounts    PaymentAccount[]
-
-  @@index([isActive, sortOrder])
-  @@index([qrCodeAssetId])
 }
 
 model PaymentAccount {
-  id                String          @id @default(cuid())
+  id               String        @id @default(cuid())
   paymentSettingsId String
-  label             String?
-  accountName       String
-  accountNumber     String
-  bankName          String?
-  iban              String?
-  swift             String?
-  phoneNumber       String?
-  instructions      String?
-  notes             String?
-  isActive          Boolean         @default(true)
-  deletedAt         DateTime?
-  sortOrder         Int             @default(0)
-  createdAt         DateTime        @default(now())
-  updatedAt         DateTime        @updatedAt
+  label            String
+  accountIdentifier String
+  instructions     String?
+  isActive         Boolean       @default(true)
+  sortOrder        Int           @default(0)
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
 
-  paymentSettings  PaymentSettings @relation(fields: [paymentSettingsId], references: [id])
-  paymentRequests  PaymentRequest[]
+  paymentSettings PaymentSettings @relation(fields: [paymentSettingsId], references: [id])
+  requests        PaymentRequest[]
 
   @@index([paymentSettingsId, isActive])
 }
@@ -850,34 +821,12 @@ model PaymentAccount {
 model PaymentRequestLog {
   id               String   @id @default(cuid())
   paymentRequestId String
-  action           String
-  actorUserId      String?
-  actorName        String?
+  fromStatus       PaymentStatus?
+  toStatus         PaymentStatus
   note             String?
-  metadata         Json?
   createdAt        DateTime @default(now())
 
   paymentRequest PaymentRequest @relation(fields: [paymentRequestId], references: [id])
 
   @@index([paymentRequestId, createdAt])
-}
-
-model SubscriptionChange {
-  id              String             @id @default(cuid())
-  subscriptionId  String
-  fromPlanId      String?
-  toPlanId        String?
-  fromStatus      SubscriptionStatus
-  toStatus        SubscriptionStatus
-  changeType      String
-  reason          String?
-  initiatedById   String?
-  metadata        Json?
-  createdAt       DateTime           @default(now())
-
-  subscription Subscription @relation(fields: [subscriptionId], references: [id])
-  fromPlan     Plan?        @relation("FromPlan", fields: [fromPlanId], references: [id])
-  toPlan       Plan?        @relation("ToPlan", fields: [toPlanId], references: [id])
-
-  @@index([subscriptionId, createdAt])
 }
