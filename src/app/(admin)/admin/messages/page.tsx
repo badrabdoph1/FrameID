@@ -1,3 +1,4 @@
+import type { LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { Bell, CheckCircle2, MessageSquareText, Send, Users, Wand2 } from "lucide-react";
 
@@ -8,6 +9,7 @@ import {
   ACTIVATION_TEMPLATE_CATEGORY,
   CUSTOMER_BROADCAST_CATEGORY,
   activationTemplateDefinitions,
+  parseActivationTemplatePayload,
   validateMessageTone,
 } from "@/modules/messages/customer-message-config";
 import { saveActivationTemplateAction, sendCustomerMessageAction } from "@/app/(admin)/admin/messages/actions";
@@ -182,7 +184,10 @@ export default async function AdminMessagesPage({ searchParams }: Props) {
               {activationTemplateDefinitions.map((definition) => {
                 const stored = templateMap.get(definition.key);
                 const tone = validateMessageTone(stored?.type ?? definition.tone);
-                const body = stored?.body ?? definition.defaultBody;
+                const payload = parseActivationTemplatePayload(stored?.body, {
+                  title: definition.defaultTitle,
+                  body: definition.defaultBody,
+                });
                 return (
                   <form key={definition.key} action={saveActivationTemplateAction} className="grid gap-3 rounded-3xl border border-white/10 bg-black/16 p-4">
                     <input type="hidden" name="key" value={definition.key} />
@@ -196,12 +201,12 @@ export default async function AdminMessagesPage({ searchParams }: Props) {
 
                     <label className="grid gap-1.5">
                       <span className="text-xs font-black text-white/42">عنوان الرسالة</span>
-                      <input name="title" defaultValue={stored ? definition.defaultTitle : definition.defaultTitle} required className="admin-message-input" />
+                      <input name="title" defaultValue={payload.title} required className="admin-message-input" />
                     </label>
 
                     <label className="grid gap-1.5">
                       <span className="text-xs font-black text-white/42">النص الذي يظهر للعميل</span>
-                      <textarea name="body" defaultValue={body} required rows={3} className="admin-message-input min-h-[92px] resize-y py-3" />
+                      <textarea name="body" defaultValue={payload.body} required rows={3} className="admin-message-input min-h-[92px] resize-y py-3" />
                     </label>
 
                     <label className="grid gap-1.5">
@@ -255,7 +260,7 @@ export default async function AdminMessagesPage({ searchParams }: Props) {
   );
 }
 
-function MetricCard({ label, value, icon: Icon }: { label: string; value: number; icon: typeof Users }) {
+function MetricCard({ label, value, icon: Icon }: { label: string; value: number; icon: LucideIcon }) {
   return (
     <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
       <Icon className="size-5 text-[#f3cf73]" />
