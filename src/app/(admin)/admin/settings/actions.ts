@@ -23,14 +23,15 @@ export async function updateSupportWhatsappAction(formData: FormData) {
 
   try {
     const savedPhone = await saveSupportWhatsappNumber(phone);
-    const admin = "user" in session ? session.user : session.user;
+    const admin = session.user;
     await prisma.auditLog.create({
       data: {
-        actorUserId: admin.id.startsWith("env-super-admin:") ? null : admin.id,
+        actorUserId: null,
         action: "SUPPORT_WHATSAPP_UPDATED",
         entityType: "FeatureFlag",
         metadata: {
           phone: savedPhone,
+          adminId: admin.id,
           adminEmail: admin.email,
         },
       },
