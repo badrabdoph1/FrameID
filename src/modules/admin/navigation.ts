@@ -76,6 +76,7 @@ export const adminNavigation: AdminNavGroup[] = [
     label: "التشغيل",
     items: [
       { href: "/admin/operations", label: "Command Center", icon: Activity },
+      { href: "/admin/jobs", label: "Jobs Queue", icon: Activity },
       { href: "/admin/backups", label: "النسخ الاحتياطي", icon: DatabaseBackup },
       { href: "/admin/analytics", label: "التحليلات", icon: BarChart3 },
       { href: "/admin/audit", label: "سجل التدقيق", icon: ClipboardList },
@@ -85,8 +86,10 @@ export const adminNavigation: AdminNavGroup[] = [
     label: "النظام",
     items: [
       { href: "/admin/notifications", label: "الإشعارات", icon: Bell },
+      { href: "/admin/email", label: "Email Center", icon: Bell },
       { href: "/admin/errors", label: "الأخطاء", icon: Activity },
       { href: "/admin/security", label: "الأمان", icon: ShieldCheck },
+      { href: "/admin/admin-users", label: "Admin Users", icon: UserCheck },
       { href: "/admin/feature-flags", label: "Feature Flags", icon: Flag },
       { href: "/admin/support", label: "الدعم", icon: Headphones },
     ],
@@ -159,6 +162,7 @@ export const adminSections: AdminSection[] = [
     icon: DatabaseBackup,
     links: [
       { href: "/admin/operations", label: "Operations", icon: Activity },
+      { href: "/admin/jobs", label: "Jobs Queue", icon: Activity },
       { href: "/admin/backups", label: "النسخ الاحتياطي", icon: DatabaseBackup },
       { href: "/admin/audit", label: "Audit Explorer", icon: ClipboardList },
       { href: "/admin/errors", label: "الأخطاء", icon: Activity },
@@ -174,7 +178,9 @@ export const adminSections: AdminSection[] = [
     icon: ShieldCheck,
     links: [
       { href: "/admin/notifications", label: "الإشعارات", icon: Bell },
+      { href: "/admin/email", label: "Email Center", icon: Bell },
       { href: "/admin/security", label: "الأمان", icon: ShieldCheck },
+      { href: "/admin/admin-users", label: "Admin Users", icon: UserCheck },
       { href: "/admin/feature-flags", label: "Feature Flags", icon: Flag },
       { href: "/admin/support", label: "الدعم", icon: Headphones },
       { href: "/admin/settings", label: "إعدادات المنصة", icon: Settings },
