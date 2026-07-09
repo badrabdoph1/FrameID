@@ -22,11 +22,11 @@ export function AdminLoginForm({ initialError }: AdminLoginFormProps) {
 
     const form = event.currentTarget;
     const formData = new FormData(form);
-    const email = String(formData.get("email") ?? "").trim();
+    const identifier = String(formData.get("identifier") ?? "").trim();
     const password = String(formData.get("password") ?? "");
 
-    if (!email || !password) {
-      setError("اكتب البريد الإلكتروني وكلمة السر.");
+    if (!identifier || !password) {
+      setError("اكتب رقم الهاتف أو البريد الإلكتروني وكلمة السر.");
       return;
     }
 
@@ -38,7 +38,7 @@ export function AdminLoginForm({ initialError }: AdminLoginFormProps) {
 
     try {
       const body = new URLSearchParams();
-      body.set("email", email);
+      body.set("identifier", identifier);
       body.set("password", password);
 
       const response = await fetch("/api/admin/login", {
@@ -82,18 +82,19 @@ export function AdminLoginForm({ initialError }: AdminLoginFormProps) {
       ) : null}
 
       <div className="space-y-2">
-        <label htmlFor="email" className="block text-sm font-extrabold text-white/60">
-          البريد الإلكتروني
+        <label htmlFor="identifier" className="block text-sm font-extrabold text-white/60">
+          رقم الهاتف أو البريد الإلكتروني
         </label>
         <input
-          id="email"
-          name="email"
-          type="email"
-          autoComplete="email"
+          id="identifier"
+          name="identifier"
+          type="text"
+          inputMode="email"
+          autoComplete="username"
           required
           disabled={pending}
-          className="flex h-12 w-full rounded-xl border border-white/10 bg-white/5 px-4 text-sm text-white outline-none transition placeholder:text-white/30 focus:border-amber-500/50 focus:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
-          placeholder="admin@frameid.app"
+          className="flex h-12 w-full rounded-xl border border-white/10 bg-white/5 px-4 text-base text-white outline-none transition placeholder:text-white/30 focus:border-amber-500/50 focus:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60 md:text-sm"
+          placeholder="01000000000 أو admin@frameid.app"
         />
       </div>
 
@@ -108,7 +109,7 @@ export function AdminLoginForm({ initialError }: AdminLoginFormProps) {
           autoComplete="current-password"
           required
           disabled={pending}
-          className="flex h-12 w-full rounded-xl border border-white/10 bg-white/5 px-4 text-sm text-white outline-none transition placeholder:text-white/30 focus:border-amber-500/50 focus:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
+          className="flex h-12 w-full rounded-xl border border-white/10 bg-white/5 px-4 text-base text-white outline-none transition placeholder:text-white/30 focus:border-amber-500/50 focus:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60 md:text-sm"
         />
       </div>
 
