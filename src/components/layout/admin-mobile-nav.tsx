@@ -20,8 +20,8 @@ function isSectionActive(pathname: string | null, sectionId: string): boolean {
   return section.links.some((link) => isAdminLinkActive(pathname, link.href))
 }
 
-function currentSectionTitle(pathname: string | null) {
-  return adminSections.find((section) => isSectionActive(pathname, section.id))?.title ?? "القيادة"
+function currentSection(pathname: string | null) {
+  return adminSections.find((section) => isSectionActive(pathname, section.id)) ?? adminSections[0]
 }
 
 export function AdminMobileNav() {
@@ -32,7 +32,9 @@ export function AdminMobileNav() {
   const primarySections = useMemo(() => adminSections.slice(0, 4), [])
   const overflowSections = useMemo(() => adminSections.slice(4), [])
   const overflowActive = overflowSections.some((section) => isSectionActive(pathname, section.id))
-  const title = currentSectionTitle(pathname)
+  const activeSection = currentSection(pathname)
+  const title = activeSection?.title ?? "القيادة"
+  const activeLinks = activeSection?.links ?? []
 
   useEffect(() => {
     if (mobileMenuOpen) {
@@ -47,34 +49,51 @@ export function AdminMobileNav() {
   return (
     <>
       <header className="admin-mobile-header lg:hidden">
-        <div className="flex items-center gap-2">
-          <button
-            onClick={toggleMobileMenu}
-            className="grid size-11 place-items-center rounded-2xl border border-white/10 bg-white/[0.05] text-white/72"
-            aria-label="فتح قائمة الإدارة"
-            aria-expanded={mobileMenuOpen}
-          >
-            <Menu className="size-5" />
-          </button>
-          <Link href="/admin" className="grid size-11 place-items-center rounded-2xl bg-gradient-to-br from-[#f3cf73] to-[#d4af37] text-[#17120a] no-underline shadow-lg">
-            <Home className="size-5" />
-          </Link>
+        <div className="admin-mobile-header-main">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={toggleMobileMenu}
+              className="grid size-11 place-items-center rounded-2xl border border-white/10 bg-white/[0.05] text-white/72"
+              aria-label="فتح قائمة الإدارة"
+              aria-expanded={mobileMenuOpen}
+            >
+              <Menu className="size-5" />
+            </button>
+            <Link href="/admin" className="grid size-11 place-items-center rounded-2xl bg-gradient-to-br from-[#f3cf73] to-[#d4af37] text-[#17120a] no-underline shadow-lg">
+              <Home className="size-5" />
+            </Link>
+          </div>
+
+          <div className="min-w-0 text-center">
+            <p className="truncate text-xs font-black text-white/36">FrameID Admin</p>
+            <h1 className="truncate text-base font-black text-[#fff7e8]">{title}</h1>
+          </div>
+
+          <div className="flex items-center justify-end gap-2">
+            <Link href="/admin/search" className="grid size-11 place-items-center rounded-2xl border border-white/10 bg-white/[0.05] text-white/72 no-underline">
+              <Search className="size-5" />
+            </Link>
+            <Link href="/admin/notifications" className="relative grid size-11 place-items-center rounded-2xl border border-white/10 bg-white/[0.05] text-white/72 no-underline">
+              <Bell className="size-5" />
+              <span className="absolute -left-1 -top-1 grid size-5 place-items-center rounded-full bg-[#f3cf73] text-[0.65rem] font-black text-[#17120a]">3</span>
+            </Link>
+          </div>
         </div>
 
-        <div className="min-w-0 text-center">
-          <p className="truncate text-xs font-black text-white/36">FrameID Admin</p>
-          <h1 className="truncate text-base font-black text-[#fff7e8]">{title}</h1>
-        </div>
-
-        <div className="flex items-center justify-end gap-2">
-          <Link href="/admin/search" className="grid size-11 place-items-center rounded-2xl border border-white/10 bg-white/[0.05] text-white/72 no-underline">
-            <Search className="size-5" />
-          </Link>
-          <Link href="/admin/notifications" className="relative grid size-11 place-items-center rounded-2xl border border-white/10 bg-white/[0.05] text-white/72 no-underline">
-            <Bell className="size-5" />
-            <span className="absolute -left-1 -top-1 grid size-5 place-items-center rounded-full bg-[#f3cf73] text-[0.65rem] font-black text-[#17120a]">3</span>
-          </Link>
-        </div>
+        {activeLinks.length > 1 ? (
+          <nav className="admin-mobile-subnav" aria-label={`صفحات ${title}`}>
+            {activeLinks.map((link) => {
+              const LinkIcon = link.icon
+              const active = isAdminLinkActive(pathname, link.href)
+              return (
+                <Link key={link.href} href={link.href} className={cn("admin-mobile-subnav-link", active && "is-active")}> 
+                  {LinkIcon ? <LinkIcon className="size-4" /> : null}
+                  <span>{link.label}</span>
+                </Link>
+              )
+            })}
+          </nav>
+        ) : null}
       </header>
 
       <div className="admin-mobile-nav-shell lg:hidden">
