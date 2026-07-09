@@ -12,7 +12,7 @@ export function AuthShell({
   children: ReactNode;
 }) {
   return (
-    <main className="grid min-h-screen bg-background px-4 py-8 md:grid-cols-[1fr_1.1fr] md:p-0">
+    <main className="grid min-h-screen min-h-dvh bg-background px-4 py-8 pb-[calc(2rem+env(safe-area-inset-bottom))] md:grid-cols-[1fr_1.1fr] md:p-0">
       <section className="hidden bg-ink p-10 text-white md:flex md:flex-col md:justify-between">
         <Link href="/" className="font-display text-2xl font-semibold">
           FrameID
