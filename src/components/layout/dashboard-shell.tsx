@@ -140,6 +140,26 @@ export function DashboardShell({ children, siteSlug }: { children: ReactNode; si
     setMobileMenuOpen(false);
   }, [pathname]);
 
+  useEffect(() => {
+    if (!mobileMenuOpen) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setMobileMenuOpen(false);
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [mobileMenuOpen]);
+
   return (
     <div className="min-h-dvh bg-[#090b10] text-[#f5ead6] color-scheme-dark">
       <header className="sticky top-0 z-40 border-b border-white/8 bg-[#090b10]/92 px-3 py-2 backdrop-blur-xl lg:hidden">
@@ -167,6 +187,7 @@ export function DashboardShell({ children, siteSlug }: { children: ReactNode; si
               onClick={() => setMobileMenuOpen(true)}
               className="grid size-10 place-items-center rounded-2xl border border-white/10 bg-white/[0.04] text-white/70 transition hover:bg-white/[0.08] hover:text-white"
               aria-label="فتح كل أقسام لوحة العميل"
+              aria-controls="dashboard-mobile-menu"
               aria-expanded={mobileMenuOpen}
             >
               <Menu className="size-5" aria-hidden />
@@ -213,7 +234,7 @@ export function DashboardShell({ children, siteSlug }: { children: ReactNode; si
           </div>
         </aside>
 
-        <main className="min-w-0 flex-1 overflow-x-hidden bg-[radial-gradient(circle_at_top_right,rgba(243,207,115,0.08),transparent_30%),#090b10] px-3 py-4 pb-24 sm:px-4 lg:px-6 lg:py-6 lg:pb-8">
+        <main className="min-w-0 flex-1 overflow-x-hidden bg-[radial-gradient(circle_at_top_right,rgba(243,207,115,0.08),transparent_30%),#090b10] px-3 py-4 pb-[calc(6.5rem+env(safe-area-inset-bottom))] sm:px-4 lg:px-6 lg:py-6 lg:pb-8">
           <div className="mx-auto w-full max-w-6xl">{children}</div>
         </main>
       </div>
@@ -241,14 +262,14 @@ export function DashboardShell({ children, siteSlug }: { children: ReactNode; si
       </nav>
 
       {mobileMenuOpen ? (
-        <div className="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true" aria-label="كل أقسام لوحة العميل">
+        <div id="dashboard-mobile-menu" className="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true" aria-label="كل أقسام لوحة العميل">
           <button
             type="button"
             className="absolute inset-0 bg-black/60 backdrop-blur-sm"
             aria-label="إغلاق القائمة"
             onClick={() => setMobileMenuOpen(false)}
           />
-          <section className="absolute inset-x-3 bottom-[calc(4.75rem+env(safe-area-inset-bottom))] max-h-[74dvh] overflow-y-auto rounded-[1.6rem] border border-white/12 bg-[#10131a] p-4 shadow-2xl">
+          <section className="absolute inset-x-3 bottom-[calc(4.75rem+env(safe-area-inset-bottom))] max-h-[74dvh] overflow-y-auto overscroll-contain rounded-[1.6rem] border border-white/12 bg-[#10131a] p-4 shadow-2xl">
             <div className="mb-3 flex items-start justify-between gap-3">
               <div>
                 <p className="text-[0.7rem] font-black text-[#f3cf73]">كل الأدوات</p>
