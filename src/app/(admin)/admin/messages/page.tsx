@@ -16,6 +16,9 @@ import { saveActivationTemplateAction, sendCustomerMessageAction } from "@/app/(
 
 export const dynamic = "force-dynamic";
 
+const inputClass =
+  "min-h-11 w-full rounded-2xl border border-white/10 bg-black/18 px-3.5 text-sm font-extrabold text-[#fff8ea]/90 outline-none transition placeholder:text-white/25 focus:border-amber-300/45 focus:ring-4 focus:ring-amber-300/8 [&>option]:bg-[#111318] [&>option]:text-[#fff7e8]";
+
 type Props = {
   searchParams: Promise<{ sent?: string; templateSaved?: string; error?: string }>;
 };
@@ -106,11 +109,11 @@ export default async function AdminMessagesPage({ searchParams }: Props) {
               <div className="grid gap-3 sm:grid-cols-2">
                 <label className="grid gap-1.5">
                   <span className="text-xs font-black text-white/42">عنوان الرسالة</span>
-                  <input name="title" required placeholder="مثال: تحديث مهم في المنصة" className="admin-message-input" />
+                  <input name="title" required placeholder="مثال: تحديث مهم في المنصة" className={inputClass} />
                 </label>
                 <label className="grid gap-1.5">
                   <span className="text-xs font-black text-white/42">نوع الرسالة</span>
-                  <select name="tone" defaultValue="info" className="admin-message-input">
+                  <select name="tone" defaultValue="info" className={inputClass}>
                     <option value="info">معلومة</option>
                     <option value="success">نجاح</option>
                     <option value="warning">تنبيه</option>
@@ -121,7 +124,7 @@ export default async function AdminMessagesPage({ searchParams }: Props) {
 
               <label className="grid gap-1.5">
                 <span className="text-xs font-black text-white/42">نص الرسالة</span>
-                <textarea name="body" required rows={4} placeholder="اكتب الرسالة التي ستظهر للعميل داخل لوحة التحكم…" className="admin-message-input min-h-[110px] resize-y py-3" />
+                <textarea name="body" required rows={4} placeholder="اكتب الرسالة التي ستظهر للعميل داخل لوحة التحكم…" className={`${inputClass} min-h-[110px] resize-y py-3`} />
               </label>
 
               <div className="grid gap-2 rounded-2xl border border-white/10 bg-black/16 p-3">
@@ -201,17 +204,17 @@ export default async function AdminMessagesPage({ searchParams }: Props) {
 
                     <label className="grid gap-1.5">
                       <span className="text-xs font-black text-white/42">عنوان الرسالة</span>
-                      <input name="title" defaultValue={payload.title} required className="admin-message-input" />
+                      <input name="title" defaultValue={payload.title} required className={inputClass} />
                     </label>
 
                     <label className="grid gap-1.5">
                       <span className="text-xs font-black text-white/42">النص الذي يظهر للعميل</span>
-                      <textarea name="body" defaultValue={payload.body} required rows={3} className="admin-message-input min-h-[92px] resize-y py-3" />
+                      <textarea name="body" defaultValue={payload.body} required rows={3} className={`${inputClass} min-h-[92px] resize-y py-3`} />
                     </label>
 
                     <label className="grid gap-1.5">
                       <span className="text-xs font-black text-white/42">شكل التنبيه</span>
-                      <select name="tone" defaultValue={tone} className="admin-message-input">
+                      <select name="tone" defaultValue={tone} className={inputClass}>
                         <option value="info">معلومة</option>
                         <option value="success">نجاح</option>
                         <option value="warning">تنبيه</option>
@@ -230,32 +233,6 @@ export default async function AdminMessagesPage({ searchParams }: Props) {
           </Panel>
         </section>
       </div>
-
-      <style jsx global>{`
-        .admin-message-input {
-          min-height: 44px;
-          width: 100%;
-          border-radius: 1rem;
-          border: 1px solid rgba(255, 255, 255, 0.1);
-          background: rgba(0, 0, 0, 0.18);
-          padding: 0 0.85rem;
-          color: rgba(255, 248, 234, 0.9);
-          font-size: 0.875rem;
-          font-weight: 800;
-          outline: none;
-        }
-        .admin-message-input::placeholder {
-          color: rgba(255, 255, 255, 0.25);
-        }
-        .admin-message-input:focus {
-          border-color: rgba(243, 207, 115, 0.45);
-          box-shadow: 0 0 0 3px rgba(243, 207, 115, 0.08);
-        }
-        select.admin-message-input option {
-          background: #111318;
-          color: #fff7e8;
-        }
-      `}</style>
     </AdminPageShell>
   );
 }
