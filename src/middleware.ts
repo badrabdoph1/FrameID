@@ -5,6 +5,7 @@ import { ADMIN_SESSION_COOKIE_NAME } from "@/modules/admin/admin-session-constan
 import { SESSION_COOKIE_NAME } from "@/modules/auth/session-tokens"
 
 const PUBLIC_ADMIN_PATHS = new Set(["/admin/login"])
+const SIGNED_ADMIN_TOKEN_PREFIX = "stateless"
 
 const SYSTEM_API_PREFIXES = new Set([
   "/api/health",
@@ -33,13 +34,82 @@ function nextWithTrace(headers: Headers): NextResponse {
   return NextResponse.next({ request: { headers } })
 }
 
+function getAdminTokenSecret(): string {
+  return (
+    process.env.ADMIN_SESSION_SECRET ||
+    process.env.AUTH_SECRET ||
+    process.env.NEXTAUTH_SECRET ||
+    process.env.SEED_SUPER_ADMIN_PASSWORD ||
+    "frameid-admin-session-development-secret"
+  )
+}
+
+function base64UrlToBase64(value: string): string {
+  const base64 = value.replace(/-/g, "+").replace(/_/g, "/")
+  return base64.padEnd(base64.length + ((4 - (base64.length % 4)) % 4), "=")
+}
+
+function base64UrlDecode(value: string): string {
+  return atob(base64UrlToBase64(value))
+}
+
+function arrayBufferToBase64Url(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer)
+  let binary = ""
+  for (const byte of bytes) binary += String.fromCharCode(byte)
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "")
+}
+
+async function hmacSha256Base64Url(message: string, secret: string): Promise<string> {
+  const encoder = new TextEncoder()
+  const key = await crypto.subtle.importKey(
+    "raw",
+    encoder.encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  )
+  const signature = await crypto.subtle.sign("HMAC", key, encoder.encode(message))
+  return arrayBufferToBase64Url(signature)
+}
+
+function safeEqualString(a: string, b: string): boolean {
+  if (a.length !== b.length) return false
+  let mismatch = 0
+  for (let index = 0; index < a.length; index += 1) {
+    mismatch |= a.charCodeAt(index) ^ b.charCodeAt(index)
+  }
+  return mismatch === 0
+}
+
+async function isValidSignedAdminToken(token: string): Promise<boolean> {
+  if (!token.startsWith(`${SIGNED_ADMIN_TOKEN_PREFIX}.`)) return false
+  const [, encodedPayload, signature] = token.split(".")
+  if (!encodedPayload || !signature) return false
+
+  try {
+    const expectedSignature = await hmacSha256Base64Url(encodedPayload, getAdminTokenSecret())
+    if (!safeEqualString(signature, expectedSignature)) return false
+
+    const payload = JSON.parse(base64UrlDecode(encodedPayload)) as { id?: string; email?: string; role?: string; exp?: number }
+    if (!payload.id || !payload.email || !payload.role || !payload.exp) return false
+    return payload.exp > Date.now()
+  } catch {
+    return false
+  }
+}
+
 function isValidTokenFormat(token: string): boolean {
-  if (token.startsWith("stateless.")) return true
+  if (token.startsWith(`${SIGNED_ADMIN_TOKEN_PREFIX}.`)) return true
   return /^[A-Za-z0-9_-]{43}$/.test(token)
 }
 
 async function isTokenValid(rawToken: string | undefined, origin: string): Promise<boolean> {
   if (!rawToken || !isValidTokenFormat(rawToken)) return false
+
+  if (rawToken.startsWith(`${SIGNED_ADMIN_TOKEN_PREFIX}.`)) {
+    return isValidSignedAdminToken(rawToken)
+  }
 
   try {
     const res = await fetch(`${origin}/api/admin/validate-session`, {
