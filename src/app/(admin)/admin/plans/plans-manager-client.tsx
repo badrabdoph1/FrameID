@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { Archive, BadgeCheck, Check, EyeOff, Flame, Plus, Save, Sparkles, ToggleLeft, ToggleRight, Trash2, X } from "lucide-react";
+import { useMemo, useState, type ReactNode } from "react";
+import { Archive, BadgeCheck, Check, Flame, Plus, Save, Sparkles, ToggleLeft, ToggleRight, Trash2, X } from "lucide-react";
 
 import { archivePlanAction, savePlanAction, togglePlanAction } from "@/app/(admin)/admin/plans/actions";
 
@@ -123,6 +123,7 @@ export function PlansManagerClient({ plans, metrics, banner }: PlansManagerClien
 
   return (
     <div className="grid gap-5">
+      <PlanFormStyles />
       {banner ? (
         <div className={banner.tone === "danger" ? "rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm font-black text-red-300" : "rounded-2xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm font-black text-emerald-300"}>
           {banner.text}
@@ -389,7 +390,7 @@ function PlanEditor({ plan, submitLabel }: { plan?: PlanRow; submitLabel: string
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
     <label className="grid gap-1.5">
       <span className="text-xs font-black text-white/42">{label}</span>
@@ -398,7 +399,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
-export function PlanFormStyles() {
+function PlanFormStyles() {
   return (
     <style jsx global>{`
       .admin-plan-input {
