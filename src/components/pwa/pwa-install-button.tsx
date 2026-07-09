@@ -19,6 +19,11 @@ type NavigatorWithInstallHints = Navigator & {
   getInstalledRelatedApps?: () => Promise<Array<unknown>>;
 };
 
+type WindowWithIdleCallback = Window & {
+  requestIdleCallback?: (callback: () => void, options?: { timeout?: number }) => number;
+  cancelIdleCallback?: (handle: number) => void;
+};
+
 type PwaInstallButtonProps = {
   context: "dashboard" | "admin";
 };
@@ -37,12 +42,15 @@ function isStandaloneMode() {
 function isIosSafari() {
   if (typeof window === "undefined") return false;
   const userAgent = window.navigator.userAgent;
-  const isIOS = /iphone|ipad|ipod/i.test(userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  const platform = window.navigator.platform;
+  const maxTouchPoints = window.navigator.maxTouchPoints;
+  const isIOS = /iphone|ipad|ipod/i.test(userAgent) || (platform === "MacIntel" && maxTouchPoints > 1);
   const isWebKit = /safari/i.test(userAgent) && !/crios|fxios|edgios|chrome/i.test(userAgent);
   return isIOS && isWebKit;
 }
 
 function canUseStorage() {
+  if (typeof window === "undefined") return false;
   try {
     window.localStorage.setItem("frameid:pwa-storage-test", "1");
     window.localStorage.removeItem("frameid:pwa-storage-test");
@@ -53,7 +61,7 @@ function canUseStorage() {
 }
 
 function isDismissedRecently() {
-  if (typeof window === "undefined" || !canUseStorage()) return false;
+  if (!canUseStorage()) return false;
   const value = window.localStorage.getItem(DISMISSED_UNTIL_KEY);
   if (!value) return false;
   const until = Number(value);
@@ -61,23 +69,23 @@ function isDismissedRecently() {
 }
 
 function rememberDismissal() {
-  if (typeof window === "undefined" || !canUseStorage()) return;
+  if (!canUseStorage()) return;
   window.localStorage.setItem(DISMISSED_UNTIL_KEY, String(Date.now() + DISMISS_DELAY_MS));
 }
 
 function rememberInstalled() {
-  if (typeof window === "undefined" || !canUseStorage()) return;
+  if (!canUseStorage()) return;
   window.localStorage.setItem(INSTALLED_KEY, "1");
   window.localStorage.removeItem(DISMISSED_UNTIL_KEY);
 }
 
 function alreadyRememberedInstalled() {
-  if (typeof window === "undefined" || !canUseStorage()) return false;
+  if (!canUseStorage()) return false;
   return window.localStorage.getItem(INSTALLED_KEY) === "1";
 }
 
 function shouldAnimateFirstAppearance() {
-  if (typeof window === "undefined" || !canUseStorage()) return true;
+  if (!canUseStorage()) return true;
   const seen = window.localStorage.getItem(FIRST_SEEN_KEY) === "1";
   if (!seen) window.localStorage.setItem(FIRST_SEEN_KEY, "1");
   return !seen;
@@ -176,8 +184,8 @@ export function PwaInstallButton({ context }: PwaInstallButtonProps) {
         // Installation should never break the interface if registration fails.
       });
     };
-    const win = window as Window & { requestIdleCallback?: (callback: IdleRequestCallback, options?: IdleRequestOptions) => number; cancelIdleCallback?: (handle: number) => void };
-    if ("requestIdleCallback" in win && typeof win.requestIdleCallback === "function") {
+    const win = window as WindowWithIdleCallback;
+    if (typeof win.requestIdleCallback === "function") {
       const id = win.requestIdleCallback(registerWorker, { timeout: 2500 });
       return () => win.cancelIdleCallback?.(id);
     }
