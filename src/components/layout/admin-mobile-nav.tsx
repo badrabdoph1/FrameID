@@ -61,10 +61,8 @@ export function AdminMobileNav() {
       return
     }
 
-    const previousBodyOverflow = document.body.style.overflow
     searchRef.current?.focus()
     document.documentElement.classList.add("admin-mobile-menu-open")
-    document.body.style.overflow = "hidden"
 
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") {
@@ -76,7 +74,6 @@ export function AdminMobileNav() {
 
     return () => {
       document.documentElement.classList.remove("admin-mobile-menu-open")
-      document.body.style.overflow = previousBodyOverflow
       window.removeEventListener("keydown", handleKeyDown)
     }
   }, [mobileMenuOpen, toggleMobileMenu])
