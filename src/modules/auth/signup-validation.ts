@@ -1,17 +1,15 @@
 import { z } from "zod";
 
-const signupInputSchema = z.object({
+import { parseEmailOrPhoneIdentifier } from "@/modules/auth/auth-identifier";
+
+const signupBaseSchema = z.object({
   name: z
     .string()
     .trim()
     .min(2, "Name must be at least 2 characters")
     .max(80, "Name must be at most 80 characters"),
-  email: z
-    .string()
-    .trim()
-    .toLowerCase()
-    .email("Email must be valid")
-    .max(160, "Email must be at most 160 characters"),
+  identifier: z.string().trim().max(160).optional(),
+  email: z.string().trim().max(160).optional(),
   password: z
     .string()
     .min(10, "Password must be at least 10 characters")
@@ -22,8 +20,20 @@ const signupInputSchema = z.object({
   selectedTemplateCode: z.string().trim().min(1).max(80).optional()
 });
 
-export type SignupInput = z.infer<typeof signupInputSchema>;
+export type SignupInput = z.infer<typeof signupBaseSchema> & {
+  email: string;
+  phone: string | null;
+  identifierKind: "email" | "phone";
+};
 
 export function parseSignupInput(input: unknown): SignupInput {
-  return signupInputSchema.parse(input);
+  const parsed = signupBaseSchema.parse(input);
+  const identifier = parseEmailOrPhoneIdentifier(parsed.identifier || parsed.email || "");
+
+  return {
+    ...parsed,
+    email: identifier.storageEmail,
+    phone: identifier.phone,
+    identifierKind: identifier.kind
+  };
 }
