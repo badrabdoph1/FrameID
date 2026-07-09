@@ -18,6 +18,7 @@ describe("current session service", () => {
           user: {
             id: "user_1",
             email: "ali@example.com",
+            phone: null,
             name: "Ali Ahmed",
             role: "USER"
           },
@@ -77,6 +78,7 @@ describe("current session service", () => {
           user: {
             id: "admin_1",
             email: "admin@example.com",
+            phone: null,
             name: "FrameID Admin",
             role: "SUPER_ADMIN"
           }
