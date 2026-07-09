@@ -9,8 +9,18 @@ import {
   createSignedAdminSessionToken,
   getAdminSessionExpiresAt,
 } from "@/modules/admin/admin-session-tokens";
+import type { AdminSessionCookie } from "@/modules/admin/admin-session-constants";
 
 type EnvAdminLoginResult = Pick<AdminLoginResult, "admin" | "session">;
+
+type AdminLoginSuccess = {
+  admin: AdminLoginResult["admin"];
+  session: {
+    id: string;
+    expiresAt: Date;
+    cookie: AdminSessionCookie;
+  };
+};
 
 function wantsJsonResponse(request: Request): boolean {
   return (
@@ -39,21 +49,10 @@ function createLoginErrorResponse(request: Request, message: string, status = 40
   return NextResponse.redirect(redirectUrl, { status: 303 });
 }
 
-function getEnvAdminLogin(email: string, password: string): EnvAdminLoginResult | null {
-  const envEmail = process.env.SEED_SUPER_ADMIN_EMAIL?.trim().toLowerCase();
-  const envPassword = process.env.SEED_SUPER_ADMIN_PASSWORD;
-  const normalizedEmail = email.trim().toLowerCase();
-
-  if (!envEmail || !envPassword) return null;
-  if (normalizedEmail !== envEmail || password !== envPassword) return null;
-
-  const expiresAt = getAdminSessionExpiresAt(new Date());
-  const admin = {
-    id: `env-super-admin:${envEmail}`,
-    email: envEmail,
-    name: "FrameID Admin",
-    role: "SUPER_ADMIN",
-  };
+function createStatelessAdminLoginResult(
+  admin: AdminLoginResult["admin"],
+  expiresAt = getAdminSessionExpiresAt(new Date()),
+): AdminLoginSuccess {
   const rawToken = createSignedAdminSessionToken(admin, expiresAt);
 
   return {
@@ -64,6 +63,22 @@ function getEnvAdminLogin(email: string, password: string): EnvAdminLoginResult 
       cookie: buildAdminSessionCookie(rawToken, expiresAt),
     },
   };
+}
+
+function getEnvAdminLogin(email: string, password: string): EnvAdminLoginResult | null {
+  const envEmail = process.env.SEED_SUPER_ADMIN_EMAIL?.trim().toLowerCase();
+  const envPassword = process.env.SEED_SUPER_ADMIN_PASSWORD;
+  const normalizedEmail = email.trim().toLowerCase();
+
+  if (!envEmail || !envPassword) return null;
+  if (normalizedEmail !== envEmail || password !== envPassword) return null;
+
+  return createStatelessAdminLoginResult({
+    id: `env-super-admin:${envEmail}`,
+    email: envEmail,
+    name: "FrameID Admin",
+    role: "SUPER_ADMIN",
+  });
 }
 
 function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
@@ -86,17 +101,22 @@ export async function POST(request: Request) {
       return createLoginErrorResponse(request, "اكتب البريد الإلكتروني وكلمة السر.", 400);
     }
 
-    const result = getEnvAdminLogin(email, password) ?? await withTimeout(
+    const resultFromEnv = getEnvAdminLogin(email, password);
+    const result = resultFromEnv ?? await withTimeout(
       createAdminLoginService(createPrismaAdminAuthRepository(prisma)).login({ email, password }),
       8000,
+    );
+    const statelessResult = resultFromEnv ?? createStatelessAdminLoginResult(
+      result.admin,
+      result.session.expiresAt,
     );
 
     const response = createLoginSuccessResponse(request);
 
     response.cookies.set(
-      result.session.cookie.name,
-      result.session.cookie.value,
-      result.session.cookie.options,
+      statelessResult.session.cookie.name,
+      statelessResult.session.cookie.value,
+      statelessResult.session.cookie.options,
     );
 
     return response;
