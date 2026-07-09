@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 
 import { Analytics } from "@/components/analytics";
 import { ToastRootProvider } from "@/components/errors/toast-root-provider";
+import { SupportFloatingButton } from "@/components/support/support-floating-button";
 import "./globals.css";
 
 const tajawal = Tajawal({
@@ -122,6 +123,7 @@ export default function RootLayout({
       <body>
         <Analytics />
         <ToastRootProvider>{children}</ToastRootProvider>
+        <SupportFloatingButton />
       </body>
     </html>
   );
