@@ -42,6 +42,15 @@ const benefitIcons = [
   Share2
 ];
 
+const heroLinkItems = [
+  { label: "معرض الصور", Icon: Images },
+  { label: "الباقات والأسعار", Icon: BadgeDollarSign },
+  { label: "بيانات التواصل", Icon: AtSign },
+  { label: "واتساب وحجز", Icon: MessageCircle },
+  { label: "السوشيال ميديا", Icon: Share2 },
+  { label: "كل صفحاتك", Icon: Link2 }
+];
+
 const journeyIcons = [Palette, UserPlus, LayoutDashboard, LogIn];
 const journeyFallbackHrefs = ["/templates", "/signup", "/dashboard", "/login"];
 
@@ -129,32 +138,45 @@ export default function HomePage() {
                   href={hero.cta.href}
                   className="inline-flex min-h-12 items-center justify-center gap-2 rounded-[var(--radius-control)] bg-champagne px-8 text-sm font-semibold text-ink transition-[background-color,box-shadow,transform] hover:-translate-y-0.5 hover:bg-champagne/90 hover:shadow-[0_12px_35px_rgba(230,196,120,0.22)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-champagne"
                 >
-                  {hero.cta.label}
+                  ابدأ مجانًا
                   <ArrowLeft className="size-4" aria-hidden />
                 </Link>
                 <Link
                   href={featuredPreviewHref}
                   className="inline-flex items-center gap-1.5 px-1 py-1 text-xs font-semibold text-white/70 underline-offset-4 transition hover:text-champagne hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-champagne md:text-sm"
                 >
-                  {hero.secondaryCta.label}
+                  شوف مثال لموقع مصور
                   <ArrowLeft className="size-3.5" aria-hidden />
                 </Link>
               </div>
-              <div className="mt-7 max-w-3xl rounded-[var(--radius-panel)] border border-white/10 bg-white/[0.055] p-3 shadow-[0_0_45px_rgba(230,196,120,0.14)] backdrop-blur md:mt-8 md:p-4">
-                <p className="mb-3 text-xs font-semibold text-champagne">
-                  كل اللي محتاجه موقعك في مكان واحد
-                </p>
-                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                  {hero.trustPoints.map((point: { text: string }, i: number) => (
+              <div className="mt-6 max-w-xl overflow-hidden rounded-[1.35rem] border border-white/10 bg-white/[0.055] p-3 shadow-[0_0_45px_rgba(230,196,120,0.12)] backdrop-blur md:mt-8 md:p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-semibold text-white">
+                      رابطك بيجمع كل حاجة
+                    </p>
+                    <p className="mt-1 text-xs font-semibold text-champagne/90">
+                      frameid.app/p/اسمك
+                    </p>
+                  </div>
+                  <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-full border border-champagne/20 bg-champagne/12 text-champagne shadow-[0_0_18px_rgba(230,196,120,0.16)]">
+                    <Link2 className="size-4" aria-hidden />
+                  </span>
+                </div>
+                <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
+                  {heroLinkItems.map(({ label, Icon }) => (
                     <span
-                      key={i}
-                      className="group inline-flex min-h-10 items-center gap-2 rounded-2xl border border-white/10 bg-black/20 px-3 text-xs font-semibold text-white/86 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] transition hover:border-champagne/40 hover:bg-champagne/10 hover:text-white"
+                      key={label}
+                      className="inline-flex min-h-9 items-center gap-2 rounded-2xl border border-white/10 bg-black/18 px-2.5 text-[0.72rem] font-semibold text-white/82 transition hover:border-champagne/35 hover:bg-champagne/10 hover:text-white md:text-xs"
                     >
-                      <CheckCircle2 className="size-3.5 shrink-0 text-champagne drop-shadow-[0_0_10px_rgba(230,196,120,0.55)]" aria-hidden />
-                      {point.text}
+                      <Icon className="size-3.5 shrink-0 text-champagne" aria-hidden />
+                      {label}
                     </span>
                   ))}
                 </div>
+                <p className="mt-3 rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs leading-5 text-white/62">
+                  كل ده في رابط واحد تشاركه مع أي عميل.
+                </p>
               </div>
             </div>
           </div>
