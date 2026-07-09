@@ -21,6 +21,7 @@ import {
   Mail,
   Search,
   BriefcaseBusiness,
+  MessageSquareText,
   type LucideIcon,
 } from "lucide-react";
 
@@ -56,6 +57,7 @@ export const adminNavigation: AdminNavGroup[] = [
       { href: "/admin/customers", label: "العملاء", icon: Users },
       { href: "/admin/billing", label: "الاشتراكات والدفع", icon: CreditCard },
       { href: "/admin/content", label: "المحتوى", icon: Palette },
+      { href: "/admin/messages", label: "الرسائل", icon: MessageSquareText },
       { href: "/admin/system", label: "النظام", icon: ShieldCheck },
     ],
   },
@@ -145,6 +147,20 @@ export const adminSections: AdminSection[] = [
       { href: "/admin/themes", label: "الثيمات", icon: Palette },
       { href: "/admin/media", label: "الوسائط", icon: Image },
       { href: "/admin/content/marketing/homepage", label: "محتوى الموقع", icon: FileText },
+    ],
+  },
+  {
+    id: "messages",
+    title: "الرسائل",
+    shortDescription: "إرسال وتنبيهات العملاء",
+    description: "إرسال رسائل للعملاء وتعديل نصوص التفعيل والمراجعة",
+    accent: "violet",
+    badge: "Messages",
+    icon: MessageSquareText,
+    links: [
+      { href: "/admin/messages", label: "إرسال رسالة", icon: MessageSquareText },
+      { href: "/admin/messages#templates", label: "رسائل التفعيل", icon: Bell },
+      { href: "/admin/notifications", label: "سجل الإشعارات", icon: Bell },
     ],
   },
   {
