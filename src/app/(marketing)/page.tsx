@@ -325,37 +325,42 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section className="bg-surface py-10 md:py-22">
-          <div className="container-page">
-            <div className="mx-auto max-w-3xl">
-              <p className="text-center text-sm font-semibold text-champagne-strong">
-                {trustSection.badge}
-              </p>
-              <h2 className="text-center text-2xl font-semibold md:text-5xl">
-                {trustSection.title}
-              </h2>
-              <p className="mx-auto mt-3 max-w-lg text-center text-sm leading-6 text-muted-foreground md:mt-4 md:text-base md:leading-7">
-                {trustSection.message}
-              </p>
-              <div className="mt-6 space-y-2 md:mt-8 md:space-y-3">
-                {faq.items.map((item: { question: string; answer: string }) => (
+        <section className="relative overflow-hidden bg-ink py-10 text-white md:py-22">
+          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-l from-transparent via-champagne/60 to-transparent" aria-hidden />
+          <div className="absolute -left-24 top-10 size-72 rounded-full bg-champagne/10 blur-3xl" aria-hidden />
+          <div className="absolute -right-28 bottom-0 size-80 rounded-full bg-white/5 blur-3xl" aria-hidden />
+          <div className="container-page relative">
+            <div className="grid gap-7 lg:grid-cols-[0.78fr_1.22fr] lg:items-start lg:gap-10">
+              <div className="lg:sticky lg:top-24">
+                <span className="inline-flex items-center gap-2 rounded-full border border-champagne/18 bg-champagne/10 px-3 py-1.5 text-xs font-semibold text-champagne shadow-[0_0_28px_rgba(230,196,120,0.12)]">
+                  <HelpCircle className="size-3.5" aria-hidden />
+                  {trustSection.badge}
+                </span>
+                <h2 className="mt-4 text-balance text-2xl font-semibold leading-tight md:text-5xl">
+                  {trustSection.title}
+                </h2>
+              </div>
+              <div className="grid gap-2.5">
+                {faq.items.map((item: { question: string; answer: string }, index: number) => (
                   <details
                     key={item.question}
-                    className="group rounded-[var(--radius-card)] border border-border bg-card transition hover:shadow-soft"
+                    className="group overflow-hidden rounded-[1.25rem] border border-white/10 bg-white/[0.045] shadow-[inset_0_1px_0_rgba(255,255,255,0.045)] transition open:border-champagne/28 open:bg-white/[0.07] hover:border-white/18 hover:bg-white/[0.06]"
                   >
-                    <summary className="flex cursor-pointer items-center justify-between gap-3 p-4 text-sm font-semibold transition hover:bg-muted/50 [&::-webkit-details-marker]:hidden">
-                      {item.question}
-                      <span
-                        className="shrink-0 text-muted-foreground transition-transform group-open:rotate-180"
-                        aria-hidden
-                      >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <polyline points="6 9 12 15 18 9" />
-                        </svg>
+                    <summary className="flex cursor-pointer list-none items-center gap-3 p-3 text-start transition active:scale-[0.99] md:p-4 [&::-webkit-details-marker]:hidden">
+                      <span className="grid size-9 shrink-0 place-items-center rounded-2xl border border-champagne/18 bg-champagne/10 text-xs font-semibold text-champagne shadow-[0_0_18px_rgba(230,196,120,0.12)]">
+                        {String(index + 1).padStart(2, "0")}
+                      </span>
+                      <span className="min-w-0 flex-1 text-sm font-semibold leading-6 text-white md:text-base">
+                        {item.question}
+                      </span>
+                      <span className="grid size-8 shrink-0 place-items-center rounded-full border border-white/10 bg-white/5 text-white/55 transition group-open:-rotate-90 group-open:border-champagne/24 group-open:text-champagne">
+                        <ArrowLeft className="size-4" aria-hidden />
                       </span>
                     </summary>
-                    <div className="border-t border-border px-4 py-3 text-sm leading-7 text-muted-foreground">
-                      {item.answer}
+                    <div className="border-t border-white/10 px-3 pb-4 pt-3 md:px-4">
+                      <p className="text-sm leading-7 text-white/62">
+                        {item.answer}
+                      </p>
                     </div>
                   </details>
                 ))}
