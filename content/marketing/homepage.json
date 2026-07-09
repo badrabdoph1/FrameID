@@ -1,6 +1,6 @@
 {
   "$schema": "marketing/homepage",
-  "version": 2,
+  "version": 3,
   "updatedAt": "2026-07-09T00:00:00.000Z",
   "data": {
     "hero": {
@@ -9,8 +9,8 @@
       "headlineHighlight": "في رابط واحد",
       "subheadline": "ابعت أسعارك وباقاتك بشكل احترافي بدل ملفات PDF والصور، وخلي عميلك يوصل لكل حاجة عنك من رابط واحد.",
       "heroImage": "https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?auto=format&fit=crop&w=1800&q=85",
-      "cta": { "label": "جرب مجاناً", "href": "/signup" },
-      "secondaryCta": { "label": "شوف القوالب", "href": "/templates" },
+      "cta": { "label": "ابدأ مجانًا", "href": "/signup" },
+      "secondaryCta": { "label": "شاهد مثال لموقع مصور", "href": "/templates" },
       "trustPoints": [
         { "text": "تجربة مجانية" },
         { "text": "لينك واحد" },
