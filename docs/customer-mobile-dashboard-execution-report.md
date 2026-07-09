@@ -11,13 +11,13 @@ The target order is:
 1. Home page starts with activation/trial alert.
 2. Public site link card immediately below it, tap/copy behavior.
 3. Thin readiness card.
-4. Today's plan card.
+4. `اكمل بيانات موقعك` card.
 5. Stages ordered as:
    - Packages
    - Contact data
    - Photos
    - Publish
-6. Reduce separate pages and make every stage feel like a practical workspace.
+6. Reduce repeated cards and make every stage feel like a practical workspace.
 
 ## Implemented changes
 
@@ -35,7 +35,9 @@ Implemented:
 - direct activation button
 - site link card with tap-to-copy behavior
 - compact readiness card
-- today's plan directly after readiness
+- renamed `خطة اليوم` to `اكمل بيانات موقعك`
+- removed repeated workspace/stage cards from the home screen so contact/packages/photos do not appear multiple times
+- improved contrast for cards, rows, borders, labels, highlight states, and CTA hover states while staying close to the existing dark/gold design language
 - journey order changed to packages, contact, photos, publish
 - avatar and uploaded cover now count in readiness
 
