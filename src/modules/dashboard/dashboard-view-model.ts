@@ -6,7 +6,7 @@ type ChecklistItem = {
   done: boolean;
   href: string;
   description: string;
-  workspace: "studio" | "gallery" | "sales" | "design" | "publish" | "billing";
+  workspace: "sales" | "studio" | "photos" | "publish" | "billing";
 };
 
 export type SubscriptionInfo = {
@@ -25,7 +25,7 @@ export type SubscriptionInfo = {
 };
 
 export type DashboardWorkspacePhase = {
-  id: "setup" | "portfolio" | "commerce" | "launch";
+  id: "packages" | "contact" | "photos" | "launch";
   title: string;
   description: string;
   done: number;
@@ -81,41 +81,33 @@ function formatRelativeTime(date: Date, now: Date): string {
 }
 
 const nextStepCopy: Record<string, { title: string; description: string }> = {
-  cover: {
-    title: "ابدأ بصورة الغلاف",
-    description: "اختر صورة قوية تظهر في أول شاشة من موقعك وتثبت هوية شغلك من أول ثانية.",
+  package: {
+    title: "ابدأ بالباقات",
+    description: "اكتب الباقات والأسعار بنفسك. لا نعتبر أي باقة جاهزة إلا بعد ما تضيفها أو تعدلها فعلاً.",
   },
   contact: {
     title: "أكمل بيانات التواصل",
-    description: "أضف الهاتف وواتساب والمدينة حتى يعرف العميل كيف يحجز معك فوراً.",
+    description: "اسم المصور، اسم الاستوديو، الهاتف، واتساب، وروابط السوشيال الأساسية.",
+  },
+  avatar: {
+    title: "ارفع صورة المصور",
+    description: "اختار صورة شخصية مربعة وواضحة تظهر للعميل بثقة.",
+  },
+  cover: {
+    title: "ارفع صورة الغلاف",
+    description: "صورة كبيرة تعطي أول انطباع عن شغلك في أول شاشة.",
   },
   album: {
-    title: "ارفع أول ألبوم",
-    description: "اجمع أفضل أعمالك في ألبوم واحد ليسهل على العميل فهم أسلوبك وجودة تصويرك.",
-  },
-  package: {
-    title: "أضف أول باقة",
-    description: "حوّل الأسعار من محادثات متكررة إلى عروض واضحة قابلة للمقارنة والحجز.",
-  },
-  template: {
-    title: "اختر شكل الموقع",
-    description: "فعّل القالب الأقرب لهوية تصويرك ويمكنك تغييره لاحقاً بدون فقد المحتوى.",
+    title: "أنشئ ألبوم أعمال",
+    description: "ألبوم واحد كفاية كبداية، ويفضل تكمّله بعد التأكد إن باقي الموقع شغال.",
   },
   seo: {
-    title: "جهّز عنوان المشاركة",
-    description: "اكتب عنوان ووصف وصورة مشاركة عشان الرابط يظهر بشكل احترافي في واتساب وجوجل.",
-  },
-  review: {
-    title: "راجع موقعك قبل النشر",
-    description: "افتح الموقع كما سيراه العميل وتأكد أن الصور والباقات وطرق التواصل واضحة.",
+    title: "جهّز شكل المشاركة",
+    description: "عنوان ووصف وصورة مشاركة عشان الرابط يظهر بشكل احترافي.",
   },
   publish: {
-    title: "انشر وشارك الرابط",
-    description: "انقل الموقع من مسودة لرابط جاهز، وانسخه لعملائك أو ضيفه على السوشيال.",
-  },
-  billing: {
-    title: "فعّل الاشتراك",
-    description: "اختار خطة وارفع إثبات الدفع حتى يظل الموقع شغال بعد التجربة المجانية.",
+    title: "انشر الموقع",
+    description: "بعد اكتمال الأساسيات، انشر الموقع وانسخ الرابط للعملاء.",
   },
 };
 
@@ -141,16 +133,13 @@ function buildSubscriptionInfo(
   const isCancelled = sub.status === "CANCELLED";
   const isSuspended = sub.status === "SUSPENDED" || tenant.status === "SUSPENDED";
 
-  const trialEndDate = tenant.trialEndsAt;
-  const periodEnd = sub.currentPeriodEnd;
-  const endDate = isTrial ? trialEndDate : (periodEnd ?? trialEndDate);
-  const daysRemaining = endDate ? calcDaysRemaining(endDate, now) : null;
+  const endDate = isTrial ? tenant.trialEndsAt : (sub.currentPeriodEnd ?? tenant.trialEndsAt);
 
   return {
     status: sub.status,
     planName: sub.plan?.name ?? null,
-    trialEndsAt: trialEndDate ? trialEndDate.toISOString() : null,
-    daysRemaining,
+    trialEndsAt: tenant.trialEndsAt ? tenant.trialEndsAt.toISOString() : null,
+    daysRemaining: endDate ? calcDaysRemaining(endDate, now) : null,
     isExpired,
     isActive,
     isTrial,
@@ -162,35 +151,35 @@ function buildSubscriptionInfo(
   };
 }
 
-function buildPhases(items: ChecklistItem[], subscription: SubscriptionInfo | null): DashboardWorkspacePhase[] {
+function buildPhases(items: ChecklistItem[]): DashboardWorkspacePhase[] {
   const phaseDefinitions: Array<Omit<DashboardWorkspacePhase, "done" | "total" | "state"> & { itemIds: string[] }> = [
     {
-      id: "setup",
-      title: "تجهيز الاستوديو",
-      description: "الاسم، الغلاف، التواصل، والقالب الأساسي.",
-      href: "/dashboard/site-info",
-      itemIds: ["contact", "cover", "template"],
-    },
-    {
-      id: "portfolio",
-      title: "بناء المعرض",
-      description: "ألبومات وصور تثبت جودة شغلك.",
-      href: "/dashboard/gallery",
-      itemIds: ["album"],
-    },
-    {
-      id: "commerce",
-      title: "تجهيز البيع والحجز",
-      description: "باقات وأسعار واضحة للعميل.",
+      id: "packages",
+      title: "١. الباقات",
+      description: "اكتب عروضك وأسعارك بوضوح.",
       href: "/dashboard/services",
       itemIds: ["package"],
     },
     {
+      id: "contact",
+      title: "٢. بيانات التواصل",
+      description: "عرّف العميل عليك وخليه يعرف يحجز.",
+      href: "/dashboard/site-info",
+      itemIds: ["contact"],
+    },
+    {
+      id: "photos",
+      title: "٣. الصور",
+      description: "الصورة الشخصية، الغلاف، وألبومات الأعمال.",
+      href: "/dashboard/gallery",
+      itemIds: ["avatar", "cover", "album"],
+    },
+    {
       id: "launch",
-      title: "الإطلاق والتفعيل",
-      description: "SEO، نشر الموقع، وتفعيل الاشتراك.",
+      title: "٤. النشر",
+      description: "راجع الرابط، جهّز المشاركة، وانشر.",
       href: "/dashboard/publish",
-      itemIds: ["seo", "review", "publish"],
+      itemIds: ["seo", "publish"],
     },
   ];
 
@@ -202,11 +191,6 @@ function buildPhases(items: ChecklistItem[], subscription: SubscriptionInfo | nu
     const complete = done === total;
     const state: DashboardWorkspacePhase["state"] = complete ? "done" : previousDone ? "active" : "locked";
     previousDone = previousDone && complete;
-
-    if (phase.id === "launch" && subscription?.isActive) {
-      return { ...phase, done, total, state };
-    }
-
     return { ...phase, done, total, state };
   });
 }
@@ -222,55 +206,47 @@ function buildOperatingAlerts({
 }): DashboardOperatingAlert[] {
   const alerts: DashboardOperatingAlert[] = [];
 
-  if (!isReadyToPublish) {
-    alerts.push({
-      tone: "warning",
-      title: "الموقع لسه محتاج تجهيز قبل المشاركة",
-      description: "كمّل الخطوات الناقصة في خطة اليوم، وبعدها انشر الرابط بثقة.",
-      href: "/dashboard",
-      actionLabel: "راجع الخطة",
-    });
-  } else if (!isPublished) {
-    alerts.push({
-      tone: "info",
-      title: "موقعك جاهز للنشر",
-      description: "كل الأساسيات موجودة. راجع المعاينة واضغط نشر من Workspace النشر.",
-      href: "/dashboard/publish",
-      actionLabel: "انشر الموقع",
-    });
-  } else {
-    alerts.push({
-      tone: "success",
-      title: "موقعك منشور وجاهز للعملاء",
-      description: "انسخ الرابط أو افتحه كعميل وابدأ مشاركته على السوشيال.",
-      href: "/dashboard/publish",
-      actionLabel: "نسخ ومشاركة",
-    });
-  }
-
   if (subscription?.hasPendingRequest) {
     alerts.push({
       tone: "warning",
       title: "طلب التفعيل قيد المراجعة",
-      description: "الإدارة تراجع إثبات الدفع. تابع حالة الطلب من صفحة الاشتراك.",
+      description: "تم إرسال إثبات الدفع. تابع الحالة من صفحة الاشتراك.",
       href: "/dashboard/billing",
-      actionLabel: "متابعة الطلب",
+      actionLabel: "متابعة",
     });
-  } else if (subscription?.isTrial && subscription.daysRemaining !== null && subscription.daysRemaining <= 3) {
+  } else if (subscription?.isTrial) {
     alerts.push({
-      tone: "danger",
-      title: "التجربة قربت تنتهي",
-      description: "فعّل الاشتراك الآن حتى لا يتأثر ظهور موقعك للعملاء.",
+      tone: subscription.daysRemaining !== null && subscription.daysRemaining <= 3 ? "danger" : "warning",
+      title: "حسابك تجريبي برجاء التأكد من التفعيل",
+      description: subscription.daysRemaining !== null ? `متبقي ${subscription.daysRemaining} يوم على نهاية التجربة.` : "فعّل الاشتراك قبل نهاية الفترة التجريبية.",
       href: "/dashboard/billing",
-      actionLabel: "فعّل الاشتراك",
+      actionLabel: "زر التفعيل",
     });
   } else if (subscription?.isExpired || subscription?.isSuspended || subscription?.isPastDue) {
     alerts.push({
       tone: "danger",
       title: "الاشتراك يحتاج إجراء",
-      description: "راجع حالة الاشتراك لاستعادة التشغيل الكامل للموقع.",
+      description: "راجع الاشتراك حتى يظل الموقع شغال للعملاء.",
       href: "/dashboard/billing",
       actionLabel: "حل المشكلة",
+    });
+  }
+
+  if (!isReadyToPublish) {
+    alerts.push({
+      tone: "info",
+      title: "كمّل الخطوات بالترتيب",
+      description: "ابدأ بالباقات، بعدها بيانات التواصل، بعدها الصور، ثم النشر.",
+      href: "/dashboard/services",
+      actionLabel: "ابدأ",
+    });
+  } else if (!isPublished) {
+    alerts.push({
+      tone: "success",
+      title: "موقعك جاهز للنشر",
+      description: "افتح صفحة النشر وراجع شكل الرابط قبل المشاركة.",
+      href: "/dashboard/publish",
+      actionLabel: "نشر",
     });
   }
 
@@ -290,6 +266,7 @@ export function createDashboardViewModel({
   lastModifiedAt,
   pendingRequestStatus,
   hasSeoSettings,
+  hasAvatarImage,
 }: {
   session: CurrentSession;
   platformBaseUrl: string;
@@ -303,74 +280,66 @@ export function createDashboardViewModel({
   lastModifiedAt: Date;
   pendingRequestStatus?: string | null;
   hasSeoSettings?: boolean;
+  hasAvatarImage?: boolean;
 }): DashboardViewModel {
   const hasPackages = packagesCount > 0;
   const hasImages = imagesCount > 0;
   const hasAlbums = albumsCount > 0;
-  const hasTheme = currentThemeName !== "بدون";
   const isPublished = session.site.status === "PUBLISHED";
 
   const items: ChecklistItem[] = [
     {
-      id: "contact",
-      label: "إكمال بيانات التواصل",
-      description: "رقم، واتساب، بريد، ومدينة حتى يقدر العميل يحجز.",
-      done: hasContactInfo,
-      href: "/dashboard/site-info",
-      workspace: "studio",
-    },
-    {
-      id: "cover",
-      label: "رفع صورة الغلاف",
-      description: "صورة قوية تعطي أول انطباع عن شغلك.",
-      done: hasCoverImage,
-      href: "/dashboard/site-info",
-      workspace: "studio",
-    },
-    {
-      id: "album",
-      label: "رفع أول ألبوم",
-      description: "ألبوم واحد على الأقل يعرض أفضل أعمالك.",
-      done: hasImages && hasAlbums,
-      href: "/dashboard/gallery",
-      workspace: "gallery",
-    },
-    {
       id: "package",
-      label: "إضافة أول باقة",
-      description: "باقة واضحة بالسعر والمميزات تساعد العميل يقرر.",
+      label: "أضف أول باقة بأسلوبك",
+      description: "الباقة لازم تكون من اختيارك أنت، باسم وسعر ومميزات واضحة.",
       done: hasPackages,
       href: "/dashboard/services",
       workspace: "sales",
     },
     {
-      id: "template",
-      label: "اختيار شكل الموقع",
-      description: "قالب مناسب لهوية تصويرك وعميلك المستهدف.",
-      done: hasTheme,
-      href: "/dashboard/templates",
-      workspace: "design",
+      id: "contact",
+      label: "أكمل بيانات التواصل",
+      description: "اسم المصور، واتساب، فيسبوك، إنستجرام، وتيك توك.",
+      done: hasContactInfo,
+      href: "/dashboard/site-info",
+      workspace: "studio",
+    },
+    {
+      id: "avatar",
+      label: "ارفع صورة المصور",
+      description: "صورة شخصية مربعة وواضحة.",
+      done: Boolean(hasAvatarImage),
+      href: "/dashboard/gallery",
+      workspace: "photos",
+    },
+    {
+      id: "cover",
+      label: "ارفع صورة الغلاف",
+      description: "صورة رئيسية كبيرة للموقع.",
+      done: hasCoverImage,
+      href: "/dashboard/gallery",
+      workspace: "photos",
+    },
+    {
+      id: "album",
+      label: "أنشئ ألبوم أعمال",
+      description: "صور من أعمالك تظهر للعميل.",
+      done: hasImages && hasAlbums,
+      href: "/dashboard/gallery",
+      workspace: "photos",
     },
     {
       id: "seo",
-      label: "تجهيز شكل المشاركة",
-      description: "عنوان ووصف وصورة تظهر عند إرسال الرابط.",
+      label: "جهّز شكل المشاركة",
+      description: "عنوان ووصف أو صورة للرابط.",
       done: Boolean(hasSeoSettings),
       href: "/dashboard/publish",
       workspace: "publish",
     },
     {
-      id: "review",
-      label: "مراجعة الموقع كعميل",
-      description: "افتح الرابط وتأكد أن التجربة مفهومة وجذابة.",
-      done: isPublished,
-      href: `/p/${session.site.slug}`,
-      workspace: "publish",
-    },
-    {
       id: "publish",
-      label: "نشر الموقع",
-      description: "حوّل الموقع من مسودة إلى رابط جاهز للمشاركة.",
+      label: "انشر الموقع",
+      description: "حوّل الموقع لرابط جاهز للعملاء.",
       done: isPublished,
       href: "/dashboard/publish",
       workspace: "publish",
@@ -380,8 +349,7 @@ export function createDashboardViewModel({
   const doneCount = items.filter((i) => i.done).length;
   const percent = calcPercent(doneCount, items.length);
   const subscription = buildSubscriptionInfo(session, now, pendingRequestStatus ?? null);
-
-  const requiredBeforePublish = items.filter((item) => !["review", "publish"].includes(item.id));
+  const requiredBeforePublish = items.filter((item) => item.id !== "publish");
   const isReadyToPublish = requiredBeforePublish.every((item) => item.done);
   const incomplete = items.find((i) => !i.done);
   const activeStep = incomplete ?? items.find((i) => i.id === "publish") ?? items[0];
@@ -389,9 +357,6 @@ export function createDashboardViewModel({
     title: activeStep.label,
     description: "أكمل هذه الخطوة للانتقال للخطوة التالية.",
   };
-
-  const phases = buildPhases(items, subscription);
-  const operatingAlerts = buildOperatingAlerts({ isReadyToPublish, isPublished, subscription });
 
   return {
     photographerName: session.tenant.displayName,
@@ -401,14 +366,14 @@ export function createDashboardViewModel({
     statusLabel: isPublished ? "منشور" : isReadyToPublish ? "جاهز للنشر" : "مسودة",
     percent,
     checklist: items,
-    phases,
-    operatingAlerts,
+    phases: buildPhases(items),
+    operatingAlerts: buildOperatingAlerts({ isReadyToPublish, isPublished, subscription }),
     stats: [
+      { label: "الباقات", value: String(packagesCount), tone: hasPackages ? "success" : "warning" },
+      { label: "التواصل", value: hasContactInfo ? "جاهز" : "ناقص", tone: hasContactInfo ? "success" : "warning" },
       { label: "الصور", value: String(imagesCount), tone: imagesCount > 0 ? "success" : "neutral" },
       { label: "الألبومات", value: String(albumsCount), tone: albumsCount > 0 ? "success" : "neutral" },
-      { label: "الباقات", value: String(packagesCount), tone: packagesCount > 0 ? "success" : "neutral" },
-      { label: "القوالب", value: currentThemeName, tone: hasTheme ? "success" : "warning" },
-      { label: "المشاركة", value: hasSeoSettings ? "جاهزة" : "ناقص SEO", tone: hasSeoSettings ? "success" : "warning" },
+      { label: "الشكل", value: currentThemeName, tone: currentThemeName !== "بدون" ? "success" : "warning" },
       { label: "النشر", value: isPublished ? "منشور" : isReadyToPublish ? "جاهز" : "مسودة", tone: isPublished ? "success" : isReadyToPublish ? "warning" : "neutral" },
     ],
     lastModified: formatRelativeTime(lastModifiedAt, now),
@@ -416,11 +381,7 @@ export function createDashboardViewModel({
     isPublished,
     isReadyToPublish,
     nextStepHref: activeStep.href,
-    nextStepLabel: incomplete
-      ? incomplete.label
-      : isPublished
-        ? "افتح الموقع المنشور"
-        : "نشر الموقع",
+    nextStepLabel: incomplete ? incomplete.label : isPublished ? "افتح الموقع" : "نشر الموقع",
     nextStepTitle: activeCopy.title,
     nextStepDescription: activeCopy.description,
     subscription,
