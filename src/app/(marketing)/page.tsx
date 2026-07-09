@@ -1,7 +1,22 @@
 import Image from "next/image";
 import Link from "next/link";
 import React from "react";
-import { ArrowLeft, CheckCircle2, Eye, WandSparkles } from "lucide-react";
+import {
+  ArrowLeft,
+  AtSign,
+  BadgeCheck,
+  BadgeDollarSign,
+  CheckCircle2,
+  Eye,
+  HelpCircle,
+  Images,
+  Link2,
+  MessageCircle,
+  PencilLine,
+  Share2,
+  Smartphone,
+  WandSparkles
+} from "lucide-react";
 
 import { MarketingFooter } from "@/components/layout/marketing-footer";
 import { MarketingNav } from "@/components/layout/marketing-nav";
@@ -9,6 +24,19 @@ import { Badge } from "@/components/ui/badge";
 import { getPublishedTemplates } from "@/modules/themes/theme-registry";
 import { getTemplatePreviewImage } from "@/modules/marketing/platform-content";
 import { getContent } from "@/lib/content";
+
+const benefitIcons = [
+  BadgeDollarSign,
+  Images,
+  Link2,
+  PencilLine,
+  MessageCircle,
+  BadgeCheck,
+  AtSign,
+  HelpCircle,
+  Smartphone,
+  Share2
+];
 
 export default function HomePage() {
   const homepage = getContent("marketing/homepage");
@@ -202,31 +230,41 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section className="bg-ink py-10 text-white md:py-22">
-          <div className="container-page">
+        <section className="relative overflow-hidden bg-ink py-10 text-white md:py-22">
+          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-l from-transparent via-champagne/60 to-transparent" aria-hidden />
+          <div className="absolute -right-24 top-12 size-72 rounded-full bg-champagne/10 blur-3xl" aria-hidden />
+          <div className="container-page relative">
             <div className="max-w-2xl">
               <p className="text-sm font-semibold text-champagne">
-                قبل FrameID وبعده
+                مش مجرد موقع
               </p>
-              <h2 className="mt-2 text-2xl font-semibold md:text-5xl">
-                إيه اللي هيتغير في شغلك لما يبقى ليك موقع؟
+              <h2 className="mt-2 text-balance text-2xl font-semibold md:text-5xl">
+                خلّي العميل يفهم شغلك ويطلبك أسرع
               </h2>
+              <p className="mt-3 max-w-xl text-sm leading-7 text-white/62 md:text-base md:leading-8">
+                بدل ما تشرح كل حاجة في الشات، خلي الرابط يبيع شغلك ويجاوب العميل قبل ما يسأل.
+              </p>
             </div>
-            <div className="mt-6 grid grid-cols-2 gap-2 md:mt-8 md:grid-cols-3 md:gap-3">
-              {benefits.map((card: { title: string; body: string }) => (
-                <div
-                  key={card.title}
-                  className="rounded-[var(--radius-card)] border border-white/10 bg-white/[0.04] p-3 transition hover:bg-white/[0.07] md:p-4"
-                >
-                  <span className="inline-flex size-7 items-center justify-center rounded-full bg-champagne/15 text-champagne md:size-8">
-                    <CheckCircle2 className="size-3.5 md:size-4" aria-hidden />
-                  </span>
-                  <h3 className="mt-2 text-sm font-semibold leading-5 md:mt-3">{card.title}</h3>
-                  <p className="mt-0.5 text-xs leading-5 text-white/60 md:mt-1 md:leading-6">
-                    {card.body}
-                  </p>
-                </div>
-              ))}
+            <div className="mt-6 grid gap-3 sm:grid-cols-2 md:mt-8 lg:grid-cols-5">
+              {benefits.map((card: { title: string; body: string }, index: number) => {
+                const BenefitIcon = benefitIcons[index % benefitIcons.length];
+                return (
+                  <article
+                    key={card.title}
+                    className="group grid min-h-[10.5rem] content-start rounded-[1.35rem] border border-white/10 bg-white/[0.045] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.045)] transition hover:-translate-y-1 hover:border-champagne/30 hover:bg-white/[0.07] hover:shadow-[0_18px_45px_rgba(0,0,0,0.18)]"
+                  >
+                    <span className="mb-4 inline-flex size-10 items-center justify-center rounded-2xl border border-champagne/18 bg-champagne/12 text-champagne shadow-[0_0_22px_rgba(230,196,120,0.12)] transition group-hover:bg-champagne/18 group-hover:shadow-[0_0_28px_rgba(230,196,120,0.22)]">
+                      <BenefitIcon className="size-4" aria-hidden />
+                    </span>
+                    <h3 className="text-base font-semibold leading-6 text-white">
+                      {card.title}
+                    </h3>
+                    <p className="mt-2 text-sm leading-6 text-white/58">
+                      {card.body}
+                    </p>
+                  </article>
+                );
+              })}
             </div>
           </div>
         </section>
