@@ -50,13 +50,13 @@
       "message": ""
     },
     "finalCta": {
-      "title": "جاهز تبدأ؟ موقعك مستنيك.",
-      "subtext": "١٤ يوم تجربة مجانية—من غير بطاقة ومن غير التزام.",
-      "cta": { "label": "جرب مجاناً", "href": "/signup" }
+      "title": "خلّي شغلك كله في رابط واحد",
+      "subtext": "ابدأ مجانًا وخلي عميلك يشوف صورك وباقاتك ويتواصل معاك بسهولة.",
+      "cta": { "label": "ابدأ مجانًا", "href": "/signup" }
     },
     "mobileStickyCta": {
-      "label": "جرب FrameID",
-      "buttonText": "ابدأ دلوقتي",
+      "label": "موقعك في رابط واحد",
+      "buttonText": "ابدأ مجانًا",
       "href": "/signup"
     },
     "photographerTypes": [
