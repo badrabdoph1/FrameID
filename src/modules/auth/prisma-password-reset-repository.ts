@@ -2,7 +2,7 @@ import type { PasswordResetRepository } from "@/modules/auth/password-reset-serv
 
 type PrismaPasswordResetClient = {
   user: {
-    findUnique(input: unknown): Promise<{ id: string; email: string; name: string } | null>;
+    findFirst(input: unknown): Promise<{ id: string; email: string; phone: string | null; name: string } | null>;
     update(input: unknown): Promise<unknown>;
   };
   passwordResetToken: {
@@ -19,15 +19,19 @@ export function createPrismaPasswordResetRepository(
   prisma: PrismaPasswordResetClient
 ): PasswordResetRepository {
   return {
-    async findUserByEmail(email) {
-      return prisma.user.findUnique({
+    async findUserByIdentifier({ email, phone }) {
+      return prisma.user.findFirst({
         where: {
-          email,
-          deletedAt: null
+          deletedAt: null,
+          OR: [
+            { email },
+            ...(phone ? [{ phone }] : [])
+          ]
         },
         select: {
           id: true,
           email: true,
+          phone: true,
           name: true,
         }
       });
