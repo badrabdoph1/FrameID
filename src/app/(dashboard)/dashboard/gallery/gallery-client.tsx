@@ -8,7 +8,6 @@ import {
   ArrowDown,
   ArrowLeft,
   ArrowUp,
-  CheckCircle2,
   FolderOpen,
   ImagePlus,
   Images,
@@ -316,7 +315,10 @@ function ImageStageCard({ title, description, preview, onUpload, square }: { tit
         <div><h2 className="text-base font-black text-[#fff7e8]">{title}</h2><p className="mt-1 text-xs font-bold leading-5 text-white/45">{description}</p></div>
       </div>
       <div className={square ? "relative mx-auto aspect-square w-full max-w-[220px] overflow-hidden rounded-3xl border border-white/10 bg-black/20" : "relative aspect-[16/7] w-full overflow-hidden rounded-3xl border border-white/10 bg-black/20"}>
-        {preview ? <Image src={preview} alt={title} fill sizes="(min-width: 1024px) 30vw, 100vw" className="object-cover" /> : <div className="grid size-full place-items-center text-white/28"><ImagePlus className="size-10" /></div>}
+        {preview ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={preview} alt={title} className="size-full object-cover" />
+        ) : <div className="grid size-full place-items-center text-white/28"><ImagePlus className="size-10" /></div>}
       </div>
       <ImageUploader onUpload={onUpload} multiple={false} maxFiles={1} maxSizeMB={square ? 10 : 15} />
     </section>
