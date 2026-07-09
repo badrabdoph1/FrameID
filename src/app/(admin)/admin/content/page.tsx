@@ -23,7 +23,7 @@ import { requireAdminPermission } from "@/modules/admin/admin-permission-guards"
 
 const contentTypes: Record<string, { label: string; description: string; icon: LucideIcon }> = {
   "marketing/homepage": { label: "الصفحة الرئيسية", description: "نصوص وأقسام الصفحة الرئيسية للتسويق", icon: Home },
-  "marketing/faq": { label: "الأسئلة الشائعة", description: "أسئلة وأوبة قسم الثقة", icon: HelpCircle },
+  "marketing/faq": { label: "الأسئلة الشائعة", description: "أسئلة وأجوبة قسم الثقة", icon: HelpCircle },
   "marketing/navigation": { label: "قائمة التنقل", description: "روابط الشريط العلوي للموقع", icon: Navigation },
   "marketing/footer": { label: "التذييل", description: "محتوى التذييل وروابطه السريعة", icon: Layout },
   "legal/privacy": { label: "سياسة الخصوصية", description: "نص سياسة الخصوصية", icon: Shield },
