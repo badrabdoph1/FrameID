@@ -23,7 +23,7 @@ export async function signupAction(formData: FormData) {
     });
     const result = await provisioningService.provisionTrialSite({
       name: readFormString(formData, "name"),
-      email: readFormString(formData, "email"),
+      identifier: readFormString(formData, "identifier"),
       password: readFormString(formData, "password"),
       selectedTemplateCode:
         readFormString(formData, "selectedTemplateCode") || undefined,
