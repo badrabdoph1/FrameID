@@ -1,47 +1,16 @@
 "use client";
 
-import {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-  useTransition,
-} from "react";
-import {
-  AlertTriangle,
-  CheckCircle2,
-  Clock,
-  Globe,
-  ImageIcon,
-  Loader2,
-  MapPin,
-  MessageSquareText,
-  Pencil,
-  Phone,
-  User,
-} from "lucide-react";
+import { useState, useTransition, type FormEvent, type ReactNode } from "react";
+import { CheckCircle2, Clock, ImageIcon, Loader2, MapPin, MessageSquareText, Phone, Share2, User, type LucideIcon } from "lucide-react";
 
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  SocialLinksEditor,
-  type SocialLinks,
-} from "@/components/dashboard/social-links-editor";
+import { Button } from "@/components/ui/button";
 import { ImageUploader } from "@/components/dashboard/image-uploader";
+import { SocialLinksEditor, type SocialLinks } from "@/components/dashboard/social-links-editor";
 import { WorkingHoursEditor } from "@/components/dashboard/working-hours-editor";
-import { BuilderPageHeader } from "@/components/dashboard/builder-primitives";
-
-import {
-  updateSiteInfoAction,
-  uploadSiteImageAction,
-  type AutosaveState,
-} from "@/app/(dashboard)/dashboard/site-info/actions";
-
-type SectionState = {
-  state: AutosaveState | null;
-  isPending: boolean;
-};
+import { BuilderNotice } from "@/components/dashboard/builder-primitives";
+import { updateSiteInfoAction, uploadSiteImageAction, type AutosaveState } from "@/app/(dashboard)/dashboard/site-info/actions";
 
 type SiteInfoClientProps = {
   userName: string;
@@ -75,199 +44,16 @@ type SiteInfoClientProps = {
   coverUrl: string | null;
 };
 
-function Card({
-  title,
-  icon,
-  children,
-  status,
-}: {
-  title: string;
-  icon: React.ReactNode;
-  children: React.ReactNode;
-  status?: React.ReactNode;
-}) {
-  return (
-    <div
-      style={{
-        borderRadius: 16,
-        border: "1px solid rgba(245, 234, 214, 0.08)",
-        background: "rgba(255, 255, 255, 0.03)",
-        overflow: "hidden",
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: 12,
-          padding: "14px 18px",
-          borderBottom: "1px solid rgba(245, 234, 214, 0.06)",
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <div
-            style={{
-              display: "flex",
-              width: 32,
-              height: 32,
-              alignItems: "center",
-              justifyContent: "center",
-              borderRadius: 8,
-              background: "rgba(243, 207, 115, 0.1)",
-              color: "#f3cf73",
-            }}
-          >
-            {icon}
-          </div>
-          <h3
-            style={{
-              color: "#fff7e8",
-              fontSize: "0.9rem",
-              fontWeight: 950,
-              margin: 0,
-            }}
-          >
-            {title}
-          </h3>
-        </div>
-        {status}
-      </div>
-      <div style={{ padding: "14px 18px" }}>{children}</div>
-    </div>
-  );
-}
+type SectionKey = "identity" | "contact" | "social" | "hours" | "avatar" | "cover";
+type SectionState = { pending: boolean; result: AutosaveState | null };
 
-function AutosaveBadge({
-  state,
-  isPending,
-}: {
-  state: AutosaveState | null;
-  isPending: boolean;
-}) {
-  if (isPending) {
-    return (
-      <span
-        style={{
-          display: "inline-flex",
-          alignItems: "center",
-          gap: 4,
-          fontSize: "0.72rem",
-          color: "rgba(245, 234, 214, 0.5)",
-        }}
-      >
-        <Loader2 size={12} style={{ animation: "spin 1s linear infinite" }} />
-        حفظ...
-      </span>
-    );
-  }
-
-  if (!state) return null;
-
-  return (
-    <span
-      style={{
-        display: "inline-flex",
-        alignItems: "center",
-        gap: 4,
-        fontSize: "0.72rem",
-        color: state.ok ? "rgba(74, 222, 128, 0.8)" : "rgba(248, 113, 113, 0.8)",
-      }}
-    >
-      {state.ok ? <CheckCircle2 size={12} /> : <AlertTriangle size={12} />}
-      {state.message}
-    </span>
-  );
-}
-
-type FormCardProps = {
-  title: string;
-  icon: React.ReactNode;
-  formId: string;
-  sectionKey: string;
-  sectionStates: Record<string, SectionState>;
-  onSave: (formId: string, sectionKey: string) => void;
-  children: React.ReactNode;
-};
-
-function FormCard({
-  title,
-  icon,
-  formId,
-  sectionKey,
-  sectionStates,
-  onSave,
-  children,
-}: FormCardProps) {
-  const s = sectionStates[sectionKey];
-
-  return (
-    <form
-      id={formId}
-      onSubmit={(e) => {
-        e.preventDefault();
-        onSave(formId, sectionKey);
-      }}
-    >
-      <Card
-        title={title}
-        icon={icon}
-        status={
-          <AutosaveBadge
-            state={s?.state ?? null}
-            isPending={s?.isPending ?? false}
-          />
-        }
-      >
-        {children}
-      </Card>
-    </form>
-  );
-}
+const socialKeys: Array<keyof SocialLinks> = ["instagram", "facebook", "tiktok", "snapchat", "youtube", "behance", "fiveHundredPx", "linkedin", "telegram", "xTwitter", "threads", "website", "whatsapp"];
 
 export function SiteInfoClient(props: SiteInfoClientProps) {
   const [, startTransition] = useTransition();
-  const [sectionStates, setSectionStates] = useState<
-    Record<string, SectionState>
-  >({});
-
-  const updateSectionState = useCallback(
-    (key: string, state: AutosaveState) => {
-      setSectionStates((prev) => ({
-        ...prev,
-        [key]: { state, isPending: false },
-      }));
-    },
-    [],
-  );
-
-  const saveForm = useCallback(
-    (formId: string, sectionKey: string) => {
-      const form = document.getElementById(formId) as HTMLFormElement | null;
-      if (!form) return;
-
-      const formData = new FormData(form);
-
-      setSectionStates((prev) => ({
-        ...prev,
-        [sectionKey]: { ...prev[sectionKey], isPending: true },
-      }));
-
-      startTransition(async () => {
-        const result = await updateSiteInfoAction(formData);
-        updateSectionState(sectionKey, result);
-      });
-    },
-    [startTransition, updateSectionState],
-  );
-
-  const makeBlurHandler = useCallback(
-    (formId: string, sectionKey: string) => () => {
-      saveForm(formId, sectionKey);
-    },
-    [saveForm],
-  );
-
+  const [states, setStates] = useState<Record<string, SectionState>>({});
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(props.avatarUrl);
+  const [coverPreview, setCoverPreview] = useState<string | null>(props.coverUrl);
   const [socialLinks, setSocialLinks] = useState<SocialLinks>({
     instagram: props.instagram ?? undefined,
     facebook: props.facebook ?? undefined,
@@ -284,600 +70,174 @@ export function SiteInfoClient(props: SiteInfoClientProps) {
     whatsapp: props.whatsapp ?? undefined,
   });
 
-  const socialFormRef = useRef<HTMLFormElement>(null);
-  const socialTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
-  const [socialState, setSocialState] = useState<AutosaveState | null>(null);
-  const [socialPending, setSocialPending] = useState(false);
+  const hasContact = Boolean(props.phone || props.whatsapp || props.email);
+  const hasLocation = Boolean(props.city || props.country || props.address);
+  const hasImages = Boolean(avatarPreview || coverPreview);
+  const filledSocials = Object.values(socialLinks).filter(Boolean).length;
 
-  useEffect(() => {
-    return () => {
-      if (socialTimerRef.current) clearTimeout(socialTimerRef.current);
+  function setPending(key: SectionKey, pending: boolean, result: AutosaveState | null = states[key]?.result ?? null) {
+    setStates((current) => ({ ...current, [key]: { pending, result } }));
+  }
+
+  function saveForm(event: FormEvent<HTMLFormElement>, key: SectionKey) {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    setPending(key, true, null);
+    startTransition(async () => {
+      const result = await updateSiteInfoAction(formData);
+      setPending(key, false, result);
+    });
+  }
+
+  function uploadImage(field: "avatarAssetId" | "coverAssetId") {
+    return async (files: File[]) => {
+      const file = files[0];
+      if (!file) return;
+      const key: SectionKey = field === "avatarAssetId" ? "avatar" : "cover";
+      setPending(key, true, null);
+      const fd = new FormData();
+      fd.append("image", file);
+      fd.append("field", field);
+      const result = await uploadSiteImageAction(fd);
+      if (result.ok) {
+        const url = URL.createObjectURL(file);
+        if (field === "avatarAssetId") setAvatarPreview(url);
+        else setCoverPreview(url);
+      }
+      setPending(key, false, result);
     };
-  }, []);
-
-  const handleSocialChange = useCallback(
-    (links: SocialLinks) => {
-      setSocialLinks(links);
-
-      if (socialTimerRef.current) clearTimeout(socialTimerRef.current);
-
-      socialTimerRef.current = setTimeout(() => {
-        const form = socialFormRef.current;
-        if (!form) return;
-
-        const formData = new FormData(form);
-        setSocialPending(true);
-        setSocialState(null);
-
-        startTransition(async () => {
-          const result = await updateSiteInfoAction(formData);
-          setSocialState(result);
-          setSocialPending(false);
-        });
-      }, 1500);
-    },
-    [startTransition],
-  );
-
-  const [avatarPreview, setAvatarPreview] = useState<string | null>(
-    props.avatarUrl,
-  );
-  const [coverPreview, setCoverPreview] = useState<string | null>(
-    props.coverUrl,
-  );
-  const [avatarUploading, setAvatarUploading] = useState(false);
-  const [coverUploading, setCoverUploading] = useState(false);
-
-  const handleImageUpload = useCallback(
-    (field: "avatarAssetId" | "coverAssetId") =>
-      async (files: File[]) => {
-        const file = files[0];
-        if (!file) return;
-
-        const setUploading =
-          field === "avatarAssetId" ? setAvatarUploading : setCoverUploading;
-        const setPreview =
-          field === "avatarAssetId" ? setAvatarPreview : setCoverPreview;
-
-        setUploading(true);
-        try {
-          const fd = new FormData();
-          fd.append("image", file);
-          fd.append("field", field);
-
-          const result = await uploadSiteImageAction(fd);
-          if (result.ok) {
-            setPreview(URL.createObjectURL(file));
-          }
-        } finally {
-          setUploading(false);
-        }
-      },
-    [],
-  );
-
-  const fieldAttrs = (formId: string, sectionKey: string) => ({
-    onBlur: makeBlurHandler(formId, sectionKey),
-  });
+  }
 
   return (
-    <main
-      style={{ display: "flex", flexDirection: "column", gap: 16, maxWidth: 800 }}
-    >
-      <BuilderPageHeader
-        eyebrow="بيانات الموقع"
-        title="عرف العملاء عليك في مكان واحد"
-        description="ضيف اسمك وصورك وطرق التواصل ومواعيد الشغل. كل تعديل بيحفظ تلقائي."
-      />
-
-      {/* Photographer Info */}
-      <FormCard
-        title="معلوماتك"
-        icon={<User size={16} />}
-        formId="profile-form"
-        sectionKey="profile"
-        sectionStates={sectionStates}
-        onSave={saveForm}
-      >
-        <div style={{ display: "grid", gap: 12 }}>
-          <div
-            style={{
-              display: "grid",
-              gap: 12,
-              gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
-            }}
-          >
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              <Label
-                style={{
-                  fontSize: "0.78rem",
-                  fontWeight: 950,
-                  color: "rgba(245, 234, 214, 0.6)",
-                }}
-              >
-                الاسم
-              </Label>
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 8,
-                  minHeight: 44,
-                  padding: "0 12px",
-                  borderRadius: 10,
-                  border: "1px solid rgba(245, 234, 214, 0.06)",
-                  background: "rgba(255, 255, 255, 0.02)",
-                  color: "rgba(245, 234, 214, 0.45)",
-                  fontSize: "0.85rem",
-                }}
-              >
-                <User size={14} style={{ opacity: 0.4 }} />
-                {props.userName}
-              </div>
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              <Label
-                htmlFor="studioName"
-                style={{
-                  fontSize: "0.78rem",
-                  fontWeight: 950,
-                  color: "rgba(245, 234, 214, 0.6)",
-                }}
-              >
-                اسم الاستوديو (اختياري)
-              </Label>
-              <Input
-                id="studioName"
-                name="studioName"
-                defaultValue={props.studioName ?? ""}
-                placeholder="استوديو فهد للتصوير"
-                {...fieldAttrs("profile-form", "profile")}
-              />
-            </div>
-          </div>
+    <main className="mx-auto grid w-full max-w-6xl gap-4 pb-4">
+      <section className="rounded-[1.6rem] border border-white/10 bg-[radial-gradient(circle_at_top_right,rgba(243,207,115,0.14),transparent_36%),rgba(255,255,255,0.035)] p-4 sm:p-5">
+        <div>
+          <p className="text-[0.72rem] font-black text-[#f3cf73]">بيانات الموقع</p>
+          <h1 className="mt-1 text-2xl font-black text-[#fff7e8] sm:text-3xl">عرّف العميل عليك بسرعة</h1>
+          <p className="mt-2 max-w-2xl text-sm font-bold leading-7 text-white/58">
+            هنا بتحط الاسم، النبذة، صور الغلاف، طرق التواصل، السوشيال، ومواعيد الشغل. كل قسم مستقل عشان التعديل يبقى سهل من الموبايل.
+          </p>
         </div>
-      </FormCard>
-
-      {/* Bio */}
-      <FormCard
-        title="نبذة عنك"
-        icon={<Pencil size={16} />}
-        formId="bio-form"
-        sectionKey="bio"
-        sectionStates={sectionStates}
-        onSave={saveForm}
-      >
-        <div style={{ display: "grid", gap: 12 }}>
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            <Label
-              htmlFor="bio"
-              style={{
-                fontSize: "0.78rem",
-                fontWeight: 950,
-                color: "rgba(245, 234, 214, 0.6)",
-              }}
-            >
-              نبذة مختصرة (تظهر في البطاقة)
-            </Label>
-            <Input
-              id="bio"
-              name="bio"
-              defaultValue={props.bio ?? ""}
-               placeholder="مثلاً: مصور فوتوغرافي متخصص في..."
-              {...fieldAttrs("bio-form", "bio")}
-            />
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            <Label
-              htmlFor="longDescription"
-              style={{
-                fontSize: "0.78rem",
-                fontWeight: 950,
-                color: "rgba(245, 234, 214, 0.6)",
-              }}
-            >
-              وصف أطول (قصة خبراتك)
-            </Label>
-            <Textarea
-              id="longDescription"
-              name="longDescription"
-              defaultValue={props.longDescription ?? ""}
-               placeholder="اكتب نبذة أوسع عن خبراتك..."
-              rows={5}
-              {...fieldAttrs("bio-form", "bio")}
-            />
-          </div>
+        <div className="mt-4 grid grid-cols-2 gap-2 lg:grid-cols-4">
+          <MiniStat label="التواصل" value={hasContact ? "جاهز" : "ناقص"} ok={hasContact} />
+          <MiniStat label="الموقع" value={hasLocation ? "محدد" : "غير مكتمل"} ok={hasLocation} />
+          <MiniStat label="الصور" value={hasImages ? "مرفوعة" : "ناقص صور"} ok={hasImages} />
+          <MiniStat label="السوشيال" value={`${filledSocials} رابط`} ok={filledSocials > 0} />
         </div>
-      </FormCard>
+      </section>
 
-      {/* Contact Info */}
-      <FormCard
-        title="وسائل التواصل"
-        icon={<Phone size={16} />}
-        formId="contact-form"
-        sectionKey="contact"
-        sectionStates={sectionStates}
-        onSave={saveForm}
-      >
-        <div style={{ display: "grid", gap: 12 }}>
-          <div
-            style={{
-              display: "grid",
-              gap: 12,
-              gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
-            }}
-          >
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              <Label
-                htmlFor="phone"
-                style={{
-                  fontSize: "0.78rem",
-                  fontWeight: 950,
-                  color: "rgba(245, 234, 214, 0.6)",
-                }}
-              >
-                رقم الهاتف
-              </Label>
-              <Input
-                id="phone"
-                name="phone"
-                type="tel"
-                defaultValue={props.phone ?? ""}
-                placeholder="+20 100 000 0000"
-                {...fieldAttrs("contact-form", "contact")}
-              />
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              <Label
-                htmlFor="whatsapp"
-                style={{
-                  fontSize: "0.78rem",
-                  fontWeight: 950,
-                  color: "rgba(245, 234, 214, 0.6)",
-                }}
-              >
-                واتساب
-              </Label>
-              <Input
-                id="whatsapp"
-                name="whatsapp"
-                defaultValue={props.whatsapp ?? ""}
-                placeholder="https://wa.me/201000000000"
-                dir="ltr"
-                {...fieldAttrs("contact-form", "contact")}
-              />
-            </div>
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            <Label
-              htmlFor="email"
-              style={{
-                fontSize: "0.78rem",
-                fontWeight: 950,
-                color: "rgba(245, 234, 214, 0.6)",
-              }}
-            >
-              البريد الإلكتروني
-            </Label>
-            <Input
-              id="email"
-              name="email"
-              type="email"
-              defaultValue={props.email ?? ""}
-              placeholder="photographer@example.com"
-              {...fieldAttrs("contact-form", "contact")}
-            />
-          </div>
-        </div>
-      </FormCard>
+      <section className="grid gap-4 lg:grid-cols-[0.8fr_1fr]">
+        <Panel icon={User} title="هويتك" description="الاسم والنبذة اللي تظهر للعميل في أول زيارة.">
+          <form className="grid gap-3" onSubmit={(event) => saveForm(event, "identity")}>
+            <ReadOnly label="اسم الحساب" value={props.userName} />
+            <Field label="اسم الاستوديو أو البراند"><Input name="studioName" defaultValue={props.studioName ?? ""} placeholder="مثلاً: Frame Studio" /></Field>
+            <Field label="نبذة قصيرة"><Input name="bio" defaultValue={props.bio ?? ""} placeholder="مصور زفاف ومنتجات في القاهرة" /></Field>
+            <Field label="قصة أو وصف أطول"><Textarea name="longDescription" defaultValue={props.longDescription ?? ""} rows={5} placeholder="احكي للعميل عن أسلوبك وخبرتك..." /></Field>
+            <SaveButton state={states.identity} />
+          </form>
+        </Panel>
 
-      {/* Location */}
-      <FormCard
-        title="الموقع"
-        icon={<MapPin size={16} />}
-        formId="location-form"
-        sectionKey="location"
-        sectionStates={sectionStates}
-        onSave={saveForm}
-      >
-        <div style={{ display: "grid", gap: 12 }}>
-          <div
-            style={{
-              display: "grid",
-              gap: 12,
-              gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
-            }}
-          >
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              <Label
-                htmlFor="city"
-                style={{
-                  fontSize: "0.78rem",
-                  fontWeight: 950,
-                  color: "rgba(245, 234, 214, 0.6)",
-                }}
-              >
-                المدينة
-              </Label>
-              <Input
-                id="city"
-                name="city"
-                defaultValue={props.city ?? ""}
-                placeholder="الرياض"
-                {...fieldAttrs("location-form", "location")}
-              />
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              <Label
-                htmlFor="country"
-                style={{
-                  fontSize: "0.78rem",
-                  fontWeight: 950,
-                  color: "rgba(245, 234, 214, 0.6)",
-                }}
-              >
-                الدولة
-              </Label>
-              <Input
-                id="country"
-                name="country"
-                defaultValue={props.country ?? ""}
-                placeholder="السعودية"
-                {...fieldAttrs("location-form", "location")}
-              />
-            </div>
+        <Panel icon={ImageIcon} title="الصور الأساسية" description="الصورة الشخصية والغلاف هم أول انطباع للعميل.">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <ImageBox title="الصورة الشخصية" preview={avatarPreview} state={states.avatar}>
+              <ImageUploader onUpload={uploadImage("avatarAssetId")} multiple={false} maxFiles={1} maxSizeMB={10} />
+            </ImageBox>
+            <ImageBox title="صورة الغلاف" preview={coverPreview} state={states.cover} wide>
+              <ImageUploader onUpload={uploadImage("coverAssetId")} multiple={false} maxFiles={1} maxSizeMB={15} />
+            </ImageBox>
           </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            <Label
-              htmlFor="address"
-              style={{
-                fontSize: "0.78rem",
-                fontWeight: 950,
-                color: "rgba(245, 234, 214, 0.6)",
-              }}
-            >
-              العنوان
-            </Label>
-            <Input
-              id="address"
-              name="address"
-              defaultValue={props.address ?? ""}
-              placeholder="شارع الملك فهد، حي العليا"
-              {...fieldAttrs("location-form", "location")}
-            />
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            <Label
-              htmlFor="googleMapsUrl"
-              style={{
-                fontSize: "0.78rem",
-                fontWeight: 950,
-                color: "rgba(245, 234, 214, 0.6)",
-              }}
-            >
-              رابط خرائط Google
-            </Label>
-            <Input
-              id="googleMapsUrl"
-              name="googleMapsUrl"
-              type="url"
-              defaultValue={props.googleMapsUrl ?? ""}
-              placeholder="https://maps.google.com/?q=..."
-              dir="ltr"
-              {...fieldAttrs("location-form", "location")}
-            />
-          </div>
-        </div>
-      </FormCard>
+        </Panel>
+      </section>
 
-      {/* Working Hours */}
-      <FormCard
-        title="مواعيد الشغل"
-        icon={<Clock size={16} />}
-        formId="hours-form"
-        sectionKey="hours"
-        sectionStates={sectionStates}
-        onSave={saveForm}
-      >
-        <WorkingHoursEditor
-          value={props.workingHours}
-          onBlur={makeBlurHandler("hours-form", "hours")}
-        />
-      </FormCard>
-
-      {/* Booking Button */}
-      <FormCard
-        title="زر الحجز المباشر"
-        icon={<MessageSquareText size={16} />}
-        formId="booking-form"
-        sectionKey="booking"
-        sectionStates={sectionStates}
-        onSave={saveForm}
-      >
-        <div style={{ display: "grid", gap: 12 }}>
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            <Label
-              htmlFor="bookingMessageTemplate"
-              style={{
-                fontSize: "0.78rem",
-                fontWeight: 950,
-                color: "rgba(245, 234, 214, 0.6)",
-              }}
-            >
-              نص زر الحجز
-            </Label>
-            <Input
-              id="bookingMessageTemplate"
-              name="bookingMessageTemplate"
-              defaultValue={props.bookingMessageTemplate ?? ""}
-              placeholder="احجز موعدك الآن"
-              {...fieldAttrs("booking-form", "booking")}
-            />
+      <Panel icon={Phone} title="طرق التواصل والمكان" description="خلي الحجز سهل: رقم، واتساب، بريد، ومدينة.">
+        <form className="grid gap-3" onSubmit={(event) => saveForm(event, "contact")}>
+          <div className="grid gap-3 lg:grid-cols-3">
+            <Field label="رقم الهاتف"><Input name="phone" type="tel" defaultValue={props.phone ?? props.userPhone ?? ""} placeholder="+20 100 000 0000" /></Field>
+            <Field label="واتساب"><Input name="whatsapp" defaultValue={props.whatsapp ?? ""} placeholder="https://wa.me/201000000000" dir="ltr" /></Field>
+            <Field label="البريد"><Input name="email" type="email" defaultValue={props.email ?? props.userEmail ?? ""} placeholder="photographer@example.com" /></Field>
           </div>
-        </div>
-      </FormCard>
-
-      {/* Social Links */}
-      <Card
-        title="حسابات التواصل"
-        icon={<Globe size={16} />}
-        status={
-          <AutosaveBadge state={socialState} isPending={socialPending} />
-        }
-      >
-        <form ref={socialFormRef} id="social-form">
-          {(
-            [
-              "instagram",
-              "facebook",
-              "tiktok",
-              "snapchat",
-              "youtube",
-              "behance",
-              "fiveHundredPx",
-              "linkedin",
-              "telegram",
-              "xTwitter",
-              "threads",
-              "website",
-              "whatsapp",
-            ] as const
-          ).map((key) => (
-            <input
-              key={key}
-              type="hidden"
-              name={key}
-              value={socialLinks[key] ?? ""}
-            />
-          ))}
+          <div className="grid gap-3 lg:grid-cols-3">
+            <Field label="المدينة"><Input name="city" defaultValue={props.city ?? ""} placeholder="القاهرة" /></Field>
+            <Field label="الدولة"><Input name="country" defaultValue={props.country ?? ""} placeholder="مصر" /></Field>
+            <Field label="Google Maps"><Input name="googleMapsUrl" defaultValue={props.googleMapsUrl ?? ""} placeholder="رابط Google Maps" dir="ltr" /></Field>
+          </div>
+          <Field label="العنوان"><Input name="address" defaultValue={props.address ?? ""} placeholder="العنوان بالتفصيل لو عندك استوديو" /></Field>
+          <Field label="رسالة الحجز الجاهزة"><Textarea name="bookingMessageTemplate" defaultValue={props.bookingMessageTemplate ?? ""} rows={3} placeholder="مثلاً: أهلاً، حابب أحجز جلسة تصوير يوم..." /></Field>
+          <SaveButton state={states.contact} />
         </form>
-        <SocialLinksEditor
-          links={socialLinks}
-          onChange={handleSocialChange}
-        />
-      </Card>
+      </Panel>
 
-      {/* Images */}
-      <Card title="صورك" icon={<ImageIcon size={16} />}>
-        <div style={{ display: "grid", gap: 20 }}>
-          <div>
-            <Label
-              style={{
-                fontSize: "0.78rem",
-                fontWeight: 950,
-                color: "rgba(245, 234, 214, 0.6)",
-                marginBottom: 8,
-                display: "block",
-              }}
-            >
-              صورة الغلاف
-            </Label>
-            {coverPreview && (
-              <div
-                style={{
-                  position: "relative",
-                  aspectRatio: "16 / 9",
-                  borderRadius: 12,
-                  overflow: "hidden",
-                  marginBottom: 12,
-                  border: "1px solid rgba(245, 234, 214, 0.08)",
-                }}
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={coverPreview}
-                  alt="الغلاف"
-                  style={{
-                    width: "100%",
-                    height: "100%",
-                    objectFit: "cover",
-                  }}
-                />
-              </div>
-            )}
-            <ImageUploader
-              onUpload={handleImageUpload("coverAssetId")}
-              multiple={false}
-              maxFiles={1}
-              disabled={coverUploading}
-            >
-              {coverUploading && (
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 8,
-                    fontSize: "0.82rem",
-                    color: "#f3cf73",
-                  }}
-                >
-                  <Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} />
-                  بترفع الصورة...
-                </div>
-              )}
-            </ImageUploader>
-          </div>
+      <Panel icon={Share2} title="روابط السوشيال" description="ضيف الروابط المهمة فقط عشان العميل مايتشتتش.">
+        <form className="grid gap-3" onSubmit={(event) => saveForm(event, "social")}>
+          {socialKeys.map((key) => <input key={key} type="hidden" name={key} value={socialLinks[key] ?? ""} />)}
+          <SocialLinksEditor links={socialLinks} onChange={setSocialLinks} />
+          <SaveButton state={states.social} />
+        </form>
+      </Panel>
 
-          <div>
-            <Label
-              style={{
-                fontSize: "0.78rem",
-                fontWeight: 950,
-                color: "rgba(245, 234, 214, 0.6)",
-                marginBottom: 8,
-                display: "block",
-              }}
-            >
-              صورتك الشخصية
-            </Label>
-            {avatarPreview && (
-              <div
-                style={{
-                  position: "relative",
-                  width: 120,
-                  height: 120,
-                  borderRadius: "50%",
-                  overflow: "hidden",
-                  marginBottom: 12,
-                  border: "2px solid rgba(243, 207, 115, 0.2)",
-                }}
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={avatarPreview}
-                  alt="الصورة الشخصية"
-                  style={{
-                    width: "100%",
-                    height: "100%",
-                    objectFit: "cover",
-                  }}
-                />
-              </div>
-            )}
-            <ImageUploader
-              onUpload={handleImageUpload("avatarAssetId")}
-              multiple={false}
-              maxFiles={1}
-              disabled={avatarUploading}
-            >
-              {avatarUploading && (
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 8,
-                    fontSize: "0.82rem",
-                    color: "#f3cf73",
-                  }}
-                >
-                  <Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} />
-                  بترفع الصورة...
-                </div>
-              )}
-            </ImageUploader>
-          </div>
-        </div>
-      </Card>
+      <Panel icon={Clock} title="مواعيد العمل" description="وضح للعميل إمتى يقدر يتواصل أو يحجز.">
+        <form className="grid gap-3" onSubmit={(event) => saveForm(event, "hours")}>
+          <WorkingHoursEditor value={props.workingHours} />
+          <SaveButton state={states.hours} />
+        </form>
+      </Panel>
     </main>
+  );
+}
+
+function Panel({ icon: Icon, title, description, children }: { icon: LucideIcon; title: string; description: string; children: ReactNode }) {
+  return (
+    <section className="overflow-hidden rounded-[1.35rem] border border-white/10 bg-white/[0.035]">
+      <header className="flex items-start gap-3 border-b border-white/8 p-4">
+        <span className="grid size-10 shrink-0 place-items-center rounded-2xl bg-amber-300/10 text-[#f3cf73]"><Icon className="size-5" /></span>
+        <div><h2 className="text-base font-black text-[#fff7e8]">{title}</h2><p className="mt-1 text-xs font-bold leading-6 text-white/45">{description}</p></div>
+      </header>
+      <div className="p-4">{children}</div>
+    </section>
+  );
+}
+
+function Field({ label, children }: { label: string; children: ReactNode }) {
+  return <label className="grid gap-1.5"><span className="text-xs font-black text-white/55">{label}</span>{children}</label>;
+}
+
+function ReadOnly({ label, value }: { label: string; value: string }) {
+  return <div className="rounded-2xl border border-white/8 bg-black/15 p-3"><p className="text-xs font-black text-white/40">{label}</p><p className="mt-1 text-sm font-black text-[#fff7e8]">{value}</p></div>;
+}
+
+function MiniStat({ label, value, ok }: { label: string; value: string; ok: boolean }) {
+  return <div className="rounded-2xl border border-white/8 bg-black/18 p-3"><p className={ok ? "text-sm font-black text-emerald-300" : "text-sm font-black text-[#f3cf73]"}>{value}</p><p className="mt-1 text-[0.72rem] font-black text-white/38">{label}</p></div>;
+}
+
+function SaveButton({ state }: { state?: SectionState }) {
+  return (
+    <div className="grid gap-2 sm:grid-cols-[auto_1fr] sm:items-center">
+      <Button type="submit" variant="luxury" className="min-h-11 rounded-2xl font-black" disabled={state?.pending}>
+        {state?.pending ? <Loader2 className="size-4 animate-spin" /> : <CheckCircle2 className="size-4" />}
+        {state?.pending ? "جاري الحفظ..." : "حفظ التعديلات"}
+      </Button>
+      <SectionFeedback state={state} />
+    </div>
+  );
+}
+
+function SectionFeedback({ state }: { state?: SectionState }) {
+  if (!state?.result) return null;
+  return <BuilderNotice tone={state.result.ok ? "success" : "error"} title={state.result.message} />;
+}
+
+function ImageBox({ title, preview, state, children, wide }: { title: string; preview: string | null; state?: SectionState; children: ReactNode; wide?: boolean }) {
+  return (
+    <div className="grid gap-3 rounded-2xl border border-white/8 bg-black/15 p-3">
+      <div className={wide ? "aspect-[16/10] overflow-hidden rounded-2xl bg-white/[0.04]" : "aspect-square overflow-hidden rounded-2xl bg-white/[0.04]"}>
+        {preview ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={preview} alt={title} className="size-full object-cover" />
+        ) : <div className="grid size-full place-items-center text-white/28"><ImageIcon className="size-10" /></div>}
+      </div>
+      <h3 className="text-sm font-black text-[#fff7e8]">{title}</h3>
+      {children}
+      <SectionFeedback state={state} />
+    </div>
   );
 }
