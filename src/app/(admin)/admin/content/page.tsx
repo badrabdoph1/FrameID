@@ -49,7 +49,7 @@ export default async function AdminContentPage() {
       where: { deletedAt: null },
       orderBy: { createdAt: "desc" },
       take: 6,
-      select: { id: true, fileName: true, mimeType: true, sizeBytes: true, createdAt: true, url: true },
+      select: { id: true, storageKey: true, alt: true, mimeType: true, sizeBytes: true, createdAt: true },
     }),
   ]);
 
@@ -110,7 +110,7 @@ export default async function AdminContentPage() {
               <Link key={asset.id} href="/admin/media" className="flex items-center gap-3 rounded-2xl border border-white/8 bg-white/[0.035] p-3 no-underline transition hover:border-amber-300/24 hover:bg-amber-300/8">
                 <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-amber-300/10 text-[#f3cf73]"><Image className="size-5" /></span>
                 <span className="min-w-0">
-                  <strong className="block truncate text-sm font-black text-[#fff7e8]">{asset.fileName}</strong>
+                  <strong className="block truncate text-sm font-black text-[#fff7e8]">{asset.alt ?? asset.storageKey.split("/").pop() ?? asset.storageKey}</strong>
                   <small className="mt-1 block truncate text-xs font-bold text-white/38">{asset.mimeType} · {Math.round(asset.sizeBytes / 1024)} KB · {new Date(asset.createdAt).toLocaleDateString("ar-EG")}</small>
                 </span>
               </Link>
