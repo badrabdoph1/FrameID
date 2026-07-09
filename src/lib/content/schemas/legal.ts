@@ -14,4 +14,5 @@ export const LegalDataSchema = z.object({
 export const LegalSchemas = {
   "legal/privacy": LegalDataSchema,
   "legal/terms": LegalDataSchema,
+  "legal/cookies": LegalDataSchema,
 } as const
