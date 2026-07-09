@@ -1,30 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import {
-  Copy,
-  CheckCircle2,
-  ExternalLink,
-  Eye,
-  Search,
-  Globe2,
-  RefreshCw,
-} from "lucide-react";
+import { CheckCircle2, Copy, ExternalLink, Globe2, QrCode, Search, Share2, UploadCloud } from "lucide-react";
 
-import {
-  updatePublishSeoAction,
-  uploadShareImageAction,
-} from "@/app/(dashboard)/dashboard/publish/actions";
+import { updatePublishSeoAction, uploadShareImageAction } from "@/app/(dashboard)/dashboard/publish/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
 import { ImageUploader } from "@/components/dashboard/image-uploader";
-import {
-  BuilderNotice,
-  BuilderPageHeader,
-} from "@/components/dashboard/builder-primitives";
+import { BuilderNotice } from "@/components/dashboard/builder-primitives";
 
 type PublishClientProps = {
   siteTitle: string;
@@ -55,26 +38,17 @@ export function PublishClient({
   const [shareImageState, setShareImageState] = useState<string | null>(null);
   const [shareImageOk, setShareImageOk] = useState(false);
 
-  const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(siteUrl);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      //
-    }
-  };
-
   const displayTitle = seoTitle || siteTitle;
-  const displayDescription =
-    seoDescription ||
-    (seoTitle
-      ? `${seoTitle} — موقع تصوير فوتوغرافي احترافي.`
-      : `${siteTitle} — موقع تصوير فوتوغرافي احترافي.`);
-
+  const displayDescription = seoDescription || `${siteTitle} — موقع تصوير فوتوغرافي احترافي.`;
   const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(siteUrl)}`;
 
-  const handleShareImageUpload = async (files: File[]) => {
+  async function copyLink() {
+    await navigator.clipboard?.writeText(siteUrl);
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 1800);
+  }
+
+  async function handleShareImageUpload(files: File[]) {
     const file = files[0];
     if (!file) return;
     const fd = new FormData();
@@ -83,679 +57,130 @@ export function PublishClient({
     setShareImageState(result.message);
     setShareImageOk(result.ok);
     if (result.ok && result.url) setOgUrl(result.url);
-  };
+  }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 20, maxWidth: 900 }}>
-      <BuilderPageHeader
-        eyebrow="نشر ومشاركة"
-        title="جهز رابطك قبل ما تبعته للعميل"
-        description="انسخ الرابط، حمل QR، واضبط عنوان الموقع وصورة المشاركة زي ما هتظهر في Google وواتساب وفيسبوك."
-      />
-
-      {updated ? (
-        <BuilderNotice
-          tone="success"
-          title="اتحدثت إعدادات النشر"
-          description="التغييرات هتظهر في معاينات المشاركة."
-        />
-      ) : null}
-
-      {error ? (
-        <BuilderNotice
-          tone="error"
-          title="مفيش حفظ لإعدادات النشر"
-          description="راجع البيانات وجرب تاني."
-          errorId={error}
-        />
-      ) : null}
-
-      {/* ─── 1. الرابط ─── */}
-      <div
-        style={{
-          padding: "20px",
-          borderRadius: 16,
-          border: "1px solid rgba(245, 234, 214, 0.08)",
-          background: "rgba(255, 255, 255, 0.03)",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 10,
-            marginBottom: 14,
-          }}
-        >
-          <Globe2 size={16} style={{ color: "#f3cf73", flexShrink: 0 }} />
-          <h2
-            style={{
-              color: "#fff7e8",
-              fontSize: "0.95rem",
-              fontWeight: 950,
-              margin: 0,
-            }}
-          >
-            الرابط
-          </h2>
-        </div>
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 10,
-            padding: "10px 14px",
-            borderRadius: 10,
-            border: "1px solid rgba(245, 234, 214, 0.08)",
-            background: "rgba(0,0,0,0.2)",
-            flexWrap: "wrap",
-          }}
-        >
-          <span
-            dir="ltr"
-            style={{
-              flex: 1,
-              minWidth: 0,
-              color: "#f3cf73",
-              fontSize: "0.85rem",
-              fontWeight: 900,
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
-            }}
-          >
-            {siteUrl}
-          </span>
-          <div style={{ display: "flex", gap: 6 }}>
-            <button
-              onClick={handleCopy}
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 5,
-                padding: "6px 12px",
-                borderRadius: 8,
-                border: "1px solid rgba(245, 234, 214, 0.12)",
-                background: "transparent",
-                color: copied ? "#4ade80" : "rgba(245, 234, 214, 0.7)",
-                fontSize: "0.78rem",
-                fontWeight: 900,
-                cursor: "pointer",
-                transition: "background 0.15s",
-              }}
-            >
-              {copied ? <CheckCircle2 size={13} /> : <Copy size={13} />}
-              {copied ? "اتنسخ" : "نسخ"}
-            </button>
-            <a
-              href={siteUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 5,
-                padding: "6px 12px",
-                borderRadius: 8,
-                border: "1px solid rgba(245, 234, 214, 0.12)",
-                background: "transparent",
-                color: "rgba(245, 234, 214, 0.7)",
-                fontSize: "0.78rem",
-                fontWeight: 900,
-                textDecoration: "none",
-                cursor: "pointer",
-                transition: "background 0.15s",
-              }}
-            >
-              <ExternalLink size={13} />
-              فتح
+    <main className="mx-auto grid w-full max-w-6xl gap-4 pb-4">
+      <section className="rounded-[1.6rem] border border-white/10 bg-[radial-gradient(circle_at_top_right,rgba(243,207,115,0.14),transparent_36%),rgba(255,255,255,0.035)] p-4 sm:p-5">
+        <div className="grid gap-4 lg:grid-cols-[1fr_auto] lg:items-end">
+          <div>
+            <p className="text-[0.72rem] font-black text-[#f3cf73]">النشر والمشاركة</p>
+            <h1 className="mt-1 text-2xl font-black text-[#fff7e8] sm:text-3xl">جهّز الرابط قبل ما تبعته للعميل</h1>
+            <p className="mt-2 max-w-2xl text-sm font-bold leading-7 text-white/58">
+              انسخ الرابط، افتح الموقع كعميل، واضبط شكل المعاينة اللي بتظهر في واتساب وفيسبوك وجوجل.
+            </p>
+          </div>
+          <div className="grid gap-2 sm:flex">
+            <Button variant="luxury" className="min-h-11 rounded-2xl font-black" onClick={copyLink}>
+              {copied ? <CheckCircle2 className="size-4" /> : <Copy className="size-4" />}
+              {copied ? "اتنسخ" : "نسخ الرابط"}
+            </Button>
+            <a href={siteUrl} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-4 text-sm font-black text-white/75 no-underline transition hover:bg-white/[0.08] hover:text-white">
+              <ExternalLink className="size-4" />
+              فتح الموقع
             </a>
           </div>
         </div>
-      </div>
+      </section>
 
-      <div
-        style={{
-          display: "grid",
-          gap: 14,
-          gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-        }}
-      >
-        <div
-          style={{
-            padding: "20px",
-            borderRadius: 16,
-            border: "1px solid rgba(245, 234, 214, 0.08)",
-            background: "rgba(255, 255, 255, 0.03)",
-          }}
-        >
-          <h2 style={{ color: "#fff7e8", fontSize: "0.95rem", fontWeight: 950, margin: "0 0 12px" }}>
-            QR Code
-          </h2>
+      {updated ? <BuilderNotice tone="success" title="تم تحديث إعدادات المشاركة" description="التغييرات هتظهر في معاينات المشاركة ومحركات البحث." /> : null}
+      {error ? <BuilderNotice tone="error" title="مقدرناش نحفظ إعدادات النشر" description="راجع البيانات وجرب تاني." errorId={error} /> : null}
+
+      <section className="grid gap-3 lg:grid-cols-[1fr_0.7fr]">
+        <Panel icon={Globe2} title="رابط الموقع" description="ده الرابط اللي هتبعته للعملاء أو تحطه في السوشيال.">
+          <div className="grid gap-3">
+            <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
+              <p dir="ltr" className="break-all text-sm font-black leading-7 text-[#f3cf73]">{siteUrl}</p>
+            </div>
+            <div className="grid gap-2 sm:grid-cols-2">
+              <Button type="button" variant="luxury" className="rounded-2xl font-black" onClick={copyLink}>
+                {copied ? <CheckCircle2 className="size-4" /> : <Copy className="size-4" />}
+                {copied ? "اتنسخ" : "نسخ الرابط"}
+              </Button>
+              <a href={siteUrl} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-4 text-sm font-black text-white/75 no-underline">
+                <ExternalLink className="size-4" />
+                معاينة كعميل
+              </a>
+            </div>
+          </div>
+        </Panel>
+
+        <Panel icon={QrCode} title="QR Code" description="اطبعه على كارت أو بانر أو ارسله للعميل.">
           <div className="grid justify-items-center gap-3">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={qrUrl}
-              alt="QR Code بتاع الموقع"
-              width={180}
-              height={180}
-              style={{ borderRadius: 12, background: "#fff", padding: 10 }}
-            />
-            <a
-              href={qrUrl}
-              download="frameid-qr.png"
-              className="inline-flex min-h-10 items-center justify-center rounded-[var(--radius-control)] border border-border bg-surface px-4 text-sm font-semibold text-foreground"
-            >
-              حمل QR
+            <img src={qrUrl} alt="QR Code بتاع الموقع" width={180} height={180} className="rounded-2xl bg-white p-3" />
+            <a href={qrUrl} download="frameid-qr.png" className="inline-flex min-h-10 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] px-4 text-sm font-black text-white/75 no-underline">
+              تحميل QR
             </a>
           </div>
-        </div>
+        </Panel>
+      </section>
 
-        <div
-          style={{
-            padding: "20px",
-            borderRadius: 16,
-            border: "1px solid rgba(245, 234, 214, 0.08)",
-            background: "rgba(255, 255, 255, 0.03)",
-          }}
-        >
-          <h2 style={{ color: "#fff7e8", fontSize: "0.95rem", fontWeight: 950, margin: "0 0 6px" }}>
-            صورة المشاركة
-          </h2>
-          <p style={{ color: "rgba(245, 234, 214, 0.55)", fontSize: "0.8rem", lineHeight: 1.6, margin: "0 0 12px" }}>
-            ارفع صورة تظهر لما تشارك الرابط. هنضبطها تلقائياً.
-          </p>
-          {shareImageState ? (
-            <BuilderNotice tone={shareImageOk ? "success" : "error"} title={shareImageState} />
-          ) : null}
-          <ImageUploader
-            onUpload={handleShareImageUpload}
-            multiple={false}
-            maxFiles={1}
-            maxSizeMB={30}
-          />
-        </div>
-      </div>
-
-      {/* ─── 2. SEO الأساسي ─── */}
-      <form action={updatePublishSeoAction}>
-        <div
-          style={{
-            padding: "20px",
-            borderRadius: 16,
-            border: "1px solid rgba(245, 234, 214, 0.08)",
-            background: "rgba(255, 255, 255, 0.03)",
-          }}
-        >
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 10,
-              marginBottom: 16,
-            }}
-          >
-            <Search size={16} style={{ color: "#f3cf73", flexShrink: 0 }} />
-            <h2
-              style={{
-                color: "#fff7e8",
-                fontSize: "0.95rem",
-                fontWeight: 950,
-                margin: 0,
-              }}
-            >
-              SEO الأساسي
-            </h2>
-          </div>
-
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: 14,
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: 6,
-              }}
-            >
-              <Label htmlFor="seo-title">عنوان الموقع في محركات البحث</Label>
-              <Input
-                id="seo-title"
-                name="title"
-                defaultValue={seoTitle ?? siteTitle}
-                required
-                placeholder={siteTitle}
-              />
-            </div>
-
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: 6,
-              }}
-            >
-              <Label htmlFor="seo-description">وصف الموقع في محركات البحث</Label>
-              <textarea
-                id="seo-description"
-                name="description"
-                rows={3}
-                defaultValue={seoDescription ?? ""}
-                placeholder="وصف مختصر يظهر في نتائج البحث..."
-                style={{
-                  width: "100%",
-                  minHeight: 44,
-                  borderRadius: "var(--radius-control, 8px)",
-                  border: "1px solid var(--border, rgba(245, 234, 214, 0.12))",
-                  background: "var(--surface, rgba(255,255,255,0.04))",
-                  color: "var(--foreground, #fff7e8)",
-                  padding: "10px 12px",
-                  fontSize: "0.85rem",
-                  outline: "none",
-                  resize: "vertical",
-                  fontFamily: "inherit",
-                  lineHeight: 1.5,
-                }}
-              />
-            </div>
-
-            <input type="hidden" name="ogImageUrl" value={ogUrl} />
-
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: 6,
-              }}
-            >
-              <Label htmlFor="canonical-url">الرابط الأساسي للموقع</Label>
-              <Input
-                id="canonical-url"
-                name="canonicalUrl"
-                dir="ltr"
-                defaultValue={canonicalUrl ?? ""}
-                placeholder={siteUrl}
-              />
-            </div>
-          </div>
-
-          <input type="hidden" name="robotsIndex" value={robots ? "on" : "off"} />
-
-          <div style={{ marginTop: 16 }}>
-            <Button type="submit" variant="luxury">
-              حفظ إعدادات SEO
-            </Button>
-          </div>
-        </div>
-      </form>
-
-      {/* ─── 3. Google Preview ─── */}
-      <div
-        style={{
-          padding: "20px",
-          borderRadius: 16,
-          border: "1px solid rgba(245, 234, 214, 0.08)",
-          background: "rgba(255, 255, 255, 0.03)",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 10,
-            marginBottom: 14,
-          }}
-        >
-          <Eye size={16} style={{ color: "#f3cf73", flexShrink: 0 }} />
-          <h2
-            style={{
-              color: "#fff7e8",
-              fontSize: "0.95rem",
-              fontWeight: 950,
-              margin: 0,
-            }}
-          >
-            Google Preview
-          </h2>
-        </div>
-
-        <div
-          style={{
-            padding: "14px 16px",
-            borderRadius: 12,
-            border: "1px solid rgba(245, 234, 214, 0.06)",
-            background: "#1a1a1a",
-          }}
-        >
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 6,
-              marginBottom: 4,
-            }}
-          >
-            <div
-              style={{
-                width: 18,
-                height: 18,
-                borderRadius: "50%",
-                background: "rgba(245, 234, 214, 0.1)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                flexShrink: 0,
-              }}
-            >
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none">
-                <path
-                  d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"
-                  fill="#8ab4f8"
-                />
-              </svg>
-            </div>
-            <span
-              style={{
-                color: "rgba(245, 234, 214, 0.4)",
-                fontSize: "0.72rem",
-                fontWeight: 600,
-              }}
-            >
-              {new URL(siteUrl).hostname}
-            </span>
-          </div>
-
-          <a
-            href={siteUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{
-              color: "#8ab4f8",
-              fontSize: "0.95rem",
-              fontWeight: 600,
-              textDecoration: "none",
-              display: "block",
-              marginBottom: 2,
-              lineHeight: 1.3,
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
-            }}
-          >
-            {displayTitle}
-          </a>
-
-          <span
-            style={{
-              color: "#b5e5a0",
-              fontSize: "0.75rem",
-              fontWeight: 500,
-              display: "block",
-              marginBottom: 4,
-            }}
-          >
-            {siteUrl.length > 60 ? siteUrl.slice(0, 60) + "..." : siteUrl}
-          </span>
-
-          <p
-            style={{
-              color: "rgba(245, 234, 214, 0.55)",
-              fontSize: "0.8rem",
-              lineHeight: 1.4,
-              margin: 0,
-            }}
-          >
-            {displayDescription.length > 160
-              ? displayDescription.slice(0, 157) + "..."
-              : displayDescription}
-          </p>
-        </div>
-      </div>
-
-      {/* ─── 4. WhatsApp Preview ─── */}
-      <div
-        style={{
-          padding: "20px",
-          borderRadius: 16,
-          border: "1px solid rgba(245, 234, 214, 0.08)",
-          background: "rgba(255, 255, 255, 0.03)",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 10,
-            marginBottom: 14,
-          }}
-        >
-          <Eye size={16} style={{ color: "#f3cf73", flexShrink: 0 }} />
-          <h2
-            style={{
-              color: "#fff7e8",
-              fontSize: "0.95rem",
-              fontWeight: 950,
-              margin: 0,
-            }}
-          >
-            WhatsApp Preview
-          </h2>
-        </div>
-
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "flex-start",
-          }}
-        >
-          <div
-            style={{
-              maxWidth: 320,
-              borderRadius: 12,
-              border: "1px solid rgba(245, 234, 214, 0.06)",
-              background: "#1f2c33",
-              overflow: "hidden",
-            }}
-          >
-            {ogUrl ? (
-              <div
-                style={{
-                  width: "100%",
-                  aspectRatio: "1200 / 630",
-                  background: "rgba(255,255,255,0.05)",
-                  overflow: "hidden",
-                }}
-              >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                  src={ogUrl}
-                  alt=""
-                  style={{
-                    width: "100%",
-                    height: "100%",
-                    objectFit: "cover",
-                    display: "block",
-                  }}
-                  onError={(e) => {
-                    (e.currentTarget as HTMLImageElement).style.display = "none";
-                  }}
-                />
-              </div>
-            ) : null}
-
-            <div style={{ padding: "10px 14px 12px" }}>
-              <span
-                style={{
-                  color: "rgba(245, 234, 214, 0.35)",
-                  fontSize: "0.68rem",
-                  fontWeight: 600,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.3px",
-                  display: "block",
-                  marginBottom: 2,
-                }}
-              >
-                {new URL(siteUrl).hostname}
-              </span>
-              <p
-                style={{
-                  color: "#e9edef",
-                  fontSize: "0.85rem",
-                  fontWeight: 700,
-                  margin: "2px 0",
-                  lineHeight: 1.3,
-                }}
-              >
-                {displayTitle}
-              </p>
-              <p
-                style={{
-                  color: "rgba(245, 234, 214, 0.5)",
-                  fontSize: "0.78rem",
-                  margin: "2px 0 0",
-                  lineHeight: 1.4,
-                  display: "-webkit-box",
-                  WebkitLineClamp: 2,
-                  WebkitBoxOrient: "vertical",
-                  overflow: "hidden",
-                }}
-              >
-                {displayDescription}
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* ─── 5. حالة الأرشفة ─── */}
-      <form action={updatePublishSeoAction}>
-        <div
-          style={{
-            padding: "20px",
-            borderRadius: 16,
-            border: "1px solid rgba(245, 234, 214, 0.08)",
-            background: "rgba(255, 255, 255, 0.03)",
-          }}
-        >
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 10,
-              marginBottom: 14,
-            }}
-          >
-            <Globe2 size={16} style={{ color: "#f3cf73", flexShrink: 0 }} />
-            <h2
-              style={{
-                color: "#fff7e8",
-                fontSize: "0.95rem",
-                fontWeight: 950,
-                margin: 0,
-              }}
-            >
-              حالة الأرشفة
-            </h2>
-          </div>
-
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              gap: 12,
-              padding: "12px 14px",
-              borderRadius: 10,
-              border: "1px solid rgba(245, 234, 214, 0.06)",
-              background: "rgba(0,0,0,0.15)",
-            }}
-          >
-            <div>
-              {robots ? (
-                <Badge tone="success">مفعلة — الأرشفة مسموحة</Badge>
+      <section className="grid gap-3 lg:grid-cols-[0.78fr_1fr]">
+        <Panel icon={Share2} title="شكل المشاركة" description="دي المعاينة المتوقعة لما تبعت الرابط على واتساب أو فيسبوك.">
+          <div className="overflow-hidden rounded-2xl border border-white/10 bg-black/25">
+            <div className="aspect-[1.9/1] bg-white/[0.04]">
+              {ogUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={ogUrl} alt="صورة مشاركة الموقع" className="size-full object-cover" />
               ) : (
-                <Badge tone="warning">مطفية — الأرشفة ممنوعة</Badge>
+                <div className="grid size-full place-items-center text-white/28"><UploadCloud className="size-10" /></div>
               )}
             </div>
-
-            <Switch
-              checked={robots}
-              onCheckedChange={(v) => setRobots(v)}
-              label="السماح لمحركات البحث"
-            />
+            <div className="p-3">
+              <h3 className="truncate text-sm font-black text-[#fff7e8]">{displayTitle}</h3>
+              <p className="mt-1 line-clamp-2 text-xs font-bold leading-5 text-white/45">{displayDescription}</p>
+              <p className="mt-2 truncate text-[0.7rem] font-bold text-[#f3cf73]" dir="ltr">{siteUrl}</p>
+            </div>
           </div>
+        </Panel>
 
-          <input type="hidden" name="robotsIndex" value={robots ? "on" : "off"} />
-          <input type="hidden" name="title" value={seoTitle ?? siteTitle} />
-          <input type="hidden" name="description" value={seoDescription ?? ""} />
-          <input type="hidden" name="ogImageUrl" value={ogUrl} />
-          <input type="hidden" name="canonicalUrl" value={canonicalUrl ?? ""} />
+        <Panel icon={UploadCloud} title="صورة المشاركة" description="ارفع صورة قوية، يفضل تكون أفقية وواضحة.">
+          {shareImageState ? <BuilderNotice tone={shareImageOk ? "success" : "error"} title={shareImageState} /> : null}
+          <ImageUploader onUpload={handleShareImageUpload} multiple={false} maxFiles={1} maxSizeMB={30} />
+        </Panel>
+      </section>
 
-          <div style={{ marginTop: 12 }}>
-            <Button type="submit" variant="secondary" size="sm">
-              حفظ حالة الأرشفة
-            </Button>
+      <form action={updatePublishSeoAction} className="grid gap-3 rounded-[1.35rem] border border-white/10 bg-white/[0.035] p-3 sm:p-4">
+        <div className="flex items-start gap-3">
+          <span className="grid size-10 shrink-0 place-items-center rounded-2xl bg-amber-300/10 text-[#f3cf73]"><Search className="size-5" /></span>
+          <div>
+            <h2 className="text-base font-black text-[#fff7e8]">إعدادات الظهور في Google</h2>
+            <p className="mt-1 text-xs font-bold leading-6 text-white/45">اكتب عنوان ووصف بسيطين. سيب الرابط القانوني فاضي لو مش فاهمه.</p>
           </div>
         </div>
+
+        <input type="hidden" name="ogImageUrl" value={ogUrl} />
+        <div className="grid gap-3 lg:grid-cols-2">
+          <Field label="عنوان الموقع"><Input name="title" defaultValue={seoTitle ?? siteTitle} required placeholder={siteTitle} /></Field>
+          <Field label="الرابط القانوني Canonical"><Input name="canonicalUrl" defaultValue={canonicalUrl ?? ""} placeholder={siteUrl} dir="ltr" /></Field>
+        </div>
+        <label className="grid gap-1.5">
+          <span className="text-xs font-black text-white/55">وصف الموقع</span>
+          <textarea name="description" rows={4} defaultValue={seoDescription ?? ""} placeholder="وصف مختصر يظهر في نتائج البحث ومعاينات المشاركة..." className="min-h-28 rounded-2xl border border-white/10 bg-black/20 px-3 py-2 text-sm font-bold text-white outline-none placeholder:text-white/28 focus:border-amber-300/40" />
+        </label>
+        <label className="flex min-h-11 items-center gap-2 rounded-2xl border border-white/10 bg-black/15 px-3 text-sm font-black text-white/65">
+          <input type="checkbox" name="robotsIndex" checked={robots} onChange={(event) => setRobots(event.target.checked)} className="size-4 accent-[#f3cf73]" />
+          اسمح لمحركات البحث تظهر موقعي
+        </label>
+        <Button type="submit" variant="luxury" className="min-h-12 rounded-2xl font-black">حفظ إعدادات النشر</Button>
       </form>
-
-      {/* ─── 6. إعادة توليد ─── */}
-      <div
-        style={{
-          padding: "20px",
-          borderRadius: 16,
-          border: "1px solid rgba(245, 234, 214, 0.08)",
-          background: "rgba(255, 255, 255, 0.03)",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 10,
-            marginBottom: 14,
-          }}
-        >
-          <RefreshCw size={16} style={{ color: "#f3cf73", flexShrink: 0 }} />
-          <h2
-            style={{
-              color: "#fff7e8",
-              fontSize: "0.95rem",
-              fontWeight: 950,
-              margin: 0,
-            }}
-          >
-إعادة التوليد
-          </h2>
-        </div>
-
-        <p
-          style={{
-            color: "rgba(245, 234, 214, 0.55)",
-            fontSize: "0.82rem",
-            margin: "0 0 12px",
-            lineHeight: 1.5,
-          }}
-        >
-          بعد ما تغير المحتوى أو الصور، تقدر تولد المعاينة تاني عشان تشاركها على
-          واتساب وفيسبوك.
-        </p>
-
-        <Button
-          type="button"
-          variant="secondary"
-          onClick={() => {
-            window.location.reload();
-          }}
-        >
-          <RefreshCw size={14} />
-          أعد توليد المعاينة
-        </Button>
-      </div>
-    </div>
+    </main>
   );
+}
+
+function Panel({ icon: Icon, title, description, children }: { icon: typeof Globe2; title: string; description: string; children: React.ReactNode }) {
+  return (
+    <section className="overflow-hidden rounded-[1.35rem] border border-white/10 bg-white/[0.035]">
+      <header className="flex items-start gap-3 border-b border-white/8 p-4">
+        <span className="grid size-10 shrink-0 place-items-center rounded-2xl bg-amber-300/10 text-[#f3cf73]"><Icon className="size-5" /></span>
+        <div><h2 className="text-base font-black text-[#fff7e8]">{title}</h2><p className="mt-1 text-xs font-bold leading-6 text-white/45">{description}</p></div>
+      </header>
+      <div className="p-4">{children}</div>
+    </section>
+  );
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return <label className="grid gap-1.5"><span className="text-xs font-black text-white/55">{label}</span>{children}</label>;
 }
