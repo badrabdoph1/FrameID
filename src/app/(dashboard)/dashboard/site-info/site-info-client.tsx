@@ -7,6 +7,7 @@ import { ArrowLeft, CheckCircle2, Loader2, Phone, Save, User, type LucideIcon } 
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { updateSiteInfoAction, type AutosaveState } from "@/app/(dashboard)/dashboard/site-info/actions";
+import { isPhoneStorageEmail } from "@/modules/auth/auth-identifier";
 
 type SiteInfoClientProps = {
   userName: string;
@@ -67,6 +68,7 @@ export function SiteInfoClient(props: SiteInfoClientProps) {
   const [, startTransition] = useTransition();
   const [states, setStates] = useState<Record<string, SectionState>>({});
   const [whatsapp, setWhatsapp] = useState(props.whatsapp ?? "");
+  const accountEmailForContact = isPhoneStorageEmail(props.userEmail) ? "" : props.userEmail;
 
   const hasIdentity = Boolean(props.userName || props.studioName || props.bio);
   const hasContact = Boolean(props.phone || props.whatsapp || props.facebook || props.instagram || props.tiktok);
@@ -134,7 +136,7 @@ export function SiteInfoClient(props: SiteInfoClientProps) {
           <Field label="رابط فيسبوك"><Input name="facebook" defaultValue={props.facebook ?? ""} placeholder="https://facebook.com/..." dir="ltr" /></Field>
           <Field label="رابط إنستجرام"><Input name="instagram" defaultValue={props.instagram ?? ""} placeholder="https://instagram.com/..." dir="ltr" /></Field>
           <Field label="رابط تيك توك"><Input name="tiktok" defaultValue={props.tiktok ?? ""} placeholder="https://tiktok.com/@..." dir="ltr" /></Field>
-          <Field label="البريد الإلكتروني اختياري"><Input name="email" type="email" defaultValue={props.email ?? props.userEmail ?? ""} placeholder="name@example.com" /></Field>
+          <Field label="البريد الإلكتروني اختياري"><Input name="email" type="email" defaultValue={props.email ?? accountEmailForContact} placeholder="name@example.com" /></Field>
         </div>
         <SaveLine state={states.contact} />
       </form>
