@@ -21,7 +21,7 @@ export async function loginAction(formData: FormData) {
       repository: createPrismaLoginRepository(prisma),
     });
     const result = await loginService.login({
-      email: readFormString(formData, "email"),
+      identifier: readFormString(formData, "identifier"),
       password: readFormString(formData, "password"),
     });
 
