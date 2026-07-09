@@ -2,11 +2,12 @@ import { createRawSessionToken, hashSessionToken } from "@/modules/auth/session-
 import { hashPassword } from "@/modules/auth/password-hashing";
 import { resetPasswordInputSchema } from "@/modules/auth/reset-password-validation";
 import { AppError } from "@/lib/errors";
+import { isPhoneStorageEmail, parseEmailOrPhoneIdentifier } from "@/modules/auth/auth-identifier";
 
 const RESET_TOKEN_TTL_MINUTES = 60;
 
 export type PasswordResetRepository = {
-  findUserByEmail(email: string): Promise<{ id: string; email: string; name: string } | null>;
+  findUserByIdentifier(input: { email: string; phone: string | null }): Promise<{ id: string; email: string; phone: string | null; name: string } | null>;
   createResetToken(input: {
     userId: string;
     tokenHash: string;
@@ -43,17 +44,21 @@ export function createPasswordResetService({
 }) {
   return {
     async requestPasswordReset(input: {
-      email: string;
+      identifier?: string;
+      email?: string;
     }): Promise<{
       delivered: boolean;
       rawToken: string | null;
       userEmail: string | null;
       userName: string | null;
     }> {
-      const email = input.email.trim().toLowerCase();
-      const user = await repository.findUserByEmail(email);
+      const identifier = parseEmailOrPhoneIdentifier(input.identifier || input.email || "");
+      const user = await repository.findUserByIdentifier({
+        email: identifier.storageEmail,
+        phone: identifier.phone
+      });
 
-      if (!user) {
+      if (!user || isPhoneStorageEmail(user.email)) {
         return {
           delivered: false,
           rawToken: null,
