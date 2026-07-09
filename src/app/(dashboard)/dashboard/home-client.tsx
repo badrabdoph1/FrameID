@@ -3,7 +3,6 @@
 import { useState, type ReactNode } from "react";
 import Link from "next/link";
 import {
-  AlertTriangle,
   ArrowLeft,
   CheckCircle2,
   Circle,
@@ -38,12 +37,13 @@ export function DashboardHomeClient({
 
   return (
     <main className="mx-auto grid w-full max-w-5xl gap-3 pb-4 sm:gap-4">
-      <section className={activationBannerClass(activation.tone)}>
+      <section className={activationNoticeClass(activation.tone)}>
+        <span className={activationGlowClass(activation.tone)} aria-hidden />
         <div className="flex min-w-0 items-center gap-2">
-          <AlertTriangle className="size-4 shrink-0" aria-hidden />
-          <p className="truncate text-sm font-black">{activation.message}</p>
+          <span className={activationDotClass(activation.tone)} aria-hidden />
+          <p className="truncate text-xs font-black sm:text-sm">{activation.message}</p>
         </div>
-        <Link href="/dashboard/billing" className="inline-flex min-h-9 items-center justify-center rounded-xl bg-[#f3cf73] px-3 text-xs font-black text-[#17120a] no-underline shadow-sm transition hover:-translate-y-0.5 hover:shadow-amber-300/20">
+        <Link href="/dashboard/billing" className={activationLinkClass(activation.tone)}>
           {activation.action}
         </Link>
       </section>
@@ -131,14 +131,45 @@ function SetupStepRow({ item, index }: { item: DashboardViewModel["checklist"][n
   );
 }
 
-function activationBannerClass(tone: "success" | "warning" | "danger") {
+function activationNoticeClass(tone: "success" | "warning" | "danger") {
+  const base = "relative flex min-h-8 items-center justify-between gap-2 overflow-hidden px-1 py-1";
   if (tone === "success") {
-    return "grid gap-2 rounded-2xl border border-emerald-300/22 bg-emerald-300/10 p-3 text-emerald-100 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] sm:grid-cols-[1fr_auto] sm:items-center";
+    return `${base} text-emerald-100 drop-shadow-[0_0_10px_rgba(110,231,183,0.22)]`;
   }
   if (tone === "danger") {
-    return "grid gap-2 rounded-2xl border border-red-400/26 bg-red-400/12 p-3 text-red-100 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] sm:grid-cols-[1fr_auto] sm:items-center";
+    return `${base} text-red-100 drop-shadow-[0_0_10px_rgba(248,113,113,0.24)]`;
   }
-  return "grid gap-2 rounded-2xl border border-amber-300/28 bg-amber-300/12 p-3 text-amber-100 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] sm:grid-cols-[1fr_auto] sm:items-center";
+  return `${base} text-amber-100 drop-shadow-[0_0_10px_rgba(243,207,115,0.24)]`;
+}
+
+function activationGlowClass(tone: "success" | "warning" | "danger") {
+  if (tone === "success") {
+    return "pointer-events-none absolute inset-x-0 bottom-0 h-px bg-gradient-to-l from-transparent via-emerald-300/55 to-transparent shadow-[0_0_18px_rgba(110,231,183,0.5)]";
+  }
+  if (tone === "danger") {
+    return "pointer-events-none absolute inset-x-0 bottom-0 h-px bg-gradient-to-l from-transparent via-red-300/55 to-transparent shadow-[0_0_18px_rgba(248,113,113,0.5)]";
+  }
+  return "pointer-events-none absolute inset-x-0 bottom-0 h-px bg-gradient-to-l from-transparent via-amber-300/60 to-transparent shadow-[0_0_18px_rgba(243,207,115,0.55)]";
+}
+
+function activationDotClass(tone: "success" | "warning" | "danger") {
+  if (tone === "success") {
+    return "size-1.5 shrink-0 rounded-full bg-emerald-300 shadow-[0_0_12px_rgba(110,231,183,0.8)]";
+  }
+  if (tone === "danger") {
+    return "size-1.5 shrink-0 rounded-full bg-red-300 shadow-[0_0_12px_rgba(248,113,113,0.8)]";
+  }
+  return "size-1.5 shrink-0 animate-pulse rounded-full bg-[#f3cf73] shadow-[0_0_12px_rgba(243,207,115,0.85)]";
+}
+
+function activationLinkClass(tone: "success" | "warning" | "danger") {
+  if (tone === "success") {
+    return "shrink-0 text-xs font-black text-emerald-200 no-underline underline-offset-4 transition hover:text-white hover:underline";
+  }
+  if (tone === "danger") {
+    return "shrink-0 text-xs font-black text-red-200 no-underline underline-offset-4 transition hover:text-white hover:underline";
+  }
+  return "shrink-0 text-xs font-black text-[#f3cf73] no-underline underline-offset-4 transition hover:text-white hover:underline";
 }
 
 function Panel({ title, description, icon: Icon, children }: { title: string; description: string; icon: LucideIcon; children: ReactNode }) {
