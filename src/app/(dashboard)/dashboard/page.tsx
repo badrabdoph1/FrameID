@@ -29,6 +29,7 @@ export default async function DashboardPage() {
     heroSection,
     siteTheme,
     pendingPayment,
+    seoSettings,
   ] = await Promise.all([
     prisma.package.count({ where: { siteId: session.site.id, deletedAt: null } }),
     prisma.galleryImage.count({
@@ -56,9 +57,14 @@ export default async function DashboardPage() {
       orderBy: { createdAt: "desc" },
       select: { status: true },
     }),
+    prisma.sEOSettings.findUnique({
+      where: { siteId: session.site.id },
+      select: { title: true, description: true, ogAssetId: true },
+    }),
   ]);
 
-  const lastModified = siteTheme?.updatedAt ?? new Date()
+  const lastModified = siteTheme?.updatedAt ?? new Date();
+  const hasSeoSettings = Boolean(seoSettings?.title && (seoSettings.description || seoSettings.ogAssetId));
 
   const dashboard = createDashboardViewModel({
     session,
@@ -72,6 +78,7 @@ export default async function DashboardPage() {
     currentThemeName: siteTheme?.theme.name ?? "بدون",
     lastModifiedAt: lastModified,
     pendingRequestStatus: pendingPayment?.status ?? null,
+    hasSeoSettings,
   });
 
   return <DashboardHomeClient {...dashboard} />;
