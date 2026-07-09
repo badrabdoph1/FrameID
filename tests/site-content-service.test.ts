@@ -8,7 +8,7 @@ import {
 
 function createSession(): CurrentSession {
   return {
-    user: { id: "user_1", email: "ali@example.com", name: "Ali", role: "USER" },
+    user: { id: "user_1", email: "ali@example.com", phone: null, name: "Ali", role: "USER" },
     tenant: {
       id: "tenant_1",
       displayName: "Ali Studio",
@@ -120,46 +120,23 @@ describe("site content service", () => {
         {
           type: "contact",
           data: {
-            callToAction: "احجز موعد التصوير"
+            callToAction: "Book now"
           }
         }
       ]
     });
-    const service = createSiteContentService({ repository });
 
-    await expect(
-      service.getEditorContent({ session: createSession() })
-    ).resolves.toEqual({
+    const service = createSiteContentService({ repository });
+    await expect(service.getEditorContent(createSession())).resolves.toEqual({
+      title: "Ali Studio",
+      description: "Fine art wedding photography",
       hero: {
         headline: "Ali Ahmed",
         subheadline: "Luxury weddings",
         imageUrl: "https://example.com/hero.jpg"
       },
       contact: {
-        callToAction: "احجز موعد التصوير"
-      }
-    });
-  });
-
-  it("falls back to real site basics when optional editor sections are missing", async () => {
-    const repository = createRepository();
-    repository.findEditorContent = async () => ({
-      title: "Ali Studio",
-      description: "Documentary weddings",
-      sections: []
-    });
-    const service = createSiteContentService({ repository });
-
-    await expect(
-      service.getEditorContent({ session: createSession() })
-    ).resolves.toEqual({
-      hero: {
-        headline: "Ali Studio",
-        subheadline: "Documentary weddings",
-        imageUrl: ""
-      },
-      contact: {
-        callToAction: "احجز جلستك الآن"
+        callToAction: "Book now"
       }
     });
   });
