@@ -10,7 +10,7 @@
     "legal/privacy": { "version": 3, "updatedAt": "2026-07-09T00:00:00.000Z" },
     "legal/terms": { "version": 3, "updatedAt": "2026-07-09T00:00:00.000Z" },
     "legal/cookies": { "version": 1, "updatedAt": "2026-07-09T00:00:00.000Z" },
-    "seo/metadata": { "version": 2, "updatedAt": "2026-07-08T00:00:00.000Z" },
+    "seo/metadata": { "version": 3, "updatedAt": "2026-07-09T00:00:00.000Z" },
     "settings/platform": { "version": 2, "updatedAt": "2026-07-08T00:00:00.000Z" }
   }
 }
