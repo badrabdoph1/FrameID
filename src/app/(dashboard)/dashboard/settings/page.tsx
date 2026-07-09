@@ -22,6 +22,7 @@ export default async function DashboardSettingsPage() {
     <SettingsClient
       userName={session.user.name}
       userEmail={session.user.email}
+      userPhone={session.user.phone}
       userRole={session.user.role}
       siteTitle={session.site.title}
       siteSlug={session.site.slug}
