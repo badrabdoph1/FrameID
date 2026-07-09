@@ -43,8 +43,16 @@ export default async function SignupPage({ searchParams }: SignupPageProps) {
           <Input id="name" name="name" autoComplete="name" required />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="email">البريد الإلكتروني</Label>
-          <Input id="email" name="email" type="email" autoComplete="email" required />
+          <Label htmlFor="identifier">رقم الهاتف أو البريد الإلكتروني</Label>
+          <Input
+            id="identifier"
+            name="identifier"
+            type="text"
+            inputMode="email"
+            autoComplete="username"
+            placeholder="01000000000 أو name@example.com"
+            required
+          />
         </div>
         <div className="space-y-2">
           <Label htmlFor="password">كلمة السر</Label>
