@@ -2,12 +2,10 @@
 
 import { useState, useTransition, type FormEvent } from "react";
 import Link from "next/link";
-import { ArrowLeft, CheckCircle2, Loader2, Phone, Save, User } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Loader2, Phone, Save, User, type LucideIcon } from "lucide-react";
 
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
-import { BuilderNotice } from "@/components/dashboard/builder-primitives";
 import { updateSiteInfoAction, type AutosaveState } from "@/app/(dashboard)/dashboard/site-info/actions";
 
 type SiteInfoClientProps = {
@@ -156,7 +154,7 @@ export function SiteInfoClient(props: SiteInfoClientProps) {
   );
 }
 
-function CardHeader({ icon: Icon, title, description, state }: { icon: typeof User; title: string; description: string; state?: SectionState }) {
+function CardHeader({ icon: Icon, title, description, state }: { icon: LucideIcon; title: string; description: string; state?: SectionState }) {
   return (
     <div className="flex items-start justify-between gap-3 border-b border-white/8 pb-3">
       <div className="flex items-start gap-3">
