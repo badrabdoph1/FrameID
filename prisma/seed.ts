@@ -95,26 +95,20 @@ async function main() {
     });
 
     for (const account of paymentSettings.accounts) {
+      const accountIdentifier = account.accountNumber;
       const existingAccount = await prisma.paymentAccount.findFirst({
         where: {
           paymentSettingsId: settings.id,
-          accountNumber: account.accountNumber,
-          deletedAt: null,
+          accountIdentifier,
         },
         select: { id: true },
       });
 
       const data = {
         label: account.label,
-        accountName: account.accountName,
-        accountNumber: account.accountNumber,
-        phoneNumber: account.phoneNumber,
+        accountIdentifier,
         instructions: account.instructions,
         sortOrder: account.sortOrder,
-        bankName: null,
-        iban: null,
-        swift: null,
-        notes: null,
         isActive: true,
       };
 
