@@ -9,12 +9,13 @@ import type { SessionCookie } from "@/modules/auth/session-tokens";
 export type AuthenticatedUser = {
   id: string;
   email: string;
+  phone: string | null;
   name: string;
   role: string;
 };
 
 export type LoginRepository = {
-  findUserByEmail(email: string): Promise<
+  findUserByIdentifier(input: { email: string; phone: string | null }): Promise<
     | (AuthenticatedUser & {
         passwordHash: string | null;
       })
@@ -43,10 +44,13 @@ export function createLoginService({
   return {
     async login(input: unknown): Promise<LoginResult> {
       const credentials = parseLoginInput(input);
-      const user = await repository.findUserByEmail(credentials.email);
+      const user = await repository.findUserByIdentifier({
+        email: credentials.email,
+        phone: credentials.phone
+      });
 
       if (!user?.passwordHash) {
-        throw new Error("Invalid email or password");
+        throw new Error("Invalid phone/email or password");
       }
 
       const passwordIsValid = await verifyPassword(
@@ -55,7 +59,7 @@ export function createLoginService({
       );
 
       if (!passwordIsValid) {
-        throw new Error("Invalid email or password");
+        throw new Error("Invalid phone/email or password");
       }
 
       const session = await createSessionForUser({
@@ -68,6 +72,7 @@ export function createLoginService({
         user: {
           id: user.id,
           email: user.email,
+          phone: user.phone,
           name: user.name,
           role: user.role
         },
