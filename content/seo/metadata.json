@@ -1,26 +1,26 @@
 {
   "$schema": "seo/metadata",
-  "version": 2,
-  "updatedAt": "2026-07-08T00:00:00.000Z",
+  "version": 3,
+  "updatedAt": "2026-07-09T00:00:00.000Z",
   "data": {
-    "defaultTitle": "FrameID | موقع مصور فوتوغرافي—موقع خاص باسمك يضم شغلك وباقاتك",
+    "defaultTitle": "FrameID | موقع احترافي لكل مصور في رابط واحد",
     "titleTemplate": "%s | FrameID",
-    "description": "موقع خاص لكل مصور: معرض أعمال، باقات وأسعار، رابط خاص، وكل حاجة. جرب ١٤ يوم مجاناً.",
+    "description": "منصة عربية للمصورين لإنشاء موقع احترافي يجمع الصور والباقات والأسعار وبيانات التواصل في رابط واحد سهل المشاركة.",
     "siteUrl": "https://frameid.app",
     "locale": "ar_EG",
     "openGraph": {
-      "title": "FrameID | موقع خاص باسمك—يضم شغلك وباقاتك",
-      "description": "خلال دقايق، حول صورك لموقع متكامل: معرض أعمال، باقات، رابط خاص. جرب مجاناً.",
+      "title": "FrameID | موقع احترافي لكل مصور في رابط واحد",
+      "description": "اعرض صورك وباقاتك وأسعارك وبيانات التواصل في رابط واحد يليق بشغلك كمصور.",
       "siteName": "FrameID",
       "images": [
-        { "url": "https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?auto=format&fit=crop&w=1800&q=85", "width": 1200, "height": 630, "alt": "FrameID—منصة مواقع للمصورين" }
+        { "url": "https://frameid.app/opengraph-image", "width": 1200, "height": 630, "alt": "FrameID - موقع احترافي للمصورين" }
       ]
     },
     "twitter": {
       "card": "summary_large_image",
-      "title": "FrameID | موقع خاص باسمك—يضم شغلك وباقاتك",
-      "description": "موقع متكامل لكل مصور: معرض، باقات، رابط خاص. جرب مجاناً.",
-      "images": ["https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?auto=format&fit=crop&w=1800&q=85"]
+      "title": "FrameID | موقع احترافي لكل مصور في رابط واحد",
+      "description": "موقع احترافي للمصور يجمع الصور والباقات والتواصل في رابط واحد.",
+      "images": ["https://frameid.app/opengraph-image"]
     }
   }
 }
