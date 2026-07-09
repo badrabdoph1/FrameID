@@ -14,7 +14,16 @@ import { SupportFloatingButton } from "@/components/support/support-floating-but
 
 describe("support floating button", () => {
   beforeEach(() => {
-    vi.stubGlobal("fetch", vi.fn());
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() => Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({
+          phone: "201000000000",
+          whatsappHref: "https://wa.me/201000000000",
+        }),
+      }))
+    );
   });
 
   afterEach(() => {
