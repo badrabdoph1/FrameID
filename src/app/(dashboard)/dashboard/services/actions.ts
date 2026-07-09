@@ -7,8 +7,6 @@ import { prisma } from "@/lib/prisma";
 import { processError } from "@/lib/errors";
 import { getCurrentRequestSession } from "@/modules/auth/request-session";
 
-/* ─── helpers ─────────────────────────────────── */
-
 function readString(formData: FormData, key: string): string {
   const value = formData.get(key);
   return typeof value === "string" ? value.trim() : "";
@@ -22,6 +20,29 @@ function readMoney(formData: FormData, key: string): number {
 
 function readBool(formData: FormData, key: string): boolean {
   return formData.get(key) === "on";
+}
+
+function readFeatures(formData: FormData): string[] {
+  const rows = formData
+    .getAll("feature")
+    .map((item) => typeof item === "string" ? item.trim() : "")
+    .filter(Boolean);
+
+  if (rows.length > 0) return rows;
+
+  const legacy = readString(formData, "features");
+  if (!legacy) return [];
+
+  try {
+    const parsed = JSON.parse(legacy);
+    if (Array.isArray(parsed)) {
+      return parsed.map((item) => String(item).trim()).filter(Boolean);
+    }
+  } catch {
+    // fallback to lines below
+  }
+
+  return legacy.split("\n").map((item) => item.trim()).filter(Boolean);
 }
 
 async function nextPackageOrder(siteId: string): Promise<number> {
@@ -40,7 +61,11 @@ async function nextExtraOrder(siteId: string): Promise<number> {
   return (result._max.sortOrder ?? -1) + 1;
 }
 
-/* ─── Package actions ─────────────────────────── */
+function revalidateCustomerServices(siteSlug: string) {
+  revalidatePath("/dashboard");
+  revalidatePath("/dashboard/services");
+  revalidatePath(`/p/${siteSlug}`);
+}
 
 export async function addPackageAction(formData: FormData) {
   const session = await getCurrentRequestSession();
@@ -49,10 +74,7 @@ export async function addPackageAction(formData: FormData) {
   const name = readString(formData, "name");
   const subtitle = readString(formData, "subtitle");
   const priceAmount = readMoney(formData, "priceAmount");
-  const features = readString(formData, "features")
-    .split("\n")
-    .map((item) => item.trim())
-    .filter(Boolean);
+  const features = readFeatures(formData);
 
   if (!name || priceAmount <= 0) {
     redirect("/dashboard/services?error=invalid-package");
@@ -66,9 +88,10 @@ export async function addPackageAction(formData: FormData) {
         name,
         subtitle: subtitle || null,
         priceAmount,
-        currency: "EGP",
+        currency: readString(formData, "currency") || "EGP",
         features,
-        isHighlighted: formData.get("isHighlighted") === "on",
+        isHighlighted: readBool(formData, "isHighlighted"),
+        isActive: true,
         sortOrder,
       },
     });
@@ -81,8 +104,7 @@ export async function addPackageAction(formData: FormData) {
     redirect(`/dashboard/services?error=${encodeURIComponent(userError.message)}`);
   }
 
-  revalidatePath("/dashboard/services");
-  revalidatePath(`/p/${session.site.slug}`);
+  revalidateCustomerServices(session.site.slug);
   redirect("/dashboard/services?created=package");
 }
 
@@ -94,9 +116,6 @@ export async function updatePackageAction(formData: FormData) {
   if (!id) return;
 
   try {
-    const featuresRaw = readString(formData, "features");
-    const features = featuresRaw ? (JSON.parse(featuresRaw) as string[]) : [];
-
     await prisma.package.update({
       where: { id, siteId: session.site.id },
       data: {
@@ -104,7 +123,7 @@ export async function updatePackageAction(formData: FormData) {
         subtitle: readString(formData, "subtitle") || null,
         priceAmount: readMoney(formData, "priceAmount"),
         currency: readString(formData, "currency") || "EGP",
-        features,
+        features: readFeatures(formData),
         isHighlighted: readBool(formData, "isHighlighted"),
         isActive: readBool(formData, "isActive"),
       },
@@ -118,8 +137,7 @@ export async function updatePackageAction(formData: FormData) {
     redirect(`/dashboard/services?error=${encodeURIComponent(userError.message)}`);
   }
 
-  revalidatePath("/dashboard/services");
-  revalidatePath(`/p/${session.site.slug}`);
+  revalidateCustomerServices(session.site.slug);
 }
 
 export async function deletePackageAction(formData: FormData) {
@@ -143,8 +161,7 @@ export async function deletePackageAction(formData: FormData) {
     redirect(`/dashboard/services?error=${encodeURIComponent(userError.message)}`);
   }
 
-  revalidatePath("/dashboard/services");
-  revalidatePath(`/p/${session.site.slug}`);
+  revalidateCustomerServices(session.site.slug);
 }
 
 export async function duplicatePackageAction(formData: FormData) {
@@ -184,8 +201,7 @@ export async function duplicatePackageAction(formData: FormData) {
     redirect(`/dashboard/services?error=${encodeURIComponent(userError.message)}`);
   }
 
-  revalidatePath("/dashboard/services");
-  revalidatePath(`/p/${session.site.slug}`);
+  revalidateCustomerServices(session.site.slug);
 }
 
 export async function reorderPackageAction(formData: FormData) {
@@ -206,24 +222,15 @@ export async function reorderPackageAction(formData: FormData) {
       where: {
         siteId: session.site.id,
         deletedAt: null,
-        sortOrder:
-          direction === "up"
-            ? { lt: current.sortOrder }
-            : { gt: current.sortOrder },
+        sortOrder: direction === "up" ? { lt: current.sortOrder } : { gt: current.sortOrder },
       },
       orderBy: { sortOrder: direction === "up" ? "desc" : "asc" },
     });
     if (!adjacent) return;
 
     await prisma.$transaction([
-      prisma.package.update({
-        where: { id: current.id },
-        data: { sortOrder: adjacent.sortOrder },
-      }),
-      prisma.package.update({
-        where: { id: adjacent.id },
-        data: { sortOrder: current.sortOrder },
-      }),
+      prisma.package.update({ where: { id: current.id }, data: { sortOrder: adjacent.sortOrder } }),
+      prisma.package.update({ where: { id: adjacent.id }, data: { sortOrder: current.sortOrder } }),
     ]);
   } catch (error) {
     const { userError } = await processError(error, {
@@ -234,11 +241,8 @@ export async function reorderPackageAction(formData: FormData) {
     redirect(`/dashboard/services?error=${encodeURIComponent(userError.message)}`);
   }
 
-  revalidatePath("/dashboard/services");
-  revalidatePath(`/p/${session.site.slug}`);
+  revalidateCustomerServices(session.site.slug);
 }
-
-/* ─── Extra service actions ───────────────────── */
 
 export async function addExtraAction(formData: FormData) {
   const session = await getCurrentRequestSession();
@@ -258,8 +262,11 @@ export async function addExtraAction(formData: FormData) {
         siteId: session.site.id,
         name,
         priceAmount,
-        currency: "EGP",
+        currency: readString(formData, "currency") || "EGP",
         iconKey: readString(formData, "iconKey") || null,
+        description: readString(formData, "description") || null,
+        isHighlighted: readBool(formData, "isHighlighted"),
+        isActive: true,
         sortOrder,
       },
     });
@@ -272,8 +279,7 @@ export async function addExtraAction(formData: FormData) {
     redirect(`/dashboard/services?error=${encodeURIComponent(userError.message)}`);
   }
 
-  revalidatePath("/dashboard/services");
-  revalidatePath(`/p/${session.site.slug}`);
+  revalidateCustomerServices(session.site.slug);
   redirect("/dashboard/services?created=extra");
 }
 
@@ -292,6 +298,8 @@ export async function updateExtraAction(formData: FormData) {
         priceAmount: readMoney(formData, "priceAmount"),
         currency: readString(formData, "currency") || "EGP",
         iconKey: readString(formData, "iconKey") || null,
+        description: readString(formData, "description") || null,
+        isHighlighted: readBool(formData, "isHighlighted"),
         isActive: readBool(formData, "isActive"),
       },
     });
@@ -304,8 +312,7 @@ export async function updateExtraAction(formData: FormData) {
     redirect(`/dashboard/services?error=${encodeURIComponent(userError.message)}`);
   }
 
-  revalidatePath("/dashboard/services");
-  revalidatePath(`/p/${session.site.slug}`);
+  revalidateCustomerServices(session.site.slug);
 }
 
 export async function deleteExtraAction(formData: FormData) {
@@ -329,8 +336,7 @@ export async function deleteExtraAction(formData: FormData) {
     redirect(`/dashboard/services?error=${encodeURIComponent(userError.message)}`);
   }
 
-  revalidatePath("/dashboard/services");
-  revalidatePath(`/p/${session.site.slug}`);
+  revalidateCustomerServices(session.site.slug);
 }
 
 export async function duplicateExtraAction(formData: FormData) {
@@ -355,6 +361,8 @@ export async function duplicateExtraAction(formData: FormData) {
         priceAmount: original.priceAmount,
         currency: original.currency,
         iconKey: original.iconKey,
+        description: original.description,
+        isHighlighted: false,
         isActive: false,
         sortOrder,
       },
@@ -368,8 +376,7 @@ export async function duplicateExtraAction(formData: FormData) {
     redirect(`/dashboard/services?error=${encodeURIComponent(userError.message)}`);
   }
 
-  revalidatePath("/dashboard/services");
-  revalidatePath(`/p/${session.site.slug}`);
+  revalidateCustomerServices(session.site.slug);
 }
 
 export async function reorderExtraAction(formData: FormData) {
@@ -390,24 +397,15 @@ export async function reorderExtraAction(formData: FormData) {
       where: {
         siteId: session.site.id,
         deletedAt: null,
-        sortOrder:
-          direction === "up"
-            ? { lt: current.sortOrder }
-            : { gt: current.sortOrder },
+        sortOrder: direction === "up" ? { lt: current.sortOrder } : { gt: current.sortOrder },
       },
       orderBy: { sortOrder: direction === "up" ? "desc" : "asc" },
     });
     if (!adjacent) return;
 
     await prisma.$transaction([
-      prisma.extraService.update({
-        where: { id: current.id },
-        data: { sortOrder: adjacent.sortOrder },
-      }),
-      prisma.extraService.update({
-        where: { id: adjacent.id },
-        data: { sortOrder: current.sortOrder },
-      }),
+      prisma.extraService.update({ where: { id: current.id }, data: { sortOrder: adjacent.sortOrder } }),
+      prisma.extraService.update({ where: { id: adjacent.id }, data: { sortOrder: current.sortOrder } }),
     ]);
   } catch (error) {
     const { userError } = await processError(error, {
@@ -418,6 +416,5 @@ export async function reorderExtraAction(formData: FormData) {
     redirect(`/dashboard/services?error=${encodeURIComponent(userError.message)}`);
   }
 
-  revalidatePath("/dashboard/services");
-  revalidatePath(`/p/${session.site.slug}`);
+  revalidateCustomerServices(session.site.slug);
 }

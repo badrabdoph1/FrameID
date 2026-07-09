@@ -5,28 +5,20 @@ import Link from "next/link";
 import {
   AlertTriangle,
   ArrowLeft,
-  BadgeCheck,
-  Camera,
   CheckCircle2,
   Circle,
   Copy,
-  CreditCard,
-  Eye,
-  Hourglass,
+  ExternalLink,
   Images,
-  LayoutTemplate,
   Package,
   Rocket,
-  Send,
-  Share2,
-  Sparkles,
   UserRound,
   Wand2,
   type LucideIcon,
 } from "lucide-react";
 
 import type { DashboardViewModel } from "@/modules/dashboard/dashboard-view-model";
-import { BuilderNotice, CompletionRing } from "@/components/dashboard/builder-primitives";
+import { CompletionRing } from "@/components/dashboard/builder-primitives";
 
 type WorkspaceCard = {
   title: string;
@@ -38,8 +30,6 @@ type WorkspaceCard = {
 };
 
 export function DashboardHomeClient({
-  photographerName,
-  siteSlug,
   siteUrl,
   statusLabel,
   percent,
@@ -48,7 +38,6 @@ export function DashboardHomeClient({
   operatingAlerts,
   stats,
   lastModified,
-  currentTheme,
   isPublished,
   isReadyToPublish,
   nextStepHref,
@@ -58,14 +47,15 @@ export function DashboardHomeClient({
   subscription,
 }: DashboardViewModel) {
   const doneCount = checklist.filter((item) => item.done).length;
-  const nextIsExternal = nextStepHref.startsWith("/p/");
   const [copied, setCopied] = useState(false);
-
   const statMap = useMemo(() => new Map(stats.map((stat) => [stat.label, stat])), [stats]);
-  const photos = statMap.get("الصور")?.value ?? "0";
-  const albums = statMap.get("الألبومات")?.value ?? "0";
+
   const packages = statMap.get("الباقات")?.value ?? "0";
-  const shareState = statMap.get("المشاركة")?.value ?? "ناقص SEO";
+  const contact = statMap.get("التواصل")?.value ?? "ناقص";
+  const photos = statMap.get("الصور")?.value ?? "0";
+  const publishState = statMap.get("النشر")?.value ?? statusLabel;
+
+  const activation = getActivationBanner(subscription);
 
   const copySiteUrl = async () => {
     await navigator.clipboard?.writeText(siteUrl);
@@ -75,130 +65,102 @@ export function DashboardHomeClient({
 
   const workspaces: WorkspaceCard[] = [
     {
-      title: "استوديو المصور",
-      description: "الاسم، الغلاف، التواصل، المكان، وروابط السوشيال في Workspace واحد.",
-      href: "/dashboard/site-info",
-      icon: UserRound,
-      state: checklist.find((item) => item.id === "contact")?.done && checklist.find((item) => item.id === "cover")?.done ? "done" : "needs-work",
-      metric: checklist.find((item) => item.id === "contact")?.done ? "التواصل جاهز" : "ناقص بيانات",
-    },
-    {
-      title: "Portfolio Workspace",
-      description: "ارفع أفضل أعمالك كألبومات واضحة بدل صور متفرقة.",
-      href: "/dashboard/gallery",
-      icon: Images,
-      state: Number(photos) > 0 ? "done" : "needs-work",
-      metric: `${photos} صورة · ${albums} ألبوم`,
-    },
-    {
-      title: "Sales Workspace",
-      description: "حوّل خدماتك لباقات وأسعار تساعد العميل يقرر ويحجز بسرعة.",
+      title: "الباقات",
+      description: "أول خطوة: اكتب أسعارك وباقاتك بنفسك.",
       href: "/dashboard/services",
       icon: Package,
       state: Number(packages) > 0 ? "done" : "needs-work",
       metric: `${packages} باقة`,
     },
     {
-      title: "Launch Workspace",
-      description: "راجع المعاينة، جهّز SEO، انشر الرابط، وتابع الاشتراك.",
+      title: "بيانات التواصل",
+      description: "اسم المصور، واتساب، وفيسبوك/إنستجرام/تيك توك.",
+      href: "/dashboard/site-info",
+      icon: UserRound,
+      state: contact === "جاهز" ? "done" : "needs-work",
+      metric: contact,
+    },
+    {
+      title: "الصور",
+      description: "الصورة الشخصية، الغلاف، وألبومات أعمالك.",
+      href: "/dashboard/gallery",
+      icon: Images,
+      state: Number(photos) > 0 ? "done" : "needs-work",
+      metric: `${photos} صورة`,
+    },
+    {
+      title: "النشر",
+      description: "راجع الرابط وشكل المشاركة ثم انشر الموقع.",
       href: "/dashboard/publish",
       icon: Rocket,
       state: isPublished ? "done" : isReadyToPublish ? "ready" : "needs-work",
-      metric: isPublished ? "منشور" : isReadyToPublish ? "جاهز للنشر" : shareState,
+      metric: publishState,
     },
   ];
 
   return (
-    <main className="mx-auto grid w-full max-w-6xl gap-4 pb-4 sm:gap-5">
-      <section className="grid gap-3 rounded-[1.6rem] border border-white/10 bg-[radial-gradient(circle_at_top_right,rgba(243,207,115,0.16),transparent_38%),linear-gradient(135deg,rgba(255,255,255,0.06),rgba(255,255,255,0.025))] p-4 shadow-2xl sm:p-5 lg:grid-cols-[1.28fr_0.72fr] lg:items-stretch">
-        <div className="grid gap-4">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="inline-flex w-fit items-center gap-1.5 rounded-full border border-amber-300/20 bg-amber-300/10 px-3 py-1 text-[0.72rem] font-black text-[#f3cf73]">
-              <Camera className="size-3.5" aria-hidden />
-              {statusLabel}
-            </span>
-            <span className="inline-flex w-fit items-center rounded-full border border-white/10 bg-black/15 px-3 py-1 text-[0.72rem] font-black text-white/45">
-              آخر تعديل {lastModified}
-            </span>
-            {isReadyToPublish ? (
-              <span className="inline-flex w-fit items-center gap-1.5 rounded-full border border-emerald-300/20 bg-emerald-300/10 px-3 py-1 text-[0.72rem] font-black text-emerald-300">
-                <BadgeCheck className="size-3.5" aria-hidden />
-                جاهز للإطلاق
+    <main className="mx-auto grid w-full max-w-5xl gap-3 pb-4 sm:gap-4">
+      <section className={activation.tone === "danger" ? "grid gap-2 rounded-2xl border border-red-400/24 bg-red-400/10 p-3 text-red-100" : "grid gap-2 rounded-2xl border border-amber-300/24 bg-amber-300/10 p-3 text-amber-100 sm:grid-cols-[1fr_auto] sm:items-center"}>
+        <div className="flex min-w-0 items-center gap-2">
+          <AlertTriangle className="size-4 shrink-0" aria-hidden />
+          <p className="truncate text-sm font-black">{activation.message}</p>
+        </div>
+        <Link href="/dashboard/billing" className="inline-flex min-h-9 items-center justify-center rounded-xl bg-[#f3cf73] px-3 text-xs font-black text-[#17120a] no-underline">
+          {activation.action}
+        </Link>
+      </section>
+
+      <button
+        type="button"
+        onClick={copySiteUrl}
+        className="grid w-full gap-2 rounded-[1.2rem] border border-white/10 bg-white/[0.035] p-3 text-start transition hover:border-amber-300/20 hover:bg-amber-300/8 sm:grid-cols-[1fr_auto] sm:items-center"
+      >
+        <span className="min-w-0">
+          <span className="block text-xs font-black text-white/38">رابط موقعك — اضغط للنسخ</span>
+          <span dir="ltr" className="mt-1 block truncate text-sm font-black text-[#f3cf73]">{siteUrl}</span>
+        </span>
+        <span className="inline-flex min-h-10 items-center justify-center gap-2 rounded-2xl border border-white/10 bg-black/20 px-3 text-xs font-black text-white/72">
+          {copied ? <CheckCircle2 className="size-4 text-emerald-300" aria-hidden /> : <Copy className="size-4" aria-hidden />}
+          {copied ? "اتنسخ" : "نسخ"}
+        </span>
+      </button>
+
+      <section className="grid gap-2 rounded-[1.2rem] border border-white/10 bg-[radial-gradient(circle_at_top_right,rgba(243,207,115,0.12),transparent_40%),rgba(255,255,255,0.035)] p-3">
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-xs font-black text-white/40">جاهزية الموقع</p>
+            <h1 className="mt-0.5 truncate text-base font-black text-[#fff7e8]">{doneCount} من {checklist.length} خطوات · {statusLabel}</h1>
+            <p className="mt-1 truncate text-[0.72rem] font-bold text-white/42">آخر تعديل {lastModified}</p>
+          </div>
+          <div className="scale-75"><CompletionRing percent={percent} /></div>
+        </div>
+        <div className="rounded-2xl border border-white/8 bg-black/18 px-3 py-2">
+          <p className="truncate text-sm font-black text-[#fff7e8]">{nextStepTitle}</p>
+          <p className="mt-0.5 line-clamp-2 text-xs font-bold leading-5 text-white/50">{nextStepDescription}</p>
+        </div>
+      </section>
+
+      <Panel title="خطة اليوم" description="امشي بالترتيب من غير ما تدور في الصفحات." icon={Wand2}>
+        <div className="grid gap-2">
+          {checklist.map((item, index) => (
+            <Link
+              key={item.id}
+              href={item.href}
+              className="group grid min-h-12 grid-cols-[auto_auto_1fr_auto] items-center gap-2 rounded-2xl border border-white/8 bg-white/[0.03] px-3 py-2.5 no-underline transition hover:border-amber-300/20 hover:bg-amber-300/8"
+            >
+              <span className={item.done ? "text-emerald-300" : "text-white/25"}>
+                {item.done ? <CheckCircle2 className="size-5" aria-hidden /> : <Circle className="size-5" aria-hidden />}
               </span>
-            ) : null}
-          </div>
-
-          <div>
-            <h1 className="text-balance text-2xl font-black leading-tight text-[#fff7e8] sm:text-3xl lg:text-4xl">
-              مركز تشغيل {photographerName} اليومي
-            </h1>
-            <p className="mt-2 max-w-2xl text-sm font-bold leading-7 text-white/60 sm:text-[0.95rem]">
-              من هنا تبدأ الرحلة: جهّز الاستوديو، ارفع أعمالك، اعرض الباقات، راجع الموقع كعميل، انشر الرابط، وفعّل الاشتراك من مسار واحد واضح.
-            </p>
-          </div>
-
-          <div className="grid gap-2 sm:grid-cols-[1fr_auto_auto]">
-            <Link
-              href={nextStepHref}
-              target={nextIsExternal ? "_blank" : undefined}
-              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-gradient-to-br from-[#f3cf73] to-[#d4af37] px-4 text-sm font-black text-[#17120a] no-underline shadow-lg transition hover:-translate-y-0.5 hover:shadow-amber-500/20"
-            >
-              {percent === 100 && isPublished ? "افتح الموقع المنشور" : nextStepLabel}
-              <ArrowLeft className="size-4" aria-hidden />
+              <span className="text-[0.7rem] font-black text-white/32">{index + 1}</span>
+              <span className="min-w-0">
+                <span className={item.done ? "block truncate text-sm font-black text-white/45" : "block truncate text-sm font-black text-[#fff7e8]"}>{item.label}</span>
+                <span className="mt-0.5 block truncate text-[0.68rem] font-bold text-white/32">{item.description}</span>
+              </span>
+              <ArrowLeft className="size-4 text-white/25 transition group-hover:text-[#f3cf73]" aria-hidden />
             </Link>
-            <Link
-              href={`/p/${siteSlug}`}
-              target="_blank"
-              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-4 text-sm font-black text-white/75 no-underline transition hover:bg-white/[0.075] hover:text-white"
-            >
-              <Eye className="size-4" aria-hidden />
-              معاينة كعميل
-            </Link>
-            <button
-              type="button"
-              onClick={copySiteUrl}
-              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-4 text-sm font-black text-white/75 transition hover:bg-white/[0.075] hover:text-white"
-            >
-              {copied ? <CheckCircle2 className="size-4 text-emerald-300" aria-hidden /> : <Copy className="size-4" aria-hidden />}
-              {copied ? "اتنسخ" : "نسخ الرابط"}
-            </button>
-          </div>
+          ))}
         </div>
-
-        <div className="grid gap-3 rounded-[1.35rem] border border-white/10 bg-black/20 p-4">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <p className="text-xs font-black text-white/40">جاهزية مركز التشغيل</p>
-              <h2 className="mt-1 text-xl font-black text-[#fff7e8]">{doneCount} من {checklist.length} خطوات</h2>
-            </div>
-            <CompletionRing percent={percent} />
-          </div>
-          <div className="rounded-2xl border border-white/8 bg-white/[0.035] p-3">
-            <p className="text-sm font-black text-[#fff7e8]">{nextStepTitle}</p>
-            <p className="mt-1 text-xs font-bold leading-6 text-white/55">{nextStepDescription}</p>
-          </div>
-        </div>
-      </section>
-
-      <section className="grid gap-3 lg:grid-cols-[1fr_0.85fr]">
-        <Panel title="مسار التشغيل" description="رحلة العميل من أول تسجيل حتى النشر والتفعيل." icon={Wand2}>
-          <div className="grid gap-2">
-            {phases.map((phase, index) => (
-              <PhaseRow key={phase.id} phase={phase} index={index + 1} />
-            ))}
-          </div>
-        </Panel>
-
-        <Panel title="تنبيهات تشغيلية" description="ما يحتاج انتباهك الآن قبل إرسال الرابط للعملاء." icon={AlertTriangle}>
-          <div className="grid gap-2">
-            {operatingAlerts.map((alert) => (
-              <OperatingAlert key={`${alert.title}-${alert.href}`} alert={alert} />
-            ))}
-          </div>
-        </Panel>
-      </section>
-
-      {subscription ? <SubscriptionCard subscription={subscription} /> : null}
+      </Panel>
 
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {workspaces.map((workspace) => (
@@ -206,61 +168,35 @@ export function DashboardHomeClient({
         ))}
       </section>
 
-      <section className="grid gap-4 lg:grid-cols-[1fr_0.85fr]">
-        <Panel title="خطة اليوم" description="خطوات عملية مرتبة حسب أهميتها، مش حسب الصفحات." icon={Wand2}>
-          <div className="grid gap-2">
-            {checklist.map((item, index) => (
-              <Link
-                key={item.id}
-                href={item.href}
-                target={item.id === "review" ? "_blank" : undefined}
-                className="group grid min-h-12 grid-cols-[auto_auto_1fr_auto] items-center gap-2 rounded-2xl border border-white/8 bg-white/[0.03] px-3 py-2.5 no-underline transition hover:border-amber-300/20 hover:bg-amber-300/8"
-              >
-                <span className={item.done ? "text-emerald-300" : "text-white/25"}>
-                  {item.done ? <CheckCircle2 className="size-5" aria-hidden /> : <Circle className="size-5" aria-hidden />}
-                </span>
-                <span className="text-[0.7rem] font-black text-white/32">{index + 1}</span>
-                <span className="min-w-0">
-                  <span className={item.done ? "block truncate text-sm font-black text-white/45" : "block truncate text-sm font-black text-[#fff7e8]"}>{item.label}</span>
-                  <span className="mt-0.5 hidden truncate text-[0.68rem] font-bold text-white/32 sm:block">{item.description}</span>
-                </span>
-                <ArrowLeft className="size-4 text-white/25 transition group-hover:text-[#f3cf73]" aria-hidden />
-              </Link>
-            ))}
-          </div>
-        </Panel>
+      <Panel title="المراحل" description="ترتيب مبسط يناسب الموبايل والشخص العادي." icon={ArrowLeft}>
+        <div className="grid gap-2">
+          {phases.map((phase, index) => (
+            <PhaseRow key={phase.id} phase={phase} index={index + 1} />
+          ))}
+        </div>
+      </Panel>
 
-        <Panel title="ملخص سريع" description="أرقام توضح جاهزية الموقع كمركز بيع وحجز." icon={Sparkles}>
-          <div className="grid grid-cols-2 gap-2">
-            {stats.map((stat) => (
-              <div key={stat.label} className="rounded-2xl border border-white/8 bg-black/15 p-3">
-                <p className="text-[0.72rem] font-black text-white/40">{stat.label}</p>
-                <p className={stat.tone === "success" ? "mt-1 truncate text-lg font-black text-emerald-300" : stat.tone === "warning" ? "mt-1 truncate text-lg font-black text-[#f3cf73]" : "mt-1 truncate text-lg font-black text-[#fff7e8]"}>
-                  {stat.value}
-                </p>
+      {operatingAlerts.length > 0 ? (
+        <div className="grid gap-2">
+          {operatingAlerts.map((alert) => (
+            <Link key={`${alert.title}-${alert.href}`} href={alert.href} className={`rounded-2xl border p-3 no-underline ${alertToneClass(alert.tone)}`}>
+              <div className="flex items-center justify-between gap-2">
+                <strong className="text-sm font-black">{alert.title}</strong>
+                <span className="text-xs font-black">{alert.actionLabel}</span>
               </div>
-            ))}
-          </div>
-          <div className="mt-3 rounded-2xl border border-white/8 bg-white/[0.03] p-3">
-            <p className="text-xs font-black text-white/40">رابط موقعك</p>
-            <p className="mt-1 break-all text-xs font-bold leading-6 text-white/60">{siteUrl}</p>
-          </div>
-        </Panel>
-      </section>
-
-      <BuilderNotice
-        tone={isPublished ? "success" : isReadyToPublish ? "info" : "warning"}
-        title={isPublished ? "موقعك منشور وجاهز للمشاركة" : isReadyToPublish ? "موقعك جاهز للنشر" : "موقعك لسه مسودة"}
-        description={isPublished ? "شارك الرابط مع عملائك أو ضيفه على السوشيال ميديا." : isReadyToPublish ? "راجع المعاينة واضغط نشر من Launch Workspace." : "كمّل الخطوات الأساسية وبعدها انشر الموقع من Launch Workspace."}
-      />
+              <p className="mt-1 text-xs font-bold leading-5 opacity-75">{alert.description}</p>
+            </Link>
+          ))}
+        </div>
+      ) : null}
 
       <div className="grid gap-2 sm:grid-cols-2">
-        <Link href="/dashboard/publish" className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-[#f3cf73] px-4 text-sm font-black text-[#17120a] no-underline">
-          <Send className="size-4" aria-hidden />
-          Launch Workspace
+        <Link href={nextStepHref} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-[#f3cf73] px-4 text-sm font-black text-[#17120a] no-underline">
+          {nextStepLabel}
+          <ArrowLeft className="size-4" aria-hidden />
         </Link>
-        <Link href={`/p/${siteSlug}`} target="_blank" className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-4 text-sm font-black text-white/75 no-underline">
-          <Share2 className="size-4" aria-hidden />
+        <Link href={siteUrl} target="_blank" className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-4 text-sm font-black text-white/75 no-underline">
+          <ExternalLink className="size-4" aria-hidden />
           افتح الموقع كعميل
         </Link>
       </div>
@@ -268,90 +204,25 @@ export function DashboardHomeClient({
   );
 }
 
-function SubscriptionCard({ subscription }: { subscription: NonNullable<DashboardViewModel["subscription"]> }) {
-  const state = getSubscriptionState(subscription);
-  return (
-    <section className="rounded-[1.35rem] border p-4" style={{ borderColor: state.border, background: state.background }}>
-      <div className="grid gap-3 sm:grid-cols-[1fr_auto] sm:items-center">
-        <div className="flex items-start gap-3">
-          <span className="grid size-10 shrink-0 place-items-center rounded-2xl bg-black/18" style={{ color: state.color }}>
-            {state.icon}
-          </span>
-          <div>
-            <div className="flex flex-wrap items-center gap-2">
-              <h2 className="text-base font-black text-[#fff7e8]">{state.title}</h2>
-              <span className="rounded-full px-2.5 py-1 text-[0.7rem] font-black" style={{ color: state.color, background: "rgba(0,0,0,0.16)" }}>{state.badge}</span>
-            </div>
-            <p className="mt-1 text-sm font-bold leading-6 text-white/58">{state.description}</p>
-          </div>
-        </div>
-        <Link href={state.href} className="inline-flex min-h-11 items-center justify-center rounded-2xl px-4 text-sm font-black no-underline" style={{ background: state.color, color: "#17120a" }}>
-          {state.action}
-        </Link>
-      </div>
-    </section>
-  );
-}
-
-function getSubscriptionState(subscription: NonNullable<DashboardViewModel["subscription"]>) {
-  if (subscription.hasPendingRequest) {
-    return {
-      title: "طلب التفعيل قيد المراجعة",
-      badge: "قيد المراجعة",
-      description: `حالة الطلب: ${subscription.pendingRequestStatus === "SUBMITTED" ? "تم الإرسال" : subscription.pendingRequestStatus === "PENDING" ? "قيد الانتظار" : "قيد المراجعة"}. تقدر تتابع الطلب من صفحة الاشتراك.`,
-      action: "متابعة الطلب",
-      href: "/dashboard/billing",
-      color: "#fbbf24",
-      border: "rgba(251, 191, 36, 0.22)",
-      background: "rgba(251, 191, 36, 0.08)",
-      icon: <Hourglass className="size-5" aria-hidden />,
-    };
+function getActivationBanner(subscription: DashboardViewModel["subscription"]) {
+  if (subscription?.hasPendingRequest) {
+    return { tone: "warning" as const, message: "طلب التفعيل قيد المراجعة — تابع حالة الطلب", action: "متابعة" };
   }
-  if (subscription.isTrial) {
-    const urgent = subscription.daysRemaining !== null && subscription.daysRemaining <= 3;
-    return {
-      title: "أنت في الفترة التجريبية",
-      badge: subscription.daysRemaining !== null ? `${subscription.daysRemaining} يوم متبقي` : "تجريبي",
-      description: urgent ? "التجربة قربت تخلص. فعّل اشتراكك دلوقتي عشان الموقع يفضل شغال." : "كمّل إعداد الموقع براحتك، وفعّل الاشتراك قبل نهاية التجربة.",
-      action: "فعّل الاشتراك",
-      href: "/dashboard/billing",
-      color: urgent ? "#f87171" : "#f3cf73",
-      border: urgent ? "rgba(248, 113, 113, 0.24)" : "rgba(243, 207, 115, 0.22)",
-      background: urgent ? "rgba(248, 113, 113, 0.08)" : "rgba(243, 207, 115, 0.08)",
-      icon: <Hourglass className="size-5" aria-hidden />,
-    };
+  if (subscription?.isActive) {
+    return { tone: "success" as const, message: "اشتراكك مفعل والموقع جاهز للتشغيل", action: "إدارة" };
   }
-  if (subscription.isActive) {
-    return {
-      title: subscription.planName ?? "اشتراك نشط",
-      badge: "نشط",
-      description: "موقعك شغال، تقدر تعدّل المحتوى أو تراجع الاشتراك في أي وقت.",
-      action: "إدارة الاشتراك",
-      href: "/dashboard/billing",
-      color: "#4ade80",
-      border: "rgba(74, 222, 128, 0.22)",
-      background: "rgba(74, 222, 128, 0.07)",
-      icon: <CreditCard className="size-5" aria-hidden />,
-    };
+  if (subscription?.isTrial) {
+    const days = subscription.daysRemaining !== null ? ` · متبقي ${subscription.daysRemaining} يوم` : "";
+    return { tone: subscription.daysRemaining !== null && subscription.daysRemaining <= 3 ? "danger" as const : "warning" as const, message: `حسابك تجريبي برجاء التأكد من التفعيل${days}`, action: "زر التفعيل" };
   }
-  return {
-    title: "الاشتراك يحتاج انتباه",
-    badge: subscription.status,
-    description: "راجع صفحة الاشتراك لمعرفة المطلوب واستعادة كل الميزات.",
-    action: "راجع الاشتراك",
-    href: "/dashboard/billing",
-    color: "#f87171",
-    border: "rgba(248, 113, 113, 0.24)",
-    background: "rgba(248, 113, 113, 0.08)",
-    icon: <CreditCard className="size-5" aria-hidden />,
-  };
+  return { tone: "danger" as const, message: "حسابك يحتاج مراجعة الاشتراك برجاء التفعيل", action: "تفعيل" };
 }
 
 function PhaseRow({ phase, index }: { phase: DashboardViewModel["phases"][number]; index: number }) {
   const isDone = phase.state === "done";
   const isActive = phase.state === "active";
   return (
-    <Link href={phase.href} className="group grid gap-2 rounded-2xl border border-white/8 bg-white/[0.03] p-3 no-underline transition hover:border-amber-300/20 hover:bg-amber-300/8 sm:grid-cols-[auto_1fr_auto] sm:items-center">
+    <Link href={phase.href} className="grid gap-2 rounded-2xl border border-white/8 bg-white/[0.03] p-3 no-underline transition hover:border-amber-300/20 hover:bg-amber-300/8 sm:grid-cols-[auto_1fr_auto] sm:items-center">
       <span className={isDone ? "grid size-9 place-items-center rounded-2xl bg-emerald-300/10 text-emerald-300" : isActive ? "grid size-9 place-items-center rounded-2xl bg-amber-300/10 text-[#f3cf73]" : "grid size-9 place-items-center rounded-2xl bg-white/[0.04] text-white/28"}>
         {isDone ? <CheckCircle2 className="size-4" aria-hidden /> : <span className="text-xs font-black">{index}</span>}
       </span>
@@ -359,32 +230,9 @@ function PhaseRow({ phase, index }: { phase: DashboardViewModel["phases"][number
         <strong className={phase.state === "locked" ? "block truncate text-sm font-black text-white/36" : "block truncate text-sm font-black text-[#fff7e8]"}>{phase.title}</strong>
         <span className="mt-0.5 block truncate text-xs font-bold text-white/38">{phase.description}</span>
       </span>
-      <span className="flex items-center justify-between gap-2 text-xs font-black text-white/35 sm:justify-end">
-        {phase.done}/{phase.total}
-        <ArrowLeft className="size-4 transition group-hover:text-[#f3cf73]" aria-hidden />
-      </span>
+      <span className="text-xs font-black text-white/35">{phase.done}/{phase.total}</span>
     </Link>
   );
-}
-
-function OperatingAlert({ alert }: { alert: DashboardViewModel["operatingAlerts"][number] }) {
-  return (
-    <Link href={alert.href} className={`grid gap-2 rounded-2xl border p-3 no-underline transition hover:-translate-y-0.5 ${alertToneClass(alert.tone)}`}>
-      <strong className="text-sm font-black">{alert.title}</strong>
-      <span className="text-xs font-bold leading-6 opacity-75">{alert.description}</span>
-      <span className="mt-1 inline-flex items-center gap-1 text-xs font-black">
-        {alert.actionLabel}
-        <ArrowLeft className="size-3.5" aria-hidden />
-      </span>
-    </Link>
-  );
-}
-
-function alertToneClass(tone: DashboardViewModel["operatingAlerts"][number]["tone"]): string {
-  if (tone === "success") return "border-emerald-300/20 bg-emerald-300/10 text-emerald-200";
-  if (tone === "danger") return "border-red-400/24 bg-red-400/10 text-red-200";
-  if (tone === "warning") return "border-amber-300/24 bg-amber-300/10 text-amber-100";
-  return "border-sky-300/20 bg-sky-300/10 text-sky-100";
 }
 
 function WorkspaceTile({ workspace }: { workspace: WorkspaceCard }) {
@@ -392,13 +240,13 @@ function WorkspaceTile({ workspace }: { workspace: WorkspaceCard }) {
   const done = workspace.state === "done";
   const ready = workspace.state === "ready";
   return (
-    <Link href={workspace.href} className="group grid min-h-[10.5rem] gap-3 rounded-[1.35rem] border border-white/10 bg-white/[0.035] p-4 no-underline transition hover:-translate-y-0.5 hover:border-amber-300/24 hover:bg-amber-300/8">
+    <Link href={workspace.href} className="group grid min-h-[9rem] gap-3 rounded-[1.2rem] border border-white/10 bg-white/[0.035] p-3 no-underline transition hover:-translate-y-0.5 hover:border-amber-300/24 hover:bg-amber-300/8">
       <div className="flex items-center justify-between gap-3">
-        <span className="grid size-11 place-items-center rounded-2xl bg-amber-300/10 text-[#f3cf73]">
+        <span className="grid size-10 place-items-center rounded-2xl bg-amber-300/10 text-[#f3cf73]">
           <Icon className="size-5" aria-hidden />
         </span>
         <span className={done ? "rounded-full bg-emerald-300/10 px-2.5 py-1 text-[0.68rem] font-black text-emerald-300" : ready ? "rounded-full bg-sky-300/10 px-2.5 py-1 text-[0.68rem] font-black text-sky-200" : "rounded-full bg-amber-300/10 px-2.5 py-1 text-[0.68rem] font-black text-[#f3cf73]"}>
-          {done ? "جاهز" : ready ? "جاهز للخطوة" : "محتاج إكمال"}
+          {done ? "جاهز" : ready ? "جاهز" : "اكمل"}
         </span>
       </div>
       <div>
@@ -413,19 +261,26 @@ function WorkspaceTile({ workspace }: { workspace: WorkspaceCard }) {
   );
 }
 
+function alertToneClass(tone: DashboardViewModel["operatingAlerts"][number]["tone"]): string {
+  if (tone === "success") return "border-emerald-300/20 bg-emerald-300/10 text-emerald-200";
+  if (tone === "danger") return "border-red-400/24 bg-red-400/10 text-red-200";
+  if (tone === "warning") return "border-amber-300/24 bg-amber-300/10 text-amber-100";
+  return "border-sky-300/20 bg-sky-300/10 text-sky-100";
+}
+
 function Panel({ title, description, icon: Icon, children }: { title: string; description: string; icon: LucideIcon; children: ReactNode }) {
   return (
-    <section className="overflow-hidden rounded-[1.35rem] border border-white/10 bg-white/[0.035]">
-      <header className="flex items-start gap-3 border-b border-white/8 p-4">
-        <span className="grid size-10 shrink-0 place-items-center rounded-2xl bg-amber-300/10 text-[#f3cf73]">
-          <Icon className="size-5" aria-hidden />
+    <section className="overflow-hidden rounded-[1.2rem] border border-white/10 bg-white/[0.035]">
+      <header className="flex items-start gap-3 border-b border-white/8 p-3">
+        <span className="grid size-9 shrink-0 place-items-center rounded-2xl bg-amber-300/10 text-[#f3cf73]">
+          <Icon className="size-4" aria-hidden />
         </span>
         <div>
           <h2 className="text-base font-black text-[#fff7e8]">{title}</h2>
-          <p className="mt-1 text-xs font-bold leading-6 text-white/45">{description}</p>
+          <p className="mt-1 text-xs font-bold leading-5 text-white/45">{description}</p>
         </div>
       </header>
-      <div className="p-4">{children}</div>
+      <div className="p-3">{children}</div>
     </section>
   );
 }

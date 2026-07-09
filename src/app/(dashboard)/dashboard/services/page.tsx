@@ -6,7 +6,7 @@ import { getCurrentRequestSession } from "@/modules/auth/request-session";
 import { ServicesClient } from "@/app/(dashboard)/dashboard/services/services-client";
 
 export const metadata: Metadata = {
-  title: "الباقات والخدمات | FrameID",
+  title: "الباقات | FrameID",
 };
 
 export const dynamic = "force-dynamic";
@@ -44,12 +44,22 @@ export default async function DashboardServicesPage({
         subtitle: p.subtitle ?? undefined,
         priceAmount: p.priceAmount,
         currency: p.currency,
-        features: p.features as string[],
+        features: Array.isArray(p.features) ? (p.features as string[]) : [],
         isHighlighted: p.isHighlighted,
         isActive: p.isActive,
         sortOrder: p.sortOrder,
       }))}
-      extras={extras}
+      extras={extras.map((extra) => ({
+        id: extra.id,
+        name: extra.name,
+        description: extra.description,
+        priceAmount: extra.priceAmount,
+        currency: extra.currency,
+        iconKey: extra.iconKey,
+        isHighlighted: extra.isHighlighted,
+        isActive: extra.isActive,
+        sortOrder: extra.sortOrder,
+      }))}
       created={created}
       error={error}
     />

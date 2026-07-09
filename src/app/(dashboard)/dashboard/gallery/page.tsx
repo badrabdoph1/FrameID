@@ -6,7 +6,7 @@ import { getCurrentRequestSession } from "@/modules/auth/request-session";
 import { GalleryClient } from "@/app/(dashboard)/dashboard/gallery/gallery-client";
 
 export const metadata: Metadata = {
-  title: "معرض الصور | FrameID"
+  title: "الصور | FrameID"
 };
 
 export const dynamic = "force-dynamic";
@@ -35,25 +35,36 @@ export default async function DashboardGalleryPage({
     redirect("/login");
   }
 
-  const albums = await prisma.galleryAlbum.findMany({
-    where: { siteId: session.site.id, deletedAt: null },
-    orderBy: { sortOrder: "asc" },
-    include: {
-      coverAsset: { select: { url: true } },
-      images: {
-        where: { deletedAt: null },
-        orderBy: { sortOrder: "asc" },
-        include: {
-          asset: { select: { url: true, width: true, height: true, sizeBytes: true } },
+  const [albums, profile] = await Promise.all([
+    prisma.galleryAlbum.findMany({
+      where: { siteId: session.site.id, deletedAt: null },
+      orderBy: { sortOrder: "asc" },
+      include: {
+        coverAsset: { select: { url: true } },
+        images: {
+          where: { deletedAt: null },
+          orderBy: { sortOrder: "asc" },
+          include: {
+            asset: { select: { url: true, width: true, height: true, sizeBytes: true } },
+          },
         },
       },
-    },
-  });
+    }),
+    prisma.contactProfile.findUnique({
+      where: { siteId: session.site.id },
+      include: {
+        avatarAsset: { select: { url: true } },
+        coverAsset: { select: { url: true } },
+      },
+    }),
+  ]);
 
   return (
     <GalleryClient
       albums={albums}
       selectedAlbumId={params.albumId || null}
+      avatarUrl={profile?.avatarAsset?.url ?? null}
+      coverUrl={profile?.coverAsset?.url ?? null}
       messages={{
         uploaded: params.uploaded,
         error: params.error,

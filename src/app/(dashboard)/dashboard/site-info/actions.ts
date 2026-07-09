@@ -9,13 +9,18 @@ import { getCurrentRequestSession } from "@/modules/auth/request-session";
 import { createMediaUploadService } from "@/modules/media/media-upload-service";
 import { createPrismaMediaUploadRepository } from "@/modules/media/prisma-media-upload-repository";
 import { createLocalMediaStorage } from "@/modules/media/local-media-storage";
-import { parseWorkingHoursFields } from "@/modules/dashboard/working-hours";
 
 export type AutosaveState = { ok: boolean; message: string };
 
 function readString(formData: FormData, key: string): string {
   const value = formData.get(key);
   return typeof value === "string" ? value.trim() : "";
+}
+
+function revalidateContact(siteSlug: string) {
+  revalidatePath("/dashboard");
+  revalidatePath("/dashboard/site-info");
+  revalidatePath(`/p/${siteSlug}`);
 }
 
 export async function updateSiteInfoAction(
@@ -27,6 +32,7 @@ export async function updateSiteInfoAction(
     redirect("/login");
   }
 
+  const userName = readString(formData, "userName");
   const fields: Record<string, string | null> = {};
   const textFields = [
     "studioName",
@@ -35,23 +41,9 @@ export async function updateSiteInfoAction(
     "phone",
     "whatsapp",
     "email",
-    "city",
-    "country",
-    "address",
-    "googleMapsUrl",
-    "bookingMessageTemplate",
-    "instagram",
     "facebook",
+    "instagram",
     "tiktok",
-    "snapchat",
-    "youtube",
-    "behance",
-    "fiveHundredPx",
-    "linkedin",
-    "telegram",
-    "xTwitter",
-    "threads",
-    "website",
   ] as const;
 
   for (const field of textFields) {
@@ -61,47 +53,33 @@ export async function updateSiteInfoAction(
     }
   }
 
-  let workingHours = parseWorkingHoursFields(formData);
-  if (!workingHours && formData.has("workingHours")) {
-    const raw = readString(formData, "workingHours");
-    if (raw) {
-      try {
-        const parsed = JSON.parse(raw);
-        if (typeof parsed !== "object" || parsed === null) {
-          return { ok: false, message: "صيغة JSON غير صحيحة" };
-        }
-        workingHours = parsed as Record<string, string>;
-      } catch {
-        return { ok: false, message: "صيغة JSON غير صحيحة لمواعيد العمل" };
-      }
-    }
-  }
-
-  const hasWorkingHours =
-    workingHours !== null || formData.has("workingHours");
-  if (!hasWorkingHours && Object.keys(fields).length === 0) {
+  if (!userName && Object.keys(fields).length === 0) {
     return { ok: true, message: "لا توجد تغييرات" };
   }
 
   try {
-    const updateData: Record<string, unknown> = { ...fields };
-    if (hasWorkingHours) {
-      updateData.workingHours = workingHours;
-    }
+    await prisma.$transaction(async (tx) => {
+      if (userName) {
+        await tx.user.update({
+          where: { id: session.user.id },
+          data: { name: userName },
+        });
+      }
 
-    await prisma.contactProfile.upsert({
-      where: { siteId: session.site.id },
-      update: updateData,
-      create: {
-        siteId: session.site.id,
-        ...updateData,
-      },
+      if (Object.keys(fields).length > 0) {
+        await tx.contactProfile.upsert({
+          where: { siteId: session.site.id },
+          update: fields,
+          create: {
+            siteId: session.site.id,
+            ...fields,
+          },
+        });
+      }
     });
 
-    revalidatePath("/dashboard/site-info");
-    revalidatePath(`/p/${session.site.slug}`);
-
-    return { ok: true, message: "تم الحفظ" };
+    revalidateContact(session.site.slug);
+    return { ok: true, message: "تم الحفظ تلقائيًا" };
   } catch (error) {
     const { userError } = await processError(error, {
       userId: session.user.id,
@@ -150,8 +128,7 @@ export async function uploadSiteImageAction(
       create: { siteId: session.site.id, [field]: asset.id },
     });
 
-    revalidatePath("/dashboard/site-info");
-    revalidatePath(`/p/${session.site.slug}`);
+    revalidateContact(session.site.slug);
 
     return {
       ok: true,

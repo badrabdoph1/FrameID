@@ -1,16 +1,12 @@
 "use client";
 
-import { useState, useTransition, type FormEvent, type ReactNode } from "react";
-import { CheckCircle2, Clock, ImageIcon, Loader2, MapPin, MessageSquareText, Phone, Share2, User, type LucideIcon } from "lucide-react";
+import { useState, useTransition, type FormEvent } from "react";
+import Link from "next/link";
+import { ArrowLeft, CheckCircle2, Loader2, Phone, Save, User, type LucideIcon } from "lucide-react";
 
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
-import { ImageUploader } from "@/components/dashboard/image-uploader";
-import { SocialLinksEditor, type SocialLinks } from "@/components/dashboard/social-links-editor";
-import { WorkingHoursEditor } from "@/components/dashboard/working-hours-editor";
-import { BuilderNotice } from "@/components/dashboard/builder-primitives";
-import { updateSiteInfoAction, uploadSiteImageAction, type AutosaveState } from "@/app/(dashboard)/dashboard/site-info/actions";
+import { updateSiteInfoAction, type AutosaveState } from "@/app/(dashboard)/dashboard/site-info/actions";
 
 type SiteInfoClientProps = {
   userName: string;
@@ -44,44 +40,44 @@ type SiteInfoClientProps = {
   coverUrl: string | null;
 };
 
-type SectionKey = "identity" | "contact" | "social" | "hours" | "avatar" | "cover";
 type SectionState = { pending: boolean; result: AutosaveState | null };
 
-const socialKeys: Array<keyof SocialLinks> = ["instagram", "facebook", "tiktok", "snapchat", "youtube", "behance", "fiveHundredPx", "linkedin", "telegram", "xTwitter", "threads", "website", "whatsapp"];
+function normalizeDigits(value: string): string {
+  return value
+    .replace(/[٠-٩]/g, (digit) => String("٠١٢٣٤٥٦٧٨٩".indexOf(digit)))
+    .replace(/[۰-۹]/g, (digit) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(digit)));
+}
+
+function normalizeWhatsApp(value: string): string {
+  const trimmed = normalizeDigits(value).trim();
+  if (!trimmed) return "";
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+
+  let digits = trimmed.replace(/[^0-9+]/g, "");
+  if (digits.startsWith("00")) digits = `+${digits.slice(2)}`;
+  if (digits.startsWith("01") && digits.length === 11) digits = `+20${digits.slice(1)}`;
+  if (digits.startsWith("1") && digits.length === 10) digits = `+20${digits}`;
+  if (!digits.startsWith("+")) digits = `+${digits}`;
+
+  const clean = digits.replace(/[^0-9]/g, "");
+  return clean ? `https://wa.me/${clean}` : trimmed;
+}
 
 export function SiteInfoClient(props: SiteInfoClientProps) {
   const [, startTransition] = useTransition();
   const [states, setStates] = useState<Record<string, SectionState>>({});
-  const [avatarPreview, setAvatarPreview] = useState<string | null>(props.avatarUrl);
-  const [coverPreview, setCoverPreview] = useState<string | null>(props.coverUrl);
-  const [socialLinks, setSocialLinks] = useState<SocialLinks>({
-    instagram: props.instagram ?? undefined,
-    facebook: props.facebook ?? undefined,
-    tiktok: props.tiktok ?? undefined,
-    snapchat: props.snapchat ?? undefined,
-    youtube: props.youtube ?? undefined,
-    behance: props.behance ?? undefined,
-    fiveHundredPx: props.fiveHundredPx ?? undefined,
-    linkedin: props.linkedin ?? undefined,
-    telegram: props.telegram ?? undefined,
-    xTwitter: props.xTwitter ?? undefined,
-    threads: props.threads ?? undefined,
-    website: props.website ?? undefined,
-    whatsapp: props.whatsapp ?? undefined,
-  });
+  const [whatsapp, setWhatsapp] = useState(props.whatsapp ?? "");
 
-  const hasContact = Boolean(props.phone || props.whatsapp || props.email);
-  const hasLocation = Boolean(props.city || props.country || props.address);
-  const hasImages = Boolean(avatarPreview || coverPreview);
-  const filledSocials = Object.values(socialLinks).filter(Boolean).length;
+  const hasIdentity = Boolean(props.userName || props.studioName || props.bio);
+  const hasContact = Boolean(props.phone || props.whatsapp || props.facebook || props.instagram || props.tiktok);
+  const completePercent = Math.round(((hasIdentity ? 1 : 0) + (hasContact ? 1 : 0)) / 2 * 100);
 
-  function setPending(key: SectionKey, pending: boolean, result: AutosaveState | null = states[key]?.result ?? null) {
+  function setPending(key: string, pending: boolean, result: AutosaveState | null = states[key]?.result ?? null) {
     setStates((current) => ({ ...current, [key]: { pending, result } }));
   }
 
-  function saveForm(event: FormEvent<HTMLFormElement>, key: SectionKey) {
-    event.preventDefault();
-    const formData = new FormData(event.currentTarget);
+  function saveForm(form: HTMLFormElement, key: string) {
+    const formData = new FormData(form);
     setPending(key, true, null);
     startTransition(async () => {
       const result = await updateSiteInfoAction(formData);
@@ -89,155 +85,96 @@ export function SiteInfoClient(props: SiteInfoClientProps) {
     });
   }
 
-  function uploadImage(field: "avatarAssetId" | "coverAssetId") {
-    return async (files: File[]) => {
-      const file = files[0];
-      if (!file) return;
-      const key: SectionKey = field === "avatarAssetId" ? "avatar" : "cover";
-      setPending(key, true, null);
-      const fd = new FormData();
-      fd.append("image", file);
-      fd.append("field", field);
-      const result = await uploadSiteImageAction(fd);
-      if (result.ok) {
-        const url = URL.createObjectURL(file);
-        if (field === "avatarAssetId") setAvatarPreview(url);
-        else setCoverPreview(url);
-      }
-      setPending(key, false, result);
-    };
+  function handleSubmit(event: FormEvent<HTMLFormElement>, key: string) {
+    event.preventDefault();
+    saveForm(event.currentTarget, key);
   }
 
   return (
-    <main className="mx-auto grid w-full max-w-6xl gap-4 pb-4">
-      <section className="rounded-[1.6rem] border border-white/10 bg-[radial-gradient(circle_at_top_right,rgba(243,207,115,0.14),transparent_36%),rgba(255,255,255,0.035)] p-4 sm:p-5">
+    <main className="mx-auto grid w-full max-w-5xl gap-3 pb-4">
+      <section className="rounded-[1.2rem] border border-white/10 bg-[radial-gradient(circle_at_top_right,rgba(243,207,115,0.1),transparent_38%),rgba(255,255,255,0.035)] p-3 sm:p-4">
+        <div className="flex items-start gap-3">
+          <span className="grid size-10 shrink-0 place-items-center rounded-2xl bg-amber-300/10 text-[#f3cf73]"><Phone className="size-5" /></span>
+          <div>
+            <p className="text-[0.72rem] font-black text-[#f3cf73]">المرحلة ٢</p>
+            <h1 className="mt-1 text-xl font-black text-[#fff7e8] sm:text-2xl">بيانات التواصل</h1>
+            <p className="mt-1 text-sm font-bold leading-7 text-white/55">هنا نحط فقط بيانات تعريفك وطرق الحجز. أي خانة بتكتبها وتنتقل للي بعدها بتتحفظ تلقائيًا.</p>
+          </div>
+        </div>
+      </section>
+
+      <form
+        className="grid gap-3 rounded-[1.2rem] border border-white/10 bg-white/[0.035] p-3"
+        onSubmit={(event) => handleSubmit(event, "identity")}
+        onBlurCapture={(event) => {
+          if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) saveForm(event.currentTarget, "identity");
+        }}
+      >
+        <CardHeader icon={User} title="هويتك" description="البيانات الأساسية اللي تظهر للعميل." state={states.identity} />
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Field label="اسم المصور"><Input name="userName" defaultValue={props.userName} placeholder="اسمك الشخصي" /></Field>
+          <Field label="اسم الاستوديو أو البراند أو الشركة"><Input name="studioName" defaultValue={props.studioName ?? ""} placeholder="مثلاً: Frame Studio" /></Field>
+        </div>
+        <Field label="نبذة قصيرة"><Input name="bio" defaultValue={props.bio ?? ""} placeholder="مصور زفاف ومنتجات في القاهرة" /></Field>
+        <Field label="قصة أو وصف"><Textarea name="longDescription" defaultValue={props.longDescription ?? ""} rows={5} placeholder="احكي للعميل عن أسلوبك وخبرتك بشكل بسيط..." /></Field>
+        <SaveLine state={states.identity} />
+      </form>
+
+      <form
+        className="grid gap-3 rounded-[1.2rem] border border-white/10 bg-white/[0.035] p-3"
+        onSubmit={(event) => handleSubmit(event, "contact")}
+        onBlurCapture={(event) => {
+          if (event.target instanceof HTMLInputElement) saveForm(event.currentTarget, "contact");
+        }}
+      >
+        <CardHeader icon={Phone} title="طرق التواصل" description="خلي الحجز سهل وواضح للعميل." state={states.contact} />
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Field label="رقم الهاتف"><Input name="phone" type="tel" defaultValue={props.phone ?? props.userPhone ?? ""} placeholder="01000000000" /></Field>
+          <Field label="رقم الواتساب أو رابط واتساب"><Input name="whatsapp" value={whatsapp} onChange={(event) => setWhatsapp(event.target.value)} onBlur={() => setWhatsapp(normalizeWhatsApp(whatsapp))} placeholder="01000000000" dir="ltr" /></Field>
+          <Field label="رابط فيسبوك"><Input name="facebook" defaultValue={props.facebook ?? ""} placeholder="https://facebook.com/..." dir="ltr" /></Field>
+          <Field label="رابط إنستجرام"><Input name="instagram" defaultValue={props.instagram ?? ""} placeholder="https://instagram.com/..." dir="ltr" /></Field>
+          <Field label="رابط تيك توك"><Input name="tiktok" defaultValue={props.tiktok ?? ""} placeholder="https://tiktok.com/@..." dir="ltr" /></Field>
+          <Field label="البريد الإلكتروني اختياري"><Input name="email" type="email" defaultValue={props.email ?? props.userEmail ?? ""} placeholder="name@example.com" /></Field>
+        </div>
+        <SaveLine state={states.contact} />
+      </form>
+
+      <section className="grid gap-3 rounded-[1.2rem] border border-white/10 bg-white/[0.035] p-3 sm:grid-cols-[1fr_auto_auto] sm:items-center">
         <div>
-          <p className="text-[0.72rem] font-black text-[#f3cf73]">بيانات الموقع</p>
-          <h1 className="mt-1 text-2xl font-black text-[#fff7e8] sm:text-3xl">عرّف العميل عليك بسرعة</h1>
-          <p className="mt-2 max-w-2xl text-sm font-bold leading-7 text-white/58">
-            هنا بتحط الاسم، النبذة، صور الغلاف، طرق التواصل، السوشيال، ومواعيد الشغل. كل قسم مستقل عشان التعديل يبقى سهل من الموبايل.
-          </p>
+          <p className="text-xs font-black text-white/38">اكتمال مرحلة التواصل</p>
+          <p className="mt-1 text-lg font-black text-[#fff7e8]">{completePercent}%</p>
         </div>
-        <div className="mt-4 grid grid-cols-2 gap-2 lg:grid-cols-4">
-          <MiniStat label="التواصل" value={hasContact ? "جاهز" : "ناقص"} ok={hasContact} />
-          <MiniStat label="الموقع" value={hasLocation ? "محدد" : "غير مكتمل"} ok={hasLocation} />
-          <MiniStat label="الصور" value={hasImages ? "مرفوعة" : "ناقص صور"} ok={hasImages} />
-          <MiniStat label="السوشيال" value={`${filledSocials} رابط`} ok={filledSocials > 0} />
-        </div>
+        <Link href="/dashboard" className="inline-flex min-h-11 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] px-4 text-sm font-black text-white/70 no-underline">الرئيسية</Link>
+        <Link href="/dashboard/gallery" className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-[#f3cf73] px-4 text-sm font-black text-[#17120a] no-underline">
+          روح لمرحلة الصور
+          <ArrowLeft className="size-4" />
+        </Link>
       </section>
-
-      <section className="grid gap-4 lg:grid-cols-[0.8fr_1fr]">
-        <Panel icon={User} title="هويتك" description="الاسم والنبذة اللي تظهر للعميل في أول زيارة.">
-          <form className="grid gap-3" onSubmit={(event) => saveForm(event, "identity")}>
-            <ReadOnly label="اسم الحساب" value={props.userName} />
-            <Field label="اسم الاستوديو أو البراند"><Input name="studioName" defaultValue={props.studioName ?? ""} placeholder="مثلاً: Frame Studio" /></Field>
-            <Field label="نبذة قصيرة"><Input name="bio" defaultValue={props.bio ?? ""} placeholder="مصور زفاف ومنتجات في القاهرة" /></Field>
-            <Field label="قصة أو وصف أطول"><Textarea name="longDescription" defaultValue={props.longDescription ?? ""} rows={5} placeholder="احكي للعميل عن أسلوبك وخبرتك..." /></Field>
-            <SaveButton state={states.identity} />
-          </form>
-        </Panel>
-
-        <Panel icon={ImageIcon} title="الصور الأساسية" description="الصورة الشخصية والغلاف هم أول انطباع للعميل.">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <ImageBox title="الصورة الشخصية" preview={avatarPreview} state={states.avatar}>
-              <ImageUploader onUpload={uploadImage("avatarAssetId")} multiple={false} maxFiles={1} maxSizeMB={10} />
-            </ImageBox>
-            <ImageBox title="صورة الغلاف" preview={coverPreview} state={states.cover} wide>
-              <ImageUploader onUpload={uploadImage("coverAssetId")} multiple={false} maxFiles={1} maxSizeMB={15} />
-            </ImageBox>
-          </div>
-        </Panel>
-      </section>
-
-      <Panel icon={Phone} title="طرق التواصل والمكان" description="خلي الحجز سهل: رقم، واتساب، بريد، ومدينة.">
-        <form className="grid gap-3" onSubmit={(event) => saveForm(event, "contact")}>
-          <div className="grid gap-3 lg:grid-cols-3">
-            <Field label="رقم الهاتف"><Input name="phone" type="tel" defaultValue={props.phone ?? props.userPhone ?? ""} placeholder="+20 100 000 0000" /></Field>
-            <Field label="واتساب"><Input name="whatsapp" defaultValue={props.whatsapp ?? ""} placeholder="https://wa.me/201000000000" dir="ltr" /></Field>
-            <Field label="البريد"><Input name="email" type="email" defaultValue={props.email ?? props.userEmail ?? ""} placeholder="photographer@example.com" /></Field>
-          </div>
-          <div className="grid gap-3 lg:grid-cols-3">
-            <Field label="المدينة"><Input name="city" defaultValue={props.city ?? ""} placeholder="القاهرة" /></Field>
-            <Field label="الدولة"><Input name="country" defaultValue={props.country ?? ""} placeholder="مصر" /></Field>
-            <Field label="Google Maps"><Input name="googleMapsUrl" defaultValue={props.googleMapsUrl ?? ""} placeholder="رابط Google Maps" dir="ltr" /></Field>
-          </div>
-          <Field label="العنوان"><Input name="address" defaultValue={props.address ?? ""} placeholder="العنوان بالتفصيل لو عندك استوديو" /></Field>
-          <Field label="رسالة الحجز الجاهزة"><Textarea name="bookingMessageTemplate" defaultValue={props.bookingMessageTemplate ?? ""} rows={3} placeholder="مثلاً: أهلاً، حابب أحجز جلسة تصوير يوم..." /></Field>
-          <SaveButton state={states.contact} />
-        </form>
-      </Panel>
-
-      <Panel icon={Share2} title="روابط السوشيال" description="ضيف الروابط المهمة فقط عشان العميل مايتشتتش.">
-        <form className="grid gap-3" onSubmit={(event) => saveForm(event, "social")}>
-          {socialKeys.map((key) => <input key={key} type="hidden" name={key} value={socialLinks[key] ?? ""} />)}
-          <SocialLinksEditor links={socialLinks} onChange={setSocialLinks} />
-          <SaveButton state={states.social} />
-        </form>
-      </Panel>
-
-      <Panel icon={Clock} title="مواعيد العمل" description="وضح للعميل إمتى يقدر يتواصل أو يحجز.">
-        <form className="grid gap-3" onSubmit={(event) => saveForm(event, "hours")}>
-          <WorkingHoursEditor value={props.workingHours} />
-          <SaveButton state={states.hours} />
-        </form>
-      </Panel>
     </main>
   );
 }
 
-function Panel({ icon: Icon, title, description, children }: { icon: LucideIcon; title: string; description: string; children: ReactNode }) {
+function CardHeader({ icon: Icon, title, description, state }: { icon: LucideIcon; title: string; description: string; state?: SectionState }) {
   return (
-    <section className="overflow-hidden rounded-[1.35rem] border border-white/10 bg-white/[0.035]">
-      <header className="flex items-start gap-3 border-b border-white/8 p-4">
-        <span className="grid size-10 shrink-0 place-items-center rounded-2xl bg-amber-300/10 text-[#f3cf73]"><Icon className="size-5" /></span>
-        <div><h2 className="text-base font-black text-[#fff7e8]">{title}</h2><p className="mt-1 text-xs font-bold leading-6 text-white/45">{description}</p></div>
-      </header>
-      <div className="p-4">{children}</div>
-    </section>
-  );
-}
-
-function Field({ label, children }: { label: string; children: ReactNode }) {
-  return <label className="grid gap-1.5"><span className="text-xs font-black text-white/55">{label}</span>{children}</label>;
-}
-
-function ReadOnly({ label, value }: { label: string; value: string }) {
-  return <div className="rounded-2xl border border-white/8 bg-black/15 p-3"><p className="text-xs font-black text-white/40">{label}</p><p className="mt-1 text-sm font-black text-[#fff7e8]">{value}</p></div>;
-}
-
-function MiniStat({ label, value, ok }: { label: string; value: string; ok: boolean }) {
-  return <div className="rounded-2xl border border-white/8 bg-black/18 p-3"><p className={ok ? "text-sm font-black text-emerald-300" : "text-sm font-black text-[#f3cf73]"}>{value}</p><p className="mt-1 text-[0.72rem] font-black text-white/38">{label}</p></div>;
-}
-
-function SaveButton({ state }: { state?: SectionState }) {
-  return (
-    <div className="grid gap-2 sm:grid-cols-[auto_1fr] sm:items-center">
-      <Button type="submit" variant="luxury" className="min-h-11 rounded-2xl font-black" disabled={state?.pending}>
-        {state?.pending ? <Loader2 className="size-4 animate-spin" /> : <CheckCircle2 className="size-4" />}
-        {state?.pending ? "جاري الحفظ..." : "حفظ التعديلات"}
-      </Button>
-      <SectionFeedback state={state} />
+    <div className="flex items-start justify-between gap-3 border-b border-white/8 pb-3">
+      <div className="flex items-start gap-3">
+        <span className="grid size-9 shrink-0 place-items-center rounded-2xl bg-amber-300/10 text-[#f3cf73]"><Icon className="size-4" /></span>
+        <div><h2 className="text-base font-black text-[#fff7e8]">{title}</h2><p className="mt-1 text-xs font-bold leading-5 text-white/45">{description}</p></div>
+      </div>
+      {state?.pending ? <Loader2 className="size-4 animate-spin text-[#f3cf73]" /> : state?.result?.ok ? <CheckCircle2 className="size-4 text-emerald-300" /> : null}
     </div>
   );
 }
 
-function SectionFeedback({ state }: { state?: SectionState }) {
-  if (!state?.result) return null;
-  return <BuilderNotice tone={state.result.ok ? "success" : "error"} title={state.result.message} />;
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return <label className="grid gap-1.5"><span className="text-xs font-black text-white/55">{label}</span>{children}</label>;
 }
 
-function ImageBox({ title, preview, state, children, wide }: { title: string; preview: string | null; state?: SectionState; children: ReactNode; wide?: boolean }) {
+function SaveLine({ state }: { state?: SectionState }) {
   return (
-    <div className="grid gap-3 rounded-2xl border border-white/8 bg-black/15 p-3">
-      <div className={wide ? "aspect-[16/10] overflow-hidden rounded-2xl bg-white/[0.04]" : "aspect-square overflow-hidden rounded-2xl bg-white/[0.04]"}>
-        {preview ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={preview} alt={title} className="size-full object-cover" />
-        ) : <div className="grid size-full place-items-center text-white/28"><ImageIcon className="size-10" /></div>}
-      </div>
-      <h3 className="text-sm font-black text-[#fff7e8]">{title}</h3>
-      {children}
-      <SectionFeedback state={state} />
+    <div className="flex min-h-9 items-center gap-2 text-xs font-black text-white/38">
+      {state?.pending ? <Loader2 className="size-3.5 animate-spin text-[#f3cf73]" /> : state?.result?.ok ? <CheckCircle2 className="size-3.5 text-emerald-300" /> : <Save className="size-3.5" />}
+      {state?.pending ? "بيتحفظ..." : state?.result?.message ?? "الحفظ تلقائي عند الانتقال من خانة للتانية"}
     </div>
   );
 }
