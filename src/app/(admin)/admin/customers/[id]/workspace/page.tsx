@@ -55,7 +55,7 @@ export default async function AdminCustomer360Page({ params }: Props) {
   const customer = await prisma.tenant.findUnique({
     where: { id },
     include: {
-      owner: { select: { id: true, name: true, email: true, role: true, createdAt: true, lastLoginAt: true, emailVerifiedAt: true } },
+      owner: { select: { id: true, name: true, email: true, role: true, createdAt: true, updatedAt: true, emailVerifiedAt: true } },
       sites: {
         where: { deletedAt: null },
         orderBy: { createdAt: "desc" },
@@ -134,7 +134,7 @@ export default async function AdminCustomer360Page({ params }: Props) {
             <Info label="Email" value={customer.owner.email} dir="ltr" />
             <Info label="Role" value={customer.owner.role} />
             <Info label="Email verified" value={dateLabel(customer.owner.emailVerifiedAt)} />
-            <Info label="Last login" value={dateLabel(customer.owner.lastLoginAt)} />
+            <Info label="Account updated" value={dateLabel(customer.owner.updatedAt)} />
             <Info label="Created" value={dateLabel(customer.createdAt)} />
           </div>
         </Panel>
