@@ -237,36 +237,36 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section className="relative overflow-hidden bg-ink py-10 text-white md:py-22">
+        <section className="relative overflow-hidden bg-ink py-8 text-white md:py-22">
           <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-l from-transparent via-champagne/60 to-transparent" aria-hidden />
-          <div className="absolute -right-24 top-12 size-72 rounded-full bg-champagne/10 blur-3xl" aria-hidden />
+          <div className="absolute -right-24 top-12 hidden size-72 rounded-full bg-champagne/10 blur-3xl md:block" aria-hidden />
           <div className="container-page relative">
-            <div className="max-w-2xl">
-              <p className="text-sm font-semibold text-champagne">
+            <div className="mx-auto max-w-xl text-center md:mx-0 md:max-w-2xl md:text-start">
+              <p className="text-xs font-semibold text-champagne md:text-sm">
                 مش مجرد موقع
               </p>
-              <h2 className="mt-2 text-balance text-2xl font-semibold md:text-5xl">
+              <h2 className="mt-2 text-balance text-xl font-semibold leading-tight md:text-5xl">
                 خلّي العميل يفهم شغلك ويطلبك أسرع
               </h2>
-              <p className="mt-3 max-w-xl text-sm leading-7 text-white/62 md:text-base md:leading-8">
+              <p className="mx-auto mt-2 max-w-xl text-xs leading-6 text-white/58 md:mx-0 md:mt-3 md:text-base md:leading-8">
                 بدل ما تشرح كل حاجة في الشات، خلي الرابط يبيع شغلك ويجاوب العميل قبل ما يسأل.
               </p>
             </div>
-            <div className="mt-6 grid gap-3 sm:grid-cols-2 md:mt-8 lg:grid-cols-5">
+            <div className="mt-5 grid grid-cols-2 gap-2 md:mt-8 md:grid-cols-3 md:gap-3 lg:grid-cols-5">
               {benefits.map((card: { title: string; body: string }, index: number) => {
                 const BenefitIcon = benefitIcons[index % benefitIcons.length];
                 return (
                   <article
                     key={card.title}
-                    className="group grid min-h-[10.5rem] content-start rounded-[1.35rem] border border-white/10 bg-white/[0.045] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.045)] transition hover:-translate-y-1 hover:border-champagne/30 hover:bg-white/[0.07] hover:shadow-[0_18px_45px_rgba(0,0,0,0.18)]"
+                    className="group grid min-h-[7.7rem] content-start rounded-2xl border border-white/10 bg-white/[0.04] p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] transition hover:-translate-y-0.5 hover:border-champagne/25 hover:bg-white/[0.06] md:min-h-[10.5rem] md:rounded-[1.35rem] md:p-4 md:hover:-translate-y-1 md:hover:shadow-[0_18px_45px_rgba(0,0,0,0.18)]"
                   >
-                    <span className="mb-4 inline-flex size-10 items-center justify-center rounded-2xl border border-champagne/18 bg-champagne/12 text-champagne shadow-[0_0_22px_rgba(230,196,120,0.12)] transition group-hover:bg-champagne/18 group-hover:shadow-[0_0_28px_rgba(230,196,120,0.22)]">
-                      <BenefitIcon className="size-4" aria-hidden />
+                    <span className="mb-2 inline-flex size-8 items-center justify-center rounded-xl border border-champagne/16 bg-champagne/10 text-champagne shadow-[0_0_16px_rgba(230,196,120,0.10)] transition group-hover:bg-champagne/14 md:mb-4 md:size-10 md:rounded-2xl md:shadow-[0_0_22px_rgba(230,196,120,0.12)]">
+                      <BenefitIcon className="size-3.5 md:size-4" aria-hidden />
                     </span>
-                    <h3 className="text-base font-semibold leading-6 text-white">
+                    <h3 className="text-sm font-semibold leading-5 text-white md:text-base md:leading-6">
                       {card.title}
                     </h3>
-                    <p className="mt-2 text-sm leading-6 text-white/58">
+                    <p className="mt-1 text-[0.72rem] leading-5 text-white/55 md:mt-2 md:text-sm md:leading-6 md:text-white/58">
                       {card.body}
                     </p>
                   </article>
@@ -276,21 +276,21 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section className="relative overflow-hidden bg-[radial-gradient(circle_at_top_left,rgba(230,196,120,0.16),transparent_32%),linear-gradient(180deg,#fffaf0_0%,#f7f2e8_100%)] py-10 md:py-22">
+        <section className="relative overflow-hidden bg-[radial-gradient(circle_at_top_left,rgba(230,196,120,0.10),transparent_30%),linear-gradient(180deg,#fffaf0_0%,#f7f2e8_100%)] py-8 md:py-22">
           <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-l from-transparent via-champagne-strong/50 to-transparent" aria-hidden />
           <div className="container-page relative">
-            <div className="mx-auto max-w-2xl text-center">
-              <p className="text-sm font-semibold text-champagne-strong">
+            <div className="mx-auto max-w-xl text-center md:max-w-2xl">
+              <p className="text-xs font-semibold text-champagne-strong md:text-sm">
                 البداية أسهل من ما تتخيل
               </p>
-              <h2 className="mt-2 text-balance text-2xl font-semibold text-ink md:text-5xl">
+              <h2 className="mt-2 text-balance text-xl font-semibold text-ink md:text-5xl">
                 ابدأ موقعك في ٤ خطوات بسيطة
               </h2>
-              <p className="mx-auto mt-3 max-w-xl text-sm leading-7 text-muted-foreground md:text-base md:leading-8">
+              <p className="mx-auto mt-2 max-w-xl text-xs leading-6 text-muted-foreground md:mt-3 md:text-base md:leading-8">
                 اختار الشكل، اعمل حسابك، ادخل لوحة التحكم، وعدّل موقعك في أي وقت.
               </p>
             </div>
-            <div className="mt-7 grid gap-3 md:mt-10 md:grid-cols-4">
+            <div className="mt-5 grid gap-2.5 md:mt-10 md:grid-cols-4 md:gap-3">
               {howItWorks.map((step: { title: string; body: string; href?: string }, index: number) => {
                 const JourneyIcon = journeyIcons[index % journeyIcons.length];
                 const href = step.href ?? journeyFallbackHrefs[index] ?? "/templates";
@@ -298,26 +298,34 @@ export default function HomePage() {
                   <Link
                     key={step.title}
                     href={href}
-                    className="group relative grid min-h-[12rem] overflow-hidden rounded-[1.45rem] border border-ink/10 bg-white/82 p-4 text-start no-underline shadow-[0_18px_45px_rgba(20,20,20,0.08),inset_0_1px_0_rgba(255,255,255,0.75)] backdrop-blur transition active:scale-[0.98] hover:-translate-y-1 hover:border-champagne-strong/35 hover:bg-white hover:shadow-[0_24px_60px_rgba(20,20,20,0.12)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-champagne-strong md:p-5"
+                    className="group relative flex min-h-[4.8rem] items-center gap-3 overflow-hidden rounded-2xl border border-ink/10 bg-white/86 p-3 text-start no-underline shadow-[0_10px_28px_rgba(20,20,20,0.06),inset_0_1px_0_rgba(255,255,255,0.75)] backdrop-blur transition active:scale-[0.98] hover:border-champagne-strong/28 hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-champagne-strong md:grid md:min-h-[12rem] md:content-start md:rounded-[1.45rem] md:p-5 md:hover:-translate-y-1 md:hover:shadow-[0_24px_60px_rgba(20,20,20,0.12)]"
                   >
-                    <span className="pointer-events-none absolute inset-x-4 top-0 h-px bg-gradient-to-l from-transparent via-champagne-strong/60 to-transparent opacity-70" aria-hidden />
-                    <span className="mb-5 flex items-center justify-between gap-3">
+                    <span className="pointer-events-none absolute inset-x-4 top-0 h-px bg-gradient-to-l from-transparent via-champagne-strong/55 to-transparent opacity-60" aria-hidden />
+                    <span className="grid size-9 shrink-0 place-items-center rounded-xl border border-champagne-strong/16 bg-champagne-strong/10 text-champagne-strong shadow-[0_0_18px_rgba(181,137,61,0.12)] md:hidden">
+                      <JourneyIcon className="size-4" aria-hidden />
+                    </span>
+                    <div className="mb-5 hidden items-center justify-between gap-3 md:flex">
                       <span className="inline-flex size-11 items-center justify-center rounded-2xl border border-champagne-strong/18 bg-champagne-strong/10 text-champagne-strong shadow-[0_0_24px_rgba(181,137,61,0.16)] transition group-hover:bg-champagne-strong/15 group-hover:shadow-[0_0_30px_rgba(181,137,61,0.26)]">
                         <JourneyIcon className="size-5" aria-hidden />
                       </span>
                       <span className="inline-flex size-9 items-center justify-center rounded-full border border-ink/10 bg-ink text-white shadow-soft transition group-hover:-translate-x-1 group-hover:bg-champagne-strong group-hover:text-ink">
                         <ArrowLeft className="size-4" aria-hidden />
                       </span>
+                    </div>
+                    <div className="min-w-0 flex-1 text-center md:text-start">
+                      <span className="mb-2 hidden w-fit rounded-full bg-ink/5 px-2.5 py-1 text-[0.68rem] font-semibold text-ink/55 md:inline-flex">
+                        خطوة {index + 1}
+                      </span>
+                      <h3 className="text-sm font-semibold leading-5 text-ink md:text-base md:leading-6">
+                        {step.title}
+                      </h3>
+                      <p className="mt-1 text-xs leading-5 text-muted-foreground md:mt-2 md:text-sm md:leading-6">
+                        {step.body}
+                      </p>
+                    </div>
+                    <span className="grid size-8 shrink-0 place-items-center rounded-full border border-ink/10 bg-ink text-white shadow-soft transition group-hover:-translate-x-1 group-hover:bg-champagne-strong group-hover:text-ink md:hidden">
+                      <ArrowLeft className="size-3.5" aria-hidden />
                     </span>
-                    <span className="mb-2 inline-flex w-fit rounded-full bg-ink/5 px-2.5 py-1 text-[0.68rem] font-semibold text-ink/55">
-                      خطوة {index + 1}
-                    </span>
-                    <h3 className="text-base font-semibold leading-6 text-ink">
-                      {step.title}
-                    </h3>
-                    <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                      {step.body}
-                    </p>
                   </Link>
                 );
               })}
