@@ -4,6 +4,7 @@ import { AdminPageShell } from "@/components/layout/admin-page-shell";
 import { prisma } from "@/lib/prisma";
 import { requireAdminPermission } from "@/modules/admin/admin-permission-guards";
 import { ROLES } from "@/modules/admin/permissions";
+import { getPublicAccountIdentifier } from "@/modules/auth/auth-identifier";
 
 export const dynamic = "force-dynamic";
 
@@ -57,7 +58,9 @@ export default async function AdminUsersPage() {
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0">
                     <h3 className="truncate text-sm font-black text-white/84">{admin.name}</h3>
-                    <p className="mt-1 truncate font-mono text-xs font-bold text-white/38">{admin.email}</p>
+                    <p className="mt-1 truncate font-mono text-xs font-bold text-white/38" dir="ltr">
+                      {getPublicAccountIdentifier({ email: admin.email, phone: admin.phone })}
+                    </p>
                   </div>
                   <span className="rounded-full border border-amber-500/20 bg-amber-500/10 px-2 py-0.5 text-[0.68rem] font-black text-amber-200">{admin.role}</span>
                 </div>
