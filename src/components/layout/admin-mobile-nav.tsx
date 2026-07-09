@@ -34,7 +34,7 @@ function MobileSectionLinks({ pathname, title, links, onNavigate }: { pathname: 
         const active = isAdminLinkActive(pathname, link.href)
         return (
           <Link key={link.href} href={link.href} onClick={onNavigate} className={cn("admin-mobile-subnav-link", active && "is-active")}> 
-            {LinkIcon ? <LinkIcon className="size-3.5" /> : null}
+            {LinkIcon ? <LinkIcon className="size-3.5" aria-hidden /> : null}
             <span>{link.label}</span>
           </Link>
         )
@@ -56,14 +56,30 @@ export function AdminMobileNav() {
   const activeLinks = activeSection?.links ?? []
 
   useEffect(() => {
-    if (mobileMenuOpen) {
-      searchRef.current?.focus()
-      document.documentElement.classList.add("admin-mobile-menu-open")
-    } else {
+    if (!mobileMenuOpen) {
       document.documentElement.classList.remove("admin-mobile-menu-open")
+      return
     }
-    return () => document.documentElement.classList.remove("admin-mobile-menu-open")
-  }, [mobileMenuOpen])
+
+    const previousBodyOverflow = document.body.style.overflow
+    searchRef.current?.focus()
+    document.documentElement.classList.add("admin-mobile-menu-open")
+    document.body.style.overflow = "hidden"
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        toggleMobileMenu()
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown)
+
+    return () => {
+      document.documentElement.classList.remove("admin-mobile-menu-open")
+      document.body.style.overflow = previousBodyOverflow
+      window.removeEventListener("keydown", handleKeyDown)
+    }
+  }, [mobileMenuOpen, toggleMobileMenu])
 
   return (
     <>
@@ -74,12 +90,13 @@ export function AdminMobileNav() {
               onClick={toggleMobileMenu}
               className="grid size-11 place-items-center rounded-2xl border border-white/10 bg-white/[0.05] text-white/72"
               aria-label="فتح قائمة الإدارة"
+              aria-controls="admin-mobile-menu"
               aria-expanded={mobileMenuOpen}
             >
-              <Menu className="size-5" />
+              <Menu className="size-5" aria-hidden />
             </button>
             <Link href="/admin" className="grid size-11 place-items-center rounded-2xl bg-gradient-to-br from-[#f3cf73] to-[#d4af37] text-[#17120a] no-underline shadow-lg">
-              <Home className="size-5" />
+              <Home className="size-5" aria-hidden />
             </Link>
           </div>
 
@@ -90,10 +107,10 @@ export function AdminMobileNav() {
 
           <div className="flex items-center justify-end gap-2">
             <Link href="/admin/search" className="grid size-11 place-items-center rounded-2xl border border-white/10 bg-white/[0.05] text-white/72 no-underline">
-              <Search className="size-5" />
+              <Search className="size-5" aria-hidden />
             </Link>
             <Link href="/admin/notifications" className="relative grid size-11 place-items-center rounded-2xl border border-white/10 bg-white/[0.05] text-white/72 no-underline">
-              <Bell className="size-5" />
+              <Bell className="size-5" aria-hidden />
               <span className="absolute -left-1 -top-1 grid size-5 place-items-center rounded-full bg-[#f3cf73] text-[0.65rem] font-black text-[#17120a]">3</span>
             </Link>
           </div>
@@ -110,7 +127,7 @@ export function AdminMobileNav() {
               const isActive = isSectionActive(pathname, section.id)
               return (
                 <Link key={section.id} href={href} className={cn("admin-mobile-bottom-link", isActive && "is-active")}> 
-                  <Icon className="size-5" />
+                  <Icon className="size-5" aria-hidden />
                   <span>{section.title}</span>
                 </Link>
               )
@@ -119,9 +136,10 @@ export function AdminMobileNav() {
               onClick={toggleMobileMenu}
               className={cn("admin-mobile-bottom-link", (mobileMenuOpen || overflowActive) && "is-active")}
               aria-label="فتح كل الأقسام"
+              aria-controls="admin-mobile-menu"
               aria-expanded={mobileMenuOpen}
             >
-              <Menu className="size-5" />
+              <Menu className="size-5" aria-hidden />
               <span>القائمة</span>
             </button>
           </nav>
@@ -129,6 +147,7 @@ export function AdminMobileNav() {
       </div>
 
       <div
+        id="admin-mobile-menu"
         role="dialog"
         aria-modal="true"
         aria-label="قائمة إدارة FrameID"
@@ -139,12 +158,12 @@ export function AdminMobileNav() {
             <p className="text-xs font-black text-[#f3cf73]">FrameID Admin</p>
             <h2 className="mt-1 truncate text-lg font-black text-[#fff7e8]">كل مراكز الإدارة</h2>
           </div>
-          <button onClick={toggleMobileMenu} className="grid size-11 shrink-0 place-items-center rounded-2xl border border-white/10 bg-white/[0.05] text-white/70">
-            <X className="size-5" />
+          <button onClick={toggleMobileMenu} className="grid size-11 shrink-0 place-items-center rounded-2xl border border-white/10 bg-white/[0.05] text-white/70" aria-label="إغلاق قائمة الإدارة">
+            <X className="size-5" aria-hidden />
           </button>
         </div>
 
-        <div className="grid gap-4 overflow-y-auto px-4 py-4 admin-scrollbar">
+        <div className="grid gap-4 overflow-y-auto overscroll-contain px-4 py-4 admin-scrollbar">
           <form
             onSubmit={(e) => {
               e.preventDefault()
@@ -154,9 +173,9 @@ export function AdminMobileNav() {
             }}
             className="grid grid-cols-[1fr_auto] gap-2 rounded-3xl border border-white/10 bg-white/[0.05] p-2"
           >
-            <input ref={searchRef} name="mobile-search" type="text" placeholder="ابحث في العملاء، المدفوعات، الأخطاء…" className="min-h-11 min-w-0 border-0 bg-transparent px-3 text-sm font-bold text-white outline-none placeholder:text-white/28" />
+            <input ref={searchRef} name="mobile-search" type="text" placeholder="ابحث في العملاء، المدفوعات، الأخطاء…" className="min-h-11 min-w-0 border-0 bg-transparent px-3 text-base font-bold text-white outline-none placeholder:text-white/28 md:text-sm" />
             <button className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-gradient-to-br from-[#f3cf73] to-[#d4af37] px-4 text-sm font-black text-[#17120a]">
-              <Search className="size-4" /> بحث
+              <Search className="size-4" aria-hidden /> بحث
             </button>
           </form>
 
@@ -168,7 +187,7 @@ export function AdminMobileNav() {
                 <article key={section.id} className={cn("rounded-3xl border bg-white/[0.035] p-3", sectionActive ? "border-amber-500/35" : "border-white/10")}>
                   <Link href={section.links[0]?.href ?? "/admin"} onClick={toggleMobileMenu} className="grid grid-cols-[auto,1fr] items-center gap-3 no-underline">
                     <span className={cn("grid size-12 place-items-center rounded-2xl", sectionActive ? "bg-[#f3cf73] text-[#17120a]" : "bg-amber-500/12 text-[#f3cf73]")}> 
-                      <Icon className="size-6" />
+                      <Icon className="size-6" aria-hidden />
                     </span>
                     <span className="min-w-0">
                       <strong className="block truncate text-base font-black text-[#fff7e8]">{section.title}</strong>
@@ -190,7 +209,7 @@ export function AdminMobileNav() {
                             active ? "border-amber-500/40 bg-amber-500/12 text-[#f3cf73]" : "border-white/8 bg-black/14 text-white/58",
                           )}
                         >
-                          {LinkIcon ? <LinkIcon className="size-4" /> : null}
+                          {LinkIcon ? <LinkIcon className="size-4" aria-hidden /> : null}
                           <span className="truncate">{link.label}</span>
                         </Link>
                       )
@@ -203,11 +222,11 @@ export function AdminMobileNav() {
 
           <div className="grid grid-cols-2 gap-2 pb-4">
             <Link href="/" onClick={toggleMobileMenu} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.05] text-sm font-black text-white/70 no-underline">
-              <ExternalLink className="size-4" /> الموقع
+              <ExternalLink className="size-4" aria-hidden /> الموقع
             </Link>
             <form action="/admin/logout" method="post" className="contents" onSubmit={() => toggleMobileMenu()}>
               <button className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.05] text-sm font-black text-white/70">
-                <LogOut className="size-4" /> خروج
+                <LogOut className="size-4" aria-hidden /> خروج
               </button>
             </form>
           </div>
