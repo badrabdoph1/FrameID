@@ -8,7 +8,6 @@ import {
   CheckCircle2,
   Circle,
   Copy,
-  CreditCard,
   ExternalLink,
   Images,
   Package,
