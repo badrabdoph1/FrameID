@@ -75,6 +75,7 @@ export default async function DashboardPage() {
     albumsCount,
     hasContactInfo: hasMeaningfulContactInfo(contactProfile),
     hasCoverImage: !!(heroSection?.data && typeof heroSection.data === "object" && "imageUrl" in heroSection.data),
+    hasAvatarImage: Boolean(contactProfile?.avatarAssetId),
     currentThemeName: siteTheme?.theme.name ?? "بدون",
     lastModifiedAt: lastModified,
     pendingRequestStatus: pendingPayment?.status ?? null,
