@@ -35,44 +35,44 @@ function parseSupportSettingsValue(value: unknown) {
   };
 }
 
-export async function getSupportSettings() {
-  const row = await prisma.featureFlag.findUnique({
+async function getSupportSettingsRow() {
+  return prisma.featureFlag.findFirst({
     where: {
-      key_scope_tenantId_siteId: {
-        key: SUPPORT_SETTINGS_KEY,
-        scope: "PLATFORM",
-        tenantId: null,
-        siteId: null,
-      },
-    },
-    select: { value: true },
+      key: SUPPORT_SETTINGS_KEY,
+      scope: "PLATFORM",
+      tenantId: null,
+      siteId: null,
+    } as never,
+    select: { id: true, value: true },
   });
+}
 
+export async function getSupportSettings() {
+  const row = await getSupportSettingsRow();
   return parseSupportSettingsValue(row?.value);
 }
 
 export async function saveSupportWhatsappNumber(phone: string) {
   const normalized = normalizeEgyptianWhatsappNumber(phone);
-  await prisma.featureFlag.upsert({
-    where: {
-      key_scope_tenantId_siteId: {
+  const existing = await getSupportSettingsRow();
+
+  if (existing) {
+    await prisma.featureFlag.update({
+      where: { id: existing.id },
+      data: { enabled: true, value: { phone: normalized } } as never,
+    });
+  } else {
+    await prisma.featureFlag.create({
+      data: {
         key: SUPPORT_SETTINGS_KEY,
         scope: "PLATFORM",
         tenantId: null,
         siteId: null,
-      },
-    },
-    create: {
-      key: SUPPORT_SETTINGS_KEY,
-      scope: "PLATFORM",
-      enabled: true,
-      value: { phone: normalized },
-    },
-    update: {
-      enabled: true,
-      value: { phone: normalized },
-    },
-  });
+        enabled: true,
+        value: { phone: normalized },
+      } as never,
+    });
+  }
 
   return normalized;
 }
