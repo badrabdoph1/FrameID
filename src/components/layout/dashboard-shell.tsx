@@ -118,7 +118,7 @@ function NavLink({ item, active, compact = false, onClick }: { item: NavItem; ac
           : "border-white/8 bg-white/[0.035] text-white/65 hover:border-amber-300/18 hover:bg-amber-300/8 hover:text-white",
       )}
     >
-      <span className={cn("grid shrink-0 place-items-center rounded-xl", compact ? "size-9" : "size-10", active ? "bg-amber-300/14" : "bg-white/[0.045]")}>
+      <span className={cn("grid shrink-0 place-items-center rounded-xl", compact ? "size-9" : "size-10", active ? "bg-amber-300/14" : "bg-white/[0.045]")}> 
         <Icon className="size-4" aria-hidden />
       </span>
       <span className="min-w-0 flex-1">
@@ -127,6 +127,19 @@ function NavLink({ item, active, compact = false, onClick }: { item: NavItem; ac
       </span>
       <ChevronLeft className="size-4 text-white/25 transition group-hover:text-[#f3cf73]" aria-hidden />
     </Link>
+  );
+}
+
+function DashboardTitleBadge() {
+  return (
+    <div className="pointer-events-none flex justify-center">
+      <div className="relative overflow-hidden rounded-full border border-amber-300/24 bg-[linear-gradient(135deg,rgba(243,207,115,0.18),rgba(255,255,255,0.055))] px-4 py-2 text-center shadow-[0_14px_42px_rgba(0,0,0,0.22),inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-xl md:px-7 md:py-2.5">
+        <span className="pointer-events-none absolute inset-x-4 top-0 h-px bg-gradient-to-l from-transparent via-amber-200/70 to-transparent" aria-hidden />
+        <h1 className="whitespace-nowrap bg-gradient-to-l from-[#fff7e8] via-[#f3cf73] to-[#fff7e8] bg-clip-text text-sm font-black tracking-tight text-transparent drop-shadow-[0_0_18px_rgba(243,207,115,0.22)] md:text-2xl">
+          صفحة التحكم في موقعك
+        </h1>
+      </div>
+    </div>
   );
 }
 
@@ -163,15 +176,18 @@ export function DashboardShell({ children, siteSlug }: { children: ReactNode; si
   return (
     <div className="min-h-dvh bg-[#090b10] text-[#f5ead6] color-scheme-dark">
       <header className="sticky top-0 z-40 border-b border-white/8 bg-[#090b10]/92 px-3 py-2 backdrop-blur-xl lg:hidden">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-2">
+        <div className="relative mx-auto grid max-w-6xl grid-cols-[auto,1fr,auto] items-center gap-2">
           <Link href="/dashboard" className="flex min-w-0 items-center gap-2 rounded-2xl p-1.5 no-underline">
             <BrandMark />
-            <span className="min-w-0">
+            <span className="hidden min-w-0 xs:block sm:block">
               <strong className="block truncate text-sm font-black text-[#fff7e8]">FrameID</strong>
               <small className="block truncate text-[0.68rem] font-bold text-white/40">لوحة المصور</small>
             </span>
           </Link>
-          <div className="flex items-center gap-1.5">
+
+          <DashboardTitleBadge />
+
+          <div className="flex items-center justify-end gap-1.5">
             {siteSlug ? (
               <Link
                 href={`/p/${siteSlug}`}
@@ -235,6 +251,9 @@ export function DashboardShell({ children, siteSlug }: { children: ReactNode; si
         </aside>
 
         <main className="min-w-0 flex-1 overflow-x-hidden bg-[radial-gradient(circle_at_top_right,rgba(243,207,115,0.08),transparent_30%),#090b10] px-3 py-4 pb-[calc(6.5rem+env(safe-area-inset-bottom))] sm:px-4 lg:px-6 lg:py-6 lg:pb-8">
+          <div className="mx-auto mb-5 hidden w-full max-w-6xl lg:block">
+            <DashboardTitleBadge />
+          </div>
           <div className="mx-auto w-full max-w-6xl">{children}</div>
         </main>
       </div>
