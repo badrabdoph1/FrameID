@@ -23,7 +23,7 @@ import { requireAdminPermission } from "@/modules/admin/admin-permission-guards"
 
 const contentTypes: Record<string, { label: string; description: string; icon: LucideIcon }> = {
   "marketing/homepage": { label: "الصفحة الرئيسية", description: "نصوص وأقسام الصفحة الرئيسية للتسويق", icon: Home },
-  "marketing/faq": { label: "الأسئلة الشائعة", description: "أسئلة وأجوبة قسم الثقة", icon: HelpCircle },
+  "marketing/faq": { label: "الأسئلة الشائعة", description: "أسئلة وأوبة قسم الثقة", icon: HelpCircle },
   "marketing/navigation": { label: "قائمة التنقل", description: "روابط الشريط العلوي للموقع", icon: Navigation },
   "marketing/footer": { label: "التذييل", description: "محتوى التذييل وروابطه السريعة", icon: Layout },
   "legal/privacy": { label: "سياسة الخصوصية", description: "نص سياسة الخصوصية", icon: Shield },
@@ -48,7 +48,7 @@ export default async function AdminContentPage() {
       where: { deletedAt: null },
       orderBy: { createdAt: "desc" },
       take: 6,
-      select: { id: true, storageKey: true, alt: true, mimeType: true, sizeBytes: true, createdAt: true },
+      select: { id: true, storageKey: true, mimeType: true, sizeBytes: true, createdAt: true },
     }),
   ]);
 
@@ -109,7 +109,7 @@ export default async function AdminContentPage() {
               <Link key={asset.id} href="/admin/media" className="flex items-center gap-3 rounded-2xl border border-white/8 bg-white/[0.035] p-3 no-underline transition hover:border-amber-300/24 hover:bg-amber-300/8">
                 <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-amber-300/10 text-[#f3cf73]"><ImageIcon className="size-5" aria-hidden /></span>
                 <span className="min-w-0">
-                  <strong className="block truncate text-sm font-black text-[#fff7e8]">{asset.alt ?? asset.storageKey.split("/").pop() ?? asset.storageKey}</strong>
+                  <strong className="block truncate text-sm font-black text-[#fff7e8]">{asset.storageKey.split("/").pop() ?? asset.storageKey}</strong>
                   <small className="mt-1 block truncate text-xs font-bold text-white/38">{asset.mimeType} · {Math.round(asset.sizeBytes / 1024)} KB · {new Date(asset.createdAt).toLocaleDateString("ar-EG")}</small>
                 </span>
               </Link>
