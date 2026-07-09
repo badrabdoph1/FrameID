@@ -12,6 +12,7 @@ const ADMIN_LOGIN_ROLES = [
 type AdminAuthRecord = {
   id: string;
   email: string;
+  phone: string | null;
   name: string;
   role: string;
   passwordHash: string | null;
@@ -37,6 +38,7 @@ type PrismaAdminAuthClient = {
 const ADMIN_AUTH_SELECT = {
   id: true,
   email: true,
+  phone: true,
   name: true,
   role: true,
   passwordHash: true,
@@ -46,20 +48,30 @@ export function createPrismaAdminAuthRepository(
   prisma: PrismaAdminAuthClient
 ): AdminLoginRepository {
   return {
-    async findAdminByEmail(email) {
+    async findAdminByIdentifier({ email, phone }) {
       const normalizedEmail = email.trim().toLowerCase();
+      const adminWhere = {
+        OR: [
+          { email: normalizedEmail },
+          ...(phone ? [{ phone }] : [])
+        ]
+      };
+      const legacyWhere = {
+        deletedAt: null,
+        role: { in: ADMIN_LOGIN_ROLES },
+        OR: [
+          { email: normalizedEmail },
+          ...(phone ? [{ phone }] : [])
+        ]
+      };
 
       const [adminUser, legacyAdminUser] = await Promise.all([
         prisma.adminUser.findFirst({
-          where: { email: normalizedEmail },
+          where: adminWhere,
           select: ADMIN_AUTH_SELECT,
         }),
         prisma.user.findFirst({
-          where: {
-            email: normalizedEmail,
-            role: { in: ADMIN_LOGIN_ROLES },
-            deletedAt: null,
-          },
+          where: legacyWhere,
           select: ADMIN_AUTH_SELECT,
         }),
       ]);
@@ -69,18 +81,21 @@ export function createPrismaAdminAuthRepository(
           !adminUser ||
           adminUser.passwordHash !== legacyAdminUser.passwordHash ||
           adminUser.name !== legacyAdminUser.name ||
-          adminUser.role !== legacyAdminUser.role;
+          adminUser.role !== legacyAdminUser.role ||
+          adminUser.phone !== legacyAdminUser.phone;
 
         if (shouldMirrorLegacyAdmin) {
           return prisma.adminUser.upsert({
-            where: { email: normalizedEmail },
+            where: { email: legacyAdminUser.email },
             update: {
               name: legacyAdminUser.name,
+              phone: legacyAdminUser.phone,
               role: legacyAdminUser.role,
               passwordHash: legacyAdminUser.passwordHash,
             },
             create: {
               email: legacyAdminUser.email,
+              phone: legacyAdminUser.phone,
               name: legacyAdminUser.name,
               role: legacyAdminUser.role,
               passwordHash: legacyAdminUser.passwordHash,
