@@ -56,11 +56,14 @@ export function createPrismaSignupProvisioningRepository(
   prisma: PrismaSignupClient
 ): SignupProvisioningRepository {
   return {
-    async emailExists(email) {
+    async identifierExists({ email, phone }) {
       const count = await prisma.user.count({
         where: {
-          email,
-          deletedAt: null
+          deletedAt: null,
+          OR: [
+            { email },
+            ...(phone ? [{ phone }] : [])
+          ]
         }
       });
 
@@ -85,6 +88,7 @@ export function createPrismaSignupProvisioningRepository(
         const user = await transaction.user.create({
           data: {
             email: input.user.email,
+            phone: input.user.phone,
             name: input.user.name,
             passwordHash: input.user.passwordHash,
             role: "USER"
