@@ -10,10 +10,10 @@ function createRepository(): PasswordResetRepository & { events: string[] } {
 
   return {
     events,
-    async findUserByEmail(email) {
-      events.push(`find:${email}`);
+    async findUserByIdentifier({ email, phone }) {
+      events.push(`find:${email}:${phone ?? "none"}`);
       return email === "ali@example.com"
-        ? { id: "user_1", email, name: "Ali" }
+        ? { id: "user_1", email, phone, name: "Ali" }
         : null;
     },
     async createResetToken(input) {
@@ -62,7 +62,7 @@ describe("password reset service", () => {
     });
 
     await expect(
-      service.requestPasswordReset({ email: "ALI@EXAMPLE.COM" })
+      service.requestPasswordReset({ identifier: "ALI@EXAMPLE.COM" })
     ).resolves.toEqual({
       delivered: true,
       rawToken: "raw-token",
@@ -71,7 +71,7 @@ describe("password reset service", () => {
     });
 
     expect(repository.events).toEqual([
-      "find:ali@example.com",
+      "find:ali@example.com:none",
       "token:user_1:hashed-token:2026-07-07T11:00:00.000Z"
     ]);
   });
@@ -81,7 +81,7 @@ describe("password reset service", () => {
     const service = createPasswordResetService({ repository });
 
     await expect(
-      service.requestPasswordReset({ email: "missing@example.com" })
+      service.requestPasswordReset({ identifier: "missing@example.com" })
     ).resolves.toEqual({
       delivered: false,
       rawToken: null,
@@ -89,7 +89,7 @@ describe("password reset service", () => {
       userName: null,
     });
 
-    expect(repository.events).toEqual(["find:missing@example.com"]);
+    expect(repository.events).toEqual(["find:missing@example.com:none"]);
   });
 
   it("resets the password, marks the token used and revokes sessions", async () => {
