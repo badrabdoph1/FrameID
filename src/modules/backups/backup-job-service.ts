@@ -7,7 +7,6 @@ import {
 } from "@/modules/backups/backup-manifest";
 import { createDatabaseDumper } from "@/modules/backups/backup-database-dumper";
 import { createUploadsPackager } from "@/modules/backups/backup-uploads-packager";
-import { createContentPackager } from "@/modules/backups/backup-content-packager";
 import { createBackupPackage } from "@/modules/backups/backup-package-creator";
 import { createLocalBackupArtifactWriter } from "@/modules/backups/local-backup-artifact-writer";
 import { createRetentionService } from "@/modules/backups/backup-retention";
@@ -15,6 +14,7 @@ import { createVerificationService } from "@/modules/backups/backup-verification
 import { createAutoRestoreService } from "@/modules/backups/backup-auto-restore-service";
 import { createSnapshotService, type SnapshotResult } from "@/modules/backups/backup-snapshot-service";
 import { createBackupScheduler, type BackupScheduler } from "@/modules/backups/backup-scheduler";
+import { getBackupPolicy } from "@/modules/backups/backup-policy";
 import type { VerificationResult } from "@/modules/backups/backup-verification-service";
 import type { AutoRestoreOptions } from "@/modules/backups/backup-auto-restore-service";
 
@@ -101,15 +101,10 @@ type ExecuteBackupResult = {
   manifest: BackupManifest;
 };
 
-function isBackupType(t: string): t is BackupType {
-  return t === "DATABASE" || t === "UPLOADS" || t === "FULL";
-}
-
 export function createBackupJobService({
   repository,
   databaseUrl,
   uploadsDir,
-  contentDir,
   backupRoot,
   backupEncryptionKey,
   platformVersion,
@@ -129,11 +124,9 @@ export function createBackupJobService({
 }): BackupJobService {
   const root = backupRoot ?? join(process.cwd(), "backups");
   const uploadRoot = uploadsDir ?? join(process.cwd(), "public", "uploads");
-  const contentRoot = contentDir ?? join(process.cwd(), "content");
 
   const dbDumper = createDatabaseDumper(databaseUrl);
   const uploadPkg = createUploadsPackager(uploadRoot);
-  const contentPkg = createContentPackager(contentRoot);
   const writer = createLocalBackupArtifactWriter({ backupRoot: root });
   const retention = createRetentionService();
   const verification = createVerificationService();
@@ -144,9 +137,7 @@ export function createBackupJobService({
     () => ({ runManualBackup: (input) => (service as BackupJobService).runManualBackup(input) })
   );
 
-  async function executeBackup(
-    input: ExecuteBackupInput
-  ): Promise<ExecuteBackupResult> {
+  async function executeBackup(input: ExecuteBackupInput): Promise<ExecuteBackupResult> {
     const createdAt = now();
 
     const job = await repository.createJob({
@@ -166,32 +157,23 @@ export function createBackupJobService({
 
     try {
       const stats = await repository.collectStats();
-      const doFull = input.type === "FULL";
-      const doUploads = input.type === "UPLOADS" || doFull;
+      const includeUploads = input.type === "FULL";
 
       let databaseDumpPath: string | null = null;
       let databaseSizeBytes = 0;
       let uploadsArchivePath: string | null = null;
       let uploadsSizeBytes = 0;
-      let contentArchivePath: string | null = null;
-      let contentSizeBytes = 0;
+      const contentArchivePath: string | null = null;
+      const contentSizeBytes = 0;
 
-      if (input.type === "DATABASE" || doFull) {
-        const dbResult = await dbDumper.dumpDatabase(root, job.id);
-        databaseDumpPath = dbResult.dumpPath;
-        databaseSizeBytes = dbResult.sizeBytes;
-      }
+      const dbResult = await dbDumper.dumpDatabase(root, job.id);
+      databaseDumpPath = dbResult.dumpPath;
+      databaseSizeBytes = dbResult.sizeBytes;
 
-      if (doUploads) {
+      if (includeUploads) {
         const upResult = await uploadPkg.packageUploads(root, job.id);
         uploadsArchivePath = upResult.archivePath;
         uploadsSizeBytes = upResult.sizeBytes;
-      }
-
-      if (doFull) {
-        const ctResult = await contentPkg.packageContent(root, job.id);
-        contentArchivePath = ctResult.archivePath;
-        contentSizeBytes = ctResult.sizeBytes;
       }
 
       const migrationVersion = await dbDumper.getMigrationVersion();
@@ -266,8 +248,9 @@ export function createBackupJobService({
       });
 
       const settings = await getBackupSettings(input.type);
-      if (settings && settings.retentionCount > 0) {
-        await retention.cleanup(root, settings.retentionCount);
+      const retentionCount = settings?.retentionCount ?? getBackupPolicy(input.type).retentionCount;
+      if (retentionCount > 0) {
+        await retention.cleanupByType(root, input.type, retentionCount);
       }
 
       return {
@@ -277,8 +260,7 @@ export function createBackupJobService({
         manifest,
       };
     } catch (error) {
-      const reason =
-        error instanceof Error ? error.message : "Unknown backup failure";
+      const reason = error instanceof Error ? error.message : "Unknown backup failure";
 
       await repository.markFailed({ backupJobId: job.id, reason });
       await repository.recordAudit({
@@ -333,7 +315,7 @@ export function createBackupJobService({
         reason: input.reason,
         databaseUrl: input.databaseUrl,
         uploadsDir: uploadRoot,
-        contentDir: contentRoot,
+        contentDir: join(process.cwd(), "content"),
         backupRoot: root,
         platformVersion,
         gitCommitSha,
@@ -354,7 +336,7 @@ export function createBackupJobService({
         ...options,
         backupRoot: root,
         uploadsDir: uploadRoot,
-        contentDir: contentRoot,
+        contentDir: join(process.cwd(), "content"),
       });
     },
 
@@ -366,9 +348,7 @@ export function createBackupJobService({
   return service;
 }
 
-async function getBackupSettings(
-  backupType: BackupType
-): Promise<{ retentionCount: number } | null> {
+async function getBackupSettings(backupType: BackupType): Promise<{ retentionCount: number } | null> {
   try {
     const { prisma } = await import("@/lib/prisma");
     const settings = await prisma.backupSettings.findUnique({
