@@ -1,8 +1,9 @@
 import "server-only";
 import { createHash } from "node:crypto";
 import { readFile, stat } from "node:fs/promises";
+import { isSupportedBackupType, type SupportedBackupType } from "@/modules/backups/backup-policy";
 
-export type BackupType = "DATABASE" | "UPLOADS" | "FULL";
+export type BackupType = SupportedBackupType;
 
 export type BackupManifest = {
   version: number;
@@ -25,8 +26,8 @@ export type BackupManifest = {
   encryptionEnabled: boolean;
   files: {
     database: string;
-    uploads: string;
-    content: string;
+    uploads: string | null;
+    content: null;
     manifest: string;
     checksum: string;
   };
@@ -74,8 +75,8 @@ export function createBackupManifest(input: {
       input.databaseSizeBytes + input.uploadsSizeBytes + input.contentSizeBytes,
     files: {
       database: "database.sql.gz",
-      uploads: "uploads.tar.gz",
-      content: "content.tar.gz",
+      uploads: input.backupType === "FULL" ? "uploads.tar.gz" : null,
+      content: null,
       manifest: "manifest.json",
       checksum: "checksum.sha256",
     },
@@ -123,17 +124,20 @@ export function validateBackupManifest(manifest: unknown): RestoreValidationResu
     result.checks.schemaCompatibility = true;
   }
 
+  const backupType = m.backupType;
+  if (!isSupportedBackupType(backupType)) {
+    errors.push(`Unsupported backup type: ${String(backupType)}`);
+  }
+
   const requiredFiles = [
     "database.sql.gz",
-    "uploads.tar.gz",
-    "content.tar.gz",
+    ...(backupType === "FULL" ? ["uploads.tar.gz"] : []),
     "manifest.json",
     "checksum.sha256",
   ];
-  const manifestFiles = (m.files as Record<string, string>) || {};
-  const allFilesPresent = requiredFiles.every((f) =>
-    Object.values(manifestFiles).includes(f)
-  );
+  const manifestFiles = (m.files as Record<string, string | null>) || {};
+  const manifestFileValues = Object.values(manifestFiles).filter(Boolean);
+  const allFilesPresent = requiredFiles.every((f) => manifestFileValues.includes(f));
   result.checks.filesIntegrity = allFilesPresent;
   if (!allFilesPresent) {
     errors.push("Required backup files missing in manifest");

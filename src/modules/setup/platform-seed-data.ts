@@ -1,4 +1,5 @@
 import { templateDefinitions, themeDefinitions } from "@/modules/themes/definitions";
+import { BACKUP_POLICY } from "@/modules/backups/backup-policy";
 
 const DEMO_HERO_IMAGE =
   "https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1800&q=85";
@@ -227,17 +228,8 @@ export function getPlatformSeedData() {
       {
         type: "DATABASE" as const,
         enabled: true,
-        schedule: "0 2 * * *",
-        retentionCount: 14,
-        compression: "zstd",
-        encryption: true,
-        githubBranch: "platform-backups"
-      },
-      {
-        type: "UPLOADS" as const,
-        enabled: true,
-        schedule: "0 3 * * *",
-        retentionCount: 14,
+        schedule: BACKUP_POLICY.DATABASE.schedule,
+        retentionCount: BACKUP_POLICY.DATABASE.retentionCount,
         compression: "zstd",
         encryption: true,
         githubBranch: "platform-backups"
@@ -245,8 +237,8 @@ export function getPlatformSeedData() {
       {
         type: "FULL" as const,
         enabled: true,
-        schedule: "0 4 * * 0",
-        retentionCount: 8,
+        schedule: BACKUP_POLICY.FULL.schedule,
+        retentionCount: BACKUP_POLICY.FULL.retentionCount,
         compression: "zstd",
         encryption: true,
         githubBranch: "platform-backups"

@@ -3,14 +3,23 @@
 import { revalidatePath } from "next/cache";
 import { saveContent } from "@/lib/content";
 import type { ContentSchemaKey, SaveResult } from "@/lib/content";
+import { requireAdminPermission } from "@/modules/admin/admin-permission-guards";
 
 export async function saveContentAction(
   type: ContentSchemaKey,
   data: unknown
 ): Promise<SaveResult> {
-  const result = saveContent(type, data);
+  const admin = await requireAdminPermission("content", "edit");
+  const result = await saveContent(type, data, {
+    actor: {
+      id: admin.id,
+      name: admin.name,
+      email: admin.email,
+    },
+  });
   if (result.success) {
     revalidatePath(`/admin/content/${type.replace("/", "/")}`);
+    revalidatePath("/admin/revisions");
     revalidatePath("/");
   }
   return result;

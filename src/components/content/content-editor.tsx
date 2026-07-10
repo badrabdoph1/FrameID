@@ -21,12 +21,17 @@ export function ContentEditor({ type, content }: ContentEditorProps) {
     const result = await saveContentAction(type, data);
     if (result.success) {
       setStatus("success");
-      setMessage(`تم الحفظ بنجاح (النسخة ${result.version})`);
+      const gitNote = result.gitStatus === "committed"
+        ? ` · Commit ${result.commitId?.slice(0, 7)}`
+        : result.gitStatus === "not-configured"
+          ? " · GitHub sync not configured"
+          : ` · GitHub sync failed${result.gitError ? `: ${result.gitError}` : ""}`;
+      setMessage(`تم الحفظ بنجاح (النسخة ${result.version})${gitNote}`);
     } else {
       setStatus("error");
       setMessage(result.errors.map((e) => `${e.path}: ${e.message}`).join("، "));
     }
-    setTimeout(() => setStatus("idle"), 3000);
+    setTimeout(() => setStatus("idle"), 5000);
   }, [type]);
 
   const cleanContent = { ...content };
