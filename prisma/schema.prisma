@@ -374,7 +374,7 @@ model GalleryImage {
 model MediaAsset {
   id             String    @id @default(cuid())
   tenantId       String
-  kind           String
+  kind           String    @default("image")
   url            String
   storageKey     String
   mimeType       String
@@ -833,7 +833,7 @@ model PaymentAccount {
   id                String        @id @default(cuid())
   paymentSettingsId String
   label             String
-  accountIdentifier String
+  accountIdentifier String        @default("")
   accountName       String        @default("")
   accountNumber     String        @default("")
   bankName          String?
