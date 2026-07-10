@@ -42,46 +42,49 @@ function parseDays(value: string, fallback: number) {
 }
 
 function parsePreset(value: string): LifecycleDurationPreset {
-  return lifecycleDurationOptions.some((item) => item.value === value) ? value as LifecycleDurationPreset : "30";
+  return lifecycleDurationOptions.some((item) => item.value === value) ? value as LifecycleDurationPreset : "keep";
 }
 
 export async function saveLifecycleTimersAction(formData: FormData) {
   const admin = await requireAdminPermission("messages", "edit");
-  const existing = await prisma.featureFlag.findFirst({
-    where: { key: "platform.lifecycle.timers", scope: "PLATFORM", tenantId: null, siteId: null },
-    select: { value: true },
-  });
-  const current = normalizeLifecycleTimerSettings(existing?.value);
-  const settings = {
-    trial: {
-      enabled: parseBool(readFormString(formData, "trialEnabled")),
-      useDefault: parseBool(readFormString(formData, "trialUseDefault")),
-      defaultDays: parseDays(readFormString(formData, "trialDays"), current.trial.defaultDays || defaultLifecycleTimerSettings.trial.defaultDays),
-    },
-    subscription: {
-      enabled: parseBool(readFormString(formData, "subscriptionEnabled")),
-      defaultPreset: parsePreset(readFormString(formData, "subscriptionPreset") || current.subscription.defaultPreset),
-      customDays: parseDays(readFormString(formData, "subscriptionCustomDays"), current.subscription.customDays || 30),
-    },
-  };
+  let redirectParams: Record<string, string | number> = { timerSaved: "1" };
 
   try {
+    const existing = await prisma.featureFlag.findFirst({
+      where: { key: "platform.lifecycle.timers", scope: "PLATFORM", tenantId: null, siteId: null },
+      select: { value: true },
+    });
+    const current = normalizeLifecycleTimerSettings(existing?.value);
+    const settings = {
+      trial: {
+        enabled: parseBool(readFormString(formData, "trialEnabled")),
+        useDefault: parseBool(readFormString(formData, "trialUseDefault")),
+        defaultDays: parseDays(readFormString(formData, "trialDays"), current.trial.defaultDays || defaultLifecycleTimerSettings.trial.defaultDays),
+      },
+      subscription: {
+        enabled: parseBool(readFormString(formData, "subscriptionEnabled")),
+        defaultPreset: parsePreset(readFormString(formData, "subscriptionPreset") || current.subscription.defaultPreset),
+        customDays: parseDays(readFormString(formData, "subscriptionCustomDays"), current.subscription.customDays || 30),
+      },
+    };
+
     await saveLifecycleTimerSettings(prisma, settings);
     await prisma.auditLog.create({
       data: {
-        actorUserId: admin.id.startsWith("env-super-admin:") ? null : admin.id,
+        actorUserId: null,
         action: "LIFECYCLE_TIMERS_UPDATED",
         entityType: "FeatureFlag",
         entityId: "platform.lifecycle.timers",
-        metadata: { settings, adminEmail: admin.email } as Prisma.InputJsonObject,
+        metadata: { settings, adminId: admin.id, adminEmail: admin.email } as Prisma.InputJsonObject,
       },
     });
     revalidatePath("/admin/messages");
-    redirectWithMessage({ timerSaved: "1" });
   } catch (error) {
     const { userError } = await processError(error, { metadata: { action: "saveLifecycleTimers" } });
-    redirectWithMessage({ error: userError.message });
+    redirectParams = { error: userError.message };
   }
+
+  redirectWithMessage(redirectParams);
 }
 
 export async function applyLifecycleTimerAction(formData: FormData) {
@@ -89,46 +92,55 @@ export async function applyLifecycleTimerAction(formData: FormData) {
   const timerType = readFormString(formData, "timerType");
   const audience = readFormString(formData, "audience") || "selected";
   const selectedTenantIds = formData.getAll("tenantIds").map(String).filter(Boolean);
+  let redirectParams: Record<string, string | number> = { error: "نوع المؤقت غير صحيح." };
 
   try {
-    let tenants: Array<{ id: string }> = [];
-
     if (timerType === "trial") {
-      const days = parseDays(readFormString(formData, "trialDays"), defaultLifecycleTimerSettings.trial.defaultDays);
-      tenants = await prisma.tenant.findMany({
-        where: audience === "all" ? { deletedAt: null, status: "TRIAL" } : { id: { in: selectedTenantIds }, deletedAt: null, status: "TRIAL" },
+      const mode = readFormString(formData, "timerMode") || "keep";
+      const days = mode === "keep" ? "keep" : parseDays(readFormString(formData, "trialDays"), defaultLifecycleTimerSettings.trial.defaultDays);
+      const tenants = await prisma.tenant.findMany({
+        where: audience === "all"
+          ? { deletedAt: null, status: "TRIAL" }
+          : { id: { in: selectedTenantIds }, deletedAt: null, status: "TRIAL" },
         select: { id: true },
       });
-      if (tenants.length === 0) redirectWithMessage({ error: "لا يوجد عملاء تجريبيون مطابقون." });
-      const count = await applyTrialTimerToTenants(prisma, tenants.map((tenant) => tenant.id), days, admin.id.startsWith("env-super-admin:") ? null : admin.id);
+      if (tenants.length === 0) throw new Error("لا يوجد عملاء تجريبيون مطابقون.");
+      const count = await applyTrialTimerToTenants(prisma, tenants.map((tenant) => tenant.id), days);
       revalidatePath("/admin/messages");
       revalidatePath("/admin/customers");
       revalidatePath("/dashboard");
-      redirectWithMessage({ timerApplied: count });
-    }
-
-    if (timerType === "subscription") {
-      const preset = parsePreset(readFormString(formData, "subscriptionPreset"));
+      redirectParams = { timerApplied: count };
+    } else if (timerType === "subscription") {
+      const preset = parsePreset(readFormString(formData, "subscriptionPreset") || "keep");
       const customDays = parseDays(readFormString(formData, "subscriptionCustomDays"), 30);
-      tenants = await prisma.tenant.findMany({
+      const tenants = await prisma.tenant.findMany({
         where: audience === "all"
           ? { deletedAt: null, status: "ACTIVE", subscriptions: { some: { deletedAt: null, status: "ACTIVE" } } }
           : { id: { in: selectedTenantIds }, deletedAt: null, status: "ACTIVE", subscriptions: { some: { deletedAt: null, status: "ACTIVE" } } },
         select: { id: true },
       });
-      if (tenants.length === 0) redirectWithMessage({ error: "لا يوجد مشتركين مطابقين." });
-      const count = await applySubscriptionTimerToTenants(prisma, tenants.map((tenant) => tenant.id), preset, customDays, admin.id.startsWith("env-super-admin:") ? null : admin.id);
+      if (tenants.length === 0) throw new Error("لا يوجد مشتركين مطابقين.");
+      const count = await applySubscriptionTimerToTenants(prisma, tenants.map((tenant) => tenant.id), preset, customDays);
       revalidatePath("/admin/messages");
       revalidatePath("/admin/customers");
       revalidatePath("/dashboard");
-      redirectWithMessage({ timerApplied: count });
+      redirectParams = { timerApplied: count };
     }
 
-    redirectWithMessage({ error: "نوع المؤقت غير صحيح." });
+    await prisma.auditLog.create({
+      data: {
+        actorUserId: null,
+        action: "LIFECYCLE_TIMER_APPLIED_FROM_MESSAGES",
+        entityType: "Tenant",
+        metadata: { timerType, audience, selectedTenantIds, adminId: admin.id, adminEmail: admin.email } as Prisma.InputJsonObject,
+      },
+    }).catch(() => undefined);
   } catch (error) {
     const { userError } = await processError(error, { metadata: { action: "applyLifecycleTimer", timerType } });
-    redirectWithMessage({ error: userError.message });
+    redirectParams = { error: userError.message };
   }
+
+  redirectWithMessage(redirectParams);
 }
 
 export async function sendCustomerMessageAction(formData: FormData) {
@@ -138,6 +150,7 @@ export async function sendCustomerMessageAction(formData: FormData) {
   const body = readFormString(formData, "body").trim();
   const tone = validateMessageTone(readFormString(formData, "tone"));
   const selectedTenantIds = formData.getAll("tenantIds").map((value) => String(value)).filter(Boolean);
+  let redirectParams: Record<string, string | number> = {};
 
   if (!title || title.length < 2) redirectWithMessage({ error: "اكتب عنوان الرسالة." });
   if (!body || body.length < 2) redirectWithMessage({ error: "اكتب نص الرسالة." });
@@ -150,7 +163,7 @@ export async function sendCustomerMessageAction(formData: FormData) {
       orderBy: { createdAt: "desc" },
     });
 
-    if (tenants.length === 0) redirectWithMessage({ error: "لا يوجد عملاء مطابقين للإرسال." });
+    if (tenants.length === 0) throw new Error("لا يوجد عملاء مطابقين للإرسال.");
 
     await prisma.notificationLog.createMany({
       data: tenants.map((tenant) => ({ type: tone, title, body, category: CUSTOMER_BROADCAST_CATEGORY, tenantId: tenant.id, userId: tenant.ownerUserId })),
@@ -158,21 +171,23 @@ export async function sendCustomerMessageAction(formData: FormData) {
 
     await prisma.auditLog.create({
       data: {
-        actorUserId: admin.id.startsWith("env-super-admin:") ? null : admin.id,
+        actorUserId: null,
         action: "CUSTOMER_MESSAGE_SENT",
         entityType: "NotificationLog",
-        metadata: { title, tone, audience, count: tenants.length, tenantIds: audience === "all" ? "ALL" : tenants.map((tenant) => tenant.id), adminEmail: admin.email } as Prisma.InputJsonObject,
+        metadata: { title, tone, audience, count: tenants.length, tenantIds: audience === "all" ? "ALL" : tenants.map((tenant) => tenant.id), adminId: admin.id, adminEmail: admin.email } as Prisma.InputJsonObject,
       },
     });
 
     revalidatePath("/admin/messages");
     revalidatePath("/admin/notifications");
     revalidatePath("/dashboard");
-    redirectWithMessage({ sent: tenants.length });
+    redirectParams = { sent: tenants.length };
   } catch (error) {
     const { userError } = await processError(error, { metadata: { action: "sendCustomerMessage", audience } });
-    redirectWithMessage({ error: userError.message });
+    redirectParams = { error: userError.message };
   }
+
+  redirectWithMessage(redirectParams);
 }
 
 export async function saveActivationTemplateAction(formData: FormData) {
@@ -182,6 +197,7 @@ export async function saveActivationTemplateAction(formData: FormData) {
   const body = readFormString(formData, "body").trim();
   const tone = validateMessageTone(readFormString(formData, "tone"));
   const definition = getActivationTemplateDefinition(key);
+  let redirectParams: Record<string, string | number> = {};
 
   if (!definition) redirectWithMessage({ error: "نوع الرسالة غير صحيح." });
   if (!title || title.length < 2) redirectWithMessage({ error: "اكتب عنوان قالب الرسالة." });
@@ -189,13 +205,15 @@ export async function saveActivationTemplateAction(formData: FormData) {
 
   try {
     await prisma.notificationLog.updateMany({ where: { category: ACTIVATION_TEMPLATE_CATEGORY, title: key, deletedAt: null }, data: { deletedAt: new Date() } });
-    await prisma.notificationLog.create({ data: { type: tone, title: key, body: encodeActivationTemplatePayload({ title, body }), category: ACTIVATION_TEMPLATE_CATEGORY, userId: admin.id.startsWith("env-super-admin:") ? null : admin.id } });
-    await prisma.auditLog.create({ data: { actorUserId: admin.id.startsWith("env-super-admin:") ? null : admin.id, action: "ACTIVATION_MESSAGE_TEMPLATE_UPDATED", entityType: "NotificationLog", entityId: key, metadata: { key, title, body, tone, adminEmail: admin.email } as Prisma.InputJsonObject } });
+    await prisma.notificationLog.create({ data: { type: tone, title: key, body: encodeActivationTemplatePayload({ title, body }), category: ACTIVATION_TEMPLATE_CATEGORY, userId: admin.id } });
+    await prisma.auditLog.create({ data: { actorUserId: null, action: "ACTIVATION_MESSAGE_TEMPLATE_UPDATED", entityType: "NotificationLog", entityId: key, metadata: { key, title, body, tone, adminId: admin.id, adminEmail: admin.email } as Prisma.InputJsonObject } });
     revalidatePath("/admin/messages");
     revalidatePath("/dashboard");
-    redirectWithMessage({ templateSaved: key });
+    redirectParams = { templateSaved: key };
   } catch (error) {
     const { userError } = await processError(error, { metadata: { action: "saveActivationTemplate", key } });
-    redirectWithMessage({ error: userError.message });
+    redirectParams = { error: userError.message };
   }
+
+  redirectWithMessage(redirectParams);
 }
