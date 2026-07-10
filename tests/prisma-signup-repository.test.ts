@@ -8,6 +8,7 @@ function createAccountInput(): AccountCreationInput {
     user: {
       name: "Ali Ahmed",
       email: "ali@example.com",
+      phone: null,
       passwordHash: "hashed-password"
     },
     tenant: {
@@ -147,7 +148,9 @@ describe("prisma signup repository", () => {
 
     const repository = createPrismaSignupProvisioningRepository(prisma);
 
-    await expect(repository.emailExists("ali@example.com")).resolves.toBe(false);
+    await expect(
+      repository.identifierExists({ email: "ali@example.com", phone: null })
+    ).resolves.toBe(false);
     await expect(repository.getUnavailableSlugs()).resolves.toEqual(
       new Set(["used-slug"])
     );
