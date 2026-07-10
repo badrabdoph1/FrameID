@@ -64,7 +64,7 @@ describe("prisma backup job repository", () => {
       files: {
         database: "database.sql.gz",
         uploads: "uploads.tar.gz",
-        content: "content.tar.gz",
+        content: null,
         manifest: "manifest.json",
         checksum: "checksum.sha256",
       },
