@@ -46,6 +46,8 @@ export async function saveTemplateCoverAction(formData: FormData) {
     if (useDefault) {
       delete previewData.previewImage;
       delete previewData.thumbnail;
+      delete previewData.image;
+      delete previewData.cover;
     } else if (file instanceof File && file.size > 0) {
       const uploaded = await uploadPlatformTemplateImage(file);
       previewData.previewImage = uploaded.url;
