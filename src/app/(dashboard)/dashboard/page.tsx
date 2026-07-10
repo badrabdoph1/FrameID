@@ -7,6 +7,7 @@ import { createDashboardViewModel } from "@/modules/dashboard/dashboard-view-mod
 import { DashboardHomeClient } from "./home-client";
 import { prisma } from "@/lib/prisma";
 import { hasMeaningfulContactInfo } from "@/modules/dashboard/contact-completion";
+import { getLifecycleTimerSettings } from "@/modules/lifecycle/customer-lifecycle";
 import {
   ACTIVATION_TEMPLATE_CATEGORY,
   CUSTOMER_BROADCAST_CATEGORY,
@@ -39,6 +40,7 @@ export default async function DashboardPage() {
     seoSettings,
     customerMessages,
     activationTemplateRows,
+    lifecycleTimerSettings,
   ] = await Promise.all([
     prisma.package.count({ where: { siteId: session.site.id, deletedAt: null } }),
     prisma.galleryImage.count({
@@ -88,6 +90,7 @@ export default async function DashboardPage() {
       orderBy: { createdAt: "desc" },
       select: { id: true, type: true, title: true, body: true },
     }),
+    getLifecycleTimerSettings(prisma),
   ]);
 
   const lastModified = siteTheme?.updatedAt ?? new Date();
@@ -110,6 +113,7 @@ export default async function DashboardPage() {
     pendingRequestStatus: ["SUBMITTED", "PENDING", "UNDER_REVIEW"].includes(latestPaymentRequest?.status ?? "") ? latestPaymentRequest?.status ?? null : null,
     latestPaymentRequestStatus: latestPaymentRequest?.status ?? null,
     hasSeoSettings,
+    lifecycleTimerSettings,
     customerMessages: customerMessages.map((message) => ({
       id: message.id,
       tone: validateMessageTone(message.type),
