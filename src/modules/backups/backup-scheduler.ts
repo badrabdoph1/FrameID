@@ -1,4 +1,5 @@
 import type { BackupType } from "./backup-manifest";
+import { SUPPORTED_BACKUP_TYPES } from "@/modules/backups/backup-policy";
 
 type SchedulerSettings = {
   type: string;
@@ -30,7 +31,7 @@ export function createBackupScheduler(
     }): Promise<{ backupJobId: string; status: "COMPLETED"; backupId: string }>;
   }
 ): BackupScheduler {
-  const backupTypes: BackupType[] = ["DATABASE", "UPLOADS", "FULL"];
+  const backupTypes: BackupType[] = [...SUPPORTED_BACKUP_TYPES];
 
   function parseCronExpression(cronExpr: string): {
     minute: number | "*";
