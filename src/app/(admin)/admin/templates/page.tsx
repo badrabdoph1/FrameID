@@ -4,7 +4,6 @@ import { AdminPageShell } from "@/components/layout/admin-page-shell";
 import { prisma } from "@/lib/prisma";
 import { requireAdminPermission } from "@/modules/admin/admin-permission-guards";
 import { TemplateManager } from "@/app/(admin)/admin/templates/template-manager";
-import { TemplateImageCenter } from "@/app/(admin)/admin/templates/template-image-center";
 
 export const dynamic = "force-dynamic";
 
@@ -95,15 +94,6 @@ export default async function AdminTemplatesPage({ searchParams }: Props) {
         <Metric label="قوالب منشورة" value={publishedTemplates} accent icon={LayoutTemplate} />
         <Metric label="الثيمات المتاحة" value={themes.length} icon={Palette} />
       </section>
-
-      <TemplateImageCenter
-        templates={templates.map((template) => ({
-          id: template.id,
-          name: template.name,
-          code: template.code,
-          previewData: template.previewData,
-        }))}
-      />
 
       <TemplateManager
         templates={templates.map((template) => ({

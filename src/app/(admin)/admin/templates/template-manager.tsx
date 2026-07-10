@@ -22,6 +22,7 @@ import {
   duplicateTemplateAction,
   restoreTemplateDefaultsAction,
 } from "@/app/(admin)/admin/templates/management-actions";
+import { TemplateImageCenter } from "@/app/(admin)/admin/templates/template-image-center";
 import { cn } from "@/lib/utils/cn";
 
 export type AdminTemplateItem = {
@@ -185,20 +186,6 @@ export function TemplateManager({ templates, themes, message }: TemplateManagerP
             <Plus className="size-4" /> قالب جديد
           </button>
         </div>
-
-        {showCreate ? (
-          <form action={createTemplateAction} className="mt-4 grid gap-3 rounded-2xl border border-amber-300/20 bg-amber-300/[0.055] p-4 sm:grid-cols-2">
-            <Field label="اسم القالب"><input name="name" required className={inputClass} placeholder="مثال: ستوديو كلاسيك" /></Field>
-            <Field label="كود القالب"><input name="code" className={inputClass} dir="ltr" placeholder="classic-studio" /></Field>
-            <Field label="الثيم الأساسي">
-              <select name="themeId" required className={inputClass} defaultValue="">
-                <option value="" disabled>اختر الثيم</option>
-                {themes.map((theme) => <option key={theme.id} value={theme.id}>{theme.name} — {theme.code}</option>)}
-              </select>
-            </Field>
-            <div className="flex items-end"><button className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl bg-[#f3cf73] px-4 text-sm font-black text-[#17120a]"><Plus className="size-4" /> إنشاء كمسودة</button></div>
-          </form>
-        ) : null}
       </section>
 
       {templates.length === 0 ? (
@@ -214,7 +201,7 @@ export function TemplateManager({ templates, themes, message }: TemplateManagerP
               const active = selected?.id === template.id;
               const image = pickImage(template.previewData);
               return (
-                <button key={template.id} type="button" onClick={() => setSelectedId(template.id)} className={cn("grid grid-cols-[64px_1fr] items-center gap-3 rounded-2xl border p-2.5 text-start transition", active ? "border-amber-300/35 bg-amber-300/10" : "border-white/8 bg-black/15 hover:border-white/16 hover:bg-white/[0.04]") }>
+                <button key={template.id} type="button" aria-label={`تعديل ${template.name}`} onClick={() => { setSelectedId(template.id); setShowCreate(false); }} className={cn("grid grid-cols-[64px_1fr] items-center gap-3 rounded-2xl border p-2.5 text-start transition", active && !showCreate ? "border-amber-300/35 bg-amber-300/10" : "border-white/8 bg-black/15 hover:border-white/16 hover:bg-white/[0.04]") }>
                   <span className="relative grid aspect-square overflow-hidden rounded-xl bg-black/30">
                     {image ? <img src={image} alt="" className="size-full object-cover" /> : <ImageIcon className="m-auto size-5 text-white/25" />}
                   </span>
@@ -228,7 +215,20 @@ export function TemplateManager({ templates, themes, message }: TemplateManagerP
             })}
           </aside>
 
-          {selected ? <TemplateEditor key={selected.id} template={selected} /> : null}
+          {showCreate ? (
+            <form action={createTemplateAction} className="grid content-start gap-3 rounded-2xl border border-amber-300/20 bg-amber-300/[0.055] p-4 sm:grid-cols-2">
+              <div className="sm:col-span-2"><p className="text-xs font-black text-[#f3cf73]">قالب جديد</p><h2 className="mt-1 text-lg font-black text-[#fff7e8]">بيانات القالب الأساسية</h2></div>
+              <Field label="اسم القالب"><input name="name" required className={inputClass} placeholder="مثال: ستوديو كلاسيك" /></Field>
+              <Field label="كود القالب"><input name="code" className={inputClass} dir="ltr" placeholder="classic-studio" /></Field>
+              <Field label="الثيم الأساسي"><select name="themeId" required className={inputClass} defaultValue=""><option value="" disabled>اختر الثيم</option>{themes.map((theme) => <option key={theme.id} value={theme.id}>{theme.name} — {theme.code}</option>)}</select></Field>
+              <div className="flex items-end"><button className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl bg-[#f3cf73] px-4 text-sm font-black text-[#17120a]"><Plus className="size-4" /> إنشاء كمسودة</button></div>
+            </form>
+          ) : selected ? (
+            <div className="grid min-w-0 gap-4">
+              <TemplateEditor key={selected.id} template={selected} />
+              <TemplateImageCenter template={selected} />
+            </div>
+          ) : null}
         </section>
       )}
     </div>

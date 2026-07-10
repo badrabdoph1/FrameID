@@ -395,7 +395,7 @@ model MediaAsset {
   contactAvatars ContactProfile[]  @relation("ContactAvatar")
   contactCovers  ContactProfile[]  @relation("ContactCover")
   seoOgImages    SEOSettings[]     @relation("SEOOgImage")
-  paymentQRCodes PaymentSettings[] @relation("PaymentQRCode")
+  paymentQRCodes PaymentAccount[]  @relation("PaymentQRCode")
 
   @@index([tenantId, kind, createdAt])
 }
@@ -488,9 +488,6 @@ model Subscription {
 
   tenant Tenant @relation(fields: [tenantId], references: [id])
   plan   Plan?  @relation(fields: [planId], references: [id])
-
-  changesFrom SubscriptionChange[] @relation("FromPlan")
-  changesTo   SubscriptionChange[] @relation("ToPlan")
 
   @@index([tenantId, status])
   @@index([expiresAt])
