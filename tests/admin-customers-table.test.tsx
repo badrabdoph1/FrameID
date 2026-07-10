@@ -27,6 +27,11 @@ const customers: CustomerRow[] = [
     ownerEmail: "ali@example.com",
     status: "TRIAL",
     trialEndsAt: "2026-07-18T00:00:00.000Z",
+    lifecycleEndAt: null,
+    subscriptionStatus: "TRIAL",
+    planName: null,
+    latestPaymentStatus: null,
+    isPublished: true,
     sitesCount: 2,
     paymentsCount: 1,
     createdAt: "2026-07-08T00:00:00.000Z",
@@ -43,6 +48,7 @@ describe("customers admin table", () => {
         basePath="/admin/customers"
         search=""
         statusFilter=""
+        lifecycleFilter=""
       />
     );
 
