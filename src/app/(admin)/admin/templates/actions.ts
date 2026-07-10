@@ -36,18 +36,11 @@ function readJsonObject(raw: string, fallback: JsonRecord): JsonRecord {
 }
 
 function readFeatureLines(value: string): string[] {
-  return value
-    .split("\n")
-    .map((item) => item.trim())
-    .filter(Boolean);
+  return value.split("\n").map((item) => item.trim()).filter(Boolean);
 }
 
 function makePackageId(name: string, index: number) {
-  const base = name
-    .toLowerCase()
-    .replace(/[^a-z0-9\u0600-\u06ff]+/giu, "-")
-    .replace(/^-+|-+$/gu, "")
-    .slice(0, 32);
+  const base = name.toLowerCase().replace(/[^a-z0-9\u0600-\u06ff]+/giu, "-").replace(/^-+|-+$/gu, "").slice(0, 32);
   return base || `package-${index + 1}`;
 }
 
@@ -61,19 +54,15 @@ function readPackages(formData: FormData): JsonRecord[] {
 
   for (let index = 0; index < count; index += 1) {
     if (!readBool(formData, `package_${index}_enabled`)) continue;
-
     const name = readString(formData, `package_${index}_name`);
     if (!name) continue;
-
     const currency = readString(formData, `package_${index}_currency`) || "EGP";
     const priceAmount = readInt(formData, `package_${index}_priceAmount`);
-    const price = readString(formData, `package_${index}_price`) || formatMoney(priceAmount, currency);
-
     packages.push({
       id: readString(formData, `package_${index}_id`) || makePackageId(name, index),
       name,
       subtitle: readString(formData, `package_${index}_subtitle`),
-      price,
+      price: readString(formData, `package_${index}_price`) || formatMoney(priceAmount, currency),
       priceAmount,
       currency,
       features: readFeatureLines(readString(formData, `package_${index}_features`)),
@@ -103,7 +92,6 @@ function readPackages(formData: FormData): JsonRecord[] {
 function readExtras(formData: FormData): JsonRecord[] | null {
   const count = readInt(formData, "extraCount");
   if (count === 0 && !readString(formData, "newExtraName")) return null;
-
   const extras: JsonRecord[] = [];
   for (let index = 0; index < count; index += 1) {
     if (!readBool(formData, `extra_${index}_enabled`)) continue;
@@ -134,7 +122,6 @@ function readExtras(formData: FormData): JsonRecord[] | null {
       iconKey: readString(formData, "newExtraIconKey") || "camera",
     });
   }
-
   return extras;
 }
 
@@ -144,8 +131,8 @@ async function auditTemplate(input: { adminId: string; adminEmail?: string; acti
       action: input.action,
       entityType: "Template",
       entityId: input.templateId,
-      actorUserId: input.adminId,
       metadata: {
+        adminId: input.adminId,
         adminEmail: input.adminEmail,
         code: input.code,
         ...(input.metadata ?? {}),
@@ -158,7 +145,6 @@ export async function saveTemplateAction(formData: FormData) {
   const admin = await requireAdminPermission("templates", "edit");
   const id = readString(formData, "id");
   if (!id) redirect("/admin/templates?error=missing-template");
-
   const current = await prisma.template.findUnique({ where: { id } });
   if (!current) redirect("/admin/templates?error=template-not-found");
 
@@ -187,7 +173,6 @@ export async function saveTemplateAction(formData: FormData) {
 
     const packages = readPackages(formData);
     if (packages.length > 0) basePreview.packages = packages;
-
     const extras = readExtras(formData);
     if (extras) basePreview.extras = extras;
 
@@ -210,10 +195,7 @@ export async function saveTemplateAction(formData: FormData) {
       action: "TEMPLATE_UPDATED",
       templateId: updated.id,
       code: updated.code,
-      metadata: {
-        status: updated.status,
-        packagesCount: Array.isArray(basePreview.packages) ? basePreview.packages.length : 0,
-      },
+      metadata: { status: updated.status, packagesCount: Array.isArray(basePreview.packages) ? basePreview.packages.length : 0 },
     });
   } catch (error) {
     const { userError } = await processError(error, { metadata: { action: "saveTemplate", id } });
@@ -230,18 +212,9 @@ export async function toggleTemplateAction(formData: FormData) {
   const id = readString(formData, "id");
   const current = await prisma.template.findUnique({ where: { id } });
   if (!current) redirect("/admin/templates?error=template-not-found");
-
   const nextStatus = current.status === "PUBLISHED" ? "DRAFT" : "PUBLISHED";
   const updated = await prisma.template.update({ where: { id }, data: { status: nextStatus } });
-  await auditTemplate({
-    adminId: admin.id,
-    adminEmail: admin.email,
-    action: nextStatus === "PUBLISHED" ? "TEMPLATE_PUBLISHED" : "TEMPLATE_UNPUBLISHED",
-    templateId: updated.id,
-    code: updated.code,
-    metadata: { status: nextStatus },
-  });
-
+  await auditTemplate({ adminId: admin.id, adminEmail: admin.email, action: nextStatus === "PUBLISHED" ? "TEMPLATE_PUBLISHED" : "TEMPLATE_UNPUBLISHED", templateId: updated.id, code: updated.code, metadata: { status: nextStatus } });
   revalidatePath("/admin/templates");
   redirect("/admin/templates?toggled=1");
 }
