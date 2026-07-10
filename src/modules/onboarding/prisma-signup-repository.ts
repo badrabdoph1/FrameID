@@ -1,4 +1,9 @@
 import { themeRegistry } from "@/modules/themes/theme-registry";
+import {
+  getTemplateStarterData,
+  mergeTemplatePreviewData,
+  templateStarterToPreviewData
+} from "@/modules/themes/template-starter-data";
 import type {
   AccountCreationInput,
   ProvisionedAccountResult,
@@ -27,6 +32,21 @@ type PrismaSignupTransaction = {
   siteSection: {
     createMany(input: unknown): Promise<{ count: number }>;
   };
+  contactProfile: {
+    create(input: unknown): Promise<{ id: string }>;
+  };
+  mediaAsset: {
+    create(input: unknown): Promise<{ id: string }>;
+  };
+  galleryAlbum: {
+    create(input: unknown): Promise<{ id: string }>;
+  };
+  galleryImage: {
+    create(input: unknown): Promise<{ id: string }>;
+  };
+  sEOSettings: {
+    create(input: unknown): Promise<{ id: string }>;
+  };
   subscription: {
     create(input: unknown): Promise<{ id: string; status: "TRIAL" }>;
   };
@@ -44,6 +64,9 @@ type PrismaSignupClient = {
   };
   site: {
     findMany(input: unknown): Promise<Array<{ slug: string }>>;
+  };
+  template: {
+    findFirst(input: unknown): Promise<{ status: string; previewData: unknown } | null>;
   };
   $transaction: unknown;
 };
@@ -80,6 +103,24 @@ export function createPrismaSignupProvisioningRepository(
       });
 
       return new Set(sites.map((site) => site.slug));
+    },
+    async getTemplateStarterData(templateCode) {
+      const registryTemplate = themeRegistry.getTemplate(templateCode);
+      if (!registryTemplate || registryTemplate.status !== "published") return null;
+
+      const row = await prisma.template.findFirst({
+        where: {
+          code: templateCode,
+          deletedAt: null
+        },
+        select: {
+          status: true,
+          previewData: true
+        }
+      });
+
+      if (row && row.status !== "PUBLISHED") return null;
+      return mergeTemplatePreviewData(templateCode, row?.previewData ?? null);
     },
     async createAccountWithSite(input) {
       return (prisma.$transaction as PrismaTransactionRunner)(async (transaction) => {
@@ -129,7 +170,7 @@ export function createPrismaSignupProvisioningRepository(
           data: {
             siteId: site.id,
             themeId: theme.id,
-            config: themeRegistry.getTheme(input.site.themeCode)?.defaultConfig ?? {}
+            config: input.defaultContent.themeConfig
           }
         });
 
@@ -140,8 +181,23 @@ export function createPrismaSignupProvisioningRepository(
             title: section.title,
             sortOrder: section.sortOrder,
             data: section.data,
-            isVisible: true
+            isVisible: section.isVisible
           }))
+        });
+
+        await transaction.contactProfile.create({
+          data: {
+            siteId: site.id,
+            studioName: input.defaultContent.contact.studioName,
+            bio: input.defaultContent.contact.bio,
+            longDescription: input.defaultContent.contact.longDescription,
+            phone: input.defaultContent.contact.phone,
+            whatsapp: input.defaultContent.contact.whatsapp,
+            email: input.defaultContent.contact.email,
+            instagram: input.defaultContent.contact.instagram,
+            facebook: input.defaultContent.contact.facebook,
+            bookingMessageTemplate: input.defaultContent.contact.callToAction
+          }
         });
 
         await transaction.package.createMany({
@@ -152,6 +208,7 @@ export function createPrismaSignupProvisioningRepository(
             priceAmount: item.priceAmount,
             currency: item.currency,
             features: item.features,
+            imageUrl: item.imageUrl,
             isHighlighted: item.isHighlighted,
             sortOrder: item.sortOrder,
             isActive: true
@@ -162,12 +219,30 @@ export function createPrismaSignupProvisioningRepository(
           data: input.defaultContent.extras.map((item) => ({
             siteId: site.id,
             name: item.name,
+            description: item.description,
             priceAmount: item.priceAmount,
             currency: item.currency,
             iconKey: item.iconKey,
             sortOrder: item.sortOrder,
             isActive: true
           }))
+        });
+
+        await copyGallery(transaction, {
+          tenantId: tenant.id,
+          siteId: site.id,
+          templateCode: input.site.templateCode,
+          images: input.defaultContent.gallery
+        });
+
+        await transaction.sEOSettings.create({
+          data: {
+            siteId: site.id,
+            title: input.defaultContent.seo.title,
+            description: input.defaultContent.seo.description,
+            robotsIndex: input.defaultContent.seo.robotsIndex,
+            structuredDataOverrides: input.defaultContent.seo.structuredDataOverrides
+          }
         });
 
         const subscription = await transaction.subscription.create({
@@ -194,6 +269,60 @@ export function createPrismaSignupProvisioningRepository(
       });
     }
   };
+}
+
+async function copyGallery(
+  transaction: PrismaSignupTransaction,
+  input: {
+    tenantId: string;
+    siteId: string;
+    templateCode: string;
+    images: AccountCreationInput["defaultContent"]["gallery"];
+  }
+) {
+  const album = await transaction.galleryAlbum.create({
+    data: {
+      siteId: input.siteId,
+      title: "معرض الأعمال",
+      slug: "main-gallery",
+      description: "صور من بيانات بداية القالب المختار.",
+      isVisible: true,
+      sortOrder: 0
+    },
+    select: { id: true }
+  });
+
+  for (const image of input.images) {
+    const asset = await transaction.mediaAsset.create({
+      data: {
+        tenantId: input.tenantId,
+        kind: "image",
+        url: image.url,
+        storageKey: `template-starter/${input.templateCode}/${input.siteId}/${image.sortOrder}-${image.id}`,
+        mimeType: "image/jpeg",
+        sizeBytes: 0,
+        alt: image.alt,
+        metadata: {
+          source: "template-starter-data",
+          templateCode: input.templateCode,
+          starterImageId: image.id
+        }
+      },
+      select: { id: true }
+    });
+
+    await transaction.galleryImage.create({
+      data: {
+        albumId: album.id,
+        assetId: asset.id,
+        caption: image.caption,
+        alt: image.alt,
+        sortOrder: image.sortOrder,
+        isFeatured: image.isFeatured
+      },
+      select: { id: true }
+    });
+  }
 }
 
 async function upsertTheme(
@@ -247,6 +376,9 @@ async function upsertTemplate(
     throw new Error(`Missing template definition: ${input.site.templateCode}`);
   }
 
+  const starter = getTemplateStarterData(template.code);
+  const previewData = starter ? templateStarterToPreviewData(starter) : {};
+
   return transaction.template.upsert({
     where: {
       code: template.code
@@ -257,8 +389,8 @@ async function upsertTemplate(
       name: template.name,
       status: template.status.toUpperCase(),
       showroomOrder: template.showroomOrder,
-      previewData: {},
-      settings: {}
+      previewData,
+      settings: input.defaultContent.themeConfig
     },
     update: {
       themeId,
