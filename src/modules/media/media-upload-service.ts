@@ -1,3 +1,5 @@
+import { UploadError } from "@/lib/errors/error-service";
+
 const ALLOWED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 const DEFAULT_MAX_SIZE_BYTES = 16 * 1024 * 1024;
 
@@ -25,16 +27,19 @@ export async function readValidatedImageFile(
   maxSizeBytes = DEFAULT_MAX_SIZE_BYTES,
 ): Promise<Uint8Array> {
   if (!ALLOWED_IMAGE_TYPES.has(file.type)) {
-    throw new Error("Unsupported media type");
+    throw new UploadError("FID-UPLOAD-002");
   }
 
   if (file.size <= 0 || file.size > maxSizeBytes) {
-    throw new Error("Media file is too large");
+    throw new UploadError("FID-UPLOAD-001");
   }
 
   const bytes = new Uint8Array(await file.arrayBuffer());
   if (bytes.byteLength !== file.size || !matchesImageSignature(bytes, file.type)) {
-    throw new Error("File content does not match its image type");
+    throw new UploadError(
+      "FID-UPLOAD-002",
+      "محتوى الملف لا يطابق صيغة الصورة. اختر صورة JPG أو PNG أو WebP حقيقية.",
+    );
   }
 
   return bytes;
