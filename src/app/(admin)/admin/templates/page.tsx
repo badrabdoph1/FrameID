@@ -4,7 +4,7 @@ import { AdminPageShell } from "@/components/layout/admin-page-shell";
 import { prisma } from "@/lib/prisma";
 import { requireAdminPermission } from "@/modules/admin/admin-permission-guards";
 import { TemplateManager } from "@/app/(admin)/admin/templates/template-manager";
-import { TemplateCoverCenter } from "@/app/(admin)/admin/templates/template-cover-center";
+import { TemplateImageCenter } from "@/app/(admin)/admin/templates/template-image-center";
 
 export const dynamic = "force-dynamic";
 
@@ -17,26 +17,16 @@ type Props = {
     restored?: string;
     archived?: string;
     coverSaved?: string;
+    visualSaved?: string;
     error?: string;
   }>;
 };
-
-type JsonRecord = Record<string, unknown>;
-
-function isRecord(value: unknown): value is JsonRecord {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-function templateCoverUrl(value: unknown): string {
-  if (!isRecord(value)) return "";
-  const image = value.previewImage ?? value.thumbnail ?? value.image ?? value.cover;
-  return typeof image === "string" ? image : "";
-}
 
 function getMessage(params: Awaited<Props["searchParams"]>) {
   if (params.error) {
     return { tone: "danger" as const, text: decodeURIComponent(params.error) };
   }
+  if (params.visualSaved) return { tone: "success" as const, text: "تم تحديث صورة القالب من الجهاز." };
   if (params.coverSaved) return { tone: "success" as const, text: "تم تحديث غلاف بطاقة القالب." };
   if (params.created) return { tone: "success" as const, text: "تم إنشاء القالب كمسودة ويمكنك تعديله الآن." };
   if (params.duplicated) return { tone: "success" as const, text: "تم إنشاء نسخة مستقلة من القالب." };
@@ -93,7 +83,12 @@ export default async function AdminTemplatesPage({ searchParams }: Props) {
         { label: "مركز المحتوى", href: "/admin/content", icon: Settings },
       ]}
     >
-      <style>{`label:has(> input[name="previewImage"]) { display: none; }`}</style>
+      <style>{`
+        label:has(> input[name="previewImage"]),
+        label:has(> input[name="heroImageUrl"]),
+        label:has(> input[name$="_imageUrl"]),
+        label:has(> input[name="newPackageImageUrl"]) { display: none; }
+      `}</style>
 
       <section className="grid gap-3 sm:grid-cols-3">
         <Metric label="كل القوالب" value={templates.length} icon={LayoutTemplate} />
@@ -101,12 +96,12 @@ export default async function AdminTemplatesPage({ searchParams }: Props) {
         <Metric label="الثيمات المتاحة" value={themes.length} icon={Palette} />
       </section>
 
-      <TemplateCoverCenter
+      <TemplateImageCenter
         templates={templates.map((template) => ({
           id: template.id,
           name: template.name,
           code: template.code,
-          currentUrl: templateCoverUrl(template.previewData),
+          previewData: template.previewData,
         }))}
       />
 
