@@ -1,6 +1,6 @@
 "use client"
 
-import { Search, Bell, Plus, Menu, X } from "lucide-react"
+import { Search, Bell, Plus, Menu, X, Command } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useState, useCallback, useRef, useEffect } from "react"
@@ -28,6 +28,9 @@ const breadcrumbLabels: Record<string, string> = {
   settings: "إعدادات المنصة",
   marketing: "التسويق",
   search: "بحث",
+  messages: "الرسائل",
+  billing: "المال",
+  system: "النظام",
 }
 
 function useBreadcrumbs(pathname: string) {
@@ -86,8 +89,8 @@ export function AdminTopbar() {
   const title = getPageTitle() || "لوحة التحكم"
 
   return (
-    <header className="sticky top-0 z-20 flex items-center justify-between gap-4 rounded-xl border border-white/10 bg-[#0c0e13]/80 px-4 py-3 shadow-2xl backdrop-blur-lg lg:px-5 lg:py-3.5">
-      <div className="flex items-center gap-3 min-w-0">
+    <header className="admin-desktop-topbar flex items-center justify-between gap-4 border border-white/10 px-5 py-4 backdrop-blur-2xl lg:px-6">
+      <div className="flex min-w-0 items-center gap-3">
         <button
           onClick={toggleMobileMenu}
           className="flex size-9 shrink-0 items-center justify-center rounded-lg text-white/50 transition hover:bg-white/5 hover:text-white lg:hidden"
@@ -96,37 +99,37 @@ export function AdminTopbar() {
           <Menu size={20} />
         </button>
         <div className="min-w-0">
-          <nav className="flex items-center gap-1.5 text-[0.72rem] font-extrabold text-white/50">
+          <nav className="flex items-center gap-1.5 text-[0.72rem] font-extrabold text-white/46">
             <Link href="/admin" className="transition hover:text-[#f3cf73] no-underline">لوحة التحكم</Link>
             {crumbs.length > 1 && crumbs.slice(1).map((crumb) => (
               <span key={crumb.href} className="flex items-center gap-1.5">
-                <span className="text-white/20">/</span>
+                <span className="text-white/18">/</span>
                 <Link href={crumb.href} className="transition hover:text-[#f3cf73] no-underline last:text-[#f3cf73]">
                   {crumb.label}
                 </Link>
               </span>
             ))}
           </nav>
-          <h1 className="mt-0.5 truncate text-lg font-bold text-[#fff7e8] sm:text-xl">{title}</h1>
+          <h1 className="mt-1 truncate bg-gradient-to-l from-[#fff7e8] via-[#f3cf73] to-[#fff7e8] bg-clip-text text-2xl font-black tracking-tight text-transparent xl:text-3xl">{title}</h1>
         </div>
       </div>
 
-      <div className="flex shrink-0 items-center gap-2">
+      <div className="flex shrink-0 items-center gap-2.5">
         {searchOpen ? (
-          <form onSubmit={handleSearchSubmit} ref={searchContainerRef} className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-1.5">
-            <Search size={16} className="shrink-0 text-white/40" />
+          <form onSubmit={handleSearchSubmit} ref={searchContainerRef} className="flex min-h-11 items-center gap-2 rounded-2xl border border-amber-300/18 bg-black/18 px-3 py-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+            <Search size={16} className="shrink-0 text-[#f3cf73]" />
             <input
               ref={searchRef}
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="ابحث في لوحة التحكم…"
-              className="min-w-[160px] flex-1 border-0 bg-transparent text-sm text-white outline-none placeholder:text-white/30"
+              placeholder="ابحث في العملاء، المدفوعات، المواقع…"
+              className="min-w-[300px] flex-1 border-0 bg-transparent text-sm font-bold text-white outline-none placeholder:text-white/28 xl:min-w-[380px]"
             />
             <button
               type="button"
               onClick={() => { setSearchOpen(false); setSearchQuery("") }}
-              className="flex size-6 items-center justify-center rounded-md text-white/30 transition hover:bg-white/5 hover:text-white/60"
+              className="flex size-7 items-center justify-center rounded-xl text-white/35 transition hover:bg-white/6 hover:text-white/70"
             >
               <X size={14} />
             </button>
@@ -134,16 +137,20 @@ export function AdminTopbar() {
         ) : (
           <button
             onClick={() => setSearchOpen(true)}
-            className="flex size-10 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-[#ffe29a] transition hover:border-amber-500/20 hover:bg-white/10"
+            className="group hidden min-h-11 items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.045] px-3.5 text-sm font-extrabold text-white/64 transition hover:border-amber-500/22 hover:bg-amber-500/8 hover:text-white lg:inline-flex"
             aria-label="بحث"
           >
-            <Search size={18} />
+            <Search size={17} className="text-[#f3cf73]" />
+            بحث سريع
+            <span className="mr-2 inline-flex items-center gap-1 rounded-lg border border-white/10 bg-black/16 px-2 py-1 text-[0.64rem] text-white/36">
+              <Command size={11} /> K
+            </span>
           </button>
         )}
 
         <Link
           href="/admin/notifications"
-          className="relative flex size-10 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-[#ffe29a] transition hover:border-amber-500/20 hover:bg-white/10"
+          className="relative flex size-11 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.045] text-[#ffe29a] transition hover:border-amber-500/22 hover:bg-amber-500/8"
           aria-label="الإشعارات"
         >
           <Bell size={18} />
@@ -152,12 +159,12 @@ export function AdminTopbar() {
           </span>
         </Link>
 
-        <Link href="/admin/customers/new" className="hidden sm:inline-flex items-center gap-2 rounded-xl border border-[#f3cf73]/60 bg-gradient-to-br from-[#f3cf73] to-[#f3cf73]/80 px-4 py-2.5 text-sm font-extrabold text-[#17120a] no-underline shadow-lg transition hover:-translate-y-0.5 hover:shadow-[#f3cf73]/30">
+        <Link href="/admin/customers/new" className="hidden min-h-11 items-center gap-2 rounded-2xl border border-[#f3cf73]/55 bg-gradient-to-br from-[#f3cf73] to-[#d4af37] px-4 text-sm font-extrabold text-[#17120a] no-underline shadow-[0_16px_32px_rgba(243,207,115,0.16)] transition hover:-translate-y-0.5 hover:shadow-[#f3cf73]/30 sm:inline-flex">
           <Plus size={18} />
           إنشاء جديد
         </Link>
 
-        <div className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-white/20 bg-gradient-to-br from-amber-500/20 to-amber-500/8 text-sm font-bold text-[#f3cf73]">
+        <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl border border-amber-300/24 bg-gradient-to-br from-amber-500/18 to-amber-500/8 text-sm font-black text-[#f3cf73] shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
           A
         </div>
       </div>
