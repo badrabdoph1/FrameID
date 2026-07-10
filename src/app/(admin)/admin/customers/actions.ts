@@ -10,13 +10,7 @@ import { createCustomerAdminRepository } from "@/modules/admin/customers/custome
 import { createCustomerAdminService } from "@/modules/admin/customers/customer-admin-service";
 import { getCurrentAdmin } from "@/modules/admin/admin-page-guards";
 import { readFormString } from "@/modules/auth/auth-action-utils";
-import {
-  addDays,
-  applySubscriptionTimerToTenants,
-  applyTrialTimerToTenants,
-  lifecycleDurationOptions,
-  type LifecycleDurationPreset,
-} from "@/modules/lifecycle/customer-lifecycle";
+import { addDays, applySubscriptionTimerToTenants, applyTrialTimerToTenants, lifecycleDurationOptions, type LifecycleDurationPreset } from "@/modules/lifecycle/customer-lifecycle";
 
 function readFormInt(formData: FormData, key: string): number {
   const val = parseInt(readFormString(formData, key), 10);
@@ -47,22 +41,13 @@ async function getService() {
 }
 
 async function withErrorHandling<T>(action: string, fn: () => Promise<T>, context?: { userId?: string; tenantId?: string }): Promise<T> {
-  try {
-    return await fn();
-  } catch (error) {
-    await processError(error, { userId: context?.userId, tenantId: context?.tenantId, metadata: { action } });
-    throw error;
-  }
+  try { return await fn(); }
+  catch (error) { await processError(error, { userId: context?.userId, tenantId: context?.tenantId, metadata: { action } }); throw error; }
 }
 
-async function auditBulkAction(input: { actorUserId: string | null; action: string; tenantIds: string[]; metadata?: Prisma.InputJsonObject }) {
+async function auditBulkAction(input: { action: string; tenantIds: string[]; metadata?: Prisma.InputJsonObject }) {
   await prisma.auditLog.create({
-    data: {
-      actorUserId: input.actorUserId,
-      action: input.action,
-      entityType: "Tenant",
-      metadata: { tenantIds: input.tenantIds, count: input.tenantIds.length, ...(input.metadata ?? {}) },
-    },
+    data: { actorUserId: null, action: input.action, entityType: "Tenant", metadata: { tenantIds: input.tenantIds, count: input.tenantIds.length, ...(input.metadata ?? {}) } },
   }).catch(() => undefined);
 }
 
@@ -175,7 +160,6 @@ export async function bulkCustomerLifecycleAction(formData: FormData) {
   const admin = await getCurrentAdmin();
   if (!admin) redirect(buildCustomersRedirect({ bulkError: "غير مصرح." }));
 
-  const actorUserId = admin.id.startsWith("env-super-admin:") ? null : admin.id;
   const action = readFormString(formData, "bulkAction");
   const tenantIds = formData.getAll("tenantIds").map(String).filter(Boolean);
   const days = parseDays(readFormString(formData, "days"), 30);
@@ -189,44 +173,42 @@ export async function bulkCustomerLifecycleAction(formData: FormData) {
   let doneCount = 0;
   try {
     if (action === "extend-trial") {
-      doneCount = await applyTrialTimerToTenants(prisma, tenantIds, days, actorUserId);
+      doneCount = await applyTrialTimerToTenants(prisma, tenantIds, days);
     } else if (action === "extend-subscription" || action === "change-duration") {
-      doneCount = await applySubscriptionTimerToTenants(prisma, tenantIds, preset, customDays, actorUserId);
+      doneCount = await applySubscriptionTimerToTenants(prisma, tenantIds, preset, customDays);
     } else if (action === "activate") {
       const now = new Date();
-      const end = preset === "forever" ? null : addDays(now, preset === "custom" ? customDays : Number(preset));
+      const end = preset === "forever" ? null : addDays(now, preset === "custom" ? customDays : Number(preset === "keep" ? "30" : preset));
       const subscriptions = await prisma.subscription.findMany({ where: { tenantId: { in: tenantIds }, deletedAt: null }, select: { id: true, tenantId: true } });
-      for (const subscription of subscriptions) {
-        await prisma.subscription.update({ where: { id: subscription.id }, data: { status: "ACTIVE", activatedAt: now, currentPeriodStart: now, currentPeriodEnd: end, expiresAt: end } });
-      }
+      for (const subscription of subscriptions) await prisma.subscription.update({ where: { id: subscription.id }, data: { status: "ACTIVE", activatedAt: now, currentPeriodStart: now, currentPeriodEnd: end, expiresAt: end } });
       await prisma.tenant.updateMany({ where: { id: { in: tenantIds }, deletedAt: null }, data: { status: "ACTIVE", gracePeriodEndsAt: null } });
       await prisma.site.updateMany({ where: { tenantId: { in: tenantIds }, deletedAt: null }, data: { status: "PUBLISHED", isPublished: true } });
       doneCount = tenantIds.length;
-      await auditBulkAction({ actorUserId, action: "CUSTOMERS_BULK_ACTIVATED", tenantIds, metadata: { preset, customDays, endAt: end?.toISOString() ?? null } as Prisma.InputJsonObject });
+      await auditBulkAction({ action: "CUSTOMERS_BULK_ACTIVATED", tenantIds, metadata: { preset, customDays, endAt: end?.toISOString() ?? null } as Prisma.InputJsonObject });
     } else if (action === "suspend") {
       await prisma.tenant.updateMany({ where: { id: { in: tenantIds }, deletedAt: null }, data: { status: "SUSPENDED" } });
       await prisma.subscription.updateMany({ where: { tenantId: { in: tenantIds }, deletedAt: null }, data: { status: "SUSPENDED" } });
       await prisma.site.updateMany({ where: { tenantId: { in: tenantIds }, deletedAt: null }, data: { status: "SUSPENDED", isPublished: false } });
       doneCount = tenantIds.length;
-      await auditBulkAction({ actorUserId, action: "CUSTOMERS_BULK_SUSPENDED", tenantIds });
+      await auditBulkAction({ action: "CUSTOMERS_BULK_SUSPENDED", tenantIds });
     } else if (action === "archive" || action === "delete") {
       const now = new Date();
       await prisma.tenant.updateMany({ where: { id: { in: tenantIds }, deletedAt: null }, data: { deletedAt: now, status: "SUSPENDED" } });
       await prisma.site.updateMany({ where: { tenantId: { in: tenantIds }, deletedAt: null }, data: { status: "SUSPENDED", isPublished: false, deletedAt: now } });
       doneCount = tenantIds.length;
-      await auditBulkAction({ actorUserId, action: "CUSTOMERS_BULK_ARCHIVED", tenantIds });
+      await auditBulkAction({ action: "CUSTOMERS_BULK_ARCHIVED", tenantIds });
     } else if (action === "notify" || action === "email") {
       if (!body) redirect(buildCustomersRedirect({ bulkError: "اكتب نص الرسالة أولًا." }));
       const tenants = await prisma.tenant.findMany({ where: { id: { in: tenantIds }, deletedAt: null }, select: { id: true, ownerUserId: true } });
       await prisma.notification.createMany({ data: tenants.map((tenant) => ({ tenantId: tenant.id, type: "admin_bulk_message", title, body, priority: "high" })) });
       await prisma.notificationLog.createMany({ data: tenants.map((tenant) => ({ tenantId: tenant.id, userId: tenant.ownerUserId, type: "info", title, body, category: "customer_lifecycle" })) });
       doneCount = tenants.length;
-      await auditBulkAction({ actorUserId, action: action === "email" ? "CUSTOMERS_BULK_EMAIL_REQUESTED" : "CUSTOMERS_BULK_NOTIFIED", tenantIds, metadata: { title, body, emailConfigured: false } as Prisma.InputJsonObject });
+      await auditBulkAction({ action: action === "email" ? "CUSTOMERS_BULK_EMAIL_REQUESTED" : "CUSTOMERS_BULK_NOTIFIED", tenantIds, metadata: { title, body, emailConfigured: false } as Prisma.InputJsonObject });
     } else {
       redirect(buildCustomersRedirect({ bulkError: "اختر عملية صحيحة." }));
     }
   } catch (error) {
-    const { userError } = await processError(error, { userId: actorUserId ?? undefined, metadata: { action: "bulkCustomerLifecycle", bulkAction: action } });
+    const { userError } = await processError(error, { metadata: { action: "bulkCustomerLifecycle", bulkAction: action } });
     redirect(buildCustomersRedirect({ bulkError: userError.message }));
   }
 
