@@ -26,7 +26,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
           cache: npm
 
       - name: Install dependencies
@@ -38,7 +38,10 @@ jobs:
       - name: Lint
         run: npm run lint
 
-      - name: Test
+      - name: Test upload pipeline
+        run: npx vitest run tests/media-upload-service.test.ts tests/platform-image-upload.test.ts
+
+      - name: Test full suite
         run: npm run test
 
       - name: Build
