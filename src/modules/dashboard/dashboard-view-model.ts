@@ -1,6 +1,12 @@
 import type { CurrentSession } from "@/modules/auth/current-session-service";
 import type { ActivationTemplateKey, CustomerMessageTone } from "@/modules/messages/customer-message-config";
-import { calcLifecycleDaysRemaining, calcLifecycleProgressPercent } from "@/modules/lifecycle/customer-lifecycle";
+import {
+  calcLifecycleDaysRemaining,
+  calcLifecycleProgressPercent,
+  defaultLifecycleTimerSettings,
+  shouldShowLifecycleTimerCard,
+  type LifecycleTimerSettings,
+} from "@/modules/lifecycle/customer-lifecycle";
 
 type ChecklistItem = {
   id: string;
@@ -30,6 +36,7 @@ export type SubscriptionInfo = {
   pendingRequestStatus: string | null;
   latestPaymentRequestStatus: string | null;
   urgency: "success" | "warning" | "danger" | "neutral";
+  showLifecycleCard: boolean;
 };
 
 export type DashboardWorkspacePhase = {
@@ -102,7 +109,13 @@ const nextStepCopy: Record<string, { title: string; description: string }> = {
   publish: { title: "انشر الموقع", description: "انشر الموقع وانسخ الرابط للعملاء." },
 };
 
-function buildSubscriptionInfo(session: CurrentSession, now: Date, pendingRequestStatus: string | null, latestPaymentRequestStatus: string | null): SubscriptionInfo | null {
+function buildSubscriptionInfo(
+  session: CurrentSession,
+  now: Date,
+  pendingRequestStatus: string | null,
+  latestPaymentRequestStatus: string | null,
+  lifecycleTimerSettings: LifecycleTimerSettings,
+): SubscriptionInfo | null {
   if (!session.subscription) return null;
 
   const sub = session.subscription;
@@ -127,6 +140,12 @@ function buildSubscriptionInfo(session: CurrentSession, now: Date, pendingReques
           ? "success"
           : "neutral";
 
+  const base = {
+    isTrial,
+    isActive,
+    isExpired,
+  };
+
   return {
     status: sub.status,
     accountType: isTrial ? "تجربة مجانية" : endDate ? "اشتراك" : "اشتراك دائم",
@@ -146,6 +165,7 @@ function buildSubscriptionInfo(session: CurrentSession, now: Date, pendingReques
     pendingRequestStatus,
     latestPaymentRequestStatus,
     urgency,
+    showLifecycleCard: shouldShowLifecycleTimerCard(lifecycleTimerSettings, base),
   };
 }
 
@@ -181,7 +201,7 @@ function buildOperatingAlerts({ isReadyToPublish, isPublished, subscription }: {
   return alerts;
 }
 
-export function createDashboardViewModel({ session, platformBaseUrl, now, packagesCount, imagesCount, albumsCount, hasContactInfo, hasCoverImage, currentThemeName, lastModifiedAt, pendingRequestStatus, latestPaymentRequestStatus, hasSeoSettings, hasAvatarImage, customerMessages, activationMessages }: {
+export function createDashboardViewModel({ session, platformBaseUrl, now, packagesCount, imagesCount, albumsCount, hasContactInfo, hasCoverImage, currentThemeName, lastModifiedAt, pendingRequestStatus, latestPaymentRequestStatus, hasSeoSettings, hasAvatarImage, customerMessages, activationMessages, lifecycleTimerSettings = defaultLifecycleTimerSettings }: {
   session: CurrentSession;
   platformBaseUrl: string;
   now: Date;
@@ -198,6 +218,7 @@ export function createDashboardViewModel({ session, platformBaseUrl, now, packag
   hasAvatarImage?: boolean;
   customerMessages?: DashboardCustomerMessage[];
   activationMessages?: DashboardActivationMessages;
+  lifecycleTimerSettings?: LifecycleTimerSettings;
 }): DashboardViewModel {
   const hasPackages = packagesCount > 0;
   const hasImages = imagesCount > 0;
@@ -214,7 +235,7 @@ export function createDashboardViewModel({ session, platformBaseUrl, now, packag
   ];
   const doneCount = items.filter((item) => item.done).length;
   const percent = calcPercent(doneCount, items.length);
-  const subscription = buildSubscriptionInfo(session, now, pendingRequestStatus ?? null, latestPaymentRequestStatus ?? null);
+  const subscription = buildSubscriptionInfo(session, now, pendingRequestStatus ?? null, latestPaymentRequestStatus ?? null, lifecycleTimerSettings);
   const requiredBeforePublish = items.filter((item) => item.id !== "publish");
   const isReadyToPublish = requiredBeforePublish.every((item) => item.done);
   const incomplete = items.find((item) => !item.done);
