@@ -55,10 +55,7 @@ export function createDatabaseDumper(databaseUrl: string): DatabaseDumper {
   }
 
   return {
-    async dumpDatabase(
-      outputDir: string,
-      _backupId: string
-    ): Promise<DatabaseDumpResult> {
+    async dumpDatabase(outputDir: string): Promise<DatabaseDumpResult> {
       const parsed = parseDatabaseUrl(databaseUrl);
       const dumpPath = join(outputDir, "database.sql.gz");
       await mkdir(dirname(dumpPath), { recursive: true });
