@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState, type ReactNode } from "react";
-import { Archive, BadgeCheck, Check, Flame, Plus, Save, Sparkles, ToggleLeft, ToggleRight, Trash2, X } from "lucide-react";
+import { Archive, BadgeCheck, Check, Eye, EyeOff, Flame, Pencil, Plus, Save, Trash2, X } from "lucide-react";
 
 import { archivePlanAction, savePlanAction, togglePlanAction } from "@/app/(admin)/admin/plans/actions";
 
@@ -118,8 +118,10 @@ function formatMoney(amount: number, currency: string) {
 }
 
 export function PlansManagerClient({ plans, metrics, banner }: PlansManagerClientProps) {
-  const [showCreate, setShowCreate] = useState(plans.length === 0);
+  const [editor, setEditor] = useState<"create" | string | null>(plans.length === 0 ? "create" : null);
   const sortedPlans = useMemo(() => [...plans].sort((a, b) => Number(b.isActive) - Number(a.isActive) || a.priceAmount - b.priceAmount), [plans]);
+  const selectedPlan = editor && editor !== "create" ? plans.find((plan) => plan.id === editor) ?? null : null;
+  const editorTitle = editor === "create" ? "إنشاء باقة جديدة" : selectedPlan ? `تعديل ${selectedPlan.name}` : "";
 
   return (
     <div className="grid gap-5">
@@ -137,47 +139,53 @@ export function PlansManagerClient({ plans, metrics, banner }: PlansManagerClien
         <Metric label="طلبات دفع" value={metrics.paymentCount} />
       </section>
 
-      <section className="rounded-3xl border border-amber-500/18 bg-[radial-gradient(circle_at_top_right,rgba(243,207,115,0.14),transparent_34%),rgba(255,255,255,0.04)] p-4 sm:p-5">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+      <section className="border-y border-white/10 py-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/25 bg-amber-500/10 px-3 py-1 text-[0.68rem] font-black text-[#f3cf73]">
-              <Sparkles className="size-3.5" /> إدارة مرئية بدون أكواد
-            </span>
-            <h2 className="mt-3 text-xl font-black text-[#fff7e8]">الباقات كما تظهر للعميل</h2>
-            <p className="mt-1 max-w-2xl text-sm font-bold leading-7 text-white/52">
-              عدّل الاسم، السعر، الوصف، الشارة، وسطور المميزات من خانات عادية. لا يوجد JSON أو أكواد داخل واجهة الإدارة.
-            </p>
+            <h2 className="text-lg font-black text-[#fff7e8]">قائمة الباقات</h2>
+            <p className="mt-1 text-sm font-bold text-white/45">اختر باقة واحدة للتعديل، أو أضف باقة جديدة.</p>
           </div>
           <button
             type="button"
-            onClick={() => setShowCreate((value) => !value)}
-            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-amber-500/45 bg-gradient-to-br from-[#f3cf73] to-[#d4af37] px-4 text-sm font-black text-[#17120a] shadow-lg transition hover:-translate-y-0.5"
+            onClick={() => setEditor(editor === "create" ? null : "create")}
+            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[#f3cf73] px-4 text-sm font-black text-[#17120a] transition hover:bg-[#f8da8a]"
           >
-            {showCreate ? <X className="size-4" /> : <Plus className="size-4" />}
-            {showCreate ? "إغلاق إنشاء باقة" : "إضافة باقة جديدة"}
+            {editor === "create" ? <X className="size-4" /> : <Plus className="size-4" />}
+            {editor === "create" ? "إغلاق الإنشاء" : "إضافة باقة جديدة"}
           </button>
         </div>
-
-        {showCreate ? (
-          <div className="mt-5 rounded-3xl border border-white/10 bg-black/18 p-4">
-            <PlanEditor submitLabel="إنشاء الباقة" />
-          </div>
-        ) : null}
       </section>
 
-      {sortedPlans.length === 0 ? (
-        <div className="grid place-items-center rounded-3xl border border-dashed border-white/12 bg-white/[0.03] px-6 py-16 text-center">
-          <BadgeCheck className="mb-3 size-10 text-white/20" />
-          <h2 className="text-lg font-black text-white/75">لا توجد باقات بعد</h2>
-          <p className="mt-1 max-w-xl text-sm font-bold leading-7 text-white/42">ابدأ بإضافة أول باقة، وستظهر هنا بنفس شكلها الذي يراه العميل.</p>
-        </div>
-      ) : (
-        <section className="grid gap-4 xl:grid-cols-2">
-          {sortedPlans.map((plan) => (
-            <PlanCard key={plan.id} plan={plan} />
+      <div className={editor ? "grid items-start gap-4 xl:grid-cols-[minmax(0,0.9fr)_minmax(420px,1.1fr)]" : "grid gap-4"}>
+        <section aria-label="قائمة الباقات" className="grid gap-2">
+          {sortedPlans.length === 0 ? (
+            <div className="grid place-items-center rounded-2xl border border-dashed border-white/12 bg-white/[0.025] px-6 py-12 text-center">
+              <BadgeCheck className="mb-3 size-9 text-white/20" />
+              <h2 className="text-base font-black text-white/75">لا توجد باقات بعد</h2>
+              <p className="mt-1 text-sm font-bold text-white/42">أدخل بيانات أول باقة من النموذج الظاهر.</p>
+            </div>
+          ) : sortedPlans.map((plan) => (
+            <PlanCard key={plan.id} plan={plan} selected={editor === plan.id} onEdit={() => setEditor(plan.id)} />
           ))}
         </section>
-      )}
+
+        {editor ? (
+          <section role="region" aria-label={editorTitle} className="overflow-hidden rounded-2xl border border-amber-300/20 bg-white/[0.035] xl:sticky xl:top-5">
+            <header className="flex items-start justify-between gap-3 border-b border-white/8 px-4 py-3">
+              <div>
+                <p className="text-[0.68rem] font-black text-[#f3cf73]">{editor === "create" ? "باقة جديدة" : "الباقة المحددة"}</p>
+                <h2 className="mt-1 text-base font-black text-[#fff7e8]">{editorTitle}</h2>
+              </div>
+              <button type="button" onClick={() => setEditor(null)} aria-label="إغلاق المحرر" className="grid size-10 shrink-0 place-items-center rounded-xl border border-white/10 bg-white/[0.04] text-white/55 hover:bg-white/[0.08] hover:text-white">
+                <X className="size-4" />
+              </button>
+            </header>
+            <div className="p-4">
+              <PlanEditor key={editor} plan={selectedPlan ?? undefined} submitLabel={editor === "create" ? "إنشاء الباقة" : "حفظ التعديلات"} />
+            </div>
+          </section>
+        ) : null}
+      </div>
     </div>
   );
 }
@@ -191,94 +199,48 @@ function Metric({ label, value, accent }: { label: string; value: number; accent
   );
 }
 
-function PlanCard({ plan }: { plan: PlanRow }) {
+function PlanCard({ plan, selected, onEdit }: { plan: PlanRow; selected: boolean; onEdit: () => void }) {
   const visual = normalizeFeatures(plan.features);
   const badge = visual.isPopular ? visual.badgeLabel || "الأكثر طلبًا" : visual.badgeLabel;
 
   return (
-    <article className="overflow-hidden rounded-3xl border border-white/10 bg-white/[0.035] shadow-2xl shadow-black/10">
-      <div className="grid gap-4 p-4 lg:grid-cols-[0.95fr_1.05fr] lg:p-5">
-        <div className="rounded-3xl border border-amber-500/20 bg-[radial-gradient(circle_at_top,rgba(243,207,115,0.18),transparent_42%),linear-gradient(180deg,rgba(255,255,255,0.07),rgba(255,255,255,0.025))] p-5">
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
-                {badge ? <span className="inline-flex items-center gap-1 rounded-full bg-[#f3cf73] px-3 py-1 text-[0.7rem] font-black text-[#17120a]"><Flame className="size-3" />{badge}</span> : null}
-                <span className={plan.isActive ? "rounded-full bg-emerald-400/10 px-2.5 py-1 text-[0.68rem] font-black text-emerald-300" : "rounded-full bg-white/8 px-2.5 py-1 text-[0.68rem] font-black text-white/38"}>{plan.isActive ? "ظاهرة" : "مخفية"}</span>
-              </div>
-              <h2 className="mt-4 text-2xl font-black text-[#fff7e8]">{plan.name}</h2>
-              <p className="mt-2 text-sm font-bold leading-7 text-white/55">{visual.description}</p>
-            </div>
+    <article aria-label={plan.name} className={selected ? "rounded-2xl border border-amber-300/35 bg-amber-300/[0.07] p-4" : "rounded-2xl border border-white/10 bg-white/[0.03] p-4"}>
+      <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 className="text-base font-black text-[#fff7e8]">{plan.name}</h2>
+            {badge ? <span className="inline-flex items-center gap-1 rounded-full bg-[#f3cf73] px-2 py-0.5 text-[0.65rem] font-black text-[#17120a]"><Flame className="size-3" />{badge}</span> : null}
+            <span className={plan.isActive ? "rounded-full bg-emerald-400/10 px-2 py-0.5 text-[0.65rem] font-black text-emerald-300" : "rounded-full bg-white/8 px-2 py-0.5 text-[0.65rem] font-black text-white/40"}>{plan.isActive ? "ظاهرة" : "مخفية"}</span>
           </div>
-
-          <div className="mt-5">
-            <p className="text-3xl font-black text-[#f3cf73]">{formatMoney(plan.priceAmount, plan.currency)}</p>
-            <p className="mt-1 text-xs font-black text-white/40">/{intervalLabel(plan.billingInterval)}</p>
+          <p className="mt-1 line-clamp-2 text-sm font-bold leading-6 text-white/50">{visual.description}</p>
+          <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs font-bold text-white/40">
+            <strong className="text-base font-black text-[#f3cf73]">{formatMoney(plan.priceAmount, plan.currency)} / {intervalLabel(plan.billingInterval)}</strong>
+            <span>{plan._count.subscriptions.toLocaleString("ar-EG")} اشتراك</span>
+            <span>{plan._count.paymentRequests.toLocaleString("ar-EG")} طلب دفع</span>
           </div>
-
-          {(visual.storageLabel || visual.photoLimitLabel || visual.highlightText) ? (
-            <div className="mt-4 grid gap-2 sm:grid-cols-2">
-              {visual.storageLabel ? <MiniSpec label="التخزين" value={visual.storageLabel} /> : null}
-              {visual.photoLimitLabel ? <MiniSpec label="الصور" value={visual.photoLimitLabel} /> : null}
-              {visual.highlightText ? <MiniSpec label="ملاحظة" value={visual.highlightText} wide /> : null}
-            </div>
-          ) : null}
-
-          <ul className="mt-5 grid gap-2">
-            {visual.featureLines.map((feature, index) => (
-              <li key={`${feature}-${index}`} className="flex items-start gap-2 text-sm font-bold leading-6 text-white/72">
-                <Check className="mt-1 size-4 shrink-0 text-emerald-300" />
-                <span>{feature}</span>
-              </li>
+          <ul className="mt-3 flex flex-wrap gap-2">
+            {visual.featureLines.slice(0, 3).map((feature, index) => (
+              <li key={`${feature}-${index}`} className="inline-flex items-center gap-1 rounded-lg bg-black/15 px-2 py-1 text-[0.68rem] font-bold text-white/55"><Check className="size-3 text-emerald-300" />{feature}</li>
             ))}
           </ul>
-
-          <button type="button" className="mt-5 h-11 w-full rounded-2xl bg-gradient-to-br from-[#f3cf73] to-[#d4af37] text-sm font-black text-[#17120a]">
-            {visual.ctaLabel || "اختيار الباقة"}
-          </button>
         </div>
 
-        <div className="grid content-start gap-3">
-          <div className="grid grid-cols-2 gap-2">
-            <form action={togglePlanAction}>
-              <input type="hidden" name="id" value={plan.id} />
-              <button className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-2xl border border-amber-500/25 bg-amber-500/10 px-3 text-sm font-black text-amber-200 transition hover:bg-amber-500/20">
-                {plan.isActive ? <ToggleLeft className="size-4" /> : <ToggleRight className="size-4" />}
-                {plan.isActive ? "إخفاء من الموقع" : "إظهار في الموقع"}
-              </button>
-            </form>
-            <form action={archivePlanAction}>
-              <input type="hidden" name="id" value={plan.id} />
-              <button className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-2xl border border-red-500/25 bg-red-500/10 px-3 text-sm font-black text-red-300 transition hover:bg-red-500/20">
-                <Archive className="size-4" /> أرشفة
-              </button>
-            </form>
-          </div>
-
-          <div className="rounded-2xl border border-white/8 bg-black/16 p-3 text-xs font-bold leading-6 text-white/42">
-            مستخدمة في {plan._count.subscriptions.toLocaleString("ar-EG")} اشتراك · {plan._count.paymentRequests.toLocaleString("ar-EG")} طلب دفع
-          </div>
-
-          <details className="rounded-3xl border border-white/10 bg-black/16 p-3" open={false}>
-            <summary className="flex cursor-pointer items-center justify-between gap-3 rounded-2xl px-2 py-2 text-sm font-black text-[#fff7e8]">
-              تعديل الباقة من خانات بسيطة
-              <Save className="size-4 text-[#f3cf73]" />
-            </summary>
-            <div className="mt-3 border-t border-white/8 pt-3">
-              <PlanEditor plan={plan} submitLabel="حفظ التعديلات" />
-            </div>
-          </details>
+        <div className="grid grid-cols-3 gap-2 lg:w-[330px]">
+          <button type="button" onClick={onEdit} aria-label={`تعديل ${plan.name}`} className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#f3cf73] px-3 text-sm font-black text-[#17120a] hover:bg-[#f8da8a]"><Pencil className="size-4" /> تعديل</button>
+          <form action={togglePlanAction}>
+            <input type="hidden" name="id" value={plan.id} />
+            <button aria-label={`${plan.isActive ? "إخفاء" : "إظهار"} ${plan.name}`} className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-2 text-xs font-black text-white/65 hover:bg-white/[0.08]">
+              {plan.isActive ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+              {plan.isActive ? "إخفاء" : "إظهار"}
+            </button>
+          </form>
+          <form action={archivePlanAction} onSubmit={(event) => { if (!window.confirm("سيتم إخفاء الباقة وأرشفتها. هل تريد المتابعة؟")) event.preventDefault(); }}>
+            <input type="hidden" name="id" value={plan.id} />
+            <button aria-label={`أرشفة ${plan.name}`} className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-red-500/20 bg-red-500/8 px-2 text-xs font-black text-red-300 hover:bg-red-500/15"><Archive className="size-4" /> أرشفة</button>
+          </form>
         </div>
       </div>
     </article>
-  );
-}
-
-function MiniSpec({ label, value, wide }: { label: string; value: string; wide?: boolean }) {
-  return (
-    <div className={wide ? "rounded-2xl border border-white/10 bg-black/16 p-3 sm:col-span-2" : "rounded-2xl border border-white/10 bg-black/16 p-3"}>
-      <p className="text-[0.65rem] font-black text-white/35">{label}</p>
-      <p className="mt-1 text-sm font-black text-white/75">{value}</p>
-    </div>
   );
 }
 
@@ -294,6 +256,7 @@ function PlanEditor({ plan, submitLabel }: { plan?: PlanRow; submitLabel: string
     <form action={savePlanAction} className="grid gap-3">
       {plan ? <input type="hidden" name="id" value={plan.id} /> : null}
       {plan ? <input type="hidden" name="code" value={plan.code} /> : null}
+      <input type="hidden" name="isActive" value={String(plan?.isActive ?? true)} />
 
       <div className="grid gap-3 sm:grid-cols-2">
         <Field label="اسم الباقة">
@@ -371,14 +334,10 @@ function PlanEditor({ plan, submitLabel }: { plan?: PlanRow; submitLabel: string
         </div>
       </div>
 
-      <div className="grid gap-2 sm:grid-cols-2">
+      <div className="grid gap-2">
         <label className="flex min-h-11 items-center gap-3 rounded-2xl border border-white/10 bg-black/18 px-3 text-sm font-bold text-white/68">
           <input name="isPopular" type="checkbox" defaultChecked={visual.isPopular} />
           إضافة شعار الأكثر طلبًا
-        </label>
-        <label className="flex min-h-11 items-center gap-3 rounded-2xl border border-white/10 bg-black/18 px-3 text-sm font-bold text-white/68">
-          <input name="isActive" type="checkbox" defaultChecked={plan?.isActive ?? true} />
-          إظهار الباقة في الموقع
         </label>
       </div>
 
@@ -401,7 +360,7 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
 
 function PlanFormStyles() {
   return (
-    <style jsx global>{`
+    <style>{`
       .admin-plan-input {
         min-height: 44px;
         width: 100%;
