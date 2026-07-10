@@ -9,7 +9,7 @@ import {
   Images,
   Instagram,
   Menu,
-  Phone,
+  Sparkles,
   Star,
   UserPlus,
   Video,
@@ -24,6 +24,7 @@ type AliAhmedLuxurySiteProps = {
 };
 
 const EMPTY_BOOKING_MESSAGE = "قم بتحديد باقة من الأعلى ليظهر ملخص الحجز هنا أولًا";
+const GOLD = "#e5c07b";
 
 export function AliAhmedLuxurySite({ site }: AliAhmedLuxurySiteProps) {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -32,12 +33,16 @@ export function AliAhmedLuxurySite({ site }: AliAhmedLuxurySiteProps) {
 
   const selectedPackage = site.packages.find((item) => item.id === selectedPackageId);
   const selectedExtras = site.extras.filter((item) => selectedExtraIds.includes(item.id));
+  const galleryImages = site.gallery.slice(0, 4);
+  const featuredImage = galleryImages[1]?.url ?? site.hero.imageUrl;
+  const displayName = getSiteDisplayName(site);
+  const highlightedPackage = site.packages.find((item) => item.isHighlighted) ?? site.packages[0];
+
   const total = useMemo(() => {
     return (selectedPackage?.priceAmount ?? 0) + selectedExtras.reduce((sum, item) => sum + item.priceAmount, 0);
   }, [selectedExtras, selectedPackage]);
-  const bookingHref = createBookingHref({ site, selectedPackage, selectedExtras, total });
-  const displayName = getSiteDisplayName(site);
 
+  const bookingHref = createBookingHref({ site, selectedPackage, selectedExtras, total });
 
   function scrollToSection(id: string) {
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -58,96 +63,155 @@ export function AliAhmedLuxurySite({ site }: AliAhmedLuxurySiteProps) {
 
   return (
     <main className="min-h-screen overflow-hidden bg-[#050505] text-white selection:bg-[#e5c07b] selection:text-black">
-      <nav className="fixed inset-x-0 top-0 z-40 border-b border-white/5 bg-[#050505]/72 backdrop-blur-xl">
-        <div className="container-page relative flex h-16 items-center justify-between">
+      <nav className="fixed inset-x-0 top-0 z-40 border-b border-white/8 bg-[#050505]/78 backdrop-blur-2xl">
+        <div className="container-page flex h-16 items-center justify-between gap-3 md:h-20">
           <button
             type="button"
             onClick={() => scrollToSection("home")}
-            className="fixed right-4 top-5 z-50 max-w-[6.5rem] truncate font-display text-xs font-bold text-[#e5c07b] sm:max-w-[14rem] sm:text-xl md:static md:max-w-xs md:tracking-[0.12em]"
+            className="max-w-[10rem] truncate font-display text-sm font-bold tracking-[0.16em] text-[#e5c07b] sm:max-w-xs md:text-xl"
           >
             {displayName}
           </button>
-          <div className="hidden items-center gap-8 text-sm text-white/68 md:flex">
+
+          <div className="hidden items-center rounded-full border border-white/10 bg-white/[0.045] px-2 py-1 text-sm text-white/68 shadow-[0_18px_60px_rgba(0,0,0,.2)] md:flex">
             <ScrollButton onClick={() => scrollToSection("home")} label="الرئيسية" />
             <ScrollButton onClick={() => scrollToSection("gallery")} label="الأعمال" />
             <ScrollButton onClick={() => scrollToSection("packages")} label="الباقات" />
             <ScrollButton onClick={() => scrollToSection("extras")} label="الإضافات" />
             <ScrollButton onClick={() => scrollToSection("contact")} label="الحجز" />
           </div>
-          <div className="ms-auto flex items-center gap-2">
-            <SocialLinks href={bookingHref} compact onClick={handleBookingClick} />
+
+          <div className="flex items-center gap-2">
+            <div className="hidden md:block">
+              <SocialLinks site={site} bookingHref={bookingHref} compact onBookingClick={handleBookingClick} />
+            </div>
             <button
               type="button"
-              className="inline-flex size-10 items-center justify-center rounded-full border border-white/10 text-white md:hidden"
+              className="inline-flex size-10 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-white md:hidden"
               aria-label="القائمة"
               onClick={() => setMenuOpen((open) => !open)}
             >
               {menuOpen ? <X className="size-4" /> : <Menu className="size-4" />}
             </button>
           </div>
-          <button type="button" className="inline-flex size-10 items-center justify-center rounded-full border border-white/10 text-white md:hidden" aria-label="القائمة" onClick={() => setMenuOpen((open) => !open)}>
-            {menuOpen ? <X className="size-4" /> : <Menu className="size-4" />}
-          </button>
         </div>
+
         {menuOpen ? (
-          <div className="border-t border-white/5 bg-[#050505]/95 px-6 py-3 md:hidden">
+          <div className="border-t border-white/5 bg-[#050505]/96 px-6 py-3 md:hidden">
             <MobileScrollButton onClick={() => scrollToSection("home")} label="الرئيسية" />
             <MobileScrollButton onClick={() => scrollToSection("gallery")} label="الأعمال" />
             <MobileScrollButton onClick={() => scrollToSection("packages")} label="الباقات" />
             <MobileScrollButton onClick={() => scrollToSection("extras")} label="الإضافات" />
             <MobileScrollButton onClick={() => scrollToSection("contact")} label="الحجز" />
             <div className="mt-3 flex justify-center">
-              <SocialLinks href={bookingHref} onClick={handleBookingClick} />
+              <SocialLinks site={site} bookingHref={bookingHref} onBookingClick={handleBookingClick} />
             </div>
           </div>
         ) : null}
       </nav>
 
-      <section id="home" className="relative flex min-h-screen items-center justify-center overflow-hidden">
+      <section id="home" className="relative overflow-hidden pt-16 md:min-h-screen md:pt-20">
         <Image
           src={site.hero.imageUrl}
           alt={site.hero.headline}
           fill
           priority
           sizes="100vw"
-          className="scale-105 object-cover opacity-55"
+          className="scale-105 object-cover opacity-45"
         />
-        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,.68),rgba(5,5,5,.22)_45%,#050505_100%)]" />
-        <div className="container-page relative z-10 pt-24 text-center">
-          <p className="font-display text-xs uppercase tracking-[0.28em] text-[#e5c07b]">تصوير احترافي</p>
-          <h1 className="mx-auto mt-5 max-w-[16rem] break-words font-display text-2xl font-bold leading-tight text-white [overflow-wrap:anywhere] sm:max-w-2xl sm:text-5xl md:max-w-5xl md:text-8xl md:tracking-[0.12em]">
-            {site.hero.headline}
-          </h1>
-          <p className="mx-auto mt-5 max-w-[20rem] px-2 text-base leading-8 text-white/78 sm:max-w-2xl md:text-2xl">
-            {site.hero.subheadline}
-          </p>
-          <button
-            type="button"
-            onClick={() => scrollToSection("packages")}
-            className="mt-8 inline-flex min-h-12 items-center rounded-[var(--radius-control)] bg-[linear-gradient(135deg,#f8e5ba,#e5c07b,#c49b50)] px-7 text-sm font-bold text-black"
-          >
-            اختر باقتك
-          </button>
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_78%_18%,rgba(229,192,123,.22),transparent_28%),linear-gradient(90deg,rgba(5,5,5,.92),rgba(5,5,5,.62)_44%,rgba(5,5,5,.9)),linear-gradient(180deg,rgba(0,0,0,.72),rgba(5,5,5,.32)_42%,#050505_100%)]" />
+        <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-[#050505] to-transparent" />
+
+        <div className="container-page relative z-10 grid min-h-[calc(100vh-5rem)] items-center gap-10 py-14 md:grid-cols-[1.02fr_0.98fr] md:gap-14 md:py-20 lg:gap-20">
+          <div className="max-w-3xl text-center md:text-start">
+            <div className="inline-flex items-center gap-2 rounded-full border border-[#e5c07b]/25 bg-[#e5c07b]/10 px-4 py-2 text-xs font-bold text-[#f8e5ba] shadow-[0_12px_36px_rgba(0,0,0,.24)]">
+              <Sparkles className="size-3.5" />
+              تصوير احترافي بتجربة حجز فاخرة
+            </div>
+            <h1 className="mt-7 text-balance font-display text-4xl font-bold leading-[1.08] tracking-tight text-white sm:text-5xl md:text-7xl lg:text-8xl">
+              {site.hero.headline}
+            </h1>
+            <p className="mx-auto mt-6 max-w-2xl text-base leading-8 text-white/76 md:mx-0 md:text-xl md:leading-10">
+              {site.hero.subheadline}
+            </p>
+
+            <div className="mt-9 flex flex-col justify-center gap-3 sm:flex-row md:justify-start">
+              <button
+                type="button"
+                onClick={() => scrollToSection("packages")}
+                className="inline-flex min-h-13 items-center justify-center rounded-[var(--radius-control)] bg-[linear-gradient(135deg,#fff3cf,#e5c07b,#b9822b)] px-8 text-sm font-black text-black shadow-[0_22px_60px_rgba(229,192,123,.22)] transition hover:-translate-y-0.5"
+              >
+                اختر باقتك
+              </button>
+              <button
+                type="button"
+                onClick={() => scrollToSection("gallery")}
+                className="inline-flex min-h-13 items-center justify-center rounded-[var(--radius-control)] border border-white/14 bg-white/[0.055] px-8 text-sm font-bold text-white transition hover:-translate-y-0.5 hover:bg-white/[0.09]"
+              >
+                شاهد الأعمال
+              </button>
+            </div>
+
+            <div className="mt-10 grid grid-cols-3 overflow-hidden rounded-[1.4rem] border border-white/10 bg-black/30 text-center shadow-[0_24px_80px_rgba(0,0,0,.25)] backdrop-blur md:max-w-xl md:text-start">
+              <HeroStat value="4K" label="معرض أونلاين" />
+              <HeroStat value={site.packages.length.toString()} label="باقات واضحة" />
+              <HeroStat value={site.extras.length.toString()} label="إضافات جاهزة" />
+            </div>
+          </div>
+
+          <div className="relative mx-auto hidden w-full max-w-[520px] md:block">
+            <div className="absolute -left-8 top-10 h-44 w-44 rounded-full bg-[#e5c07b]/20 blur-3xl" />
+            <div className="absolute -right-10 bottom-10 h-52 w-52 rounded-full bg-white/10 blur-3xl" />
+            <div className="relative rotate-[-1.5deg] overflow-hidden rounded-[2.4rem] border border-[#e5c07b]/24 bg-[#101010] p-3 shadow-[0_46px_150px_rgba(0,0,0,.48)]">
+              <div className="relative aspect-[4/5] overflow-hidden rounded-[1.9rem]">
+                <Image
+                  src={site.hero.imageUrl}
+                  alt={site.hero.headline}
+                  fill
+                  sizes="(min-width: 1024px) 38vw, 90vw"
+                  className="object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/72 via-transparent to-black/18" />
+                <div className="absolute inset-x-5 bottom-5 rounded-2xl border border-white/12 bg-black/42 p-4 backdrop-blur-xl">
+                  <p className="text-xs font-bold text-[#e5c07b]">القالب الكلاسيكي</p>
+                  <p className="mt-1 line-clamp-2 text-lg font-bold leading-7 text-white">واجهة فاخرة تبرز الصورة وتحوّل الزائر للحجز</p>
+                </div>
+              </div>
+            </div>
+
+            {highlightedPackage ? (
+              <div className="absolute -bottom-6 -right-6 max-w-[250px] rounded-3xl border border-[#e5c07b]/24 bg-[#080808]/88 p-4 shadow-[0_24px_90px_rgba(0,0,0,.42)] backdrop-blur-xl">
+                <div className="flex items-center gap-2 text-xs font-bold text-[#e5c07b]"><Star className="size-4" /> الباقة المميزة</div>
+                <p className="mt-2 font-display text-xl font-bold text-white">{highlightedPackage.name}</p>
+                <p className="mt-1 text-sm text-white/58">{highlightedPackage.price}</p>
+              </div>
+            ) : null}
+          </div>
         </div>
       </section>
 
       {site.gallery.length ? (
-        <section className="container-page py-16 md:py-24">
-          <SectionHeading eyebrow="أعمال مختارة" title="لمحات من الأعمال" />
-          <div className="-mx-4 mt-8 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-3 [scrollbar-width:none] md:mx-0 md:grid md:grid-cols-3 md:overflow-visible md:px-0 md:pb-0 [&::-webkit-scrollbar]:hidden">
-            {site.gallery.slice(0, 3).map((image) => (
+        <section id="gallery" className="container-page scroll-mt-24 py-16 md:py-28">
+          <SectionHeading eyebrow="أعمال مختارة" title="لمحات من الأعمال" description="توزيع بصري واسع وواضح يخلّي أول انطباع مركز على جودة الصور." />
+          <div className="mt-10 grid gap-4 md:grid-cols-12 md:grid-rows-[230px_230px] lg:grid-rows-[280px_280px]">
+            {galleryImages.map((image, index) => (
               <figure
                 key={image.id}
-                className="relative w-[78vw] shrink-0 snap-center overflow-hidden rounded-2xl border border-white/5 bg-white/5 shadow-[0_20px_70px_rgba(0,0,0,.24)] md:w-auto"
+                className={cn(
+                  "group relative overflow-hidden rounded-[1.6rem] border border-white/8 bg-white/[0.04] shadow-[0_24px_90px_rgba(0,0,0,.26)]",
+                  index === 0 ? "md:col-span-7 md:row-span-2" : index === 1 ? "md:col-span-5" : "md:col-span-5"
+                )}
               >
-                <div className="relative aspect-[4/5] md:aspect-[4/3]">
+                <div className={cn("relative", index === 0 ? "aspect-[4/5] md:h-full md:aspect-auto" : "aspect-[16/10] md:h-full md:aspect-auto") }>
                   <Image
                     src={image.url}
                     alt={image.alt}
                     fill
-                    sizes="(min-width: 1024px) 24vw, (min-width: 640px) 45vw, 92vw"
-                    className="object-cover"
+                    sizes={index === 0 ? "(min-width: 1024px) 52vw, 92vw" : "(min-width: 1024px) 38vw, 92vw"}
+                    className="object-cover transition duration-700 group-hover:scale-105"
                   />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/56 via-transparent to-transparent opacity-80" />
+                  {image.caption ? <figcaption className="absolute inset-x-5 bottom-5 text-sm font-bold text-white/86">{image.caption}</figcaption> : null}
                 </div>
               </figure>
             ))}
@@ -155,59 +219,72 @@ export function AliAhmedLuxurySite({ site }: AliAhmedLuxurySiteProps) {
         </section>
       ) : null}
 
-      <section id="packages" className="bg-[#050505] py-16 md:py-24">
+      <section id="packages" className="scroll-mt-24 border-y border-white/6 bg-[radial-gradient(circle_at_top,rgba(229,192,123,.10),transparent_32%),#070707] py-16 md:py-28">
         <div className="container-page">
-          <SectionHeading eyebrow="باقات التصوير" title="اختر باقتك" />
-        </div>
-        <div className="mt-10 grid gap-4 px-4 pb-6 md:flex md:snap-x md:snap-mandatory md:overflow-x-auto md:px-12">
-          {site.packages.map((item, index) => {
-            const selected = selectedPackageId === item.id;
-            const imageUrl = item.imageUrl ?? site.gallery[index % site.gallery.length]?.url ?? site.hero.imageUrl;
+          <SectionHeading eyebrow="باقات التصوير" title="اختر باقتك" description="كروت واضحة على سطح المكتب بدون سحب جانبي، مع إبراز السعر والمميزات وزر الاختيار." />
+          <div className="mt-10 grid gap-5 lg:grid-cols-3">
+            {site.packages.map((item, index) => {
+              const selected = selectedPackageId === item.id;
+              const fallbackImage = site.gallery.length ? site.gallery[index % site.gallery.length]?.url : undefined;
+              const imageUrl = item.imageUrl ?? fallbackImage ?? site.hero.imageUrl;
 
-            return (
-              <article
-                key={item.id}
-                className={cn(
-                  "relative w-[85vw] shrink-0 snap-center overflow-hidden rounded-2xl border bg-[#0f0f0f] shadow-[0_20px_80px_rgba(0,0,0,.25)] transition md:w-auto",
-                  selected ? "border-[#e5c07b] shadow-[0_0_35px_rgba(229,192,123,.16)]" : "border-white/5"
-                )}
-              >
-                <div className="relative h-48 md:h-56">
-                  <Image src={imageUrl} alt={item.name} fill sizes="340px" className="object-cover opacity-78" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#0f0f0f] to-transparent" />
-                  {item.isHighlighted ? (
-                    <span className="absolute left-3 top-3 inline-flex min-h-7 items-center gap-1 rounded-full border border-[#e5c07b]/30 bg-black/45 px-3 text-xs font-bold text-[#e5c07b] backdrop-blur"><Star className="size-3" />مميز</span>
-                  ) : null}
-                </div>
-                <div className="flex min-h-[320px] flex-col p-5 md:p-6">
-                  <h3 className="font-display text-2xl font-bold tracking-wider">{item.name}</h3>
-                  {item.subtitle ? <p className="mt-1 text-sm text-[#e5c07b]">{item.subtitle}</p> : null}
-                  <p className="mt-5 font-display text-3xl font-bold">{item.price}</p>
-                  <ul className="mt-5 flex-1 space-y-2">
-                    {item.features.map((feature) => <li key={feature} className="flex gap-2 text-sm text-white/68"><span className="mt-2 size-1.5 shrink-0 rounded-full bg-[#e5c07b]" /><span>{feature}</span></li>)}
-                  </ul>
-                  <button
-                    type="button"
-                    onClick={() => setSelectedPackageId(item.id)}
-                    className={cn(
-                      "mt-6 min-h-12 rounded-xl text-sm font-bold transition",
-                      selected ? "bg-[linear-gradient(135deg,#f8e5ba,#e5c07b,#c49b50)] text-black" : "bg-white/5 text-white hover:bg-white/10"
-                    )}
-                  >
-                    {selected ? "تم الاختيار" : "اختر الباقة"}
-                  </button>
-                </div>
-              </article>
-            );
-          })}
+              return (
+                <article
+                  key={item.id}
+                  className={cn(
+                    "group relative flex min-h-full flex-col overflow-hidden rounded-[2rem] border bg-[#0e0e0e] shadow-[0_26px_100px_rgba(0,0,0,.30)] transition duration-300 hover:-translate-y-1",
+                    selected ? "border-[#e5c07b] shadow-[0_0_52px_rgba(229,192,123,.18)]" : item.isHighlighted ? "border-[#e5c07b]/42" : "border-white/8"
+                  )}
+                >
+                  <div className="relative h-60 overflow-hidden">
+                    <Image src={imageUrl} alt={item.name} fill sizes="(min-width: 1024px) 30vw, 92vw" className="object-cover opacity-82 transition duration-700 group-hover:scale-105" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#0e0e0e] via-[#0e0e0e]/18 to-transparent" />
+                    {item.isHighlighted ? (
+                      <span className="absolute left-4 top-4 inline-flex min-h-8 items-center gap-1.5 rounded-full border border-[#e5c07b]/35 bg-black/52 px-3 text-xs font-bold text-[#f8e5ba] backdrop-blur"><Star className="size-3.5" />الأكثر اختيارًا</span>
+                    ) : null}
+                  </div>
+
+                  <div className="flex flex-1 flex-col p-6">
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <h3 className="font-display text-2xl font-bold tracking-wide text-white">{item.name}</h3>
+                        {item.subtitle ? <p className="mt-1 text-sm font-semibold text-[#e5c07b]">{item.subtitle}</p> : null}
+                      </div>
+                      <p className="shrink-0 rounded-2xl border border-[#e5c07b]/18 bg-[#e5c07b]/8 px-3 py-2 text-sm font-black text-[#f8e5ba]">{item.price}</p>
+                    </div>
+
+                    <ul className="mt-6 flex-1 space-y-3">
+                      {item.features.map((feature) => (
+                        <li key={feature} className="flex gap-3 text-sm leading-6 text-white/70">
+                          <span className="mt-1 inline-flex size-5 shrink-0 items-center justify-center rounded-full bg-[#e5c07b]/12 text-[#e5c07b]"><Check className="size-3" /></span>
+                          <span>{feature}</span>
+                        </li>
+                      ))}
+                    </ul>
+
+                    <button
+                      type="button"
+                      onClick={() => setSelectedPackageId(item.id)}
+                      className={cn(
+                        "mt-7 min-h-12 rounded-[var(--radius-control)] text-sm font-black transition hover:-translate-y-0.5",
+                        selected ? "bg-[linear-gradient(135deg,#fff3cf,#e5c07b,#b9822b)] text-black" : "border border-white/10 bg-white/[0.055] text-white hover:bg-white/[0.09]"
+                      )}
+                    >
+                      {selected ? "تم الاختيار" : "اختر الباقة"}
+                    </button>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
         </div>
       </section>
 
       {site.extras.length ? (
-        <section id="extras" className="border-y border-white/5 bg-[#080808] py-16 md:py-24">
+        <section id="extras" className="scroll-mt-24 bg-[#050505] py-16 md:py-28">
           <div className="container-page">
-            <SectionHeading eyebrow="خدمات إضافية" title="إضافات مميزة" />
-            <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <SectionHeading eyebrow="خدمات إضافية" title="إضافات مميزة" description="اختيارات صغيرة وسريعة تزيد قيمة الحجز بدون تشتيت." />
+            <div className="mt-10 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
               {site.extras.map((extra) => {
                 const selected = selectedExtraIds.includes(extra.id);
                 const Icon = getExtraIcon(extra.iconKey);
@@ -217,22 +294,20 @@ export function AliAhmedLuxurySite({ site }: AliAhmedLuxurySiteProps) {
                     type="button"
                     onClick={() => toggleExtra(extra.id)}
                     className={cn(
-                      "flex min-h-16 items-center justify-between gap-3 rounded-2xl border bg-white/[0.035] p-3 text-start transition md:min-h-20 md:p-4",
-                      selected ? "border-[#e5c07b] bg-[#e5c07b]/8" : "border-white/5 hover:bg-white/[0.06]"
+                      "group min-h-40 rounded-[1.6rem] border bg-white/[0.035] p-5 text-start shadow-[0_18px_70px_rgba(0,0,0,.18)] transition hover:-translate-y-0.5 hover:bg-white/[0.06]",
+                      selected ? "border-[#e5c07b] bg-[#e5c07b]/9" : "border-white/8"
                     )}
                   >
-                    <span className="flex min-w-0 items-center gap-3">
-                      <span
-                        className={cn(
-                          "inline-flex size-10 shrink-0 items-center justify-center rounded-full border md:size-11",
-                          selected ? "border-[#e5c07b] bg-[#e5c07b] text-black" : "border-white/10 bg-black/35 text-[#e5c07b]"
-                        )}
-                      >
-                        {selected ? <Check className="size-4" /> : <Icon className="size-4" />}
-                      </span>
-                      <span className="truncate text-sm font-semibold md:text-base">{extra.name}</span>
+                    <span
+                      className={cn(
+                        "inline-flex size-12 items-center justify-center rounded-2xl border transition",
+                        selected ? "border-[#e5c07b] bg-[#e5c07b] text-black" : "border-white/10 bg-black/35 text-[#e5c07b] group-hover:border-[#e5c07b]/40"
+                      )}
+                    >
+                      {selected ? <Check className="size-5" /> : <Icon className="size-5" />}
                     </span>
-                    <span className="shrink-0 font-display text-base font-bold text-[#e5c07b] md:text-lg">{extra.price}</span>
+                    <span className="mt-5 block text-base font-black text-white">{extra.name}</span>
+                    <span className="mt-2 block font-display text-xl font-bold text-[#e5c07b]">{extra.price}</span>
                   </button>
                 );
               })}
@@ -241,41 +316,61 @@ export function AliAhmedLuxurySite({ site }: AliAhmedLuxurySiteProps) {
         </section>
       ) : null}
 
-      <section id="contact" className="container-page py-16 md:py-24">
-        <div className="mx-auto max-w-xl rounded-3xl border border-white/5 bg-white/[0.035] p-6 text-center shadow-[0_20px_80px_rgba(0,0,0,.22)] md:p-8">
-          <h2 className="text-2xl font-bold">ملخص الحجز</h2>
-          {selectedPackage ? (
-            <div className="mt-6 space-y-4 rounded-2xl bg-[#111] p-5 text-start">
-              <div className="flex justify-between border-b border-white/5 pb-3"><span className="text-sm text-white/55">الباقة</span><strong>{selectedPackage.name}</strong></div>
-              {selectedExtras.length ? <div className="space-y-2 border-b border-white/5 pb-3">{selectedExtras.map((extra) => <div key={extra.id} className="flex justify-between text-sm"><span className="text-white/65">{extra.name}</span><span className="text-[#e5c07b]">{extra.price}</span></div>)}</div> : null}
-              <div className="flex items-center justify-between"><span className="font-bold">الإجمالي التقريبي</span><span className="font-display text-2xl font-bold text-[#e5c07b]">{formatTotal(total, selectedPackage.currency)}</span></div>
+      <section id="contact" className="container-page scroll-mt-24 py-16 md:py-28">
+        <div className="grid overflow-hidden rounded-[2.2rem] border border-white/8 bg-white/[0.035] shadow-[0_35px_130px_rgba(0,0,0,.28)] lg:grid-cols-[1.05fr_0.95fr]">
+          <div className="relative min-h-[360px] overflow-hidden p-7 md:p-10">
+            <Image src={featuredImage} alt={site.hero.headline} fill sizes="(min-width: 1024px) 48vw, 100vw" className="object-cover opacity-42" />
+            <div className="absolute inset-0 bg-gradient-to-l from-[#050505]/96 via-[#050505]/72 to-[#050505]/38" />
+            <div className="relative z-10 max-w-lg">
+              <p className="font-display text-xs uppercase tracking-[0.28em] text-[#e5c07b]">خطوة أخيرة</p>
+              <h2 className="mt-4 text-3xl font-bold leading-tight md:text-5xl">حوّل اختيارك لطلب حجز واضح</h2>
+              <p className="mt-4 text-sm leading-7 text-white/68 md:text-base md:leading-8">
+                اختر الباقة والإضافات، وسيتم تجهيز رسالة حجز تلقائية بالتفاصيل والسعر التقريبي.
+              </p>
+              <div className="mt-7 flex flex-wrap gap-3 text-sm font-bold text-white/70">
+                <span className="rounded-full border border-white/10 bg-black/35 px-4 py-2">بدون تعقيد</span>
+                <span className="rounded-full border border-white/10 bg-black/35 px-4 py-2">رسالة جاهزة</span>
+                <span className="rounded-full border border-white/10 bg-black/35 px-4 py-2">تأكيد سريع</span>
+              </div>
             </div>
-          ) : (
-            <p className="m-6 rounded-2xl border border-dashed border-white/10 bg-black/20 p-5 text-sm font-bold leading-7 text-white/55">
-              {EMPTY_BOOKING_MESSAGE}
-            </p>
-          )}
-          <a
-            href={bookingHref}
-            onClick={handleBookingClick}
-            className={cn(
-              "mx-4 mb-4 inline-flex min-h-12 w-[calc(100%-2rem)] items-center justify-center gap-2 rounded-xl text-sm font-bold transition md:mx-6 md:mb-6 md:w-[calc(100%-3rem)]",
-              selectedPackage ? "bg-[#25d366] text-white hover:bg-[#20b858]" : "bg-white/5 text-white/35"
+          </div>
+
+          <div className="bg-[#0b0b0b] p-6 md:p-8 lg:p-10">
+            <h2 className="text-2xl font-bold">ملخص الحجز</h2>
+            {selectedPackage ? (
+              <div className="mt-6 space-y-4 rounded-[1.4rem] border border-white/8 bg-black/28 p-5 text-start">
+                <div className="flex justify-between gap-4 border-b border-white/8 pb-3"><span className="text-sm text-white/55">الباقة</span><strong>{selectedPackage.name}</strong></div>
+                {selectedExtras.length ? <div className="space-y-2 border-b border-white/8 pb-3">{selectedExtras.map((extra) => <div key={extra.id} className="flex justify-between gap-4 text-sm"><span className="text-white/65">{extra.name}</span><span className="text-[#e5c07b]">{extra.price}</span></div>)}</div> : null}
+                <div className="flex items-center justify-between gap-4"><span className="font-bold">الإجمالي التقريبي</span><span className="font-display text-2xl font-bold text-[#e5c07b]">{formatTotal(total, selectedPackage.currency)}</span></div>
+              </div>
+            ) : (
+              <p className="mt-6 rounded-[1.4rem] border border-dashed border-white/12 bg-black/24 p-5 text-sm font-bold leading-7 text-white/55">
+                {EMPTY_BOOKING_MESSAGE}
+              </p>
             )}
-          >
-            <WhatsAppMark className="size-5" />
-            {selectedPackage ? site.contact.callToAction : "اختار باقة أولًا"}
-          </a>
+            <a
+              href={bookingHref}
+              onClick={handleBookingClick}
+              className={cn(
+                "mt-6 inline-flex min-h-13 w-full items-center justify-center gap-2 rounded-[var(--radius-control)] text-sm font-black transition hover:-translate-y-0.5",
+                selectedPackage ? "bg-[#25d366] text-white hover:bg-[#20b858]" : "bg-white/5 text-white/35"
+              )}
+            >
+              <WhatsAppMark className="size-5" />
+              {selectedPackage ? site.contact.callToAction : "اختار باقة أولًا"}
+            </a>
+          </div>
         </div>
       </section>
 
       <footer className="border-t border-white/5 bg-[#020202] py-12 text-center">
         <h2 className="font-display text-3xl font-bold tracking-[0.18em] text-[#e5c07b]">{displayName}</h2>
         <div className="mt-6 flex items-center justify-center">
-          <SocialLinks href={bookingHref} onClick={handleBookingClick} />
+          <SocialLinks site={site} bookingHref={bookingHref} onBookingClick={handleBookingClick} />
         </div>
         <p className="mt-8 font-display text-xs tracking-[0.2em] text-white/30">© {new Date().getFullYear()} FrameID</p>
       </footer>
+
       <a
         href={bookingHref}
         onClick={handleBookingClick}
@@ -290,7 +385,7 @@ export function AliAhmedLuxurySite({ site }: AliAhmedLuxurySiteProps) {
 
 function ScrollButton({ label, onClick }: { label: string; onClick: () => void }) {
   return (
-    <button type="button" onClick={onClick} className="hover:text-[#e5c07b]">
+    <button type="button" onClick={onClick} className="rounded-full px-4 py-2 font-bold transition hover:bg-white/7 hover:text-[#e5c07b]">
       {label}
     </button>
   );
@@ -308,28 +403,41 @@ function MobileScrollButton({ label, onClick }: { label: string; onClick: () => 
   );
 }
 
+function HeroStat({ value, label }: { value: string; label: string }) {
+  return (
+    <div className="border-s border-white/8 p-4 first:border-s-0">
+      <p className="font-display text-2xl font-bold text-[#e5c07b] md:text-3xl">{value}</p>
+      <p className="mt-1 text-xs font-bold leading-5 text-white/48">{label}</p>
+    </div>
+  );
+}
+
 function SocialLinks({
-  href,
+  site,
+  bookingHref,
   compact = false,
-  onClick
+  onBookingClick
 }: {
-  href: string;
+  site: PublicSiteViewModel;
+  bookingHref: string;
   compact?: boolean;
-  onClick?: (event: MouseEvent<HTMLAnchorElement>) => void;
+  onBookingClick?: (event: MouseEvent<HTMLAnchorElement>) => void;
 }) {
   const itemClass = compact
     ? "inline-flex size-9 items-center justify-center rounded-full border border-[#e5c07b]/18 bg-white/[0.055] text-white/72 shadow-[0_10px_30px_rgba(0,0,0,.18)] transition hover:border-[#e5c07b]/45 hover:bg-[#e5c07b]/14 hover:text-[#e5c07b]"
     : "inline-flex size-11 items-center justify-center rounded-full border border-[#e5c07b]/18 bg-white/[0.055] text-white/72 shadow-[0_10px_30px_rgba(0,0,0,.18)] transition hover:border-[#e5c07b]/45 hover:bg-[#e5c07b]/14 hover:text-[#e5c07b]";
+  const instagramHref = site.contact.instagram ? normalizeSocialUrl(site.contact.instagram, "instagram") : bookingHref;
+  const facebookHref = site.contact.facebook ? normalizeSocialUrl(site.contact.facebook, "facebook") : bookingHref;
 
   return (
     <div className="flex items-center gap-2">
-      <a href={href} onClick={onClick} className={itemClass} aria-label="واتساب">
+      <a href={bookingHref} onClick={onBookingClick} className={itemClass} aria-label="واتساب">
         <WhatsAppMark className={compact ? "size-[1.125rem]" : "size-5"} />
       </a>
-      <a href={href} onClick={onClick} className={itemClass} aria-label="إنستجرام">
+      <a href={instagramHref} onClick={instagramHref === bookingHref ? onBookingClick : undefined} target={instagramHref === bookingHref ? undefined : "_blank"} rel={instagramHref === bookingHref ? undefined : "noreferrer"} className={itemClass} aria-label="إنستجرام">
         <Instagram className={compact ? "size-4" : "size-5"} />
       </a>
-      <a href={href} onClick={onClick} className={itemClass} aria-label="فيسبوك">
+      <a href={facebookHref} onClick={facebookHref === bookingHref ? onBookingClick : undefined} target={facebookHref === bookingHref ? undefined : "_blank"} rel={facebookHref === bookingHref ? undefined : "noreferrer"} className={itemClass} aria-label="فيسبوك">
         <span className={compact ? "font-display text-base font-bold" : "font-display text-lg font-bold"}>f</span>
       </a>
     </div>
@@ -341,11 +449,12 @@ function getSiteDisplayName(site: PublicSiteViewModel) {
   return title.split(/[—|]/u)[0]?.trim() || site.hero.headline;
 }
 
-function SectionHeading({ eyebrow, title }: { eyebrow: string; title: string }) {
+function SectionHeading({ eyebrow, title, description }: { eyebrow: string; title: string; description?: string }) {
   return (
-    <div className="text-center">
+    <div className="mx-auto max-w-3xl text-center">
       <p className="font-display text-xs uppercase tracking-[0.28em] text-[#e5c07b]">{eyebrow}</p>
       <h2 className="mt-3 text-3xl font-bold md:text-5xl">{title}</h2>
+      {description ? <p className="mx-auto mt-4 max-w-2xl text-sm leading-7 text-white/58 md:text-base md:leading-8">{description}</p> : null}
     </div>
   );
 }
@@ -402,6 +511,11 @@ function formatCurrencyLabel(currency: string): string {
   return currency === "EGP" ? "جنيه" : currency;
 }
 
+function normalizeSocialUrl(value: string, provider: "instagram" | "facebook") {
+  if (value.startsWith("http://") || value.startsWith("https://")) return value;
+  return provider === "instagram" ? `https://instagram.com/${value.replace(/^@/u, "")}` : `https://facebook.com/${value}`;
+}
+
 function WhatsAppMark({ className }: { className?: string }) {
   return (
     <svg
@@ -413,9 +527,4 @@ function WhatsAppMark({ className }: { className?: string }) {
       <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z" />
     </svg>
   );
-}
-
-function normalizeSocialUrl(value: string, provider: "instagram" | "facebook") {
-  if (value.startsWith("http://") || value.startsWith("https://")) return value;
-  return provider === "instagram" ? `https://instagram.com/${value.replace(/^@/u, "")}` : `https://facebook.com/${value}`;
 }
