@@ -1,12 +1,12 @@
-import { exec } from "node:child_process";
+import { execFile, spawn } from "node:child_process";
 import { promisify } from "node:util";
 import { createGzip } from "node:zlib";
 import { createWriteStream } from "node:fs";
-import { mkdir } from "node:fs/promises";
+import { mkdir, stat } from "node:fs/promises";
 import { pipeline } from "node:stream/promises";
 import { join, dirname } from "node:path";
 
-const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
 
 export type DatabaseDumpResult = {
   dumpPath: string;
@@ -38,8 +38,20 @@ export function createDatabaseDumper(databaseUrl: string): DatabaseDumper {
         database: u.pathname.replace(/^\//, ""),
       };
     } catch {
-      throw new Error(`Invalid DATABASE_URL: ${url}`);
+      throw new Error("Invalid DATABASE_URL");
     }
+  }
+
+  function psqlArgs(parsed: ReturnType<typeof parseDatabaseUrl>, command: string): string[] {
+    return [
+      `--host=${parsed.host}`,
+      `--port=${parsed.port}`,
+      `--username=${parsed.user}`,
+      "--no-password",
+      `--dbname=${parsed.database}`,
+      "--tuples-only",
+      `--command=${command}`,
+    ];
   }
 
   return {
@@ -57,20 +69,17 @@ export function createDatabaseDumper(databaseUrl: string): DatabaseDumper {
         `--host=${parsed.host}`,
         `--port=${parsed.port}`,
         `--username=${parsed.user}`,
-        `--no-password`,
-        `--format=custom`,
-        `--compress=9`,
-        `--no-owner`,
-        `--no-acl`,
-        `--file=-`,
+        "--no-password",
+        "--format=custom",
+        "--compress=9",
+        "--no-owner",
+        "--no-acl",
+        "--file=-",
         parsed.database,
       ];
 
       const env = { ...process.env, PGPASSWORD: parsed.password };
-      const dumpChild = exec(`pg_dump ${pgDumpArgs.join(" ")}`, {
-        env,
-        maxBuffer: 1024 * 1024 * 1024,
-      });
+      const dumpChild = spawn("pg_dump", pgDumpArgs, { env, stdio: ["ignore", "pipe", "pipe"] });
 
       const gzipStream = createGzip({ level: 9 });
       const writeStream = createWriteStream(dumpPath);
@@ -79,14 +88,24 @@ export function createDatabaseDumper(databaseUrl: string): DatabaseDumper {
         throw new Error("pg_dump failed to produce stdout");
       }
 
+      let stderr = "";
+      dumpChild.stderr?.on("data", (chunk: Buffer) => {
+        stderr += chunk.toString();
+      });
+
       await pipeline(dumpChild.stdout, gzipStream, writeStream);
 
-      const { stdout: sizeOutput } = await execAsync(
-        `wc -c < "${dumpPath}"`,
-        { env: { ...process.env } }
-      );
+      const exitCode = await new Promise<number | null>((resolve, reject) => {
+        dumpChild.on("error", reject);
+        dumpChild.on("close", resolve);
+      });
+
+      if (exitCode !== 0) {
+        throw new Error(`pg_dump failed with exit code ${exitCode}: ${stderr.trim()}`);
+      }
+
       const durationMs = Date.now() - startTime;
-      const sizeBytes = parseInt(sizeOutput.trim(), 10);
+      const sizeBytes = (await stat(dumpPath)).size;
 
       return { dumpPath, sizeBytes, durationMs };
     },
@@ -94,12 +113,9 @@ export function createDatabaseDumper(databaseUrl: string): DatabaseDumper {
     async getDatabaseSize(): Promise<number> {
       const parsed = parseDatabaseUrl(databaseUrl);
       const env = { ...process.env, PGPASSWORD: parsed.password };
-      const query = `SELECT pg_database_size('${parsed.database}')`;
+      const query = "SELECT pg_database_size(current_database())";
 
-      const { stdout } = await execAsync(
-        `psql --host=${parsed.host} --port=${parsed.port} --username=${parsed.user} --no-password --dbname=${parsed.database} --tuples-only --command="${query}"`,
-        { env }
-      );
+      const { stdout } = await execFileAsync("psql", psqlArgs(parsed, query), { env });
 
       return parseInt(stdout.trim(), 10);
     },
@@ -108,8 +124,9 @@ export function createDatabaseDumper(databaseUrl: string): DatabaseDumper {
       const parsed = parseDatabaseUrl(databaseUrl);
       const env = { ...process.env, PGPASSWORD: parsed.password };
       try {
-        const { stdout } = await execAsync(
-          `psql --host=${parsed.host} --port=${parsed.port} --username=${parsed.user} --no-password --dbname=${parsed.database} --tuples-only --command="SELECT MAX(migration_name) FROM _prisma_migrations"`,
+        const { stdout } = await execFileAsync(
+          "psql",
+          psqlArgs(parsed, "SELECT MAX(migration_name) FROM _prisma_migrations"),
           { env }
         );
         return stdout.trim() || "unknown";
