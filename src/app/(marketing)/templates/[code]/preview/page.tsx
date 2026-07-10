@@ -169,14 +169,14 @@ export default async function TemplatePreviewPage({ params, searchParams }: Prop
       <TemplatePreviewGuard />
       <ThemeComponent site={siteData} />
       {isEmbed ? null : (
-        <div data-preview-toolbar className="fixed inset-x-4 bottom-4 z-40 mx-auto flex max-w-md items-center gap-2 rounded-[var(--radius-panel)] border border-white/10 bg-ink/80 p-2 shadow-soft backdrop-blur-xl">
-          <Link href="/templates" className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-[var(--radius-control)] text-sm font-semibold text-white hover:bg-white/10">
+        <div data-preview-toolbar className="fixed inset-x-4 bottom-4 z-[90] mx-auto flex max-w-md items-center gap-2 rounded-[var(--radius-panel)] border border-white/10 bg-ink/90 p-2 shadow-[0_18px_70px_rgba(0,0,0,.35)] backdrop-blur-xl">
+          <Link href="/templates" className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-[var(--radius-control)] text-sm font-semibold text-white hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/45">
             <ArrowRight className="size-4" aria-hidden />
             رجوع
           </Link>
-          <Link href={`/signup?template=${template.code}`} className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-[var(--radius-control)] bg-white px-4 text-sm font-semibold text-ink">
+          <Link href={`/signup?template=${template.code}`} className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-[var(--radius-control)] bg-white px-4 text-sm font-semibold text-ink hover:bg-white/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/55">
             <WandSparkles className="size-4" aria-hidden />
-            استخدم القالب ده
+            استخدام هذا القالب
           </Link>
         </div>
       )}
