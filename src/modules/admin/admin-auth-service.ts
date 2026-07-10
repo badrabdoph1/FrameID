@@ -1,5 +1,4 @@
 import { verifyPassword } from "@/modules/auth/password-hashing";
-import { parseEmailOrPhoneIdentifier } from "@/modules/auth/auth-identifier";
 import {
   buildAdminSessionCookie,
   createRawAdminSessionToken,
@@ -23,7 +22,7 @@ export type AdminSessionRecord = {
 };
 
 export type AdminLoginRepository = {
-  findAdminByIdentifier(input: { email: string; phone: string | null }): Promise<
+  findAdminByEmail(email: string): Promise<
     | (AdminAuthenticatedUser & { passwordHash: string | null })
     | null
   >;
@@ -46,19 +45,16 @@ export type AdminLoginResult = {
 export function createAdminLoginService(repository: AdminLoginRepository) {
   return {
     async login(input: { identifier?: string; email?: string; password: string }): Promise<AdminLoginResult> {
-      const identifier = parseEmailOrPhoneIdentifier(input.identifier || input.email || "");
-      const admin = await repository.findAdminByIdentifier({
-        email: identifier.storageEmail,
-        phone: identifier.phone
-      });
+      const email = (input.identifier || input.email || "").trim().toLowerCase();
+      const admin = await repository.findAdminByEmail(email);
 
       if (!admin?.passwordHash) {
-        throw new Error("Invalid phone/email or password");
+        throw new Error("Invalid email or password");
       }
 
       const isValid = await verifyPassword(input.password, admin.passwordHash);
       if (!isValid) {
-        throw new Error("Invalid phone/email or password");
+        throw new Error("Invalid email or password");
       }
 
       const rawToken = createRawAdminSessionToken();
