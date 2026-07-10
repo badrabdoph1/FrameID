@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 import React from "react";
 
+import { PasswordRecoverySupportCard } from "@/components/auth/password-recovery-support-card";
 import { AuthShell } from "@/components/layout/auth-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { CopyButton } from "@/components/ui/copy-button";
 import { resetPasswordAction } from "@/app/(marketing)/reset-password/actions";
 
 export const metadata: Metadata = {
@@ -34,12 +34,7 @@ export default async function ResetPasswordPage({
       title="تعيين كلمة سر جديدة"
       description="اختار كلمة سر قوية وهتتقفل الجلسات القديمة بعد التحديث."
     >
-      {error ? (
-        <div className="mb-4 rounded-[var(--radius-panel)] border border-warning/30 bg-warning/10 px-4 py-3 text-sm">
-          <span className="text-foreground">{error}</span>
-          <CopyButton value={error} />
-        </div>
-      ) : null}
+      {error ? <PasswordRecoverySupportCard /> : null}
       <form action={resetPasswordAction} className="space-y-4">
         <input type="hidden" name="token" value={token ?? ""} />
         <div className="space-y-2">
