@@ -11,73 +11,33 @@ import type {
 } from "@/modules/onboarding/signup-provisioning";
 
 type PrismaSignupTransaction = {
-  theme: {
-    upsert(input: unknown): Promise<{ id: string }>;
-  };
-  template: {
-    upsert(input: unknown): Promise<{ id: string }>;
-  };
-  user: {
-    create(input: unknown): Promise<{ id: string }>;
-  };
-  tenant: {
-    create(input: unknown): Promise<{ id: string }>;
-  };
-  site: {
-    create(input: unknown): Promise<{ id: string; slug: string }>;
-  };
-  siteThemeConfig: {
-    create(input: unknown): Promise<{ id: string }>;
-  };
-  siteSection: {
-    createMany(input: unknown): Promise<{ count: number }>;
-  };
-  contactProfile: {
-    create(input: unknown): Promise<{ id: string }>;
-  };
-  mediaAsset: {
-    create(input: unknown): Promise<{ id: string }>;
-  };
-  galleryAlbum: {
-    create(input: unknown): Promise<{ id: string }>;
-  };
-  galleryImage: {
-    create(input: unknown): Promise<{ id: string }>;
-  };
-  sEOSettings: {
-    create(input: unknown): Promise<{ id: string }>;
-  };
-  subscription: {
-    create(input: unknown): Promise<{ id: string; status: "TRIAL" }>;
-  };
-  package: {
-    createMany(input: unknown): Promise<{ count: number }>;
-  };
-  extraService: {
-    createMany(input: unknown): Promise<{ count: number }>;
-  };
+  theme: { upsert(input: unknown): Promise<{ id: string }>; };
+  template: { upsert(input: unknown): Promise<{ id: string }>; };
+  user: { create(input: unknown): Promise<{ id: string }>; };
+  tenant: { create(input: unknown): Promise<{ id: string }>; };
+  site: { create(input: unknown): Promise<{ id: string; slug: string }>; };
+  siteThemeConfig: { create(input: unknown): Promise<{ id: string }>; };
+  siteSection: { createMany(input: unknown): Promise<{ count: number }>; };
+  contactProfile: { create(input: unknown): Promise<{ id: string }>; };
+  mediaAsset: { create(input: unknown): Promise<{ id: string }>; };
+  galleryAlbum: { create(input: unknown): Promise<{ id: string }>; };
+  galleryImage: { create(input: unknown): Promise<{ id: string }>; };
+  sEOSettings: { create(input: unknown): Promise<{ id: string }>; };
+  subscription: { create(input: unknown): Promise<{ id: string; status: "TRIAL" }>; };
+  package: { createMany(input: unknown): Promise<{ count: number }>; };
+  extraService: { createMany(input: unknown): Promise<{ count: number }>; };
 };
 
 type PrismaSignupClient = {
-  user: {
-    count(input: unknown): Promise<number>;
-  };
-  site: {
-    findMany(input: unknown): Promise<Array<{ slug: string }>>;
-  };
-  template: {
-    findFirst(input: unknown): Promise<{ status: string; previewData: unknown } | null>;
-  };
+  user: { count(input: unknown): Promise<number>; };
+  site: { findMany(input: unknown): Promise<Array<{ slug: string }>>; };
+  template: { findUnique(input: unknown): Promise<{ status: string; deletedAt: Date | null; previewData: unknown } | null>; };
   $transaction: unknown;
 };
 
-type PrismaTransactionRunner = <T>(
-  callback: (transaction: PrismaSignupTransaction) => Promise<T>
-) => Promise<T>;
+type PrismaTransactionRunner = <T>(callback: (transaction: PrismaSignupTransaction) => Promise<T>) => Promise<T>;
 
-export function createPrismaSignupProvisioningRepository(
-  prisma: PrismaSignupClient
-): SignupProvisioningRepository {
+export function createPrismaSignupProvisioningRepository(prisma: PrismaSignupClient): SignupProvisioningRepository {
   return {
     async identifierExists({ email, phone }) {
       const count = await prisma.user.count({
@@ -93,32 +53,19 @@ export function createPrismaSignupProvisioningRepository(
       return count > 0;
     },
     async getUnavailableSlugs() {
-      const sites = await prisma.site.findMany({
-        select: {
-          slug: true
-        },
-        where: {
-          deletedAt: null
-        }
-      });
-
+      const sites = await prisma.site.findMany({ select: { slug: true }, where: { deletedAt: null } });
       return new Set(sites.map((site) => site.slug));
     },
     async getTemplateStarterData(templateCode) {
       const registryTemplate = themeRegistry.getTemplate(templateCode);
       if (!registryTemplate || registryTemplate.status !== "published") return null;
 
-      const row = await prisma.template.findFirst({
-        where: {
-          code: templateCode,
-          deletedAt: null
-        },
-        select: {
-          status: true,
-          previewData: true
-        }
+      const row = await prisma.template.findUnique({
+        where: { code: templateCode },
+        select: { status: true, deletedAt: true, previewData: true }
       });
 
+      if (row?.deletedAt) return null;
       if (row && row.status !== "PUBLISHED") return null;
       return mergeTemplatePreviewData(templateCode, row?.previewData ?? null);
     },
@@ -134,9 +81,7 @@ export function createPrismaSignupProvisioningRepository(
             passwordHash: input.user.passwordHash,
             role: "USER"
           },
-          select: {
-            id: true
-          }
+          select: { id: true }
         });
         const tenant = await transaction.tenant.create({
           data: {
@@ -146,9 +91,7 @@ export function createPrismaSignupProvisioningRepository(
             trialStartedAt: input.tenant.trialStartedAt,
             trialEndsAt: input.tenant.trialEndsAt
           },
-          select: {
-            id: true
-          }
+          select: { id: true }
         });
         const site = await transaction.site.create({
           data: {
@@ -160,19 +103,10 @@ export function createPrismaSignupProvisioningRepository(
             status: "PUBLISHED",
             isPublished: true
           },
-          select: {
-            id: true,
-            slug: true
-          }
+          select: { id: true, slug: true }
         });
 
-        await transaction.siteThemeConfig.create({
-          data: {
-            siteId: site.id,
-            themeId: theme.id,
-            config: input.defaultContent.themeConfig
-          }
-        });
+        await transaction.siteThemeConfig.create({ data: { siteId: site.id, themeId: theme.id, config: input.defaultContent.themeConfig } });
 
         await transaction.siteSection.createMany({
           data: input.defaultContent.sections.map((section) => ({
@@ -228,12 +162,7 @@ export function createPrismaSignupProvisioningRepository(
           }))
         });
 
-        await copyGallery(transaction, {
-          tenantId: tenant.id,
-          siteId: site.id,
-          templateCode: input.site.templateCode,
-          images: input.defaultContent.gallery
-        });
+        await copyGallery(transaction, { tenantId: tenant.id, siteId: site.id, templateCode: input.site.templateCode, images: input.defaultContent.gallery });
 
         await transaction.sEOSettings.create({
           data: {
@@ -253,10 +182,7 @@ export function createPrismaSignupProvisioningRepository(
             currentPeriodEnd: input.subscription.trialEndsAt,
             expiresAt: input.subscription.trialEndsAt
           },
-          select: {
-            id: true,
-            status: true
-          }
+          select: { id: true, status: true }
         });
 
         return {
@@ -273,12 +199,7 @@ export function createPrismaSignupProvisioningRepository(
 
 async function copyGallery(
   transaction: PrismaSignupTransaction,
-  input: {
-    tenantId: string;
-    siteId: string;
-    templateCode: string;
-    images: AccountCreationInput["defaultContent"]["gallery"];
-  }
+  input: { tenantId: string; siteId: string; templateCode: string; images: AccountCreationInput["defaultContent"]["gallery"]; }
 ) {
   const album = await transaction.galleryAlbum.create({
     data: {
@@ -302,11 +223,7 @@ async function copyGallery(
         mimeType: "image/jpeg",
         sizeBytes: 0,
         alt: image.alt,
-        metadata: {
-          source: "template-starter-data",
-          templateCode: input.templateCode,
-          starterImageId: image.id
-        }
+        metadata: { source: "template-starter-data", templateCode: input.templateCode, starterImageId: image.id }
       },
       select: { id: true }
     });
@@ -325,20 +242,12 @@ async function copyGallery(
   }
 }
 
-async function upsertTheme(
-  transaction: PrismaSignupTransaction,
-  input: AccountCreationInput
-) {
+async function upsertTheme(transaction: PrismaSignupTransaction, input: AccountCreationInput) {
   const themeDefinition = themeRegistry.getTheme(input.site.themeCode);
-
-  if (!themeDefinition) {
-    throw new Error(`Missing theme definition: ${input.site.themeCode}`);
-  }
+  if (!themeDefinition) throw new Error(`Missing theme definition: ${input.site.themeCode}`);
 
   return transaction.theme.upsert({
-    where: {
-      code: themeDefinition.code
-    },
+    where: { code: themeDefinition.code },
     create: {
       code: themeDefinition.code,
       name: themeDefinition.name,
@@ -346,43 +255,28 @@ async function upsertTheme(
       version: themeDefinition.version,
       category: "photography",
       defaultConfig: themeDefinition.defaultConfig,
-      contentSchema: {
-        supportedSections: themeDefinition.supportedSections
-      }
+      contentSchema: { supportedSections: themeDefinition.supportedSections }
     },
     update: {
       name: themeDefinition.name,
       status: themeDefinition.status.toUpperCase(),
       version: themeDefinition.version,
       defaultConfig: themeDefinition.defaultConfig,
-      contentSchema: {
-        supportedSections: themeDefinition.supportedSections
-      }
+      contentSchema: { supportedSections: themeDefinition.supportedSections }
     },
-    select: {
-      id: true
-    }
+    select: { id: true }
   });
 }
 
-async function upsertTemplate(
-  transaction: PrismaSignupTransaction,
-  input: AccountCreationInput,
-  themeId: string
-) {
+async function upsertTemplate(transaction: PrismaSignupTransaction, input: AccountCreationInput, themeId: string) {
   const template = themeRegistry.getTemplate(input.site.templateCode);
-
-  if (!template) {
-    throw new Error(`Missing template definition: ${input.site.templateCode}`);
-  }
+  if (!template) throw new Error(`Missing template definition: ${input.site.templateCode}`);
 
   const starter = getTemplateStarterData(template.code);
   const previewData = starter ? templateStarterToPreviewData(starter) : {};
 
   return transaction.template.upsert({
-    where: {
-      code: template.code
-    },
+    where: { code: template.code },
     create: {
       themeId,
       code: template.code,
@@ -398,8 +292,6 @@ async function upsertTemplate(
       status: template.status.toUpperCase(),
       showroomOrder: template.showroomOrder
     },
-    select: {
-      id: true
-    }
+    select: { id: true }
   });
 }
