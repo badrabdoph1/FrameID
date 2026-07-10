@@ -2,8 +2,18 @@ import { describe, expect, it } from "vitest";
 
 import { createPrismaSignupProvisioningRepository } from "@/modules/onboarding/prisma-signup-repository";
 import type { AccountCreationInput } from "@/modules/onboarding/signup-provisioning";
+import {
+  createSignupContentFromStarter,
+  getTemplateStarterData,
+  personalizeTemplateStarterData
+} from "@/modules/themes/template-starter-data";
 
 function createAccountInput(): AccountCreationInput {
+  const starter = personalizeTemplateStarterData(
+    getTemplateStarterData("noir-gold")!,
+    "Ali Ahmed"
+  );
+
   return {
     user: {
       name: "Ali Ahmed",
@@ -19,46 +29,17 @@ function createAccountInput(): AccountCreationInput {
     },
     site: {
       slug: "ali-ahmed",
-      title: "Ali Ahmed",
-      description: "Premium photography",
-      themeCode: "noir-gold",
-      templateCode: "noir-gold"
+      title: starter.title,
+      description: starter.description,
+      themeCode: starter.themeCode,
+      templateCode: starter.code
     },
     subscription: {
       status: "TRIAL",
       trialStartedAt: new Date("2026-07-06T12:00:00.000Z"),
       trialEndsAt: new Date("2026-07-20T12:00:00.000Z")
     },
-    defaultContent: {
-      sections: [
-        {
-          type: "hero",
-          title: "Home",
-          sortOrder: 0,
-          data: { headline: "Ali Ahmed" }
-        }
-      ],
-      packages: [
-        {
-          name: "Silver",
-          subtitle: "Engagement",
-          priceAmount: 2500,
-          currency: "EGP",
-          features: ["Album"],
-          isHighlighted: false,
-          sortOrder: 0
-        }
-      ],
-      extras: [
-        {
-          name: "Reel",
-          priceAmount: 1000,
-          currency: "EGP",
-          iconKey: "film",
-          sortOrder: 0
-        }
-      ]
-    }
+    defaultContent: createSignupContentFromStarter(starter)
   };
 }
 
@@ -103,9 +84,15 @@ describe("prisma signup repository", () => {
         }
       },
       siteSection: {
-        async createMany() {
-          operations.push("sections");
-          return { count: 1 };
+        async createMany(args: { data: unknown[] }) {
+          operations.push(`sections:${args.data.length}`);
+          return { count: args.data.length };
+        }
+      },
+      contactProfile: {
+        async create() {
+          operations.push("contact");
+          return { id: "contact_1" };
         }
       },
       package: {
@@ -118,6 +105,30 @@ describe("prisma signup repository", () => {
         async createMany(args: { data: unknown[] }) {
           operations.push(`extras:${args.data.length}`);
           return { count: args.data.length };
+        }
+      },
+      galleryAlbum: {
+        async create() {
+          operations.push("gallery-album");
+          return { id: "album_1" };
+        }
+      },
+      mediaAsset: {
+        async create() {
+          operations.push("media-asset");
+          return { id: `asset_${operations.length}` };
+        }
+      },
+      galleryImage: {
+        async create() {
+          operations.push("gallery-image");
+          return { id: `image_${operations.length}` };
+        }
+      },
+      sEOSettings: {
+        async create() {
+          operations.push("seo");
+          return { id: "seo_1" };
         }
       },
       subscription: {
@@ -136,6 +147,11 @@ describe("prisma signup repository", () => {
       site: {
         async findMany() {
           return [{ slug: "used-slug" }];
+        }
+      },
+      template: {
+        async findUnique() {
+          return null;
         }
       },
       async $transaction<T>(callback: (transaction: typeof tx) => Promise<T>) {
@@ -172,9 +188,20 @@ describe("prisma signup repository", () => {
       "tenant",
       "site:ali-ahmed",
       "config:site_1:theme_1",
-      "sections",
-      "packages:1",
-      "extras:1",
+      "sections:5",
+      "contact",
+      "packages:3",
+      "extras:4",
+      "gallery-album",
+      "media-asset",
+      "gallery-image",
+      "media-asset",
+      "gallery-image",
+      "media-asset",
+      "gallery-image",
+      "media-asset",
+      "gallery-image",
+      "seo",
       "subscription:TRIAL",
       "commit"
     ]);

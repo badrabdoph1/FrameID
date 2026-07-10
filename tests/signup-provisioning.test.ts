@@ -5,6 +5,7 @@ import {
   resolveAvailableSlug,
   type SignupProvisioningRepository
 } from "@/modules/onboarding/signup-provisioning";
+import { getTemplateStarterData } from "@/modules/themes/template-starter-data";
 
 function createRepository(
   existingSlugs: string[] = []
@@ -15,6 +16,10 @@ function createRepository(
 
   return {
     calls,
+    async getTemplateStarterData(templateCode) {
+      calls.push(`starter:${templateCode}`);
+      return getTemplateStarterData(templateCode);
+    },
     async identifierExists({ email, phone }) {
       calls.push(`identifier:${email}:${phone ?? "none"}`);
       return email === "used@example.com";
@@ -54,11 +59,12 @@ describe("signup provisioning", () => {
     });
 
     expect(repository.calls).toEqual([
+      "starter:noir-gold",
       "identifier:ali@example.com:none",
       "slugs",
       "transaction",
       "packages:3",
-      "extras:5"
+      "extras:4"
     ]);
     expect(result).toMatchObject({
       userId: "user_1",
@@ -82,7 +88,10 @@ describe("signup provisioning", () => {
       })
     ).rejects.toThrow("رقم الهاتف أو البريد الإلكتروني مستخدم بالفعل");
 
-    expect(repository.calls).toEqual(["identifier:used@example.com:none"]);
+    expect(repository.calls).toEqual([
+      "starter:noir-gold",
+      "identifier:used@example.com:none"
+    ]);
   });
 
   it("skips reserved route names when generating a site slug", () => {

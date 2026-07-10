@@ -30,7 +30,6 @@ describe("platform seed data", () => {
     });
     expect(seedData.backupSettings.map((setting) => setting.type)).toEqual([
       "DATABASE",
-      "UPLOADS",
       "FULL"
     ]);
   });
