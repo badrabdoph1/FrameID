@@ -67,7 +67,7 @@ export default async function AdminCustomer360Page({ params }: Props) {
       },
       subscriptions: {
         where: { deletedAt: null },
-        orderBy: { createdAt: "desc" },
+        orderBy: { currentPeriodStart: "desc" },
         take: 5,
         include: { plan: { select: { id: true, code: true, name: true, priceAmount: true, currency: true, billingInterval: true } } },
       },
@@ -75,7 +75,7 @@ export default async function AdminCustomer360Page({ params }: Props) {
         where: { deletedAt: null },
         orderBy: { createdAt: "desc" },
         take: 8,
-        select: { id: true, amount: true, currency: true, method: true, status: true, reference: true, createdAt: true, submittedAt: true, reviewedAt: true },
+        select: { id: true, amount: true, currency: true, method: true, status: true, reference: true, createdAt: true, reviewedAt: true },
       },
       supportCases: {
         where: { deletedAt: null },

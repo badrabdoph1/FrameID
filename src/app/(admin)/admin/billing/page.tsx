@@ -75,9 +75,10 @@ export default async function AdminBillingWorkspacePage() {
       take: 6,
       select: { id: true, name: true, code: true, priceAmount: true, currency: true, billingInterval: true, isActive: true },
     }),
-    prisma.paymentSettings.findMany({
-      orderBy: [{ isActive: "desc" }, { sortOrder: "asc" }],
-      select: { id: true, paymentMethod: true, label: true, isActive: true, _count: { select: { accounts: true } } },
+    prisma.paymentAccount.groupBy({
+      by: ["method"],
+      orderBy: [{ method: "asc" }],
+      _count: { id: true },
     }),
     prisma.paymentRequest.findMany({
       where: { deletedAt: null },
@@ -185,12 +186,11 @@ export default async function AdminBillingWorkspacePage() {
           <WorkspacePanel title="وسائل الدفع" description="حالة قنوات الدفع والحسابات المرتبطة بها." href="/admin/settings/payment" cta="إعدادات الدفع">
             <div className="grid gap-2">
               {paymentSettings.length === 0 ? <EmptyState text="لا توجد وسائل دفع مفعلة." /> : paymentSettings.map((method) => (
-                <Link key={method.id} href="/admin/settings/payment" className="flex items-center justify-between gap-3 rounded-2xl border border-white/8 bg-white/[0.035] p-3 no-underline transition hover:border-amber-300/24 hover:bg-amber-300/8">
+                <Link key={method.method} href="/admin/settings/payment" className="flex items-center justify-between gap-3 rounded-2xl border border-white/8 bg-white/[0.035] p-3 no-underline transition hover:border-amber-300/24 hover:bg-amber-300/8">
                   <span className="min-w-0">
-                    <strong className="block truncate text-sm font-black text-[#fff7e8]">{method.label ?? method.paymentMethod}</strong>
-                    <small className="mt-1 block text-xs font-bold text-white/38">{method._count.accounts} حسابات مرتبطة</small>
+                    <strong className="block truncate text-sm font-black text-[#fff7e8]">{method.method}</strong>
+                    <small className="mt-1 block text-xs font-bold text-white/38">{method._count.id} حسابات مرتبطة</small>
                   </span>
-                  <span className={method.isActive ? "rounded-full bg-emerald-300/10 px-2.5 py-1 text-xs font-black text-emerald-300" : "rounded-full bg-white/8 px-2.5 py-1 text-xs font-black text-white/38"}>{method.isActive ? "مفعل" : "مخفي"}</span>
                 </Link>
               ))}
             </div>
