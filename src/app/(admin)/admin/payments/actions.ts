@@ -8,11 +8,19 @@ import { processError } from "@/lib/errors";
 import { requireSuperAdminSession } from "@/modules/admin/admin-page-guards";
 import { createBillingActivationService } from "@/modules/billing/billing-activation-service";
 import { createPrismaBillingActivationRepository } from "@/modules/billing/prisma-billing-activation-repository";
+import { lifecycleDurationOptions, type LifecycleDurationPreset } from "@/modules/lifecycle/customer-lifecycle";
 
 function getService() {
   return createBillingActivationService({
     repository: createPrismaBillingActivationRepository(prisma)
   });
+}
+
+function parseDuration(formData: FormData) {
+  const rawPreset = String(formData.get("durationPreset") || "30") as LifecycleDurationPreset;
+  const preset = lifecycleDurationOptions.some((item) => item.value === rawPreset) ? rawPreset : "30";
+  const customDays = Math.max(1, Math.min(3650, Math.round(Number(formData.get("customDays")) || 30)));
+  return { preset, customDays };
 }
 
 export async function approvePaymentAction(formData: FormData) {
@@ -21,6 +29,7 @@ export async function approvePaymentAction(formData: FormData) {
   try {
     const paymentRequestId = formData.get("paymentRequestId");
     const adminNote = formData.get("adminNote");
+    const duration = parseDuration(formData);
 
     if (typeof paymentRequestId !== "string" || !paymentRequestId) {
       redirect("/admin/payments?error=invalid-payment");
@@ -35,7 +44,9 @@ export async function approvePaymentAction(formData: FormData) {
       adminNote:
         typeof adminNote === "string" && adminNote.trim()
           ? adminNote.trim()
-          : undefined
+          : undefined,
+      durationPreset: duration.preset,
+      customDays: duration.customDays
     });
   } catch (error) {
     const { userError } = await processError(error, {
@@ -47,6 +58,8 @@ export async function approvePaymentAction(formData: FormData) {
 
   revalidatePath("/admin");
   revalidatePath("/admin/payments");
+  revalidatePath("/admin/customers");
+  revalidatePath("/dashboard");
   redirect("/admin/payments?approved=1");
 }
 
