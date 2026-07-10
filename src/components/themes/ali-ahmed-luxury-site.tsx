@@ -9,6 +9,7 @@ import {
   Images,
   Instagram,
   Menu,
+  MessageCircle,
   Star,
   UserPlus,
   Video,
@@ -35,6 +36,7 @@ export function AliAhmedLuxurySite({ site }: AliAhmedLuxurySiteProps) {
   const heroImage = galleryImages[0] ?? null;
   const featuredImage = galleryImages[1]?.url ?? galleryImages[0]?.url;
   const displayName = getSiteDisplayName(site);
+  const mobileHeaderCaption = getMobileHeaderCaption(site, displayName);
 
   const total = useMemo(() => {
     return (selectedPackage?.priceAmount ?? 0) + selectedExtras.reduce((sum, item) => sum + item.priceAmount, 0);
@@ -61,14 +63,19 @@ export function AliAhmedLuxurySite({ site }: AliAhmedLuxurySiteProps) {
 
   return (
     <main className="min-h-screen overflow-hidden bg-[#050505] text-white selection:bg-[#e5c07b] selection:text-black">
-      <nav className="fixed inset-x-0 top-0 z-40 border-b border-white/8 bg-[#050505]/78 backdrop-blur-2xl">
-        <div className="container-page flex h-16 items-center justify-between gap-3 md:h-20">
+      <nav className="fixed inset-x-0 top-0 z-40 border-b border-white/8 bg-[#050505]/88 shadow-[0_14px_55px_rgba(0,0,0,.28)] backdrop-blur-2xl">
+        <div className="container-page flex min-h-16 items-center justify-between gap-3 py-2 md:h-20 md:py-0">
           <button
             type="button"
             onClick={() => scrollToSection("home")}
-            className="max-w-[10rem] truncate font-display text-sm font-bold tracking-[0.16em] text-[#e5c07b] sm:max-w-xs md:text-xl"
+            className="group flex min-w-0 flex-1 flex-col items-start text-start md:max-w-[15rem]"
           >
-            {displayName}
+            <span className="max-w-full truncate font-display text-base font-bold tracking-[0.12em] text-[#e5c07b] sm:text-lg md:text-xl">
+              {displayName}
+            </span>
+            <span className="mt-0.5 max-w-full truncate text-[0.68rem] font-bold tracking-[0.16em] text-white/45 md:hidden">
+              {mobileHeaderCaption}
+            </span>
           </button>
 
           <div className="hidden items-center rounded-full border border-white/10 bg-white/[0.045] px-2 py-1 text-sm text-white/68 shadow-[0_18px_60px_rgba(0,0,0,.2)] md:flex">
@@ -79,19 +86,27 @@ export function AliAhmedLuxurySite({ site }: AliAhmedLuxurySiteProps) {
             <ScrollButton onClick={() => scrollToSection("contact")} label="الحجز" />
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex shrink-0 items-center gap-2">
             <div className="hidden md:block">
               <SocialLinks site={site} bookingHref={bookingHref} compact onBookingClick={handleBookingClick} />
             </div>
             <button
               type="button"
-              className="inline-flex size-10 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-white md:hidden"
+              className="inline-flex size-10 items-center justify-center rounded-full border border-white/10 bg-white/[0.06] text-white shadow-[0_10px_30px_rgba(0,0,0,.18)] md:hidden"
               aria-label="القائمة"
+              aria-expanded={menuOpen}
               onClick={() => setMenuOpen((open) => !open)}
             >
               {menuOpen ? <X className="size-4" /> : <Menu className="size-4" />}
             </button>
           </div>
+        </div>
+
+        <div className="container-page flex gap-2 overflow-x-auto pb-2 [scrollbar-width:none] md:hidden [&::-webkit-scrollbar]:hidden">
+          <MobileTopButton onClick={() => scrollToSection("home")} label="الرئيسية" />
+          <MobileTopButton onClick={() => scrollToSection("gallery")} label="الأعمال" />
+          <MobileTopButton onClick={() => scrollToSection("packages")} label="الباقات" />
+          <MobileTopButton onClick={() => scrollToSection("contact")} label="الحجز" />
         </div>
 
         {menuOpen ? (
@@ -108,7 +123,7 @@ export function AliAhmedLuxurySite({ site }: AliAhmedLuxurySiteProps) {
         ) : null}
       </nav>
 
-      <section id="home" className="relative overflow-hidden pt-16 md:min-h-screen md:pt-20">
+      <section id="home" className="relative overflow-hidden pt-28 md:min-h-screen md:pt-20">
         {heroImage ? (
           <Image
             src={heroImage.url}
@@ -326,7 +341,7 @@ export function AliAhmedLuxurySite({ site }: AliAhmedLuxurySiteProps) {
                 selectedPackage ? "bg-[#25d366] text-white hover:bg-[#20b858]" : "bg-white/5 text-white/35"
               )}
             >
-              <WhatsAppMark className="size-5" />
+              <MessageCircle className="size-5" />
               {selectedPackage ? site.contact.callToAction : "اختار باقة أولًا"}
             </a>
           </div>
@@ -350,7 +365,7 @@ export function AliAhmedLuxurySite({ site }: AliAhmedLuxurySiteProps) {
         )}
         aria-label="حجز عبر واتساب"
       >
-        <WhatsAppMark className="size-6 md:size-7" />
+        <MessageCircle className="size-6 md:size-7" />
         <span className="md:hidden">{selectedPackage ? site.contact.callToAction : "اختار باقة أولًا"}</span>
       </a>
     </main>
@@ -360,6 +375,18 @@ export function AliAhmedLuxurySite({ site }: AliAhmedLuxurySiteProps) {
 function ScrollButton({ label, onClick }: { label: string; onClick: () => void }) {
   return (
     <button type="button" onClick={onClick} className="rounded-full px-4 py-2 font-bold transition hover:bg-white/7 hover:text-[#e5c07b]">
+      {label}
+    </button>
+  );
+}
+
+function MobileTopButton({ label, onClick }: { label: string; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="inline-flex min-h-9 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/[0.055] px-3 text-xs font-black text-white/72 transition hover:border-[#e5c07b]/35 hover:bg-[#e5c07b]/10 hover:text-[#e5c07b]"
+    >
       {label}
     </button>
   );
@@ -397,7 +424,7 @@ function SocialLinks({
   return (
     <div className="flex items-center gap-2">
       <a href={bookingHref} onClick={onBookingClick} className={itemClass} aria-label="واتساب">
-        <WhatsAppMark className={compact ? "size-[1.125rem]" : "size-5"} />
+        <MessageCircle className={compact ? "size-[1.125rem]" : "size-5"} />
       </a>
       <a href={instagramHref} onClick={instagramHref === bookingHref ? onBookingClick : undefined} target={instagramHref === bookingHref ? undefined : "_blank"} rel={instagramHref === bookingHref ? undefined : "noreferrer"} className={itemClass} aria-label="إنستجرام">
         <Instagram className={compact ? "size-4" : "size-5"} />
@@ -412,6 +439,13 @@ function SocialLinks({
 function getSiteDisplayName(site: PublicSiteViewModel) {
   const title = typeof site.metadata.title === "string" ? site.metadata.title : site.hero.headline;
   return title.split(/[—|]/u)[0]?.trim() || site.hero.headline;
+}
+
+function getMobileHeaderCaption(site: PublicSiteViewModel, displayName: string) {
+  const metadataDescription = typeof site.metadata.description === "string" ? site.metadata.description : "";
+  const candidates = [site.hero.headline, metadataDescription, site.hero.subheadline];
+
+  return candidates.find((item) => item.trim() && item.trim() !== displayName)?.trim() ?? "معرض تصوير";
 }
 
 function SectionHeading({ eyebrow, title, description }: { eyebrow: string; title: string; description?: string }) {
@@ -479,17 +513,4 @@ function formatCurrencyLabel(currency: string): string {
 function normalizeSocialUrl(value: string, provider: "instagram" | "facebook") {
   if (value.startsWith("http://") || value.startsWith("https://")) return value;
   return provider === "instagram" ? `https://instagram.com/${value.replace(/^@/u, "")}` : `https://facebook.com/${value}`;
-}
-
-function WhatsAppMark({ className }: { className?: string }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="currentColor"
-      className={className}
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z" />
-    </svg>
-  );
 }
