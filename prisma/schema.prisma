@@ -178,59 +178,39 @@ model Tenant {
   auditLogs             AuditLog[]
   adminNotes            AdminNote[]
   supportCases          SupportCase[]
-  featureFlags          FeatureFlag[]
-  impersonationSessions ImpersonationSession[]
 
-  @@index([ownerUserId])
-  @@index([status, deletedAt])
+  @@index([ownerUserId, status])
 }
 
 model Site {
-  id               String     @id @default(cuid())
-  tenantId         String
-  themeId          String
-  slug             String     @unique
-  slugChangeUsed   Boolean    @default(false)
-  title            String
-  description      String?
-  status           SiteStatus @default(DRAFT)
-  locale           String     @default("ar")
-  isPublished      Boolean    @default(false)
-  publishedVersion Int        @default(0)
-  createdAt        DateTime   @default(now())
-  updatedAt        DateTime   @updatedAt
-  deletedAt        DateTime?
+  id          String     @id @default(cuid())
+  tenantId    String
+  themeId     String
+  slug        String     @unique
+  title       String
+  description String?
+  status      SiteStatus @default(DRAFT)
+  isPublished Boolean    @default(false)
+  publishedAt DateTime?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  deletedAt   DateTime?
 
-  tenant       Tenant           @relation(fields: [tenantId], references: [id])
-  theme        Theme            @relation(fields: [themeId], references: [id])
-  domains      SiteDomain[]
-  themeConfig  SiteThemeConfig?
-  sections     SiteSection[]
-  packages     Package[]
-  extras       ExtraService[]
-  albums       GalleryAlbum[]
-  contact      ContactProfile?
-  seoSettings  SEOSettings?
-  featureFlags FeatureFlag[]
+  tenant           Tenant            @relation(fields: [tenantId], references: [id])
+  theme            Theme             @relation(fields: [themeId], references: [id])
+  domains          Domain[]
+  themeConfigs     SiteThemeConfig[]
+  sections         SiteSection[]
+  galleryAlbums    GalleryAlbum[]
+  contactProfile   ContactProfile?
+  seoSettings      SEOSettings?
+  lifecycleEvents  LifecycleEvent[]
+  featureFlags     FeatureFlag[]
+  packages         Package[]
+  extraServices    ExtraService[]
 
-  @@index([tenantId, status, deletedAt])
+  @@index([tenantId, status])
   @@index([themeId])
-}
-
-model SiteDomain {
-  id                String       @id @default(cuid())
-  siteId            String
-  domain            String       @unique
-  status            DomainStatus @default(PENDING)
-  verificationToken String
-  verifiedAt        DateTime?
-  createdAt         DateTime     @default(now())
-  updatedAt         DateTime     @updatedAt
-  deletedAt         DateTime?
-
-  site Site @relation(fields: [siteId], references: [id])
-
-  @@index([siteId])
 }
 
 model Theme {
@@ -239,15 +219,13 @@ model Theme {
   name          String
   status        ThemeStatus @default(DRAFT)
   version       String
-  category      String
+  category      String?
   defaultConfig Json
   contentSchema Json
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
   deletedAt     DateTime?
 
-  templates        Template[]
   sites            Site[]
+  templates        Template[]
   siteThemeConfigs SiteThemeConfig[]
 }
 
@@ -258,98 +236,75 @@ model Template {
   name          String
   status        ThemeStatus @default(DRAFT)
   showroomOrder Int         @default(0)
-  previewData   Json
-  settings      Json
-  createdAt     DateTime    @default(now())
+  coverAssetId  String?
+  previewData   Json?
+  settings      Json?
   updatedAt     DateTime    @updatedAt
   deletedAt     DateTime?
 
   theme Theme @relation(fields: [themeId], references: [id])
 
-  @@index([themeId])
-  @@index([status, showroomOrder])
+  @@index([themeId, showroomOrder])
 }
 
 model SiteThemeConfig {
-  id        String   @id @default(cuid())
-  siteId    String   @unique
+  id        String    @id @default(cuid())
+  siteId    String
   themeId   String
   config    Json
-  updatedAt DateTime @updatedAt
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
 
   site  Site  @relation(fields: [siteId], references: [id])
   theme Theme @relation(fields: [themeId], references: [id])
+
+  @@unique([siteId, themeId])
+}
+
+model Domain {
+  id        String       @id @default(cuid())
+  siteId    String
+  hostname  String       @unique
+  status    DomainStatus @default(PENDING)
+  verifiedAt DateTime?
+  createdAt DateTime     @default(now())
+
+  site Site @relation(fields: [siteId], references: [id])
+
+  @@index([siteId])
 }
 
 model SiteSection {
   id        String    @id @default(cuid())
   siteId    String
   type      String
-  title     String?
-  sortOrder Int       @default(0)
+  title     String
   data      Json
+  sortOrder Int       @default(0)
   isVisible Boolean   @default(true)
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 
   site Site @relation(fields: [siteId], references: [id])
 
-  @@index([siteId, type, sortOrder])
-}
-
-model Package {
-  id            String    @id @default(cuid())
-  siteId        String
-  name          String
-  subtitle      String?
-  priceAmount   Int
-  currency      String    @default("EGP")
-  features      Json
-  imageUrl      String?
-  isHighlighted Boolean   @default(false)
-  isActive      Boolean   @default(true)
-  sortOrder     Int       @default(0)
-  deletedAt     DateTime?
-
-  site Site @relation(fields: [siteId], references: [id])
-
-  @@index([siteId, isActive, sortOrder])
-}
-
-model ExtraService {
-  id            String    @id @default(cuid())
-  siteId        String
-  name          String
-  description   String?
-  priceAmount   Int
-  currency      String    @default("EGP")
-  iconKey       String?
-  isActive      Boolean   @default(true)
-  isHighlighted Boolean   @default(false)
-  sortOrder     Int       @default(0)
-  deletedAt     DateTime?
-
-  site Site @relation(fields: [siteId], references: [id])
-
-  @@index([siteId, isActive, sortOrder])
+  @@index([siteId, sortOrder])
 }
 
 model GalleryAlbum {
-  id           String    @id @default(cuid())
-  siteId       String
-  title        String
-  slug         String    @default("")
-  description  String?
-  coverAssetId String?
-  isVisible    Boolean   @default(true)
-  sortOrder    Int       @default(0)
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-  deletedAt    DateTime?
+  id            String    @id @default(cuid())
+  siteId        String
+  title         String
+  slug          String    @default("")
+  description   String?
+  coverAssetId  String?
+  isVisible     Boolean   @default(true)
+  sortOrder     Int       @default(0)
+  createdAt     DateTime  @default(now())
+  deletedAt     DateTime?
 
-  site       Site           @relation(fields: [siteId], references: [id])
-  coverAsset MediaAsset?    @relation("AlbumCover", fields: [coverAssetId], references: [id])
-  images     GalleryImage[]
+  site   Site        @relation(fields: [siteId], references: [id])
+  cover  MediaAsset? @relation("AlbumCover", fields: [coverAssetId], references: [id])
+  images GalleryImage[]
 
   @@index([siteId, sortOrder])
   @@index([coverAssetId])
@@ -458,21 +413,72 @@ model SEOSettings {
   @@index([ogAssetId])
 }
 
+model Package {
+  id            String   @id @default(cuid())
+  siteId        String
+  name          String
+  subtitle      String?
+  priceAmount   Int
+  currency      String   @default("EGP")
+  features      Json
+  imageUrl      String?
+  isHighlighted Boolean  @default(false)
+  isActive      Boolean  @default(true)
+  sortOrder     Int      @default(0)
+  deletedAt     DateTime?
+
+  site Site @relation(fields: [siteId], references: [id])
+
+  @@index([siteId, isActive, sortOrder])
+}
+
+model ExtraService {
+  id          String   @id @default(cuid())
+  siteId      String
+  name        String
+  description String?
+  priceAmount Int
+  currency    String   @default("EGP")
+  iconKey     String?
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  deletedAt   DateTime?
+
+  site Site @relation(fields: [siteId], references: [id])
+
+  @@index([siteId, isActive, sortOrder])
+}
+
+model LifecycleEvent {
+  id        String   @id @default(cuid())
+  tenantId  String
+  siteId    String?
+  type      String
+  message   String
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  site   Site?  @relation(fields: [siteId], references: [id])
+
+  @@index([tenantId, createdAt])
+}
+
 model Plan {
-  id              String    @id @default(cuid())
-  code            String    @unique
+  id              String   @id @default(cuid())
+  code            String   @unique
   name            String
   priceAmount     Int
-  currency        String    @default("EGP")
+  currency        String   @default("EGP")
   billingInterval String
   features        Json
-  isActive        Boolean   @default(true)
-  deletedAt       DateTime?
-
+  isActive        Boolean  @default(true)
+  sortOrder       Int      @default(0)
   subscriptions   Subscription[]
-  paymentRequests PaymentRequest[]
-  fromChanges     SubscriptionChange[] @relation("FromPlan")
-  toChanges        SubscriptionChange[] @relation("ToPlan")
+  changesFrom     SubscriptionChange[] @relation("FromPlan")
+  changesTo       SubscriptionChange[] @relation("ToPlan")
+
+  @@index([isActive, sortOrder])
 }
 
 model Subscription {
@@ -482,9 +488,10 @@ model Subscription {
   status             SubscriptionStatus @default(TRIAL)
   currentPeriodStart DateTime
   currentPeriodEnd   DateTime
-  expiresAt          DateTime
+  expiresAt          DateTime?
   cancelledAt        DateTime?
-  deletedAt          DateTime?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
 
   tenant Tenant @relation(fields: [tenantId], references: [id])
   plan   Plan?  @relation(fields: [planId], references: [id])
