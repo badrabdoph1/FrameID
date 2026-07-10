@@ -24,7 +24,6 @@ type AliAhmedLuxurySiteProps = {
 };
 
 const EMPTY_BOOKING_MESSAGE = "قم بتحديد باقة من الأعلى ليظهر ملخص الحجز هنا أولًا";
-const GOLD = "#e5c07b";
 
 export function AliAhmedLuxurySite({ site }: AliAhmedLuxurySiteProps) {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -36,7 +35,6 @@ export function AliAhmedLuxurySite({ site }: AliAhmedLuxurySiteProps) {
   const galleryImages = site.gallery.slice(0, 4);
   const featuredImage = galleryImages[1]?.url ?? site.hero.imageUrl;
   const displayName = getSiteDisplayName(site);
-  const highlightedPackage = site.packages.find((item) => item.isHighlighted) ?? site.packages[0];
 
   const total = useMemo(() => {
     return (selectedPackage?.priceAmount ?? 0) + selectedExtras.reduce((sum, item) => sum + item.priceAmount, 0);
@@ -126,7 +124,7 @@ export function AliAhmedLuxurySite({ site }: AliAhmedLuxurySiteProps) {
           <div className="max-w-3xl text-center md:text-start">
             <div className="inline-flex items-center gap-2 rounded-full border border-[#e5c07b]/25 bg-[#e5c07b]/10 px-4 py-2 text-xs font-bold text-[#f8e5ba] shadow-[0_12px_36px_rgba(0,0,0,.24)]">
               <Sparkles className="size-3.5" />
-              تصوير احترافي بتجربة حجز فاخرة
+              تصوير زفاف وخطوبة بجودة سينمائية
             </div>
             <h1 className="mt-7 text-balance font-display text-4xl font-bold leading-[1.08] tracking-tight text-white sm:text-5xl md:text-7xl lg:text-8xl">
               {site.hero.headline}
@@ -139,23 +137,23 @@ export function AliAhmedLuxurySite({ site }: AliAhmedLuxurySiteProps) {
               <button
                 type="button"
                 onClick={() => scrollToSection("packages")}
-                className="inline-flex min-h-13 items-center justify-center rounded-[var(--radius-control)] bg-[linear-gradient(135deg,#fff3cf,#e5c07b,#b9822b)] px-8 text-sm font-black text-black shadow-[0_22px_60px_rgba(229,192,123,.22)] transition hover:-translate-y-0.5"
+                className="inline-flex min-h-12 items-center justify-center rounded-[var(--radius-control)] bg-[linear-gradient(135deg,#fff3cf,#e5c07b,#b9822b)] px-8 text-sm font-black text-black shadow-[0_22px_60px_rgba(229,192,123,.22)] transition hover:-translate-y-0.5"
               >
                 اختر باقتك
               </button>
               <button
                 type="button"
                 onClick={() => scrollToSection("gallery")}
-                className="inline-flex min-h-13 items-center justify-center rounded-[var(--radius-control)] border border-white/14 bg-white/[0.055] px-8 text-sm font-bold text-white transition hover:-translate-y-0.5 hover:bg-white/[0.09]"
+                className="inline-flex min-h-12 items-center justify-center rounded-[var(--radius-control)] border border-white/14 bg-white/[0.055] px-8 text-sm font-bold text-white transition hover:-translate-y-0.5 hover:bg-white/[0.09]"
               >
                 شاهد الأعمال
               </button>
             </div>
 
-            <div className="mt-10 grid grid-cols-3 overflow-hidden rounded-[1.4rem] border border-white/10 bg-black/30 text-center shadow-[0_24px_80px_rgba(0,0,0,.25)] backdrop-blur md:max-w-xl md:text-start">
-              <HeroStat value="4K" label="معرض أونلاين" />
-              <HeroStat value={site.packages.length.toString()} label="باقات واضحة" />
-              <HeroStat value={site.extras.length.toString()} label="إضافات جاهزة" />
+            <div className="mt-10 grid gap-3 text-sm font-bold leading-6 text-white/72 sm:grid-cols-3 md:max-w-2xl">
+              <HeroFeature label="تغطية يوم الزفاف" />
+              <HeroFeature label="جلسات خارجية" />
+              <HeroFeature label="ألبومات وتسليم رقمي" />
             </div>
           </div>
 
@@ -173,36 +171,28 @@ export function AliAhmedLuxurySite({ site }: AliAhmedLuxurySiteProps) {
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/72 via-transparent to-black/18" />
                 <div className="absolute inset-x-5 bottom-5 rounded-2xl border border-white/12 bg-black/42 p-4 backdrop-blur-xl">
-                  <p className="text-xs font-bold text-[#e5c07b]">القالب الكلاسيكي</p>
-                  <p className="mt-1 line-clamp-2 text-lg font-bold leading-7 text-white">واجهة فاخرة تبرز الصورة وتحوّل الزائر للحجز</p>
+                  <p className="text-xs font-bold text-[#e5c07b]">{displayName}</p>
+                  <p className="mt-1 line-clamp-2 text-lg font-bold leading-7 text-white">تفاصيل هادئة وصور تحكي اللحظة كما كانت</p>
                 </div>
               </div>
             </div>
-
-            {highlightedPackage ? (
-              <div className="absolute -bottom-6 -right-6 max-w-[250px] rounded-3xl border border-[#e5c07b]/24 bg-[#080808]/88 p-4 shadow-[0_24px_90px_rgba(0,0,0,.42)] backdrop-blur-xl">
-                <div className="flex items-center gap-2 text-xs font-bold text-[#e5c07b]"><Star className="size-4" /> الباقة المميزة</div>
-                <p className="mt-2 font-display text-xl font-bold text-white">{highlightedPackage.name}</p>
-                <p className="mt-1 text-sm text-white/58">{highlightedPackage.price}</p>
-              </div>
-            ) : null}
           </div>
         </div>
       </section>
 
       {site.gallery.length ? (
         <section id="gallery" className="container-page scroll-mt-24 py-16 md:py-28">
-          <SectionHeading eyebrow="أعمال مختارة" title="لمحات من الأعمال" description="توزيع بصري واسع وواضح يخلّي أول انطباع مركز على جودة الصور." />
+          <SectionHeading eyebrow="أعمال مختارة" title="لمحات من الأعمال" description="مختارات من جلسات الزفاف والخطوبة بتفاصيل قريبة وإضاءة طبيعية." />
           <div className="mt-10 grid gap-4 md:grid-cols-12 md:grid-rows-[230px_230px] lg:grid-rows-[280px_280px]">
             {galleryImages.map((image, index) => (
               <figure
                 key={image.id}
                 className={cn(
                   "group relative overflow-hidden rounded-[1.6rem] border border-white/8 bg-white/[0.04] shadow-[0_24px_90px_rgba(0,0,0,.26)]",
-                  index === 0 ? "md:col-span-7 md:row-span-2" : index === 1 ? "md:col-span-5" : "md:col-span-5"
+                  index === 0 ? "md:col-span-7 md:row-span-2" : "md:col-span-5"
                 )}
               >
-                <div className={cn("relative", index === 0 ? "aspect-[4/5] md:h-full md:aspect-auto" : "aspect-[16/10] md:h-full md:aspect-auto") }>
+                <div className={cn("relative", index === 0 ? "aspect-[4/5] md:h-full md:aspect-auto" : "aspect-[16/10] md:h-full md:aspect-auto")}>
                   <Image
                     src={image.url}
                     alt={image.alt}
@@ -221,7 +211,7 @@ export function AliAhmedLuxurySite({ site }: AliAhmedLuxurySiteProps) {
 
       <section id="packages" className="scroll-mt-24 border-y border-white/6 bg-[radial-gradient(circle_at_top,rgba(229,192,123,.10),transparent_32%),#070707] py-16 md:py-28">
         <div className="container-page">
-          <SectionHeading eyebrow="باقات التصوير" title="اختر باقتك" description="كروت واضحة على سطح المكتب بدون سحب جانبي، مع إبراز السعر والمميزات وزر الاختيار." />
+          <SectionHeading eyebrow="باقات التصوير" title="اختر باقتك" description="اختار التغطية الأنسب ليومك، ويمكنك إضافة أي خدمة تحتاجها قبل تأكيد الحجز." />
           <div className="mt-10 grid gap-5 lg:grid-cols-3">
             {site.packages.map((item, index) => {
               const selected = selectedPackageId === item.id;
@@ -283,7 +273,7 @@ export function AliAhmedLuxurySite({ site }: AliAhmedLuxurySiteProps) {
       {site.extras.length ? (
         <section id="extras" className="scroll-mt-24 bg-[#050505] py-16 md:py-28">
           <div className="container-page">
-            <SectionHeading eyebrow="خدمات إضافية" title="إضافات مميزة" description="اختيارات صغيرة وسريعة تزيد قيمة الحجز بدون تشتيت." />
+            <SectionHeading eyebrow="خدمات إضافية" title="إضافات مميزة" description="أضف خدمة تصوير أو ألبوم أو فيديو حسب احتياج اليوم." />
             <div className="mt-10 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
               {site.extras.map((extra) => {
                 const selected = selectedExtraIds.includes(extra.id);
@@ -322,15 +312,15 @@ export function AliAhmedLuxurySite({ site }: AliAhmedLuxurySiteProps) {
             <Image src={featuredImage} alt={site.hero.headline} fill sizes="(min-width: 1024px) 48vw, 100vw" className="object-cover opacity-42" />
             <div className="absolute inset-0 bg-gradient-to-l from-[#050505]/96 via-[#050505]/72 to-[#050505]/38" />
             <div className="relative z-10 max-w-lg">
-              <p className="font-display text-xs uppercase tracking-[0.28em] text-[#e5c07b]">خطوة أخيرة</p>
-              <h2 className="mt-4 text-3xl font-bold leading-tight md:text-5xl">حوّل اختيارك لطلب حجز واضح</h2>
+              <p className="font-display text-xs uppercase tracking-[0.28em] text-[#e5c07b]">جاهز نحجز يومك؟</p>
+              <h2 className="mt-4 text-3xl font-bold leading-tight md:text-5xl">ارسل تفاصيل الحجز مباشرة</h2>
               <p className="mt-4 text-sm leading-7 text-white/68 md:text-base md:leading-8">
-                اختر الباقة والإضافات، وسيتم تجهيز رسالة حجز تلقائية بالتفاصيل والسعر التقريبي.
+                اختر الباقة والإضافات المناسبة، وسيتم تجهيز رسالة بالحجز والسعر التقريبي للتواصل معنا.
               </p>
               <div className="mt-7 flex flex-wrap gap-3 text-sm font-bold text-white/70">
-                <span className="rounded-full border border-white/10 bg-black/35 px-4 py-2">بدون تعقيد</span>
-                <span className="rounded-full border border-white/10 bg-black/35 px-4 py-2">رسالة جاهزة</span>
-                <span className="rounded-full border border-white/10 bg-black/35 px-4 py-2">تأكيد سريع</span>
+                <span className="rounded-full border border-white/10 bg-black/35 px-4 py-2">اختيار الباقة</span>
+                <span className="rounded-full border border-white/10 bg-black/35 px-4 py-2">تحديد الإضافات</span>
+                <span className="rounded-full border border-white/10 bg-black/35 px-4 py-2">إرسال الطلب</span>
               </div>
             </div>
           </div>
@@ -352,7 +342,7 @@ export function AliAhmedLuxurySite({ site }: AliAhmedLuxurySiteProps) {
               href={bookingHref}
               onClick={handleBookingClick}
               className={cn(
-                "mt-6 inline-flex min-h-13 w-full items-center justify-center gap-2 rounded-[var(--radius-control)] text-sm font-black transition hover:-translate-y-0.5",
+                "mt-6 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-[var(--radius-control)] text-sm font-black transition hover:-translate-y-0.5",
                 selectedPackage ? "bg-[#25d366] text-white hover:bg-[#20b858]" : "bg-white/5 text-white/35"
               )}
             >
@@ -403,11 +393,13 @@ function MobileScrollButton({ label, onClick }: { label: string; onClick: () => 
   );
 }
 
-function HeroStat({ value, label }: { value: string; label: string }) {
+function HeroFeature({ label }: { label: string }) {
   return (
-    <div className="border-s border-white/8 p-4 first:border-s-0">
-      <p className="font-display text-2xl font-bold text-[#e5c07b] md:text-3xl">{value}</p>
-      <p className="mt-1 text-xs font-bold leading-5 text-white/48">{label}</p>
+    <div className="rounded-[1.2rem] border border-white/10 bg-black/28 px-4 py-3 shadow-[0_18px_60px_rgba(0,0,0,.18)] backdrop-blur">
+      <span className="inline-flex items-center gap-2">
+        <Check className="size-4 text-[#e5c07b]" />
+        {label}
+      </span>
     </div>
   );
 }
