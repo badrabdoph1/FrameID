@@ -203,10 +203,8 @@ export async function applySubscriptionTimerToTenants(prisma: LifecyclePrismaCli
   });
 
   for (const sub of latestSubscriptions) {
-    const currentEnd = sub.currentPeriodEnd ?? sub.expiresAt;
-    const end = preset === "keep" && currentEnd && currentEnd > now
-      ? currentEnd
-      : getLifecycleEndDate(now, preset === "keep" ? "30" : preset, customDays);
+    const currentEnd = sub.currentPeriodEnd ?? sub.expiresAt ?? null;
+    const end = preset === "keep" ? currentEnd : getLifecycleEndDate(now, preset, customDays);
     await prisma.subscription.update({ where: { id: sub.id }, data: { status: "ACTIVE", activatedAt: sub.currentPeriodStart ?? now, currentPeriodStart: sub.currentPeriodStart ?? now, currentPeriodEnd: end, expiresAt: end } });
     await prisma.tenant.update({ where: { id: sub.tenantId }, data: { status: "ACTIVE", gracePeriodEndsAt: null } });
   }
