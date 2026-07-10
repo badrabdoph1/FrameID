@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { CalendarClock, CheckCircle2, Clock3, Search, ShieldCheck, Sparkles } from "lucide-react";
 
 import { applyLifecycleTimerAction, saveLifecycleTimersAction } from "@/app/(admin)/admin/messages/actions";
@@ -223,7 +223,7 @@ function ToggleField({ name, label, defaultChecked }: { name: string; label: str
   return <label className="flex min-h-11 items-center gap-2 rounded-2xl border border-white/8 bg-white/[0.035] px-3 text-xs font-black text-white/60"><input name={name} type="checkbox" defaultChecked={defaultChecked} /> {label}</label>;
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({ label, children }: { label: string; children: ReactNode }) {
   return <label className="grid gap-1.5"><span className="text-[0.68rem] font-black text-white/42">{label}</span>{children}</label>;
 }
 
