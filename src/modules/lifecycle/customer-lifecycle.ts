@@ -5,7 +5,7 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 
 type LifecyclePrismaClient = PrismaClient;
 
-export type LifecycleDurationPreset = "30" | "60" | "90" | "180" | "365" | "730" | "forever" | "custom";
+export type LifecycleDurationPreset = "keep" | "30" | "60" | "90" | "180" | "365" | "730" | "forever" | "custom";
 
 export type LifecycleTimerSettings = {
   trial: {
@@ -20,7 +20,8 @@ export type LifecycleTimerSettings = {
   };
 };
 
-export const lifecycleDurationOptions: Array<{ value: LifecycleDurationPreset; label: string; days: number | null }> = [
+export const lifecycleDurationOptions: Array<{ value: LifecycleDurationPreset; label: string; days: number | null; description?: string }> = [
+  { value: "keep", label: "الوضع الذكي", days: null, description: "يحافظ على تاريخ انتهاء كل عميل كما هو" },
   { value: "30", label: "30 يوم", days: 30 },
   { value: "60", label: "شهرين", days: 60 },
   { value: "90", label: "3 أشهر", days: 90 },
@@ -33,7 +34,7 @@ export const lifecycleDurationOptions: Array<{ value: LifecycleDurationPreset; l
 
 export const defaultLifecycleTimerSettings: LifecycleTimerSettings = {
   trial: { enabled: true, useDefault: true, defaultDays: 14 },
-  subscription: { enabled: true, defaultPreset: "30", customDays: 30 },
+  subscription: { enabled: true, defaultPreset: "keep", customDays: 30 },
 };
 
 function normalizeNumber(value: unknown, fallback: number) {
@@ -53,14 +54,14 @@ export function normalizeLifecycleTimerSettings(value: unknown): LifecycleTimerS
     },
     subscription: {
       enabled: input?.subscription?.enabled ?? defaultLifecycleTimerSettings.subscription.enabled,
-      defaultPreset: lifecycleDurationOptions.some((item) => item.value === preset) ? preset as LifecycleDurationPreset : "30",
+      defaultPreset: lifecycleDurationOptions.some((item) => item.value === preset) ? preset as LifecycleDurationPreset : "keep",
       customDays: normalizeNumber(input?.subscription?.customDays, defaultLifecycleTimerSettings.subscription.customDays),
     },
   };
 }
 
 export function resolveDurationDays(preset: LifecycleDurationPreset, customDays?: number): number | null {
-  if (preset === "forever") return null;
+  if (preset === "keep" || preset === "forever") return null;
   if (preset === "custom") return normalizeNumber(customDays, 30);
   const option = lifecycleDurationOptions.find((item) => item.value === preset);
   return option?.days ?? 30;
@@ -73,6 +74,7 @@ export function addDays(date: Date, days: number) {
 }
 
 export function getLifecycleEndDate(start: Date, preset: LifecycleDurationPreset, customDays?: number): Date | null {
+  if (preset === "keep") return null;
   const days = resolveDurationDays(preset, customDays);
   return days === null ? null : addDays(start, days);
 }
@@ -111,25 +113,18 @@ export async function saveLifecycleTimerSettings(prisma: LifecyclePrismaClient, 
     enabled: true,
     value: settings as unknown as Prisma.InputJsonObject,
   };
-  if (current) {
-    await prisma.featureFlag.update({ where: { id: current.id }, data });
-  } else {
-    await prisma.featureFlag.create({ data });
-  }
+  if (current) await prisma.featureFlag.update({ where: { id: current.id }, data });
+  else await prisma.featureFlag.create({ data });
 }
 
-async function notifyLifecycleExpired(prisma: LifecyclePrismaClient, tenant: { id: string; ownerUserId?: string | null; displayName?: string | null }, type: "trial" | "subscription") {
+async function notifyLifecycleExpired(prisma: LifecyclePrismaClient, tenant: { id: string; ownerUserId?: string | null }, type: "trial" | "subscription") {
   const title = type === "trial" ? "انتهت التجربة المجانية" : "انتهى الاشتراك";
   const body = type === "trial"
     ? "انتهت فترة التجربة المجانية. يمكنك تفعيل الاشتراك لإعادة تشغيل الموقع."
     : "انتهت مدة الاشتراك. يمكنك تجديد الاشتراك لإعادة تشغيل الموقع.";
 
-  await prisma.notification.create({
-    data: { tenantId: tenant.id, type: `${type}_expired`, title, body, priority: "high" },
-  }).catch(() => undefined);
-  await prisma.notificationLog.create({
-    data: { type: "danger", title, body, category: "lifecycle", tenantId: tenant.id, userId: tenant.ownerUserId ?? null },
-  }).catch(() => undefined);
+  await prisma.notification.create({ data: { tenantId: tenant.id, type: `${type}_expired`, title, body, priority: "high" } }).catch(() => undefined);
+  await prisma.notificationLog.create({ data: { type: "danger", title, body, category: "lifecycle", tenantId: tenant.id, userId: tenant.ownerUserId ?? null } }).catch(() => undefined);
 }
 
 export async function syncCustomerLifecycle(prisma: LifecyclePrismaClient, options: { tenantId?: string; now?: Date; limit?: number } = {}) {
@@ -140,7 +135,7 @@ export async function syncCustomerLifecycle(prisma: LifecyclePrismaClient, optio
   const expiredTrials = await prisma.tenant.findMany({
     where: { ...tenantScope, deletedAt: null, status: "TRIAL", trialEndsAt: { lte: now } },
     take: limit,
-    select: { id: true, ownerUserId: true, displayName: true, trialEndsAt: true },
+    select: { id: true, ownerUserId: true, trialEndsAt: true },
   });
 
   for (const tenant of expiredTrials) {
@@ -148,7 +143,7 @@ export async function syncCustomerLifecycle(prisma: LifecyclePrismaClient, optio
     await prisma.subscription.updateMany({ where: { tenantId: tenant.id, deletedAt: null, status: "TRIAL" }, data: { status: "EXPIRED", currentPeriodEnd: tenant.trialEndsAt, expiresAt: tenant.trialEndsAt } });
     await prisma.site.updateMany({ where: { tenantId: tenant.id, deletedAt: null }, data: { status: "EXPIRED", isPublished: false } });
     await notifyLifecycleExpired(prisma, tenant, "trial");
-    await prisma.auditLog.create({ data: { tenantId: tenant.id, action: "TRIAL_AUTO_EXPIRED", entityType: "Tenant", entityId: tenant.id, metadata: { expiredAt: now.toISOString(), trialEndsAt: tenant.trialEndsAt.toISOString() } } }).catch(() => undefined);
+    await prisma.auditLog.create({ data: { actorUserId: null, tenantId: tenant.id, action: "TRIAL_AUTO_EXPIRED", entityType: "Tenant", entityId: tenant.id, metadata: { expiredAt: now.toISOString(), trialEndsAt: tenant.trialEndsAt.toISOString() } } }).catch(() => undefined);
   }
 
   const expiredSubscriptions = await prisma.subscription.findMany({
@@ -159,7 +154,7 @@ export async function syncCustomerLifecycle(prisma: LifecyclePrismaClient, optio
       tenant: { ...tenantScope, deletedAt: null },
     },
     take: limit,
-    select: { id: true, tenantId: true, currentPeriodEnd: true, expiresAt: true, tenant: { select: { id: true, ownerUserId: true, displayName: true } } },
+    select: { id: true, tenantId: true, currentPeriodEnd: true, expiresAt: true, tenant: { select: { id: true, ownerUserId: true } } },
   });
 
   for (const subscription of expiredSubscriptions) {
@@ -167,34 +162,56 @@ export async function syncCustomerLifecycle(prisma: LifecyclePrismaClient, optio
     await prisma.tenant.update({ where: { id: subscription.tenantId }, data: { status: "EXPIRED", gracePeriodEndsAt: null } });
     await prisma.site.updateMany({ where: { tenantId: subscription.tenantId, deletedAt: null }, data: { status: "EXPIRED", isPublished: false } });
     await notifyLifecycleExpired(prisma, subscription.tenant, "subscription");
-    await prisma.auditLog.create({ data: { tenantId: subscription.tenantId, action: "SUBSCRIPTION_AUTO_EXPIRED", entityType: "Subscription", entityId: subscription.id, metadata: { expiredAt: now.toISOString(), endAt: (subscription.currentPeriodEnd ?? subscription.expiresAt)?.toISOString() } } }).catch(() => undefined);
+    await prisma.auditLog.create({ data: { actorUserId: null, tenantId: subscription.tenantId, action: "SUBSCRIPTION_AUTO_EXPIRED", entityType: "Subscription", entityId: subscription.id, metadata: { expiredAt: now.toISOString(), endAt: (subscription.currentPeriodEnd ?? subscription.expiresAt)?.toISOString() } } }).catch(() => undefined);
   }
 
   return { expiredTrials: expiredTrials.length, expiredSubscriptions: expiredSubscriptions.length };
 }
 
-export async function applyTrialTimerToTenants(prisma: LifecyclePrismaClient, tenantIds: string[], days: number, actorId?: string | null) {
+export async function applyTrialTimerToTenants(prisma: LifecyclePrismaClient, tenantIds: string[], days: number | "keep") {
   const now = new Date();
-  const end = addDays(now, days);
-  const result = await prisma.tenant.updateMany({
+  const tenants = await prisma.tenant.findMany({
     where: { id: { in: tenantIds }, deletedAt: null, status: { in: ["TRIAL", "TRIAL_EXPIRED"] } },
-    data: { status: "TRIAL", trialStartedAt: now, trialEndsAt: end, trialDays: days, gracePeriodEndsAt: null },
+    select: { id: true, trialEndsAt: true },
   });
-  await prisma.subscription.updateMany({ where: { tenantId: { in: tenantIds }, deletedAt: null, status: { in: ["TRIAL", "EXPIRED"] } }, data: { status: "TRIAL", currentPeriodStart: now, currentPeriodEnd: end, expiresAt: end } });
-  await prisma.site.updateMany({ where: { tenantId: { in: tenantIds }, deletedAt: null }, data: { status: "PUBLISHED", isPublished: true } });
-  await prisma.auditLog.create({ data: { actorUserId: actorId ?? null, action: "TRIAL_TIMER_APPLIED", entityType: "Tenant", metadata: { count: result.count, tenantIds, days, endAt: end.toISOString() } } }).catch(() => undefined);
-  return result.count;
+
+  for (const tenant of tenants) {
+    const end = days === "keep" && tenant.trialEndsAt > now ? tenant.trialEndsAt : addDays(now, typeof days === "number" ? days : 14);
+    const appliedDays = Math.max(1, Math.ceil((end.getTime() - now.getTime()) / DAY_MS));
+    await prisma.tenant.update({ where: { id: tenant.id }, data: { status: "TRIAL", trialStartedAt: now, trialEndsAt: end, trialDays: appliedDays, gracePeriodEndsAt: null } });
+    await prisma.subscription.updateMany({ where: { tenantId: tenant.id, deletedAt: null, status: { in: ["TRIAL", "EXPIRED"] } }, data: { status: "TRIAL", currentPeriodStart: now, currentPeriodEnd: end, expiresAt: end } });
+  }
+
+  await prisma.site.updateMany({ where: { tenantId: { in: tenants.map((tenant) => tenant.id) }, deletedAt: null }, data: { status: "PUBLISHED", isPublished: true } });
+  await prisma.auditLog.create({ data: { actorUserId: null, action: "TRIAL_TIMER_APPLIED", entityType: "Tenant", metadata: { count: tenants.length, tenantIds, mode: days === "keep" ? "keep" : "days", days } } }).catch(() => undefined);
+  return tenants.length;
 }
 
-export async function applySubscriptionTimerToTenants(prisma: LifecyclePrismaClient, tenantIds: string[], preset: LifecycleDurationPreset, customDays: number, actorId?: string | null) {
+export async function applySubscriptionTimerToTenants(prisma: LifecyclePrismaClient, tenantIds: string[], preset: LifecycleDurationPreset, customDays: number) {
   const now = new Date();
-  const end = getLifecycleEndDate(now, preset, customDays);
-  const subscriptions = await prisma.subscription.findMany({ where: { tenantId: { in: tenantIds }, deletedAt: null, status: { in: ["ACTIVE", "EXPIRED", "PAST_DUE"] } }, select: { id: true, tenantId: true } });
-  for (const sub of subscriptions) {
-    await prisma.subscription.update({ where: { id: sub.id }, data: { status: "ACTIVE", activatedAt: now, currentPeriodStart: now, currentPeriodEnd: end, expiresAt: end } });
+  const subscriptions = await prisma.subscription.findMany({
+    where: { tenantId: { in: tenantIds }, deletedAt: null, status: { in: ["ACTIVE", "EXPIRED", "PAST_DUE"] } },
+    orderBy: { createdAt: "desc" },
+    select: { id: true, tenantId: true, currentPeriodStart: true, currentPeriodEnd: true, expiresAt: true },
+  });
+
+  const seen = new Set<string>();
+  const latestSubscriptions = subscriptions.filter((sub) => {
+    if (seen.has(sub.tenantId)) return false;
+    seen.add(sub.tenantId);
+    return true;
+  });
+
+  for (const sub of latestSubscriptions) {
+    const currentEnd = sub.currentPeriodEnd ?? sub.expiresAt;
+    const end = preset === "keep" && currentEnd && currentEnd > now
+      ? currentEnd
+      : getLifecycleEndDate(now, preset === "keep" ? "30" : preset, customDays);
+    await prisma.subscription.update({ where: { id: sub.id }, data: { status: "ACTIVE", activatedAt: sub.currentPeriodStart ?? now, currentPeriodStart: sub.currentPeriodStart ?? now, currentPeriodEnd: end, expiresAt: end } });
     await prisma.tenant.update({ where: { id: sub.tenantId }, data: { status: "ACTIVE", gracePeriodEndsAt: null } });
   }
-  await prisma.site.updateMany({ where: { tenantId: { in: subscriptions.map((item: { tenantId: string }) => item.tenantId) }, deletedAt: null }, data: { status: "PUBLISHED", isPublished: true } });
-  await prisma.auditLog.create({ data: { actorUserId: actorId ?? null, action: "SUBSCRIPTION_TIMER_APPLIED", entityType: "Subscription", metadata: { count: subscriptions.length, tenantIds, preset, customDays, endAt: end?.toISOString() ?? null } } }).catch(() => undefined);
-  return subscriptions.length;
+
+  await prisma.site.updateMany({ where: { tenantId: { in: latestSubscriptions.map((item) => item.tenantId) }, deletedAt: null }, data: { status: "PUBLISHED", isPublished: true } });
+  await prisma.auditLog.create({ data: { actorUserId: null, action: "SUBSCRIPTION_TIMER_APPLIED", entityType: "Subscription", metadata: { count: latestSubscriptions.length, tenantIds, preset, customDays } } }).catch(() => undefined);
+  return latestSubscriptions.length;
 }
