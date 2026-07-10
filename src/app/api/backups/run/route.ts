@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { createPrismaBackupJobRepository } from "@/modules/backups/prisma-backup-job-repository";
 import { createBackupJobService } from "@/modules/backups/backup-job-service";
 import { env } from "@/lib/env";
+import { isSupportedBackupType } from "@/modules/backups/backup-policy";
 
 export async function POST(request: NextRequest) {
   try {
@@ -14,11 +15,11 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json().catch(() => ({}));
-    const type = (body.type || "FULL") as "DATABASE" | "UPLOADS" | "FULL";
+    const requestedType = body.type || "FULL";
 
-    if (!["DATABASE", "UPLOADS", "FULL"].includes(type)) {
+    if (!isSupportedBackupType(requestedType)) {
       return NextResponse.json(
-        { error: "Invalid backup type. Must be DATABASE, UPLOADS, or FULL" },
+        { error: "Invalid backup type. Must be DATABASE or FULL" },
         { status: 400 }
       );
     }
@@ -38,7 +39,7 @@ export async function POST(request: NextRequest) {
     });
 
     const result = await service.runManualBackup({
-      type,
+      type: requestedType,
       initiatedById: "api",
       note: "API-triggered backup",
     });
@@ -53,6 +54,6 @@ export async function POST(request: NextRequest) {
 export async function GET() {
   return NextResponse.json({
     message: "Use POST to trigger a backup",
-    usage: { body: { type: "DATABASE | UPLOADS | FULL" } },
+    usage: { body: { type: "DATABASE | FULL" } },
   });
 }
