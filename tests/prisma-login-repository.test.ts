@@ -3,15 +3,19 @@ import { describe, expect, it } from "vitest";
 import { createPrismaLoginRepository } from "@/modules/auth/prisma-login-repository";
 
 describe("prisma login repository", () => {
-  it("loads active users by normalized email and stores hashed sessions", async () => {
+  it("loads active users by identifier and stores hashed sessions", async () => {
     const calls: string[] = [];
     const prisma = {
       user: {
-        async findFirst(args: { where: { email: string; deletedAt: null } }) {
-          calls.push(`find:${args.where.email}`);
+        async findFirst(args: unknown) {
+          const input = args as { where: { OR: Array<{ email?: string; phone?: string }> } };
+          const email = input.where.OR.find((item) => item.email)?.email ?? "";
+          const phone = input.where.OR.find((item) => item.phone)?.phone ?? null;
+          calls.push(`find:${email}:${phone ?? "none"}`);
           return {
             id: "user_1",
-            email: args.where.email,
+            email,
+            phone,
             name: "Ali Ahmed",
             role: "USER",
             passwordHash: "hash"
@@ -42,9 +46,12 @@ describe("prisma login repository", () => {
     };
     const repository = createPrismaLoginRepository(prisma);
 
-    await expect(repository.findUserByEmail("ali@example.com")).resolves.toEqual({
+    await expect(
+      repository.findUserByIdentifier({ email: "ali@example.com", phone: null })
+    ).resolves.toEqual({
       id: "user_1",
       email: "ali@example.com",
+      phone: null,
       name: "Ali Ahmed",
       role: "USER",
       passwordHash: "hash"
@@ -62,7 +69,7 @@ describe("prisma login repository", () => {
     });
 
     expect(calls).toEqual([
-      "find:ali@example.com",
+      "find:ali@example.com:none",
       "session:user_1:hashed-token"
     ]);
   });
