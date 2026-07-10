@@ -7,6 +7,14 @@ import {
   validateSiteSlug
 } from "@/modules/sites/slug-policy";
 import { getTemplateByCode } from "@/modules/themes/theme-registry";
+import {
+  createSignupContentFromStarter,
+  getDefaultTemplateStarterCode,
+  personalizeTemplateStarterData,
+  validateTemplateStarterData,
+  type TemplateSignupContent,
+  type TemplateStarterData
+} from "@/modules/themes/template-starter-data";
 
 export type ProvisionedAccountResult = {
   userId: string;
@@ -41,35 +49,13 @@ export type AccountCreationInput = {
     trialStartedAt: Date;
     trialEndsAt: Date;
   };
-  defaultContent: {
-    sections: Array<{
-      type: string;
-      title: string;
-      sortOrder: number;
-      data: Record<string, unknown>;
-    }>;
-    packages: Array<{
-      name: string;
-      subtitle: string;
-      priceAmount: number;
-      currency: string;
-      features: string[];
-      isHighlighted: boolean;
-      sortOrder: number;
-    }>;
-    extras: Array<{
-      name: string;
-      priceAmount: number;
-      currency: string;
-      iconKey: string;
-      sortOrder: number;
-    }>;
-  };
+  defaultContent: TemplateSignupContent;
 };
 
 export type SignupProvisioningRepository = {
   identifierExists(input: { email: string; phone: string | null }): Promise<boolean>;
   getUnavailableSlugs(): Promise<ReadonlySet<string>>;
+  getTemplateStarterData(templateCode: string): Promise<TemplateStarterData | null>;
   createAccountWithSite(
     input: AccountCreationInput
   ): Promise<ProvisionedAccountResult>;
@@ -92,7 +78,7 @@ export function createSignupProvisioningService({
   repository,
   now = () => new Date(),
   trialDays = 14,
-  defaultTemplateCode = "noir-gold"
+  defaultTemplateCode = getDefaultTemplateStarterCode()
 }: SignupProvisioningServiceOptions): SignupProvisioningService {
   return {
     async provisionTrialSite(rawInput) {
@@ -103,6 +89,14 @@ export function createSignupProvisioningService({
       if (!template || template.status !== "published") {
         throw new Error("Selected template is not available");
       }
+
+      const starter = await repository.getTemplateStarterData(templateCode);
+      if (!starter) {
+        throw new Error("Selected template is not available");
+      }
+
+      const personalizedStarter = personalizeTemplateStarterData(starter, input.name);
+      validateTemplateStarterData(personalizedStarter);
 
       if (await repository.identifierExists({ email: input.email, phone: input.phone })) {
         throw new Error("رقم الهاتف أو البريد الإلكتروني مستخدم بالفعل");
@@ -129,21 +123,17 @@ export function createSignupProvisioningService({
         },
         site: {
           slug,
-          title: input.name,
-          description: "موقع مصور احترافي مبني عبر FrameID.",
-          themeCode: template.themeCode,
-          templateCode: template.code
+          title: personalizedStarter.title,
+          description: personalizedStarter.description,
+          themeCode: personalizedStarter.themeCode,
+          templateCode: personalizedStarter.code
         },
         subscription: {
           status: "TRIAL",
           trialStartedAt: currentTime,
           trialEndsAt
         },
-        defaultContent: {
-          sections: createDefaultSections(input.name),
-          packages: createDefaultPackages(),
-          extras: createDefaultExtras()
-        }
+        defaultContent: createSignupContentFromStarter(personalizedStarter)
       });
 
       return {
@@ -192,71 +182,4 @@ function removeGenericStudioSuffix(slug: string): string {
 
 function isUsableSlug(candidate: string, unavailableSlugs: ReadonlySet<string>) {
   return validateSiteSlug(candidate).ok && !unavailableSlugs.has(candidate);
-}
-
-function createDefaultSections(
-  displayName: string
-): AccountCreationInput["defaultContent"]["sections"] {
-  return [
-    {
-      type: "hero",
-      title: "الرئيسية",
-      sortOrder: 0,
-      data: {
-        photographerName: displayName,
-        headline: displayName,
-        subheadline: "نصنع ذكريات تبقى للأبد — تصوير حفلات الزفاف والخطوبة والجلسات الخاصة بأسلوب فاخر."
-      }
-    },
-    {
-      type: "contact",
-      title: "التواصل",
-      sortOrder: 10,
-      data: {
-        callToAction: "احجز الآن"
-      }
-    }
-  ];
-}
-
-function createDefaultPackages(): AccountCreationInput["defaultContent"]["packages"] {
-  return [
-    {
-      name: "الباقة البرونزية",
-      subtitle: "جلسة تصوير بسيطة",
-      priceAmount: 2500,
-      currency: "EGP",
-      features: ["3 ساعات", "جميع الصور المعدلة", "معرض إلكتروني", "تسليم خلال 7 أيام"],
-      isHighlighted: false,
-      sortOrder: 0
-    },
-    {
-      name: "الباقة الفضية",
-      subtitle: "نصف يوم تصوير",
-      priceAmount: 5000,
-      currency: "EGP",
-      features: ["نصف يوم", "جميع الصور المعدلة", "ألبوم فاخر", "فيديو Highlight"],
-      isHighlighted: true,
-      sortOrder: 1
-    },
-    {
-      name: "الباقة الذهبية",
-      subtitle: "تغطية يوم كامل",
-      priceAmount: 8500,
-      currency: "EGP",
-      features: ["يوم كامل", "تصوير العريس والعروسة", "فيديو سينمائي", "ألبوم فاخر", "معرض إلكتروني", "تسليم سريع"],
-      isHighlighted: false,
-      sortOrder: 2
-    }
-  ];
-}
-
-function createDefaultExtras(): AccountCreationInput["defaultContent"]["extras"] {
-  return [
-    { name: "فيديو سينمائي", priceAmount: 3000, currency: "EGP", iconKey: "video", sortOrder: 0 },
-    { name: "Drone", priceAmount: 2500, currency: "EGP", iconKey: "camera", sortOrder: 1 },
-    { name: "جلسة قبل الزفاف", priceAmount: 2000, currency: "EGP", iconKey: "camera", sortOrder: 2 },
-    { name: "ألبوم فاخر", priceAmount: 1500, currency: "EGP", iconKey: "album", sortOrder: 3 },
-    { name: "طباعة إضافية", priceAmount: 0, currency: "EGP", iconKey: "album", sortOrder: 4 }
-  ];
 }

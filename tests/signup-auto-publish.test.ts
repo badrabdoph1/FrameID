@@ -2,6 +2,13 @@ import { describe, expect, it } from "vitest";
 
 import { createPrismaSignupProvisioningRepository } from "@/modules/onboarding/prisma-signup-repository";
 import type { AccountCreationInput } from "@/modules/onboarding/signup-provisioning";
+import {
+  createSignupContentFromStarter,
+  getTemplateStarterData,
+  personalizeTemplateStarterData
+} from "@/modules/themes/template-starter-data";
+
+const starter = personalizeTemplateStarterData(getTemplateStarterData("noir-gold")!, "Ali Ahmed");
 
 const accountInput: AccountCreationInput = {
   user: {
@@ -18,26 +25,24 @@ const accountInput: AccountCreationInput = {
   },
   site: {
     slug: "ali-ahmed",
-    title: "Ali Ahmed",
-    description: "Premium photography",
-    themeCode: "noir-gold",
-    templateCode: "noir-gold"
+    title: starter.title,
+    description: starter.description,
+    themeCode: starter.themeCode,
+    templateCode: starter.code
   },
   subscription: {
     status: "TRIAL",
     trialStartedAt: new Date("2026-07-10T12:00:00.000Z"),
     trialEndsAt: new Date("2026-07-24T12:00:00.000Z")
   },
-  defaultContent: {
-    sections: [],
-    packages: [],
-    extras: []
-  }
+  defaultContent: createSignupContentFromStarter(starter)
 };
 
 describe("signup site publication", () => {
   it("creates the public site as published inside the signup transaction", async () => {
     let createdSiteData: Record<string, unknown> | null = null;
+    let createdContactData: Record<string, unknown> | null = null;
+    let createdSeoData: Record<string, unknown> | null = null;
 
     const transaction = {
       theme: { async upsert() { return { id: "theme_1" }; } },
@@ -51,9 +56,14 @@ describe("signup site publication", () => {
         }
       },
       siteThemeConfig: { async create() { return { id: "config_1" }; } },
-      siteSection: { async createMany() { return { count: 0 }; } },
-      package: { async createMany() { return { count: 0 }; } },
-      extraService: { async createMany() { return { count: 0 }; } },
+      siteSection: { async createMany() { return { count: accountInput.defaultContent.sections.length }; } },
+      contactProfile: { async create(args: { data: Record<string, unknown> }) { createdContactData = args.data; return { id: "contact_1" }; } },
+      mediaAsset: { async create() { return { id: `asset_${Math.random()}` }; } },
+      galleryAlbum: { async create() { return { id: "album_1" }; } },
+      galleryImage: { async create() { return { id: `image_${Math.random()}` }; } },
+      sEOSettings: { async create(args: { data: Record<string, unknown> }) { createdSeoData = args.data; return { id: "seo_1" }; } },
+      package: { async createMany() { return { count: accountInput.defaultContent.packages.length }; } },
+      extraService: { async createMany() { return { count: accountInput.defaultContent.extras.length }; } },
       subscription: {
         async create() {
           return { id: "subscription_1", status: "TRIAL" as const };
@@ -64,6 +74,7 @@ describe("signup site publication", () => {
     const prisma = {
       user: { async count() { return 0; } },
       site: { async findMany() { return []; } },
+      template: { async findFirst() { return null; } },
       async $transaction<T>(callback: (tx: typeof transaction) => Promise<T>) {
         return callback(transaction);
       }
@@ -75,7 +86,14 @@ describe("signup site publication", () => {
     expect(createdSiteData).toMatchObject({
       slug: "ali-ahmed",
       status: "PUBLISHED",
-      isPublished: true
+      isPublished: true,
+      title: "Ali Ahmed"
+    });
+    expect(createdContactData).toMatchObject({
+      studioName: "Ali Ahmed"
+    });
+    expect(createdSeoData).toMatchObject({
+      title: "Ali Ahmed — تصوير زفاف فاخر"
     });
     expect(result).toMatchObject({
       siteId: "site_1",

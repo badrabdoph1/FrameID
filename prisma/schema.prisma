@@ -305,6 +305,7 @@ model Package {
   priceAmount   Int
   currency      String    @default("EGP")
   features      Json
+  imageUrl      String?
   isHighlighted Boolean   @default(false)
   isActive      Boolean   @default(true)
   sortOrder     Int       @default(0)
@@ -471,7 +472,7 @@ model Plan {
   subscriptions   Subscription[]
   paymentRequests PaymentRequest[]
   fromChanges     SubscriptionChange[] @relation("FromPlan")
-  toChanges       SubscriptionChange[] @relation("ToPlan")
+  toChanges        SubscriptionChange[] @relation("ToPlan")
 }
 
 model Subscription {
@@ -479,80 +480,112 @@ model Subscription {
   tenantId           String
   planId             String?
   status             SubscriptionStatus @default(TRIAL)
-  currentPeriodStart DateTime?
-  currentPeriodEnd   DateTime?
-  activatedAt        DateTime?
-  expiresAt          DateTime?
-  createdAt          DateTime           @default(now())
-  updatedAt          DateTime           @updatedAt
+  currentPeriodStart DateTime
+  currentPeriodEnd   DateTime
+  expiresAt          DateTime
+  cancelledAt        DateTime?
   deletedAt          DateTime?
 
-  tenant   Tenant               @relation(fields: [tenantId], references: [id])
-  plan     Plan?                @relation(fields: [planId], references: [id])
-  payments PaymentRequest[]
-  changes  SubscriptionChange[]
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  plan   Plan?  @relation(fields: [planId], references: [id])
 
-  @@index([tenantId, status, deletedAt])
+  changesFrom SubscriptionChange[] @relation("FromPlan")
+  changesTo   SubscriptionChange[] @relation("ToPlan")
+
+  @@index([tenantId, status])
+  @@index([expiresAt])
 }
 
 model SubscriptionChange {
-  id             String              @id @default(cuid())
-  subscriptionId String
-  fromPlanId     String?
-  toPlanId       String?
-  fromStatus     SubscriptionStatus?
-  toStatus       SubscriptionStatus?
-  changeType     String?
-  initiatedById  String?
-  requestedById  String?
-  reason         String?
-  note           String?
-  effectiveAt    DateTime?
-  createdAt      DateTime            @default(now())
-  deletedAt      DateTime?
+  id         String   @id @default(cuid())
+  tenantId   String
+  fromPlanId String?
+  toPlanId   String?
+  reason     String?
+  createdAt  DateTime @default(now())
 
-  subscription Subscription @relation(fields: [subscriptionId], references: [id])
-  fromPlan     Plan?        @relation("FromPlan", fields: [fromPlanId], references: [id])
-  toPlan       Plan?        @relation("ToPlan", fields: [toPlanId], references: [id])
-
-  @@index([subscriptionId, createdAt])
-  @@index([fromPlanId])
-  @@index([toPlanId])
+  fromPlan Plan? @relation("FromPlan", fields: [fromPlanId], references: [id])
+  toPlan   Plan? @relation("ToPlan", fields: [toPlanId], references: [id])
 }
 
 model PaymentRequest {
-  id               String        @id @default(cuid())
-  tenantId         String
-  subscriptionId   String
-  planId           String?
-  method           PaymentMethod
-  paymentAccountId String?
-  amount           Int
-  currency         String        @default("EGP")
-  status           PaymentStatus @default(DRAFT)
-  reference        String?
-  proofAssetId     String?
-  reviewedById     String?
-  adminNote        String?
-  rejectionReason  String?
-  submittedAt      DateTime?
-  reviewedAt       DateTime?
-  createdAt        DateTime      @default(now())
-  deletedAt        DateTime?
+  id                String        @id @default(cuid())
+  tenantId          String
+  planId            String?
+  amount            Int
+  currency          String        @default("EGP")
+  method            PaymentMethod
+  status            PaymentStatus @default(DRAFT)
+  reference         String?
+  note              String?
+  proofAssetId      String?
+  reviewedByUserId  String?
+  reviewedAt        DateTime?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  deletedAt         DateTime?
 
-  tenant         Tenant              @relation(fields: [tenantId], references: [id])
-  subscription   Subscription        @relation(fields: [subscriptionId], references: [id])
-  plan           Plan?               @relation(fields: [planId], references: [id])
-  paymentAccount PaymentAccount?     @relation(fields: [paymentAccountId], references: [id])
-  proofAsset     MediaAsset?         @relation("PaymentProof", fields: [proofAssetId], references: [id])
-  reviewedBy     User?               @relation("PaymentReviewer", fields: [reviewedById], references: [id])
-  logs           PaymentRequestLog[]
+  tenant       Tenant      @relation(fields: [tenantId], references: [id])
+  plan         Plan?       @relation(fields: [planId], references: [id])
+  proofAsset   MediaAsset? @relation("PaymentProof", fields: [proofAssetId], references: [id])
+  reviewer     User?       @relation("PaymentReviewer", fields: [reviewedByUserId], references: [id])
+  logs         PaymentRequestLog[]
 
-  @@index([status, createdAt])
-  @@index([tenantId])
-  @@index([proofAssetId])
-  @@index([reviewedById])
   @@index([tenantId, status])
+  @@index([proofAssetId])
+}
+
+model PaymentRequestLog {
+  id             String         @id @default(cuid())
+  requestId      String
+  fromStatus     PaymentStatus?
+  toStatus       PaymentStatus?
+  action         String         @default("STATUS_CHANGED")
+  actorUserId    String?
+  actorName      String?
+  metadata       Json?
+  createdAt      DateTime       @default(now())
+
+  request PaymentRequest @relation(fields: [requestId], references: [id])
+
+  @@index([requestId, createdAt])
+}
+
+model PaymentAccount {
+  id                String        @id @default(cuid())
+  method            PaymentMethod
+  displayName       String
+  accountIdentifier String        @default("")
+  accountName       String        @default("")
+  accountNumber     String        @default("")
+  phoneNumber       String?
+  bankName          String?
+  qrAssetId         String?
+  isActive          Boolean       @default(true)
+  sortOrder         Int           @default(0)
+  deletedAt         DateTime?
+
+  qrAsset MediaAsset? @relation("PaymentQRCode", fields: [qrAssetId], references: [id])
+
+  @@index([method, isActive, sortOrder])
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String?
+  action     String
+  entityType String
+  entityId   String?
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  tenant  Tenant? @relation(fields: [tenantId], references: [id])
+  tenantId String?
+  actor   User?   @relation("AuditActor", fields: [actorId], references: [id])
+
+  @@index([actorId, createdAt])
+  @@index([tenantId, createdAt])
+  @@index([entityType, entityId])
 }
 
 model Notification {
@@ -561,78 +594,81 @@ model Notification {
   type      String
   title     String
   body      String
-  priority  String    @default("info")
   readAt    DateTime?
   createdAt DateTime  @default(now())
   deletedAt DateTime?
 
   tenant Tenant @relation(fields: [tenantId], references: [id])
 
-  @@index([tenantId, createdAt])
+  @@index([tenantId, readAt, createdAt])
+}
+
+model NotificationLog {
+  id        String    @id @default(cuid())
+  tenantId  String?
+  category  String?
+  type      String
+  title     String
+  body      String?
+  createdAt DateTime  @default(now())
+  deletedAt DateTime?
+
+  @@index([tenantId, category, createdAt])
+}
+
+model AdminUser {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  phone        String?  @unique
+  passwordHash String
+  name         String
+  role         UserRole @default(SUPER_ADMIN)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }
 
 model AdminNote {
-  id        String    @id @default(cuid())
+  id        String   @id @default(cuid())
   tenantId  String
   authorId  String
   body      String
-  createdAt DateTime  @default(now())
-  deletedAt DateTime?
+  createdAt DateTime @default(now())
 
   tenant Tenant @relation(fields: [tenantId], references: [id])
   author User   @relation("AdminNoteAuthor", fields: [authorId], references: [id])
 
   @@index([tenantId, createdAt])
-  @@index([authorId, createdAt])
-}
-
-model AuditLog {
-  id          String   @id @default(cuid())
-  actorUserId String?
-  tenantId    String?
-  action      String
-  entityType  String
-  entityId    String?
-  metadata    Json?
-  ipAddress   String?
-  userAgent   String?
-  createdAt   DateTime @default(now())
-
-  actor  User?   @relation("AuditActor", fields: [actorUserId], references: [id])
-  tenant Tenant? @relation(fields: [tenantId], references: [id])
-
-  @@index([tenantId, createdAt])
-  @@index([actorUserId, createdAt])
 }
 
 model ImpersonationSession {
-  id          String    @id @default(cuid())
-  adminUserId String
-  tenantId    String
-  reason      String
-  startedAt   DateTime  @default(now())
-  endedAt     DateTime?
+  id        String   @id @default(cuid())
+  adminId   String
+  tenantId  String
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+  revokedAt DateTime?
 
-  admin  User   @relation("ImpersonationAdmin", fields: [adminUserId], references: [id])
+  admin  User   @relation("ImpersonationAdmin", fields: [adminId], references: [id])
   tenant Tenant @relation(fields: [tenantId], references: [id])
 
-  @@index([adminUserId, startedAt])
-  @@index([tenantId, startedAt])
+  @@index([adminId, createdAt])
+  @@index([tenantId, createdAt])
 }
 
 model SupportCase {
-  id        String            @id @default(cuid())
-  tenantId  String
-  subject   String
-  status    SupportCaseStatus @default(OPEN)
-  priority  String            @default("normal")
-  createdAt DateTime          @default(now())
-  updatedAt DateTime          @updatedAt
-  deletedAt DateTime?
+  id          String            @id @default(cuid())
+  tenantId    String
+  openedById  String?
+  status      SupportCaseStatus @default(OPEN)
+  subject     String
+  description String
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
 
   tenant Tenant @relation(fields: [tenantId], references: [id])
 
-  @@index([tenantId, status, createdAt])
+  @@index([tenantId, status])
 }
 
 model FeatureFlag {
@@ -643,226 +679,43 @@ model FeatureFlag {
   siteId    String?
   enabled   Boolean          @default(false)
   value     Json?
-  createdAt DateTime         @default(now())
   updatedAt DateTime         @updatedAt
 
   tenant Tenant? @relation(fields: [tenantId], references: [id])
   site   Site?   @relation(fields: [siteId], references: [id])
 
   @@unique([key, scope, tenantId, siteId])
-  @@index([tenantId])
-  @@index([siteId])
-}
-
-model BackupSettings {
-  id             String     @id @default(cuid())
-  type           BackupType @unique
-  enabled        Boolean    @default(false)
-  schedule       String
-  retentionCount Int        @default(10)
-  compression    String     @default("zstd")
-  encryption     Boolean    @default(true)
-  githubBranch   String     @default("platform-backups")
-  lastRunAt      DateTime?
-  nextRunAt      DateTime?
-  updatedAt      DateTime   @updatedAt
 }
 
 model BackupJob {
-  id             String       @id @default(cuid())
-  type           BackupType
-  status         BackupStatus @default(PENDING)
-  trigger        String
-  initiatedById  String?
-  note           String?
-  sizeBytes      Int?
-  checksumSha256 String?
-  localPath      String?
-  githubPath     String?
-  startedAt      DateTime?
-  completedAt    DateTime?
-  createdAt      DateTime     @default(now())
+  id               String       @id @default(cuid())
+  type             BackupType
+  status           BackupStatus @default(PENDING)
+  triggeredById    String?
+  filePath         String?
+  sizeBytes        Int?
+  checksumSha256   String?
+  errorMessage     String?
+  metadata         Json?
+  createdAt        DateTime     @default(now())
+  completedAt      DateTime?
 
-  manifest    BackupManifest?
-  initiatedBy User?           @relation("BackupInitiator", fields: [initiatedById], references: [id])
+  triggeredBy User? @relation("BackupInitiator", fields: [triggeredById], references: [id])
 
-  @@index([type, createdAt])
   @@index([status, createdAt])
-  @@index([initiatedById, createdAt])
-}
-
-model BackupManifest {
-  id                       String   @id @default(cuid())
-  backupJobId              String   @unique
-  platformVersion          String
-  gitCommitSha             String?
-  databaseMigrationVersion String?
-  usersCount               Int
-  tenantsCount             Int
-  sitesCount               Int
-  mediaFilesCount          Int
-  compressedSizeBytes      Int
-  compressionAlgorithm     String
-  encryptionEnabled        Boolean
-  sha256Checksum           String
-  localVerificationStatus  String
-  githubUploadStatus       String
-  durationMs               Int?
-  uploadDurationMs         Int?
-  createdAt                DateTime @default(now())
-
-  backupJob BackupJob @relation(fields: [backupJobId], references: [id])
 }
 
 model RestoreJob {
-  id                 String     @id @default(cuid())
-  backupId           String
-  backupJobId        String?
-  type               BackupType
-  status             String     @default("PENDING")
-  initiatedById      String?
-  manifest           Json?
-  validationJson     Json?
-  resultJson         Json?
-  postValidationJson Json?
-  startedAt          DateTime?
-  completedAt        DateTime?
-  errorMessage       String?
-  createdAt          DateTime   @default(now())
+  id              String       @id @default(cuid())
+  backupJobId     String
+  status          BackupStatus @default(PENDING)
+  triggeredById   String?
+  targetDatabase  String?
+  errorMessage    String?
+  createdAt       DateTime     @default(now())
+  completedAt     DateTime?
 
-  initiatedBy User? @relation("RestoreInitiator", fields: [initiatedById], references: [id])
+  triggeredBy User? @relation("RestoreInitiator", fields: [triggeredById], references: [id])
 
-  @@index([backupId, createdAt])
   @@index([status, createdAt])
-}
-
-model AdminUser {
-  id           String    @id @default(cuid())
-  email        String    @unique
-  phone        String?   @unique
-  name         String
-  passwordHash String?
-  role         String    @default("SUPER_ADMIN")
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-
-  sessions AdminSession[]
-}
-
-model AdminSession {
-  id          String   @id @default(cuid())
-  adminUserId String
-  tokenHash   String   @unique
-  expiresAt   DateTime
-  revokedAt   DateTime?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  adminUser AdminUser @relation(fields: [adminUserId], references: [id])
-
-  @@index([adminUserId, expiresAt])
-  @@index([expiresAt, revokedAt])
-}
-
-model ErrorLog {
-  id             String   @id @default(cuid())
-  code           String
-  message        String
-  category       String
-  level          String
-  requestId      String?
-  correlationId  String?
-  route          String?
-  method         String?
-  userId         String?
-  tenantId       String?
-  userAgent      String?
-  platform       String?
-  browser        String?
-  stack          String?
-  cause          String?
-  metadata       Json?
-  resolved       Boolean  @default(false)
-  resolvedAt     DateTime?
-  resolvedBy     String?
-  resolutionNote String?
-  createdAt      DateTime @default(now())
-
-  @@index([code, createdAt])
-  @@index([category, createdAt])
-  @@index([level, createdAt])
-  @@index([userId])
-  @@index([createdAt])
-}
-
-model NotificationLog {
-  id        String    @id @default(cuid())
-  type      String
-  title     String
-  body      String?
-  category  String?
-  userId    String?
-  tenantId  String?
-  readAt    DateTime?
-  createdAt DateTime  @default(now())
-  deletedAt DateTime?
-
-  @@index([userId, createdAt])
-  @@index([tenantId, createdAt])
-  @@index([type, createdAt])
-  @@index([createdAt])
-}
-
-model PaymentSettings {
-  id            String        @id @default(cuid())
-  paymentMethod PaymentMethod @unique
-  isActive      Boolean       @default(true)
-  label         String?
-  description   String?
-  config        Json          @default("{}")
-  qrCodeAssetId String?
-  sortOrder     Int           @default(0)
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
-
-  qrCodeAsset MediaAsset?     @relation("PaymentQRCode", fields: [qrCodeAssetId], references: [id])
-  accounts    PaymentAccount[]
-}
-
-model PaymentAccount {
-  id                String        @id @default(cuid())
-  paymentSettingsId String
-  label             String
-  accountIdentifier String        @default("")
-  accountName       String        @default("")
-  accountNumber     String        @default("")
-  bankName          String?
-  instructions      String?
-  isActive          Boolean       @default(true)
-  sortOrder         Int           @default(0)
-  createdAt         DateTime      @default(now())
-  updatedAt         DateTime      @updatedAt
-  deletedAt         DateTime?
-
-  paymentSettings PaymentSettings @relation(fields: [paymentSettingsId], references: [id])
-  requests        PaymentRequest[]
-
-  @@index([paymentSettingsId, isActive])
-}
-
-model PaymentRequestLog {
-  id               String         @id @default(cuid())
-  paymentRequestId String
-  action           String         @default("STATUS_CHANGED")
-  actorUserId      String?
-  actorName        String?
-  fromStatus       PaymentStatus?
-  toStatus         PaymentStatus?
-  note             String?
-  metadata         Json?
-  createdAt        DateTime       @default(now())
-
-  paymentRequest PaymentRequest @relation(fields: [paymentRequestId], references: [id])
-
-  @@index([paymentRequestId, createdAt])
 }
