@@ -30,8 +30,6 @@ export default async function AdminBillingWorkspacePage() {
     rejectedThisMonth,
     subscriptionStats,
     expiringSubscriptions,
-    plans,
-    paymentSettings,
     recentPayments,
   ] = await Promise.all([
     prisma.paymentRequest.count({
@@ -69,18 +67,8 @@ export default async function AdminBillingWorkspacePage() {
         plan: { select: { name: true } },
       },
     }),
-    prisma.plan.findMany({
-      where: { deletedAt: null },
-      orderBy: [{ isActive: "desc" }, { priceAmount: "asc" }],
-      take: 6,
-      select: { id: true, name: true, code: true, priceAmount: true, currency: true, billingInterval: true, isActive: true },
-    }),
-    prisma.paymentSettings.findMany({
-      orderBy: [{ isActive: "desc" }, { sortOrder: "asc" }],
-      select: { id: true, paymentMethod: true, label: true, isActive: true, _count: { select: { accounts: true } } },
-    }),
     prisma.paymentRequest.findMany({
-      where: { deletedAt: null },
+      where: { status: { in: ["SUBMITTED", "PENDING", "UNDER_REVIEW"] }, deletedAt: null },
       orderBy: { createdAt: "desc" },
       take: 8,
       select: {
@@ -112,11 +100,18 @@ export default async function AdminBillingWorkspacePage() {
     >
       <div className="grid gap-4">
         <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <MetricCard label="طلبات معلقة" value={pendingPayments} icon={Clock} tone={pendingPayments > 0 ? "warning" : "success"} href="/admin/payments" />
+          <MetricCard label="طلبات معلقة" value={pendingPayments} icon={Clock} tone={pendingPayments > 0 ? "warning" : "success"} href="/admin/payments?status=pending" />
           <MetricCard label="إيراد الشهر" value={formatMoney(monthRevenue)} icon={WalletCards} tone="gold" href="/admin/payments" />
           <MetricCard label="اشتراكات نشطة" value={subscriptionCount.get("ACTIVE") ?? 0} icon={CheckCircle2} tone="success" href="/admin/subscriptions" />
           <MetricCard label="مرفوض هذا الشهر" value={rejectedThisMonth} icon={XCircle} tone={rejectedThisMonth > 0 ? "danger" : "neutral"} href="/admin/payments" />
         </section>
+
+        <nav aria-label="إدارة المال" className="grid gap-2 border-y border-white/8 py-3 sm:grid-cols-2 xl:grid-cols-4">
+          <QuickLink href="/admin/payments?status=pending" icon={CreditCard} label="مراجعة المدفوعات" />
+          <QuickLink href="/admin/subscriptions" icon={BadgeCheck} label="إدارة الاشتراكات" />
+          <QuickLink href="/admin/plans" icon={Banknote} label="إدارة الباقات" />
+          <QuickLink href="/admin/settings/payment" icon={Settings} label="إعدادات الدفع" />
+        </nav>
 
         <section className="grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
           <WorkspacePanel
@@ -164,40 +159,17 @@ export default async function AdminBillingWorkspacePage() {
           </WorkspacePanel>
         </section>
 
-        <section className="grid gap-4 xl:grid-cols-[1fr_1fr]">
-          <WorkspacePanel title="الباقات" description="إدارة الأسعار والميزات بدون الدخول لمكان منفصل كل مرة." href="/admin/plans" cta="إدارة الباقات">
-            <div className="grid gap-2">
-              {plans.map((plan) => (
-                <Link key={plan.id} href="/admin/plans" className="flex items-center justify-between gap-3 rounded-2xl border border-white/8 bg-white/[0.035] p-3 no-underline transition hover:border-amber-300/24 hover:bg-amber-300/8">
-                  <span className="min-w-0">
-                    <strong className="block truncate text-sm font-black text-[#fff7e8]">{plan.name}</strong>
-                    <small className="mt-1 block truncate text-xs font-bold text-white/38">{plan.code} · {plan.billingInterval}</small>
-                  </span>
-                  <span className="shrink-0 text-left">
-                    <strong className="block text-sm font-black text-[#f3cf73]">{formatMoney(plan.priceAmount, plan.currency)}</strong>
-                    <small className={plan.isActive ? "text-xs font-black text-emerald-300" : "text-xs font-black text-white/35"}>{plan.isActive ? "فعالة" : "متوقفة"}</small>
-                  </span>
-                </Link>
-              ))}
-            </div>
-          </WorkspacePanel>
-
-          <WorkspacePanel title="وسائل الدفع" description="حالة قنوات الدفع والحسابات المرتبطة بها." href="/admin/settings/payment" cta="إعدادات الدفع">
-            <div className="grid gap-2">
-              {paymentSettings.length === 0 ? <EmptyState text="لا توجد وسائل دفع مفعلة." /> : paymentSettings.map((method) => (
-                <Link key={method.id} href="/admin/settings/payment" className="flex items-center justify-between gap-3 rounded-2xl border border-white/8 bg-white/[0.035] p-3 no-underline transition hover:border-amber-300/24 hover:bg-amber-300/8">
-                  <span className="min-w-0">
-                    <strong className="block truncate text-sm font-black text-[#fff7e8]">{method.label ?? method.paymentMethod}</strong>
-                    <small className="mt-1 block text-xs font-bold text-white/38">{method._count.accounts} حسابات مرتبطة</small>
-                  </span>
-                  <span className={method.isActive ? "rounded-full bg-emerald-300/10 px-2.5 py-1 text-xs font-black text-emerald-300" : "rounded-full bg-white/8 px-2.5 py-1 text-xs font-black text-white/38"}>{method.isActive ? "مفعل" : "مخفي"}</span>
-                </Link>
-              ))}
-            </div>
-          </WorkspacePanel>
-        </section>
       </div>
     </AdminPageShell>
+  );
+}
+
+function QuickLink({ href, icon: Icon, label }: { href: string; icon: LucideIcon; label: string }) {
+  return (
+    <Link href={href} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.035] px-3 text-sm font-black text-white/65 no-underline transition hover:border-amber-300/25 hover:bg-amber-300/8 hover:text-[#fff7e8]">
+      <Icon className="size-4 text-[#f3cf73]" />
+      {label}
+    </Link>
   );
 }
 
