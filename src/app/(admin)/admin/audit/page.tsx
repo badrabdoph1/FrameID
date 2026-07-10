@@ -95,7 +95,7 @@ export default async function AdminAuditPage({ searchParams }: Props) {
   if (action) where.action = { contains: action, mode: "insensitive" };
   if (entityType) where.entityType = { contains: entityType, mode: "insensitive" };
   if (tenantId) where.tenantId = tenantId;
-  if (actorId) where.actorUserId = actorId;
+  if (actorId) where.actorId = actorId;
   if (from) createdAt.gte = from;
   if (to) createdAt.lte = to;
   if (Object.keys(createdAt).length > 0) where.createdAt = createdAt;
@@ -194,7 +194,7 @@ export default async function AdminAuditPage({ searchParams }: Props) {
                   </div>
                   <div className="min-w-0 text-sm font-bold text-white/62">
                     <span className="block truncate">{entry.actor?.name ?? "النظام"}</span>
-                    <span className="block truncate text-xs text-white/32">{entry.actor?.email ?? entry.actorUserId ?? "system"}</span>
+                    <span className="block truncate text-xs text-white/32">{entry.actor?.email ?? entry.actorId ?? "system"}</span>
                   </div>
                   <div className="min-w-0 text-sm font-bold text-white/62">
                     {entry.tenant ? (
@@ -256,23 +256,6 @@ function MetricCard({ label, value, icon: Icon, danger }: { label: string; value
       <Icon className={danger ? "size-5 text-red-300" : "size-5 text-amber-300"} />
       <p className="mt-3 text-xs font-black text-white/38">{label}</p>
       <p className={danger ? "mt-1 text-2xl font-black text-red-300" : "mt-1 text-2xl font-black text-[#fff7e8]"}>{value}</p>
-    </div>
-  );
-}
-
-function InsightPanel({ title, items }: { title: string; items: { label: string; count: number }[] }) {
-  return (
-    <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-4">
-      <h3 className="text-sm font-black text-[#fff7e8]">{title}</h3>
-      <div className="mt-3 grid gap-2">
-        {items.length === 0 ? <p className="text-xs font-bold text-white/35">لا توجد بيانات.</p> : null}
-        {items.map((item) => (
-          <div key={item.label} className="flex items-center justify-between gap-3 rounded-xl bg-black/18 px-3 py-2">
-            <span className="truncate text-xs font-bold text-white/56">{item.label}</span>
-            <strong className="text-xs font-black text-amber-200">{item.count}</strong>
-          </div>
-        ))}
-      </div>
     </div>
   );
 }
