@@ -1,5 +1,3 @@
-import "server-only";
-
 export const SUPPORTED_BACKUP_TYPES = ["DATABASE", "FULL"] as const;
 
 export type SupportedBackupType = (typeof SUPPORTED_BACKUP_TYPES)[number];
