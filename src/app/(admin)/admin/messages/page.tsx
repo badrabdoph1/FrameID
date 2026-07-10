@@ -72,7 +72,7 @@ export default async function AdminMessagesPage({ searchParams }: Props) {
         displayName: true,
         status: true,
         owner: { select: { email: true, name: true } },
-        subscriptions: { where: { deletedAt: null, status: "ACTIVE" }, orderBy: { createdAt: "desc" }, take: 1, select: { currentPeriodEnd: true, expiresAt: true } },
+        subscriptions: { where: { deletedAt: null, status: "ACTIVE" }, orderBy: { currentPeriodEnd: "desc" }, take: 1, select: { currentPeriodEnd: true, expiresAt: true } },
       },
     }),
     prisma.notificationLog.findMany({ where: { category: CUSTOMER_BROADCAST_CATEGORY, deletedAt: null }, orderBy: { createdAt: "desc" }, take: 8, select: { id: true, type: true, title: true, body: true, tenantId: true, createdAt: true } }),
