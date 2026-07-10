@@ -78,13 +78,11 @@ export default async function AdminCustomer360Page({ params }: Props) {
         select: { id: true, amount: true, currency: true, method: true, status: true, reference: true, createdAt: true, reviewedAt: true },
       },
       supportCases: {
-        where: { deletedAt: null },
         orderBy: { createdAt: "desc" },
         take: 8,
-        select: { id: true, subject: true, status: true, priority: true, createdAt: true, updatedAt: true },
+        select: { id: true, subject: true, status: true, createdAt: true, updatedAt: true },
       },
       adminNotes: {
-        where: { deletedAt: null },
         orderBy: { createdAt: "desc" },
         take: 5,
         include: { author: { select: { name: true, email: true } } },
@@ -179,7 +177,7 @@ export default async function AdminCustomer360Page({ params }: Props) {
       <section className="grid gap-4 xl:grid-cols-3">
         <Panel title={`الدعم · ${openSupportCount.toLocaleString("ar-EG")}`} icon={Bell}>
           <div className="grid gap-2">
-            {customer.supportCases.length === 0 ? <Empty text="لا توجد تذاكر." /> : customer.supportCases.map((ticket) => <CompactItem key={ticket.id} title={ticket.subject} subtitle={`${ticket.status} · ${ticket.priority} · ${dateLabel(ticket.createdAt)}`} />)}
+            {customer.supportCases.length === 0 ? <Empty text="لا توجد تذاكر." /> : customer.supportCases.map((ticket) => <CompactItem key={ticket.id} title={ticket.subject} subtitle={`${ticket.status} · ${dateLabel(ticket.createdAt)}`} />)}
           </div>
         </Panel>
         <Panel title={`Feature Flags · ${activeFlagsCount.toLocaleString("ar-EG")}`} icon={Flag}>

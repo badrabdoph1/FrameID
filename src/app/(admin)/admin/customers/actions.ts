@@ -47,7 +47,7 @@ async function withErrorHandling<T>(action: string, fn: () => Promise<T>, contex
 
 async function auditBulkAction(input: { action: string; tenantIds: string[]; metadata?: Prisma.InputJsonObject }) {
   await prisma.auditLog.create({
-    data: { actorUserId: null, action: input.action, entityType: "Tenant", metadata: { tenantIds: input.tenantIds, count: input.tenantIds.length, ...(input.metadata ?? {}) } },
+    data: { actorId: null, action: input.action, entityType: "Tenant", metadata: { tenantIds: input.tenantIds, count: input.tenantIds.length, ...(input.metadata ?? {}) } },
   }).catch(() => undefined);
 }
 
@@ -178,9 +178,9 @@ export async function bulkCustomerLifecycleAction(formData: FormData) {
       doneCount = await applySubscriptionTimerToTenants(prisma, tenantIds, preset, customDays);
     } else if (action === "activate") {
       const now = new Date();
-      const end = preset === "forever" ? null : addDays(now, preset === "custom" ? customDays : Number(preset === "keep" ? "30" : preset));
+      const end = preset === "forever" ? new Date("2099-12-31") : addDays(now, preset === "custom" ? customDays : Number(preset === "keep" ? "30" : preset));
       const subscriptions = await prisma.subscription.findMany({ where: { tenantId: { in: tenantIds }, deletedAt: null }, select: { id: true, tenantId: true } });
-      for (const subscription of subscriptions) await prisma.subscription.update({ where: { id: subscription.id }, data: { status: "ACTIVE", activatedAt: now, currentPeriodStart: now, currentPeriodEnd: end, expiresAt: end } });
+      for (const subscription of subscriptions) await prisma.subscription.update({ where: { id: subscription.id }, data: { status: "ACTIVE", currentPeriodStart: now, currentPeriodEnd: end, expiresAt: end } });
       await prisma.tenant.updateMany({ where: { id: { in: tenantIds }, deletedAt: null }, data: { status: "ACTIVE", gracePeriodEndsAt: null } });
       await prisma.site.updateMany({ where: { tenantId: { in: tenantIds }, deletedAt: null }, data: { status: "PUBLISHED", isPublished: true } });
       doneCount = tenantIds.length;
