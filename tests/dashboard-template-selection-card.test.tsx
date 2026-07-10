@@ -3,13 +3,11 @@ import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import { DashboardTemplateSelectionCard } from "@/components/dashboard/dashboard-template-selection-card";
+import { noirGoldTemplate } from "@/modules/themes/definitions/noir-gold";
 
 const template = {
-  code: "noir-gold",
-  themeCode: "noir-gold",
+  ...noirGoldTemplate,
   name: "Ali Ahmed Luxury",
-  status: "published" as const,
-  showroomOrder: 1,
   description: "قالب داكن ذهبي جاهز للحجز."
 };
 
