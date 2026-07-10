@@ -96,12 +96,12 @@ function DashboardTitleBadge({ compact = false }: { compact?: boolean }) {
     <div className="pointer-events-none flex min-w-0 justify-center">
       <div className={cn(
         "relative min-w-0 overflow-hidden rounded-full border border-amber-300/24 bg-[linear-gradient(135deg,rgba(243,207,115,0.18),rgba(255,255,255,0.055))] text-center shadow-[0_14px_42px_rgba(0,0,0,0.22),inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-xl",
-        compact ? "px-3 py-1.5" : "customer-desktop-title-badge px-4 py-2 md:px-7 md:py-2.5"
+        compact ? "px-2.5 py-1.5 sm:px-3" : "customer-desktop-title-badge px-4 py-2 md:px-7 md:py-2.5"
       )}>
         <span className="pointer-events-none absolute inset-x-4 top-0 h-px bg-gradient-to-l from-transparent via-amber-200/70 to-transparent" aria-hidden />
         <h1 className={cn(
           "truncate whitespace-nowrap bg-gradient-to-l from-[#fff7e8] via-[#f3cf73] to-[#fff7e8] bg-clip-text font-black tracking-tight text-transparent drop-shadow-[0_0_18px_rgba(243,207,115,0.22)]",
-          compact ? "text-[0.76rem] sm:text-sm" : "text-sm md:text-2xl"
+          compact ? "text-[0.68rem] xs:text-[0.72rem] sm:text-sm" : "text-sm md:text-2xl"
         )}>
           صفحة التحكم في موقعك
         </h1>
@@ -112,11 +112,11 @@ function DashboardTitleBadge({ compact = false }: { compact?: boolean }) {
 
 function IdentityBrand({ large = false }: { large?: boolean }) {
   return (
-    <Link href="/dashboard" className={cn("flex min-w-0 items-center gap-2.5 rounded-2xl no-underline", large ? "p-2" : "p-1.5")}> 
+    <Link href="/dashboard" className={cn("flex min-w-0 items-center gap-2 rounded-2xl no-underline", large ? "p-2" : "p-1")}> 
       <BrandMark large={large} />
       <span className="min-w-0">
         <strong className={cn("block truncate font-black text-[#fff7e8]", large ? "text-base" : "text-xs sm:text-sm")}>FrameID</strong>
-        <small className={cn("block truncate font-bold text-white/42", large ? "text-xs" : "text-[0.62rem] sm:text-[0.68rem]")}>لوحة المصور</small>
+        <small className={cn("block truncate font-bold text-white/42", large ? "text-xs" : "text-[0.6rem] sm:text-[0.68rem]")}>لوحة المصور</small>
       </span>
     </Link>
   );
@@ -129,10 +129,11 @@ function CustomerSupportLink({ href, compact = false }: { href: string; compact?
         href={href}
         target="_blank"
         rel="noreferrer"
-        className="grid size-10 place-items-center rounded-2xl border border-emerald-300/20 bg-emerald-400/10 text-emerald-200 transition hover:bg-emerald-400/16 hover:text-white"
+        className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-2xl border border-emerald-300/20 bg-emerald-400/10 px-2.5 text-[0.68rem] font-black text-emerald-200 no-underline transition hover:bg-emerald-400/16 hover:text-white sm:px-3 sm:text-xs"
         aria-label="الدعم الفني"
       >
-        <MessageCircle className="size-4" aria-hidden />
+        <MessageCircle className="size-3.5 shrink-0" aria-hidden />
+        <span>الدعم</span>
       </Link>
     );
   }
@@ -142,22 +143,22 @@ function CustomerSupportLink({ href, compact = false }: { href: string; compact?
       href={href}
       target="_blank"
       rel="noreferrer"
-      className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-emerald-300/22 bg-emerald-400/10 px-4 text-sm font-black text-emerald-200 no-underline transition hover:bg-emerald-400/16 hover:text-white"
+      className="inline-flex min-h-11 items-center justify-center gap-2.5 rounded-2xl border border-emerald-300/22 bg-emerald-400/10 px-4 text-sm font-black text-emerald-200 no-underline transition hover:bg-emerald-400/16 hover:text-white lg:min-h-12 lg:px-5"
     >
-      <MessageCircle className="size-4" aria-hidden />
-      الدعم الفني
+      <MessageCircle className="size-4 shrink-0" aria-hidden />
+      الدعم
     </Link>
   );
 }
 
 function CustomerIdentityBar({ supportHref }: { supportHref: string }) {
   return (
-    <div className="customer-desktop-identity-bar hidden w-full grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 lg:grid">
+    <div className="customer-desktop-identity-bar hidden w-full grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-4 lg:grid">
       <div className="justify-self-start">
         <IdentityBrand large />
       </div>
       <DashboardTitleBadge />
-      <div className="flex justify-end gap-2 justify-self-end">
+      <div className="flex justify-end gap-3 justify-self-end">
         <CustomerSupportLink href={supportHref} />
       </div>
     </div>
@@ -203,12 +204,12 @@ export function DashboardShell({ children, siteSlug }: { children: ReactNode; si
   return (
     <div className="customer-desktop-shell min-h-dvh bg-[#090b10] text-[#f5ead6] color-scheme-dark">
       <header className="sticky top-0 z-40 border-b border-white/8 bg-[#090b10]/92 px-2 py-2 backdrop-blur-xl lg:hidden">
-        <div className="relative mx-auto grid max-w-6xl grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-1.5">
+        <div className="relative mx-auto grid max-w-6xl grid-cols-[minmax(4.45rem,1fr)_auto_minmax(6.2rem,1fr)] items-center gap-1.5 sm:grid-cols-[minmax(5.5rem,1fr)_auto_minmax(7.5rem,1fr)] sm:gap-2">
           <IdentityBrand />
 
           <DashboardTitleBadge compact />
 
-          <div className="flex items-center justify-end gap-1.5">
+          <div className="flex items-center justify-end gap-1.5 sm:gap-2">
             <CustomerSupportLink href={supportSettings.whatsappHref} compact />
             <button
               type="button"
