@@ -74,42 +74,26 @@ async function main() {
   }
 
   for (const paymentSettings of seedData.paymentSettings) {
-    const settings = await prisma.paymentSettings.upsert({
-      where: { paymentMethod: paymentSettings.paymentMethod },
-      update: {
-        isActive: paymentSettings.isActive,
-        label: paymentSettings.label,
-        description: paymentSettings.description,
-        config: paymentSettings.config as Prisma.InputJsonValue,
-        sortOrder: paymentSettings.sortOrder,
-      },
-      create: {
-        paymentMethod: paymentSettings.paymentMethod,
-        isActive: paymentSettings.isActive,
-        label: paymentSettings.label,
-        description: paymentSettings.description,
-        config: paymentSettings.config as Prisma.InputJsonValue,
-        sortOrder: paymentSettings.sortOrder,
-      },
-      select: { id: true },
-    });
-
     for (const account of paymentSettings.accounts) {
       const accountIdentifier = account.accountNumber;
       const existingAccount = await prisma.paymentAccount.findFirst({
         where: {
-          paymentSettingsId: settings.id,
+          method: paymentSettings.paymentMethod,
           accountIdentifier,
+          deletedAt: null,
         },
         select: { id: true },
       });
 
       const data = {
-        label: account.label,
+        method: paymentSettings.paymentMethod,
+        displayName: account.label || paymentSettings.label,
         accountIdentifier,
-        instructions: account.instructions,
-        sortOrder: account.sortOrder,
-        isActive: true,
+        accountName: account.accountName,
+        accountNumber: account.accountNumber,
+        phoneNumber: account.phoneNumber,
+        isActive: paymentSettings.isActive,
+        sortOrder: paymentSettings.sortOrder + account.sortOrder,
       };
 
       if (existingAccount) {
@@ -119,10 +103,7 @@ async function main() {
         });
       } else {
         await prisma.paymentAccount.create({
-          data: {
-            paymentSettingsId: settings.id,
-            ...data,
-          },
+          data,
         });
       }
     }
