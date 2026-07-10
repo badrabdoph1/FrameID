@@ -5,7 +5,7 @@ import { Eye, WandSparkles } from "lucide-react";
 
 import { MarketingFooter } from "@/components/layout/marketing-footer";
 import { MarketingNav } from "@/components/layout/marketing-nav";
-import { TemplateLivePreview } from "@/components/themes/template-live-preview";
+import { TemplateDesktopPreview } from "@/components/themes/template-desktop-preview";
 import { getPublishedTemplates } from "@/modules/themes/theme-registry";
 
 export const metadata: Metadata = {
@@ -103,49 +103,49 @@ export default function TemplatesPage() {
               لا توجد قوالب منشورة حاليًا.
             </div>
           ) : (
-          <div className="grid gap-4 md:grid-cols-2 md:gap-6">
-            {templates.map((template) => (
-              <article
-                key={template.code}
-                className="group flex overflow-hidden rounded-[1.35rem] border border-border bg-white shadow-soft transition-[border-color,box-shadow,transform] hover:-translate-y-0.5 hover:border-champagne/45 hover:shadow-champagne md:rounded-[1.75rem]"
-              >
-                <div className="flex w-full flex-col">
-                  <div className="relative overflow-hidden bg-ink p-3 transition duration-700 group-hover:scale-[1.015] md:p-4">
-                    <TemplateLivePreview template={template} />
-                    <span className="absolute right-3 top-3 rounded-full border border-white/20 bg-ink/78 px-3 py-1.5 text-[0.68rem] font-semibold text-white shadow-soft backdrop-blur">
-                      ديسكتوب وموبايل
-                    </span>
-                  </div>
-                  <div className="flex flex-1 flex-col p-4 md:p-5">
-                    <div className="min-w-0 flex-1">
-                      <h3 className="text-lg font-semibold text-foreground md:text-xl">
-                        {template.name}
-                      </h3>
-                      <p className="mt-2 text-sm leading-7 text-muted-foreground md:min-h-14">
-                        {template.description}
-                      </p>
+            <div className="grid gap-4 md:grid-cols-2 md:gap-6">
+              {templates.map((template) => (
+                <article
+                  key={template.code}
+                  className="group flex overflow-hidden rounded-[1.35rem] border border-border bg-white shadow-soft transition-[border-color,box-shadow,transform] hover:-translate-y-0.5 hover:border-champagne/45 hover:shadow-champagne md:rounded-[1.75rem]"
+                >
+                  <div className="flex w-full flex-col">
+                    <div className="relative overflow-hidden bg-ink p-3 transition duration-700 group-hover:scale-[1.015] md:p-4">
+                      <TemplateDesktopPreview template={template} />
+                      <span className="absolute right-3 top-3 rounded-full border border-white/20 bg-ink/78 px-3 py-1.5 text-[0.68rem] font-semibold text-white shadow-soft backdrop-blur">
+                        لقطة ديسكتوب
+                      </span>
                     </div>
-                    <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                      <Link
-                        href={`/templates/${template.code}/preview`}
-                        className="inline-flex min-h-11 items-center justify-center gap-2 rounded-[var(--radius-control)] bg-foreground px-4 text-sm font-semibold text-background transition-[background-color,transform] hover:-translate-y-0.5 hover:bg-foreground/90 active:translate-y-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                      >
-                        <Eye className="size-4" aria-hidden />
-                        شوف القالب
-                      </Link>
-                      <Link
-                        href={`/signup?template=${template.code}`}
-                        className="inline-flex min-h-11 items-center justify-center gap-2 rounded-[var(--radius-control)] border border-border bg-surface px-4 text-sm font-semibold text-foreground transition-[background-color,transform] hover:-translate-y-0.5 hover:bg-muted active:translate-y-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                      >
-                        <WandSparkles className="size-4" aria-hidden />
-                        استخدمه لموقعي
-                      </Link>
+                    <div className="flex flex-1 flex-col p-4 md:p-5">
+                      <div className="min-w-0 flex-1">
+                        <h3 className="text-lg font-semibold text-foreground md:text-xl">
+                          {template.name}
+                        </h3>
+                        <p className="mt-2 text-sm leading-7 text-muted-foreground md:min-h-14">
+                          {template.description}
+                        </p>
+                      </div>
+                      <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                        <Link
+                          href={`/templates/${template.code}/preview`}
+                          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-[var(--radius-control)] bg-foreground px-4 text-sm font-semibold text-background transition-[background-color,transform] hover:-translate-y-0.5 hover:bg-foreground/90 active:translate-y-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        >
+                          <Eye className="size-4" aria-hidden />
+                          شوف القالب
+                        </Link>
+                        <Link
+                          href={`/signup?template=${template.code}`}
+                          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-[var(--radius-control)] border border-border bg-surface px-4 text-sm font-semibold text-foreground transition-[background-color,transform] hover:-translate-y-0.5 hover:bg-muted active:translate-y-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        >
+                          <WandSparkles className="size-4" aria-hidden />
+                          استخدمه لموقعي
+                        </Link>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </article>
-            ))}
-          </div>
+                </article>
+              ))}
+            </div>
           )}
         </section>
 
