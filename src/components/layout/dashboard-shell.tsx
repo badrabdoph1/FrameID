@@ -12,6 +12,7 @@ import {
   LayoutDashboard,
   LogOut,
   Menu,
+  MessageCircle,
   Package,
   Palette,
   Settings,
@@ -19,8 +20,10 @@ import {
   X,
   type LucideIcon,
 } from "lucide-react";
+
 import { logoutAction } from "@/app/_actions/logout";
 import { cn } from "@/lib/utils/cn";
+import { DEFAULT_SUPPORT_WHATSAPP_NUMBER, toWhatsappHref } from "@/modules/support/support-utils";
 import "@/app/admin.css";
 import "@/app/customer-dashboard.css";
 
@@ -31,6 +34,11 @@ type NavItem = {
   description: string;
   icon: LucideIcon;
   priority: "primary" | "secondary";
+};
+
+type SupportSettingsResponse = {
+  phone?: string;
+  whatsappHref?: string;
 };
 
 const navItems: NavItem[] = [
@@ -47,6 +55,14 @@ const navItems: NavItem[] = [
 function isActivePath(pathname: string | null, href: string): boolean {
   if (href === "/dashboard") return pathname === "/dashboard";
   return pathname?.startsWith(href) ?? false;
+}
+
+function normalizeSupportResponse(input: SupportSettingsResponse | null) {
+  const phone = input?.phone || DEFAULT_SUPPORT_WHATSAPP_NUMBER;
+  return {
+    phone,
+    whatsappHref: input?.whatsappHref || toWhatsappHref(phone),
+  };
 }
 
 function NavLink({ item, active, compact = false, onClick }: { item: NavItem; active: boolean; compact?: boolean; onClick?: () => void }) {
@@ -106,7 +122,35 @@ function IdentityBrand({ large = false }: { large?: boolean }) {
   );
 }
 
-function CustomerIdentityBar({ siteSlug }: { siteSlug?: string }) {
+function CustomerSupportLink({ href, compact = false }: { href: string; compact?: boolean }) {
+  if (compact) {
+    return (
+      <Link
+        href={href}
+        target="_blank"
+        rel="noreferrer"
+        className="grid size-10 place-items-center rounded-2xl border border-emerald-300/20 bg-emerald-400/10 text-emerald-200 transition hover:bg-emerald-400/16 hover:text-white"
+        aria-label="الدعم الفني"
+      >
+        <MessageCircle className="size-4" aria-hidden />
+      </Link>
+    );
+  }
+
+  return (
+    <Link
+      href={href}
+      target="_blank"
+      rel="noreferrer"
+      className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-emerald-300/22 bg-emerald-400/10 px-4 text-sm font-black text-emerald-200 no-underline transition hover:bg-emerald-400/16 hover:text-white"
+    >
+      <MessageCircle className="size-4" aria-hidden />
+      الدعم الفني
+    </Link>
+  );
+}
+
+function CustomerIdentityBar({ supportHref }: { supportHref: string }) {
   return (
     <div className="customer-desktop-identity-bar hidden w-full grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 lg:grid">
       <div className="justify-self-start">
@@ -114,12 +158,7 @@ function CustomerIdentityBar({ siteSlug }: { siteSlug?: string }) {
       </div>
       <DashboardTitleBadge />
       <div className="flex justify-end gap-2 justify-self-end">
-        {siteSlug ? (
-          <Link href={`/p/${siteSlug}`} target="_blank" className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-amber-300/18 bg-amber-300/10 px-4 text-sm font-black text-[#f3cf73] no-underline transition hover:bg-amber-300/16 hover:text-[#ffe9a8]">
-            <ExternalLink className="size-4" aria-hidden />
-            فتح الموقع
-          </Link>
-        ) : null}
+        <CustomerSupportLink href={supportHref} />
       </div>
     </div>
   );
@@ -128,12 +167,22 @@ function CustomerIdentityBar({ siteSlug }: { siteSlug?: string }) {
 export function DashboardShell({ children, siteSlug }: { children: ReactNode; siteSlug?: string }) {
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [supportSettings, setSupportSettings] = useState(() => normalizeSupportResponse(null));
   const primaryNav = navItems.filter((item) => item.priority === "primary").slice(0, 5);
   const secondaryNav = navItems.filter((item) => item.priority === "secondary");
 
   useEffect(() => {
     setMobileMenuOpen(false);
   }, [pathname]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    fetch("/api/support-settings", { signal: controller.signal, cache: "no-store" })
+      .then((response) => response.ok ? response.json() as Promise<SupportSettingsResponse> : null)
+      .then((data) => setSupportSettings(normalizeSupportResponse(data)))
+      .catch(() => setSupportSettings(normalizeSupportResponse(null)));
+    return () => controller.abort();
+  }, []);
 
   useEffect(() => {
     if (!mobileMenuOpen) return;
@@ -160,16 +209,7 @@ export function DashboardShell({ children, siteSlug }: { children: ReactNode; si
           <DashboardTitleBadge compact />
 
           <div className="flex items-center justify-end gap-1.5">
-            {siteSlug ? (
-              <Link
-                href={`/p/${siteSlug}`}
-                target="_blank"
-                className="grid size-10 place-items-center rounded-2xl border border-white/10 bg-white/[0.04] text-white/60 transition hover:bg-white/[0.08] hover:text-white"
-                aria-label="فتح الموقع"
-              >
-                <ExternalLink className="size-4" aria-hidden />
-              </Link>
-            ) : null}
+            <CustomerSupportLink href={supportSettings.whatsappHref} compact />
             <button
               type="button"
               onClick={() => setMobileMenuOpen(true)}
@@ -224,7 +264,7 @@ export function DashboardShell({ children, siteSlug }: { children: ReactNode; si
 
         <main className="customer-desktop-main min-w-0 flex-1 overflow-x-hidden bg-[radial-gradient(circle_at_top_right,rgba(243,207,115,0.08),transparent_30%),#090b10] px-3 py-4 pb-[calc(6.5rem+env(safe-area-inset-bottom))] sm:px-4 lg:px-7 lg:py-7 lg:pb-8 xl:px-9">
           <div className="mx-auto hidden w-full max-w-6xl lg:block">
-            <CustomerIdentityBar siteSlug={siteSlug} />
+            <CustomerIdentityBar supportHref={supportSettings.whatsappHref} />
           </div>
           <div className="mx-auto w-full max-w-6xl lg:mt-5">{children}</div>
         </main>
