@@ -1,5 +1,5 @@
 import { getContent as loadContent } from "./loader"
-import { saveContent as writeContent } from "./writer"
+import { saveContent as writeContent, type SaveContentOptions } from "./writer"
 import { getManifestData, getManifestEntry } from "./manifest"
 import { ContentSchemas } from "./schemas"
 import type { ContentSchemaKey, ContentSchemaType, SaveResult, ContentManifest } from "./types"
@@ -19,10 +19,10 @@ export function getContent<T extends ContentSchemaKey>(
   }
 }
 
-export function saveContent(type: ContentSchemaKey, data: unknown): SaveResult {
+export async function saveContent(type: ContentSchemaKey, data: unknown, options?: SaveContentOptions): Promise<SaveResult> {
   const schema: ContentSchema = ContentSchemas[type]
   if (!schema) throw new Error(`Unknown content type: ${String(type)}`)
-  return writeContent(type, schema, data)
+  return writeContent(type, schema, data, options)
 }
 
 export function getManifest(): ContentManifest {
