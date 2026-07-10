@@ -28,10 +28,7 @@ function tarArchive(args: string[]): Promise<void> {
 
 export function createContentPackager(contentDir: string): ContentPackager {
   return {
-    async packageContent(
-      outputDir: string,
-      _backupId: string
-    ): Promise<ContentPackagerResult> {
+    async packageContent(outputDir: string): Promise<ContentPackagerResult> {
       const archivePath = join(outputDir, "content.tar.gz");
       await mkdir(dirname(archivePath), { recursive: true });
 
@@ -78,12 +75,8 @@ export function createContentPackager(contentDir: string): ContentPackager {
       for (const file of files) {
         if (file.startsWith(".") || file.startsWith(".backups")) continue;
         const filePath = join(contentDir, file);
-        try {
-          const stats = await stat(filePath);
-          if (stats.isFile()) {
-            totalSize += stats.size;
-          }
-        } catch {}
+        const stats = await stat(filePath);
+        if (stats.isFile()) totalSize += stats.size;
       }
       return totalSize;
     },
