@@ -5,6 +5,7 @@ import {
   type AccountCreationInput,
   type SignupProvisioningRepository
 } from "@/modules/onboarding/signup-provisioning";
+import { getTemplateStarterData } from "@/modules/themes/template-starter-data";
 
 describe("signup trial duration", () => {
   it("uses the trial day count supplied from the admin lifecycle settings", async () => {
@@ -17,6 +18,9 @@ describe("signup trial duration", () => {
       },
       async getUnavailableSlugs() {
         return new Set<string>();
+      },
+      async getTemplateStarterData(templateCode) {
+        return getTemplateStarterData(templateCode);
       },
       async createAccountWithSite(input) {
         capturedInputs.push(input);
