@@ -19,15 +19,17 @@ import { createSnapshotService } from "@/modules/backups/backup-snapshot-service
 import { env } from "@/lib/env";
 import type { BackupType } from "@/modules/backups/backup-manifest";
 import { listBackupDirs } from "@/modules/backups/local-backup-artifact-writer";
+import { getBackupPolicy, isSupportedBackupType } from "@/modules/backups/backup-policy";
+
+function readBackupType(value: FormDataEntryValue | null): BackupType | null {
+  return isSupportedBackupType(value) ? value : null;
+}
 
 export async function runBackupAction(formData: FormData) {
   const session = await requireSuperAdminSession();
+  const type = readBackupType(formData.get("type"));
 
-  const type = formData.get("type");
-
-  if (type !== "DATABASE" && type !== "UPLOADS" && type !== "FULL") {
-    redirect("/admin/backups?error=invalid-type");
-  }
+  if (!type) redirect("/admin/backups?error=invalid-type");
 
   const databaseUrl = env.DATABASE_URL;
 
@@ -41,7 +43,7 @@ export async function runBackupAction(formData: FormData) {
     });
 
     await service.runManualBackup({
-      type: type as BackupType,
+      type,
       initiatedById: session.user.id,
       note: "نسخة يدوية من مركز النسخ الاحتياطي",
     });
@@ -61,15 +63,10 @@ export async function restoreBackupAction(formData: FormData) {
   const session = await requireSuperAdminSession();
 
   const backupId = formData.get("backupId") as string;
-  const type = formData.get("type") as string;
+  const type = readBackupType(formData.get("type"));
 
-  if (!backupId) {
-    redirect("/admin/backups?error=missing-backup-id");
-  }
-
-  if (type !== "DATABASE" && type !== "UPLOADS" && type !== "FULL") {
-    redirect("/admin/backups?error=invalid-type");
-  }
+  if (!backupId) redirect("/admin/backups?error=missing-backup-id");
+  if (!type) redirect("/admin/backups?error=invalid-type");
 
   const databaseUrl = env.DATABASE_URL;
   const backupRoot = join(process.cwd(), "backups");
@@ -82,58 +79,48 @@ export async function restoreBackupAction(formData: FormData) {
       backupRoot,
     });
 
-      await (prisma as unknown as { restoreJob: { create: (args: { data: Record<string, unknown> }) => Promise<unknown> } }).restoreJob.create({
-        data: {
-          backupId,
-          type: type as BackupType,
-          status: validation.valid ? "VALIDATED" : "VALIDATION_FAILED",
-          initiatedById: session.user.id,
-          manifest: validation.manifest,
-          validationJson: validation.validation,
-        },
-      });
+    await (prisma as unknown as { restoreJob: { create: (args: { data: Record<string, unknown> }) => Promise<unknown> } }).restoreJob.create({
+      data: {
+        backupId,
+        type,
+        status: validation.valid ? "VALIDATED" : "VALIDATION_FAILED",
+        initiatedById: session.user.id,
+        manifest: validation.manifest,
+        validationJson: validation.validation,
+      },
+    });
 
-    if (!validation.valid) {
-      redirect("/admin/backups?error=restore-validation-failed");
-    }
+    if (!validation.valid) redirect("/admin/backups?error=restore-validation-failed");
 
     const result = await restoreService.executeRestore({
       backupId,
       backupRoot,
       databaseUrl,
-      type: type as BackupType,
+      type,
     });
 
     await (prisma as unknown as { restoreJob: { updateMany: (args: { where: Record<string, unknown>, data: Record<string, unknown> }) => Promise<unknown> } }).restoreJob.updateMany({
-        where: { backupId, status: "VALIDATED" },
-        data: {
-          status: result.success ? "COMPLETED" : "FAILED",
-          resultJson: result,
-          errorMessage: result.errors.join("; ") || null,
-          completedAt: new Date(),
-        },
-      });
+      where: { backupId, status: "VALIDATED" },
+      data: {
+        status: result.success ? "COMPLETED" : "FAILED",
+        resultJson: result,
+        errorMessage: result.errors.join("; ") || null,
+        completedAt: new Date(),
+      },
+    });
 
     if (!result.success) {
-      redirect(
-        `/admin/backups?error=restore-failed&details=${encodeURIComponent(
-          result.errors.join("; ")
-        )}`
-      );
+      redirect(`/admin/backups?error=restore-failed&details=${encodeURIComponent(result.errors.join("; "))}`);
     }
 
     const postValidation = await restoreService.validatePostRestore(databaseUrl);
     await (prisma as unknown as { restoreJob: { updateMany: (args: { where: Record<string, unknown>, data: Record<string, unknown> }) => Promise<unknown> } }).restoreJob.updateMany({
-        where: { backupId, status: "COMPLETED" },
-        data: {
-          postValidationJson: postValidation,
-        },
-      });
+      where: { backupId, status: "COMPLETED" },
+      data: { postValidationJson: postValidation },
+    });
 
     revalidatePath("/admin/backups");
-    redirect(
-      `/admin/backups?restored=1&backup=${encodeURIComponent(backupId)}`
-    );
+    redirect(`/admin/backups?restored=1&backup=${encodeURIComponent(backupId)}`);
   } catch (error) {
     const { userError } = await processError(error, {
       userId: session.user.id,
@@ -149,11 +136,7 @@ export async function listLocalBackupsAction() {
   return dirs.map((dir) => {
     const parts = dir.split("_");
     const datePart = parts[0];
-    return {
-      id: dir,
-      date: datePart,
-      display: dir,
-    };
+    return { id: dir, date: datePart, display: dir };
   });
 }
 
@@ -164,9 +147,7 @@ export async function verifyBackupAction(formData: FormData) {
   const verification = createVerificationService();
   const result = await verification.verifyBackup(backupId, backupRoot);
   revalidatePath("/admin/backups");
-  redirect(
-    `/admin/backups?verified=${result.valid ? "1" : "0"}&backup=${encodeURIComponent(backupId)}`
-  );
+  redirect(`/admin/backups?verified=${result.valid ? "1" : "0"}&backup=${encodeURIComponent(backupId)}`);
 }
 
 export async function verifyAllBackupsAction() {
@@ -175,9 +156,7 @@ export async function verifyAllBackupsAction() {
   const verification = createVerificationService();
   const result = await verification.verifyAllBackups(backupRoot);
   revalidatePath("/admin/backups");
-  redirect(
-    `/admin/backups?verified-all=1&valid=${result.valid}&invalid=${result.invalid}`
-  );
+  redirect(`/admin/backups?verified-all=1&valid=${result.valid}&invalid=${result.invalid}`);
 }
 
 export async function deleteBackupAction(formData: FormData) {
@@ -187,9 +166,7 @@ export async function deleteBackupAction(formData: FormData) {
   const backupDir = join(backupRoot, backupId);
 
   try {
-    if (existsSync(backupDir)) {
-      await rm(backupDir, { recursive: true, force: true });
-    }
+    if (existsSync(backupDir)) await rm(backupDir, { recursive: true, force: true });
     revalidatePath("/admin/backups");
     redirect(`/admin/backups?deleted=1&backup=${encodeURIComponent(backupId)}`);
   } catch (error) {
@@ -208,7 +185,7 @@ export async function createSnapshotAction() {
   try {
     const snapshot = createSnapshotService();
     const result = await snapshot.createSnapshot({
-      reason: "manual-snapshot",
+      reason: "manual-migration-package",
       databaseUrl,
       uploadsDir: join(process.cwd(), "public", "uploads"),
       contentDir: join(process.cwd(), "content"),
@@ -246,11 +223,8 @@ export async function checkAutoRestoreAction() {
     });
 
     revalidatePath("/admin/backups");
-    if (result.restored) {
-      redirect("/admin/backups?auto-restored=1");
-    } else {
-      redirect(`/admin/backups?auto-restore-check=1&needed=${result.needed ? "1" : "0"}`);
-    }
+    if (result.restored) redirect("/admin/backups?auto-restored=1");
+    redirect(`/admin/backups?auto-restore-check=1&needed=${result.needed ? "1" : "0"}`);
   } catch (error) {
     const { userError } = await processError(error, {
       userId: session.user.id,
@@ -262,28 +236,28 @@ export async function checkAutoRestoreAction() {
 
 export async function updateBackupSettingsAction(formData: FormData) {
   const session = await requireSuperAdminSession();
-  const type = formData.get("type") as string;
+  const type = readBackupType(formData.get("type"));
   const enabled = formData.get("enabled") === "true";
-  const schedule = formData.get("schedule") as string;
+  const schedule = (formData.get("schedule") as string) || "";
   const retentionCount = parseInt(formData.get("retentionCount") as string, 10);
 
-  if (type !== "DATABASE" && type !== "UPLOADS" && type !== "FULL") {
-    redirect("/admin/backups?error=invalid-type");
-  }
+  if (!type) redirect("/admin/backups?error=invalid-type");
+
+  const policy = getBackupPolicy(type);
 
   try {
     await prisma.backupSettings.upsert({
-      where: { type: type as BackupType },
+      where: { type },
       update: {
         enabled,
-        schedule: schedule || "0 2 * * 0",
-        retentionCount: retentionCount || 10,
+        schedule: schedule || policy.schedule,
+        retentionCount: Number.isFinite(retentionCount) ? retentionCount : policy.retentionCount,
       },
       create: {
-        type: type as BackupType,
+        type,
         enabled,
-        schedule: schedule || "0 2 * * 0",
-        retentionCount: retentionCount || 10,
+        schedule: schedule || policy.schedule,
+        retentionCount: Number.isFinite(retentionCount) ? retentionCount : policy.retentionCount,
       },
     });
 
