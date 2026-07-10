@@ -84,8 +84,7 @@ export default async function AdminAuditPage({ searchParams }: Props) {
       { action: contains },
       { entityType: contains },
       { entityId: contains },
-      { ipAddress: contains },
-      { userAgent: contains },
+      { metadata: contains },
       { actor: { email: contains } },
       { actor: { name: contains } },
       { tenant: { displayName: contains } },
@@ -95,7 +94,7 @@ export default async function AdminAuditPage({ searchParams }: Props) {
   if (action) where.action = { contains: action, mode: "insensitive" };
   if (entityType) where.entityType = { contains: entityType, mode: "insensitive" };
   if (tenantId) where.tenantId = tenantId;
-  if (actorId) where.actorUserId = actorId;
+  if (actorId) where.actorId = actorId;
   if (from) createdAt.gte = from;
   if (to) createdAt.lte = to;
   if (Object.keys(createdAt).length > 0) where.createdAt = createdAt;
@@ -194,7 +193,7 @@ export default async function AdminAuditPage({ searchParams }: Props) {
                   </div>
                   <div className="min-w-0 text-sm font-bold text-white/62">
                     <span className="block truncate">{entry.actor?.name ?? "النظام"}</span>
-                    <span className="block truncate text-xs text-white/32">{entry.actor?.email ?? entry.actorUserId ?? "system"}</span>
+                    <span className="block truncate text-xs text-white/32">{entry.actor?.email ?? entry.actorId ?? "system"}</span>
                   </div>
                   <div className="min-w-0 text-sm font-bold text-white/62">
                     {entry.tenant ? (
