@@ -1,4 +1,5 @@
 import { Eye, Layout, Palette, Save, Settings, Sparkles, ToggleLeft, ToggleRight } from "lucide-react";
+import type { ReactNode } from "react";
 
 import { AdminPageShell } from "@/components/layout/admin-page-shell";
 import { prisma } from "@/lib/prisma";
@@ -16,17 +17,21 @@ type TemplatePackage = {
   price: string;
   priceAmount: number;
   currency: string;
+  imageUrl: string;
   features: string[];
   isHighlighted: boolean;
+  enabled: boolean;
 };
 
 type TemplateExtra = {
   id: string;
   name: string;
+  description: string;
   price: string;
   priceAmount: number;
   currency: string;
   iconKey: string;
+  enabled: boolean;
 };
 
 function isRecord(value: unknown): value is JsonRecord {
@@ -42,8 +47,10 @@ function numberFrom(value: unknown, fallback = 0) {
   return Number.isFinite(number) ? number : fallback;
 }
 
-function boolFrom(value: unknown) {
-  return value === true || value === "true" || value === "on";
+function boolFrom(value: unknown, fallback = false) {
+  if (value === true || value === "true" || value === "on") return true;
+  if (value === false || value === "false" || value === "off") return false;
+  return fallback;
 }
 
 function pickText(value: unknown, keys: string[], fallback = "") {
@@ -82,8 +89,10 @@ function readPackages(previewData: unknown): TemplatePackage[] {
     price: stringFrom(item.price),
     priceAmount: numberFrom(item.priceAmount),
     currency: stringFrom(item.currency, "EGP"),
+    imageUrl: stringFrom(item.imageUrl),
     features: Array.isArray(item.features) ? item.features.map((feature) => stringFrom(feature)).filter(Boolean) : [],
     isHighlighted: boolFrom(item.isHighlighted),
+    enabled: boolFrom(item.enabled, item.isActive !== false),
   }));
 }
 
@@ -92,10 +101,12 @@ function readExtras(previewData: unknown): TemplateExtra[] {
   return previewData.extras.filter(isRecord).map((item, index) => ({
     id: stringFrom(item.id, `extra-${index + 1}`),
     name: stringFrom(item.name, `إضافة ${index + 1}`),
+    description: stringFrom(item.description),
     price: stringFrom(item.price),
     priceAmount: numberFrom(item.priceAmount),
     currency: stringFrom(item.currency, "EGP"),
     iconKey: stringFrom(item.iconKey, "camera"),
+    enabled: boolFrom(item.enabled, item.isActive !== false),
   }));
 }
 
@@ -138,7 +149,7 @@ export default async function AdminTemplatesPage({ searchParams }: Props) {
     <AdminPageShell
       badge="المحتوى"
       title="إدارة القوالب الجاهزة"
-      description="تعديل اسم القالب، وصفه، صورته، حالة ظهوره، وبيانات الباقات التجريبية التي تظهر داخل المعاينة."
+      description="تحكم كامل في اسم القالب، وصفه، صورته، الحالة، الباقات، الإضافات، ونصوص المعاينة. أي تعديل هنا يظهر في صفحة معاينة القالب."
       breadcrumbs={[{ label: "المحتوى", href: "/admin/content" }, { label: "القوالب" }]}
       actions={[{ label: "الثيمات", href: "/admin/themes", icon: Palette }, { label: "مركز المحتوى", href: "/admin/content", icon: Settings }]}
     >
@@ -165,6 +176,7 @@ export default async function AdminTemplatesPage({ searchParams }: Props) {
             const previewTitle = pickText(template.previewData, ["title", "headline", "name"], template.name);
             const previewSubtitle = pickText(template.previewData, ["subtitle", "description", "tagline"], template.theme.category);
             const image = pickImage(template.previewData);
+            const activePackages = packages.filter((item) => item.enabled).length;
             return (
               <article key={template.id} className="overflow-hidden rounded-3xl border border-white/10 bg-white/[0.04] shadow-2xl shadow-black/10">
                 <div className="relative min-h-56 overflow-hidden bg-[radial-gradient(circle_at_top,rgba(243,207,115,0.18),transparent_42%),linear-gradient(135deg,#171a22,#0d0f14)] p-5">
@@ -177,6 +189,7 @@ export default async function AdminTemplatesPage({ searchParams }: Props) {
                     <div>
                       <h2 className="text-2xl font-black text-[#fff7e8] drop-shadow">{previewTitle}</h2>
                       <p className="mt-2 line-clamp-2 text-sm font-bold leading-7 text-white/68">{previewSubtitle}</p>
+                      <p className="mt-2 text-xs font-black text-white/42">{activePackages} باقات مفعلة من {packages.length}</p>
                     </div>
                   </div>
                 </div>
@@ -198,15 +211,13 @@ export default async function AdminTemplatesPage({ searchParams }: Props) {
                         {template.status === "PUBLISHED" ? "إيقاف القالب" : "تشغيل القالب"}
                       </button>
                     </form>
-                    <details className="contents">
-                      <summary className="inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] text-sm font-black text-white/70 transition hover:bg-white/[0.08]">
-                        <Eye className="size-4" /> تعديل شامل
-                      </summary>
-                    </details>
+                    <a href={`/templates/${template.code}/preview`} target="_blank" className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] text-sm font-black text-white/70 no-underline transition hover:bg-white/[0.08]">
+                      <Eye className="size-4" /> معاينة
+                    </a>
                   </div>
 
                   <details className="rounded-3xl border border-white/10 bg-black/18 p-4">
-                    <summary className="cursor-pointer text-sm font-black text-[#fff7e8]">فتح محرر القالب والبيانات التجريبية</summary>
+                    <summary className="cursor-pointer text-sm font-black text-[#fff7e8]">فتح محرر القالب والباقات والإضافات</summary>
                     <form action={saveTemplateAction} className="mt-4 grid gap-4 border-t border-white/8 pt-4">
                       <input type="hidden" name="id" value={template.id} />
 
@@ -229,13 +240,14 @@ export default async function AdminTemplatesPage({ searchParams }: Props) {
                         <Field label="صورة كارت القالب"><input name="previewImage" defaultValue={image} className="template-input sm:col-span-2" /></Field>
                         <Field label="عنوان Hero داخل القالب"><input name="heroHeadline" defaultValue={stringFrom(hero.headline)} className="template-input" /></Field>
                         <Field label="وصف Hero داخل القالب"><input name="heroSubheadline" defaultValue={stringFrom(hero.subheadline)} className="template-input" /></Field>
-                        <Field label="صورة Hero داخل القالب"><input name="heroImageUrl" defaultValue={stringFrom(hero.imageUrl)} className="template-input sm:col-span-2" /></Field>
+                        <Field label="صورة Hero داخل القالب"><input name="heroImageUrl" defaultValue={stringFrom(hero.imageUrl)} className="template-input" /></Field>
+                        <Field label="نص زر الحجز"><input name="callToAction" defaultValue={pickText(template.previewData, ["callToAction"], "احجز الآن")} className="template-input" /></Field>
                       </div>
 
                       <div className="grid gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-3">
                         <div>
                           <h4 className="text-sm font-black text-[#fff7e8]">باقات القالب التجريبية</h4>
-                          <p className="mt-1 text-xs font-bold leading-6 text-white/42">عدّل الاسم والسعر والوصف والمميزات. أزل علامة التشغيل لإخفاء باقة من المعاينة.</p>
+                          <p className="mt-1 text-xs font-bold leading-6 text-white/42">عدّل كل خانة، ويمكنك إخفاء الباقة بدون حذفها.</p>
                         </div>
                         <input type="hidden" name="packageCount" value={packages.length} />
                         {packages.map((item, index) => <PackageFields key={`${item.id}-${index}`} item={item} index={index} />)}
@@ -245,7 +257,7 @@ export default async function AdminTemplatesPage({ searchParams }: Props) {
                       <div className="grid gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-3">
                         <div>
                           <h4 className="text-sm font-black text-[#fff7e8]">الإضافات التجريبية</h4>
-                          <p className="mt-1 text-xs font-bold leading-6 text-white/42">اختياري: تظهر في معاينة القالب فقط.</p>
+                          <p className="mt-1 text-xs font-bold leading-6 text-white/42">تظهر في معاينة القالب فقط، ويمكن إخفاؤها بدون حذفها.</p>
                         </div>
                         <input type="hidden" name="extraCount" value={extras.length} />
                         {extras.map((item, index) => <ExtraFields key={`${item.id}-${index}`} item={item} index={index} />)}
@@ -281,13 +293,14 @@ function PackageFields({ item, index }: { item: TemplatePackage; index: number }
     <fieldset className="grid gap-3 rounded-2xl border border-white/10 bg-black/18 p-3">
       <legend className="px-2 text-xs font-black text-[#f3cf73]">باقة {index + 1}</legend>
       <input type="hidden" name={`package_${index}_id`} value={item.id} />
-      <label className="flex min-h-10 items-center gap-2 text-sm font-bold text-white/62"><input type="checkbox" name={`package_${index}_enabled`} defaultChecked /> تشغيل الباقة في المعاينة</label>
+      <label className="flex min-h-10 items-center gap-2 text-sm font-bold text-white/62"><input type="checkbox" name={`package_${index}_enabled`} defaultChecked={item.enabled} /> تشغيل الباقة في المعاينة</label>
       <div className="grid gap-3 sm:grid-cols-2">
         <Field label="اسم الباقة"><input name={`package_${index}_name`} defaultValue={item.name} className="template-input" /></Field>
         <Field label="وصف قصير"><input name={`package_${index}_subtitle`} defaultValue={item.subtitle} className="template-input" /></Field>
         <Field label="السعر النصي"><input name={`package_${index}_price`} defaultValue={item.price} className="template-input" /></Field>
         <Field label="السعر الرقمي"><input name={`package_${index}_priceAmount`} type="number" defaultValue={item.priceAmount} className="template-input" /></Field>
         <Field label="العملة"><input name={`package_${index}_currency`} defaultValue={item.currency} className="template-input" /></Field>
+        <Field label="صورة الباقة"><input name={`package_${index}_imageUrl`} defaultValue={item.imageUrl} className="template-input" /></Field>
         <label className="flex min-h-10 items-center gap-2 text-sm font-bold text-white/62"><input type="checkbox" name={`package_${index}_isHighlighted`} defaultChecked={item.isHighlighted} /> مميزة</label>
       </div>
       <Field label="المميزات — كل سطر ميزة"><textarea name={`package_${index}_features`} rows={4} defaultValue={item.features.join("\n")} className="template-input min-h-28 py-3" /></Field>
@@ -299,12 +312,14 @@ function NewPackageFields() {
   return (
     <fieldset className="grid gap-3 rounded-2xl border border-dashed border-amber-500/25 bg-amber-500/5 p-3">
       <legend className="px-2 text-xs font-black text-[#f3cf73]">إضافة باقة جديدة للقالب</legend>
+      <label className="flex min-h-10 items-center gap-2 text-sm font-bold text-white/62"><input type="checkbox" name="newPackageEnabled" defaultChecked /> تشغيل الباقة الجديدة</label>
       <div className="grid gap-3 sm:grid-cols-2">
         <Field label="اسم الباقة الجديدة"><input name="newPackageName" className="template-input" placeholder="اتركها فارغة لو مش عايز تضيف" /></Field>
         <Field label="وصف قصير"><input name="newPackageSubtitle" className="template-input" /></Field>
         <Field label="السعر النصي"><input name="newPackagePrice" className="template-input" placeholder="مثال: 5,000 جنيه" /></Field>
         <Field label="السعر الرقمي"><input name="newPackagePriceAmount" type="number" className="template-input" /></Field>
         <Field label="العملة"><input name="newPackageCurrency" defaultValue="EGP" className="template-input" /></Field>
+        <Field label="صورة الباقة"><input name="newPackageImageUrl" className="template-input" /></Field>
         <label className="flex min-h-10 items-center gap-2 text-sm font-bold text-white/62"><input type="checkbox" name="newPackageIsHighlighted" /> مميزة</label>
       </div>
       <Field label="المميزات"><textarea name="newPackageFeatures" rows={3} className="template-input min-h-24 py-3" /></Field>
@@ -317,9 +332,10 @@ function ExtraFields({ item, index }: { item: TemplateExtra; index: number }) {
     <fieldset className="grid gap-3 rounded-2xl border border-white/10 bg-black/18 p-3">
       <legend className="px-2 text-xs font-black text-white/45">إضافة {index + 1}</legend>
       <input type="hidden" name={`extra_${index}_id`} value={item.id} />
-      <label className="flex min-h-10 items-center gap-2 text-sm font-bold text-white/62"><input type="checkbox" name={`extra_${index}_enabled`} defaultChecked /> تشغيل الإضافة</label>
+      <label className="flex min-h-10 items-center gap-2 text-sm font-bold text-white/62"><input type="checkbox" name={`extra_${index}_enabled`} defaultChecked={item.enabled} /> تشغيل الإضافة</label>
       <div className="grid gap-3 sm:grid-cols-2">
         <Field label="اسم الإضافة"><input name={`extra_${index}_name`} defaultValue={item.name} className="template-input" /></Field>
+        <Field label="الوصف"><input name={`extra_${index}_description`} defaultValue={item.description} className="template-input" /></Field>
         <Field label="السعر النصي"><input name={`extra_${index}_price`} defaultValue={item.price} className="template-input" /></Field>
         <Field label="السعر الرقمي"><input name={`extra_${index}_priceAmount`} type="number" defaultValue={item.priceAmount} className="template-input" /></Field>
         <Field label="العملة"><input name={`extra_${index}_currency`} defaultValue={item.currency} className="template-input" /></Field>
@@ -335,6 +351,7 @@ function NewExtraFields() {
       <legend className="px-2 text-xs font-black text-white/45">إضافة خدمة جديدة</legend>
       <div className="grid gap-3 sm:grid-cols-2">
         <Field label="اسم الإضافة"><input name="newExtraName" className="template-input" /></Field>
+        <Field label="الوصف"><input name="newExtraDescription" className="template-input" /></Field>
         <Field label="السعر النصي"><input name="newExtraPrice" className="template-input" /></Field>
         <Field label="السعر الرقمي"><input name="newExtraPriceAmount" type="number" className="template-input" /></Field>
         <Field label="العملة"><input name="newExtraCurrency" defaultValue="EGP" className="template-input" /></Field>
@@ -344,7 +361,7 @@ function NewExtraFields() {
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({ label, children }: { label: string; children: ReactNode }) {
   return <label className="grid gap-1.5"><span className="text-xs font-black text-white/42">{label}</span>{children}</label>;
 }
 
@@ -367,6 +384,7 @@ function TemplateStyles() {
         font-weight: 800;
         outline: none;
       }
+      textarea.template-input { padding-top: 0.75rem; padding-bottom: 0.75rem; }
       .template-input::placeholder { color: rgba(255, 255, 255, 0.24); }
       .template-input:focus { border-color: rgba(243, 207, 115, 0.55); box-shadow: 0 0 0 3px rgba(243, 207, 115, 0.1); }
       select.template-input { padding-inline-end: 2rem; }
