@@ -147,12 +147,14 @@ async function seedSuperAdmin() {
           where: { email: input.email },
           update: {
             name: input.name,
+            phone: input.phone,
             role: "SUPER_ADMIN",
             passwordHash: input.passwordHash,
             deletedAt: null
           },
           create: {
             email: input.email,
+            phone: input.phone,
             name: input.name,
             role: "SUPER_ADMIN",
             passwordHash: input.passwordHash
@@ -162,11 +164,13 @@ async function seedSuperAdmin() {
           where: { email: input.email },
           update: {
             name: input.name,
+            phone: input.phone,
             role: "SUPER_ADMIN",
             passwordHash: input.passwordHash,
           },
           create: {
             email: input.email,
+            phone: input.phone,
             name: input.name,
             role: "SUPER_ADMIN",
             passwordHash: input.passwordHash,
@@ -175,6 +179,7 @@ async function seedSuperAdmin() {
       }
     },
     email: process.env.SEED_SUPER_ADMIN_EMAIL,
+    phone: process.env.SEED_SUPER_ADMIN_PHONE,
     password: process.env.SEED_SUPER_ADMIN_PASSWORD
   });
 }
