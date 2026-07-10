@@ -19,7 +19,13 @@ describe("theme registry", () => {
     expect(getTemplateByCode("noir-gold")).toMatchObject({
       code: "noir-gold",
       themeCode: "noir-gold",
-      status: "published"
+      status: "published",
+      starterContent: {
+        sections: {
+          hero: expect.any(Object),
+          contact: expect.any(Object)
+        }
+      }
     });
   });
 

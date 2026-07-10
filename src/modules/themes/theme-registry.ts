@@ -2,6 +2,7 @@ import {
   templateDefinitions,
   themeDefinitions
 } from "@/modules/themes/definitions";
+import type { TemplateStarterContent } from "@/modules/themes/template-starter-content";
 
 export type TemplateStatus = "draft" | "published" | "archived";
 
@@ -23,6 +24,7 @@ export type TemplateSummary = {
   status: TemplateStatus;
   showroomOrder: number;
   description: string;
+  starterContent?: TemplateStarterContent;
 };
 
 export type ThemeRegistryInput = {
