@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useMemo, useState, type ChangeEvent, type ReactNode } from "react";
-import { AlertTriangle, Check, CheckCircle2, CreditCard, Loader2, Package, Upload, X } from "lucide-react";
+import { AlertTriangle, Check, CheckCircle2, CreditCard, Loader2, Package, Sparkles, Upload, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { BuilderPageHeader } from "@/components/dashboard/builder-primitives";
@@ -108,6 +108,7 @@ type BillingClientProps = {
 
 type ActionResult = { success: true; draftId?: string } | { success: false; error: string };
 type CheckoutStep = 1 | 2 | 3;
+type FeatureSheetKind = "basic" | "pro";
 
 type StepConfig = {
   step: CheckoutStep;
@@ -130,38 +131,67 @@ const REQUEST_STATUS_LABELS: Record<string, string> = {
 
 const LOCKED_REQUEST_STATUSES = ["SUBMITTED", "PENDING", "UNDER_REVIEW", "APPROVED"];
 const SUPPORT_EMAIL = "support@frameid.app";
+const BASIC_PRICE_AMOUNT = 40;
+const BASIC_CURRENCY = "EGP";
+const BASIC_INTERVAL = "monthly";
+
+const BASIC_VISIBLE_FEATURES = [
+  "معرض خاص لكل عميل (رابط + كلمة مرور)",
+  "موقع احترافي كامل",
+  "صفحة أسعار وباقات",
+  "معرض أعمال",
+  "مساحة تخزين 1 GB",
+  "لينك واحد لكل شغلك",
+  "لوحة تحكم كاملة",
+  "تعديل الموقع في أي وقت",
+];
+
+const BASIC_EXTRA_FEATURES = [
+  "تصميم متجاوب ومحسن للموبايل",
+  "استضافة مجانية داخل منصة FrameID",
+  "شهادة SSL للرابط المنشور",
+  "تحديثات مجانية للمنصة",
+  "دعم فني من داخل لوحة التحكم",
+  "صفحات وبيانات التواصل",
+  "تحسين أساسي للظهور في محركات البحث",
+  "إدارة الباقات والأسعار من لوحة التحكم",
+  "رفع الصور والألبومات من لوحة التحكم",
+  "رابط عام جاهز للمشاركة مع العملاء",
+];
+
+const PRO_VISIBLE_FEATURES = [
+  "دومين مخصص",
+  "إزالة شعار FrameID",
+  "مساحة تخزين 10 GB",
+  "معرض خاص للعملاء بجودة أصلية",
+  "حجز المواعيد أونلاين",
+  "قوالب حصرية إضافية",
+  "إحصائيات متقدمة",
+  "دعم فني بأولوية",
+];
+
+const PRO_FUTURE_FEATURES = [
+  "Google Analytics",
+  "Meta Pixel",
+  "Google Search Console",
+  "Instagram Feed",
+  "WhatsApp API",
+  "Messenger Integration",
+  "فيديو داخل المعرض",
+  "معرض غير محدود",
+  "صفحات إضافية",
+  "Blog",
+  "Reviews",
+  "CRM",
+  "AI Features",
+  "Team Members",
+  "API",
+  "Automation للتسويق والمتابعة",
+  "تقارير تحميل ومشاهدة المعارض",
+];
 
 function getPaymentMethodLabel(method: string): string {
   return ({ INSTAPAY: "إنستا باي", VODAFONE_CASH: "فودافون كاش", STRIPE: "Stripe", PAYPAL: "PayPal" } as Record<string, string>)[method] ?? method;
-}
-
-function getBillingIntervalLabel(interval: string): string {
-  return ({ monthly: "شهري", yearly: "سنوي", annual: "سنوي", lifetime: "مدى الحياة" } as Record<string, string>)[interval] ?? interval;
-}
-
-function normalizePlanFeatures(features: unknown): string[] {
-  if (Array.isArray(features)) {
-    return features.filter((item): item is string => typeof item === "string" && item.trim().length > 0);
-  }
-
-  if (!features || typeof features !== "object") return [];
-
-  const record = features as Record<string, unknown>;
-  const labels: string[] = [];
-
-  if (record.publicSite) labels.push("موقع عام جاهز للنشر");
-  if (record.dashboard) labels.push("لوحة تحكم كاملة");
-  if (typeof record.themes === "number") labels.push(`${record.themes} قالب متاح`);
-  if (typeof record.galleryImages === "number") labels.push(`حتى ${record.galleryImages.toLocaleString()} صورة`);
-  if (record.customDomain === true) labels.push("دومين مخصص");
-  if (record.customDomain === false) labels.push("بدون دومين مخصص");
-  if (record.storage) labels.push(`مساحة ${String(record.storage)}`);
-  if (record.priority === "vip") labels.push("دعم VIP");
-  else if (record.priority === "high") labels.push("دعم أولوية عالية");
-  else if (record.priority === "standard") labels.push("دعم عادي");
-  if (record.manualActivation) labels.push("تفعيل يدوي آمن");
-
-  return labels;
 }
 
 function isActionSuccess(state: unknown): state is Extract<ActionResult, { success: true }> {
@@ -190,12 +220,23 @@ function getSupportHref(receiptNumber: string): string {
   return `mailto:${SUPPORT_EMAIL}?subject=${subject}&body=${body}`;
 }
 
+function buildBasicPlan(plan: PlanData | undefined): PlanData | null {
+  if (!plan) return null;
+  return {
+    ...plan,
+    name: "الباقة الأساسية",
+    priceAmount: BASIC_PRICE_AMOUNT,
+    currency: BASIC_CURRENCY,
+    billingInterval: BASIC_INTERVAL,
+  };
+}
+
 export function BillingClient({ session, plans, paymentMethods, paymentRequest, daysRemaining, requested, draftId, error: urlError }: BillingClientProps) {
   const subscriptionStatus = session.subscription?.status ?? session.tenant.status;
   const requestLocked = Boolean(paymentRequest && LOCKED_REQUEST_STATUSES.includes(paymentRequest.status));
   const siteHref = session.site.slug ? `/p/${session.site.slug}` : "/dashboard";
 
-  const visiblePlans = useMemo(() => plans.filter((plan) => plan.isActive).slice(0, 2), [plans]);
+  const basicPlan = useMemo(() => buildBasicPlan(plans.find((plan) => plan.isActive)), [plans]);
   const initialMethod = useMemo(() => paymentMethods.find((method) => method.paymentMethod === paymentRequest?.method) ?? null, [paymentMethods, paymentRequest?.method]);
   const initialAccount = useMemo(() => initialMethod?.accounts.find((account) => account.id === paymentRequest?.paymentAccountId) ?? initialMethod?.accounts[0] ?? null, [initialMethod, paymentRequest?.paymentAccountId]);
 
@@ -207,6 +248,7 @@ export function BillingClient({ session, plans, paymentMethods, paymentRequest, 
   const [proofUploaded, setProofUploaded] = useState(Boolean(paymentRequest?.proofAssetId));
   const [fileError, setFileError] = useState<string | null>(null);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const [featureSheet, setFeatureSheet] = useState<FeatureSheetKind | null>(null);
   const [step, setStep] = useState<CheckoutStep>(() => getInitialStep(paymentRequest, Boolean(paymentRequest?.id ?? draftId), Boolean(paymentRequest?.proofAssetId)));
 
   const [createState, createAction, createPending] = useActionState<ActionResult | null, FormData>(async (_prev, fd) => createPaymentDraftAction(fd), null);
@@ -229,7 +271,7 @@ export function BillingClient({ session, plans, paymentMethods, paymentRequest, 
   const [submitState, submitAction, submitPending] = useActionState<ActionResult | null, FormData>(async (_prev, fd) => submitPaymentRequestAction(fd), null);
   const [cancelState, cancelAction, cancelPending] = useActionState<ActionResult | null, FormData>(async (_prev, fd) => cancelPaymentRequestAction(fd), null);
 
-  const selectedPlan = useMemo(() => plans.find((plan) => plan.id === selectedPlanId), [plans, selectedPlanId]);
+  const selectedPlan = selectedPlanId && basicPlan?.id === selectedPlanId ? basicPlan : undefined;
   const selectedMethod = useMemo(() => paymentMethods.find((method) => method.id === selectedMethodId) ?? initialMethod, [paymentMethods, selectedMethodId, initialMethod]);
   const selectedAccount = useMemo(() => selectedMethod?.accounts.find((account) => account.id === selectedAccountId) ?? selectedMethod?.accounts[0] ?? initialAccount, [selectedMethod, selectedAccountId, initialAccount]);
 
@@ -264,6 +306,7 @@ export function BillingClient({ session, plans, paymentMethods, paymentRequest, 
       setProofFile(null);
       setSelectedMethodId(null);
       setSelectedAccountId(null);
+      setSelectedPlanId(null);
       setStep(1);
     }
   }, [cancelState]);
@@ -316,22 +359,18 @@ export function BillingClient({ session, plans, paymentMethods, paymentRequest, 
   return (
     <main className="mx-auto max-w-4xl space-y-4">
       <style>{`
-        .billing-step-motion {
-          animation: billingStepIn 260ms cubic-bezier(0.22, 1, 0.36, 1) both;
-        }
+        .billing-step-motion { animation: billingStepIn 260ms cubic-bezier(0.22, 1, 0.36, 1) both; }
         @keyframes billingStepIn {
           from { opacity: 0; transform: translateY(14px) scale(0.985); filter: blur(5px); }
           to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
         }
-        @media (prefers-reduced-motion: reduce) {
-          .billing-step-motion { animation: none; }
-        }
+        @media (prefers-reduced-motion: reduce) { .billing-step-motion { animation: none; } }
       `}</style>
 
       <BuilderPageHeader
         eyebrow="التفعيل"
         title={subscriptionStatus === "ACTIVE" ? "اشتراكك نشط" : "تفعيل الاشتراك"}
-        description={subscriptionStatus === "ACTIVE" ? "اشتراكك مفعل ويمكنك استخدام كل الميزات." : "اختار الباقة، حوّل المبلغ، ارفع إثبات الدفع، وسيتم مراجعة الطلب خلال 24 ساعة."}
+        description={subscriptionStatus === "ACTIVE" ? "اشتراكك مفعل ويمكنك استخدام كل الميزات." : "ابدأ بالباقة الأساسية الآن، واطلب التفعيل بعد تحويل الاشتراك الشهري."}
       />
 
       {urlError ? <Alert tone="danger" title="حدث خطأ" text={urlError === "no-subscription" ? "لا يوجد اشتراك نشط. يرجى إنشاء الموقع أولاً." : urlError} /> : null}
@@ -339,28 +378,27 @@ export function BillingClient({ session, plans, paymentMethods, paymentRequest, 
       {subscriptionStatus !== "ACTIVE" ? <TrialNotice daysRemaining={daysRemaining} submitted={submitted} status={paymentRequest?.status ?? null} /> : null}
 
       {subscriptionStatus !== "ACTIVE" ? (
-        <section className="rounded-[28px] border border-white/[0.08] bg-white/[0.03] p-4">
+        <section className="rounded-[28px] border border-white/[0.08] bg-white/[0.03] p-3 sm:p-4">
           <StepTabs steps={stepConfig} current={step} onSelect={goToStep} />
 
-          <div className="mt-4 rounded-2xl border border-white/[0.07] bg-black/15 p-4">
+          <div className="mt-4 rounded-2xl border border-white/[0.07] bg-black/15 p-3 sm:p-4">
             <AnimatedStepPanel stageKey={stageKey}>
               {step === 1 ? (
                 <CheckoutStage title="اختار الباقة" icon={<Package className="size-4" />}>
-                  {visiblePlans.length > 0 ? (
-                    <div className="grid gap-3 md:grid-cols-2">
-                      {visiblePlans.map((plan) => (
-                        <PlanCard
-                          key={plan.id}
-                          plan={plan}
-                          selected={selectedPlanId === plan.id}
-                          disabled={Boolean(draftState || requestLocked)}
-                          onSelect={() => handlePlanSelect(plan.id)}
-                        />
-                      ))}
+                  {basicPlan ? (
+                    <div className="grid gap-3 lg:grid-cols-[1.06fr_0.94fr]">
+                      <BasicPlanCard
+                        plan={basicPlan}
+                        selected={selectedPlanId === basicPlan.id}
+                        disabled={Boolean(draftState || requestLocked)}
+                        onSelect={() => handlePlanSelect(basicPlan.id)}
+                        onShowDetails={() => setFeatureSheet("basic")}
+                      />
+                      <FutureProPlanCard onShowDetails={() => setFeatureSheet("pro")} />
                     </div>
                   ) : <Alert tone="warning" title="لا توجد باقات" text="لا توجد باقات مفعلة حاليًا. تواصل مع الدعم الفني." />}
                   <Actions>
-                    <Button type="button" variant="luxury" disabled={!selectedPlan} onClick={() => setStep(2)}>متابعة</Button>
+                    <Button type="button" variant="luxury" disabled={!selectedPlan} onClick={() => setStep(2)}>متابعة بالباقة الأساسية</Button>
                   </Actions>
                 </CheckoutStage>
               ) : null}
@@ -384,7 +422,6 @@ export function BillingClient({ session, plans, paymentMethods, paymentRequest, 
                       <PaymentInstructionCard
                         account={selectedAccount}
                         method={selectedMethod}
-                        plan={selectedPlan}
                         fallbackMethod={paymentRequest?.method ?? null}
                         copied={copiedKey === "pay-account"}
                         onCopy={() => selectedAccount ? copyToClipboard(selectedAccount.phoneNumber ?? selectedAccount.accountNumber, "pay-account") : undefined}
@@ -447,6 +484,8 @@ export function BillingClient({ session, plans, paymentMethods, paymentRequest, 
           </div>
         </section>
       ) : null}
+
+      {featureSheet ? <FeatureBottomSheet kind={featureSheet} onClose={() => setFeatureSheet(null)} /> : null}
     </main>
   );
 }
@@ -485,38 +524,100 @@ function CheckoutStage({ title, icon, children }: { title: string; icon: ReactNo
   );
 }
 
-function PlanCard({ plan, selected, disabled, onSelect }: { plan: PlanData; selected: boolean; disabled: boolean; onSelect: () => void }) {
-  const features = normalizePlanFeatures(plan.features);
-  const visibleFeatures = features.slice(0, 6);
-  const remainingFeatures = Math.max(features.length - visibleFeatures.length, 0);
+function BasicPlanCard({ plan, selected, disabled, onSelect, onShowDetails }: { plan: PlanData; selected: boolean; disabled: boolean; onSelect: () => void; onShowDetails: () => void }) {
+  return (
+    <article className={`relative overflow-hidden rounded-[1.65rem] border p-4 text-right shadow-2xl shadow-amber-950/20 ${selected ? "border-amber-300/75 bg-amber-500/12" : "border-amber-300/30 bg-[linear-gradient(145deg,rgba(243,207,115,0.13),rgba(255,255,255,0.035))]"}`}>
+      <div className="pointer-events-none absolute inset-x-6 top-0 h-px bg-gradient-to-l from-transparent via-amber-200/70 to-transparent" />
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <span className="inline-flex rounded-full border border-amber-200/24 bg-amber-200/10 px-3 py-1 text-[0.68rem] font-black text-[#f3cf73]">الأكثر مناسبة للبداية</span>
+          <h3 className="mt-3 text-xl font-black text-[#fff7e8]">الباقة الأساسية</h3>
+          <p className="mt-1 text-xs font-bold leading-5 text-white/45">كل ما تحتاجه لنشر موقعك واستقبال عملائك.</p>
+        </div>
+        {selected ? <span className="inline-flex items-center gap-1 rounded-full bg-emerald-300 px-2.5 py-1 text-[0.68rem] font-black text-black"><Check size={12} />مختارة</span> : null}
+      </div>
+
+      <div className="mt-4 flex items-end gap-2">
+        <strong className="text-4xl font-black text-[#f3cf73]">40</strong>
+        <span className="pb-1 text-sm font-black text-white/50">جنيه / شهريًا</span>
+      </div>
+
+      <ul className="mt-4 grid gap-2 text-sm font-bold text-white/70">
+        {BASIC_VISIBLE_FEATURES.map((feature) => <FeatureItem key={feature}>{feature}</FeatureItem>)}
+      </ul>
+
+      <div className="mt-4 grid gap-2 sm:grid-cols-2">
+        <button type="button" disabled={disabled} onClick={onSelect} className={`min-h-11 rounded-2xl px-4 text-sm font-black transition ${selected ? "bg-emerald-300 text-black" : "bg-[#f3cf73] text-[#17120a] hover:bg-[#ffe08a]"} ${disabled ? "cursor-not-allowed opacity-60" : ""}`}>{selected ? "تم اختيار الباقة" : "اختيار الباقة"}</button>
+        <button type="button" onClick={onShowDetails} className="min-h-11 rounded-2xl border border-white/12 bg-white/[0.045] px-4 text-sm font-black text-white/75 transition hover:border-amber-300/30 hover:text-white">عرض كل المميزات</button>
+      </div>
+    </article>
+  );
+}
+
+function FutureProPlanCard({ onShowDetails }: { onShowDetails: () => void }) {
+  return (
+    <article className="relative overflow-hidden rounded-[1.65rem] border border-white/10 bg-white/[0.025] p-4 text-right opacity-95">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.08),transparent_34%)]" aria-hidden />
+      <div className="relative">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <span className="inline-flex rounded-full border border-sky-300/22 bg-sky-300/10 px-3 py-1 text-[0.68rem] font-black text-sky-200">قريبًا</span>
+            <h3 className="mt-3 text-xl font-black text-[#fff7e8]">Pro</h3>
+            <p className="mt-1 text-xs font-bold leading-5 text-white/42">إصدار مستقبلي للمصورين الذين يحتاجون توسعًا أكبر.</p>
+          </div>
+          <Sparkles className="size-6 text-sky-200/70" />
+        </div>
+
+        <div className="mt-4 flex items-end gap-2">
+          <strong className="text-3xl font-black text-white/70">قريبًا</strong>
+        </div>
+
+        <ul className="mt-4 grid gap-2 text-sm font-bold text-white/58">
+          {PRO_VISIBLE_FEATURES.map((feature) => <FeatureItem key={feature} muted>{feature}</FeatureItem>)}
+        </ul>
+
+        <div className="mt-4 grid gap-2">
+          <button type="button" disabled className="min-h-11 cursor-not-allowed rounded-2xl border border-white/10 bg-white/[0.035] px-4 text-sm font-black text-white/32">الشراء غير متاح حاليًا</button>
+          <button type="button" onClick={onShowDetails} className="min-h-11 rounded-2xl border border-sky-300/18 bg-sky-300/8 px-4 text-sm font-black text-sky-100 transition hover:bg-sky-300/12">عرض كل المميزات القادمة</button>
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function FeatureItem({ children, muted = false }: { children: ReactNode; muted?: boolean }) {
+  return <li className="flex gap-2"><CheckCircle2 className={`mt-0.5 size-4 shrink-0 ${muted ? "text-sky-200/60" : "text-emerald-300"}`} /> <span>{children}</span></li>;
+}
+
+function FeatureBottomSheet({ kind, onClose }: { kind: FeatureSheetKind; onClose: () => void }) {
+  const isPro = kind === "pro";
+  const title = isPro ? "كل المميزات القادمة في Pro" : "كل مميزات الباقة الأساسية";
+  const description = isPro ? "هذه أفكار ومميزات مستقبلية مقترحة، وليست متاحة حاليًا داخل الاشتراك." : "هذه مميزات متاحة فعليًا في المنصة أو ضمن تجربة استخدام FrameID الحالية.";
+  const features = isPro ? PRO_FUTURE_FEATURES : [...BASIC_VISIBLE_FEATURES, ...BASIC_EXTRA_FEATURES];
 
   return (
-    <button
-      type="button"
-      disabled={disabled}
-      onClick={onSelect}
-      className={`flex min-h-[22rem] flex-col rounded-3xl border p-4 text-right transition ${selected ? "border-amber-400/70 bg-amber-500/10 shadow-2xl shadow-amber-950/20" : "border-white/[0.08] bg-white/[0.025] hover:border-white/20 hover:bg-white/[0.04]"} ${disabled ? "cursor-not-allowed opacity-60" : ""}`}
-    >
-      <span className="mb-3 flex items-center justify-between gap-2">
-        <span className="rounded-full border border-white/[0.08] bg-black/20 px-3 py-1 text-[0.68rem] font-black text-white/45" dir="ltr">{plan.code}</span>
-        {selected ? <span className="inline-flex items-center gap-1 rounded-full bg-emerald-400 px-2 py-1 text-[0.68rem] font-black text-black"><Check size={12} />مختارة</span> : <span className="rounded-full bg-white/[0.06] px-2 py-1 text-[0.68rem] font-black text-white/35">اختيار</span>}
-      </span>
-
-      <strong className="text-base font-black text-[#fff7e8]">{plan.name}</strong>
-      <span className="mt-2 text-3xl font-black text-[#f3cf73]">{plan.priceAmount.toLocaleString()} <small className="text-sm text-white/40">{plan.currency}</small></span>
-      <span className="mt-1 text-xs font-bold text-white/35">{getBillingIntervalLabel(plan.billingInterval)}</span>
-
-      <ul className="mt-4 grid gap-2 text-sm text-white/60">
-        {visibleFeatures.map((feature) => <li key={feature} className="flex gap-2"><CheckCircle2 className="mt-0.5 size-4 shrink-0 text-emerald-300" />{feature}</li>)}
-        {remainingFeatures > 0 ? <li className="text-xs font-bold text-white/35">+ {remainingFeatures} ميزة أخرى</li> : null}
-      </ul>
-    </button>
+    <div className="fixed inset-0 z-50 grid items-end bg-black/65 p-2 backdrop-blur-sm sm:items-center sm:p-4" role="dialog" aria-modal="true" aria-label={title}>
+      <button type="button" aria-label="إغلاق" className="absolute inset-0" onClick={onClose} />
+      <section className="relative mx-auto grid max-h-[86dvh] w-full max-w-2xl gap-4 overflow-hidden rounded-t-[1.8rem] border border-white/12 bg-[#10131a] p-4 shadow-2xl sm:rounded-[1.8rem] sm:p-5">
+        <header className="flex items-start justify-between gap-3">
+          <div>
+            <p className={`text-[0.68rem] font-black uppercase tracking-[0.2em] ${isPro ? "text-sky-200" : "text-[#f3cf73]"}`}>{isPro ? "Future Roadmap" : "Available Now"}</p>
+            <h3 className="mt-1 text-xl font-black text-[#fff7e8]">{title}</h3>
+            <p className="mt-1 text-xs font-bold leading-6 text-white/48">{description}</p>
+          </div>
+          <button type="button" onClick={onClose} className="grid size-10 shrink-0 place-items-center rounded-2xl border border-white/10 bg-white/[0.04] text-white/70 hover:bg-white/[0.08]"><X className="size-5" /></button>
+        </header>
+        <div className="grid max-h-[58dvh] gap-2 overflow-y-auto pr-1 sm:grid-cols-2">
+          {features.map((feature) => <div key={feature} className="flex gap-2 rounded-2xl border border-white/8 bg-white/[0.035] p-3 text-sm font-bold leading-6 text-white/72"><CheckCircle2 className={`mt-1 size-4 shrink-0 ${isPro ? "text-sky-200" : "text-emerald-300"}`} />{feature}</div>)}
+        </div>
+      </section>
+    </div>
   );
 }
 
 function PaymentMethodPicker({ methods, selectedMethodId, selectedPlanId, pending, action, onMethodSelect }: { methods: PaymentMethodData[]; selectedMethodId: string | null; selectedPlanId: string | null; pending: boolean; action: (payload: FormData) => void; onMethodSelect: (methodId: string) => void }) {
   const availableMethods = methods.filter((method) => method.isActive && method.accounts.length > 0);
-  if (!selectedPlanId) return <Alert tone="warning" title="اختار الباقة أولًا" text="لازم تختار باقة قبل وسيلة الدفع." />;
+  if (!selectedPlanId) return <Alert tone="warning" title="اختار الباقة أولًا" text="لازم تختار الباقة الأساسية قبل وسيلة الدفع." />;
   if (availableMethods.length === 0) return <Alert tone="warning" title="لا توجد وسائل دفع" text="وسائل الدفع اليدوية غير مفعلة حاليًا." />;
 
   return (
@@ -541,7 +642,7 @@ function PaymentMethodPicker({ methods, selectedMethodId, selectedPlanId, pendin
   );
 }
 
-function PaymentInstructionCard({ account, method, fallbackMethod, copied, onCopy }: { account: PaymentAccountData | null | undefined; method: PaymentMethodData | null | undefined; plan: PlanData | undefined; fallbackMethod: string | null; copied: boolean; onCopy: () => void }) {
+function PaymentInstructionCard({ account, method, fallbackMethod, copied, onCopy }: { account: PaymentAccountData | null | undefined; method: PaymentMethodData | null | undefined; fallbackMethod: string | null; copied: boolean; onCopy: () => void }) {
   const accountValue = account?.phoneNumber ?? account?.accountNumber ?? "";
   return (
     <div className="rounded-3xl border border-amber-400/20 bg-amber-500/10 p-4">
@@ -560,7 +661,7 @@ function PaymentInstructionCard({ account, method, fallbackMethod, copied, onCop
 }
 
 function PaymentAmountCard({ plan, request }: { plan: PlanData | undefined; request: PaymentRequestData | null }) {
-  return <div className="rounded-2xl border border-white/[0.07] bg-white/[0.025] p-4"><p className="text-xs text-white/40">المبلغ المطلوب</p><p className="mt-1 text-2xl font-black text-[#fff7e8]">{(request?.amount ?? plan?.priceAmount ?? 0).toLocaleString()} <span className="text-sm text-white/40">{request?.currency ?? plan?.currency ?? "EGP"}</span></p></div>;
+  return <div className="rounded-2xl border border-white/[0.07] bg-white/[0.025] p-4"><p className="text-xs text-white/40">المبلغ المطلوب</p><p className="mt-1 text-2xl font-black text-[#fff7e8]">{(request?.amount ?? plan?.priceAmount ?? BASIC_PRICE_AMOUNT).toLocaleString()} <span className="text-sm text-white/40">{request?.currency ?? plan?.currency ?? BASIC_CURRENCY}</span></p></div>;
 }
 
 function ProofSubmitCard({ draftId, proofFile, proofUploaded, pending, canSubmit, action, onFileSelect }: { draftId: string; proofFile: File | null; proofUploaded: boolean; pending: boolean; canSubmit: boolean; action: (payload: FormData) => void; onFileSelect: (event: ChangeEvent<HTMLInputElement>) => void }) {
@@ -581,7 +682,7 @@ function ProofSubmitCard({ draftId, proofFile, proofUploaded, pending, canSubmit
 }
 
 function FinalSummary({ plan, method, account, uploadSucceeded, request }: { plan: PlanData | undefined; method: PaymentMethodData | null | undefined; account: PaymentAccountData | null | undefined; uploadSucceeded: boolean; request: PaymentRequestData | null }) {
-  return <div className="grid gap-2 rounded-2xl border border-white/[0.07] bg-white/[0.025] p-4 text-sm text-white/55"><p>الباقة: <b className="text-white">{plan?.name ?? request?.planId ?? "—"}</b></p><p>وسيلة الدفع: <b className="text-white">{method?.label ?? getPaymentMethodLabel(request?.method ?? "—")}</b></p><p>الحساب: <b className="text-white">{account?.phoneNumber ?? account?.accountNumber ?? "—"}</b></p><p>إثبات الدفع: <b className={uploadSucceeded ? "text-emerald-300" : "text-amber-300"}>{uploadSucceeded ? "مرفوع" : "غير مرفوع"}</b></p></div>;
+  return <div className="grid gap-2 rounded-2xl border border-white/[0.07] bg-white/[0.025] p-4 text-sm text-white/55"><p>الباقة: <b className="text-white">{plan?.name ?? "الباقة الأساسية"}</b></p><p>وسيلة الدفع: <b className="text-white">{method?.label ?? getPaymentMethodLabel(request?.method ?? "—")}</b></p><p>الحساب: <b className="text-white">{account?.phoneNumber ?? account?.accountNumber ?? "—"}</b></p><p>إثبات الدفع: <b className={uploadSucceeded ? "text-emerald-300" : "text-amber-300"}>{uploadSucceeded ? "مرفوع" : "غير مرفوع"}</b></p></div>;
 }
 
 function SuccessReceiptCard({ receiptNumber, status, rejectionReason, copied, dashboardHref, siteHref, onCopy }: { receiptNumber: string; status: string; rejectionReason: string | null; copied: boolean; dashboardHref: string; siteHref: string; onCopy: () => void }) {
