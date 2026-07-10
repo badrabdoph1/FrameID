@@ -34,21 +34,21 @@ function createRepository(): BillingActivationRepository & {
       events.push(`submit:${id}:${submittedAt.toISOString()}`);
       return { tenantId: "tenant_1", subscriptionId: "subscription_1" };
     },
-    async getCustomerActivePaymentRequest(tenantId) {
+    async getCustomerActivePaymentRequest() {
       return null;
     },
-    async approvePayment(paymentRequestId, reviewerId, adminNote, reviewedAt) {
+    async approvePayment(paymentRequestId, reviewerId) {
       events.push(`approve:${paymentRequestId}:${reviewerId}`);
       return { tenantId: "tenant_1", subscriptionId: "subscription_1", planId: "plan_1" };
     },
-    async rejectPayment(paymentRequestId, reviewerId, reason, reviewedAt) {
+    async rejectPayment(paymentRequestId, reviewerId, reason) {
       events.push(`reject:${paymentRequestId}:${reviewerId}:${reason}`);
       return { tenantId: "tenant_1" };
     },
     async requestReupload(paymentRequestId, reviewerId, note) {
       events.push(`reupload:${paymentRequestId}:${reviewerId}:${note}`);
     },
-    async activateSubscription(tenantId, subscriptionId, planId, activatedAt) {
+    async activateSubscription(tenantId, subscriptionId) {
       events.push(`activate:${tenantId}:${subscriptionId}`);
     },
     async getPaymentRequestById(id) {
@@ -60,16 +60,19 @@ function createRepository(): BillingActivationRepository & {
         subscriptionId: "subscription_1",
         method: "INSTAPAY",
         amount: 120000,
-        planId: null,
+        currency: "EGP",
+        planId: "plan_1",
+        paymentAccountId: "account_1",
         reference: null,
-        proofAssetId: null,
+        proofAssetId: "asset_1",
         submittedAt: null,
         adminNote: null,
         rejectionReason: null,
         tenant: { id: "tenant_1", status: "TRIAL" },
-        plan: null,
-        paymentAccount: null,
-        proofAsset: null
+        subscription: { id: "subscription_1", status: "TRIAL", planId: null },
+        plan: { id: "plan_1", name: "Pro" },
+        paymentAccount: { id: "account_1", accountName: "Instapay" },
+        proofAsset: { id: "asset_1", url: "https://example.com/proof.jpg" }
       };
     },
     async cancelPaymentRequest(id, cancelledAt) {
@@ -89,36 +92,36 @@ function createRepository(): BillingActivationRepository & {
     async addLog(paymentRequestId, action, actorUserId, actorName, note) {
       events.push(`log:${paymentRequestId}:${action}:${note ?? ""}`);
     },
-    async getLogs(paymentRequestId) {
+    async getLogs() {
       return [];
     },
-    async createNotification(tenantId, type, title, body) {
+    async createNotification(tenantId, type, title) {
       events.push(`notify:${tenantId}:${type}:${title}`);
     },
-    async createNotificationLog(type, title, body, category) {
+    async createNotificationLog(type, title) {
       events.push(`notify-log:${type}:${title}`);
     },
     async recordAudit(actorUserId, tenantId, action, entityType, entityId) {
       events.push(`audit:${action}:${entityId}`);
     },
-    async recordSubscriptionChange(subscriptionId, fromPlanId, toPlanId, fromStatus, toStatus, changeType) {
+    async recordSubscriptionChange(subscriptionId, fromPlanId, toPlanId, fromStatus, toStatus) {
       events.push(`change:${subscriptionId}:${fromStatus}->${toStatus}`);
     },
     async getPlan(planId) {
       events.push(`get-plan:${planId}`);
       return { id: planId, billingInterval: "MONTHLY", priceAmount: 120000 };
     },
-    async getTrialInfo(tenantId) {
+    async getTrialInfo() {
       return null;
     },
-    daysRemaining(trialEndsAt) {
+    daysRemaining() {
       return 7;
     }
   };
 }
 
 describe("billing activation service", () => {
-  it("creates a pending manual payment request for activation", async () => {
+  it("creates a draft payment request for activation", async () => {
     const repository = createRepository();
     const service = createBillingActivationService({
       repository,
@@ -126,26 +129,23 @@ describe("billing activation service", () => {
     });
 
     await expect(
-      service.requestManualActivation({
+      service.createDraftPayment({
         tenantId: "tenant_1",
         subscriptionId: "subscription_1",
         method: "INSTAPAY",
+        paymentAccountId: "account_1",
         amount: 120000,
         currency: "EGP",
-        reference: "ali-payment",
-        proofAssetId: "asset_1"
+        reference: "ali-payment"
       })
     ).resolves.toEqual({
-      paymentRequestId: "payment_1",
-      status: "SUBMITTED"
+      id: "payment_1",
+      status: "DRAFT"
     });
 
     expect(repository.events).toContain("draft:tenant_1:INSTAPAY:120000");
-    expect(repository.events).toContain("update:payment_1:ref=ali-payment");
-    expect(repository.events).toContain("proof:payment_1:asset_1");
-    expect(repository.events).toContain("submit:payment_1:2026-07-06T12:00:00.000Z");
-    expect(repository.events).toContain("audit:PAYMENT_REQUEST_CREATED:payment_1");
-    expect(repository.events).toContain("log:payment_1:SUBMITTED:تم تقديم طلب الدفع (يدوي)");
+    expect(repository.events).toContain("audit:PAYMENT_DRAFT_CREATED:payment_1");
+    expect(repository.events).toContain("log:payment_1:DRAFT_CREATED:تم إنشاء مسودة طلب الدفع");
   });
 
   it("approves payment and activates the tenant subscription", async () => {
@@ -156,7 +156,7 @@ describe("billing activation service", () => {
       now: () => new Date("2026-07-06T12:00:00.000Z")
     });
 
-    await service.approveManualPayment({
+    await service.approvePayment({
       paymentRequestId: "payment_1",
       reviewerId: "admin_1",
       adminNote: "Verified"
@@ -167,12 +167,12 @@ describe("billing activation service", () => {
     expect(repository.events).toContain("log:payment_1:APPROVED:Verified");
     expect(repository.events).toContain("audit:PAYMENT_APPROVED:payment_1");
     expect(repository.events).toContain("audit:SUBSCRIPTION_ACTIVATED:subscription_1");
-    expect(repository.events).toContain("change:subscription_1:UNDER_REVIEW->ACTIVE");
+    expect(repository.events).toContain("change:subscription_1:TRIAL->ACTIVE");
     expect(repository.events).toContain("notify:tenant_1:payment_approved:تم قبول طلب الدفع");
     expect(repository.events).toContain("notify-log:payment_approved:تم قبول طلب الدفع");
   });
 
-  it("rejects a manual payment request with a review audit trail", async () => {
+  it("rejects a payment request with a review audit trail", async () => {
     const repository = createRepository();
     repository.setPaymentStatus("UNDER_REVIEW");
     const service = createBillingActivationService({
@@ -180,10 +180,10 @@ describe("billing activation service", () => {
       now: () => new Date("2026-07-06T12:00:00.000Z")
     });
 
-    await service.rejectManualPayment({
+    await service.rejectPayment({
       paymentRequestId: "payment_1",
       reviewerId: "admin_1",
-      adminNote: "Reference mismatch"
+      reason: "Reference mismatch"
     });
 
     expect(repository.events).toContain("reject:payment_1:admin_1:Reference mismatch");
