@@ -74,7 +74,7 @@ describe("signup site publication", () => {
     const prisma = {
       user: { async count() { return 0; } },
       site: { async findMany() { return []; } },
-      template: { async findFirst() { return null; } },
+      template: { async findUnique() { return null; } },
       async $transaction<T>(callback: (tx: typeof transaction) => Promise<T>) {
         return callback(transaction);
       }
