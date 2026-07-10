@@ -38,10 +38,10 @@ export default async function TemplatePreviewPage({ params, searchParams }: Prop
 
   const editableTemplate = await prisma.template.findUnique({
     where: { code },
-    select: { status: true, previewData: true }
+    select: { status: true, deletedAt: true, previewData: true }
   });
 
-  if (editableTemplate && editableTemplate.status !== "PUBLISHED") {
+  if (editableTemplate?.deletedAt || (editableTemplate && editableTemplate.status !== "PUBLISHED")) {
     notFound();
   }
 
