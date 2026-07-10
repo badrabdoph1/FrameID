@@ -20,14 +20,14 @@ function normalizeResponse(input: SupportSettingsResponse | null) {
 }
 
 function supportBottomClass(pathname: string | null) {
-  if (!pathname) return "bottom-[calc(1rem+env(safe-area-inset-bottom))]";
+  if (!pathname) return "bottom-[calc(0.75rem+env(safe-area-inset-bottom))]";
   if (pathname === "/admin" || pathname.startsWith("/admin/")) {
-    return "bottom-[calc(9rem+env(safe-area-inset-bottom))] lg:bottom-5";
+    return "bottom-[calc(7.8rem+env(safe-area-inset-bottom))] lg:bottom-5";
   }
   if (pathname === "/dashboard" || pathname.startsWith("/dashboard/")) {
-    return "bottom-[calc(6.5rem+env(safe-area-inset-bottom))] lg:bottom-5";
+    return "bottom-[calc(5.15rem+env(safe-area-inset-bottom))] lg:bottom-5";
   }
-  return "bottom-[calc(5.25rem+env(safe-area-inset-bottom))] md:bottom-5";
+  return "bottom-[calc(4.25rem+env(safe-area-inset-bottom))] md:bottom-5";
 }
 
 function isPublicMarketingPath(pathname: string) {
@@ -123,12 +123,12 @@ export function SupportFloatingButton() {
       <button
         type="button"
         onClick={() => setOpen((value) => !value)}
-        className={`inline-flex min-h-11 items-center gap-2 rounded-full border border-emerald-400/25 bg-[#111720]/94 px-3.5 text-xs font-black text-white shadow-[0_16px_42px_rgba(0,0,0,0.24)] backdrop-blur-xl transition duration-300 hover:-translate-y-0.5 hover:bg-[#172033] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 md:min-h-12 md:px-4 ${entered ? "translate-y-0 scale-100 opacity-100" : "translate-y-2 scale-95 opacity-0"}`}
+        className={`inline-flex min-h-10 items-center gap-2 rounded-full border border-emerald-400/25 bg-[#111720]/94 px-3 text-[0.7rem] font-black text-white shadow-[0_16px_42px_rgba(0,0,0,0.24)] backdrop-blur-xl transition duration-300 hover:-translate-y-0.5 hover:bg-[#172033] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 md:min-h-12 md:px-4 md:text-xs ${entered ? "translate-y-0 scale-100 opacity-100" : "translate-y-2 scale-95 opacity-0"}`}
         aria-label="فتح الدعم الفني"
         aria-expanded={open}
       >
-        <span className="grid size-7 place-items-center rounded-full bg-emerald-400 text-[#07120d]">
-          <MessageCircle className="size-4" aria-hidden />
+        <span className="grid size-6 place-items-center rounded-full bg-emerald-400 text-[#07120d] md:size-7">
+          <MessageCircle className="size-3.5 md:size-4" aria-hidden />
         </span>
         الدعم الفني
       </button>
