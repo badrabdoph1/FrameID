@@ -10,6 +10,7 @@ import { readFormString } from "@/modules/auth/auth-action-utils";
 import { createPrismaLoginRepository } from "@/modules/auth/prisma-login-repository";
 import { shouldUseSecureSessionCookie } from "@/modules/auth/request-cookie-security";
 import { createSessionForUser } from "@/modules/auth/session-service";
+import { getLifecycleTimerSettings } from "@/modules/lifecycle/customer-lifecycle";
 import { createPrismaSignupProvisioningRepository } from "@/modules/onboarding/prisma-signup-repository";
 import { createSignupProvisioningService } from "@/modules/onboarding/signup-provisioning";
 
@@ -42,8 +43,10 @@ export async function signupAction(formData: FormData) {
 
   try {
     const cookieSecure = await shouldUseSecureSessionCookie();
+    const lifecycleSettings = await getLifecycleTimerSettings(prisma);
     const provisioningService = createSignupProvisioningService({
       repository: createPrismaSignupProvisioningRepository(prisma),
+      trialDays: lifecycleSettings.trial.defaultDays,
     });
     const result = await provisioningService.provisionTrialSite({
       name: readFormString(formData, "name"),
