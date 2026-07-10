@@ -9,7 +9,8 @@
   "scripts": {
     "dev": "next dev",
     "build": "prisma generate && next build",
-    "start": "prisma db push --accept-data-loss && tsx prisma/seed.ts && next start",
+    "start": "next start",
+    "start:railway": "npm run db:deploy:safe && next start",
     "lint": "eslint .",
     "typecheck": "prisma generate && tsc --noEmit",
     "test": "vitest run",
@@ -17,15 +18,18 @@
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate deploy",
     "db:seed": "tsx prisma/seed.ts",
-    "db:deploy": "prisma db push --accept-data-loss && tsx prisma/seed.ts",
+    "db:push": "prisma db push",
+    "db:deploy": "npm run db:deploy:safe",
+    "db:deploy:safe": "prisma db push && tsx prisma/seed.ts",
+    "db:deploy:dangerous": "prisma db push --accept-data-loss && tsx prisma/seed.ts",
     "validate:env": "tsx scripts/validate-env.ts",
-    "setup": "npm run validate:env && npm run db:deploy",
+    "setup": "npm run validate:env && npm run db:deploy:safe",
     "backup": "tsx src/scripts/backup-run.ts",
     "restore": "tsx src/scripts/backup-restore.ts",
     "backup:db": "tsx src/scripts/backup-run.ts DATABASE",
     "backup:uploads": "tsx src/scripts/backup-run.ts UPLOADS",
     "backup:full": "tsx src/scripts/backup-run.ts FULL",
-    "check": "npm run typecheck && npm run lint && npm run test"
+    "check": "npm run validate:env && npm run typecheck && npm run lint && npm run test && npm run build"
   },
   "dependencies": {
     "@prisma/client": "^6.16.0",
