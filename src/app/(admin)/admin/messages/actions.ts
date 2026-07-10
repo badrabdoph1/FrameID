@@ -17,12 +17,14 @@ import {
   validateMessageTone,
 } from "@/modules/messages/customer-message-config";
 import {
+  applyDefaultTrialDurationFromRegistration,
   applySubscriptionTimerToTenants,
   applyTrialTimerToTenants,
   defaultLifecycleTimerSettings,
   lifecycleDurationOptions,
   normalizeLifecycleTimerSettings,
   saveLifecycleTimerSettings,
+  syncCustomerLifecycle,
   type LifecycleDurationPreset,
 } from "@/modules/lifecycle/customer-lifecycle";
 
@@ -69,24 +71,34 @@ export async function saveLifecycleTimersAction(formData: FormData) {
     },
   };
 
+  let defaultTrialApplied = 0;
+
   try {
     await saveLifecycleTimerSettings(prisma, settings);
+
+    if (settings.trial.useDefault) {
+      defaultTrialApplied = await applyDefaultTrialDurationFromRegistration(prisma, settings.trial.defaultDays);
+      await syncCustomerLifecycle(prisma);
+    }
+
     await prisma.auditLog.create({
       data: {
         actorUserId: null,
         action: "LIFECYCLE_TIMERS_UPDATED",
         entityType: "FeatureFlag",
         entityId: "platform.lifecycle.timers",
-        metadata: { settings, ...adminActorMetadata(admin) } as Prisma.InputJsonObject,
+        metadata: { settings, defaultTrialApplied, ...adminActorMetadata(admin) } as Prisma.InputJsonObject,
       },
     });
     revalidatePath("/admin/messages");
+    revalidatePath("/dashboard");
+    revalidatePath("/admin/customers");
   } catch (error) {
     const { userError } = await processError(error, { metadata: { action: "saveLifecycleTimers", ...adminActorMetadata(admin) } });
     redirectWithMessage({ error: userError.message });
   }
 
-  redirectWithMessage({ timerSaved: "1" });
+  redirectWithMessage({ timerSaved: defaultTrialApplied || "1" });
 }
 
 export async function applyLifecycleTimerAction(formData: FormData) {
@@ -110,6 +122,7 @@ export async function applyLifecycleTimerAction(formData: FormData) {
       if (tenants.length === 0) throw new Error("لا يوجد عملاء تجريبيون مطابقون.");
       const days = timerMode === "days" ? parseDays(readFormString(formData, "trialDays"), defaultLifecycleTimerSettings.trial.defaultDays) : "keep";
       appliedCount = await applyTrialTimerToTenants(prisma, tenants.map((tenant) => tenant.id), days);
+      await syncCustomerLifecycle(prisma);
     } else if (timerType === "subscription") {
       const tenants = await prisma.tenant.findMany({
         where: audience === "all"
