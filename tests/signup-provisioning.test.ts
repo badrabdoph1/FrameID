@@ -16,6 +16,10 @@ function createRepository(
 
   return {
     calls,
+    async getTemplateStarterData(templateCode) {
+      calls.push(`starter:${templateCode}`);
+      return getTemplateStarterData(templateCode);
+    },
     async identifierExists({ email, phone }) {
       calls.push(`identifier:${email}:${phone ?? "none"}`);
       return email === "used@example.com";
