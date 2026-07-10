@@ -15,6 +15,9 @@ export type PublicSiteRecord = {
     displayName: string;
   };
   contactProfile: {
+    studioName?: string | null;
+    bio?: string | null;
+    longDescription?: string | null;
     phone: string | null;
     whatsapp: string | null;
     email: string | null;
@@ -72,6 +75,9 @@ export type PublicSiteViewModel = {
     imageUrl: string;
   };
   contact: {
+    studioName: string | null;
+    bio: string | null;
+    longDescription: string | null;
     callToAction: string;
     phone: string | null;
     whatsapp: string | null;
@@ -169,7 +175,7 @@ export function createPublicSiteViewModel({
       {
         "@context": "https://schema.org",
         "@type": "LocalBusiness",
-        name: site.tenant.displayName,
+        name: site.contactProfile?.studioName ?? site.tenant.displayName,
         url: publicUrl,
         description: metadataDescription
       },
@@ -182,6 +188,9 @@ export function createPublicSiteViewModel({
       imageUrl: heroImageUrl
     },
     contact: {
+      studioName: site.contactProfile?.studioName ?? null,
+      bio: site.contactProfile?.bio ?? null,
+      longDescription: site.contactProfile?.longDescription ?? null,
       callToAction: readString(
         contactSection?.data.callToAction,
         "احجز جلستك الآن"

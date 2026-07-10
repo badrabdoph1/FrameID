@@ -25,6 +25,9 @@ type RawPublicSiteRecord = Omit<
     currency: string;
     features: unknown;
     isHighlighted: boolean;
+    imageAsset: {
+      url: string;
+    } | null;
   }>;
   albums: Array<{
     images: Array<{
@@ -80,6 +83,9 @@ export function createPrismaPublicSiteRepository(
           },
           contact: {
             select: {
+              studioName: true,
+              bio: true,
+              longDescription: true,
               phone: true,
               whatsapp: true,
               email: true,
@@ -117,7 +123,12 @@ export function createPrismaPublicSiteRepository(
               priceAmount: true,
               currency: true,
               features: true,
-              isHighlighted: true
+              isHighlighted: true,
+              imageAsset: {
+                select: {
+                  url: true
+                }
+              }
             }
           },
           extras: {
@@ -201,7 +212,7 @@ export function createPrismaPublicSiteRepository(
         })),
         packages: site.packages.map((item) => ({
           ...item,
-          imageUrl: null
+          imageUrl: item.imageAsset?.url ?? null
         })),
         contactProfile: site.contact,
         gallery: site.albums.flatMap((album) =>

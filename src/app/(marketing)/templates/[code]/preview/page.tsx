@@ -204,7 +204,7 @@ const previewSite: PublicSiteViewModel = {
     subheadline: "تصوير زفاف وخطوبة وجلسات خاصة بأسلوب فاخر—بساطة، إضاءة سينمائية، وألوان طبيعية.",
     imageUrl: DEMO_HERO_IMAGE
   },
-  contact: { callToAction: "احجز دلوقتي", phone: null, whatsapp: null, email: null, instagram: "bodystudio", facebook: "bodystudio" },
+  contact: { studioName: null, bio: null, longDescription: null, callToAction: "احجز دلوقتي", phone: null, whatsapp: null, email: null, instagram: "bodystudio", facebook: "bodystudio" },
   packages: [
     { id: "bronze", name: "الباقة البرونزية", subtitle: "جلسة تصوير بسيطة", price: "2,500 جنيه", priceAmount: 2500, currency: "EGP", features: ["3 ساعات", "جميع الصور المعدلة", "معرض إلكتروني", "تسليم خلال 7 أيام"], imageUrl: null, isHighlighted: false },
     { id: "silver", name: "الباقة الفضية", subtitle: "نصف يوم تصوير", price: "5,000 جنيه", priceAmount: 5000, currency: "EGP", features: ["نصف يوم", "جميع الصور المعدلة", "ألبوم فاخر", "فيديو Highlight"], imageUrl: null, isHighlighted: true },
