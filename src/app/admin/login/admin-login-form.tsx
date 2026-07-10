@@ -26,7 +26,7 @@ export function AdminLoginForm({ initialError }: AdminLoginFormProps) {
     const password = String(formData.get("password") ?? "");
 
     if (!identifier || !password) {
-      setError("اكتب رقم الهاتف أو البريد الإلكتروني وكلمة السر.");
+      setError("اكتب البريد الإلكتروني وكلمة السر.");
       return;
     }
 
@@ -83,18 +83,18 @@ export function AdminLoginForm({ initialError }: AdminLoginFormProps) {
 
       <div className="space-y-2">
         <label htmlFor="identifier" className="block text-sm font-extrabold text-white/60">
-          رقم الهاتف أو البريد الإلكتروني
+          البريد الإلكتروني
         </label>
         <input
           id="identifier"
           name="identifier"
-          type="text"
+          type="email"
           inputMode="email"
           autoComplete="username"
           required
           disabled={pending}
           className="flex h-12 w-full rounded-xl border border-white/10 bg-white/5 px-4 text-base text-white outline-none transition placeholder:text-white/30 focus:border-amber-500/50 focus:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60 md:text-sm"
-          placeholder="01000000000 أو admin@frameid.app"
+          placeholder="admin@frameid.app"
         />
       </div>
 
