@@ -20,6 +20,8 @@ const EDITABLE_PAYMENT_STATUSES: PaymentStatus[] = ["DRAFT"];
 const ACTIVE_PAYMENT_STATUSES: PaymentStatus[] = ["DRAFT", "SUBMITTED", "PENDING", "UNDER_REVIEW"];
 const MAX_PROOF_SIZE_BYTES = 5 * 1024 * 1024;
 const ALLOWED_PROOF_TYPES = ["image/jpeg", "image/png", "image/webp"];
+const BASIC_PLAN_PRICE_AMOUNT = 40;
+const BASIC_PLAN_CURRENCY = "EGP";
 
 function getService() {
   return createBillingActivationService({ repository: createPrismaBillingActivationRepository(prisma) });
@@ -56,12 +58,17 @@ async function assertEditableOwnedDraft(draftId: string, tenantId: string) {
 }
 
 async function validatePlan(planId: string) {
-  const plan = await prisma.plan.findFirst({
-    where: { id: planId, isActive: true, deletedAt: null },
-    select: { id: true, priceAmount: true, currency: true },
+  const basicPlan = await prisma.plan.findFirst({
+    where: { isActive: true, deletedAt: null },
+    orderBy: { priceAmount: "asc" },
+    select: { id: true },
   });
-  if (!plan) throw new Error("الباقة غير موجودة أو غير مفعلة");
-  return plan;
+
+  if (!basicPlan || basicPlan.id !== planId) {
+    throw new Error("الباقة الأساسية فقط متاحة للشراء حاليًا");
+  }
+
+  return { id: basicPlan.id, priceAmount: BASIC_PLAN_PRICE_AMOUNT, currency: BASIC_PLAN_CURRENCY };
 }
 
 async function validatePaymentAccount(method: PaymentMethod, accountId: string) {
@@ -262,10 +269,4 @@ export async function cancelPaymentRequestAction(formData: FormData): Promise<Ac
     });
     return { success: false, error: userError.message };
   }
-}
-
-export async function requestActivationAction(formData: FormData) {
-  const result = await createPaymentDraftAction(formData);
-  if (!result.success) redirect(`/dashboard/billing?error=${encodeURIComponent(result.error)}`);
-  redirect(`/dashboard/billing?draft=${result.draftId}`);
 }
