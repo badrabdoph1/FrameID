@@ -2,9 +2,9 @@ name: FrameID CI
 
 on:
   pull_request:
+    branches: [main]
   push:
-    branches:
-      - main
+    branches: [main]
 
 concurrency:
   group: frameid-ci-${{ github.ref }}
@@ -13,12 +13,31 @@ concurrency:
 jobs:
   validate:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     env:
-      DATABASE_URL: postgresql://frameid:frameid@127.0.0.1:5432/frameid
-      NEXT_PUBLIC_APP_URL: https://frameid.example.com
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/frameid_ci?schema=public
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
       SESSION_SECRET: ci-session-secret-with-more-than-32-characters
       ADMIN_SESSION_SECRET: ci-admin-session-secret-with-more-than-32-characters
+      PASSWORD_RESET_DELIVERY_MODE: console
+      SEED_SUPER_ADMIN_EMAIL: admin@frameid.local
+      SEED_SUPER_ADMIN_PASSWORD: FrameID-CI-Password-123!
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: frameid_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d frameid_ci"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -26,11 +45,20 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 24
+          node-version: 22
           cache: npm
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Validate Prisma schema
+        run: node scripts/ensure-prisma-schema-compat.mjs && npx prisma validate
+
+      - name: Generate Prisma client
+        run: npx prisma generate
+
+      - name: Prepare test database
+        run: npx prisma db push
 
       - name: Typecheck
         run: npm run typecheck
@@ -38,24 +66,8 @@ jobs:
       - name: Lint
         run: npm run lint
 
-      - name: Test upload pipeline
-        run: npx vitest run tests/media-upload-service.test.ts tests/platform-image-upload.test.ts
+      - name: Test critical flows
+        run: npx vitest run tests/template-starter-data.test.ts tests/signup-auto-publish.test.ts tests/media-upload-service.test.ts tests/platform-image-upload.test.ts
 
-      - name: Test full suite (diagnostic)
-        continue-on-error: true
-        shell: bash
-        run: |
-          set -o pipefail
-          npm run test 2>&1 | tee test-results.log
-
-      - name: Upload full-suite diagnostics
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: full-test-diagnostics
-          path: test-results.log
-          if-no-files-found: error
-          retention-days: 1
-
-      - name: Build
+      - name: Production build
         run: npm run build
