@@ -81,6 +81,11 @@ export function createDatabaseDumper(databaseUrl: string): DatabaseDumper {
       const env = { ...process.env, PGPASSWORD: parsed.password };
       const dumpChild = spawn("pg_dump", pgDumpArgs, { env, stdio: ["ignore", "pipe", "pipe"] });
 
+      const exitPromise = new Promise<number | null>((resolve, reject) => {
+        dumpChild.on("error", reject);
+        dumpChild.on("close", resolve);
+      });
+
       const gzipStream = createGzip({ level: 9 });
       const writeStream = createWriteStream(dumpPath);
 
@@ -95,10 +100,7 @@ export function createDatabaseDumper(databaseUrl: string): DatabaseDumper {
 
       await pipeline(dumpChild.stdout, gzipStream, writeStream);
 
-      const exitCode = await new Promise<number | null>((resolve, reject) => {
-        dumpChild.on("error", reject);
-        dumpChild.on("close", resolve);
-      });
+      const exitCode = await exitPromise;
 
       if (exitCode !== 0) {
         throw new Error(`pg_dump failed with exit code ${exitCode}: ${stderr.trim()}`);
