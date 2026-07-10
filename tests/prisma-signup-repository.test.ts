@@ -30,32 +30,67 @@ function createAccountInput(): AccountCreationInput {
       trialEndsAt: new Date("2026-07-20T12:00:00.000Z")
     },
     defaultContent: {
+      themeConfig: { colorPreset: "test" },
+      contact: {
+        studioName: "Ali Ahmed",
+        bio: "Photographer",
+        longDescription: "Premium photography studio",
+        callToAction: "Book now",
+        phone: null,
+        whatsapp: null,
+        email: "ali@example.com",
+        instagram: null,
+        facebook: null
+      },
+      seo: {
+        title: "Ali Ahmed",
+        description: "Premium photography",
+        robotsIndex: true,
+        structuredDataOverrides: {}
+      },
       sections: [
         {
           type: "hero",
           title: "Home",
           sortOrder: 0,
+          isVisible: true,
           data: { headline: "Ali Ahmed" }
         }
       ],
       packages: [
         {
+          id: "silver",
           name: "Silver",
           subtitle: "Engagement",
+          price: "2,500 EGP",
           priceAmount: 2500,
           currency: "EGP",
           features: ["Album"],
+          imageUrl: "https://example.com/package.jpg",
           isHighlighted: false,
           sortOrder: 0
         }
       ],
       extras: [
         {
+          id: "reel",
           name: "Reel",
+          description: "Short social reel",
+          price: "1,000 EGP",
           priceAmount: 1000,
           currency: "EGP",
           iconKey: "film",
           sortOrder: 0
+        }
+      ],
+      gallery: [
+        {
+          id: "gallery-1",
+          url: "https://example.com/gallery.jpg",
+          alt: "Gallery image",
+          caption: "Gallery caption",
+          sortOrder: 0,
+          isFeatured: true
         }
       ]
     }
@@ -65,6 +100,7 @@ function createAccountInput(): AccountCreationInput {
 describe("prisma signup repository", () => {
   it("creates the account, tenant, site, content and trial subscription in one transaction", async () => {
     const operations: string[] = [];
+    let assetCounter = 0;
     const tx = {
       theme: {
         async upsert() {
@@ -108,6 +144,12 @@ describe("prisma signup repository", () => {
           return { count: 1 };
         }
       },
+      contactProfile: {
+        async create() {
+          operations.push("contact");
+          return { id: "contact_1" };
+        }
+      },
       package: {
         async createMany(args: { data: unknown[] }) {
           operations.push(`packages:${args.data.length}`);
@@ -118,6 +160,31 @@ describe("prisma signup repository", () => {
         async createMany(args: { data: unknown[] }) {
           operations.push(`extras:${args.data.length}`);
           return { count: args.data.length };
+        }
+      },
+      galleryAlbum: {
+        async create() {
+          operations.push("gallery-album");
+          return { id: "album_1" };
+        }
+      },
+      mediaAsset: {
+        async create() {
+          assetCounter += 1;
+          operations.push(`media:${assetCounter}`);
+          return { id: `asset_${assetCounter}` };
+        }
+      },
+      galleryImage: {
+        async create() {
+          operations.push("gallery-image");
+          return { id: "gallery_image_1" };
+        }
+      },
+      sEOSettings: {
+        async create() {
+          operations.push("seo");
+          return { id: "seo_1" };
         }
       },
       subscription: {
@@ -136,6 +203,11 @@ describe("prisma signup repository", () => {
       site: {
         async findMany() {
           return [{ slug: "used-slug" }];
+        }
+      },
+      template: {
+        async findUnique() {
+          return { status: "PUBLISHED", deletedAt: null, previewData: null };
         }
       },
       async $transaction<T>(callback: (transaction: typeof tx) => Promise<T>) {
@@ -173,8 +245,13 @@ describe("prisma signup repository", () => {
       "site:ali-ahmed",
       "config:site_1:theme_1",
       "sections",
+      "contact",
       "packages:1",
       "extras:1",
+      "gallery-album",
+      "media:1",
+      "gallery-image",
+      "seo",
       "subscription:TRIAL",
       "commit"
     ]);
