@@ -4,7 +4,6 @@ import { prisma } from "@/lib/prisma";
 import { processError } from "@/lib/errors";
 import { createPrismaAdminAuthRepository } from "@/modules/admin/prisma-admin-auth-repository";
 import { createAdminLoginService, type AdminLoginResult } from "@/modules/admin/admin-auth-service";
-import { parseEmailOrPhoneIdentifier } from "@/modules/auth/auth-identifier";
 import {
   buildAdminSessionCookie,
   createSignedAdminSessionToken,
@@ -68,22 +67,17 @@ function createStatelessAdminLoginResult(
 
 function getEnvAdminLogin(identifierValue: string, password: string): EnvAdminLoginResult | null {
   const envEmail = process.env.SEED_SUPER_ADMIN_EMAIL?.trim().toLowerCase();
-  const envPhone = process.env.SEED_SUPER_ADMIN_PHONE?.trim();
   const envPassword = process.env.SEED_SUPER_ADMIN_PASSWORD;
-  const identifier = parseEmailOrPhoneIdentifier(identifierValue);
+  const email = identifierValue.trim().toLowerCase();
 
-  if (!envPassword) return null;
-
-  const emailMatches = identifier.kind === "email" && envEmail && identifier.email === envEmail;
-  const phoneMatches = identifier.kind === "phone" && envPhone && identifier.phone === parseEmailOrPhoneIdentifier(envPhone).phone;
-
-  if (!emailMatches && !phoneMatches) return null;
+  if (!envEmail || !envPassword) return null;
+  if (email !== envEmail) return null;
   if (password !== envPassword) return null;
 
   return createStatelessAdminLoginResult({
-    id: `env-super-admin:${envEmail ?? envPhone}`,
-    email: envEmail ?? identifier.storageEmail,
-    phone: envPhone ? parseEmailOrPhoneIdentifier(envPhone).phone : null,
+    id: `env-super-admin:${envEmail}`,
+    email: envEmail,
+    phone: null,
     name: "FrameID Admin",
     role: "SUPER_ADMIN",
   });
@@ -106,7 +100,7 @@ export async function POST(request: Request) {
     const password = params.get("password") ?? "";
 
     if (!identifier.trim() || !password) {
-      return createLoginErrorResponse(request, "اكتب رقم الهاتف أو البريد الإلكتروني وكلمة السر.", 400);
+      return createLoginErrorResponse(request, "اكتب البريد الإلكتروني وكلمة السر.", 400);
     }
 
     const resultFromEnv = getEnvAdminLogin(identifier, password);

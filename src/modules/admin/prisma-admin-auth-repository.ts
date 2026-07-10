@@ -48,21 +48,13 @@ export function createPrismaAdminAuthRepository(
   prisma: PrismaAdminAuthClient
 ): AdminLoginRepository {
   return {
-    async findAdminByIdentifier({ email, phone }) {
+    async findAdminByEmail(email) {
       const normalizedEmail = email.trim().toLowerCase();
-      const adminWhere = {
-        OR: [
-          { email: normalizedEmail },
-          ...(phone ? [{ phone }] : [])
-        ]
-      };
+      const adminWhere = { email: normalizedEmail };
       const legacyWhere = {
         deletedAt: null,
         role: { in: ADMIN_LOGIN_ROLES },
-        OR: [
-          { email: normalizedEmail },
-          ...(phone ? [{ phone }] : [])
-        ]
+        email: normalizedEmail,
       };
 
       const [adminUser, legacyAdminUser] = await Promise.all([
