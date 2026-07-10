@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Activity, CalendarDays, CheckCircle2, Clock, DollarSign, ExternalLink, ImageIcon, X } from "lucide-react";
 
@@ -186,103 +185,14 @@ export function AdminPaymentsClient({ payments, stats, banner }: Props) {
         <StatCard label="متوسط المراجعة" value={stats.avgReviewHours != null ? `${stats.avgReviewHours} ساعة` : "—"} icon={Activity} iconColor="text-sky-400" />
       </section>
 
-      <section className="rounded-3xl border border-amber-300/14 bg-amber-300/[0.045] p-4">
-        <div className="flex items-start gap-3">
-          <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-amber-300/12 text-[#f3cf73]"><CalendarDays className="size-5" /></span>
-          <div>
-            <h2 className="text-base font-black text-[#fff7e8]">قبول الدفع أصبح جزءًا من دورة حياة العميل</h2>
-            <p className="mt-1 text-sm font-bold leading-6 text-white/55">عند الضغط على قبول ستظهر نافذة اختيار مدة الاشتراك، وسيتم حفظ تاريخ البداية والانتهاء وتحديث حالة العميل وتسجيل العملية في Audit Log.</p>
-          </div>
-        </div>
-      </section>
-
-      <div className="flex flex-wrap gap-2 rounded-2xl border border-white/8 bg-white/[0.03] p-1.5">
-        {tabs.map((tab) => (
-          <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={cn("min-h-10 flex-1 rounded-xl px-4 text-sm font-black transition", activeTab === tab.id ? "bg-[#f3cf73] text-[#17120a]" : "text-white/50 hover:bg-white/[0.06] hover:text-white")}>{tab.label}</button>
-        ))}
-      </div>
-
-      <section className="grid gap-3">
-        {visiblePayments.length === 0 ? (
-          <div className="rounded-3xl border border-dashed border-white/10 bg-white/[0.025] p-12 text-center text-sm font-bold text-white/40">لا توجد طلبات في هذا التصنيف.</div>
-        ) : visiblePayments.map((payment) => (
-          <article key={payment.id} className="overflow-hidden rounded-3xl border border-white/10 bg-white/[0.035]">
-            <header className="grid gap-3 border-b border-white/8 p-4 lg:grid-cols-[1fr_auto] lg:items-start">
-              <div className="min-w-0">
-                <div className="flex flex-wrap items-center gap-2">
-                  <h3 className="truncate text-base font-black text-[#fff7e8]">{payment.tenant.displayName}</h3>
-                  <Badge tone={statusTone[payment.status] ?? "neutral"}>{statusLabel[payment.status] ?? payment.status}</Badge>
-                </div>
-                <p className="mt-1 text-xs font-bold text-white/42">{payment.tenant.owner.email} · {payment.plan?.name ?? "بدون خطة"} · {methodLabel(payment.method)} · منذ {daysSince(payment.createdAt)} يوم</p>
-              </div>
-              <strong className="text-lg font-black text-[#f3cf73]">{formatMoney(payment.amount, payment.currency)}</strong>
-            </header>
-
-            <div className="grid gap-4 p-4 xl:grid-cols-[1fr_0.8fr]">
-              <div className="grid gap-3 sm:grid-cols-2">
-                <Info label="تاريخ الطلب" value={formatDate(payment.createdAt)} />
-                <Info label="المرجع" value={payment.reference ?? "—"} />
-                <Info label="حساب الدفع" value={payment.paymentAccount?.accountName ?? "—"} />
-                <Info label="المراجع" value={payment.reviewedBy?.name ?? "—"} />
-              </div>
-
-              <div className="grid gap-3">
-                {payment.proofAsset ? (
-                  <a href={payment.proofAsset.url} target="_blank" rel="noreferrer" className="flex min-h-24 items-center justify-between gap-3 rounded-2xl border border-white/10 bg-black/18 p-3 text-white/70 no-underline transition hover:border-amber-300/24 hover:text-white">
-                    <span className="flex items-center gap-2 text-sm font-black"><ImageIcon className="size-4 text-[#f3cf73]" /> عرض إثبات الدفع</span>
-                    <ExternalLink className="size-4" />
-                  </a>
-                ) : <div className="flex min-h-24 items-center justify-center rounded-2xl border border-dashed border-white/10 text-sm font-bold text-white/35">لا يوجد إثبات دفع</div>}
-              </div>
-            </div>
-
-            {pendingPayments.some((item) => item.id === payment.id) ? (
-              <footer className="grid gap-3 border-t border-white/8 p-4">
-                <div className="flex flex-wrap gap-2">
-                  <button disabled={submitting} onClick={() => setApproval({ payment, durationPreset: "30", customDays: 30, adminNote: "" })} className="inline-flex min-h-11 items-center gap-2 rounded-2xl bg-gradient-to-br from-[#f3cf73] to-[#d4af37] px-5 text-sm font-black text-[#17120a] disabled:opacity-50"><CheckCircle2 className="size-4" /> قبول وتحديد المدة</button>
-                  <TextActionInput value={rejectReason[payment.id] ?? ""} placeholder="سبب الرفض" onChange={(value) => setRejectReason((prev) => ({ ...prev, [payment.id]: value }))} buttonLabel="رفض" tone="danger" onSubmit={() => reject(payment)} disabled={submitting} />
-                  <TextActionInput value={reuploadNote[payment.id] ?? ""} placeholder="ملاحظة إعادة الرفع" onChange={(value) => setReuploadNote((prev) => ({ ...prev, [payment.id]: value }))} buttonLabel="إعادة رفع" tone="warning" onSubmit={() => requestReupload(payment)} disabled={submitting} />
-                  <TextActionInput value={internalNote[payment.id] ?? ""} placeholder="ملاحظة داخلية" onChange={(value) => setInternalNote((prev) => ({ ...prev, [payment.id]: value }))} buttonLabel="حفظ" tone="neutral" onSubmit={() => addNote(payment)} disabled={submitting} />
-                </div>
-              </footer>
-            ) : null}
-          </article>
-        ))}
-      </section>
-
+      <section className="rounded-3xl border border-amber-300/14 bg-amber-300/[0.045] p-4"><div className="flex items-start gap-3"><span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-amber-300/12 text-[#f3cf73]"><CalendarDays className="size-5" /></span><div><h2 className="text-base font-black text-[#fff7e8]">قبول الدفع أصبح جزءًا من دورة حياة العميل</h2><p className="mt-1 text-sm font-bold leading-6 text-white/55">عند الضغط على قبول ستظهر نافذة اختيار مدة الاشتراك، وسيتم حفظ تاريخ البداية والانتهاء وتحديث حالة العميل وتسجيل العملية في Audit Log.</p></div></div></section>
+      <div className="flex flex-wrap gap-2 rounded-2xl border border-white/8 bg-white/[0.03] p-1.5">{tabs.map((tab) => <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={cn("min-h-10 flex-1 rounded-xl px-4 text-sm font-black transition", activeTab === tab.id ? "bg-[#f3cf73] text-[#17120a]" : "text-white/50 hover:bg-white/[0.06] hover:text-white")}>{tab.label}</button>)}</div>
+      <section className="grid gap-3">{visiblePayments.length === 0 ? <div className="rounded-3xl border border-dashed border-white/10 bg-white/[0.025] p-12 text-center text-sm font-bold text-white/40">لا توجد طلبات في هذا التصنيف.</div> : visiblePayments.map((payment) => <article key={payment.id} className="overflow-hidden rounded-3xl border border-white/10 bg-white/[0.035]"><header className="grid gap-3 border-b border-white/8 p-4 lg:grid-cols-[1fr_auto] lg:items-start"><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><h3 className="truncate text-base font-black text-[#fff7e8]">{payment.tenant.displayName}</h3><Badge tone={statusTone[payment.status] ?? "neutral"}>{statusLabel[payment.status] ?? payment.status}</Badge></div><p className="mt-1 text-xs font-bold text-white/42">{payment.tenant.owner.email} · {payment.plan?.name ?? "بدون خطة"} · {methodLabel(payment.method)} · منذ {daysSince(payment.createdAt)} يوم</p></div><strong className="text-lg font-black text-[#f3cf73]">{formatMoney(payment.amount, payment.currency)}</strong></header><div className="grid gap-4 p-4 xl:grid-cols-[1fr_0.8fr]"><div className="grid gap-3 sm:grid-cols-2"><Info label="تاريخ الطلب" value={formatDate(payment.createdAt)} /><Info label="المرجع" value={payment.reference ?? "—"} /><Info label="حساب الدفع" value={payment.paymentAccount?.accountName ?? "—"} /><Info label="المراجع" value={payment.reviewedBy?.name ?? "—"} /></div><div className="grid gap-3">{payment.proofAsset ? <a href={payment.proofAsset.url} target="_blank" rel="noreferrer" className="flex min-h-24 items-center justify-between gap-3 rounded-2xl border border-white/10 bg-black/18 p-3 text-white/70 no-underline transition hover:border-amber-300/24 hover:text-white"><span className="flex items-center gap-2 text-sm font-black"><ImageIcon className="size-4 text-[#f3cf73]" /> عرض إثبات الدفع</span><ExternalLink className="size-4" /></a> : <div className="flex min-h-24 items-center justify-center rounded-2xl border border-dashed border-white/10 text-sm font-bold text-white/35">لا يوجد إثبات دفع</div>}</div></div>{pendingPayments.some((item) => item.id === payment.id) ? <footer className="grid gap-3 border-t border-white/8 p-4"><div className="flex flex-wrap gap-2"><button disabled={submitting} onClick={() => setApproval({ payment, durationPreset: "30", customDays: 30, adminNote: "" })} className="inline-flex min-h-11 items-center gap-2 rounded-2xl bg-gradient-to-br from-[#f3cf73] to-[#d4af37] px-5 text-sm font-black text-[#17120a] disabled:opacity-50"><CheckCircle2 className="size-4" /> قبول وتحديد المدة</button><TextActionInput value={rejectReason[payment.id] ?? ""} placeholder="سبب الرفض" onChange={(value) => setRejectReason((prev) => ({ ...prev, [payment.id]: value }))} buttonLabel="رفض" tone="danger" onSubmit={() => reject(payment)} disabled={submitting} /><TextActionInput value={reuploadNote[payment.id] ?? ""} placeholder="ملاحظة إعادة الرفع" onChange={(value) => setReuploadNote((prev) => ({ ...prev, [payment.id]: value }))} buttonLabel="إعادة رفع" tone="warning" onSubmit={() => requestReupload(payment)} disabled={submitting} /><TextActionInput value={internalNote[payment.id] ?? ""} placeholder="ملاحظة داخلية" onChange={(value) => setInternalNote((prev) => ({ ...prev, [payment.id]: value }))} buttonLabel="حفظ" tone="neutral" onSubmit={() => addNote(payment)} disabled={submitting} /></div></footer> : null}</article>)}</section>
       {approval ? <ApprovalModal approval={approval} setApproval={setApproval} onCancel={() => setApproval(null)} onConfirm={confirmApproval} submitting={submitting} /> : null}
     </AdminPageShell>
   );
 }
 
-function Info({ label, value }: { label: string; value: string }) {
-  return <div className="rounded-2xl border border-white/8 bg-black/14 p-3"><p className="text-[0.68rem] font-black text-white/35">{label}</p><p className="mt-1 truncate text-sm font-bold text-white/72">{value}</p></div>;
-}
-
-function TextActionInput({ value, placeholder, buttonLabel, tone, onChange, onSubmit, disabled }: { value: string; placeholder: string; buttonLabel: string; tone: "danger" | "warning" | "neutral"; onChange: (value: string) => void; onSubmit: () => void; disabled?: boolean }) {
-  const buttonClass = tone === "danger" ? "border-red-400/24 text-red-300 hover:bg-red-500/10" : tone === "warning" ? "border-amber-400/24 text-amber-300 hover:bg-amber-500/10" : "border-white/10 text-white/55 hover:bg-white/[0.06] hover:text-white";
-  return <span className="inline-flex min-h-11 overflow-hidden rounded-2xl border border-white/8 bg-black/16"><input value={value} onChange={(event) => onChange(event.target.value)} placeholder={placeholder} className="w-36 bg-transparent px-3 text-xs font-bold text-white outline-none placeholder:text-white/25" /><button disabled={disabled || !value.trim()} onClick={onSubmit} className={cn("border-r px-3 text-xs font-black transition disabled:opacity-35", buttonClass)}>{buttonLabel}</button></span>;
-}
-
-function ApprovalModal({ approval, setApproval, onCancel, onConfirm, submitting }: { approval: ApprovalState; setApproval: (value: ApprovalState) => void; onCancel: () => void; onConfirm: () => void; submitting: boolean }) {
-  const expectedEnd = getLifecycleEndDate(new Date(), approval.durationPreset, approval.customDays);
-  return (
-    <div className="fixed inset-0 z-[2147483000] grid place-items-center bg-black/70 p-4 backdrop-blur-sm" role="dialog" aria-modal="true">
-      <section className="w-full max-w-xl overflow-hidden rounded-[2rem] border border-amber-300/18 bg-[#111720] text-[#fff7e8] shadow-2xl">
-        <header className="flex items-start justify-between gap-3 border-b border-white/10 bg-amber-300/[0.06] p-5">
-          <div><p className="text-xs font-black text-[#f3cf73]">تأكيد تفعيل الاشتراك</p><h2 className="mt-1 text-xl font-black">اختر مدة الاشتراك قبل قبول الدفع</h2><p className="mt-1 text-sm font-bold text-white/48">العميل: {approval.payment.tenant.displayName}</p></div>
-          <button onClick={onCancel} className="grid size-9 place-items-center rounded-2xl border border-white/10 bg-white/[0.04] text-white/60"><X className="size-4" /></button>
-        </header>
-        <div className="grid gap-4 p-5">
-          <div className="grid gap-2 sm:grid-cols-2">
-            {approvalDurationOptions.map((option) => <label key={option.value} className={cn("flex min-h-12 cursor-pointer items-center gap-3 rounded-2xl border px-3 text-sm font-black transition", approval.durationPreset === option.value ? "border-amber-300/45 bg-amber-300/12 text-[#f3cf73]" : "border-white/10 bg-white/[0.035] text-white/58 hover:border-amber-300/18")}><input type="radio" name="duration" checked={approval.durationPreset === option.value} onChange={() => setApproval({ ...approval, durationPreset: option.value })} />{option.label}</label>)}
-          </div>
-          {approval.durationPreset === "custom" ? <label className="grid gap-1.5"><span className="text-xs font-black text-white/42">المدة المخصصة بالأيام</span><input type="number" min={1} max={3650} value={approval.customDays} onChange={(event) => setApproval({ ...approval, customDays: Number(event.target.value) || 30 })} className="min-h-11 rounded-2xl border border-white/10 bg-black/18 px-3 text-sm font-black text-white outline-none focus:border-amber-300/45" /></label> : null}
-          <div className="rounded-2xl border border-white/10 bg-black/18 p-4"><p className="text-xs font-black text-white/38">تاريخ الانتهاء المتوقع</p><p className="mt-1 text-lg font-black text-[#f3cf73]">{expectedEnd ? formatDate(expectedEnd) : "اشتراك دائم بدون تاريخ انتهاء"}</p></div>
-          <label className="grid gap-1.5"><span className="text-xs font-black text-white/42">ملاحظة داخلية اختيارية</span><textarea rows={3} value={approval.adminNote} onChange={(event) => setApproval({ ...approval, adminNote: event.target.value })} className="rounded-2xl border border-white/10 bg-black/18 px-3 py-2 text-sm font-bold text-white outline-none focus:border-amber-300/45" /></label>
-        </div>
-        <footer className="grid gap-2 border-t border-white/10 p-5 sm:grid-cols-2"><button onClick={onCancel} className="min-h-12 rounded-2xl border border-white/10 bg-white/[0.04] text-sm font-black text-white/62">إلغاء</button><button disabled={submitting} onClick={onConfirm} className="min-h-12 rounded-2xl bg-gradient-to-br from-[#f3cf73] to-[#d4af37] text-sm font-black text-[#17120a] disabled:opacity-50">تأكيد التفعيل</button></footer>
-      </section>
-    </div>
-  );
-}
+function Info({ label, value }: { label: string; value: string }) { return <div className="rounded-2xl border border-white/8 bg-black/14 p-3"><p className="text-[0.68rem] font-black text-white/35">{label}</p><p className="mt-1 truncate text-sm font-bold text-white/72">{value}</p></div>; }
+function TextActionInput({ value, placeholder, buttonLabel, tone, onChange, onSubmit, disabled }: { value: string; placeholder: string; buttonLabel: string; tone: "danger" | "warning" | "neutral"; onChange: (value: string) => void; onSubmit: () => void; disabled?: boolean }) { const buttonClass = tone === "danger" ? "border-red-400/24 text-red-300 hover:bg-red-500/10" : tone === "warning" ? "border-amber-400/24 text-amber-300 hover:bg-amber-500/10" : "border-white/10 text-white/55 hover:bg-white/[0.06] hover:text-white"; return <span className="inline-flex min-h-11 overflow-hidden rounded-2xl border border-white/8 bg-black/16"><input value={value} onChange={(event) => onChange(event.target.value)} placeholder={placeholder} className="w-36 bg-transparent px-3 text-xs font-bold text-white outline-none placeholder:text-white/25" /><button disabled={disabled || !value.trim()} onClick={onSubmit} className={cn("border-r px-3 text-xs font-black transition disabled:opacity-35", buttonClass)}>{buttonLabel}</button></span>; }
+function ApprovalModal({ approval, setApproval, onCancel, onConfirm, submitting }: { approval: ApprovalState; setApproval: (value: ApprovalState) => void; onCancel: () => void; onConfirm: () => void; submitting: boolean }) { const expectedEnd = getLifecycleEndDate(new Date(), approval.durationPreset, approval.customDays); return <div className="fixed inset-0 z-[2147483000] grid place-items-center bg-black/70 p-4 backdrop-blur-sm" role="dialog" aria-modal="true"><section className="w-full max-w-xl overflow-hidden rounded-[2rem] border border-amber-300/18 bg-[#111720] text-[#fff7e8] shadow-2xl"><header className="flex items-start justify-between gap-3 border-b border-white/10 bg-amber-300/[0.06] p-5"><div><p className="text-xs font-black text-[#f3cf73]">تأكيد تفعيل الاشتراك</p><h2 className="mt-1 text-xl font-black">اختر مدة الاشتراك قبل قبول الدفع</h2><p className="mt-1 text-sm font-bold text-white/48">العميل: {approval.payment.tenant.displayName}</p></div><button onClick={onCancel} className="grid size-9 place-items-center rounded-2xl border border-white/10 bg-white/[0.04] text-white/60"><X className="size-4" /></button></header><div className="grid gap-4 p-5"><div className="grid gap-2 sm:grid-cols-2">{approvalDurationOptions.map((option) => <label key={option.value} className={cn("flex min-h-12 cursor-pointer items-center gap-3 rounded-2xl border px-3 text-sm font-black transition", approval.durationPreset === option.value ? "border-amber-300/45 bg-amber-300/12 text-[#f3cf73]" : "border-white/10 bg-white/[0.035] text-white/58 hover:border-amber-300/18")}><input type="radio" name="duration" checked={approval.durationPreset === option.value} onChange={() => setApproval({ ...approval, durationPreset: option.value })} />{option.label}</label>)}</div>{approval.durationPreset === "custom" ? <label className="grid gap-1.5"><span className="text-xs font-black text-white/42">المدة المخصصة بالأيام</span><input type="number" min={1} max={3650} value={approval.customDays} onChange={(event) => setApproval({ ...approval, customDays: Number(event.target.value) || 30 })} className="min-h-11 rounded-2xl border border-white/10 bg-black/18 px-3 text-sm font-black text-white outline-none focus:border-amber-300/45" /></label> : null}<div className="rounded-2xl border border-white/10 bg-black/18 p-4"><p className="text-xs font-black text-white/38">تاريخ الانتهاء المتوقع</p><p className="mt-1 text-lg font-black text-[#f3cf73]">{expectedEnd ? formatDate(expectedEnd) : "اشتراك دائم بدون تاريخ انتهاء"}</p></div><label className="grid gap-1.5"><span className="text-xs font-black text-white/42">ملاحظة داخلية اختيارية</span><textarea rows={3} value={approval.adminNote} onChange={(event) => setApproval({ ...approval, adminNote: event.target.value })} className="rounded-2xl border border-white/10 bg-black/18 px-3 py-2 text-sm font-bold text-white outline-none focus:border-amber-300/45" /></label></div><footer className="grid gap-2 border-t border-white/10 p-5 sm:grid-cols-2"><button onClick={onCancel} className="min-h-12 rounded-2xl border border-white/10 bg-white/[0.04] text-sm font-black text-white/62">إلغاء</button><button disabled={submitting} onClick={onConfirm} className="min-h-12 rounded-2xl bg-gradient-to-br from-[#f3cf73] to-[#d4af37] text-sm font-black text-[#17120a] disabled:opacity-50">تأكيد التفعيل</button></footer></section></div>; }
