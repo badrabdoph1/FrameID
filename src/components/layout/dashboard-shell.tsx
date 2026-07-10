@@ -22,6 +22,7 @@ import {
 import { logoutAction } from "@/app/_actions/logout";
 import { cn } from "@/lib/utils/cn";
 import "@/app/admin.css";
+import "@/app/customer-dashboard.css";
 
 type NavItem = {
   href: string;
@@ -111,14 +112,14 @@ function NavLink({ item, active, compact = false, onClick }: { item: NavItem; ac
       href={item.href}
       onClick={onClick}
       className={cn(
-        "group flex items-center gap-3 rounded-2xl border no-underline transition",
-        compact ? "min-h-12 px-3 py-2.5" : "min-h-[4.25rem] px-3.5 py-3",
+        "group flex items-center gap-3 rounded-2xl border no-underline transition duration-200",
+        compact ? "customer-desktop-secondary-link min-h-12 px-3 py-2.5" : "customer-desktop-nav-link min-h-[4.25rem] px-3.5 py-3",
         active
-          ? "border-amber-300/25 bg-amber-300/12 text-[#f3cf73]"
-          : "border-white/8 bg-white/[0.035] text-white/65 hover:border-amber-300/18 hover:bg-amber-300/8 hover:text-white",
+          ? "border-amber-300/28 bg-amber-300/13 text-[#f3cf73] shadow-[0_12px_38px_rgba(243,207,115,0.08)]"
+          : "border-white/8 bg-white/[0.035] text-white/65 hover:border-amber-300/22 hover:bg-amber-300/8 hover:text-white",
       )}
     >
-      <span className={cn("grid shrink-0 place-items-center rounded-xl", compact ? "size-9" : "size-10", active ? "bg-amber-300/14" : "bg-white/[0.045]")}> 
+      <span className={cn("grid shrink-0 place-items-center rounded-xl transition", compact ? "size-9" : "size-10", active ? "bg-amber-300/16 text-[#f3cf73]" : "bg-white/[0.045]")}> 
         <Icon className="size-4" aria-hidden />
       </span>
       <span className="min-w-0 flex-1">
@@ -133,7 +134,7 @@ function NavLink({ item, active, compact = false, onClick }: { item: NavItem; ac
 function DashboardTitleBadge() {
   return (
     <div className="pointer-events-none flex justify-center">
-      <div className="relative overflow-hidden rounded-full border border-amber-300/24 bg-[linear-gradient(135deg,rgba(243,207,115,0.18),rgba(255,255,255,0.055))] px-4 py-2 text-center shadow-[0_14px_42px_rgba(0,0,0,0.22),inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-xl md:px-7 md:py-2.5">
+      <div className="customer-desktop-title-badge relative overflow-hidden rounded-full border border-amber-300/24 bg-[linear-gradient(135deg,rgba(243,207,115,0.18),rgba(255,255,255,0.055))] px-4 py-2 text-center shadow-[0_14px_42px_rgba(0,0,0,0.22),inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-xl md:px-7 md:py-2.5">
         <span className="pointer-events-none absolute inset-x-4 top-0 h-px bg-gradient-to-l from-transparent via-amber-200/70 to-transparent" aria-hidden />
         <h1 className="whitespace-nowrap bg-gradient-to-l from-[#fff7e8] via-[#f3cf73] to-[#fff7e8] bg-clip-text text-sm font-black tracking-tight text-transparent drop-shadow-[0_0_18px_rgba(243,207,115,0.22)] md:text-2xl">
           صفحة التحكم في موقعك
@@ -174,7 +175,7 @@ export function DashboardShell({ children, siteSlug }: { children: ReactNode; si
   }, [mobileMenuOpen]);
 
   return (
-    <div className="min-h-dvh bg-[#090b10] text-[#f5ead6] color-scheme-dark">
+    <div className="customer-desktop-shell min-h-dvh bg-[#090b10] text-[#f5ead6] color-scheme-dark">
       <header className="sticky top-0 z-40 border-b border-white/8 bg-[#090b10]/92 px-3 py-2 backdrop-blur-xl lg:hidden">
         <div className="relative mx-auto grid max-w-6xl grid-cols-[auto,1fr,auto] items-center gap-2">
           <Link href="/dashboard" className="flex min-w-0 items-center gap-2 rounded-2xl p-1.5 no-underline">
@@ -212,17 +213,17 @@ export function DashboardShell({ children, siteSlug }: { children: ReactNode; si
         </div>
       </header>
 
-      <div className="mx-auto flex min-h-dvh max-w-[1440px] lg:min-h-screen">
-        <aside className="sticky top-0 hidden h-screen w-[296px] shrink-0 flex-col border-l border-white/8 bg-[#0c0e13] p-4 lg:flex">
-          <Link href="/dashboard" className="flex items-center gap-3 rounded-3xl border border-white/8 bg-white/[0.035] p-3 no-underline">
+      <div className="customer-desktop-layout mx-auto flex min-h-dvh max-w-[1440px] lg:min-h-screen">
+        <aside className="customer-desktop-sidebar sticky top-0 hidden h-screen w-[296px] shrink-0 flex-col border-l border-white/8 bg-[#0c0e13] p-4 lg:flex">
+          <Link href="/dashboard" className="customer-desktop-brand-card flex items-center gap-3 rounded-3xl border border-white/8 bg-white/[0.035] p-3 no-underline transition hover:border-amber-300/20 hover:bg-amber-300/8">
             <BrandMark large />
             <span>
-              <strong className="block text-base font-black text-[#fff7e8]">FrameID</strong>
-              <small className="block text-xs font-bold text-white/40">رحلة تجهيز موقعك</small>
+              <strong className="block text-lg font-black text-[#fff7e8]">FrameID</strong>
+              <small className="block text-xs font-bold text-white/46">رحلة تجهيز موقعك</small>
             </span>
           </Link>
 
-          <div className="mt-4 grid gap-2 overflow-y-auto pb-4 pr-0.5 admin-scrollbar">
+          <div className="customer-desktop-sidebar-nav mt-4 grid gap-2 overflow-y-auto pb-4 pr-0.5 admin-scrollbar">
             <p className="px-2 text-[0.68rem] font-black uppercase tracking-wider text-white/28">خطوات العمل</p>
             {primaryNav.map((item) => (
               <NavLink key={item.href} item={item} active={isActivePath(pathname, item.href)} />
@@ -236,13 +237,13 @@ export function DashboardShell({ children, siteSlug }: { children: ReactNode; si
 
           <div className="mt-auto grid gap-2 border-t border-white/8 pt-3">
             {siteSlug ? (
-              <Link href={`/p/${siteSlug}`} target="_blank" className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-3 text-sm font-black text-white/70 no-underline transition hover:bg-white/[0.08] hover:text-white">
+              <Link href={`/p/${siteSlug}`} target="_blank" className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-amber-300/18 bg-amber-300/10 px-3 text-sm font-black text-[#f3cf73] no-underline transition hover:bg-amber-300/16 hover:text-[#ffe9a8]">
                 <ExternalLink className="size-4" aria-hidden />
                 فتح الموقع
               </Link>
             ) : null}
             <form action={logoutAction}>
-              <button type="submit" className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.035] px-3 text-sm font-black text-white/50 transition hover:bg-white/[0.08] hover:text-white">
+              <button type="submit" className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.035] px-3 text-sm font-black text-white/50 transition hover:border-red-300/20 hover:bg-red-500/10 hover:text-red-100">
                 <LogOut className="size-4" aria-hidden />
                 خروج
               </button>
@@ -250,8 +251,8 @@ export function DashboardShell({ children, siteSlug }: { children: ReactNode; si
           </div>
         </aside>
 
-        <main className="min-w-0 flex-1 overflow-x-hidden bg-[radial-gradient(circle_at_top_right,rgba(243,207,115,0.08),transparent_30%),#090b10] px-3 py-4 pb-[calc(6.5rem+env(safe-area-inset-bottom))] sm:px-4 lg:px-6 lg:py-6 lg:pb-8">
-          <div className="mx-auto mb-5 hidden w-full max-w-6xl lg:block">
+        <main className="customer-desktop-main min-w-0 flex-1 overflow-x-hidden bg-[radial-gradient(circle_at_top_right,rgba(243,207,115,0.08),transparent_30%),#090b10] px-3 py-4 pb-[calc(6.5rem+env(safe-area-inset-bottom))] sm:px-4 lg:px-7 lg:py-7 lg:pb-8 xl:px-9">
+          <div className="customer-desktop-title-wrap mx-auto mb-5 hidden w-full max-w-6xl lg:block">
             <DashboardTitleBadge />
           </div>
           <div className="mx-auto w-full max-w-6xl">{children}</div>
