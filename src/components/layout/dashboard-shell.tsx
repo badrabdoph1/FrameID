@@ -34,70 +34,14 @@ type NavItem = {
 };
 
 const navItems: NavItem[] = [
-  {
-    href: "/dashboard",
-    label: "الرئيسية",
-    shortLabel: "الرئيسية",
-    description: "الرابط، التفعيل، وخطة اليوم.",
-    icon: LayoutDashboard,
-    priority: "primary",
-  },
-  {
-    href: "/dashboard/services",
-    label: "الباقات",
-    shortLabel: "الباقات",
-    description: "أول خطوة: أسعارك وعروضك.",
-    icon: Package,
-    priority: "primary",
-  },
-  {
-    href: "/dashboard/site-info",
-    label: "التواصل",
-    shortLabel: "التواصل",
-    description: "اسم المصور، واتساب، وروابطك.",
-    icon: UserCircle,
-    priority: "primary",
-  },
-  {
-    href: "/dashboard/gallery",
-    label: "الصور",
-    shortLabel: "الصور",
-    description: "الصورة الشخصية، الغلاف، والألبومات.",
-    icon: Images,
-    priority: "primary",
-  },
-  {
-    href: "/dashboard/publish",
-    label: "النشر",
-    shortLabel: "النشر",
-    description: "انسخ الرابط وانشر الموقع.",
-    icon: Globe2,
-    priority: "primary",
-  },
-  {
-    href: "/dashboard/templates",
-    label: "شكل الموقع",
-    shortLabel: "الشكل",
-    description: "اختيار القالب والهوية البصرية.",
-    icon: Palette,
-    priority: "secondary",
-  },
-  {
-    href: "/dashboard/billing",
-    label: "التفعيل والدفع",
-    shortLabel: "التفعيل",
-    description: "التجربة المجانية، الاشتراك، وإثبات الدفع.",
-    icon: CreditCard,
-    priority: "secondary",
-  },
-  {
-    href: "/dashboard/settings",
-    label: "الإعدادات",
-    shortLabel: "إعدادات",
-    description: "إعدادات الحساب والموقع.",
-    icon: Settings,
-    priority: "secondary",
-  },
+  { href: "/dashboard", label: "الرئيسية", shortLabel: "الرئيسية", description: "الرابط، التفعيل، وخطة اليوم.", icon: LayoutDashboard, priority: "primary" },
+  { href: "/dashboard/services", label: "الباقات", shortLabel: "الباقات", description: "أول خطوة: أسعارك وعروضك.", icon: Package, priority: "primary" },
+  { href: "/dashboard/site-info", label: "التواصل", shortLabel: "التواصل", description: "اسم المصور، واتساب، وروابطك.", icon: UserCircle, priority: "primary" },
+  { href: "/dashboard/gallery", label: "الصور", shortLabel: "الصور", description: "الصورة الشخصية، الغلاف، والألبومات.", icon: Images, priority: "primary" },
+  { href: "/dashboard/publish", label: "النشر", shortLabel: "النشر", description: "انسخ الرابط وانشر الموقع.", icon: Globe2, priority: "primary" },
+  { href: "/dashboard/templates", label: "شكل الموقع", shortLabel: "الشكل", description: "اختيار القالب والهوية البصرية.", icon: Palette, priority: "secondary" },
+  { href: "/dashboard/billing", label: "التفعيل والدفع", shortLabel: "التفعيل", description: "التجربة المجانية، الاشتراك، وإثبات الدفع.", icon: CreditCard, priority: "secondary" },
+  { href: "/dashboard/settings", label: "الإعدادات", shortLabel: "إعدادات", description: "إعدادات الحساب والموقع.", icon: Settings, priority: "secondary" },
 ];
 
 function isActivePath(pathname: string | null, href: string): boolean {
@@ -131,14 +75,51 @@ function NavLink({ item, active, compact = false, onClick }: { item: NavItem; ac
   );
 }
 
-function DashboardTitleBadge() {
+function DashboardTitleBadge({ compact = false }: { compact?: boolean }) {
   return (
-    <div className="pointer-events-none flex justify-center">
-      <div className="customer-desktop-title-badge relative overflow-hidden rounded-full border border-amber-300/24 bg-[linear-gradient(135deg,rgba(243,207,115,0.18),rgba(255,255,255,0.055))] px-4 py-2 text-center shadow-[0_14px_42px_rgba(0,0,0,0.22),inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-xl md:px-7 md:py-2.5">
+    <div className="pointer-events-none flex min-w-0 justify-center">
+      <div className={cn(
+        "relative min-w-0 overflow-hidden rounded-full border border-amber-300/24 bg-[linear-gradient(135deg,rgba(243,207,115,0.18),rgba(255,255,255,0.055))] text-center shadow-[0_14px_42px_rgba(0,0,0,0.22),inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-xl",
+        compact ? "px-3 py-1.5" : "customer-desktop-title-badge px-4 py-2 md:px-7 md:py-2.5"
+      )}>
         <span className="pointer-events-none absolute inset-x-4 top-0 h-px bg-gradient-to-l from-transparent via-amber-200/70 to-transparent" aria-hidden />
-        <h1 className="whitespace-nowrap bg-gradient-to-l from-[#fff7e8] via-[#f3cf73] to-[#fff7e8] bg-clip-text text-sm font-black tracking-tight text-transparent drop-shadow-[0_0_18px_rgba(243,207,115,0.22)] md:text-2xl">
+        <h1 className={cn(
+          "truncate whitespace-nowrap bg-gradient-to-l from-[#fff7e8] via-[#f3cf73] to-[#fff7e8] bg-clip-text font-black tracking-tight text-transparent drop-shadow-[0_0_18px_rgba(243,207,115,0.22)]",
+          compact ? "text-[0.76rem] sm:text-sm" : "text-sm md:text-2xl"
+        )}>
           صفحة التحكم في موقعك
         </h1>
+      </div>
+    </div>
+  );
+}
+
+function IdentityBrand({ large = false }: { large?: boolean }) {
+  return (
+    <Link href="/dashboard" className={cn("flex min-w-0 items-center gap-2.5 rounded-2xl no-underline", large ? "p-2" : "p-1.5")}> 
+      <BrandMark large={large} />
+      <span className="min-w-0">
+        <strong className={cn("block truncate font-black text-[#fff7e8]", large ? "text-base" : "text-xs sm:text-sm")}>FrameID</strong>
+        <small className={cn("block truncate font-bold text-white/42", large ? "text-xs" : "text-[0.62rem] sm:text-[0.68rem]")}>لوحة المصور</small>
+      </span>
+    </Link>
+  );
+}
+
+function CustomerIdentityBar({ siteSlug }: { siteSlug?: string }) {
+  return (
+    <div className="customer-desktop-identity-bar hidden w-full grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 lg:grid">
+      <div className="justify-self-start">
+        <IdentityBrand large />
+      </div>
+      <DashboardTitleBadge />
+      <div className="flex justify-end gap-2 justify-self-end">
+        {siteSlug ? (
+          <Link href={`/p/${siteSlug}`} target="_blank" className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-amber-300/18 bg-amber-300/10 px-4 text-sm font-black text-[#f3cf73] no-underline transition hover:bg-amber-300/16 hover:text-[#ffe9a8]">
+            <ExternalLink className="size-4" aria-hidden />
+            فتح الموقع
+          </Link>
+        ) : null}
       </div>
     </div>
   );
@@ -156,18 +137,14 @@ export function DashboardShell({ children, siteSlug }: { children: ReactNode; si
 
   useEffect(() => {
     if (!mobileMenuOpen) return;
-
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
 
     function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        setMobileMenuOpen(false);
-      }
+      if (event.key === "Escape") setMobileMenuOpen(false);
     }
 
     window.addEventListener("keydown", handleKeyDown);
-
     return () => {
       document.body.style.overflow = previousOverflow;
       window.removeEventListener("keydown", handleKeyDown);
@@ -176,17 +153,11 @@ export function DashboardShell({ children, siteSlug }: { children: ReactNode; si
 
   return (
     <div className="customer-desktop-shell min-h-dvh bg-[#090b10] text-[#f5ead6] color-scheme-dark">
-      <header className="sticky top-0 z-40 border-b border-white/8 bg-[#090b10]/92 px-3 py-2 backdrop-blur-xl lg:hidden">
-        <div className="relative mx-auto grid max-w-6xl grid-cols-[auto,1fr,auto] items-center gap-2">
-          <Link href="/dashboard" className="flex min-w-0 items-center gap-2 rounded-2xl p-1.5 no-underline">
-            <BrandMark />
-            <span className="hidden min-w-0 xs:block sm:block">
-              <strong className="block truncate text-sm font-black text-[#fff7e8]">FrameID</strong>
-              <small className="block truncate text-[0.68rem] font-bold text-white/40">لوحة المصور</small>
-            </span>
-          </Link>
+      <header className="sticky top-0 z-40 border-b border-white/8 bg-[#090b10]/92 px-2 py-2 backdrop-blur-xl lg:hidden">
+        <div className="relative mx-auto grid max-w-6xl grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-1.5">
+          <IdentityBrand />
 
-          <DashboardTitleBadge />
+          <DashboardTitleBadge compact />
 
           <div className="flex items-center justify-end gap-1.5">
             {siteSlug ? (
@@ -252,10 +223,10 @@ export function DashboardShell({ children, siteSlug }: { children: ReactNode; si
         </aside>
 
         <main className="customer-desktop-main min-w-0 flex-1 overflow-x-hidden bg-[radial-gradient(circle_at_top_right,rgba(243,207,115,0.08),transparent_30%),#090b10] px-3 py-4 pb-[calc(6.5rem+env(safe-area-inset-bottom))] sm:px-4 lg:px-7 lg:py-7 lg:pb-8 xl:px-9">
-          <div className="customer-desktop-title-wrap mx-auto mb-5 hidden w-full max-w-6xl lg:block">
-            <DashboardTitleBadge />
+          <div className="mx-auto hidden w-full max-w-6xl lg:block">
+            <CustomerIdentityBar siteSlug={siteSlug} />
           </div>
-          <div className="mx-auto w-full max-w-6xl">{children}</div>
+          <div className="mx-auto w-full max-w-6xl lg:mt-5">{children}</div>
         </main>
       </div>
 
