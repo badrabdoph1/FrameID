@@ -10,7 +10,7 @@ const VALID_TRANSITIONS: Record<PaymentStatus, PaymentStatus[]> = {
   APPROVED: ["REFUNDED"],
   REJECTED: ["DRAFT"],
   CANCELLED: [],
-  PENDING: ["SUBMITTED", "CANCELLED", "UNDER_REVIEW"],
+  PENDING: ["SUBMITTED", "CANCELLED", "UNDER_REVIEW", "APPROVED", "REJECTED", "DRAFT"],
   REFUNDED: [],
   EXPIRED: [],
 };
@@ -111,16 +111,16 @@ export function createBillingActivationService({ repository, now = () => new Dat
       assertValidTransition(payment.status as PaymentStatus, "APPROVED", "FID-PAY-001");
       if (!payment.proofAssetId) throw new ValidationError("FID-VAL-002", "لا يمكن قبول طلب بدون إثبات دفع");
       const reviewedAt = now();
-      const preset = input.durationPreset ?? "30";
+      const preset = input.durationPreset && input.durationPreset !== "keep" ? input.durationPreset : "30";
       const periodEnd = getLifecycleEndDate(reviewedAt, preset, input.customDays);
       const approved = await repository.approvePayment(input.paymentRequestId, input.reviewerId, input.adminNote, reviewedAt);
       await repository.activateSubscription(approved.tenantId, approved.subscriptionId, approved.planId, reviewedAt, periodEnd);
-      await repository.recordSubscriptionChange(approved.subscriptionId, payment.subscription.planId, approved.planId, payment.subscription.status, "ACTIVE", "ACTIVATE", input.reviewerId, `تم التفعيل لمدة ${preset === "forever" ? "دائمة" : "محددة"}`);
-      await repository.addLog(input.paymentRequestId, "APPROVED", input.reviewerId, input.adminName, input.adminNote || "تم قبول طلب الدفع وتفعيل الاشتراك", { activatedAt: reviewedAt.toISOString(), expiresAt: periodEnd?.toISOString() ?? null, durationPreset: preset, customDays: input.customDays ?? null });
+      await repository.recordSubscriptionChange(approved.subscriptionId, payment.subscription.planId, approved.planId, payment.subscription.status, "ACTIVE", "ACTIVATE", undefined, `تم التفعيل لمدة ${preset === "forever" ? "دائمة" : "محددة"}`);
+      await repository.addLog(input.paymentRequestId, "APPROVED", undefined, input.adminName, input.adminNote || "تم قبول طلب الدفع وتفعيل الاشتراك", { activatedAt: reviewedAt.toISOString(), expiresAt: periodEnd?.toISOString() ?? null, durationPreset: preset, customDays: input.customDays ?? null, adminActorId: input.reviewerId });
       await repository.createNotification(approved.tenantId, "payment_approved", "تم قبول طلب الدفع", periodEnd ? `تم تفعيل اشتراكك حتى ${periodEnd.toLocaleDateString("ar-EG")}.` : "تم تفعيل اشتراكك بشكل دائم.", "high");
       await repository.createNotificationLog("payment_approved", "تم قبول طلب الدفع", `تمت الموافقة على طلب الدفع ${input.paymentRequestId.slice(0, 8)}...`, "billing", undefined, approved.tenantId);
-      await repository.recordAudit(input.reviewerId, approved.tenantId, "PAYMENT_APPROVED", "PaymentRequest", input.paymentRequestId, { adminNote: input.adminNote, activatedAt: reviewedAt.toISOString(), expiresAt: periodEnd?.toISOString() ?? null, durationPreset: preset, customDays: input.customDays ?? null });
-      await repository.recordAudit(input.reviewerId, approved.tenantId, "SUBSCRIPTION_ACTIVATED", "Subscription", approved.subscriptionId, { planId: approved.planId, expiresAt: periodEnd?.toISOString() ?? null, durationPreset: preset });
+      await repository.recordAudit(undefined, approved.tenantId, "PAYMENT_APPROVED", "PaymentRequest", input.paymentRequestId, { adminNote: input.adminNote, activatedAt: reviewedAt.toISOString(), expiresAt: periodEnd?.toISOString() ?? null, durationPreset: preset, customDays: input.customDays ?? null, adminActorId: input.reviewerId });
+      await repository.recordAudit(undefined, approved.tenantId, "SUBSCRIPTION_ACTIVATED", "Subscription", approved.subscriptionId, { planId: approved.planId, expiresAt: periodEnd?.toISOString() ?? null, durationPreset: preset, adminActorId: input.reviewerId });
     },
 
     async rejectPayment(input: { paymentRequestId: string; reviewerId: string; adminName?: string; reason: string; adminNote?: string }) {
@@ -129,10 +129,10 @@ export function createBillingActivationService({ repository, now = () => new Dat
       assertValidTransition(payment.status as PaymentStatus, "REJECTED", "FID-PAY-002");
       const reviewedAt = now();
       const rejected = await repository.rejectPayment(input.paymentRequestId, input.reviewerId, input.reason, reviewedAt, input.adminNote);
-      await repository.addLog(input.paymentRequestId, "REJECTED", input.reviewerId, input.adminName, input.reason);
+      await repository.addLog(input.paymentRequestId, "REJECTED", undefined, input.adminName, input.reason, { adminActorId: input.reviewerId });
       await repository.createNotification(rejected.tenantId, "payment_rejected", "تم رفض طلب الدفع", `عذراً، تم رفض طلب الدفع الخاص بك. السبب: ${input.reason}.`, "high");
       await repository.createNotificationLog("payment_rejected", "تم رفض طلب الدفع", `تم رفض طلب الدفع: ${input.reason}`, "billing", undefined, rejected.tenantId);
-      await repository.recordAudit(input.reviewerId, rejected.tenantId, "PAYMENT_REJECTED", "PaymentRequest", input.paymentRequestId, { reason: input.reason, adminNote: input.adminNote });
+      await repository.recordAudit(undefined, rejected.tenantId, "PAYMENT_REJECTED", "PaymentRequest", input.paymentRequestId, { reason: input.reason, adminNote: input.adminNote, adminActorId: input.reviewerId });
     },
 
     async requestReupload(input: { paymentRequestId: string; reviewerId: string; adminName?: string; note: string }) {
@@ -140,29 +140,23 @@ export function createBillingActivationService({ repository, now = () => new Dat
       const payment = await repository.getPaymentRequestById(input.paymentRequestId);
       assertValidTransition(payment.status as PaymentStatus, "DRAFT", "FID-PAY-003");
       await repository.requestReupload(input.paymentRequestId, input.reviewerId, input.note);
-      await repository.addLog(input.paymentRequestId, "REUPLOAD_REQUESTED", input.reviewerId, input.adminName, input.note);
+      await repository.addLog(input.paymentRequestId, "REUPLOAD_REQUESTED", undefined, input.adminName, input.note, { adminActorId: input.reviewerId });
       await repository.createNotification(payment.tenantId, "reupload_requested", "مطلوب إعادة رفع إثبات الدفع", `يرجى إعادة رفع صورة إثبات الدفع. ملاحظة: ${input.note}`, "high");
-      await repository.createNotificationLog("reupload_requested", "مطلوب إعادة رفع إثبات الدفع", `طلب إعادة رفع: ${input.note}`, "billing", undefined, payment.tenantId);
-      await repository.recordAudit(input.reviewerId, payment.tenantId, "PAYMENT_REUPLOAD_REQUESTED", "PaymentRequest", input.paymentRequestId, { note: input.note });
+      await repository.createNotificationLog("reupload_requested", "مطلوب إعادة رفع إثبات الدفع", `طلب إعادة رفع إثبات الدفع: ${input.note}`, "billing", undefined, payment.tenantId);
+      await repository.recordAudit(undefined, payment.tenantId, "PAYMENT_REUPLOAD_REQUESTED", "PaymentRequest", input.paymentRequestId, { note: input.note, adminActorId: input.reviewerId });
     },
 
     async addPaymentNote(input: { paymentRequestId: string; adminId: string; adminName?: string; note: string }) {
       if (!input.note?.trim()) throw new ValidationError("FID-VAL-002", "الملاحظة مطلوبة");
       const payment = await repository.getPaymentRequestById(input.paymentRequestId);
-      await repository.addLog(input.paymentRequestId, "NOTE_ADDED", input.adminId, input.adminName, input.note);
-      await repository.recordAudit(input.adminId, payment.tenantId, "PAYMENT_NOTE_ADDED", "PaymentRequest", input.paymentRequestId, { note: input.note });
+      await repository.addLog(input.paymentRequestId, "ADMIN_NOTE", undefined, input.adminName, input.note, { adminActorId: input.adminId });
+      await repository.recordAudit(undefined, payment.tenantId, "PAYMENT_NOTE_ADDED", "PaymentRequest", input.paymentRequestId, { note: input.note, adminActorId: input.adminId });
     },
 
-    async cancelPaymentRequest(paymentRequestId: string) {
+    async cancelPayment(paymentRequestId: string) {
       const current = await repository.getPaymentRequestById(paymentRequestId);
-      const allowed = VALID_TRANSITIONS[current.status as PaymentStatus] ?? [];
-      if (!allowed.includes("CANCELLED")) return { success: false, error: "لا يمكن إلغاء الطلب في الحالة الحالية" };
-      const cancelledAt = now();
-      const result = await repository.cancelPaymentRequest(paymentRequestId, cancelledAt);
-      await repository.addLog(paymentRequestId, "CANCELLED", undefined, undefined, "تم إلغاء طلب الدفع");
-      await repository.createNotification(result.tenantId, "payment_cancelled", "تم إلغاء طلب الدفع", "تم إلغاء طلب التفعيل الخاص بك. يمكنك إنشاء طلب جديد في أي وقت.", "normal");
-      await repository.recordAudit(undefined, result.tenantId, "PAYMENT_REQUEST_CANCELLED", "PaymentRequest", paymentRequestId, { cancelledAt: cancelledAt.toISOString() });
-      return { success: true };
-    },
+      assertValidTransition(current.status as PaymentStatus, "CANCELLED", "FID-PAY-004");
+      return repository.cancelPaymentRequest(paymentRequestId, now());
+    }
   };
 }
