@@ -1,0 +1,45 @@
+name: FrameID CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: frameid-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      DATABASE_URL: postgresql://frameid:frameid@127.0.0.1:5432/frameid
+      NEXT_PUBLIC_APP_URL: https://frameid.example.com
+      SESSION_SECRET: ci-session-secret-with-more-than-32-characters
+      ADMIN_SESSION_SECRET: ci-admin-session-secret-with-more-than-32-characters
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Test
+        run: npm run test
+
+      - name: Build
+        run: npm run build
