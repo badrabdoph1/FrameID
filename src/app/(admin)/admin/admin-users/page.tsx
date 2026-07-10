@@ -22,13 +22,45 @@ function dateLabel(value: Date | null | undefined): string {
 export default async function AdminUsersPage() {
   await requireAdminPermission("security", "view");
 
-  const [adminUsers, activeSessions] = await Promise.all([
+  const now = new Date();
+  const [adminUsers, activeSessions, recentAdminSessions] = await Promise.all([
     prisma.adminUser.findMany({
       orderBy: { createdAt: "desc" },
-      include: { sessions: { orderBy: { createdAt: "desc" }, take: 3 } },
     }),
-    prisma.adminSession.count({ where: { revokedAt: null, expiresAt: { gt: new Date() } } }),
+    prisma.session.count({
+      where: {
+        revokedAt: null,
+        expiresAt: { gt: now },
+        user: { role: { not: "USER" } },
+      },
+    }),
+    prisma.session.findMany({
+      where: {
+        user: { role: { not: "USER" } },
+      },
+      orderBy: { createdAt: "desc" },
+      take: 50,
+      select: {
+        id: true,
+        expiresAt: true,
+        revokedAt: true,
+        user: { select: { email: true } },
+      },
+    }),
   ]);
+
+  type RecentAdminSession = (typeof recentAdminSessions)[number];
+  const sessionsByEmail = new Map<string, RecentAdminSession[]>();
+
+  for (const session of recentAdminSessions) {
+    const existing = sessionsByEmail.get(session.user.email);
+
+    if (existing) {
+      if (existing.length < 3) existing.push(session);
+    } else {
+      sessionsByEmail.set(session.user.email, [session]);
+    }
+  }
 
   const roles = Object.values(ROLES).sort((a, b) => b.level - a.level);
 
@@ -53,34 +85,38 @@ export default async function AdminUsersPage() {
             <h2 className="text-sm font-black text-[#fff7e8]">Admin Users</h2>
           </header>
           <div className="grid divide-y divide-white/6">
-            {adminUsers.length === 0 ? <p className="px-4 py-12 text-center text-sm font-bold text-white/35">لا يوجد AdminUser محفوظ في قاعدة البيانات.</p> : adminUsers.map((admin) => (
-              <article key={admin.id} className="px-4 py-4">
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <h3 className="truncate text-sm font-black text-white/84">{admin.name}</h3>
-                    <p className="mt-1 truncate font-mono text-xs font-bold text-white/38" dir="ltr">
-                      {getPublicAccountIdentifier({ email: admin.email, phone: admin.phone })}
-                    </p>
+            {adminUsers.length === 0 ? <p className="px-4 py-12 text-center text-sm font-bold text-white/35">لا يوجد AdminUser محفوظ في قاعدة البيانات.</p> : adminUsers.map((admin) => {
+              const sessions = sessionsByEmail.get(admin.email) ?? [];
+
+              return (
+                <article key={admin.id} className="px-4 py-4">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <h3 className="truncate text-sm font-black text-white/84">{admin.name}</h3>
+                      <p className="mt-1 truncate font-mono text-xs font-bold text-white/38" dir="ltr">
+                        {getPublicAccountIdentifier({ email: admin.email, phone: admin.phone })}
+                      </p>
+                    </div>
+                    <span className="rounded-full border border-amber-500/20 bg-amber-500/10 px-2 py-0.5 text-[0.68rem] font-black text-amber-200">{admin.role}</span>
                   </div>
-                  <span className="rounded-full border border-amber-500/20 bg-amber-500/10 px-2 py-0.5 text-[0.68rem] font-black text-amber-200">{admin.role}</span>
-                </div>
-                <div className="mt-3 grid gap-2 sm:grid-cols-3">
-                  <Info label="Created" value={dateLabel(admin.createdAt)} />
-                  <Info label="Updated" value={dateLabel(admin.updatedAt)} />
-                  <Info label="Sessions" value={admin.sessions.length.toLocaleString("ar-EG")} />
-                </div>
-                {admin.sessions.length > 0 ? (
-                  <div className="mt-3 grid gap-2">
-                    {admin.sessions.map((session) => (
-                      <div key={session.id} className="rounded-xl border border-white/8 bg-black/16 p-3">
-                        <p className="font-mono text-[0.68rem] font-bold text-white/35">{session.id}</p>
-                        <p className="mt-1 text-xs font-bold text-white/45">expires: {dateLabel(session.expiresAt)} · {session.revokedAt ? `revoked: ${dateLabel(session.revokedAt)}` : "active"}</p>
-                      </div>
-                    ))}
+                  <div className="mt-3 grid gap-2 sm:grid-cols-3">
+                    <Info label="Created" value={dateLabel(admin.createdAt)} />
+                    <Info label="Updated" value={dateLabel(admin.updatedAt)} />
+                    <Info label="Recent Sessions" value={sessions.length.toLocaleString("ar-EG")} />
                   </div>
-                ) : null}
-              </article>
-            ))}
+                  {sessions.length > 0 ? (
+                    <div className="mt-3 grid gap-2">
+                      {sessions.map((session) => (
+                        <div key={session.id} className="rounded-xl border border-white/8 bg-black/16 p-3">
+                          <p className="font-mono text-[0.68rem] font-bold text-white/35">{session.id}</p>
+                          <p className="mt-1 text-xs font-bold text-white/45">expires: {dateLabel(session.expiresAt)} · {session.revokedAt ? `revoked: ${dateLabel(session.revokedAt)}` : "active"}</p>
+                        </div>
+                      ))}
+                    </div>
+                  ) : null}
+                </article>
+              );
+            })}
           </div>
         </div>
 
