@@ -128,6 +128,8 @@ async function main() {
     }
   }
 
+  await prisma.backupSettings.deleteMany({ where: { type: "UPLOADS" } });
+
   for (const settings of seedData.backupSettings) {
     await prisma.backupSettings.upsert({
       where: { type: settings.type },
