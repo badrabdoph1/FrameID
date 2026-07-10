@@ -64,21 +64,31 @@ export function DashboardHomeClient({
       ) : null}
 
       <section className="grid gap-4 lg:grid-cols-[1.15fr_0.85fr] lg:items-stretch">
-        <button
-          type="button"
-          onClick={copySiteUrl}
-          className="customer-dashboard-url-card grid w-full gap-2 rounded-[1.2rem] border border-white/12 bg-[#121720] p-3 text-start shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] transition hover:border-amber-300/30 hover:bg-[#171c26] sm:grid-cols-[1fr_auto] sm:items-center lg:min-h-full"
-        >
+        <section className="customer-dashboard-url-card grid w-full gap-3 rounded-[1.2rem] border border-white/12 bg-[#121720] p-3 text-start shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] transition hover:border-amber-300/30 hover:bg-[#171c26] sm:grid-cols-[1fr_auto] sm:items-center lg:min-h-full">
           <span className="min-w-0">
-            <span className="block text-xs font-black text-white/50 lg:text-sm">رابط موقعك — اضغط للنسخ</span>
+            <span className="block text-xs font-black text-white/50 lg:text-sm">رابط موقعك</span>
             <span dir="ltr" className="mt-1 block truncate text-sm font-black text-[#f3cf73] lg:text-lg">{siteUrl}</span>
-            <span className="mt-2 hidden text-xs font-bold leading-5 text-white/38 lg:block">انسخه وضعه في البايو أو ابعته للعميل مباشرة.</span>
+            <span className="mt-2 hidden text-xs font-bold leading-5 text-white/38 lg:block">انسخه وضعه في البايو أو افتحه للتأكد من شكل موقعك.</span>
           </span>
-          <span className="inline-flex min-h-10 items-center justify-center gap-2 rounded-2xl border border-amber-300/18 bg-amber-300/10 px-3 text-xs font-black text-[#ffe49a] transition hover:bg-amber-300/16 lg:min-h-12 lg:px-5">
-            {copied ? <CheckCircle2 className="size-4 text-emerald-300" aria-hidden /> : <Copy className="size-4" aria-hidden />}
-            {copied ? "اتنسخ" : "نسخ"}
+          <span className="grid gap-2 sm:flex sm:justify-end">
+            <button
+              type="button"
+              onClick={copySiteUrl}
+              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-2xl border border-amber-300/18 bg-amber-300/10 px-3 text-xs font-black text-[#ffe49a] transition hover:bg-amber-300/16 lg:min-h-12 lg:px-5"
+            >
+              {copied ? <CheckCircle2 className="size-4 text-emerald-300" aria-hidden /> : <Copy className="size-4" aria-hidden />}
+              {copied ? "اتنسخ" : "نسخ"}
+            </button>
+            <Link
+              href={siteUrl}
+              target="_blank"
+              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-2xl border border-white/12 bg-white/[0.045] px-3 text-xs font-black text-white/78 no-underline transition hover:border-amber-300/24 hover:bg-white/[0.075] hover:text-white lg:min-h-12 lg:px-5"
+            >
+              <ExternalLink className="size-4" aria-hidden />
+              فتح الموقع
+            </Link>
           </span>
-        </button>
+        </section>
 
         <section className="customer-dashboard-readiness-card rounded-[1.35rem] border border-white/12 bg-[linear-gradient(135deg,rgba(243,207,115,0.10),rgba(255,255,255,0.045)),#10151d] p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] sm:p-4">
           <div className="flex items-center justify-between gap-3 lg:h-full">
