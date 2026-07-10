@@ -122,9 +122,21 @@ export function AliAhmedLuxurySite({ site }: AliAhmedLuxurySiteProps) {
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_78%_18%,rgba(229,192,123,.18),transparent_28%),linear-gradient(90deg,rgba(5,5,5,.92),rgba(5,5,5,.64)_44%,rgba(5,5,5,.88)),linear-gradient(180deg,rgba(0,0,0,.78),rgba(5,5,5,.35)_42%,#050505_100%)]" />
         <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-[#050505] to-transparent" />
 
-        <div className="container-page relative z-10 flex min-h-[58svh] items-end py-12 md:min-h-[calc(100vh-5rem)] md:items-center md:py-20">
-          <div className="w-full max-w-2xl pb-8 text-center md:pb-0 md:text-start">
-            <div className="flex flex-col justify-center gap-3 sm:flex-row md:justify-start">
+        <div className="container-page relative z-10 flex min-h-[64svh] items-end py-12 md:min-h-[calc(100vh-5rem)] md:items-center md:py-20">
+          <div className="w-full max-w-3xl pb-8 text-center md:pb-0 md:text-start">
+            <h1 className="mx-auto max-w-4xl text-balance font-display text-4xl font-bold leading-[1.08] tracking-tight text-white sm:text-5xl md:mx-0 md:text-7xl lg:text-8xl">
+              {site.hero.headline}
+            </h1>
+            {displayName !== site.hero.headline ? (
+              <p className="mx-auto mt-4 max-w-2xl font-display text-sm font-bold tracking-[0.24em] text-[#e5c07b] md:mx-0 md:text-base">
+                {displayName}
+              </p>
+            ) : null}
+            <p className="mx-auto mt-5 max-w-2xl text-base leading-8 text-white/76 md:mx-0 md:text-xl md:leading-10">
+              {site.hero.subheadline}
+            </p>
+
+            <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row md:mt-9 md:justify-start">
               <button
                 type="button"
                 onClick={() => scrollToSection("packages")}
