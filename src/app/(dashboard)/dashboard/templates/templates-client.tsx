@@ -5,7 +5,7 @@ import { CheckCircle2, Eye, Palette, WandSparkles } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { selectTemplateAction } from "@/app/(dashboard)/dashboard/design/actions";
-import { TemplateDesktopPreview } from "@/components/themes/template-desktop-preview";
+import { TemplateLivePreview } from "@/components/themes/template-live-preview";
 import type { TemplateSummary } from "@/modules/themes/theme-registry";
 
 type TemplatesClientProps = {
@@ -68,7 +68,7 @@ function TemplateCard({ template, isCurrent }: { template: TemplateSummary; isCu
           </span>
         ) : null}
         <div className="absolute inset-3">
-          <TemplateDesktopPreview template={template} compact />
+          <TemplateLivePreview template={template} compact />
         </div>
       </div>
 

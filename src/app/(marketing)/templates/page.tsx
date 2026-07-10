@@ -5,7 +5,7 @@ import { Eye, WandSparkles } from "lucide-react";
 
 import { MarketingFooter } from "@/components/layout/marketing-footer";
 import { MarketingNav } from "@/components/layout/marketing-nav";
-import { TemplateDesktopPreview } from "@/components/themes/template-desktop-preview";
+import { TemplateLivePreview } from "@/components/themes/template-live-preview";
 import { getPublishedTemplates } from "@/modules/themes/theme-registry";
 
 export const metadata: Metadata = {
@@ -111,9 +111,9 @@ export default function TemplatesPage() {
               >
                 <div className="flex w-full flex-col">
                   <div className="relative overflow-hidden bg-ink p-3 transition duration-700 group-hover:scale-[1.015] md:p-4">
-                    <TemplateDesktopPreview template={template} />
+                    <TemplateLivePreview template={template} />
                     <span className="absolute right-3 top-3 rounded-full border border-white/20 bg-ink/78 px-3 py-1.5 text-[0.68rem] font-semibold text-white shadow-soft backdrop-blur">
-                      لقطة ديسكتوب
+                      ديسكتوب وموبايل
                     </span>
                   </div>
                   <div className="flex flex-1 flex-col p-4 md:p-5">

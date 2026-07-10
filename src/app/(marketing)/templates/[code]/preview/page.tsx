@@ -17,10 +17,12 @@ export const metadata: Metadata = {
 
 type Props = {
   params: Promise<{ code: string }>;
+  searchParams?: Promise<{ embed?: string }>;
 };
 
-export default async function TemplatePreviewPage({ params }: Props) {
+export default async function TemplatePreviewPage({ params, searchParams }: Props) {
   const { code } = await params;
+  const query = await searchParams;
   const template = getTemplateByCode(code);
 
   if (!template || template.status !== "published") {
@@ -29,26 +31,29 @@ export default async function TemplatePreviewPage({ params }: Props) {
 
   const ThemeComponent = getThemeSiteComponent(code);
   const siteData = { ...previewSite, themeCode: code };
+  const isEmbed = query?.embed === "1";
 
   return (
     <>
       <ThemeComponent site={siteData} />
-      <div className="fixed inset-x-4 bottom-4 z-40 mx-auto flex max-w-md items-center gap-2 rounded-[var(--radius-panel)] border border-white/10 bg-ink/80 p-2 shadow-soft backdrop-blur-xl">
-        <Link
-          href="/templates"
-          className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-[var(--radius-control)] text-sm font-semibold text-white hover:bg-white/10"
-        >
-          <ArrowRight className="size-4" aria-hidden />
-          رجوع
-        </Link>
-        <Link
-          href={`/signup?template=${template.code}`}
-          className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-[var(--radius-control)] bg-white px-4 text-sm font-semibold text-ink"
-        >
-          <WandSparkles className="size-4" aria-hidden />
-          استخدم القالب ده
-        </Link>
-      </div>
+      {isEmbed ? null : (
+        <div className="fixed inset-x-4 bottom-4 z-40 mx-auto flex max-w-md items-center gap-2 rounded-[var(--radius-panel)] border border-white/10 bg-ink/80 p-2 shadow-soft backdrop-blur-xl">
+          <Link
+            href="/templates"
+            className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-[var(--radius-control)] text-sm font-semibold text-white hover:bg-white/10"
+          >
+            <ArrowRight className="size-4" aria-hidden />
+            رجوع
+          </Link>
+          <Link
+            href={`/signup?template=${template.code}`}
+            className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-[var(--radius-control)] bg-white px-4 text-sm font-semibold text-ink"
+          >
+            <WandSparkles className="size-4" aria-hidden />
+            استخدم القالب ده
+          </Link>
+        </div>
+      )}
     </>
   );
 }
