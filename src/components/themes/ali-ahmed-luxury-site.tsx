@@ -9,7 +9,6 @@ import {
   Images,
   Instagram,
   Menu,
-  Sparkles,
   Star,
   UserPlus,
   Video,
@@ -33,7 +32,8 @@ export function AliAhmedLuxurySite({ site }: AliAhmedLuxurySiteProps) {
   const selectedPackage = site.packages.find((item) => item.id === selectedPackageId);
   const selectedExtras = site.extras.filter((item) => selectedExtraIds.includes(item.id));
   const galleryImages = site.gallery.slice(0, 4);
-  const featuredImage = galleryImages[1]?.url ?? site.hero.imageUrl;
+  const heroImage = galleryImages[0] ?? null;
+  const featuredImage = galleryImages[1]?.url ?? galleryImages[0]?.url;
   const displayName = getSiteDisplayName(site);
 
   const total = useMemo(() => {
@@ -109,31 +109,22 @@ export function AliAhmedLuxurySite({ site }: AliAhmedLuxurySiteProps) {
       </nav>
 
       <section id="home" className="relative overflow-hidden pt-16 md:min-h-screen md:pt-20">
-        <Image
-          src={site.hero.imageUrl}
-          alt={site.hero.headline}
-          fill
-          priority
-          sizes="100vw"
-          className="scale-105 object-cover opacity-45"
-        />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_78%_18%,rgba(229,192,123,.22),transparent_28%),linear-gradient(90deg,rgba(5,5,5,.92),rgba(5,5,5,.62)_44%,rgba(5,5,5,.9)),linear-gradient(180deg,rgba(0,0,0,.72),rgba(5,5,5,.32)_42%,#050505_100%)]" />
+        {heroImage ? (
+          <Image
+            src={heroImage.url}
+            alt={heroImage.alt}
+            fill
+            priority
+            sizes="100vw"
+            className="scale-105 object-cover opacity-48"
+          />
+        ) : null}
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_78%_18%,rgba(229,192,123,.18),transparent_28%),linear-gradient(90deg,rgba(5,5,5,.92),rgba(5,5,5,.64)_44%,rgba(5,5,5,.88)),linear-gradient(180deg,rgba(0,0,0,.78),rgba(5,5,5,.35)_42%,#050505_100%)]" />
         <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-[#050505] to-transparent" />
 
-        <div className="container-page relative z-10 grid min-h-[calc(100vh-5rem)] items-center gap-10 py-14 md:grid-cols-[1.02fr_0.98fr] md:gap-14 md:py-20 lg:gap-20">
-          <div className="max-w-3xl text-center md:text-start">
-            <div className="inline-flex items-center gap-2 rounded-full border border-[#e5c07b]/25 bg-[#e5c07b]/10 px-4 py-2 text-xs font-bold text-[#f8e5ba] shadow-[0_12px_36px_rgba(0,0,0,.24)]">
-              <Sparkles className="size-3.5" />
-              تصوير زفاف وخطوبة بجودة سينمائية
-            </div>
-            <h1 className="mt-7 text-balance font-display text-4xl font-bold leading-[1.08] tracking-tight text-white sm:text-5xl md:text-7xl lg:text-8xl">
-              {site.hero.headline}
-            </h1>
-            <p className="mx-auto mt-6 max-w-2xl text-base leading-8 text-white/76 md:mx-0 md:text-xl md:leading-10">
-              {site.hero.subheadline}
-            </p>
-
-            <div className="mt-9 flex flex-col justify-center gap-3 sm:flex-row md:justify-start">
+        <div className="container-page relative z-10 flex min-h-[58svh] items-end py-12 md:min-h-[calc(100vh-5rem)] md:items-center md:py-20">
+          <div className="w-full max-w-2xl pb-8 text-center md:pb-0 md:text-start">
+            <div className="flex flex-col justify-center gap-3 sm:flex-row md:justify-start">
               <button
                 type="button"
                 onClick={() => scrollToSection("packages")}
@@ -149,46 +140,19 @@ export function AliAhmedLuxurySite({ site }: AliAhmedLuxurySiteProps) {
                 شاهد الأعمال
               </button>
             </div>
-
-            <div className="mt-10 grid gap-3 text-sm font-bold leading-6 text-white/72 sm:grid-cols-3 md:max-w-2xl">
-              <HeroFeature label="تغطية يوم الزفاف" />
-              <HeroFeature label="جلسات خارجية" />
-              <HeroFeature label="ألبومات وتسليم رقمي" />
-            </div>
-          </div>
-
-          <div className="relative mx-auto hidden w-full max-w-[520px] md:block">
-            <div className="absolute -left-8 top-10 h-44 w-44 rounded-full bg-[#e5c07b]/20 blur-3xl" />
-            <div className="absolute -right-10 bottom-10 h-52 w-52 rounded-full bg-white/10 blur-3xl" />
-            <div className="relative rotate-[-1.5deg] overflow-hidden rounded-[2.4rem] border border-[#e5c07b]/24 bg-[#101010] p-3 shadow-[0_46px_150px_rgba(0,0,0,.48)]">
-              <div className="relative aspect-[4/5] overflow-hidden rounded-[1.9rem]">
-                <Image
-                  src={site.hero.imageUrl}
-                  alt={site.hero.headline}
-                  fill
-                  sizes="(min-width: 1024px) 38vw, 90vw"
-                  className="object-cover"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/72 via-transparent to-black/18" />
-                <div className="absolute inset-x-5 bottom-5 rounded-2xl border border-white/12 bg-black/42 p-4 backdrop-blur-xl">
-                  <p className="text-xs font-bold text-[#e5c07b]">{displayName}</p>
-                  <p className="mt-1 line-clamp-2 text-lg font-bold leading-7 text-white">تفاصيل هادئة وصور تحكي اللحظة كما كانت</p>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       </section>
 
       {site.gallery.length ? (
-        <section id="gallery" className="container-page scroll-mt-24 py-16 md:py-28">
+        <section id="gallery" className="container-page scroll-mt-24 py-14 md:py-28">
           <SectionHeading eyebrow="أعمال مختارة" title="لمحات من الأعمال" description="مختارات من جلسات الزفاف والخطوبة بتفاصيل قريبة وإضاءة طبيعية." />
-          <div className="mt-10 grid gap-4 md:grid-cols-12 md:grid-rows-[230px_230px] lg:grid-rows-[280px_280px]">
+          <div className="-mx-4 mt-10 flex snap-x gap-4 overflow-x-auto px-4 pb-3 [scrollbar-width:none] md:mx-0 md:grid md:grid-cols-12 md:grid-rows-[230px_230px] md:overflow-visible md:px-0 md:pb-0 lg:grid-rows-[280px_280px] [&::-webkit-scrollbar]:hidden">
             {galleryImages.map((image, index) => (
               <figure
                 key={image.id}
                 className={cn(
-                  "group relative overflow-hidden rounded-[1.6rem] border border-white/8 bg-white/[0.04] shadow-[0_24px_90px_rgba(0,0,0,.26)]",
+                  "group relative w-[82vw] shrink-0 snap-center overflow-hidden rounded-[1.6rem] border border-white/8 bg-white/[0.04] shadow-[0_24px_90px_rgba(0,0,0,.26)] md:w-auto",
                   index === 0 ? "md:col-span-7 md:row-span-2" : "md:col-span-5"
                 )}
               >
@@ -197,7 +161,7 @@ export function AliAhmedLuxurySite({ site }: AliAhmedLuxurySiteProps) {
                     src={image.url}
                     alt={image.alt}
                     fill
-                    sizes={index === 0 ? "(min-width: 1024px) 52vw, 92vw" : "(min-width: 1024px) 38vw, 92vw"}
+                    sizes={index === 0 ? "(min-width: 1024px) 52vw, 82vw" : "(min-width: 1024px) 38vw, 82vw"}
                     className="object-cover transition duration-700 group-hover:scale-105"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/56 via-transparent to-transparent opacity-80" />
@@ -209,41 +173,43 @@ export function AliAhmedLuxurySite({ site }: AliAhmedLuxurySiteProps) {
         </section>
       ) : null}
 
-      <section id="packages" className="scroll-mt-24 border-y border-white/6 bg-[radial-gradient(circle_at_top,rgba(229,192,123,.10),transparent_32%),#070707] py-16 md:py-28">
+      <section id="packages" className="scroll-mt-24 border-y border-white/6 bg-[radial-gradient(circle_at_top,rgba(229,192,123,.10),transparent_32%),#070707] py-14 md:py-28">
         <div className="container-page">
           <SectionHeading eyebrow="باقات التصوير" title="اختر باقتك" description="اختار التغطية الأنسب ليومك، ويمكنك إضافة أي خدمة تحتاجها قبل تأكيد الحجز." />
-          <div className="mt-10 grid gap-5 lg:grid-cols-3">
+          <div className="mt-9 grid gap-4 md:mt-10 lg:grid-cols-3 lg:gap-5">
             {site.packages.map((item, index) => {
               const selected = selectedPackageId === item.id;
               const fallbackImage = site.gallery.length ? site.gallery[index % site.gallery.length]?.url : undefined;
-              const imageUrl = item.imageUrl ?? fallbackImage ?? site.hero.imageUrl;
+              const imageUrl = item.imageUrl ?? fallbackImage;
 
               return (
                 <article
                   key={item.id}
                   className={cn(
-                    "group relative flex min-h-full flex-col overflow-hidden rounded-[2rem] border bg-[#0e0e0e] shadow-[0_26px_100px_rgba(0,0,0,.30)] transition duration-300 hover:-translate-y-1",
+                    "group relative flex min-h-full flex-col overflow-hidden rounded-[1.6rem] border bg-[#0e0e0e] shadow-[0_26px_100px_rgba(0,0,0,.30)] transition duration-300 hover:-translate-y-1 md:rounded-[2rem]",
                     selected ? "border-[#e5c07b] shadow-[0_0_52px_rgba(229,192,123,.18)]" : item.isHighlighted ? "border-[#e5c07b]/42" : "border-white/8"
                   )}
                 >
-                  <div className="relative h-60 overflow-hidden">
-                    <Image src={imageUrl} alt={item.name} fill sizes="(min-width: 1024px) 30vw, 92vw" className="object-cover opacity-82 transition duration-700 group-hover:scale-105" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#0e0e0e] via-[#0e0e0e]/18 to-transparent" />
-                    {item.isHighlighted ? (
-                      <span className="absolute left-4 top-4 inline-flex min-h-8 items-center gap-1.5 rounded-full border border-[#e5c07b]/35 bg-black/52 px-3 text-xs font-bold text-[#f8e5ba] backdrop-blur"><Star className="size-3.5" />الأكثر اختيارًا</span>
-                    ) : null}
-                  </div>
+                  {imageUrl ? (
+                    <div className="relative h-44 overflow-hidden md:h-60">
+                      <Image src={imageUrl} alt={item.name} fill sizes="(min-width: 1024px) 30vw, 92vw" className="object-cover opacity-82 transition duration-700 group-hover:scale-105" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-[#0e0e0e] via-[#0e0e0e]/18 to-transparent" />
+                      {item.isHighlighted ? (
+                        <span className="absolute left-4 top-4 inline-flex min-h-8 items-center gap-1.5 rounded-full border border-[#e5c07b]/35 bg-black/52 px-3 text-xs font-bold text-[#f8e5ba] backdrop-blur"><Star className="size-3.5" />الأكثر اختيارًا</span>
+                      ) : null}
+                    </div>
+                  ) : null}
 
-                  <div className="flex flex-1 flex-col p-6">
+                  <div className="flex flex-1 flex-col p-5 md:p-6">
                     <div className="flex items-start justify-between gap-4">
                       <div>
-                        <h3 className="font-display text-2xl font-bold tracking-wide text-white">{item.name}</h3>
+                        <h3 className="font-display text-xl font-bold tracking-wide text-white md:text-2xl">{item.name}</h3>
                         {item.subtitle ? <p className="mt-1 text-sm font-semibold text-[#e5c07b]">{item.subtitle}</p> : null}
                       </div>
                       <p className="shrink-0 rounded-2xl border border-[#e5c07b]/18 bg-[#e5c07b]/8 px-3 py-2 text-sm font-black text-[#f8e5ba]">{item.price}</p>
                     </div>
 
-                    <ul className="mt-6 flex-1 space-y-3">
+                    <ul className="mt-5 flex-1 space-y-2.5 md:mt-6 md:space-y-3">
                       {item.features.map((feature) => (
                         <li key={feature} className="flex gap-3 text-sm leading-6 text-white/70">
                           <span className="mt-1 inline-flex size-5 shrink-0 items-center justify-center rounded-full bg-[#e5c07b]/12 text-[#e5c07b]"><Check className="size-3" /></span>
@@ -256,7 +222,7 @@ export function AliAhmedLuxurySite({ site }: AliAhmedLuxurySiteProps) {
                       type="button"
                       onClick={() => setSelectedPackageId(item.id)}
                       className={cn(
-                        "mt-7 min-h-12 rounded-[var(--radius-control)] text-sm font-black transition hover:-translate-y-0.5",
+                        "mt-6 min-h-12 rounded-[var(--radius-control)] text-sm font-black transition hover:-translate-y-0.5 md:mt-7",
                         selected ? "bg-[linear-gradient(135deg,#fff3cf,#e5c07b,#b9822b)] text-black" : "border border-white/10 bg-white/[0.055] text-white hover:bg-white/[0.09]"
                       )}
                     >
@@ -271,10 +237,10 @@ export function AliAhmedLuxurySite({ site }: AliAhmedLuxurySiteProps) {
       </section>
 
       {site.extras.length ? (
-        <section id="extras" className="scroll-mt-24 bg-[#050505] py-16 md:py-28">
+        <section id="extras" className="scroll-mt-24 bg-[#050505] py-14 md:py-28">
           <div className="container-page">
             <SectionHeading eyebrow="خدمات إضافية" title="إضافات مميزة" description="أضف خدمة تصوير أو ألبوم أو فيديو حسب احتياج اليوم." />
-            <div className="mt-10 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <div className="mt-9 grid gap-3 sm:grid-cols-2 md:mt-10 xl:grid-cols-4">
               {site.extras.map((extra) => {
                 const selected = selectedExtraIds.includes(extra.id);
                 const Icon = getExtraIcon(extra.iconKey);
@@ -284,20 +250,20 @@ export function AliAhmedLuxurySite({ site }: AliAhmedLuxurySiteProps) {
                     type="button"
                     onClick={() => toggleExtra(extra.id)}
                     className={cn(
-                      "group min-h-40 rounded-[1.6rem] border bg-white/[0.035] p-5 text-start shadow-[0_18px_70px_rgba(0,0,0,.18)] transition hover:-translate-y-0.5 hover:bg-white/[0.06]",
+                      "group min-h-32 rounded-[1.4rem] border bg-white/[0.035] p-4 text-start shadow-[0_18px_70px_rgba(0,0,0,.18)] transition hover:-translate-y-0.5 hover:bg-white/[0.06] md:min-h-40 md:rounded-[1.6rem] md:p-5",
                       selected ? "border-[#e5c07b] bg-[#e5c07b]/9" : "border-white/8"
                     )}
                   >
                     <span
                       className={cn(
-                        "inline-flex size-12 items-center justify-center rounded-2xl border transition",
+                        "inline-flex size-11 items-center justify-center rounded-2xl border transition md:size-12",
                         selected ? "border-[#e5c07b] bg-[#e5c07b] text-black" : "border-white/10 bg-black/35 text-[#e5c07b] group-hover:border-[#e5c07b]/40"
                       )}
                     >
                       {selected ? <Check className="size-5" /> : <Icon className="size-5" />}
                     </span>
-                    <span className="mt-5 block text-base font-black text-white">{extra.name}</span>
-                    <span className="mt-2 block font-display text-xl font-bold text-[#e5c07b]">{extra.price}</span>
+                    <span className="mt-4 block text-sm font-black text-white md:mt-5 md:text-base">{extra.name}</span>
+                    <span className="mt-2 block font-display text-lg font-bold text-[#e5c07b] md:text-xl">{extra.price}</span>
                   </button>
                 );
               })}
@@ -306,26 +272,28 @@ export function AliAhmedLuxurySite({ site }: AliAhmedLuxurySiteProps) {
         </section>
       ) : null}
 
-      <section id="contact" className="container-page scroll-mt-24 py-16 md:py-28">
-        <div className="grid overflow-hidden rounded-[2.2rem] border border-white/8 bg-white/[0.035] shadow-[0_35px_130px_rgba(0,0,0,.28)] lg:grid-cols-[1.05fr_0.95fr]">
-          <div className="relative min-h-[360px] overflow-hidden p-7 md:p-10">
-            <Image src={featuredImage} alt={site.hero.headline} fill sizes="(min-width: 1024px) 48vw, 100vw" className="object-cover opacity-42" />
-            <div className="absolute inset-0 bg-gradient-to-l from-[#050505]/96 via-[#050505]/72 to-[#050505]/38" />
-            <div className="relative z-10 max-w-lg">
-              <p className="font-display text-xs uppercase tracking-[0.28em] text-[#e5c07b]">جاهز نحجز يومك؟</p>
-              <h2 className="mt-4 text-3xl font-bold leading-tight md:text-5xl">ارسل تفاصيل الحجز مباشرة</h2>
-              <p className="mt-4 text-sm leading-7 text-white/68 md:text-base md:leading-8">
-                اختر الباقة والإضافات المناسبة، وسيتم تجهيز رسالة بالحجز والسعر التقريبي للتواصل معنا.
-              </p>
-              <div className="mt-7 flex flex-wrap gap-3 text-sm font-bold text-white/70">
-                <span className="rounded-full border border-white/10 bg-black/35 px-4 py-2">اختيار الباقة</span>
-                <span className="rounded-full border border-white/10 bg-black/35 px-4 py-2">تحديد الإضافات</span>
-                <span className="rounded-full border border-white/10 bg-black/35 px-4 py-2">إرسال الطلب</span>
+      <section id="contact" className="container-page scroll-mt-24 py-14 pb-28 md:py-28">
+        <div className="grid overflow-hidden rounded-[1.8rem] border border-white/8 bg-white/[0.035] shadow-[0_35px_130px_rgba(0,0,0,.28)] md:rounded-[2.2rem] lg:grid-cols-[1.05fr_0.95fr]">
+          {featuredImage ? (
+            <div className="relative hidden min-h-[360px] overflow-hidden p-7 md:p-10 lg:block">
+              <Image src={featuredImage} alt={site.hero.headline} fill sizes="(min-width: 1024px) 48vw, 100vw" className="object-cover opacity-42" />
+              <div className="absolute inset-0 bg-gradient-to-l from-[#050505]/96 via-[#050505]/72 to-[#050505]/38" />
+              <div className="relative z-10 max-w-lg">
+                <p className="font-display text-xs uppercase tracking-[0.28em] text-[#e5c07b]">جاهز نحجز يومك؟</p>
+                <h2 className="mt-4 text-3xl font-bold leading-tight md:text-5xl">ارسل تفاصيل الحجز مباشرة</h2>
+                <p className="mt-4 text-sm leading-7 text-white/68 md:text-base md:leading-8">
+                  اختر الباقة والإضافات المناسبة، وسيتم تجهيز رسالة بالحجز والسعر التقريبي للتواصل معنا.
+                </p>
+                <div className="mt-7 flex flex-wrap gap-3 text-sm font-bold text-white/70">
+                  <span className="rounded-full border border-white/10 bg-black/35 px-4 py-2">اختيار الباقة</span>
+                  <span className="rounded-full border border-white/10 bg-black/35 px-4 py-2">تحديد الإضافات</span>
+                  <span className="rounded-full border border-white/10 bg-black/35 px-4 py-2">إرسال الطلب</span>
+                </div>
               </div>
             </div>
-          </div>
+          ) : null}
 
-          <div className="bg-[#0b0b0b] p-6 md:p-8 lg:p-10">
+          <div className="bg-[#0b0b0b] p-5 md:p-8 lg:p-10">
             <h2 className="text-2xl font-bold">ملخص الحجز</h2>
             {selectedPackage ? (
               <div className="mt-6 space-y-4 rounded-[1.4rem] border border-white/8 bg-black/28 p-5 text-start">
@@ -364,10 +332,14 @@ export function AliAhmedLuxurySite({ site }: AliAhmedLuxurySiteProps) {
       <a
         href={bookingHref}
         onClick={handleBookingClick}
-        className="fixed bottom-5 right-5 z-50 inline-flex size-14 items-center justify-center rounded-full bg-[#25d366] text-white shadow-[0_14px_45px_rgba(37,211,102,.34)] transition hover:scale-105 hover:bg-[#20b858]"
+        className={cn(
+          "fixed bottom-4 left-4 right-4 z-50 inline-flex min-h-12 items-center justify-center gap-2 rounded-full px-5 text-sm font-black text-white shadow-[0_14px_45px_rgba(37,211,102,.34)] transition hover:scale-[1.01] md:left-auto md:right-5 md:size-14 md:px-0",
+          selectedPackage ? "bg-[#25d366] hover:bg-[#20b858]" : "bg-white/10 text-white/70 backdrop-blur"
+        )}
         aria-label="حجز عبر واتساب"
       >
-        <WhatsAppMark className="size-7" />
+        <WhatsAppMark className="size-6 md:size-7" />
+        <span className="md:hidden">{selectedPackage ? site.contact.callToAction : "اختار باقة أولًا"}</span>
       </a>
     </main>
   );
@@ -390,17 +362,6 @@ function MobileScrollButton({ label, onClick }: { label: string; onClick: () => 
     >
       {label}
     </button>
-  );
-}
-
-function HeroFeature({ label }: { label: string }) {
-  return (
-    <div className="rounded-[1.2rem] border border-white/10 bg-black/28 px-4 py-3 shadow-[0_18px_60px_rgba(0,0,0,.18)] backdrop-blur">
-      <span className="inline-flex items-center gap-2">
-        <Check className="size-4 text-[#e5c07b]" />
-        {label}
-      </span>
-    </div>
   );
 }
 
