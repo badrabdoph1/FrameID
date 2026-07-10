@@ -2,11 +2,12 @@
 import { PrismaClient } from "@prisma/client";
 import { createPrismaBackupJobRepository } from "@/modules/backups/prisma-backup-job-repository";
 import { createBackupJobService } from "@/modules/backups/backup-job-service";
+import { isSupportedBackupType } from "@/modules/backups/backup-policy";
 
 async function main() {
   const type = process.argv[2]?.toUpperCase();
-  if (!type || !["DATABASE", "UPLOADS", "FULL"].includes(type)) {
-    console.error("Usage: npm run backup -- [DATABASE|UPLOADS|FULL]");
+  if (!isSupportedBackupType(type)) {
+    console.error("Usage: npm run backup -- [DATABASE|FULL]");
     process.exit(1);
   }
 
@@ -27,7 +28,7 @@ async function main() {
 
   try {
     const result = await service.runManualBackup({
-      type: type as "DATABASE" | "UPLOADS" | "FULL",
+      type,
       initiatedById: "cli-script",
       note: "CLI backup",
     });
