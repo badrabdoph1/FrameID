@@ -9,7 +9,6 @@ import {
   CheckCircle2,
   Copy,
   Edit3,
-  EyeOff,
   Package,
   Plus,
   Save,
