@@ -34,6 +34,9 @@ type TemplateExtra = {
   enabled: boolean;
 };
 
+const inputClass = "min-h-11 w-full rounded-2xl border border-white/10 bg-black/18 px-3.5 text-sm font-extrabold text-[#fff8ea]/90 outline-none transition placeholder:text-white/25 focus:border-amber-300/55 focus:ring-4 focus:ring-amber-300/10";
+const textareaClass = `${inputClass} py-3`;
+
 function isRecord(value: unknown): value is JsonRecord {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
@@ -222,26 +225,26 @@ export default async function AdminTemplatesPage({ searchParams }: Props) {
                       <input type="hidden" name="id" value={template.id} />
 
                       <div className="grid gap-3 sm:grid-cols-2">
-                        <Field label="اسم القالب"><input name="name" defaultValue={template.name} className="template-input" /></Field>
-                        <Field label="كود القالب"><input name="code" defaultValue={template.code} className="template-input" /></Field>
+                        <Field label="اسم القالب"><input name="name" defaultValue={template.name} className={inputClass} /></Field>
+                        <Field label="كود القالب"><input name="code" defaultValue={template.code} className={inputClass} /></Field>
                         <Field label="حالة القالب">
-                          <select name="status" defaultValue={template.status} className="template-input">
+                          <select name="status" defaultValue={template.status} className={inputClass}>
                             <option value="PUBLISHED">منشور</option>
                             <option value="DRAFT">مسودة</option>
                             <option value="ARCHIVED">مؤرشف</option>
                           </select>
                         </Field>
-                        <Field label="ترتيب الظهور"><input name="showroomOrder" type="number" defaultValue={template.showroomOrder} className="template-input" /></Field>
+                        <Field label="ترتيب الظهور"><input name="showroomOrder" type="number" defaultValue={template.showroomOrder} className={inputClass} /></Field>
                       </div>
 
                       <div className="grid gap-3 sm:grid-cols-2">
-                        <Field label="عنوان المعاينة"><input name="previewTitle" defaultValue={previewTitle} className="template-input" /></Field>
-                        <Field label="وصف المعاينة"><input name="previewDescription" defaultValue={previewSubtitle} className="template-input" /></Field>
-                        <Field label="صورة كارت القالب"><input name="previewImage" defaultValue={image} className="template-input sm:col-span-2" /></Field>
-                        <Field label="عنوان Hero داخل القالب"><input name="heroHeadline" defaultValue={stringFrom(hero.headline)} className="template-input" /></Field>
-                        <Field label="وصف Hero داخل القالب"><input name="heroSubheadline" defaultValue={stringFrom(hero.subheadline)} className="template-input" /></Field>
-                        <Field label="صورة Hero داخل القالب"><input name="heroImageUrl" defaultValue={stringFrom(hero.imageUrl)} className="template-input" /></Field>
-                        <Field label="نص زر الحجز"><input name="callToAction" defaultValue={pickText(template.previewData, ["callToAction"], "احجز الآن")} className="template-input" /></Field>
+                        <Field label="عنوان المعاينة"><input name="previewTitle" defaultValue={previewTitle} className={inputClass} /></Field>
+                        <Field label="وصف المعاينة"><input name="previewDescription" defaultValue={previewSubtitle} className={inputClass} /></Field>
+                        <Field label="صورة كارت القالب"><input name="previewImage" defaultValue={image} className={inputClass} /></Field>
+                        <Field label="عنوان Hero داخل القالب"><input name="heroHeadline" defaultValue={stringFrom(hero.headline)} className={inputClass} /></Field>
+                        <Field label="وصف Hero داخل القالب"><input name="heroSubheadline" defaultValue={stringFrom(hero.subheadline)} className={inputClass} /></Field>
+                        <Field label="صورة Hero داخل القالب"><input name="heroImageUrl" defaultValue={stringFrom(hero.imageUrl)} className={inputClass} /></Field>
+                        <Field label="نص زر الحجز"><input name="callToAction" defaultValue={pickText(template.previewData, ["callToAction"], "احجز الآن")} className={inputClass} /></Field>
                       </div>
 
                       <div className="grid gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-3">
@@ -267,8 +270,8 @@ export default async function AdminTemplatesPage({ searchParams }: Props) {
                       <details className="rounded-2xl border border-white/10 bg-black/20 p-3">
                         <summary className="cursor-pointer text-xs font-black text-white/55">تحكم متقدم JSON — لتعديل أي حقل لم يظهر كخانة</summary>
                         <div className="mt-3 grid gap-3">
-                          <Field label="previewData JSON"><textarea name="previewDataJson" rows={8} defaultValue={jsonText(template.previewData)} className="template-input min-h-40 py-3 font-mono text-xs" /></Field>
-                          <Field label="settings JSON"><textarea name="settingsJson" rows={5} defaultValue={jsonText(template.settings)} className="template-input min-h-28 py-3 font-mono text-xs" /></Field>
+                          <Field label="previewData JSON"><textarea name="previewDataJson" rows={8} defaultValue={jsonText(template.previewData)} className={`${textareaClass} min-h-40 font-mono text-xs`} /></Field>
+                          <Field label="settings JSON"><textarea name="settingsJson" rows={5} defaultValue={jsonText(template.settings)} className={`${textareaClass} min-h-28 font-mono text-xs`} /></Field>
                         </div>
                       </details>
 
@@ -283,7 +286,6 @@ export default async function AdminTemplatesPage({ searchParams }: Props) {
           })}
         </section>
       )}
-      <TemplateStyles />
     </AdminPageShell>
   );
 }
@@ -295,15 +297,15 @@ function PackageFields({ item, index }: { item: TemplatePackage; index: number }
       <input type="hidden" name={`package_${index}_id`} value={item.id} />
       <label className="flex min-h-10 items-center gap-2 text-sm font-bold text-white/62"><input type="checkbox" name={`package_${index}_enabled`} defaultChecked={item.enabled} /> تشغيل الباقة في المعاينة</label>
       <div className="grid gap-3 sm:grid-cols-2">
-        <Field label="اسم الباقة"><input name={`package_${index}_name`} defaultValue={item.name} className="template-input" /></Field>
-        <Field label="وصف قصير"><input name={`package_${index}_subtitle`} defaultValue={item.subtitle} className="template-input" /></Field>
-        <Field label="السعر النصي"><input name={`package_${index}_price`} defaultValue={item.price} className="template-input" /></Field>
-        <Field label="السعر الرقمي"><input name={`package_${index}_priceAmount`} type="number" defaultValue={item.priceAmount} className="template-input" /></Field>
-        <Field label="العملة"><input name={`package_${index}_currency`} defaultValue={item.currency} className="template-input" /></Field>
-        <Field label="صورة الباقة"><input name={`package_${index}_imageUrl`} defaultValue={item.imageUrl} className="template-input" /></Field>
+        <Field label="اسم الباقة"><input name={`package_${index}_name`} defaultValue={item.name} className={inputClass} /></Field>
+        <Field label="وصف قصير"><input name={`package_${index}_subtitle`} defaultValue={item.subtitle} className={inputClass} /></Field>
+        <Field label="السعر النصي"><input name={`package_${index}_price`} defaultValue={item.price} className={inputClass} /></Field>
+        <Field label="السعر الرقمي"><input name={`package_${index}_priceAmount`} type="number" defaultValue={item.priceAmount} className={inputClass} /></Field>
+        <Field label="العملة"><input name={`package_${index}_currency`} defaultValue={item.currency} className={inputClass} /></Field>
+        <Field label="صورة الباقة"><input name={`package_${index}_imageUrl`} defaultValue={item.imageUrl} className={inputClass} /></Field>
         <label className="flex min-h-10 items-center gap-2 text-sm font-bold text-white/62"><input type="checkbox" name={`package_${index}_isHighlighted`} defaultChecked={item.isHighlighted} /> مميزة</label>
       </div>
-      <Field label="المميزات — كل سطر ميزة"><textarea name={`package_${index}_features`} rows={4} defaultValue={item.features.join("\n")} className="template-input min-h-28 py-3" /></Field>
+      <Field label="المميزات — كل سطر ميزة"><textarea name={`package_${index}_features`} rows={4} defaultValue={item.features.join("\n")} className={`${textareaClass} min-h-28`} /></Field>
     </fieldset>
   );
 }
@@ -314,15 +316,15 @@ function NewPackageFields() {
       <legend className="px-2 text-xs font-black text-[#f3cf73]">إضافة باقة جديدة للقالب</legend>
       <label className="flex min-h-10 items-center gap-2 text-sm font-bold text-white/62"><input type="checkbox" name="newPackageEnabled" defaultChecked /> تشغيل الباقة الجديدة</label>
       <div className="grid gap-3 sm:grid-cols-2">
-        <Field label="اسم الباقة الجديدة"><input name="newPackageName" className="template-input" placeholder="اتركها فارغة لو مش عايز تضيف" /></Field>
-        <Field label="وصف قصير"><input name="newPackageSubtitle" className="template-input" /></Field>
-        <Field label="السعر النصي"><input name="newPackagePrice" className="template-input" placeholder="مثال: 5,000 جنيه" /></Field>
-        <Field label="السعر الرقمي"><input name="newPackagePriceAmount" type="number" className="template-input" /></Field>
-        <Field label="العملة"><input name="newPackageCurrency" defaultValue="EGP" className="template-input" /></Field>
-        <Field label="صورة الباقة"><input name="newPackageImageUrl" className="template-input" /></Field>
+        <Field label="اسم الباقة الجديدة"><input name="newPackageName" className={inputClass} placeholder="اتركها فارغة لو مش عايز تضيف" /></Field>
+        <Field label="وصف قصير"><input name="newPackageSubtitle" className={inputClass} /></Field>
+        <Field label="السعر النصي"><input name="newPackagePrice" className={inputClass} placeholder="مثال: 5,000 جنيه" /></Field>
+        <Field label="السعر الرقمي"><input name="newPackagePriceAmount" type="number" className={inputClass} /></Field>
+        <Field label="العملة"><input name="newPackageCurrency" defaultValue="EGP" className={inputClass} /></Field>
+        <Field label="صورة الباقة"><input name="newPackageImageUrl" className={inputClass} /></Field>
         <label className="flex min-h-10 items-center gap-2 text-sm font-bold text-white/62"><input type="checkbox" name="newPackageIsHighlighted" /> مميزة</label>
       </div>
-      <Field label="المميزات"><textarea name="newPackageFeatures" rows={3} className="template-input min-h-24 py-3" /></Field>
+      <Field label="المميزات"><textarea name="newPackageFeatures" rows={3} className={`${textareaClass} min-h-24`} /></Field>
     </fieldset>
   );
 }
@@ -334,12 +336,12 @@ function ExtraFields({ item, index }: { item: TemplateExtra; index: number }) {
       <input type="hidden" name={`extra_${index}_id`} value={item.id} />
       <label className="flex min-h-10 items-center gap-2 text-sm font-bold text-white/62"><input type="checkbox" name={`extra_${index}_enabled`} defaultChecked={item.enabled} /> تشغيل الإضافة</label>
       <div className="grid gap-3 sm:grid-cols-2">
-        <Field label="اسم الإضافة"><input name={`extra_${index}_name`} defaultValue={item.name} className="template-input" /></Field>
-        <Field label="الوصف"><input name={`extra_${index}_description`} defaultValue={item.description} className="template-input" /></Field>
-        <Field label="السعر النصي"><input name={`extra_${index}_price`} defaultValue={item.price} className="template-input" /></Field>
-        <Field label="السعر الرقمي"><input name={`extra_${index}_priceAmount`} type="number" defaultValue={item.priceAmount} className="template-input" /></Field>
-        <Field label="العملة"><input name={`extra_${index}_currency`} defaultValue={item.currency} className="template-input" /></Field>
-        <Field label="الأيقونة"><input name={`extra_${index}_iconKey`} defaultValue={item.iconKey} className="template-input" /></Field>
+        <Field label="اسم الإضافة"><input name={`extra_${index}_name`} defaultValue={item.name} className={inputClass} /></Field>
+        <Field label="الوصف"><input name={`extra_${index}_description`} defaultValue={item.description} className={inputClass} /></Field>
+        <Field label="السعر النصي"><input name={`extra_${index}_price`} defaultValue={item.price} className={inputClass} /></Field>
+        <Field label="السعر الرقمي"><input name={`extra_${index}_priceAmount`} type="number" defaultValue={item.priceAmount} className={inputClass} /></Field>
+        <Field label="العملة"><input name={`extra_${index}_currency`} defaultValue={item.currency} className={inputClass} /></Field>
+        <Field label="الأيقونة"><input name={`extra_${index}_iconKey`} defaultValue={item.iconKey} className={inputClass} /></Field>
       </div>
     </fieldset>
   );
@@ -350,12 +352,12 @@ function NewExtraFields() {
     <fieldset className="grid gap-3 rounded-2xl border border-dashed border-white/12 bg-white/[0.02] p-3">
       <legend className="px-2 text-xs font-black text-white/45">إضافة خدمة جديدة</legend>
       <div className="grid gap-3 sm:grid-cols-2">
-        <Field label="اسم الإضافة"><input name="newExtraName" className="template-input" /></Field>
-        <Field label="الوصف"><input name="newExtraDescription" className="template-input" /></Field>
-        <Field label="السعر النصي"><input name="newExtraPrice" className="template-input" /></Field>
-        <Field label="السعر الرقمي"><input name="newExtraPriceAmount" type="number" className="template-input" /></Field>
-        <Field label="العملة"><input name="newExtraCurrency" defaultValue="EGP" className="template-input" /></Field>
-        <Field label="الأيقونة"><input name="newExtraIconKey" defaultValue="camera" className="template-input" /></Field>
+        <Field label="اسم الإضافة"><input name="newExtraName" className={inputClass} /></Field>
+        <Field label="الوصف"><input name="newExtraDescription" className={inputClass} /></Field>
+        <Field label="السعر النصي"><input name="newExtraPrice" className={inputClass} /></Field>
+        <Field label="السعر الرقمي"><input name="newExtraPriceAmount" type="number" className={inputClass} /></Field>
+        <Field label="العملة"><input name="newExtraCurrency" defaultValue="EGP" className={inputClass} /></Field>
+        <Field label="الأيقونة"><input name="newExtraIconKey" defaultValue="camera" className={inputClass} /></Field>
       </div>
     </fieldset>
   );
@@ -367,27 +369,4 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
 
 function Metric({ label, value, accent }: { label: string; value: number; accent?: boolean }) {
   return <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4"><p className={accent ? "text-2xl font-black text-amber-200" : "text-2xl font-black text-[#fff7e8]"}>{value.toLocaleString("ar-EG")}</p><p className="mt-1 text-xs font-black text-white/38">{label}</p></div>;
-}
-
-function TemplateStyles() {
-  return (
-    <style jsx global>{`
-      .template-input {
-        min-height: 44px;
-        width: 100%;
-        border-radius: 1rem;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        background: rgba(0, 0, 0, 0.18);
-        padding: 0 0.85rem;
-        color: rgba(255, 248, 234, 0.9);
-        font-size: 0.875rem;
-        font-weight: 800;
-        outline: none;
-      }
-      textarea.template-input { padding-top: 0.75rem; padding-bottom: 0.75rem; }
-      .template-input::placeholder { color: rgba(255, 255, 255, 0.24); }
-      .template-input:focus { border-color: rgba(243, 207, 115, 0.55); box-shadow: 0 0 0 3px rgba(243, 207, 115, 0.1); }
-      select.template-input { padding-inline-end: 2rem; }
-    `}</style>
-  );
 }
