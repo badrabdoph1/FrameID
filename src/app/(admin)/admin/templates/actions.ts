@@ -53,7 +53,6 @@ function readPackages(formData: FormData): JsonRecord[] {
   const packages: JsonRecord[] = [];
 
   for (let index = 0; index < count; index += 1) {
-    if (!readBool(formData, `package_${index}_enabled`)) continue;
     const name = readString(formData, `package_${index}_name`);
     if (!name) continue;
     const currency = readString(formData, `package_${index}_currency`) || "EGP";
@@ -65,8 +64,10 @@ function readPackages(formData: FormData): JsonRecord[] {
       price: readString(formData, `package_${index}_price`) || formatMoney(priceAmount, currency),
       priceAmount,
       currency,
+      imageUrl: readString(formData, `package_${index}_imageUrl`),
       features: readFeatureLines(readString(formData, `package_${index}_features`)),
       isHighlighted: readBool(formData, `package_${index}_isHighlighted`),
+      enabled: readBool(formData, `package_${index}_enabled`),
     });
   }
 
@@ -81,8 +82,10 @@ function readPackages(formData: FormData): JsonRecord[] {
       price: readString(formData, "newPackagePrice") || formatMoney(priceAmount, currency),
       priceAmount,
       currency,
+      imageUrl: readString(formData, "newPackageImageUrl"),
       features: readFeatureLines(readString(formData, "newPackageFeatures")),
       isHighlighted: readBool(formData, "newPackageIsHighlighted"),
+      enabled: readBool(formData, "newPackageEnabled") || true,
     });
   }
 
@@ -94,7 +97,6 @@ function readExtras(formData: FormData): JsonRecord[] | null {
   if (count === 0 && !readString(formData, "newExtraName")) return null;
   const extras: JsonRecord[] = [];
   for (let index = 0; index < count; index += 1) {
-    if (!readBool(formData, `extra_${index}_enabled`)) continue;
     const name = readString(formData, `extra_${index}_name`);
     if (!name) continue;
     const currency = readString(formData, `extra_${index}_currency`) || "EGP";
@@ -102,10 +104,12 @@ function readExtras(formData: FormData): JsonRecord[] | null {
     extras.push({
       id: readString(formData, `extra_${index}_id`) || makePackageId(name, index),
       name,
+      description: readString(formData, `extra_${index}_description`),
       price: readString(formData, `extra_${index}_price`) || formatMoney(priceAmount, currency),
       priceAmount,
       currency,
       iconKey: readString(formData, `extra_${index}_iconKey`) || "camera",
+      enabled: readBool(formData, `extra_${index}_enabled`),
     });
   }
 
@@ -116,10 +120,12 @@ function readExtras(formData: FormData): JsonRecord[] | null {
     extras.push({
       id: makePackageId(newName, extras.length),
       name: newName,
+      description: readString(formData, "newExtraDescription"),
       price: readString(formData, "newExtraPrice") || formatMoney(priceAmount, currency),
       priceAmount,
       currency,
       iconKey: readString(formData, "newExtraIconKey") || "camera",
+      enabled: true,
     });
   }
   return extras;
@@ -159,13 +165,18 @@ export async function saveTemplateAction(formData: FormData) {
     const heroHeadline = readString(formData, "heroHeadline");
     const heroSubheadline = readString(formData, "heroSubheadline");
     const heroImageUrl = readString(formData, "heroImageUrl");
+    const callToAction = readString(formData, "callToAction");
 
     if (previewTitle) {
       basePreview.title = previewTitle;
       basePreview.headline = previewTitle;
     }
-    if (previewDescription) basePreview.description = previewDescription;
+    if (previewDescription) {
+      basePreview.description = previewDescription;
+      basePreview.subtitle = previewDescription;
+    }
     if (previewImage) basePreview.previewImage = previewImage;
+    if (callToAction) basePreview.callToAction = callToAction;
     if (heroHeadline) hero.headline = heroHeadline;
     if (heroSubheadline) hero.subheadline = heroSubheadline;
     if (heroImageUrl) hero.imageUrl = heroImageUrl;
@@ -195,7 +206,11 @@ export async function saveTemplateAction(formData: FormData) {
       action: "TEMPLATE_UPDATED",
       templateId: updated.id,
       code: updated.code,
-      metadata: { status: updated.status, packagesCount: Array.isArray(basePreview.packages) ? basePreview.packages.length : 0 },
+      metadata: {
+        status: updated.status,
+        packagesCount: Array.isArray(basePreview.packages) ? basePreview.packages.length : 0,
+        activePackagesCount: Array.isArray(basePreview.packages) ? basePreview.packages.filter((item) => isRecord(item) && item.enabled !== false).length : 0,
+      },
     });
   } catch (error) {
     const { userError } = await processError(error, { metadata: { action: "saveTemplate", id } });
@@ -203,6 +218,7 @@ export async function saveTemplateAction(formData: FormData) {
   }
 
   revalidatePath("/admin/templates");
+  revalidatePath("/templates");
   revalidatePath("/admin/content");
   redirect("/admin/templates?saved=1");
 }
@@ -216,5 +232,6 @@ export async function toggleTemplateAction(formData: FormData) {
   const updated = await prisma.template.update({ where: { id }, data: { status: nextStatus } });
   await auditTemplate({ adminId: admin.id, adminEmail: admin.email, action: nextStatus === "PUBLISHED" ? "TEMPLATE_PUBLISHED" : "TEMPLATE_UNPUBLISHED", templateId: updated.id, code: updated.code, metadata: { status: nextStatus } });
   revalidatePath("/admin/templates");
+  revalidatePath("/templates");
   redirect("/admin/templates?toggled=1");
 }
