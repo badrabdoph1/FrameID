@@ -74,7 +74,7 @@ describe("media upload service", () => {
         tenantId: "tenant_1",
         file
       })
-    ).rejects.toThrow("Unsupported media type");
+    ).rejects.toThrow("نوع الملف غير مدعوم");
   });
 
   it("rejects executable or text content disguised as an image", async () => {
@@ -84,7 +84,7 @@ describe("media upload service", () => {
 
     await expect(
       service.uploadImage({ tenantId: "tenant_1", file })
-    ).rejects.toThrow("File content does not match its image type");
+    ).rejects.toThrow("محتوى الملف لا يطابق صيغة الصورة");
 
     expect(storage.saved).toEqual([]);
     expect(repository.created).toEqual([]);
