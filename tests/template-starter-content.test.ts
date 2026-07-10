@@ -25,18 +25,15 @@ describe("template starter content", () => {
       templateDefinitions[0].starterContent
     );
     const personalized = personalizeTemplateStarterContent(original, "ليلى أحمد");
+    const expected = structuredClone(original);
 
-    expect(personalized.site.title).toBe("ليلى أحمد");
-    expect(personalized.contact.studioName).toBe("ليلى أحمد");
-    expect(personalized.sections.hero.headline).toBe("ليلى أحمد");
-    expect(personalized.seo.title).toBe("ليلى أحمد");
-    expect(personalized.seo.structuredData.name).toBe("ليلى أحمد");
-    expect(personalized.packages.map((item) => item.priceAmount)).toEqual(
-      original.packages.map((item) => item.priceAmount)
-    );
-    expect(personalized.gallery.images.map((item) => item.url)).toEqual(
-      original.gallery.images.map((item) => item.url)
-    );
+    expected.site.title = "ليلى أحمد";
+    expected.contact.studioName = "ليلى أحمد";
+    expected.sections.hero.headline = "ليلى أحمد";
+    expected.seo.title = "ليلى أحمد";
+    expected.seo.structuredData.name = "ليلى أحمد";
+
+    expect(personalized).toEqual(expected);
     expect(original.site.title).not.toBe("ليلى أحمد");
   });
 });

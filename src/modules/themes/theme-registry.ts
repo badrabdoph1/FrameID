@@ -24,7 +24,7 @@ export type TemplateSummary = {
   status: TemplateStatus;
   showroomOrder: number;
   description: string;
-  starterContent?: TemplateStarterContent;
+  starterContent: TemplateStarterContent;
 };
 
 export type ThemeRegistryInput = {
@@ -68,10 +68,19 @@ function assertTemplateThemesExist(
   }
 }
 
+function assertTemplatesHaveStarterContent(templateItems: TemplateSummary[]) {
+  for (const template of templateItems) {
+    if (!template.starterContent) {
+      throw new Error(`Template ${template.code} is missing starter content`);
+    }
+  }
+}
+
 export function createThemeRegistry(input: ThemeRegistryInput): ThemeRegistry {
   assertUniqueCodes(input.themes, "theme");
   assertUniqueCodes(input.templates, "template");
   assertTemplateThemesExist(input.themes, input.templates);
+  assertTemplatesHaveStarterContent(input.templates);
 
   const themeMap = new Map(input.themes.map((theme) => [theme.code, theme]));
   const templateMap = new Map(
