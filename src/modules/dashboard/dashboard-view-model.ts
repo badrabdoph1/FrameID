@@ -1,5 +1,6 @@
 import type { CurrentSession } from "@/modules/auth/current-session-service";
 import type { ActivationTemplateKey, CustomerMessageTone } from "@/modules/messages/customer-message-config";
+import { calcLifecycleDaysRemaining, calcLifecycleProgressPercent } from "@/modules/lifecycle/customer-lifecycle";
 
 type ChecklistItem = {
   id: string;
@@ -12,9 +13,13 @@ type ChecklistItem = {
 
 export type SubscriptionInfo = {
   status: string;
+  accountType: "تجربة مجانية" | "اشتراك" | "اشتراك دائم";
   planName: string | null;
   trialEndsAt: string | null;
+  startsAt: string | null;
+  endsAt: string | null;
   daysRemaining: number | null;
+  progressPercent: number | null;
   isExpired: boolean;
   isActive: boolean;
   isTrial: boolean;
@@ -24,6 +29,7 @@ export type SubscriptionInfo = {
   hasPendingRequest: boolean;
   pendingRequestStatus: string | null;
   latestPaymentRequestStatus: string | null;
+  urgency: "success" | "warning" | "danger" | "neutral";
 };
 
 export type DashboardWorkspacePhase = {
@@ -44,19 +50,8 @@ export type DashboardOperatingAlert = {
   actionLabel: string;
 };
 
-export type DashboardCustomerMessage = {
-  id: string;
-  tone: CustomerMessageTone;
-  title: string;
-  body: string;
-  createdAt: string;
-};
-
-export type DashboardActivationMessages = Partial<Record<ActivationTemplateKey, {
-  title: string;
-  body: string;
-  tone: CustomerMessageTone;
-}>>;
+export type DashboardCustomerMessage = { id: string; tone: CustomerMessageTone; title: string; body: string; createdAt: string };
+export type DashboardActivationMessages = Partial<Record<ActivationTemplateKey, { title: string; body: string; tone: CustomerMessageTone }>>;
 
 export type DashboardViewModel = {
   photographerName: string;
@@ -94,71 +89,53 @@ function formatRelativeTime(date: Date, now: Date): string {
   if (mins < 60) return `منذ ${mins} د`;
   const hours = Math.floor(mins / 60);
   if (hours < 24) return `منذ ${hours} س`;
-  const days = Math.floor(hours / 24);
-  return `منذ ${days} ي`;
+  return `منذ ${Math.floor(hours / 24)} ي`;
 }
 
 const nextStepCopy: Record<string, { title: string; description: string }> = {
-  package: {
-    title: "ابدأ بالباقات",
-    description: "اكتب الباقات والأسعار بنفسك. لا نعتبر أي باقة جاهزة إلا بعد ما تضيفها أو تعدلها فعلاً.",
-  },
-  contact: {
-    title: "أكمل بيانات التواصل",
-    description: "اسم المصور، اسم الاستوديو، الهاتف، واتساب، وروابط السوشيال الأساسية.",
-  },
-  avatar: {
-    title: "ارفع صورة المصور",
-    description: "اختار صورة شخصية مربعة وواضحة تظهر للعميل بثقة.",
-  },
-  cover: {
-    title: "ارفع صورة الغلاف",
-    description: "صورة كبيرة تعطي أول انطباع عن شغلك في أول شاشة.",
-  },
-  album: {
-    title: "أنشئ ألبوم أعمال",
-    description: "ألبوم واحد كفاية كبداية، ويفضل تكمّله بعد التأكد إن باقي الموقع شغال.",
-  },
-  seo: {
-    title: "جهّز شكل المشاركة",
-    description: "عنوان ووصف وصورة مشاركة عشان الرابط يظهر بشكل احترافي.",
-  },
-  publish: {
-    title: "انشر الموقع",
-    description: "بعد اكتمال الأساسيات، انشر الموقع وانسخ الرابط للعملاء.",
-  },
+  package: { title: "ابدأ بالباقات", description: "اكتب الباقات والأسعار بنفسك." },
+  contact: { title: "أكمل بيانات التواصل", description: "اسم المصور، الاستوديو، الهاتف، واتساب، وروابطك." },
+  avatar: { title: "ارفع صورة المصور", description: "اختار صورة شخصية واضحة." },
+  cover: { title: "ارفع صورة الغلاف", description: "صورة كبيرة تعطي أول انطباع عن شغلك." },
+  album: { title: "أنشئ ألبوم أعمال", description: "ألبوم واحد كفاية كبداية." },
+  seo: { title: "جهّز شكل المشاركة", description: "عنوان ووصف وصورة مشاركة للرابط." },
+  publish: { title: "انشر الموقع", description: "انشر الموقع وانسخ الرابط للعملاء." },
 };
 
-function calcDaysRemaining(endDate: Date, now: Date): number {
-  const diff = endDate.getTime() - now.getTime();
-  if (diff <= 0) return 0;
-  return Math.ceil(diff / (1000 * 60 * 60 * 24));
-}
-
-function buildSubscriptionInfo(
-  session: CurrentSession,
-  now: Date,
-  pendingRequestStatus: string | null,
-  latestPaymentRequestStatus: string | null,
-): SubscriptionInfo | null {
+function buildSubscriptionInfo(session: CurrentSession, now: Date, pendingRequestStatus: string | null, latestPaymentRequestStatus: string | null): SubscriptionInfo | null {
   if (!session.subscription) return null;
 
   const sub = session.subscription;
   const tenant = session.tenant;
   const isTrial = sub.status === "TRIAL" || tenant.status === "TRIAL";
-  const isActive = sub.status === "ACTIVE";
+  const isActive = sub.status === "ACTIVE" || tenant.status === "ACTIVE";
   const isExpired = sub.status === "EXPIRED" || tenant.status === "EXPIRED" || tenant.status === "TRIAL_EXPIRED";
   const isPastDue = sub.status === "PAST_DUE";
   const isCancelled = sub.status === "CANCELLED";
   const isSuspended = sub.status === "SUSPENDED" || tenant.status === "SUSPENDED";
-
-  const endDate = isTrial ? tenant.trialEndsAt : (sub.currentPeriodEnd ?? tenant.trialEndsAt);
+  const startDate = isTrial ? tenant.trialStartedAt : (sub.currentPeriodStart ?? sub.activatedAt);
+  const endDate = isTrial ? tenant.trialEndsAt : (sub.currentPeriodEnd ?? sub.expiresAt);
+  const daysRemaining = calcLifecycleDaysRemaining(endDate ?? null, now);
+  const progressPercent = calcLifecycleProgressPercent(startDate ?? null, endDate ?? null, now);
+  const urgency = isExpired || isSuspended || isPastDue || daysRemaining === 0
+    ? "danger"
+    : daysRemaining !== null && daysRemaining <= 3
+      ? "danger"
+      : daysRemaining !== null && daysRemaining <= 7
+        ? "warning"
+        : isActive || isTrial
+          ? "success"
+          : "neutral";
 
   return {
     status: sub.status,
+    accountType: isTrial ? "تجربة مجانية" : endDate ? "اشتراك" : "اشتراك دائم",
     planName: sub.plan?.name ?? null,
     trialEndsAt: tenant.trialEndsAt ? tenant.trialEndsAt.toISOString() : null,
-    daysRemaining: endDate ? calcDaysRemaining(endDate, now) : null,
+    startsAt: startDate ? startDate.toISOString() : null,
+    endsAt: endDate ? endDate.toISOString() : null,
+    daysRemaining,
+    progressPercent,
     isExpired,
     isActive,
     isTrial,
@@ -168,43 +145,19 @@ function buildSubscriptionInfo(
     hasPendingRequest: pendingRequestStatus !== null,
     pendingRequestStatus,
     latestPaymentRequestStatus,
+    urgency,
   };
 }
 
 function buildPhases(items: ChecklistItem[]): DashboardWorkspacePhase[] {
-  const phaseDefinitions: Array<Omit<DashboardWorkspacePhase, "done" | "total" | "state"> & { itemIds: string[] }> = [
-    {
-      id: "packages",
-      title: "١. الباقات",
-      description: "اكتب عروضك وأسعارك بوضوح.",
-      href: "/dashboard/services",
-      itemIds: ["package"],
-    },
-    {
-      id: "contact",
-      title: "٢. بيانات التواصل",
-      description: "عرّف العميل عليك وخليه يعرف يحجز.",
-      href: "/dashboard/site-info",
-      itemIds: ["contact"],
-    },
-    {
-      id: "photos",
-      title: "٣. الصور",
-      description: "الصورة الشخصية، الغلاف، وألبومات الأعمال.",
-      href: "/dashboard/gallery",
-      itemIds: ["avatar", "cover", "album"],
-    },
-    {
-      id: "launch",
-      title: "٤. النشر",
-      description: "راجع الرابط، جهّز المشاركة، وانشر.",
-      href: "/dashboard/publish",
-      itemIds: ["seo", "publish"],
-    },
+  const phases: Array<Omit<DashboardWorkspacePhase, "done" | "total" | "state"> & { itemIds: string[] }> = [
+    { id: "packages", title: "١. الباقات", description: "اكتب عروضك وأسعارك بوضوح.", href: "/dashboard/services", itemIds: ["package"] },
+    { id: "contact", title: "٢. بيانات التواصل", description: "عرّف العميل عليك.", href: "/dashboard/site-info", itemIds: ["contact"] },
+    { id: "photos", title: "٣. الصور", description: "الصورة الشخصية والغلاف والألبومات.", href: "/dashboard/gallery", itemIds: ["avatar", "cover", "album"] },
+    { id: "launch", title: "٤. النشر", description: "راجع الرابط وانشر.", href: "/dashboard/publish", itemIds: ["seo", "publish"] },
   ];
-
   let previousDone = true;
-  return phaseDefinitions.map((phase) => {
+  return phases.map((phase) => {
     const related = items.filter((item) => phase.itemIds.includes(item.id));
     const done = related.filter((item) => item.done).length;
     const total = related.length;
@@ -215,82 +168,20 @@ function buildPhases(items: ChecklistItem[]): DashboardWorkspacePhase[] {
   });
 }
 
-function buildOperatingAlerts({
-  isReadyToPublish,
-  isPublished,
-  subscription,
-}: {
-  isReadyToPublish: boolean;
-  isPublished: boolean;
-  subscription: SubscriptionInfo | null;
-}): DashboardOperatingAlert[] {
+function buildOperatingAlerts({ isReadyToPublish, isPublished, subscription }: { isReadyToPublish: boolean; isPublished: boolean; subscription: SubscriptionInfo | null }): DashboardOperatingAlert[] {
   const alerts: DashboardOperatingAlert[] = [];
-
-  if (subscription?.hasPendingRequest) {
-    alerts.push({
-      tone: "warning",
-      title: "طلب التفعيل قيد المراجعة",
-      description: "تم إرسال إثبات الدفع. تابع الحالة من صفحة الاشتراك.",
-      href: "/dashboard/billing",
-      actionLabel: "متابعة",
-    });
-  } else if (subscription?.isTrial) {
-    alerts.push({
-      tone: subscription.daysRemaining !== null && subscription.daysRemaining <= 3 ? "danger" : "warning",
-      title: "حسابك تجريبي برجاء التأكد من التفعيل",
-      description: subscription.daysRemaining !== null ? `متبقي ${subscription.daysRemaining} يوم على نهاية التجربة.` : "فعّل الاشتراك قبل نهاية الفترة التجريبية.",
-      href: "/dashboard/billing",
-      actionLabel: "زر التفعيل",
-    });
-  } else if (subscription?.isExpired || subscription?.isSuspended || subscription?.isPastDue) {
-    alerts.push({
-      tone: "danger",
-      title: "الاشتراك يحتاج إجراء",
-      description: "راجع الاشتراك حتى يظل الموقع شغال للعملاء.",
-      href: "/dashboard/billing",
-      actionLabel: "حل المشكلة",
-    });
+  if (subscription?.hasPendingRequest) alerts.push({ tone: "warning", title: "طلب التفعيل قيد المراجعة", description: "تم إرسال إثبات الدفع. تابع الحالة من صفحة الاشتراك.", href: "/dashboard/billing", actionLabel: "متابعة" });
+  else if (subscription?.isExpired || subscription?.isSuspended || subscription?.isPastDue) alerts.push({ tone: "danger", title: "الاشتراك يحتاج تجديد", description: "انتهت المدة أو يحتاج الحساب إجراءً حتى يظل الموقع شغالًا.", href: "/dashboard/billing", actionLabel: "تجديد" });
+  else if (subscription?.isTrial || subscription?.isActive) {
+    const tone = subscription.urgency === "danger" ? "danger" : subscription.urgency === "warning" ? "warning" : "success";
+    if (subscription.daysRemaining !== null && subscription.daysRemaining <= 7) alerts.push({ tone, title: subscription.daysRemaining <= 3 ? "تنبيه: المدة أوشكت على الانتهاء" : "تنبيه قبل انتهاء المدة", description: `متبقي ${subscription.daysRemaining} يوم.`, href: "/dashboard/billing", actionLabel: subscription.isTrial ? "تفعيل" : "تجديد" });
   }
-
-  if (!isReadyToPublish) {
-    alerts.push({
-      tone: "info",
-      title: "كمّل الخطوات بالترتيب",
-      description: "ابدأ بالباقات، بعدها بيانات التواصل، بعدها الصور، ثم النشر.",
-      href: "/dashboard/services",
-      actionLabel: "ابدأ",
-    });
-  } else if (!isPublished) {
-    alerts.push({
-      tone: "success",
-      title: "موقعك جاهز للنشر",
-      description: "افتح صفحة النشر وراجع شكل الرابط قبل المشاركة.",
-      href: "/dashboard/publish",
-      actionLabel: "نشر",
-    });
-  }
-
+  if (!isReadyToPublish) alerts.push({ tone: "info", title: "كمّل الخطوات بالترتيب", description: "ابدأ بالباقات، بعدها بيانات التواصل، بعدها الصور، ثم النشر.", href: "/dashboard/services", actionLabel: "ابدأ" });
+  else if (!isPublished) alerts.push({ tone: "success", title: "موقعك جاهز للنشر", description: "افتح صفحة النشر وراجع شكل الرابط قبل المشاركة.", href: "/dashboard/publish", actionLabel: "نشر" });
   return alerts;
 }
 
-export function createDashboardViewModel({
-  session,
-  platformBaseUrl,
-  now,
-  packagesCount,
-  imagesCount,
-  albumsCount,
-  hasContactInfo,
-  hasCoverImage,
-  currentThemeName,
-  lastModifiedAt,
-  pendingRequestStatus,
-  latestPaymentRequestStatus,
-  hasSeoSettings,
-  hasAvatarImage,
-  customerMessages,
-  activationMessages,
-}: {
+export function createDashboardViewModel({ session, platformBaseUrl, now, packagesCount, imagesCount, albumsCount, hasContactInfo, hasCoverImage, currentThemeName, lastModifiedAt, pendingRequestStatus, latestPaymentRequestStatus, hasSeoSettings, hasAvatarImage, customerMessages, activationMessages }: {
   session: CurrentSession;
   platformBaseUrl: string;
   now: Date;
@@ -312,77 +203,23 @@ export function createDashboardViewModel({
   const hasImages = imagesCount > 0;
   const hasAlbums = albumsCount > 0;
   const isPublished = session.site.status === "PUBLISHED";
-
   const items: ChecklistItem[] = [
-    {
-      id: "package",
-      label: "أضف أول باقة بأسلوبك",
-      description: "الباقة لازم تكون من اختيارك أنت، باسم وسعر ومميزات واضحة.",
-      done: hasPackages,
-      href: "/dashboard/services",
-      workspace: "sales",
-    },
-    {
-      id: "contact",
-      label: "أكمل بيانات التواصل",
-      description: "اسم المصور، واتساب، فيسبوك، إنستجرام، وتيك توك.",
-      done: hasContactInfo,
-      href: "/dashboard/site-info",
-      workspace: "studio",
-    },
-    {
-      id: "avatar",
-      label: "ارفع صورة المصور",
-      description: "صورة شخصية مربعة وواضحة.",
-      done: Boolean(hasAvatarImage),
-      href: "/dashboard/gallery",
-      workspace: "photos",
-    },
-    {
-      id: "cover",
-      label: "ارفع صورة الغلاف",
-      description: "صورة رئيسية كبيرة للموقع.",
-      done: hasCoverImage,
-      href: "/dashboard/gallery",
-      workspace: "photos",
-    },
-    {
-      id: "album",
-      label: "أنشئ ألبوم أعمال",
-      description: "صور من أعمالك تظهر للعميل.",
-      done: hasImages && hasAlbums,
-      href: "/dashboard/gallery",
-      workspace: "photos",
-    },
-    {
-      id: "seo",
-      label: "جهّز شكل المشاركة",
-      description: "عنوان ووصف أو صورة للرابط.",
-      done: Boolean(hasSeoSettings),
-      href: "/dashboard/publish",
-      workspace: "publish",
-    },
-    {
-      id: "publish",
-      label: "انشر الموقع",
-      description: "حوّل الموقع لرابط جاهز للعملاء.",
-      done: isPublished,
-      href: "/dashboard/publish",
-      workspace: "publish",
-    },
+    { id: "package", label: "أضف أول باقة بأسلوبك", description: "اسم وسعر ومميزات واضحة.", done: hasPackages, href: "/dashboard/services", workspace: "sales" },
+    { id: "contact", label: "أكمل بيانات التواصل", description: "اسم المصور، واتساب، وروابطك.", done: hasContactInfo, href: "/dashboard/site-info", workspace: "studio" },
+    { id: "avatar", label: "ارفع صورة المصور", description: "صورة شخصية واضحة.", done: Boolean(hasAvatarImage), href: "/dashboard/gallery", workspace: "photos" },
+    { id: "cover", label: "ارفع صورة الغلاف", description: "صورة رئيسية كبيرة.", done: hasCoverImage, href: "/dashboard/gallery", workspace: "photos" },
+    { id: "album", label: "أنشئ ألبوم أعمال", description: "صور من أعمالك تظهر للعميل.", done: hasImages && hasAlbums, href: "/dashboard/gallery", workspace: "photos" },
+    { id: "seo", label: "جهّز شكل المشاركة", description: "عنوان ووصف أو صورة للرابط.", done: Boolean(hasSeoSettings), href: "/dashboard/publish", workspace: "publish" },
+    { id: "publish", label: "انشر الموقع", description: "حوّل الموقع لرابط جاهز للعملاء.", done: isPublished, href: "/dashboard/publish", workspace: "publish" },
   ];
-
-  const doneCount = items.filter((i) => i.done).length;
+  const doneCount = items.filter((item) => item.done).length;
   const percent = calcPercent(doneCount, items.length);
   const subscription = buildSubscriptionInfo(session, now, pendingRequestStatus ?? null, latestPaymentRequestStatus ?? null);
   const requiredBeforePublish = items.filter((item) => item.id !== "publish");
   const isReadyToPublish = requiredBeforePublish.every((item) => item.done);
-  const incomplete = items.find((i) => !i.done);
-  const activeStep = incomplete ?? items.find((i) => i.id === "publish") ?? items[0];
-  const activeCopy = nextStepCopy[activeStep.id] ?? {
-    title: activeStep.label,
-    description: "أكمل هذه الخطوة للانتقال للخطوة التالية.",
-  };
+  const incomplete = items.find((item) => !item.done);
+  const activeStep = incomplete ?? items.find((item) => item.id === "publish") ?? items[0];
+  const activeCopy = nextStepCopy[activeStep.id] ?? { title: activeStep.label, description: "أكمل هذه الخطوة للانتقال للخطوة التالية." };
 
   return {
     photographerName: session.tenant.displayName,
