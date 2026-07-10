@@ -127,7 +127,7 @@ describe("site content service", () => {
     });
 
     const service = createSiteContentService({ repository });
-    await expect(service.getEditorContent(createSession())).resolves.toEqual({
+    await expect(service.getEditorContent({ session: createSession() })).resolves.toEqual({
       title: "Ali Studio",
       description: "Fine art wedding photography",
       hero: {
