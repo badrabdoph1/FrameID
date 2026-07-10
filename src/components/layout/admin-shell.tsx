@@ -41,15 +41,15 @@ function ShellContent({ children }: { children: React.ReactNode }) {
 
       <div
         className={cn(
-          "min-w-0 transition-all duration-200",
-          mounted && !sidebarCollapsed ? "lg:mr-[310px]" : "lg:mr-0",
+          "admin-desktop-workspace min-w-0 transition-all duration-300 ease-out",
+          mounted && !sidebarCollapsed ? "lg:mr-[326px]" : "lg:mr-[86px]",
         )}
       >
-        <main className="min-h-screen overflow-x-hidden px-3 pb-[calc(166px+env(safe-area-inset-bottom))] pt-[calc(82px+env(safe-area-inset-top))] sm:px-4 lg:p-6">
+        <main className="admin-desktop-main min-h-screen overflow-x-hidden px-3 pb-[calc(166px+env(safe-area-inset-bottom))] pt-[calc(82px+env(safe-area-inset-top))] sm:px-4 lg:px-7 lg:py-6 lg:pb-8 xl:px-8">
           <div className="hidden lg:block">
             <AdminTopbar />
           </div>
-          <div className="lg:mt-4">{children}</div>
+          <div className="admin-desktop-content-card lg:mt-5 lg:p-4 xl:p-5">{children}</div>
         </main>
       </div>
 
