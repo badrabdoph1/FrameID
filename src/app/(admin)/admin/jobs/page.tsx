@@ -41,12 +41,12 @@ export default async function AdminJobsPage() {
     prisma.backupJob.findMany({
       orderBy: { createdAt: "desc" },
       take: 30,
-      select: { id: true, type: true, status: true, trigger: true, note: true, createdAt: true },
+      select: { id: true, type: true, status: true, createdAt: true },
     }),
     prisma.restoreJob.findMany({
       orderBy: { createdAt: "desc" },
       take: 20,
-      select: { id: true, type: true, status: true, errorMessage: true, createdAt: true },
+      select: { id: true, status: true, errorMessage: true, createdAt: true },
     }),
     prisma.paymentRequest.findMany({
       where: { deletedAt: null, status: { in: ["SUBMITTED", "PENDING", "UNDER_REVIEW"] } } as never,
@@ -67,7 +67,7 @@ export default async function AdminJobsPage() {
       id: `backup-${job.id}`,
       type: "Backup",
       title: `${job.type} backup`,
-      subtitle: job.note ?? job.trigger,
+      subtitle: `Backup job`,
       status: job.status,
       href: "/admin/backups",
       createdAt: job.createdAt,
@@ -76,7 +76,7 @@ export default async function AdminJobsPage() {
     ...restoreJobs.map((job) => ({
       id: `restore-${job.id}`,
       type: "Restore",
-      title: `${job.type} restore`,
+      title: "Database restore",
       subtitle: job.errorMessage ?? "Restore operation",
       status: job.status,
       href: "/admin/backups",
@@ -96,10 +96,10 @@ export default async function AdminJobsPage() {
     ...errorJobs.map((job) => ({
       id: `error-${job.id}`,
       type: "Error Resolution",
-      title: job.code,
+      title: job.code ?? "Unknown error",
       subtitle: job.message,
       status: job.level,
-      href: `/admin/errors?search=${encodeURIComponent(job.code)}`,
+      href: `/admin/errors?search=${encodeURIComponent(job.code ?? "")}`,
       createdAt: job.createdAt,
       priority: ["critical", "fatal", "error"].includes(job.level) ? "critical" as const : "normal" as const,
     })),

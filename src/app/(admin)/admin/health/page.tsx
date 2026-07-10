@@ -14,7 +14,7 @@ export default async function AdminHealthPage() {
       prisma.site.count({ where: { deletedAt: null } }),
       prisma.backupJob.count(),
       prisma.paymentRequest.count({ where: { status: { in: ["SUBMITTED", "PENDING", "UNDER_REVIEW"] }, deletedAt: null } }),
-      prisma.supportCase.count({ where: { deletedAt: null, status: "OPEN" } }),
+      prisma.supportCase.count({ where: { status: "OPEN" } }),
     ]);
 
   const cards = [

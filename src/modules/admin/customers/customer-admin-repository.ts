@@ -481,7 +481,7 @@ export function createCustomerAdminRepository(prisma: PrismaClient) {
 
       await tx.auditLog.create({
         data: {
-          actorUserId: actorId,
+          actorId: actorId,
           tenantId: id,
           action: `CUSTOMER_STATUS_${status}`,
           entityType: "Tenant",
@@ -510,7 +510,7 @@ export function createCustomerAdminRepository(prisma: PrismaClient) {
 
       await tx.auditLog.create({
         data: {
-          actorUserId: actorId,
+          actorId: actorId,
           tenantId: id,
           action: "CUSTOMER_DELETED",
           entityType: "Tenant",
@@ -560,7 +560,7 @@ export function createCustomerAdminRepository(prisma: PrismaClient) {
   ): Promise<void> {
     await prisma.auditLog.create({
       data: {
-        actorUserId,
+        actorId: actorUserId,
         tenantId,
         action,
         entityType,
@@ -696,7 +696,7 @@ export function createCustomerAdminRepository(prisma: PrismaClient) {
 
       await tx.auditLog.create({
         data: {
-          actorUserId: actorId,
+          actorId: actorId,
           tenantId,
           action: "TRIAL_EXTENDED",
           entityType: "Tenant",

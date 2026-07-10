@@ -172,7 +172,7 @@ export async function syncCustomerLifecycle(prisma: LifecyclePrismaClient, optio
     await prisma.subscription.updateMany({ where: { tenantId: tenant.id, deletedAt: null, status: "TRIAL" }, data: { status: "EXPIRED", currentPeriodEnd: tenant.trialEndsAt, expiresAt: tenant.trialEndsAt } });
     await prisma.site.updateMany({ where: { tenantId: tenant.id, deletedAt: null }, data: { status: "EXPIRED", isPublished: false } });
     await notifyLifecycleExpired(prisma, tenant, "trial");
-    await prisma.auditLog.create({ data: { actorUserId: null, tenantId: tenant.id, action: "TRIAL_AUTO_EXPIRED", entityType: "Tenant", entityId: tenant.id, metadata: { expiredAt: now.toISOString(), trialEndsAt: tenant.trialEndsAt.toISOString() } } }).catch(() => undefined);
+    await prisma.auditLog.create({ data: { actorId: null, tenantId: tenant.id, action: "TRIAL_AUTO_EXPIRED", entityType: "Tenant", entityId: tenant.id, metadata: { expiredAt: now.toISOString(), trialEndsAt: tenant.trialEndsAt.toISOString() } } }).catch(() => undefined);
   }
 
   const expiredSubscriptions = await prisma.subscription.findMany({
@@ -191,7 +191,7 @@ export async function syncCustomerLifecycle(prisma: LifecyclePrismaClient, optio
     await prisma.tenant.update({ where: { id: subscription.tenantId }, data: { status: "EXPIRED", gracePeriodEndsAt: null } });
     await prisma.site.updateMany({ where: { tenantId: subscription.tenantId, deletedAt: null }, data: { status: "EXPIRED", isPublished: false } });
     await notifyLifecycleExpired(prisma, subscription.tenant, "subscription");
-    await prisma.auditLog.create({ data: { actorUserId: null, tenantId: subscription.tenantId, action: "SUBSCRIPTION_AUTO_EXPIRED", entityType: "Subscription", entityId: subscription.id, metadata: { expiredAt: now.toISOString(), endAt: (subscription.currentPeriodEnd ?? subscription.expiresAt)?.toISOString() } } }).catch(() => undefined);
+    await prisma.auditLog.create({ data: { actorId: null, tenantId: subscription.tenantId, action: "SUBSCRIPTION_AUTO_EXPIRED", entityType: "Subscription", entityId: subscription.id, metadata: { expiredAt: now.toISOString(), endAt: (subscription.currentPeriodEnd ?? subscription.expiresAt)?.toISOString() } } }).catch(() => undefined);
   }
 
   return { expiredTrials: expiredTrials.length, expiredSubscriptions: expiredSubscriptions.length };
@@ -212,7 +212,7 @@ export async function applyTrialTimerToTenants(prisma: LifecyclePrismaClient, te
   }
 
   await prisma.site.updateMany({ where: { tenantId: { in: tenants.map((tenant) => tenant.id) }, deletedAt: null }, data: { status: "PUBLISHED", isPublished: true } });
-  await prisma.auditLog.create({ data: { actorUserId: null, action: "TRIAL_TIMER_APPLIED", entityType: "Tenant", metadata: { count: tenants.length, tenantIds, mode: days === "keep" ? "keep" : "days", days } } }).catch(() => undefined);
+  await prisma.auditLog.create({ data: { actorId: null, action: "TRIAL_TIMER_APPLIED", entityType: "Tenant", metadata: { count: tenants.length, tenantIds, mode: days === "keep" ? "keep" : "days", days } } }).catch(() => undefined);
   return tenants.length;
 }
 
@@ -239,6 +239,6 @@ export async function applySubscriptionTimerToTenants(prisma: LifecyclePrismaCli
   }
 
   await prisma.site.updateMany({ where: { tenantId: { in: latestSubscriptions.map((item) => item.tenantId) }, deletedAt: null }, data: { status: "PUBLISHED", isPublished: true } });
-  await prisma.auditLog.create({ data: { actorUserId: null, action: "SUBSCRIPTION_TIMER_APPLIED", entityType: "Subscription", metadata: { count: latestSubscriptions.length, tenantIds, preset, customDays } } }).catch(() => undefined);
+  await prisma.auditLog.create({ data: { actorId: null, action: "SUBSCRIPTION_TIMER_APPLIED", entityType: "Subscription", metadata: { count: latestSubscriptions.length, tenantIds, preset, customDays } } }).catch(() => undefined);
   return latestSubscriptions.length;
 }

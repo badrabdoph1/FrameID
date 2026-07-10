@@ -99,7 +99,7 @@ export function createPrismaBackupJobRepository(
     async recordAudit(input) {
       await prisma.auditLog.create({
         data: {
-          actorUserId: input.actorUserId,
+          actorId: input.actorUserId,
           action: input.action,
           entityType: input.entityType,
           entityId: input.entityId,

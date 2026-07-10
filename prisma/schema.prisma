@@ -727,3 +727,25 @@ model RestoreJob {
 
   @@index([status, createdAt])
 }
+
+model ErrorLog {
+  id             String    @id @default(cuid())
+  category       String
+  level          String
+  code           String?
+  message        String
+  requestId      String?
+  correlationId  String?
+  route          String?
+  userId         String?
+  metadata       Json?
+  resolved       Boolean   @default(false)
+  resolvedAt     DateTime?
+  resolvedBy     String?
+  resolutionNote String?
+  createdAt      DateTime  @default(now())
+
+  @@index([category, level])
+  @@index([createdAt])
+  @@index([resolved])
+}

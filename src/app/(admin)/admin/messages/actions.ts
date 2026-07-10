@@ -83,7 +83,7 @@ export async function saveLifecycleTimersAction(formData: FormData) {
 
     await prisma.auditLog.create({
       data: {
-        actorUserId: null,
+        actorId: null,
         action: "LIFECYCLE_TIMERS_UPDATED",
         entityType: "FeatureFlag",
         entityId: "platform.lifecycle.timers",
@@ -140,7 +140,7 @@ export async function applyLifecycleTimerAction(formData: FormData) {
 
     await prisma.auditLog.create({
       data: {
-        actorUserId: null,
+        actorId: null,
         action: timerType === "trial" ? "TRIAL_TIMER_APPLIED_FROM_MESSAGES" : "SUBSCRIPTION_TIMER_APPLIED_FROM_MESSAGES",
         entityType: "Tenant",
         metadata: { timerType, audience, timerMode, selectedTenantIds, appliedCount, ...adminActorMetadata(admin) } as Prisma.InputJsonObject,
@@ -188,7 +188,7 @@ export async function sendCustomerMessageAction(formData: FormData) {
 
     await prisma.auditLog.create({
       data: {
-        actorUserId: null,
+        actorId: null,
         action: "CUSTOMER_MESSAGE_SENT",
         entityType: "NotificationLog",
         metadata: { title, tone, audience, count: tenants.length, tenantIds: audience === "all" ? "ALL" : tenants.map((tenant) => tenant.id), ...adminActorMetadata(admin) } as Prisma.InputJsonObject,
@@ -222,7 +222,7 @@ export async function saveActivationTemplateAction(formData: FormData) {
   try {
     await prisma.notificationLog.updateMany({ where: { category: ACTIVATION_TEMPLATE_CATEGORY, title: key, deletedAt: null }, data: { deletedAt: new Date() } });
     await prisma.notificationLog.create({ data: { type: tone, title: key, body: encodeActivationTemplatePayload({ title, body }), category: ACTIVATION_TEMPLATE_CATEGORY, userId: null } });
-    await prisma.auditLog.create({ data: { actorUserId: null, action: "ACTIVATION_MESSAGE_TEMPLATE_UPDATED", entityType: "NotificationLog", entityId: key, metadata: { key, title, body, tone, ...adminActorMetadata(admin) } as Prisma.InputJsonObject } });
+    await prisma.auditLog.create({ data: { actorId: null, action: "ACTIVATION_MESSAGE_TEMPLATE_UPDATED", entityType: "NotificationLog", entityId: key, metadata: { key, title, body, tone, ...adminActorMetadata(admin) } as Prisma.InputJsonObject } });
     revalidatePath("/admin/messages");
     revalidatePath("/dashboard");
   } catch (error) {
