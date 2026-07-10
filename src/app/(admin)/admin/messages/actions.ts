@@ -175,14 +175,14 @@ export async function sendCustomerMessageAction(formData: FormData) {
   try {
     const tenants = await prisma.tenant.findMany({
       where: audience === "all" ? { deletedAt: null } : { id: { in: selectedTenantIds }, deletedAt: null },
-      select: { id: true, ownerUserId: true, displayName: true },
+      select: { id: true, displayName: true },
       orderBy: { createdAt: "desc" },
     });
 
     if (tenants.length === 0) throw new Error("لا يوجد عملاء مطابقين للإرسال.");
 
     await prisma.notificationLog.createMany({
-      data: tenants.map((tenant) => ({ type: tone, title, body, category: CUSTOMER_BROADCAST_CATEGORY, tenantId: tenant.id, userId: tenant.ownerUserId })),
+      data: tenants.map((tenant) => ({ type: tone, title, body, category: CUSTOMER_BROADCAST_CATEGORY, tenantId: tenant.id })),
     });
     sentCount = tenants.length;
 
@@ -221,7 +221,7 @@ export async function saveActivationTemplateAction(formData: FormData) {
 
   try {
     await prisma.notificationLog.updateMany({ where: { category: ACTIVATION_TEMPLATE_CATEGORY, title: key, deletedAt: null }, data: { deletedAt: new Date() } });
-    await prisma.notificationLog.create({ data: { type: tone, title: key, body: encodeActivationTemplatePayload({ title, body }), category: ACTIVATION_TEMPLATE_CATEGORY, userId: null } });
+    await prisma.notificationLog.create({ data: { type: tone, title: key, body: encodeActivationTemplatePayload({ title, body }), category: ACTIVATION_TEMPLATE_CATEGORY } });
     await prisma.auditLog.create({ data: { actorId: null, action: "ACTIVATION_MESSAGE_TEMPLATE_UPDATED", entityType: "NotificationLog", entityId: key, metadata: { key, title, body, tone, ...adminActorMetadata(admin) } as Prisma.InputJsonObject } });
     revalidatePath("/admin/messages");
     revalidatePath("/dashboard");
