@@ -70,7 +70,7 @@ export function createDatabaseBackupLock(
       return running === 0;
     },
 
-    async release(_type: string): Promise<void> {
+    async release(): Promise<void> {
       return;
     },
 
