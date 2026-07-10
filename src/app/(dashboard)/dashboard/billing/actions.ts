@@ -114,7 +114,7 @@ export async function createPaymentDraftAction(formData: FormData): Promise<Acti
   const sid = session.subscription!.id;
   const planId = cleanString(formData.get("planId"));
   const method = cleanString(formData.get("method"));
-  const accountId = cleanString(formData.get("accountId"));
+  const accountId = cleanString(formData.get("accountId")) ?? cleanString(formData.get("paymentAccountId"));
   const reference = cleanString(formData.get("reference"));
 
   if (!planId) return { success: false, error: "يرجى اختيار الباقة" };
@@ -153,7 +153,7 @@ export async function updatePaymentDraftAction(formData: FormData): Promise<Acti
   const session = await getSessionWithSub();
   const draftId = cleanString(formData.get("draftId"));
   const method = cleanString(formData.get("method"));
-  const accountId = cleanString(formData.get("accountId"));
+  const accountId = cleanString(formData.get("accountId")) ?? cleanString(formData.get("paymentAccountId"));
   const reference = cleanString(formData.get("reference"));
 
   if (!draftId) return { success: false, error: "معرّف المسودة مطلوب" };
