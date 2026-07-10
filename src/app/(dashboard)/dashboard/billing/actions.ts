@@ -250,8 +250,7 @@ export async function cancelPaymentRequestAction(formData: FormData): Promise<Ac
 
   try {
     await getOwnedPaymentRequest(draftId, session.tenant.id);
-    const result = await getService().cancelPaymentRequest(draftId);
-    if (!result.success) return { success: false, error: result.error ?? "حدث خطأ" };
+    await getService().cancelPayment(draftId);
     revalidatePath("/dashboard");
     revalidatePath("/dashboard/billing");
     return { success: true };
