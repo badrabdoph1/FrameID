@@ -15,8 +15,8 @@ function createRepository(
 
   return {
     calls,
-    async emailExists(email) {
-      calls.push(`email:${email}`);
+    async identifierExists({ email, phone }) {
+      calls.push(`identifier:${email}:${phone ?? "none"}`);
       return email === "used@example.com";
     },
     async getUnavailableSlugs() {
@@ -48,13 +48,13 @@ describe("signup provisioning", () => {
 
     const result = await service.provisionTrialSite({
       name: "Ali Ahmed Studio",
-      email: "ali@example.com",
+      identifier: "ali@example.com",
       password: "StrongPass123!",
       selectedTemplateCode: "noir-gold"
     });
 
     expect(repository.calls).toEqual([
-      "email:ali@example.com",
+      "identifier:ali@example.com:none",
       "slugs",
       "transaction",
       "packages:3",
@@ -70,19 +70,19 @@ describe("signup provisioning", () => {
     });
   });
 
-  it("stops before provisioning when the email is already used", async () => {
+  it("stops before provisioning when the identifier is already used", async () => {
     const repository = createRepository();
     const service = createSignupProvisioningService({ repository });
 
     await expect(
       service.provisionTrialSite({
         name: "Ali Ahmed",
-        email: "used@example.com",
+        identifier: "used@example.com",
         password: "StrongPass123!"
       })
-    ).rejects.toThrow("Email already exists");
+    ).rejects.toThrow("رقم الهاتف أو البريد الإلكتروني مستخدم بالفعل");
 
-    expect(repository.calls).toEqual(["email:used@example.com"]);
+    expect(repository.calls).toEqual(["identifier:used@example.com:none"]);
   });
 
   it("skips reserved route names when generating a site slug", () => {
