@@ -23,7 +23,9 @@ export type CurrentSession = {
     id: string;
     displayName: string;
     status: "TRIAL" | "ACTIVE" | "TRIAL_EXPIRED" | "EXPIRED" | "SUSPENDED";
+    trialStartedAt: Date;
     trialEndsAt: Date;
+    trialDays: number;
     gracePeriodEndsAt: Date | null;
   };
   site: {
@@ -38,53 +40,28 @@ export type CurrentSession = {
     planId: string | null;
     plan: { code: string; name: string; priceAmount: number; currency: string } | null;
     status: "TRIAL" | "ACTIVE" | "EXPIRED" | "PAST_DUE" | "CANCELLED" | "SUSPENDED";
+    currentPeriodStart: Date | null;
     currentPeriodEnd: Date | null;
+    activatedAt: Date | null;
+    expiresAt: Date | null;
   } | null;
 };
 
 export type CurrentSessionRepository = {
-  findActiveSessionByTokenHash(
-    tokenHash: string,
-    now: Date
-  ): Promise<CurrentSession | null>;
+  findActiveSessionByTokenHash(tokenHash: string, now: Date): Promise<CurrentSession | null>;
 };
 
 export type CurrentUserSessionRepository = {
-  findActiveUserByTokenHash(
-    tokenHash: string,
-    now: Date
-  ): Promise<CurrentUserSession | null>;
+  findActiveUserByTokenHash(tokenHash: string, now: Date): Promise<CurrentUserSession | null>;
 };
 
-export async function getCurrentSession({
-  repository,
-  rawToken,
-  now
-}: {
-  repository: CurrentSessionRepository;
-  rawToken: string | undefined;
-  now: Date;
-}): Promise<CurrentSession | null> {
-  if (!rawToken) {
-    return null;
-  }
-
+export async function getCurrentSession({ repository, rawToken, now }: { repository: CurrentSessionRepository; rawToken: string | undefined; now: Date }): Promise<CurrentSession | null> {
+  if (!rawToken) return null;
   return repository.findActiveSessionByTokenHash(hashSessionToken(rawToken), now);
 }
 
-export async function getCurrentUserSession({
-  repository,
-  rawToken,
-  now
-}: {
-  repository: CurrentUserSessionRepository;
-  rawToken: string | undefined;
-  now: Date;
-}): Promise<CurrentUserSession | null> {
-  if (!rawToken) {
-    return null;
-  }
-
+export async function getCurrentUserSession({ repository, rawToken, now }: { repository: CurrentUserSessionRepository; rawToken: string | undefined; now: Date }): Promise<CurrentUserSession | null> {
+  if (!rawToken) return null;
   return repository.findActiveUserByTokenHash(hashSessionToken(rawToken), now);
 }
 
