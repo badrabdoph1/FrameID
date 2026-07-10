@@ -40,7 +40,7 @@ export default async function AdminEmailPage({ searchParams }: Props) {
   const [logs, total, unread, types] = await Promise.all([
     prisma.notificationLog.findMany({ where: where as never, orderBy: { createdAt: "desc" }, take: 100 }),
     prisma.notificationLog.count({ where: { deletedAt: null } }),
-    prisma.notificationLog.count({ where: { deletedAt: null, readAt: null } }),
+    prisma.notificationLog.count({ where: { deletedAt: null } }),
     prisma.notificationLog.groupBy({ by: ["type"], _count: true, orderBy: { _count: { type: "desc" } }, take: 8 }),
   ]);
 
@@ -92,7 +92,7 @@ export default async function AdminEmailPage({ searchParams }: Props) {
                   <strong className="block truncate text-sm font-black text-white/82">{log.title}</strong>
                   <p className="mt-1 truncate text-xs font-bold text-white/35">{log.body ?? "—"}</p>
                 </div>
-                <span className="truncate font-mono text-xs font-bold text-white/38">{log.tenantId ?? log.userId ?? "system"}</span>
+                <span className="truncate font-mono text-xs font-bold text-white/38">{log.tenantId ?? "system"}</span>
                 <span className="w-fit rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[0.68rem] font-black text-white/42">{log.type}{log.category ? ` · ${log.category}` : ""}</span>
                 <span className="text-xs font-bold text-white/32">{dateLabel(log.createdAt)}</span>
               </article>

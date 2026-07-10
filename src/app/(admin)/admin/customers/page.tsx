@@ -94,7 +94,7 @@ export default async function AdminCustomersPage({ searchParams }: Props) {
         createdAt: true,
         owner: { select: { name: true, email: true } },
         sites: { where: { deletedAt: null }, take: 1, select: { isPublished: true, status: true } },
-        subscriptions: { where: { deletedAt: null }, orderBy: { createdAt: "desc" }, take: 1, select: { status: true, currentPeriodEnd: true, expiresAt: true, plan: { select: { name: true } } } },
+        subscriptions: { where: { deletedAt: null }, orderBy: { currentPeriodStart: "desc" }, take: 1, select: { status: true, currentPeriodEnd: true, expiresAt: true, plan: { select: { name: true } } } },
         payments: { where: { deletedAt: null }, orderBy: { createdAt: "desc" }, take: 1, select: { status: true } },
         _count: { select: { sites: true, payments: true } },
       },
