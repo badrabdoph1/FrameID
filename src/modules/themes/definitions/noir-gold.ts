@@ -2,7 +2,7 @@ import type { TemplateSummary, ThemeDefinition } from "@/modules/themes/theme-re
 
 export const noirGoldTheme: ThemeDefinition = {
   code: "noir-gold",
-  name: "Kareem Magdy | تميز",
+  name: "كلاسك",
   version: "1.0.0",
   status: "published",
   supportedSections: ["hero", "gallery", "packages", "extras", "contact"],
@@ -16,8 +16,8 @@ export const noirGoldTheme: ThemeDefinition = {
 export const noirGoldTemplate: TemplateSummary = {
   code: "noir-gold",
   themeCode: "noir-gold",
-  name: "Kareem Magdy | تميز",
+  name: "كلاسك",
   status: "published",
   showroomOrder: 1,
-  description: "قالب داكن ذهبي فاخر مثالي لاستعراض خدمات التصوير والباقات، بتصميم أنيق وأجواء سينمائية."
+  description: "قالب كلاسيكي داكن بلمسة ذهبية، مناسب للمصورين الذين يريدون موقعًا فاخرًا وواضحًا للباقات والحجز."
 };

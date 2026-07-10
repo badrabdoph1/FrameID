@@ -2,7 +2,7 @@ import type { TemplateSummary, ThemeDefinition } from "@/modules/themes/theme-re
 
 export const roseBlushTheme: ThemeDefinition = {
   code: "rose-blush",
-  name: "روز بلش | أنيق وهادئ",
+  name: "أنيق وهادئ",
   version: "1.0.0",
   status: "published",
   supportedSections: ["hero", "gallery", "packages", "extras", "contact"],
@@ -16,7 +16,7 @@ export const roseBlushTheme: ThemeDefinition = {
 export const roseBlushTemplate: TemplateSummary = {
   code: "rose-blush",
   themeCode: "rose-blush",
-  name: "روز بلش | أنيق وهادئ",
+  name: "أنيق وهادئ",
   status: "published",
   showroomOrder: 2,
   description: "قالب فاتح أنيق بألوان الورد والمريمية، مثالي للمصورين الذين يفضلون التصميم الناعم العصري."

@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { CheckCircle2, Eye, Monitor, Palette, Smartphone, WandSparkles } from "lucide-react";
+import { CheckCircle2, Eye, Palette, WandSparkles } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { selectTemplateAction } from "@/app/(dashboard)/dashboard/design/actions";
+import { TemplateDesktopPreview } from "@/components/themes/template-desktop-preview";
 import type { TemplateSummary } from "@/modules/themes/theme-registry";
 
 type TemplatesClientProps = {
@@ -66,27 +67,8 @@ function TemplateCard({ template, isCurrent }: { template: TemplateSummary; isCu
             شغال الآن
           </span>
         ) : null}
-        <div className="absolute inset-4 rounded-2xl border border-white/10 p-3 shadow-2xl" style={{ background: palette[0] }}>
-          <div className="mb-3 flex items-center justify-between">
-            <div className="flex gap-1.5"><span className="size-2 rounded-full bg-white/30" /><span className="size-2 rounded-full bg-white/20" /><span className="size-2 rounded-full bg-white/10" /></div>
-            <Monitor className="size-4 text-white/45" aria-hidden />
-          </div>
-          <div className="grid grid-cols-[1.4fr_0.8fr] gap-3">
-            <div>
-              <div className="mb-3 h-5 w-28 rounded-full" style={{ background: palette[1] }} />
-              <div className="mb-2 h-3 w-full rounded-full bg-white/35" />
-              <div className="mb-4 h-3 w-4/5 rounded-full bg-white/20" />
-              <div className="grid grid-cols-3 gap-2"><span className="aspect-square rounded-lg bg-white/15" /><span className="aspect-square rounded-lg bg-white/25" /><span className="aspect-square rounded-lg bg-white/15" /></div>
-            </div>
-            <div className="relative mx-auto h-32 w-16 rounded-2xl border border-white/20 bg-black/25 p-1">
-              <Smartphone className="absolute -top-6 left-1/2 size-4 -translate-x-1/2 text-white/45" aria-hidden />
-              <div className="size-full rounded-xl" style={{ background: palette[2] }}>
-                <div className="mx-auto mt-2 h-2 w-8 rounded-full" style={{ background: palette[1] }} />
-                <div className="mx-2 mt-3 aspect-square rounded-lg bg-black/20" />
-                <div className="mx-2 mt-2 h-2 rounded-full bg-black/20" />
-              </div>
-            </div>
-          </div>
+        <div className="absolute inset-3">
+          <TemplateDesktopPreview template={template} compact />
         </div>
       </div>
 

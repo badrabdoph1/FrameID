@@ -88,12 +88,12 @@ const previewSite: PublicSiteViewModel = {
   themeCode: "noir-gold",
   publicUrl: "https://frameid.app/templates/preview",
   metadata: {
-    title: "Kareem Magdy — تصوير زفاف فاخر"
+    title: "كلاسك — تصوير زفاف فاخر"
   },
   structuredData: {
     "@context": "https://schema.org",
     "@type": "LocalBusiness",
-    name: "Kareem Magdy"
+    name: "كلاسك"
   },
   hero: {
     headline: "بنصنع ذكريات تفضل طول العمر",

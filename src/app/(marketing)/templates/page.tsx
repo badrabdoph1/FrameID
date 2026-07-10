@@ -1,12 +1,11 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
 import React from "react";
 import { Eye, WandSparkles } from "lucide-react";
 
 import { MarketingFooter } from "@/components/layout/marketing-footer";
 import { MarketingNav } from "@/components/layout/marketing-nav";
-import { getTemplatePreviewImage } from "@/modules/marketing/platform-content";
+import { TemplateDesktopPreview } from "@/components/themes/template-desktop-preview";
 import { getPublishedTemplates } from "@/modules/themes/theme-registry";
 
 export const metadata: Metadata = {
@@ -111,16 +110,10 @@ export default function TemplatesPage() {
                 className="group flex overflow-hidden rounded-[1.35rem] border border-border bg-white shadow-soft transition-[border-color,box-shadow,transform] hover:-translate-y-0.5 hover:border-champagne/45 hover:shadow-champagne md:rounded-[1.75rem]"
               >
                 <div className="flex w-full flex-col">
-                  <div className="relative aspect-[4/3] overflow-hidden md:aspect-[16/10]">
-                    <Image
-                      src={getTemplatePreviewImage(template)}
-                      alt={`معاينة قالب ${template.name} لموقع مصور`}
-                      fill
-                      sizes="(max-width: 768px) 100vw, 50vw"
-                      className="object-cover transition duration-700 group-hover:scale-105"
-                    />
+                  <div className="relative overflow-hidden bg-ink p-3 transition duration-700 group-hover:scale-[1.015] md:p-4">
+                    <TemplateDesktopPreview template={template} />
                     <span className="absolute right-3 top-3 rounded-full border border-white/20 bg-ink/78 px-3 py-1.5 text-[0.68rem] font-semibold text-white shadow-soft backdrop-blur">
-                      جاهز للتجربة
+                      لقطة ديسكتوب
                     </span>
                   </div>
                   <div className="flex flex-1 flex-col p-4 md:p-5">
