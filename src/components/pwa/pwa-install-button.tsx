@@ -84,6 +84,11 @@ function shouldAnimateFirstAppearance() {
   return !seen;
 }
 
+function installButtonBottomClass(context: "dashboard" | "admin") {
+  if (context === "admin") return "bottom-[calc(7.8rem+env(safe-area-inset-bottom))]";
+  return "bottom-[calc(5.15rem+env(safe-area-inset-bottom))]";
+}
+
 export function PwaInstallButton({ context }: PwaInstallButtonProps) {
   const pathname = usePathname();
   const deferredPromptRef = useRef<BeforeInstallPromptEvent | null>(null);
@@ -136,7 +141,7 @@ export function PwaInstallButton({ context }: PwaInstallButtonProps) {
           return;
         }
       } catch {
-        // Some browsers expose the API but block it. Ignore safely.
+        // Ignore unsupported/blocked install related apps checks.
       }
     }
 
@@ -207,9 +212,7 @@ export function PwaInstallButton({ context }: PwaInstallButtonProps) {
           watchRegistration(registration);
           return registration.update().catch(() => undefined);
         })
-        .catch(() => {
-          // Installation should never break the interface if registration fails.
-        });
+        .catch(() => undefined);
     };
 
     navigator.serviceWorker.addEventListener("controllerchange", onControllerChange);
@@ -294,7 +297,7 @@ export function PwaInstallButton({ context }: PwaInstallButtonProps) {
         <button
           type="button"
           onClick={handleInstallClick}
-          className={`fixed right-3 z-[2147482400] inline-flex min-h-9 items-center gap-1.5 rounded-full border border-black/10 bg-white/92 px-3 text-[0.72rem] font-black text-[#121212] shadow-[0_12px_32px_rgba(0,0,0,0.18)] backdrop-blur transition duration-300 hover:-translate-y-0.5 hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300 dark:border-white/10 dark:bg-[#111720]/92 dark:text-[#fff7e8] md:right-4 md:bottom-4 md:min-h-10 md:px-3.5 ${context === "admin" ? "bottom-[calc(9rem+env(safe-area-inset-bottom))]" : "bottom-[calc(6.5rem+env(safe-area-inset-bottom))]"} ${entered ? "translate-y-0 scale-100 opacity-100" : "translate-y-2 scale-95 opacity-0"}`}
+          className={`fixed right-3 z-[2147482400] inline-flex min-h-10 items-center gap-1.5 rounded-full border border-black/10 bg-white/92 px-3 text-[0.72rem] font-black text-[#121212] shadow-[0_12px_32px_rgba(0,0,0,0.18)] backdrop-blur transition duration-300 hover:-translate-y-0.5 hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300 dark:border-white/10 dark:bg-[#111720]/92 dark:text-[#fff7e8] md:right-4 md:bottom-4 md:min-h-10 md:px-3.5 ${installButtonBottomClass(context)} ${entered ? "translate-y-0 scale-100 opacity-100" : "translate-y-2 scale-95 opacity-0"}`}
           aria-label="ثبت التطبيق"
         >
           <Download className="size-3.5" aria-hidden />
@@ -341,13 +344,16 @@ export function PwaInstallButton({ context }: PwaInstallButtonProps) {
       ) : null}
 
       {showUpdateToast ? (
-        <div className="fixed bottom-[calc(1rem+env(safe-area-inset-bottom))] left-1/2 z-[2147483000] grid w-[calc(100vw-2rem)] max-w-sm -translate-x-1/2 grid-cols-[1fr_auto] items-center gap-3 rounded-3xl border border-amber-300/20 bg-[#111720] px-4 py-3 text-[#fff7e8] shadow-2xl">
-          <span className="min-w-0 text-xs font-black leading-5">يتوفر تحديث جديد للتطبيق.</span>
-          <button type="button" onClick={updateNow} className="inline-flex min-h-9 items-center gap-1.5 rounded-2xl bg-amber-300 px-3 text-xs font-black text-[#17120a]">
-            <RefreshCw className="size-3.5" aria-hidden />
-            تحديث الآن
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={updateNow}
+          className="fixed right-3 bottom-[calc(4.85rem+env(safe-area-inset-bottom))] z-[2147482450] grid size-10 place-items-center rounded-full border border-amber-300/28 bg-[#111720]/94 text-[#f3cf73] shadow-[0_14px_36px_rgba(0,0,0,0.26),0_0_22px_rgba(243,207,115,0.12)] backdrop-blur-xl transition active:scale-90 md:right-4 md:bottom-4 md:size-11"
+          aria-label="تحديث التطبيق الآن"
+          title="تحديث التطبيق"
+        >
+          <span className="absolute inset-0 rounded-full bg-amber-300/10 animate-ping" aria-hidden />
+          <RefreshCw className="relative size-4 animate-spin [animation-duration:1.8s]" aria-hidden />
+        </button>
       ) : null}
     </>
   );
