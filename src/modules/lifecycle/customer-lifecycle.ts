@@ -105,7 +105,7 @@ export async function saveLifecycleTimerSettings(prisma: LifecyclePrismaClient, 
   });
   const data = {
     key: LIFECYCLE_TIMER_SETTINGS_KEY,
-    scope: "PLATFORM",
+    scope: "PLATFORM" as const,
     tenantId: null,
     siteId: null,
     enabled: true,
