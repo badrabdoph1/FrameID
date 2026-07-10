@@ -6,6 +6,7 @@ import { createBackup } from "./backup"
 import { updateManifestEntry } from "./manifest"
 import { getContent, contentFileExists } from "./loader"
 import { appendContentRevision, getRevisionLogAbsolutePath } from "./revisions"
+import type { ContentRevisionEntry } from "./revisions"
 import { commitContentFilesToGitHub } from "./git-sync"
 import type { SaveResult } from "./types"
 
@@ -79,8 +80,13 @@ export async function saveContent(
     message: `Update platform content: ${type}`,
   })
 
-  const gitStatus = commitResult.commitSha ? "committed" : commitResult.enabled ? "failed" : "not-configured"
-  const revision = {
+  const gitStatus: ContentRevisionEntry["gitStatus"] = commitResult.commitSha
+    ? "committed"
+    : commitResult.enabled
+      ? "failed"
+      : "not-configured"
+
+  const revision: ContentRevisionEntry = {
     id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     type,
     actorId: options.actor?.id,

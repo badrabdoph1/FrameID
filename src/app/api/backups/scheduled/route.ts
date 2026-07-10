@@ -2,25 +2,24 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { createPrismaBackupJobRepository } from "@/modules/backups/prisma-backup-job-repository";
 import { createBackupJobService } from "@/modules/backups/backup-job-service";
+import { isSupportedBackupType, type SupportedBackupType } from "@/modules/backups/backup-policy";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
-async function getScheduledTypes(): Promise<Array<"DATABASE" | "UPLOADS" | "FULL">> {
+async function getScheduledTypes(): Promise<SupportedBackupType[]> {
   try {
     const settings = await prisma.backupSettings.findMany({
       where: { enabled: true },
       select: { type: true },
     });
-    return settings.map((s) => s.type as "DATABASE" | "UPLOADS" | "FULL");
+    return settings.map((s) => s.type).filter(isSupportedBackupType);
   } catch {
-    return ["DATABASE"] as Array<"DATABASE" | "UPLOADS" | "FULL">;
+    return ["DATABASE"];
   }
 }
 
-async function shouldRunNow(
-  type: "DATABASE" | "UPLOADS" | "FULL"
-): Promise<boolean> {
+async function shouldRunNow(type: SupportedBackupType): Promise<boolean> {
   const now = new Date();
   const currentHour = now.getUTCHours();
   const currentDay = now.getUTCDay();
@@ -39,8 +38,7 @@ async function shouldRunNow(
       if (hoursSinceLastRun < 23) return false;
     }
 
-    const [, hour, , , dayOfWeek] =
-      setting.schedule.split(" ");
+    const [, hour, , , dayOfWeek] = setting.schedule.split(" ");
 
     if (hour !== "*") {
       const scheduledHour = parseInt(hour, 10);
@@ -83,8 +81,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    for (const rawType of types) {
-      const type = rawType as "DATABASE" | "UPLOADS" | "FULL";
+    for (const type of types) {
       if (!(await shouldRunNow(type))) {
         results.push({ type, status: "SKIPPED" });
         continue;

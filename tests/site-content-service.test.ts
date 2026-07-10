@@ -13,7 +13,9 @@ function createSession(): CurrentSession {
       id: "tenant_1",
       displayName: "Ali Studio",
       status: "TRIAL",
+      trialStartedAt: new Date("2026-07-06T12:00:00.000Z"),
       trialEndsAt: new Date("2026-07-20T12:00:00.000Z"),
+      trialDays: 14,
       gracePeriodEndsAt: null
     },
     site: {
@@ -28,7 +30,10 @@ function createSession(): CurrentSession {
       planId: null,
       plan: null,
       status: "TRIAL",
-      currentPeriodEnd: new Date("2026-07-20T12:00:00.000Z")
+      currentPeriodStart: new Date("2026-07-06T12:00:00.000Z"),
+      currentPeriodEnd: new Date("2026-07-20T12:00:00.000Z"),
+      activatedAt: null,
+      expiresAt: null
     }
   };
 }

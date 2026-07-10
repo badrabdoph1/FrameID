@@ -1,6 +1,7 @@
 #!/usr/bin/env tsx
 import { join } from "node:path";
 import { createRestoreService } from "@/modules/backups/backup-restore-service";
+import { SUPPORTED_BACKUP_TYPES, isSupportedBackupType } from "@/modules/backups/backup-policy";
 
 async function main() {
   const backupId = process.argv[2];
@@ -8,7 +9,7 @@ async function main() {
   const databaseUrl = process.env.DATABASE_URL;
 
   if (!backupId) {
-    console.error("Usage: npm run restore -- <backup-id> [DATABASE|UPLOADS|FULL]");
+    console.error("Usage: npm run restore -- <backup-id> [DATABASE|FULL]");
     console.error("Available backups:");
     const { listBackupDirs } = await import("@/modules/backups/local-backup-artifact-writer");
     const dirs = await listBackupDirs();
@@ -23,9 +24,8 @@ async function main() {
     process.exit(1);
   }
 
-  const validTypes = ["DATABASE", "UPLOADS", "FULL"];
-  if (!validTypes.includes(type)) {
-    console.error(`Invalid type: ${type}. Must be one of: ${validTypes.join(", ")}`);
+  if (!isSupportedBackupType(type)) {
+    console.error(`Invalid type: ${type}. Must be one of: ${SUPPORTED_BACKUP_TYPES.join(", ")}`);
     process.exit(1);
   }
 
@@ -54,7 +54,7 @@ async function main() {
     backupId,
     backupRoot,
     databaseUrl,
-    type: type as "DATABASE" | "UPLOADS" | "FULL",
+    type,
     skipChecksumVerification: process.argv.includes("--force"),
   });
 
