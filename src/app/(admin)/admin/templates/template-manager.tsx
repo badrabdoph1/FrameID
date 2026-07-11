@@ -119,8 +119,10 @@ function pickImage(value: unknown) {
   return typeof direct === "string" ? direct : "";
 }
 
-function heroFrom(value: unknown): JsonRecord {
-  return isRecord(value) && isRecord(value.hero) ? value.hero : {};
+function starterOverrideFrom(value: unknown): JsonRecord {
+  return isRecord(value) && isRecord(value.starterContentOverride)
+    ? value.starterContentOverride
+    : {};
 }
 
 function readPackages(value: unknown): PackageDraft[] {
@@ -178,9 +180,9 @@ export function TemplateManager({ templates, themes, message }: TemplateManagerP
       <section className="rounded-3xl border border-white/10 bg-white/[0.035] p-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <p className="text-xs font-black text-[#f3cf73]">إدارة بسيطة بدون أكواد تقنية</p>
+            <p className="text-xs font-black text-[#f3cf73]">إدارة القوالب والاستثناءات</p>
             <h2 className="mt-1 text-lg font-black text-[#fff7e8]">القوالب الجاهزة</h2>
-            <p className="mt-1 text-xs font-bold leading-6 text-white/42">أنشئ قالبًا أو اختر قالبًا موجودًا ثم عدّل النصوص والصور والباقات من الأقسام الواضحة بالأسفل.</p>
+            <p className="mt-1 text-xs font-bold leading-6 text-white/42">كل قالب يرث Starter Content Defaults تلقائيًا. استخدم Override فقط عندما يحتاج القالب قيمة مختلفة فعلًا.</p>
           </div>
           <button type="button" onClick={() => setShowCreate((value) => !value)} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-[#f3cf73] px-4 text-sm font-black text-[#17120a]">
             <Plus className="size-4" /> قالب جديد
@@ -217,7 +219,7 @@ export function TemplateManager({ templates, themes, message }: TemplateManagerP
 
           {showCreate ? (
             <form action={createTemplateAction} className="grid content-start gap-3 rounded-2xl border border-amber-300/20 bg-amber-300/[0.055] p-4 sm:grid-cols-2">
-              <div className="sm:col-span-2"><p className="text-xs font-black text-[#f3cf73]">قالب جديد</p><h2 className="mt-1 text-lg font-black text-[#fff7e8]">بيانات القالب الأساسية</h2></div>
+              <div className="sm:col-span-2"><p className="text-xs font-black text-[#f3cf73]">قالب جديد</p><h2 className="mt-1 text-lg font-black text-[#fff7e8]">بيانات القالب الأساسية</h2><p className="mt-1 text-xs font-bold text-white/42">سيتم توريث بيانات البداية المشتركة تلقائيًا.</p></div>
               <Field label="اسم القالب"><input name="name" required className={inputClass} placeholder="مثال: ستوديو كلاسيك" /></Field>
               <Field label="كود القالب"><input name="code" className={inputClass} dir="ltr" placeholder="classic-studio" /></Field>
               <Field label="الثيم الأساسي"><select name="themeId" required className={inputClass} defaultValue=""><option value="" disabled>اختر الثيم</option>{themes.map((theme) => <option key={theme.id} value={theme.id}>{theme.name} — {theme.code}</option>)}</select></Field>
@@ -239,7 +241,7 @@ function TemplateEditor({ template }: { template: AdminTemplateItem }) {
   const previewTitle = pickText(template.previewData, ["title", "headline", "name"], template.name);
   const previewDescription = pickText(template.previewData, ["description", "subtitle", "tagline"], template.theme.category);
   const previewImage = pickImage(template.previewData);
-  const hero = heroFrom(template.previewData);
+  const starterOverride = starterOverrideFrom(template.previewData);
   const packages = readPackages(template.previewData);
   const extras = readExtras(template.previewData);
 
@@ -273,16 +275,17 @@ function TemplateEditor({ template }: { template: AdminTemplateItem }) {
           <div className="grid gap-3 sm:grid-cols-2">
             <Field label="عنوان الكارت"><input name="previewTitle" defaultValue={previewTitle} className={inputClass} /></Field>
             <Field label="وصف الكارت"><input name="previewDescription" defaultValue={previewDescription} className={inputClass} /></Field>
-            <Field label="صورة غلاف الكارت"><input name="previewImage" defaultValue={previewImage} className={inputClass} placeholder="سيتم تحويلها إلى رفع من الجهاز في المرحلة التالية" /></Field>
+            <Field label="صورة غلاف الكارت"><input name="previewImage" defaultValue={previewImage} className={inputClass} /></Field>
             <Field label="نص زر الحجز"><input name="callToAction" defaultValue={pickText(template.previewData, ["callToAction"], "احجز الآن")} className={inputClass} /></Field>
           </div>
         </EditorSection>
 
-        <EditorSection icon={Sparkles} title="القسم الرئيسي Hero" description="أول عنوان ووصف وصورة يراها زائر الموقع.">
+        <EditorSection icon={Sparkles} title="Starter Content Override — اختياري" description="اترك الحقول فارغة ليرث القالب القيم المشتركة. اكتب قيمة فقط لو هذا القالب يحتاج استثناءً.">
           <div className="grid gap-3 sm:grid-cols-2">
-            <Field label="العنوان الرئيسي"><input name="heroHeadline" defaultValue={stringFrom(hero.headline)} className={inputClass} /></Field>
-            <Field label="الوصف الرئيسي"><input name="heroSubheadline" defaultValue={stringFrom(hero.subheadline)} className={inputClass} /></Field>
-            <Field label="صورة Hero"><input name="heroImageUrl" defaultValue={stringFrom(hero.imageUrl)} className={inputClass} placeholder="سيتم تحويلها إلى رفع من الجهاز في المرحلة التالية" /></Field>
+            <Field label="اسم المصور المختلف"><input name="starterOverridePhotographerName" defaultValue={stringFrom(starterOverride.photographerName)} className={inputClass} placeholder="يرث Kareem Magdy" /></Field>
+            <Field label="اسم الاستوديو المختلف"><input name="starterOverrideStudioName" defaultValue={stringFrom(starterOverride.studioName)} className={inputClass} placeholder="يرث Photography" /></Field>
+            <Field label="الوصف المختلف"><textarea name="starterOverrideDescription" rows={3} defaultValue={stringFrom(starterOverride.description)} className={`${textareaClass} min-h-24`} placeholder="يرث الوصف المشترك" /></Field>
+            <Field label="صورة Hero مختلفة"><input name="starterOverrideHeroImageUrl" defaultValue={stringFrom(starterOverride.heroImageUrl)} className={inputClass} placeholder="يرث الصورة المشتركة أو صورة القالب" /></Field>
           </div>
         </EditorSection>
 
