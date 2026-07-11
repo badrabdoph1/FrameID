@@ -65,7 +65,7 @@ export default async function BillingPage({
 
   if (paymentRequest) {
     logs = await prisma.paymentRequestLog.findMany({
-      where: { requestId: paymentRequest.id },
+      where: { paymentRequestId: paymentRequest.id },
       orderBy: { createdAt: "asc" },
       select: { id: true, action: true, actorName: true, metadata: true, createdAt: true },
     });
