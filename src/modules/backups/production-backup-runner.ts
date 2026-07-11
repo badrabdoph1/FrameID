@@ -18,21 +18,14 @@ function nextDailyRun(schedule: string, now: Date): Date {
 }
 
 export async function runDueBackups(now = new Date()): Promise<void> {
-  const settings = await prisma.backupSettings.findMany({
-    where: { enabled: true },
-    orderBy: { type: "asc" },
-  });
+  const settings = await prisma.backupSettings.findMany({ where: { enabled: true }, orderBy: { type: "asc" } });
 
   for (const setting of settings) {
     if (!isSupportedBackupType(setting.type)) continue;
     if (setting.nextRunAt && setting.nextRunAt > now) continue;
 
     const claimed = await prisma.backupSettings.updateMany({
-      where: {
-        type: setting.type,
-        enabled: true,
-        OR: [{ nextRunAt: null }, { nextRunAt: { lte: now } }],
-      },
+      where: { type: setting.type, enabled: true, OR: [{ nextRunAt: null }, { nextRunAt: { lte: now } }] },
       data: { nextRunAt: nextDailyRun(setting.schedule, now) },
     });
     if (claimed.count !== 1) continue;
@@ -43,15 +36,13 @@ export async function runDueBackups(now = new Date()): Promise<void> {
       platformVersion: process.env.npm_package_version ?? "0.1.0",
       gitCommitSha: process.env.RAILWAY_GIT_COMMIT_SHA,
       backupEncryptionKey: process.env.BACKUP_ENCRYPTION_KEY,
+      backupGitHubToken: process.env.BACKUP_GITHUB_TOKEN,
+      backupGitHubRepository: process.env.BACKUP_GITHUB_REPOSITORY,
+      backupRoot: process.env.BACKUP_DIR || undefined,
     });
 
     const result = await service.runScheduledBackup(setting.type);
-    if (result) {
-      await prisma.backupSettings.update({
-        where: { type: setting.type },
-        data: { lastRunAt: now },
-      });
-    }
+    if (result) await prisma.backupSettings.update({ where: { type: setting.type }, data: { lastRunAt: now } });
   }
 }
 
@@ -60,23 +51,16 @@ export function startProductionBackupRunner(): void {
   if (process.env.BACKUP_SCHEDULER_ENABLED === "false") return;
   if (!process.env.DATABASE_URL) return;
 
-  const globalState = globalThis as typeof globalThis & {
-    __frameIdBackupRunnerStarted?: boolean;
-  };
+  const globalState = globalThis as typeof globalThis & { __frameIdBackupRunnerStarted?: boolean };
   if (globalState.__frameIdBackupRunnerStarted) return;
   globalState.__frameIdBackupRunnerStarted = true;
 
   const tick = () => {
-    runDueBackups().catch((error) => {
-      console.error("[backup-runner] scheduled backup tick failed", error);
-    });
+    runDueBackups().catch((error) => console.error("[backup-runner] scheduled backup tick failed", error));
   };
 
   tick();
-  const intervalMs = Number.parseInt(
-    process.env.BACKUP_SCHEDULER_INTERVAL_MS ?? String(DEFAULT_INTERVAL_MS),
-    10
-  );
+  const intervalMs = Number.parseInt(process.env.BACKUP_SCHEDULER_INTERVAL_MS ?? String(DEFAULT_INTERVAL_MS), 10);
   const timer = setInterval(tick, Number.isFinite(intervalMs) ? intervalMs : DEFAULT_INTERVAL_MS);
   timer.unref();
 }
