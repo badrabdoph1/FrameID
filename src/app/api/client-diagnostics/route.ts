@@ -85,37 +85,24 @@ export async function POST(request: Request) {
   const isRenderingReport = category === "rendering-report";
   const metadata = sanitizeMetadata(body.metadata);
   const stack = text(body.stack, 8000);
-  const context = await resolveTrustedIssueContext(request);
-  await issueService.captureOccurrence({
-    category: isRenderingReport ? "CLIENT_RENDERING" : "CLIENT_ERROR",
-    level: isRenderingReport ? "WARN" : "ERROR",
-    code: text(body.code, 120) ?? (isRenderingReport ? "FID-RENDER-001" : "FID-CLIENT-001"),
-    errorType: isRenderingReport ? "RenderingDiagnostic" : "ClientError",
-    message,
-    requestId: context.requestId,
-    correlationId: context.correlationId,
-    route: typeof metadata.route === "string" ? metadata.route.slice(0, 500) : context.route,
-    method: context.method,
-    url: context.url,
-    stack,
-    userId: session.user.id,
+  const logMetadata: Prisma.InputJsonObject = {
     tenantId: session.tenant.id,
     siteId: session.site.id,
-    sessionId: context.sessionId,
-    sourceArea: "CUSTOMER_DASHBOARD",
-    ipAddress: context.ipAddress,
-    userAgent: context.userAgent,
-    browser: typeof metadata.browserName === "string" ? metadata.browserName : null,
-    device: typeof metadata.model === "string" ? metadata.model : null,
-    os: typeof metadata.platform === "string" ? metadata.platform : null,
-    environment: context.environment,
-    releaseVersion: context.releaseVersion,
-    buildVersion: context.buildVersion,
-    templateCode: context.templateCode,
-    metadata: {
-      siteSlug: session.site.slug,
-      diagnosticType: category,
-      rendering: metadata,
+    siteSlug: session.site.slug,
+    diagnosticType: category,
+    rendering: metadata,
+  };
+  if (stack) logMetadata.stack = stack;
+
+  await prisma.errorLog.create({
+    data: {
+      category: isRenderingReport ? "CLIENT_RENDERING" : "CLIENT_ERROR",
+      level: isRenderingReport ? "WARN" : "ERROR",
+      code: text(body.code, 120) ?? (isRenderingReport ? "FID-RENDER-001" : "FID-CLIENT-001"),
+      message,
+      route: text(metadata.route, 500),
+      userId: session.user.id,
+      metadata: logMetadata,
     },
   });
 
