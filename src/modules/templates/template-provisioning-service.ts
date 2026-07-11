@@ -5,6 +5,7 @@ import {
   type ProvisionedTemplatePayload,
   type TemplateContentSourceOptions,
 } from "@/modules/templates/template-content-source";
+import type { TemplateRegistrationIdentity } from "@/modules/themes/template-starter-content";
 import { loadTemplateContentSourceOptions } from "@/modules/templates/template-starter-defaults-repository";
 
 export type TemplateProvisioningRepository = {
@@ -16,6 +17,7 @@ export type TemplateProvisioningService = {
   buildSiteFromTemplate(input: {
     templateCode?: string | null;
     ownerName: string;
+    registrationIdentity?: TemplateRegistrationIdentity;
   }): Promise<ProvisionedTemplatePayload>;
 };
 
@@ -40,6 +42,7 @@ export function createTemplateProvisioningService({
 
       return createTemplateProvisioningPayload(source, {
         ownerName: input.ownerName,
+        registrationIdentity: input.registrationIdentity,
       });
     },
   };
