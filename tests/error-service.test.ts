@@ -31,4 +31,12 @@ describe("error service", () => {
       "FID-SITE-001"
     );
   });
+
+  it("keeps the technical stack available for the internal error log outside development", () => {
+    const error = new Error("private diagnostic message");
+
+    const classified = classifyError(error);
+
+    expect(classified.stack).toContain("private diagnostic message");
+  });
 });

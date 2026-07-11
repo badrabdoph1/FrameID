@@ -94,6 +94,26 @@ enum SupportCaseStatus {
   CLOSED
 }
 
+enum CustomerIssueStatus {
+  NEW
+  IN_REVIEW
+  RESOLVED
+  CLOSED
+}
+
+enum CustomerIssuePriority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum CustomerIssueSource {
+  CUSTOMER_REPORT
+  INTERNAL_AUTO
+  ADMIN_REPORT
+}
+
 enum FeatureFlagScope {
   PLATFORM
   TENANT
@@ -121,6 +141,7 @@ model User {
   impersonationSessions ImpersonationSession[] @relation("ImpersonationAdmin")
   sessions              Session[]
   passwordResetTokens   PasswordResetToken[]
+  customerIssues        CustomerIssue[]        @relation("CustomerIssueReporter")
 
   @@index([role, deletedAt])
 }
@@ -181,6 +202,7 @@ model Tenant {
   lifecycleEvents       LifecycleEvent[]
   featureFlags          FeatureFlag[]
   impersonationSessions ImpersonationSession[]
+  customerIssues        CustomerIssue[]
 
   @@index([ownerUserId, status])
 }
@@ -216,6 +238,7 @@ model Site {
   packages         Package[]
   extraServices    ExtraService[]
   contentSnapshots SiteContentSnapshot[]
+  customerIssues   CustomerIssue[]
 
   @@index([tenantId, status])
   @@index([themeId])
@@ -689,7 +712,10 @@ model AdminUser {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  sessions AdminSession[]
+  sessions               AdminSession[]
+  assignedCustomerIssues CustomerIssue[]      @relation("CustomerIssueAssignee")
+  resolvedCustomerIssues CustomerIssue[]      @relation("CustomerIssueResolver")
+  customerIssueEvents    CustomerIssueEvent[] @relation("CustomerIssueEventActor")
 }
 
 model AdminSession {
@@ -830,23 +856,117 @@ model RestoreJob {
 }
 
 model ErrorLog {
-  id             String    @id @default(cuid())
-  category       String
-  level          String
-  code           String?
-  message        String
-  requestId      String?
-  correlationId  String?
-  route          String?
-  userId         String?
-  metadata       Json?
-  resolved       Boolean   @default(false)
-  resolvedAt     DateTime?
-  resolvedBy     String?
-  resolutionNote String?
-  createdAt      DateTime  @default(now())
+  id               String    @id @default(cuid())
+  issueId          String?
+  category         String
+  level            String
+  code             String?
+  errorType        String?
+  message          String
+  fingerprint      String?
+  requestId        String?
+  correlationId    String?
+  route            String?
+  method           String?
+  url              String?
+  stack            String?
+  digest           String?
+  cause            String?
+  userId           String?
+  tenantId         String?
+  siteId           String?
+  sessionId        String?
+  adminUserId      String?
+  sourceArea       String?
+  sourceFile       String?
+  sourceLine       Int?
+  sourceColumn     Int?
+  ipAddress        String?
+  userAgent        String?
+  browser          String?
+  device           String?
+  os               String?
+  language         String?
+  timezone         String?
+  screenSize       String?
+  referrer         String?
+  connectionStatus String?
+  environment      String?
+  releaseVersion   String?
+  buildVersion     String?
+  templateCode     String?
+  lastAction       String?
+  metadata         Json?
+  resolved         Boolean   @default(false)
+  resolvedAt       DateTime?
+  resolvedBy       String?
+  resolutionNote   String?
+  createdAt        DateTime  @default(now())
+
+  issue CustomerIssue? @relation(fields: [issueId], references: [id], onDelete: SetNull)
 
   @@index([category, level])
   @@index([createdAt])
   @@index([resolved])
+  @@index([fingerprint, createdAt])
+  @@index([issueId, createdAt])
+  @@index([tenantId, siteId, createdAt])
+}
+
+model CustomerIssue {
+  id                      String                @id @default(cuid())
+  number                  Int                   @unique @default(autoincrement())
+  status                  CustomerIssueStatus   @default(NEW)
+  priority                CustomerIssuePriority @default(MEDIUM)
+  source                  CustomerIssueSource   @default(CUSTOMER_REPORT)
+  title                   String
+  fingerprint             String
+  customerNote            String?
+  resolutionNote          String?
+  userId                  String?
+  tenantId                String?
+  siteId                  String?
+  sessionId               String?
+  assigneeAdminUserId     String?
+  resolvedByAdminUserId   String?
+  occurrenceCount         Int                   @default(1)
+  lastSeenAt              DateTime              @default(now())
+  reviewStartedAt         DateTime?
+  resolvedAt              DateTime?
+  closedAt                DateTime?
+  customerNotifiedAt      DateTime?
+  createdAt               DateTime              @default(now())
+  updatedAt               DateTime              @updatedAt
+
+  reporter       User?                @relation("CustomerIssueReporter", fields: [userId], references: [id], onDelete: SetNull)
+  tenant         Tenant?              @relation(fields: [tenantId], references: [id], onDelete: SetNull)
+  site           Site?                @relation(fields: [siteId], references: [id], onDelete: SetNull)
+  assignee       AdminUser?           @relation("CustomerIssueAssignee", fields: [assigneeAdminUserId], references: [id], onDelete: SetNull)
+  resolvedBy     AdminUser?           @relation("CustomerIssueResolver", fields: [resolvedByAdminUserId], references: [id], onDelete: SetNull)
+  occurrences    ErrorLog[]
+  events         CustomerIssueEvent[]
+
+  @@index([status, priority, createdAt])
+  @@index([fingerprint, status, updatedAt])
+  @@index([tenantId, siteId, status])
+  @@index([userId, status])
+  @@index([assigneeAdminUserId, status])
+}
+
+model CustomerIssueEvent {
+  id           String   @id @default(cuid())
+  issueId      String
+  actorAdminId String?
+  type         String
+  fromStatus   String?
+  toStatus     String?
+  note         String?
+  metadata     Json?
+  createdAt    DateTime @default(now())
+
+  issue CustomerIssue @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  actor AdminUser?    @relation("CustomerIssueEventActor", fields: [actorAdminId], references: [id], onDelete: SetNull)
+
+  @@index([issueId, createdAt])
+  @@index([actorAdminId, createdAt])
 }
