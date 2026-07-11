@@ -28,18 +28,60 @@ ALTER TABLE "PaymentRequestLog" ADD COLUMN IF NOT EXISTS "requestId" TEXT NOT NU
 -- 4. SubscriptionChange: add tenantId if missing
 ALTER TABLE "SubscriptionChange" ADD COLUMN IF NOT EXISTS "tenantId" TEXT NOT NULL DEFAULT '';
 
--- 5. BackupSettings: ensure type column exists as TEXT (handles type change from enum to text)
--- This only runs if the column type is incompatible; prisma db push handles the rest.
+-- 5. BackupSettings: convert enum type column to TEXT and restructure as @id
+--    DB has: id TEXT PK, type "BackupType" ENUM (unique)
+--    Schema wants: type TEXT PK (no id column)
 DO $$
 DECLARE
   col_type TEXT;
+  constraint_exists BOOLEAN;
 BEGIN
+  -- Check if the type column exists and what its data type is
   SELECT data_type INTO col_type
   FROM information_schema.columns
   WHERE table_name = 'BackupSettings' AND column_name = 'type';
 
-  -- If the column doesn't exist at all, add it
+  -- If the type column is an enum, convert it to TEXT
+  IF col_type = 'USER-DEFINED' THEN
+    -- Create a new TEXT column
+    ALTER TABLE "BackupSettings" ADD COLUMN IF NOT EXISTS "type_text" TEXT NOT NULL DEFAULT 'DATABASE';
+    -- Copy data from enum to text
+    UPDATE "BackupSettings" SET "type_text" = "type"::TEXT;
+    -- Drop the old enum column and its unique constraint
+    ALTER TABLE "BackupSettings" DROP CONSTRAINT IF EXISTS "BackupSettings_type_key";
+    ALTER TABLE "BackupSettings" DROP COLUMN "type";
+    -- Rename text column to type
+    ALTER TABLE "BackupSettings" RENAME COLUMN "type_text" TO "type";
+  END IF;
+
+  -- Ensure type column exists as TEXT (handles fresh DB edge case)
   IF col_type IS NULL THEN
     ALTER TABLE "BackupSettings" ADD COLUMN "type" TEXT NOT NULL DEFAULT 'DATABASE';
+  END IF;
+
+  -- Drop the id column if it exists and make type the PK
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'BackupSettings' AND column_name = 'id'
+  ) THEN
+    -- Drop old PK constraint
+    SELECT EXISTS (
+      SELECT 1 FROM pg_constraint
+      WHERE conrelid = '"BackupSettings"'::regclass
+      AND contype = 'p'
+    ) INTO constraint_exists;
+
+    IF constraint_exists THEN
+      ALTER TABLE "BackupSettings" DROP CONSTRAINT "BackupSettings_pkey";
+    END IF;
+
+    -- Drop the id column
+    ALTER TABLE "BackupSettings" DROP COLUMN "id";
+
+    -- Add createdAt if missing
+    ALTER TABLE "BackupSettings" ADD COLUMN IF NOT EXISTS "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP;
+
+    -- Make type the primary key
+    ALTER TABLE "BackupSettings" ADD CONSTRAINT "BackupSettings_pkey" PRIMARY KEY ("type");
   END IF;
 END $$;
