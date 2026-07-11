@@ -1,5 +1,10 @@
 import type { Metadata } from "next";
 
+import {
+  buildSocialMetadata,
+  resolvePhotographerSocialPreview,
+} from "@/modules/social-preview/social-preview";
+
 export type PublicSiteRecord = {
   id: string;
   slug: string;
@@ -23,6 +28,10 @@ export type PublicSiteRecord = {
     email: string | null;
     instagram: string | null;
     facebook: string | null;
+    avatarAsset?: {
+      url: string;
+      deletedAt: Date | null;
+    } | null;
   } | null;
   sections: Array<{
     type: string;
@@ -126,6 +135,7 @@ export type PublicSiteViewModel = {
 
 const FALLBACK_HERO_IMAGE =
   "https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1800&q=85";
+const NEUTRAL_PHOTOGRAPHER_DESCRIPTION = "معرض أعمال وباقات وخدمات المصور.";
 
 export function createPublicSiteViewModel({
   site,
@@ -137,14 +147,36 @@ export function createPublicSiteViewModel({
   const publicUrl = `${platformBaseUrl.replace(/\/$/u, "")}/p/${site.slug}`;
   const heroSection = findSection(site, "hero");
   const contactSection = findSection(site, "contact");
+  const photographerName = site.tenant.displayName.trim() || site.title;
+  const socialTitle = site.contactProfile?.studioName?.trim() || photographerName;
+  const heroSubheadline = readNullableString(heroSection?.data.subheadline);
+  const socialDescription =
+    site.description?.trim() ||
+    site.contactProfile?.longDescription?.trim() ||
+    site.contactProfile?.bio?.trim() ||
+    heroSubheadline ||
+    NEUTRAL_PHOTOGRAPHER_DESCRIPTION;
   const metadataTitle = site.seoSettings?.title ?? site.title;
-  const metadataDescription =
-    site.seoSettings?.description ??
-    site.description ??
-    `موقع ${site.tenant.displayName} على FrameID.`;
+  const metadataDescription = site.seoSettings?.description ?? socialDescription;
   const canonical = site.seoSettings?.canonicalUrl ?? publicUrl;
-  const heroImageUrl = readString(heroSection?.data.imageUrl, FALLBACK_HERO_IMAGE);
-  const socialImageUrl = site.seoSettings?.ogImageUrl ?? heroImageUrl;
+  const rawHeroImageUrl = readNullableString(heroSection?.data.imageUrl);
+  const heroImageUrl = rawHeroImageUrl ?? FALLBACK_HERO_IMAGE;
+  const profilePhotoUrl =
+    site.contactProfile?.avatarAsset && !site.contactProfile.avatarAsset.deletedAt
+      ? site.contactProfile.avatarAsset.url
+      : null;
+  const socialPreview = resolvePhotographerSocialPreview({
+    kind: "photographer",
+    title: socialTitle,
+    description: socialDescription,
+    profilePhotoUrl,
+    heroCoverUrl: rawHeroImageUrl,
+  });
+  const socialMetadata = buildSocialMetadata({
+    preview: socialPreview,
+    canonicalUrl: canonical,
+    siteName: socialTitle,
+  });
   const shouldIndex = site.seoSettings?.robotsIndex ?? site.isPublished;
 
   return {
@@ -161,35 +193,16 @@ export function createPublicSiteViewModel({
         index: shouldIndex,
         follow: shouldIndex
       },
-      openGraph: {
-        type: "website",
-        title: metadataTitle,
-        description: metadataDescription,
-        url: canonical,
-        images: socialImageUrl
-          ? [
-              {
-                url: socialImageUrl,
-                alt: metadataTitle
-              }
-            ]
-          : undefined
-      },
-      twitter: {
-        card: "summary_large_image",
-        title: metadataTitle,
-        description: metadataDescription,
-        images: socialImageUrl ? [socialImageUrl] : undefined
-      }
+      ...socialMetadata,
     },
     structuredData:
       (site.seoSettings?.structuredDataOverrides as Record<string, unknown> | null) ??
       {
         "@context": "https://schema.org",
         "@type": "LocalBusiness",
-        name: site.contactProfile?.studioName ?? site.tenant.displayName,
+        name: socialTitle,
         url: publicUrl,
-        description: metadataDescription
+        description: socialDescription
       },
     sections: Object.fromEntries(
       [...site.sections].sort((a, b) => a.sortOrder - b.sortOrder).map((section) => [
@@ -264,7 +277,7 @@ function readString(value: unknown, fallback: string): string {
 }
 
 function readNullableString(value: unknown): string | null {
-  return typeof value === "string" && value.trim() ? value : null;
+  return typeof value === "string" && value.trim() ? value.trim() : null;
 }
 
 function readStringList(value: unknown): string[] {
