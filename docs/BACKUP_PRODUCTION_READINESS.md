@@ -48,3 +48,7 @@ A complete migration requires:
 7. Run post-restore validation and application smoke tests.
 
 A DATABASE-only backup does not include uploads. A FULL backup is required for complete migration.
+
+## Acceptance status
+
+The scheduler and restore path are materially safer after this PR, but disaster recovery is **not accepted as complete** until an external storage provider is implemented, configured, and restore-tested. The pull request must remain unmerged until that requirement is closed or explicitly accepted as a separate infrastructure dependency.
