@@ -1,54 +1,93 @@
 # Backup production readiness
 
-## Current production execution
+## Architecture decision
 
-The application starts `startProductionBackupRunner()` from `src/instrumentation.ts` when the Node.js production server starts. The runner executes immediately after every restart and then every minute. It does not depend on an admin page, a user visit, or a Server Action.
+FrameID uses GitHub as the only external backup store in the current architecture.
 
-`BackupSettings.nextRunAt` is used as a database-backed claim. `updateMany` atomically moves the next run before executing a backup, preventing two application instances from claiming the same scheduled run in normal operation.
+- Git is the source of truth for platform code, templates, themes, public platform content, documentation, and platform configuration stored in the repository.
+- PostgreSQL and uploaded files are the source of truth for customer data.
+- Customer backups are stored externally in GitHub backup branches.
+- Object storage providers are intentionally outside the scope of this architecture.
+
+Default backup branches:
+
+- `frameid-backups-database`
+- `frameid-backups-full`
+
+The repository can be overridden with `BACKUP_GITHUB_REPOSITORY`. GitHub access requires `BACKUP_GITHUB_TOKEN` with permission to read and write the backup branches.
+
+## Completion contract
+
+A backup is not marked `COMPLETED` until all of these steps succeed:
+
+1. Create the local database dump and optional uploads archive.
+2. Create the manifest and checksums.
+3. Verify the local artifact.
+4. Upload the artifact to GitHub.
+5. Read and verify the artifact from GitHub.
+6. Store the GitHub location and verification metadata in the database.
+7. Mark the backup `COMPLETED`.
+
+Any failure before step 7 marks the backup `FAILED`. Local filesystem success alone is never treated as backup success.
+
+## Automatic backups
+
+`startProductionBackupRunner()` starts from `src/instrumentation.ts` with the production Node server. It runs immediately after restart and then polls every minute by default. It does not depend on opening the admin panel, visiting the public site, or invoking a Server Action.
+
+`BackupSettings.nextRunAt` is claimed atomically before execution to prevent duplicate scheduled runs under normal multi-instance operation.
 
 Environment controls:
 
 - `BACKUP_SCHEDULER_ENABLED=false` disables the runner.
-- `BACKUP_SCHEDULER_INTERVAL_MS` changes the polling interval. Default: 60000.
+- `BACKUP_SCHEDULER_INTERVAL_MS` changes the polling interval.
 
-## Restore safety
+## Verification
 
-Before restore the system now verifies:
+Local verification checks the manifest, checksum file, required files, non-empty database dump, and required uploads archive for `FULL` backups.
 
-- the backup record is completed;
-- the artifact path is inside the configured backup root;
-- the manifest exists and parses;
-- the manifest checksum matches;
-- all required files exist;
-- the PostgreSQL custom dump can be read by `pg_restore --list`;
-- no other restore is PENDING or RUNNING.
+Remote verification reads the uploaded artifact from GitHub and checks the manifest, checksum, required files, and sizes before the database record is completed.
 
-Database restore uses `pg_restore`, not `psql`, because backups are produced by `pg_dump --format=custom` and then gzip-compressed.
+Restore validation additionally checks that the PostgreSQL custom dump can be read by `pg_restore --list`.
 
-Restore lifecycle events are written to AuditLog: RESTORE_STARTED, RESTORE_COMPLETED, RESTORE_FAILED, and RESTORE_REJECTED.
+## Restore behavior
 
-## Critical remaining production requirement
+The admin restore workflow uses GitHub as the official external source.
 
-Backup artifacts are still stored on the application filesystem under `backups/`. This is not sufficient for disaster recovery if the Railway project or its storage is deleted.
+- When the local artifact exists, it is verified before restore.
+- When the local artifact is missing, the system downloads it from GitHub, verifies it locally, and then restores it.
+- A corrupt, incomplete, or unverifiable backup is rejected.
+- Concurrent restore jobs are rejected.
+- Restore lifecycle events are written to `AuditLog`.
+- PostgreSQL custom dumps are restored with `pg_restore`, not `psql`.
 
-Before claiming full disaster recovery readiness, configure an external durable storage provider outside Railway, such as Cloudflare R2, Amazon S3, or Backblaze B2, and ensure every completed backup is uploaded and periodically restore-tested from that provider.
+Legacy local-only automatic restore is disabled. Legacy local-only snapshot creation is also disabled. The migration action in the admin workspace creates a normal `FULL` backup through the official GitHub pipeline.
 
-Until external durable storage is configured and tested, deleting the Railway project can delete the only copy of backup artifacts.
+## Retention
+
+Retention is applied to GitHub and local cache copies after a verified successful upload:
+
+- Keep the latest 20 `DATABASE` backups.
+- Keep the latest 10 `FULL` backups.
+
+Older artifacts are removed automatically from their corresponding GitHub backup branch.
 
 ## Migration runbook
 
 A complete migration requires:
 
-1. Clone the matching Git commit recorded in the manifest.
-2. Provision PostgreSQL and set `DATABASE_URL`.
-3. Install PostgreSQL client tools (`pg_dump`, `pg_restore`, `psql`) and `tar`.
-4. Obtain the FULL backup artifact from durable external storage.
-5. Run restore against the new database and uploads directory.
-6. Run Prisma deployment compatibility steps for the target commit.
-7. Run post-restore validation and application smoke tests.
+1. Clone the Git commit recorded in the backup manifest, or a compatible later commit.
+2. Provision a new PostgreSQL database and set `DATABASE_URL`.
+3. Configure `BACKUP_GITHUB_TOKEN` and the backup repository/branch settings.
+4. Install PostgreSQL client tools (`pg_dump`, `pg_restore`, `psql`) and `tar`.
+5. Select the latest verified `FULL` backup from the admin backup workspace.
+6. Download from GitHub automatically if the artifact is not present locally.
+7. Verify the artifact.
+8. Restore PostgreSQL and uploads.
+9. Run Prisma deployment compatibility steps.
+10. Run post-restore validation and application smoke tests.
 
-A DATABASE-only backup does not include uploads. A FULL backup is required for complete migration.
+A `DATABASE` backup does not contain uploads. A `FULL` backup is required to restore customer database data and uploaded files together.
 
-## Acceptance status
+## Production readiness status
 
-The scheduler and restore path are materially safer after this PR, but disaster recovery is **not accepted as complete** until an external storage provider is implemented, configured, and restore-tested. The pull request must remain unmerged until that requirement is closed or explicitly accepted as a separate infrastructure dependency.
+The code path is production-ready when the required GitHub token and repository permissions are configured in the production environment. Without valid GitHub credentials, backup jobs intentionally fail and are never reported as completed.
