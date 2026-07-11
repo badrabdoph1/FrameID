@@ -7,6 +7,7 @@ import {
 } from "@/modules/themes/theme-registry";
 import {
   personalizeTemplateStarterContent,
+  type TemplateRegistrationIdentity,
   type TemplateStarterContent,
 } from "@/modules/themes/template-starter-content";
 import {
@@ -99,9 +100,13 @@ export function getTemplateContentSource(
 
 export function createTemplateProvisioningPayload(
   source: TemplateContentSource,
-  input: { ownerName: string },
+  input: { ownerName: string; registrationIdentity?: TemplateRegistrationIdentity },
 ): ProvisionedTemplatePayload {
-  const content = personalizeTemplateStarterContent(source.content, input.ownerName);
+  const content = personalizeTemplateStarterContent(
+    source.content,
+    input.ownerName,
+    input.registrationIdentity,
+  );
   const sections = content.sections;
 
   return {

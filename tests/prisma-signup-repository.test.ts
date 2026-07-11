@@ -46,7 +46,6 @@ function createAccountInput(): AccountCreationInput {
 describe("prisma signup repository", () => {
   it("creates the account, tenant, site, content and trial subscription in one transaction", async () => {
     const operations: string[] = [];
-    let assetCounter = 0;
     const tx = {
       theme: {
         async upsert() {

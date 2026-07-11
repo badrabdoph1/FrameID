@@ -106,23 +106,36 @@ export const templateStarterContentSchema = z.object({
 
 export type TemplateStarterContent = z.infer<typeof templateStarterContentSchema>;
 
+export type TemplateRegistrationIdentity =
+  | { identifierKind: "phone"; phone: string; email?: string | null }
+  | { identifierKind: "email"; email: string; phone?: string | null };
+
 export function parseTemplateStarterContent(value: unknown): TemplateStarterContent {
   return templateStarterContentSchema.parse(value);
 }
 
 export function personalizeTemplateStarterContent(
   content: TemplateStarterContent,
-  photographerName: string
+  photographerName: string,
+  registrationIdentity?: TemplateRegistrationIdentity
 ): TemplateStarterContent {
   const name = z.string().trim().min(1).max(120).parse(photographerName);
   const personalized = structuredClone(content);
 
-  // Only photographer identity changes during signup. Shared studio and description
-  // defaults remain untouched until the customer edits them from the dashboard.
+  // Signup copies the selected template exactly, then changes only customer identity.
+  // Studio, description, imagery, packages, extras and social links stay untouched.
   personalized.site.title = name;
   personalized.sections.hero.headline = name;
   personalized.seo.title = name;
   personalized.seo.structuredData.name = name;
+
+  if (registrationIdentity?.identifierKind === "phone") {
+    const phone = z.string().trim().min(1).max(40).parse(registrationIdentity.phone);
+    personalized.contact.phone = phone;
+    personalized.contact.whatsapp = phone;
+  } else if (registrationIdentity?.identifierKind === "email") {
+    personalized.contact.email = z.string().trim().email().parse(registrationIdentity.email);
+  }
 
   return personalized;
 }

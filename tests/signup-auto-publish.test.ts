@@ -93,7 +93,7 @@ describe("signup site publication", () => {
       title: "Ali Ahmed"
     });
     expect(createdContactData).toMatchObject({
-      studioName: "Ali Ahmed"
+      studioName: "Photography"
     });
     expect(createdSeoData).toMatchObject({
       title: "Ali Ahmed"

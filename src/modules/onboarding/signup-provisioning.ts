@@ -11,6 +11,7 @@ import {
   type TemplateProvisioningRepository,
 } from "@/modules/templates/template-provisioning-service";
 import type { ProvisionedTemplatePayload } from "@/modules/templates/template-content-source";
+import type { TemplateRegistrationIdentity } from "@/modules/themes/template-starter-content";
 
 export type ProvisionedAccountResult = {
   userId: string;
@@ -85,9 +86,11 @@ export function createSignupProvisioningService({
   return {
     async provisionTrialSite(rawInput) {
       const input = parseSignupInput(rawInput);
+      const registrationIdentity = resolveRegistrationIdentity(input);
       const templateContent = await templateProvisioning.buildSiteFromTemplate({
         templateCode: input.selectedTemplateCode,
         ownerName: input.name,
+        registrationIdentity,
       });
 
       if (await repository.identifierExists({ email: input.email, phone: input.phone })) {
@@ -135,6 +138,18 @@ export function createSignupProvisioningService({
       };
     }
   };
+}
+
+function resolveRegistrationIdentity(input: ReturnType<typeof parseSignupInput>): TemplateRegistrationIdentity {
+  if (input.identifierKind === "phone") {
+    if (!input.phone) {
+      throw new Error("تعذر قراءة رقم الهاتف المستخدم في التسجيل");
+    }
+
+    return { identifierKind: "phone", phone: input.phone };
+  }
+
+  return { identifierKind: "email", email: input.email };
 }
 
 export function resolveAvailableSlug(
