@@ -7,6 +7,7 @@ const sectionSchema = z.object({
 });
 
 const urlSchema = z.string().url();
+const optionalContactText = z.string().trim().max(120).nullable();
 
 export const templateStarterContentSchema = z.object({
   site: z.object({
@@ -36,9 +37,9 @@ export const templateStarterContentSchema = z.object({
     studioName: z.string().trim().min(1).max(120),
     bio: z.string().trim().min(1).max(320),
     longDescription: z.string().trim().min(1).max(1200),
-    phone: z.string().trim().min(1).max(40),
-    whatsapp: z.string().trim().min(1).max(40),
-    email: z.string().trim().email(),
+    phone: optionalContactText,
+    whatsapp: optionalContactText,
+    email: z.string().trim().email().nullable(),
     instagram: z.string().trim().min(1).max(80),
     facebook: z.string().trim().min(1).max(120)
   }),
@@ -122,8 +123,6 @@ export function personalizeTemplateStarterContent(
   const name = z.string().trim().min(1).max(120).parse(photographerName);
   const personalized = structuredClone(content);
 
-  // Signup copies the selected template exactly, then changes only customer identity.
-  // Studio, description, imagery, packages, extras and social links stay untouched.
   personalized.site.title = name;
   personalized.sections.hero.headline = name;
   personalized.seo.title = name;
@@ -133,8 +132,11 @@ export function personalizeTemplateStarterContent(
     const phone = z.string().trim().min(1).max(40).parse(registrationIdentity.phone);
     personalized.contact.phone = phone;
     personalized.contact.whatsapp = phone;
+    personalized.contact.email = null;
   } else if (registrationIdentity?.identifierKind === "email") {
     personalized.contact.email = z.string().trim().email().parse(registrationIdentity.email);
+    personalized.contact.phone = null;
+    personalized.contact.whatsapp = null;
   }
 
   return personalized;
