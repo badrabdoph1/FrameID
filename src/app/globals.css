@@ -185,3 +185,226 @@
 @utility animate-toast-swipe {
   animation: toast-swipe 0.25s ease-in forwards;
 }
+
+/* ── Phone Input ── */
+
+.pi-group {
+  display: flex;
+  align-items: stretch;
+  width: 100%;
+  min-height: 2.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  background: var(--color-surface);
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.pi-group:focus-within {
+  border-color: var(--color-champagne);
+  box-shadow: 0 0 0 3px rgb(216 180 106 / 0.18);
+}
+
+.pi-group[aria-invalid="true"] {
+  border-color: var(--color-danger);
+  box-shadow: 0 0 0 3px rgb(186 45 45 / 0.08);
+}
+
+.pi-country-wrap {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.pi-country-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 8px 0 10px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: inherit;
+  white-space: nowrap;
+  border-inline-end: 1px solid var(--color-border);
+  transition: background 140ms ease;
+  border-radius: var(--radius-control) 0 0 var(--radius-control);
+  min-height: 100%;
+}
+
+.pi-country-btn:hover {
+  background: rgb(0 0 0 / 0.03);
+}
+
+.pi-flag {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.pi-dialcode {
+  font-size: 0.78rem;
+  font-weight: 700;
+  opacity: 0.7;
+  direction: ltr;
+}
+
+.pi-arrow {
+  opacity: 0.4;
+  flex-shrink: 0;
+}
+
+.pi-field {
+  width: 100%;
+  border: none !important;
+  outline: none !important;
+  background: transparent !important;
+  padding: 0 10px;
+  font-size: inherit;
+  font-family: inherit;
+  color: inherit;
+  box-shadow: none !important;
+  min-height: inherit;
+}
+
+.pi-field::placeholder {
+  color: var(--color-muted-foreground);
+  opacity: 0.6;
+}
+
+/* ── Country dropdown ── */
+
+.pi-dropdown {
+  position: absolute;
+  bottom: calc(100% + 3px);
+  inset-inline-end: 0;
+  z-index: 200;
+  width: 100%;
+  min-width: 13rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  box-shadow: var(--shadow-soft);
+  overflow: hidden;
+  animation: pi-dropdown-in 140ms ease both;
+  transform-origin: bottom center;
+}
+
+@keyframes pi-dropdown-in {
+  from {
+    opacity: 0;
+    transform: translateY(3px) scaleY(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scaleY(1);
+  }
+}
+
+.pi-search-wrap {
+  padding: 5px 5px 3px;
+}
+
+.pi-search {
+  width: 100%;
+  height: 36px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: rgb(0 0 0 / 0.02);
+  padding: 0 8px;
+  font-size: 0.78rem;
+  font-family: inherit;
+  color: var(--color-foreground);
+  outline: none;
+  transition: border-color 140ms ease;
+  -webkit-appearance: none;
+}
+
+.pi-search:focus {
+  border-color: var(--color-champagne);
+}
+
+.pi-search::placeholder {
+  color: var(--color-muted-foreground);
+  opacity: 0.5;
+}
+
+.pi-items {
+  max-height: 13rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+
+.pi-items::-webkit-scrollbar {
+  width: 4px;
+}
+
+.pi-items::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.pi-items::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 4px;
+}
+
+.pi-empty {
+  padding: 14px 8px;
+  text-align: center;
+  color: var(--color-muted-foreground);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.pi-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  height: 42px;
+  padding: 0 10px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-family: inherit;
+  text-align: left;
+  color: var(--color-foreground);
+  transition: background 80ms ease;
+  direction: rtl;
+}
+
+.pi-item:hover,
+.pi-item:focus-visible {
+  background: rgb(0 0 0 / 0.03);
+  outline: none;
+}
+
+.pi-item.active {
+  background: rgb(216 180 106 / 0.12);
+  font-weight: 700;
+  color: var(--color-champagne-strong);
+}
+
+.pi-item-flag {
+  font-size: 1rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.pi-item-name {
+  flex: 1;
+  text-align: right;
+  font-size: 0.82rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pi-item-dial {
+  font-size: 0.76rem;
+  opacity: 0.5;
+  direction: ltr;
+  font-weight: 600;
+  flex-shrink: 0;
+}

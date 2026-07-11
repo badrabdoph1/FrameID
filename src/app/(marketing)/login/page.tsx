@@ -2,10 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { AuthShell } from "@/components/layout/auth-shell";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { loginAction } from "@/app/(marketing)/login/actions";
+import { LoginForm } from "@/components/auth/login-form";
 
 export const metadata: Metadata = {
   title: "تسجيل الدخول",
@@ -31,43 +28,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
       title="تسجيل الدخول"
       description="ادخل برقم الهاتف أو البريد عشان تدير موقعك، صورك، وباقاتك."
     >
-      {message ? (
-        <p className="mb-4 rounded-[var(--radius-panel)] border border-success/20 bg-success-soft px-4 py-3 text-sm text-success">
-          {message}
-        </p>
-      ) : null}
-      {error ? (
-        <p className="mb-4 rounded-[var(--radius-panel)] border border-warning/30 bg-warning/10 px-4 py-3 text-sm text-foreground">
-          {error}
-        </p>
-      ) : null}
-      <form action={loginAction} className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="identifier">رقم الهاتف أو البريد الإلكتروني</Label>
-          <Input
-            id="identifier"
-            name="identifier"
-            type="text"
-            inputMode="email"
-            autoComplete="username"
-            placeholder="01000000000 أو name@example.com"
-            required
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="password">كلمة المرور</Label>
-          <Input
-            id="password"
-            name="password"
-            type="password"
-            autoComplete="current-password"
-            required
-          />
-        </div>
-        <Button type="submit" className="w-full">
-          تسجيل الدخول
-        </Button>
-      </form>
+      <LoginForm error={error} message={message} />
       <div className="mt-6 flex items-center justify-between text-sm">
         <Link href="/forgot-password" className="text-muted-foreground hover:text-foreground">
           نسيت كلمة السر؟
