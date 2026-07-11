@@ -12,7 +12,7 @@ const COMMON_HEADERS = {
 } as const;
 
 type ResolvedImage = {
-  bytes: Buffer;
+  bytes: ArrayBuffer;
   contentType: string;
   etag: string;
 };
@@ -63,12 +63,12 @@ async function resolveImage(request: Request): Promise<ResolvedImage> {
   const shouldUseCustom = requestedMode === "custom" || (requestedMode !== "default" && settings.enabled);
 
   if (shouldUseCustom && settings.imageData && settings.imageMimeType) {
-    const bytes = Buffer.from(settings.imageData, "base64");
-    if (bytes.byteLength > 0) {
+    const buffer = Buffer.from(settings.imageData, "base64");
+    if (buffer.byteLength > 0) {
       return {
-        bytes,
+        bytes: toArrayBuffer(buffer),
         contentType: settings.imageMimeType,
-        etag: `\"custom-${settings.imageVersion ?? bytes.byteLength}\"`,
+        etag: `\"custom-${settings.imageVersion ?? buffer.byteLength}\"`,
       };
     }
   }
@@ -86,7 +86,7 @@ async function resolveImage(request: Request): Promise<ResolvedImage> {
   const contentType = upstream.headers.get("content-type") ?? "image/jpeg";
   if (!contentType.startsWith("image/")) throw new Error("Hero source did not return an image");
 
-  const bytes = Buffer.from(await upstream.arrayBuffer());
+  const bytes = await upstream.arrayBuffer();
   if (bytes.byteLength === 0) throw new Error("Hero image is empty");
 
   return {
@@ -94,6 +94,10 @@ async function resolveImage(request: Request): Promise<ResolvedImage> {
     contentType,
     etag: `\"hero-${homepage._version}-${bytes.byteLength}\"`,
   };
+}
+
+function toArrayBuffer(buffer: Buffer): ArrayBuffer {
+  return buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength) as ArrayBuffer;
 }
 
 function buildOpenGraphHeroUrl(value: string): string {
