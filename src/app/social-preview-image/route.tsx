@@ -32,10 +32,10 @@ export async function GET(request: Request) {
   }
 
   const homepage = getContent("marketing/homepage");
-  const heroUrl = homepage.hero.heroImage;
+  const heroUrl = buildOpenGraphHeroUrl(homepage.hero.heroImage);
   const upstream = await fetch(heroUrl, {
     cache: "no-store",
-    headers: { Accept: "image/avif,image/webp,image/jpeg,image/png,image/*" },
+    headers: { Accept: "image/jpeg,image/*;q=0.8" },
   });
 
   if (!upstream.ok) {
@@ -70,4 +70,19 @@ export async function GET(request: Request) {
       "ETag": `\"hero-${homepage._version}-${bytes.byteLength}\"`,
     },
   });
+}
+
+function buildOpenGraphHeroUrl(value: string): string {
+  try {
+    const url = new URL(value);
+    url.searchParams.set("w", "1200");
+    url.searchParams.set("h", "630");
+    url.searchParams.set("fit", "crop");
+    url.searchParams.set("crop", "center");
+    url.searchParams.set("q", "88");
+    url.searchParams.set("fm", "jpg");
+    return url.toString();
+  } catch {
+    return value;
+  }
 }
