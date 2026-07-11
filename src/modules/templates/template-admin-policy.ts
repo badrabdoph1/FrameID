@@ -55,5 +55,10 @@ export function buildTemplateDefaults(input: {
       // Starter identity is intentionally absent. It is inherited from the
       // shared Template Content Source defaults unless an explicit override is saved.
     },
+    settings: {
+      contentSource: "starter-content-defaults",
+      version: "1.0.0",
+      ...(input.themeDefaultConfig ?? {}),
+    },
   };
 }

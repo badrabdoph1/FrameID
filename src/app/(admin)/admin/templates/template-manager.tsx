@@ -7,6 +7,7 @@ import {
   Eye,
   ImageIcon,
   LayoutTemplate,
+  Package,
   Plus,
   RotateCcw,
   Save,
@@ -112,6 +113,30 @@ function readExtras(value: unknown): ExtraDraft[] {
   }));
 }
 
+type PackageDraft = {
+  id: string;
+  name: string;
+  subtitle: string;
+  price: string;
+  priceAmount: number;
+  currency: string;
+  imageUrl: string;
+  features: string[];
+  isHighlighted: boolean;
+  enabled: boolean;
+};
+
+type ExtraDraft = {
+  id: string;
+  name: string;
+  description: string;
+  price: string;
+  priceAmount: number;
+  currency: string;
+  iconKey: string;
+  enabled: boolean;
+};
+
 function statusLabel(status: string) {
   if (status === "PUBLISHED") return "منشور";
   if (status === "ARCHIVED") return "مؤرشف";
@@ -171,7 +196,7 @@ export function TemplateManager({ templates, themes, message }: TemplateManagerP
             </form>
           ) : selected ? (
             <div className="grid min-w-0 gap-4">
-              <TemplateEditor key={selected.id} template={selected} />
+              <TemplateEditor key={selected.id} template={selected} themes={themes} />
               <TemplateImageCenter template={selected} />
             </div>
           ) : null}
@@ -182,6 +207,7 @@ export function TemplateManager({ templates, themes, message }: TemplateManagerP
 }
 
 function TemplateEditor({ template, themes }: { template: AdminTemplateItem; themes: AdminTemplateThemeOption[] }) {
+  const settings = isRecord(template.settings) ? template.settings : {};
   const previewTitle = pickText(template.previewData, ["title", "headline", "name"], template.name);
   const previewDescription = pickText(template.previewData, ["description", "subtitle", "tagline"], template.theme.category);
   const previewImage = pickImage(template.previewData);
@@ -220,7 +246,7 @@ function TemplateEditor({ template, themes }: { template: AdminTemplateItem; the
           </div>
         </EditorSection>
 
-        <EditorSection icon={PackagePlus} title="الباقات التجريبية" description="تظهر في معاينة القالب ويمكن إخفاء أي باقة بدون حذفها.">
+        <EditorSection icon={Package} title="الباقات التجريبية" description="تظهر في معاينة القالب ويمكن إخفاء أي باقة بدون حذفها.">
           <input type="hidden" name="packageCount" value={packages.length} />
           <div className="grid gap-3">
             {packages.map((item, index) => <PackageFields key={`${item.id}-${index}`} item={item} index={index} />)}
@@ -252,3 +278,68 @@ function TemplateEditor({ template, themes }: { template: AdminTemplateItem; the
 function EditorSection({ icon: Icon, title, description, children }: { icon: typeof Settings2; title: string; description: string; children: ReactNode }) { return <section className="grid gap-3 rounded-3xl border border-white/10 bg-black/16 p-4"><div className="flex items-start gap-3"><span className="grid size-9 shrink-0 place-items-center rounded-xl bg-amber-300/10 text-[#f3cf73]"><Icon className="size-4" /></span><span><h3 className="text-sm font-black text-[#fff7e8]">{title}</h3><p className="mt-1 text-xs font-bold leading-6 text-white/42">{description}</p></span></div>{children}</section>; }
 function Field({ label, children }: { label: string; children: ReactNode }) { return <label className="grid gap-1.5"><span className="text-xs font-black text-white/55">{label}</span>{children}</label>; }
 function ActionButton({ children }: { children: ReactNode }) { return <button className="inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-3 text-xs font-black text-white/65">{children}</button>; }
+
+function PackageFields({ item, index }: { item: PackageDraft; index: number }) {
+  const prefix = `package_${index}`;
+  return (
+    <div className="rounded-2xl border border-white/8 bg-white/[0.025] p-3 grid gap-2">
+      <div className="grid gap-2 sm:grid-cols-2">
+        <Field label="اسم الباقة"><input name={`${prefix}_name`} defaultValue={item.name} className={inputClass} /></Field>
+        <Field label="السعر"><input name={`${prefix}_price`} defaultValue={item.price} className={inputClass} /></Field>
+        <Field label="العملة"><input name={`${prefix}_currency`} defaultValue={item.currency} className={inputClass} /></Field>
+        <Field label="رابط الصورة"><input name={`${prefix}_imageUrl`} defaultValue={item.imageUrl} className={inputClass} /></Field>
+      </div>
+      <Field label="المميزات (سطر واحد لكل ميزة)"><textarea name={`${prefix}_features`} rows={3} defaultValue={item.features.join("\n")} className={textareaClass} /></Field>
+      <div className="flex items-center gap-4">
+        <label className="flex items-center gap-2 text-xs font-bold text-white/55"><input type="checkbox" name={`${prefix}_isHighlighted`} defaultChecked={item.isHighlighted} className="accent-amber-300" /> مميزة</label>
+        <label className="flex items-center gap-2 text-xs font-bold text-white/55"><input type="checkbox" name={`${prefix}_enabled`} defaultChecked={item.enabled} className="accent-amber-300" /> مفعلة</label>
+      </div>
+    </div>
+  );
+}
+
+function NewPackageFields() {
+  return (
+    <div className="rounded-2xl border border-dashed border-white/10 bg-white/[0.015] p-3 grid gap-2">
+      <p className="text-xs font-black text-white/35">باقة جديدة</p>
+      <div className="grid gap-2 sm:grid-cols-2">
+        <Field label="اسم الباقة"><input name="newPackageName" className={inputClass} /></Field>
+        <Field label="السعر"><input name="newPackagePrice" className={inputClass} /></Field>
+        <Field label="العملة"><input name="newPackageCurrency" className={inputClass} /></Field>
+        <Field label="رابط الصورة"><input name="newPackageImageUrl" className={inputClass} /></Field>
+      </div>
+      <Field label="المميزات (سطر واحد لكل ميزة)"><textarea name="newPackageFeatures" rows={3} className={textareaClass} /></Field>
+    </div>
+  );
+}
+
+function ExtraFields({ item, index }: { item: ExtraDraft; index: number }) {
+  const prefix = `extra_${index}`;
+  return (
+    <div className="rounded-2xl border border-white/8 bg-white/[0.025] p-3 grid gap-2">
+      <div className="grid gap-2 sm:grid-cols-2">
+        <Field label="اسم الإضافة"><input name={`${prefix}_name`} defaultValue={item.name} className={inputClass} /></Field>
+        <Field label="السعر"><input name={`${prefix}_price`} defaultValue={item.price} className={inputClass} /></Field>
+        <Field label="العملة"><input name={`${prefix}_currency`} defaultValue={item.currency} className={inputClass} /></Field>
+        <Field label="الوصف"><input name={`${prefix}_description`} defaultValue={item.description} className={inputClass} /></Field>
+      </div>
+      <div className="flex items-center gap-4">
+        <label className="flex items-center gap-2 text-xs font-bold text-white/55"><input type="checkbox" name={`${prefix}_enabled`} defaultChecked={item.enabled} className="accent-amber-300" /> مفعلة</label>
+      </div>
+    </div>
+  );
+}
+
+function NewExtraFields() {
+  return (
+    <div className="rounded-2xl border border-dashed border-white/10 bg-white/[0.015] p-3 grid gap-2">
+      <p className="text-xs font-black text-white/35">إضافة جديدة</p>
+      <div className="grid gap-2 sm:grid-cols-2">
+        <Field label="اسم الإضافة"><input name="newExtraName" className={inputClass} /></Field>
+        <Field label="السعر"><input name="newExtraPrice" className={inputClass} /></Field>
+        <Field label="العملة"><input name="newExtraCurrency" className={inputClass} /></Field>
+        <Field label="الوصف"><input name="newExtraDescription" className={inputClass} /></Field>
+      </div>
+    </div>
+  );
+}

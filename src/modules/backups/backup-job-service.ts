@@ -5,6 +5,7 @@ import {
   type BackupType,
   type BackupManifest,
 } from "@/modules/backups/backup-manifest";
+import { prisma } from "@/lib/prisma";
 import { createDatabaseDumper } from "@/modules/backups/backup-database-dumper";
 import { createUploadsPackager } from "@/modules/backups/backup-uploads-packager";
 import { createBackupPackage } from "@/modules/backups/backup-package-creator";
@@ -141,7 +142,7 @@ export function createBackupJobService({
   const retention = createRetentionService();
   const verification = createVerificationService();
   const scheduler = createBackupScheduler(
-    { backupSettings: { findMany: () => Promise.resolve([]) } },
+    { backupSettings: { findMany: () => prisma.backupSettings.findMany({ orderBy: { type: "asc" } }) } },
     () => ({
       runManualBackup: (input) => (service as BackupJobService).runManualBackup(input),
     })

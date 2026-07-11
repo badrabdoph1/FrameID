@@ -69,7 +69,7 @@ async function resolveImage(request: Request): Promise<ResolvedImage> {
       return {
         bytes: toArrayBuffer(buffer),
         contentType: settings.imageMimeType,
-        etag: `\"custom-${settings.imageVersion ?? buffer.byteLength}\"`,
+        etag: `"custom-${buffer.byteLength}"`,
       };
     }
   }

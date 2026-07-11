@@ -123,7 +123,7 @@ export async function verifyAllBackupsAction() {
     });
 
     revalidatePath("/admin/backups");
-    redirect(`/admin/backups?verified-all=1&valid=${valid}&invalid=${invalid}`);
+    redirect(`/admin/backups?verified=1&valid=${valid}&invalid=${invalid}`);
   } catch (error) {
     const { userError } = await processError(error, {
       userId: session.user.id,
@@ -175,9 +175,11 @@ export async function updateBackupSettingsAction(formData: FormData) {
   const type = readBackupType(formData.get("type"));
   const enabled = formData.get("enabled") === "true";
   const schedule = String(formData.get("schedule") ?? "");
+  const retentionRaw = Number(formData.get("retentionCount"));
   if (!type) redirect("/admin/backups?error=invalid-type");
 
   const policy = getBackupPolicy(type);
+  const retentionCount = Number.isFinite(retentionRaw) && retentionRaw >= 1 ? Math.min(retentionRaw, 100) : policy.retentionCount;
 
   try {
     await prisma.backupSettings.upsert({
@@ -185,13 +187,13 @@ export async function updateBackupSettingsAction(formData: FormData) {
       update: {
         enabled,
         schedule: schedule || policy.schedule,
-        retentionCount: policy.retentionCount,
+        retentionCount,
       },
       create: {
         type,
         enabled,
         schedule: schedule || policy.schedule,
-        retentionCount: policy.retentionCount,
+        retentionCount,
       },
     });
 

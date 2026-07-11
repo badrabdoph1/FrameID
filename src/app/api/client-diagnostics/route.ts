@@ -1,3 +1,4 @@
+import type { Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
 
 import { prisma } from "@/lib/prisma";
@@ -89,8 +90,8 @@ export async function POST(request: Request) {
         siteSlug: session.site.slug,
         diagnosticType: category,
         stack: text(body.stack, 8000),
-        rendering: metadata,
-      },
+        rendering: metadata as unknown as Prisma.InputJsonValue,
+      } as Prisma.InputJsonObject,
     },
   });
 

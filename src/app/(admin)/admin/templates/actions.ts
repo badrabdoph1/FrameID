@@ -9,6 +9,8 @@ import { processError } from "@/lib/errors";
 import { requireAdminPermission } from "@/modules/admin/admin-permission-guards";
 import { TEMPLATE_STARTER_DEFAULTS_CODE } from "@/modules/themes/template-starter-defaults";
 
+type JsonRecord = Record<string, unknown>;
+
 function readString(formData: FormData, key: string): string {
   const value = formData.get(key);
   return typeof value === "string" ? value.trim() : "";
@@ -17,6 +19,25 @@ function readString(formData: FormData, key: string): string {
 function readInt(formData: FormData, key: string, fallback = 0): number {
   const value = Number.parseInt(readString(formData, key), 10);
   return Number.isFinite(value) ? value : fallback;
+}
+
+function readBool(formData: FormData, key: string): boolean {
+  const value = formData.get(key);
+  return value === "on" || value === "true";
+}
+
+function readFeatureLines(raw: string): string[] {
+  return raw.split("\n").map((line) => line.trim()).filter(Boolean);
+}
+
+function readJsonObject(raw: string, fallback: Record<string, unknown> = {}): Record<string, unknown> {
+  if (!raw) return fallback;
+  try {
+    const parsed = JSON.parse(raw);
+    return isRecord(parsed) ? parsed : fallback;
+  } catch {
+    return fallback;
+  }
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -139,17 +160,6 @@ function readExtras(formData: FormData): JsonRecord[] | null {
   return extras;
 }
 
-function readStarterOverride(formData: FormData): JsonRecord | null {
-  const override = {
-    photographerName: readString(formData, "starterOverridePhotographerName"),
-    studioName: readString(formData, "starterOverrideStudioName"),
-    description: readString(formData, "starterOverrideDescription"),
-    heroImageUrl: readString(formData, "starterOverrideHeroImageUrl"),
-  };
-  const entries = Object.entries(override).filter(([, value]) => Boolean(value));
-  return entries.length ? Object.fromEntries(entries) : null;
-}
-
 async function auditTemplate(input: { adminId: string; adminEmail?: string; action: string; templateId: string; code: string; metadata?: JsonRecord }) {
   await prisma.auditLog.create({
     data: {
@@ -197,13 +207,9 @@ export async function saveTemplateAction(formData: FormData) {
     if (starterOverride) basePreview.starterContentOverride = starterOverride;
     else delete basePreview.starterContentOverride;
 
-    const starterOverride = readStarterOverride(formData);
-    if (starterOverride) preview.starterContentOverride = starterOverride;
-    else delete preview.starterContentOverride;
-
-    if (version) settings.version = version;
-    else delete settings.version;
-    settings.contentSource = "starter-content-defaults";
+    if (version) baseSettings.version = version;
+    else delete baseSettings.version;
+    baseSettings.contentSource = "starter-content-defaults";
 
     if (themeId) {
       const themeExists = await prisma.theme.count({ where: { id: themeId, deletedAt: null } });
@@ -218,8 +224,8 @@ export async function saveTemplateAction(formData: FormData) {
         name: readString(formData, "name") || current.name,
         status: readString(formData, "status") || current.status,
         showroomOrder: readInt(formData, "showroomOrder", current.showroomOrder),
-        previewData: preview as Prisma.InputJsonValue,
-        settings: settings as Prisma.InputJsonValue,
+        previewData: basePreview as Prisma.InputJsonValue,
+        settings: baseSettings as Prisma.InputJsonValue,
         deletedAt: null,
       } as never,
     });

@@ -5,6 +5,7 @@ import {
   type ProvisionedTemplatePayload,
   type TemplateContentSourceOptions,
 } from "@/modules/templates/template-content-source";
+import type { TemplateRegistrationIdentity } from "@/modules/themes/template-starter-content";
 import { loadTemplateContentSourceOptions } from "@/modules/templates/template-starter-defaults-repository";
 
 export type TemplateProvisioningRepository = {

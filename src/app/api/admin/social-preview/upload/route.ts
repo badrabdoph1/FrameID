@@ -5,7 +5,7 @@ import {
   getPlatformSocialPreviewSettings,
   savePlatformSocialPreviewSettings,
 } from "@/modules/social-preview/platform-social-preview-settings";
-import { PLATFORM_CUSTOM_SOCIAL_IMAGE } from "@/modules/social-preview/social-preview";
+import { PLATFORM_DEFAULT_SOCIAL_IMAGE } from "@/modules/social-preview/social-preview";
 
 export const runtime = "nodejs";
 
@@ -32,7 +32,7 @@ export async function POST(request: Request) {
     const imageData = Buffer.from(await file.arrayBuffer()).toString("base64");
     await savePlatformSocialPreviewSettings({
       ...current,
-      imageUrl: PLATFORM_CUSTOM_SOCIAL_IMAGE,
+      imageUrl: PLATFORM_DEFAULT_SOCIAL_IMAGE,
       storageKey: null,
       imageData,
       imageMimeType: file.type,
@@ -40,7 +40,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       ok: true,
-      imageUrl: `${PLATFORM_CUSTOM_SOCIAL_IMAGE}?v=${Date.now()}`,
+      imageUrl: `${PLATFORM_DEFAULT_SOCIAL_IMAGE}?v=${Date.now()}`,
     });
   } catch (error) {
     console.error("[social-preview] upload failed", error);

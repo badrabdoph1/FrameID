@@ -198,6 +198,11 @@ function Feedback({ params }: { params: Record<string, string | undefined> }) {
   if (params.started) return <Banner tone="success">تم إنشاء النسخة بنجاح.</Banner>;
   if (params.restored) return <Banner tone="success">تمت الاستعادة بنجاح.</Banner>;
   if (params.deleted) return <Banner tone="success">تم حذف النسخة.</Banner>;
+  if (params.verified && params.valid !== undefined) {
+    const valid = Number(params.valid);
+    const invalid = Number(params.invalid);
+    return <Banner tone={invalid === 0 ? "success" : "danger"}>{invalid === 0 ? `تم التحقق من ${valid} نسخة بنجاح.` : `فشل التحقق: ${invalid} نسخة من أصل ${valid + invalid}.`}</Banner>;
+  }
   if (params.verified) return <Banner tone={params.verified === "1" ? "success" : "danger"}>{params.verified === "1" ? "النسخة سليمة." : "فشل التحقق من النسخة."}</Banner>;
   if (params["settings-updated"]) return <Banner tone="success">تم تحديث إعدادات النسخ.</Banner>;
   return null;
