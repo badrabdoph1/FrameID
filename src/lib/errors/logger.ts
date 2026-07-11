@@ -1,5 +1,8 @@
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { createErrorFingerprint, extractSourceLocation } from "@/modules/customer-issues/fingerprint";
+import { sanitizeIssuePayload, sanitizeIssueUrl } from "@/modules/customer-issues/sanitize";
+import type { ErrorSourceArea } from "@/modules/customer-issues/types";
 import type { ErrorCategory, ErrorLevel, ErrorLogEntry, Logger } from "./types";
 
 const isDev = process.env.NODE_ENV === "development";
@@ -63,24 +66,54 @@ function createEntry(
   message: string,
   meta?: Record<string, unknown>,
 ): ErrorLogEntry {
+  const stack = meta?.stack as string | undefined;
+  const route = meta?.route as string | undefined;
+  const source = extractSourceLocation(stack);
+  const sourceArea = ((meta?.sourceArea as ErrorSourceArea | undefined) ?? "GLOBAL");
+  const errorType = meta?.errorType as string | undefined;
+  const digest = meta?.digest as string | undefined;
   return {
     id: crypto.randomUUID(),
     code,
     message,
+    errorType,
+    fingerprint: createErrorFingerprint({ code, errorType, route, stack, digest, sourceArea }),
     category: normalizeCategory(meta),
     level,
     requestId: meta?.requestId as string | undefined,
     correlationId: meta?.correlationId as string | undefined,
-    route: meta?.route as string | undefined,
+    route: sanitizeIssueUrl(route) ?? undefined,
     method: meta?.method as string | undefined,
+    url: sanitizeIssueUrl(meta?.url as string | undefined) ?? undefined,
     userId: meta?.userId as string | undefined,
     tenantId: meta?.tenantId as string | undefined,
+    siteId: meta?.siteId as string | undefined,
+    sessionId: meta?.sessionId as string | undefined,
+    adminUserId: meta?.adminUserId as string | undefined,
     userAgent: meta?.userAgent as string | undefined,
     platform: meta?.platform as string | undefined,
     browser: meta?.browser as string | undefined,
-    stack: meta?.stack as string | undefined,
+    device: meta?.device as string | undefined,
+    os: meta?.os as string | undefined,
+    language: meta?.language as string | undefined,
+    timezone: meta?.timezone as string | undefined,
+    screenSize: meta?.screenSize as string | undefined,
+    referrer: sanitizeIssueUrl(meta?.referrer as string | undefined) ?? undefined,
+    connectionStatus: meta?.connectionStatus as string | undefined,
+    environment: (meta?.environment as string | undefined) ?? process.env.NODE_ENV,
+    releaseVersion: meta?.releaseVersion as string | undefined,
+    buildVersion: meta?.buildVersion as string | undefined,
+    templateCode: meta?.templateCode as string | undefined,
+    lastAction: meta?.lastAction as string | undefined,
+    sourceArea,
+    sourceFile: source?.file,
+    sourceLine: source?.line,
+    sourceColumn: source?.column,
+    ipAddress: meta?.ipAddress as string | undefined,
+    stack,
+    digest,
     cause: meta?.cause as string | undefined,
-    metadata: meta?.metadata as Record<string, unknown> | undefined,
+    metadata: sanitizeIssuePayload((meta?.metadata as Record<string, unknown> | undefined) ?? {}),
     resolved: level === "INFO" || level === "DEBUG",
     createdAt: formatTimestamp(),
   };
@@ -102,8 +135,38 @@ async function persistErrorLog(entry: ErrorLogEntry): Promise<void> {
         requestId: entry.requestId || null,
         correlationId: entry.correlationId || null,
         route: entry.route || null,
+        method: entry.method || null,
+        url: entry.url || null,
+        errorType: entry.errorType || null,
+        fingerprint: entry.fingerprint || null,
+        stack: entry.stack || null,
+        digest: entry.digest || null,
+        cause: entry.cause || null,
         userId: entry.userId || null,
-        metadata: entry.metadata as Prisma.InputJsonValue | undefined,
+        tenantId: entry.tenantId || null,
+        siteId: entry.siteId || null,
+        sessionId: entry.sessionId || null,
+        adminUserId: entry.adminUserId || null,
+        sourceArea: entry.sourceArea || null,
+        sourceFile: entry.sourceFile || null,
+        sourceLine: entry.sourceLine ?? null,
+        sourceColumn: entry.sourceColumn ?? null,
+        ipAddress: entry.ipAddress || null,
+        userAgent: entry.userAgent || null,
+        browser: entry.browser || null,
+        device: entry.device || null,
+        os: entry.os || entry.platform || null,
+        language: entry.language || null,
+        timezone: entry.timezone || null,
+        screenSize: entry.screenSize || null,
+        referrer: entry.referrer || null,
+        connectionStatus: entry.connectionStatus || null,
+        environment: entry.environment || null,
+        releaseVersion: entry.releaseVersion || null,
+        buildVersion: entry.buildVersion || null,
+        templateCode: entry.templateCode || null,
+        lastAction: entry.lastAction || null,
+        metadata: entry.metadata as Prisma.InputJsonObject,
         resolved: entry.resolved,
       },
     });

@@ -200,8 +200,8 @@ export function classifyError(error: unknown): ClassifiedError {
 
   if (error instanceof Error && !(error instanceof AppError)) {
     const prismaMsg = extractPrismaMessage(error);
-    if (prismaMsg && isDev) cause = error.message;
-    if (isDev) stack = error.stack;
+    if (prismaMsg) cause = error.message;
+    stack = error.stack;
   }
 
   return { def, message, suggestion, stack, cause, metadata };
@@ -248,6 +248,9 @@ export async function processError(
 
   logger.error(classified.def.code, classified.message, {
     ...detail,
+    errorType: error instanceof Error ? error.name : typeof error,
+    stack: classified.stack,
+    cause: classified.cause,
     category: classified.def.category,
   });
 
