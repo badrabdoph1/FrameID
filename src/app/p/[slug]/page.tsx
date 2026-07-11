@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { getThemeSiteComponent } from "@/components/themes/theme-components";
+import { MissingContactGuard } from "@/components/themes/missing-contact-guard";
 import { prisma } from "@/lib/prisma";
 import { getPlatformBaseUrl } from "@/lib/platform-url";
 import { createPrismaPublicSiteRepository } from "@/modules/public-sites/prisma-public-site-repository";
@@ -70,6 +71,7 @@ export default async function PublicSitePage({ params }: Props) {
         }}
       />
       <ThemeSiteComponent site={site} />
+      <MissingContactGuard />
     </>
   );
 }
