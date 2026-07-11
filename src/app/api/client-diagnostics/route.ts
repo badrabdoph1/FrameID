@@ -1,30 +1,15 @@
-import type { Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
 
 import { prisma } from "@/lib/prisma";
-import { createCustomerIssueService } from "@/modules/customer-issues/customer-issue-service";
-import { resolveTrustedIssueContext } from "@/modules/customer-issues/context";
-import { createPrismaCustomerIssueRepository } from "@/modules/customer-issues/prisma-customer-issue-repository";
 import { getCurrentRequestSession } from "@/modules/auth/request-session";
 
 const ALLOWED_CATEGORIES = new Set(["rendering-report", "client-error"]);
-
-type JsonScalar = string | number | boolean;
-const issueService = createCustomerIssueService(createPrismaCustomerIssueRepository(prisma));
 
 function text(value: unknown, maxLength: number) {
   return typeof value === "string" ? value.slice(0, maxLength) : null;
 }
 
-function sanitizeJsonScalar(value: unknown): Prisma.InputJsonValue | undefined {
-  if (typeof value === "string") return value.slice(0, 1024);
-  if (typeof value === "number" && Number.isFinite(value)) return value;
-  if (typeof value === "boolean") return value;
-  if (value === null) return null;
-  return undefined;
-}
-
-function sanitizeMetadata(value: unknown): Prisma.InputJsonObject {
+function sanitizeMetadata(value: unknown) {
   if (!value || typeof value !== "object" || Array.isArray(value)) return {};
   const source = value as Record<string, unknown>;
   const allowedKeys = [
@@ -56,16 +41,13 @@ function sanitizeMetadata(value: unknown): Prisma.InputJsonObject {
     "gpuVendor",
     "gpuRenderer",
     "route",
-  ] as const;
+  ];
 
-  const sanitized: Prisma.InputJsonObject = {};
-  for (const key of allowedKeys) {
-    if (!(key in source)) continue;
-    const safeValue = sanitizeJsonScalar(source[key]);
-    if (safeValue !== undefined) sanitized[key] = safeValue;
-  }
-
-  return sanitized;
+  return Object.fromEntries(
+    allowedKeys
+      .filter((key) => key in source)
+      .map((key) => [key, typeof source[key] === "string" ? String(source[key]).slice(0, 1024) : source[key]]),
+  );
 }
 
 export async function POST(request: Request) {
@@ -87,14 +69,6 @@ export async function POST(request: Request) {
 
   const isRenderingReport = category === "rendering-report";
   const metadata = sanitizeMetadata(body.metadata);
-  const logMetadata: Prisma.InputJsonObject = {
-    tenantId: session.tenant.id,
-    siteId: session.site.id,
-    siteSlug: session.site.slug,
-    diagnosticType: category,
-    stack: text(body.stack, 8000),
-    rendering: metadata,
-  };
 
   await prisma.errorLog.create({
     data: {
@@ -104,7 +78,14 @@ export async function POST(request: Request) {
       message,
       route: text(metadata.route, 500),
       userId: session.user.id,
-      metadata: logMetadata,
+      metadata: {
+        tenantId: session.tenant.id,
+        siteId: session.site.id,
+        siteSlug: session.site.slug,
+        diagnosticType: category,
+        stack: text(body.stack, 8000),
+        rendering: metadata,
+      },
     },
   });
 

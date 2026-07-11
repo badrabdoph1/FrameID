@@ -79,7 +79,7 @@ export default async function DashboardLayout({
 
   return (
     <>
-      <RenderingSafetyMode />
+      <RenderingSafetyMode config={renderingConfig} userId={session.user.id} />
       <DashboardScrollReset />
       <DashboardShell siteSlug={session.site.slug}>{children}</DashboardShell>
       <PwaInstallButton context="dashboard" />
