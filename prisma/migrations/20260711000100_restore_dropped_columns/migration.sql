@@ -78,9 +78,7 @@ CREATE TABLE IF NOT EXISTS "PaymentSettings" (
 DO $$
 BEGIN
   IF NOT EXISTS (
-    SELECT 1 FROM pg_constraint
-    WHERE conrelid = '"PaymentSettings"'::regclass
-    AND conname = 'PaymentSettings_paymentMethod_key'
+    SELECT 1 FROM pg_constraint WHERE conname = 'PaymentSettings_paymentMethod_key'
   ) THEN
     ALTER TABLE "PaymentSettings" ADD CONSTRAINT "PaymentSettings_paymentMethod_key" UNIQUE ("paymentMethod");
   END IF;
@@ -103,42 +101,22 @@ CREATE INDEX IF NOT EXISTS "PaymentAccount_paymentSettingsId_idx" ON "PaymentAcc
 -- 14. Add foreign key constraints (only if they don't exist)
 DO $$
 BEGIN
-  -- PaymentRequest -> Subscription
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_constraint
-    WHERE conrelid = '"PaymentRequest"'::regclass
-    AND conname = 'PaymentRequest_subscriptionId_fkey'
-  ) THEN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'PaymentRequest_subscriptionId_fkey') THEN
     ALTER TABLE "PaymentRequest" ADD CONSTRAINT "PaymentRequest_subscriptionId_fkey"
       FOREIGN KEY ("subscriptionId") REFERENCES "Subscription"("id") ON DELETE SET NULL ON UPDATE CASCADE;
   END IF;
 
-  -- PaymentRequest -> PaymentAccount
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_constraint
-    WHERE conrelid = '"PaymentRequest"'::regclass
-    AND conname = 'PaymentRequest_paymentAccountId_fkey'
-  ) THEN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'PaymentRequest_paymentAccountId_fkey') THEN
     ALTER TABLE "PaymentRequest" ADD CONSTRAINT "PaymentRequest_paymentAccountId_fkey"
       FOREIGN KEY ("paymentAccountId") REFERENCES "PaymentAccount"("id") ON DELETE SET NULL ON UPDATE CASCADE;
   END IF;
 
-  -- PaymentAccount -> PaymentSettings
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_constraint
-    WHERE conrelid = '"PaymentAccount"'::regclass
-    AND conname = 'PaymentAccount_paymentSettingsId_fkey'
-  ) THEN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'PaymentAccount_paymentSettingsId_fkey') THEN
     ALTER TABLE "PaymentAccount" ADD CONSTRAINT "PaymentAccount_paymentSettingsId_fkey"
       FOREIGN KEY ("paymentSettingsId") REFERENCES "PaymentSettings"("id") ON DELETE SET NULL ON UPDATE CASCADE;
   END IF;
 
-  -- PaymentSettings -> MediaAsset (QR code)
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_constraint
-    WHERE conrelid = '"PaymentSettings"'::regclass
-    AND conname = 'PaymentSettings_qrCodeAssetId_fkey'
-  ) THEN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'PaymentSettings_qrCodeAssetId_fkey') THEN
     ALTER TABLE "PaymentSettings" ADD CONSTRAINT "PaymentSettings_qrCodeAssetId_fkey"
       FOREIGN KEY ("qrCodeAssetId") REFERENCES "MediaAsset"("id") ON DELETE SET NULL ON UPDATE CASCADE;
   END IF;
