@@ -1,18 +1,71 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, CalendarDays, CheckCircle2, Circle, Copy, ExternalLink, Wand2, type LucideIcon } from "lucide-react";
+import {
+  ArrowLeft,
+  CalendarDays,
+  CheckCircle2,
+  ChevronDown,
+  ChevronUp,
+  Circle,
+  Copy,
+  ExternalLink,
+  RotateCcw,
+  X,
+} from "lucide-react";
 
 import type { DashboardViewModel } from "@/modules/dashboard/dashboard-view-model";
 import { CompletionRing } from "@/components/dashboard/builder-primitives";
 
 type BannerTone = "success" | "warning" | "danger" | "info";
 
+const CHECKLIST_STORAGE_KEY = "frameid:onboarding-checklist";
+
+const onboardingCopy: Record<string, { label: string; description: string }> = {
+  package: { label: "راجع الباقات والأسعار", description: "تأكد من أسماء الباقات والأسعار والمميزات." },
+  contact: { label: "غيّر اسم الاستوديو وراجع التواصل", description: "راجع الهاتف وواتساب والبريد وروابطك." },
+  avatar: { label: "أضف شعارك أو صورتك", description: "استخدم صورة واضحة تمثل هويتك." },
+  cover: { label: "غيّر صورة الغلاف", description: "اختر صورة رئيسية قوية لموقعك." },
+  album: { label: "غيّر صورك", description: "أضف أعمالك الحقيقية داخل الألبومات." },
+};
+
 export function DashboardHomeClient({ siteUrl, statusLabel, percent, checklist, lastModified, nextStepHref, nextStepLabel, subscription, customerMessages, activationMessages }: DashboardViewModel) {
   const doneCount = checklist.filter((item) => item.done).length;
   const [copied, setCopied] = useState(false);
+  const [checklistHidden, setChecklistHidden] = useState(false);
+  const [checklistExpanded, setChecklistExpanded] = useState(true);
   const activation = getActivationBanner(subscription, activationMessages);
+
+  const onboardingItems = useMemo(
+    () => checklist
+      .filter((item) => onboardingCopy[item.id])
+      .map((item) => ({ ...item, ...onboardingCopy[item.id] })),
+    [checklist],
+  );
+  const onboardingDoneCount = onboardingItems.filter((item) => item.done).length;
+
+  useEffect(() => {
+    try {
+      const saved = window.localStorage.getItem(CHECKLIST_STORAGE_KEY);
+      if (!saved) return;
+      const preferences = JSON.parse(saved) as { hidden?: boolean; expanded?: boolean };
+      setChecklistHidden(Boolean(preferences.hidden));
+      setChecklistExpanded(preferences.expanded !== false);
+    } catch {
+      // Invalid browser storage must never block the dashboard.
+    }
+  }, []);
+
+  const saveChecklistPreferences = (hidden: boolean, expanded: boolean) => {
+    setChecklistHidden(hidden);
+    setChecklistExpanded(expanded);
+    try {
+      window.localStorage.setItem(CHECKLIST_STORAGE_KEY, JSON.stringify({ hidden, expanded }));
+    } catch {
+      // Browsers may disable localStorage; the current session still works.
+    }
+  };
 
   const copySiteUrl = async () => {
     await navigator.clipboard?.writeText(siteUrl);
@@ -69,11 +122,37 @@ export function DashboardHomeClient({ siteUrl, statusLabel, percent, checklist, 
         </section>
       </section>
 
-      <section className="pt-1 lg:pt-0">
-        <Panel title="اكمل بيانات موقعك" description="الخطوات الأساسية في مكان واحد، من غير تكرار ولا دوشة." icon={Wand2}>
-          <div className="grid gap-2 lg:grid-cols-2 lg:gap-3">{checklist.map((item, index) => <SetupStepRow key={item.id} item={item} index={index + 1} />)}</div>
-        </Panel>
-      </section>
+      {checklistHidden ? (
+        <button
+          type="button"
+          onClick={() => saveChecklistPreferences(false, true)}
+          className="inline-flex min-h-10 w-fit items-center gap-2 rounded-2xl border border-white/10 bg-[#111720] px-3 text-xs font-black text-white/70 transition hover:border-amber-300/25 hover:text-[#f3cf73]"
+        >
+          <RotateCcw className="size-4" aria-hidden /> إظهار خطوات البداية
+        </button>
+      ) : (
+        <section className="overflow-hidden rounded-[1.25rem] border border-white/12 bg-[#111720] shadow-[inset_0_1px_0_rgba(255,255,255,0.045),0_18px_48px_rgba(0,0,0,0.18)]">
+          <header className="flex items-center justify-between gap-2 border-b border-white/10 bg-[linear-gradient(135deg,rgba(243,207,115,0.10),rgba(255,255,255,0.035))] p-3">
+            <button type="button" onClick={() => saveChecklistPreferences(false, !checklistExpanded)} className="flex min-w-0 flex-1 items-center gap-3 text-start">
+              <span className="grid size-10 shrink-0 place-items-center rounded-2xl border border-amber-300/18 bg-amber-300/12 text-[#f3cf73] shadow-sm">
+                {checklistExpanded ? <ChevronUp className="size-4" aria-hidden /> : <ChevronDown className="size-4" aria-hidden />}
+              </span>
+              <span className="min-w-0">
+                <strong className="block truncate text-sm font-black text-[#fff7e8] sm:text-base">ابدأ تجهيز موقعك</strong>
+                <small className="mt-0.5 block truncate text-[0.68rem] font-bold text-white/55 sm:text-xs">{onboardingDoneCount} من {onboardingItems.length} مكتملة</small>
+              </span>
+            </button>
+            <button type="button" onClick={() => saveChecklistPreferences(true, checklistExpanded)} aria-label="إخفاء خطوات البداية" className="grid size-9 shrink-0 place-items-center rounded-xl text-white/45 transition hover:bg-white/[0.06] hover:text-white">
+              <X className="size-4" aria-hidden />
+            </button>
+          </header>
+          {checklistExpanded ? (
+            <div className="grid gap-2 p-3 sm:grid-cols-2 lg:gap-3">
+              {onboardingItems.map((item, index) => <SetupStepRow key={item.id} item={item} index={index + 1} />)}
+            </div>
+          ) : null}
+        </section>
+      )}
 
       <div className="grid gap-2 sm:grid-cols-2 lg:gap-4">
         <Link href={nextStepHref} className="customer-dashboard-action-card inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-[#f3cf73] px-4 text-sm font-black text-[#17120a] no-underline shadow-lg shadow-amber-500/10 transition hover:-translate-y-0.5 hover:bg-[#ffe08a] hover:shadow-amber-500/20">{nextStepLabel}<ArrowLeft className="size-4" aria-hidden /></Link>
@@ -126,4 +205,3 @@ function customerMessageClass(tone: BannerTone) { const base = "flex min-h-11 it
 function activationGlowClass(tone: BannerTone) { if (tone === "success") return "pointer-events-none absolute inset-x-0 bottom-0 h-px bg-gradient-to-l from-transparent via-emerald-300/55 to-transparent shadow-[0_0_18px_rgba(110,231,183,0.5)]"; if (tone === "danger") return "pointer-events-none absolute inset-x-0 bottom-0 h-px bg-gradient-to-l from-transparent via-red-300/55 to-transparent shadow-[0_0_18px_rgba(248,113,113,0.5)]"; if (tone === "info") return "pointer-events-none absolute inset-x-0 bottom-0 h-px bg-gradient-to-l from-transparent via-sky-300/55 to-transparent shadow-[0_0_18px_rgba(125,211,252,0.45)]"; return "pointer-events-none absolute inset-x-0 bottom-0 h-px bg-gradient-to-l from-transparent via-amber-300/60 to-transparent shadow-[0_0_18px_rgba(243,207,115,0.55)]"; }
 function activationDotClass(tone: BannerTone) { if (tone === "success") return "mt-1.5 size-1.5 shrink-0 rounded-full bg-emerald-300 shadow-[0_0_12px_rgba(110,231,183,0.8)]"; if (tone === "danger") return "mt-1.5 size-1.5 shrink-0 rounded-full bg-red-300 shadow-[0_0_12px_rgba(248,113,113,0.8)]"; if (tone === "info") return "mt-1.5 size-1.5 shrink-0 rounded-full bg-sky-300 shadow-[0_0_12px_rgba(125,211,252,0.75)]"; return "mt-1.5 size-1.5 shrink-0 animate-pulse rounded-full bg-[#f3cf73] shadow-[0_0_12px_rgba(243,207,115,0.85)]"; }
 function activationLinkClass(tone: BannerTone) { if (tone === "success") return "shrink-0 text-xs font-black text-emerald-200 no-underline underline-offset-4 transition hover:text-white hover:underline"; if (tone === "danger") return "shrink-0 text-xs font-black text-red-200 no-underline underline-offset-4 transition hover:text-white hover:underline"; if (tone === "info") return "shrink-0 text-xs font-black text-sky-200 no-underline underline-offset-4 transition hover:text-white hover:underline"; return "shrink-0 text-xs font-black text-[#f3cf73] no-underline underline-offset-4 transition hover:text-white hover:underline"; }
-function Panel({ title, description, icon: Icon, children }: { title: string; description: string; icon: LucideIcon; children: ReactNode }) { return <section className="customer-dashboard-panel overflow-hidden rounded-[1.25rem] border border-white/12 bg-[#111720] shadow-[inset_0_1px_0_rgba(255,255,255,0.045),0_18px_48px_rgba(0,0,0,0.18)]"><header className="flex items-start gap-3 border-b border-white/10 bg-[linear-gradient(135deg,rgba(243,207,115,0.10),rgba(255,255,255,0.035))] p-3"><span className="grid size-10 shrink-0 place-items-center rounded-2xl border border-amber-300/18 bg-amber-300/12 text-[#f3cf73] shadow-sm"><Icon className="size-4" aria-hidden /></span><div><h2 className="text-base font-black text-[#fff7e8]">{title}</h2><p className="mt-1 text-xs font-bold leading-5 text-white/58">{description}</p></div></header><div className="p-3">{children}</div></section>; }

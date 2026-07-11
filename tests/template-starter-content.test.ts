@@ -55,7 +55,7 @@ describe("template starter content", () => {
     expect(original.site.title).toBe("Kareem Magdy");
   });
 
-  it("uses the signup phone for both phone and WhatsApp without changing the rest of the template", () => {
+  it("uses the signup phone for phone and WhatsApp and clears template email", () => {
     const original = applyTemplateStarterSharedDefaults(
       parseTemplateStarterContent(templateDefinitions[0].starterContent),
     );
@@ -66,7 +66,7 @@ describe("template starter content", () => {
 
     expect(personalized.contact.phone).toBe("+201012345678");
     expect(personalized.contact.whatsapp).toBe("+201012345678");
-    expect(personalized.contact.email).toBe(original.contact.email);
+    expect(personalized.contact.email).toBeNull();
     expect(personalized.contact.instagram).toBe(original.contact.instagram);
     expect(personalized.contact.facebook).toBe(original.contact.facebook);
     expect(personalized.contact.studioName).toBe(original.contact.studioName);
@@ -75,7 +75,7 @@ describe("template starter content", () => {
     expect(personalized.extras).toEqual(original.extras);
   });
 
-  it("uses the signup email without replacing template phone or WhatsApp", () => {
+  it("uses the signup email and clears phone and WhatsApp", () => {
     const original = applyTemplateStarterSharedDefaults(
       parseTemplateStarterContent(templateDefinitions[0].starterContent),
     );
@@ -85,8 +85,8 @@ describe("template starter content", () => {
     });
 
     expect(personalized.contact.email).toBe("ahmed@example.com");
-    expect(personalized.contact.phone).toBe(original.contact.phone);
-    expect(personalized.contact.whatsapp).toBe(original.contact.whatsapp);
+    expect(personalized.contact.phone).toBeNull();
+    expect(personalized.contact.whatsapp).toBeNull();
     expect(personalized.contact.studioName).toBe(original.contact.studioName);
     expect(personalized.sections.hero.imageUrl).toBe(original.sections.hero.imageUrl);
     expect(personalized.themeSettings).toEqual(original.themeSettings);
