@@ -11,6 +11,25 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --silent
+
+      - name: Lint
+        run: npm run lint
+
   validate:
     runs-on: ubuntu-latest
     timeout-minutes: 25
@@ -62,14 +81,6 @@ jobs:
 
       - name: Typecheck
         run: npm run typecheck
-
-      - name: Lint
-        shell: bash
-        run: |
-          if ! npm run lint > /tmp/frameid-lint.log 2>&1; then
-            tail -n 120 /tmp/frameid-lint.log
-            exit 1
-          fi
 
       - name: Test critical flows
         run: npx vitest run tests/template-starter-data.test.ts tests/signup-auto-publish.test.ts tests/media-upload-service.test.ts tests/platform-image-upload.test.ts
