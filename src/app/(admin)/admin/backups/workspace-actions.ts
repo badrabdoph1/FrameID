@@ -19,7 +19,7 @@ import { isSupportedBackupType } from "@/modules/backups/backup-policy";
 async function getArtifact(backupJobId: string) {
   const job = await prisma.backupJob.findUnique({
     where: { id: backupJobId },
-    select: { id: true, type: true, status: true, filePath: true, githubPath: true },
+    select: { id: true, type: true, status: true, filePath: true, metadata: true },
   });
   if (!job) throw new Error("النسخة غير موجودة.");
   if (job.status !== "COMPLETED") throw new Error("لا يمكن استخدام نسخة غير مكتملة.");
@@ -30,7 +30,18 @@ async function getArtifact(backupJobId: string) {
   const backupDir = resolve(job.filePath);
   if (!backupDir.startsWith(`${expectedRoot}/`)) throw new Error("مسار النسخة غير صالح.");
 
-  return { job, backupDir, backupRoot: dirname(backupDir), artifactId: basename(backupDir), branch: getGitHubBackupBranch(job.type) };
+  const metadata = job.metadata && typeof job.metadata === "object" && !Array.isArray(job.metadata)
+    ? job.metadata as Record<string, unknown>
+    : {};
+
+  return {
+    job,
+    backupDir,
+    backupRoot: dirname(backupDir),
+    artifactId: basename(backupDir),
+    branch: getGitHubBackupBranch(job.type),
+    githubPath: typeof metadata.githubPath === "string" ? metadata.githubPath : null,
+  };
 }
 
 async function audit(input: { actorId: string; action: string; entityId: string; metadata?: Record<string, unknown> }) {
@@ -45,16 +56,9 @@ export async function restoreWorkspaceBackupAction(formData: FormData) {
   try {
     const artifact = await getArtifact(backupJobId);
     const service = createRestoreService();
-    const available = await service.ensureBackupAvailable({
-      backupId: artifact.artifactId,
-      backupRoot: artifact.backupRoot,
-      type: artifact.job.type,
-      githubToken: env.BACKUP_GITHUB_TOKEN,
-      githubRepository: process.env.BACKUP_GITHUB_REPOSITORY,
-      githubBranch: artifact.branch,
-    });
-
+    const available = await service.ensureBackupAvailable({ backupId: artifact.artifactId, backupRoot: artifact.backupRoot, type: artifact.job.type, githubToken: env.BACKUP_GITHUB_TOKEN, githubRepository: process.env.BACKUP_GITHUB_REPOSITORY, githubBranch: artifact.branch });
     const validation = await service.validateBackup({ backupId: artifact.artifactId, backupRoot: artifact.backupRoot });
+
     if (!validation.valid) {
       await audit({ actorId: session.user.id, action: "RESTORE_REJECTED", entityId: backupJobId, metadata: { source: available.source, errors: validation.validation.errors } });
       throw new Error(validation.validation.errors.join("; ") || "فشل التحقق قبل الاستعادة.");
@@ -69,15 +73,7 @@ export async function restoreWorkspaceBackupAction(formData: FormData) {
 
     await audit({ actorId: session.user.id, action: "RESTORE_STARTED", entityId: backupJobId, metadata: { restoreJobId, source: available.source } });
 
-    const result = await service.executeRestore({
-      backupId: artifact.artifactId,
-      backupRoot: artifact.backupRoot,
-      databaseUrl: env.DATABASE_URL,
-      type: artifact.job.type,
-      githubToken: env.BACKUP_GITHUB_TOKEN,
-      githubRepository: process.env.BACKUP_GITHUB_REPOSITORY,
-      githubBranch: artifact.branch,
-    });
+    const result = await service.executeRestore({ backupId: artifact.artifactId, backupRoot: artifact.backupRoot, databaseUrl: env.DATABASE_URL, type: artifact.job.type, githubToken: env.BACKUP_GITHUB_TOKEN, githubRepository: process.env.BACKUP_GITHUB_REPOSITORY, githubBranch: artifact.branch });
     if (!result.success) throw new Error(result.errors.join("; ") || "فشلت الاستعادة.");
 
     const postValidation = await service.validatePostRestore(env.DATABASE_URL);
@@ -130,7 +126,7 @@ export async function deleteWorkspaceBackupAction(formData: FormData) {
     if (!github) throw new Error("لا يمكن حذف نسخة مكتملة بدون الاتصال بمخزن GitHub الرسمي.");
     await github.deleteBackup(artifact.artifactId, artifact.branch);
     if (existsSync(artifact.backupDir)) await rm(artifact.backupDir, { recursive: true, force: true });
-    await audit({ actorId: session.user.id, action: "BACKUP_DELETED", entityId: backupJobId, metadata: { branch: artifact.branch, githubPath: artifact.job.githubPath } });
+    await audit({ actorId: session.user.id, action: "BACKUP_DELETED", entityId: backupJobId, metadata: { branch: artifact.branch, githubPath: artifact.githubPath } });
     await prisma.restoreJob.deleteMany({ where: { backupJobId } });
     await prisma.backupJob.delete({ where: { id: backupJobId } });
     revalidatePath("/admin/backups");
