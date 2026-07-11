@@ -186,20 +186,22 @@ model Tenant {
 }
 
 model Site {
-  id          String     @id @default(cuid())
-  tenantId    String
-  themeId     String
-  slug        String     @unique
-  title       String
-  description String?
+  id              String     @id @default(cuid())
+  tenantId        String
+  themeId         String
+  slug            String     @unique
+  slugChangeUsed  Boolean    @default(false)
+  title           String
+  description     String?
   templateCode    String?
   templateVersion String?
-  status      SiteStatus @default(DRAFT)
-  isPublished Boolean    @default(false)
-  publishedAt DateTime?
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
-  deletedAt   DateTime?
+  status          SiteStatus @default(DRAFT)
+  isPublished     Boolean    @default(false)
+  publishedVersion Int       @default(1)
+  publishedAt     DateTime?
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+  deletedAt       DateTime?
 
   tenant           Tenant            @relation(fields: [tenantId], references: [id])
   theme            Theme             @relation(fields: [themeId], references: [id])
@@ -229,6 +231,8 @@ model Theme {
   category      String?
   defaultConfig Json
   contentSchema Json
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
   deletedAt     DateTime?
 
   sites            Site[]
@@ -247,6 +251,7 @@ model Template {
   coverAssetId  String?
   previewData   Json?
   settings      Json?
+  createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
   deletedAt     DateTime?
 
@@ -373,7 +378,8 @@ model MediaAsset {
   contactAvatars ContactProfile[]  @relation("ContactAvatar")
   contactCovers  ContactProfile[]  @relation("ContactCover")
   seoOgImages    SEOSettings[]     @relation("SEOOgImage")
-  paymentQRCodes PaymentAccount[]  @relation("PaymentQRCode")
+  paymentQRCodes      PaymentAccount[]  @relation("PaymentQRCode")
+  paymentSettingsQR   PaymentSettings[] @relation("PaymentQRCodeSettings")
 
   @@index([tenantId, kind, createdAt])
 }
@@ -510,6 +516,7 @@ model Subscription {
   tenantId           String
   planId             String?
   status             SubscriptionStatus @default(TRIAL)
+  activatedAt        DateTime?
   currentPeriodStart DateTime
   currentPeriodEnd   DateTime
   expiresAt          DateTime?
@@ -517,20 +524,26 @@ model Subscription {
   createdAt          DateTime           @default(now())
   updatedAt          DateTime           @updatedAt
 
-  tenant Tenant @relation(fields: [tenantId], references: [id])
-  plan   Plan?  @relation(fields: [planId], references: [id])
+  tenant         Tenant           @relation(fields: [tenantId], references: [id])
+  plan           Plan?            @relation(fields: [planId], references: [id])
+  paymentRequests PaymentRequest[]
 
   @@index([tenantId, status])
   @@index([expiresAt])
 }
 
 model SubscriptionChange {
-  id         String   @id @default(cuid())
-  tenantId   String
-  fromPlanId String?
-  toPlanId   String?
-  reason     String?
-  createdAt  DateTime @default(now())
+  id             String    @id @default(cuid())
+  tenantId       String
+  subscriptionId String?
+  fromPlanId     String?
+  toPlanId       String?
+  fromStatus     String?
+  toStatus       String?
+  changeType     String?
+  initiatedById  String?
+  reason         String?
+  createdAt      DateTime  @default(now())
 
   fromPlan Plan? @relation("FromPlan", fields: [fromPlanId], references: [id])
   toPlan   Plan? @relation("ToPlan", fields: [toPlanId], references: [id])
@@ -539,13 +552,18 @@ model SubscriptionChange {
 model PaymentRequest {
   id                String        @id @default(cuid())
   tenantId          String
+  subscriptionId    String?
   planId            String?
+  paymentAccountId  String?
   amount            Int
   currency          String        @default("EGP")
   method            PaymentMethod
   status            PaymentStatus @default(DRAFT)
   reference         String?
+  submittedAt       DateTime?
   note              String?
+  adminNote         String?
+  rejectionReason   String?
   proofAssetId      String?
   reviewedByUserId  String?
   reviewedAt        DateTime?
@@ -553,48 +571,62 @@ model PaymentRequest {
   updatedAt         DateTime      @default(now())
   deletedAt         DateTime?
 
-  tenant       Tenant      @relation(fields: [tenantId], references: [id])
-  plan         Plan?       @relation(fields: [planId], references: [id])
-  proofAsset   MediaAsset? @relation("PaymentProof", fields: [proofAssetId], references: [id])
-  reviewer     User?       @relation("PaymentReviewer", fields: [reviewedByUserId], references: [id])
-  logs         PaymentRequestLog[]
+  tenant         Tenant        @relation(fields: [tenantId], references: [id])
+  subscription   Subscription? @relation(fields: [subscriptionId], references: [id])
+  plan           Plan?         @relation(fields: [planId], references: [id])
+  paymentAccount PaymentAccount? @relation(fields: [paymentAccountId], references: [id])
+  proofAsset     MediaAsset?   @relation("PaymentProof", fields: [proofAssetId], references: [id])
+  reviewer       User?         @relation("PaymentReviewer", fields: [reviewedByUserId], references: [id])
+  logs           PaymentRequestLog[]
 
   @@index([tenantId, status])
+  @@index([subscriptionId])
+  @@index([paymentAccountId])
   @@index([proofAssetId])
 }
 
 model PaymentRequestLog {
-  id             String         @id @default(cuid())
-  requestId      String
-  fromStatus     PaymentStatus?
-  toStatus       PaymentStatus?
-  action         String         @default("STATUS_CHANGED")
-  actorUserId    String?
-  actorName      String?
-  metadata       Json?
-  createdAt      DateTime       @default(now())
+  id               String         @id @default(cuid())
+  paymentRequestId String
+  fromStatus       PaymentStatus?
+  toStatus         PaymentStatus?
+  action           String         @default("STATUS_CHANGED")
+  actorUserId      String?
+  actorName        String?
+  note             String?
+  metadata         Json?
+  createdAt        DateTime       @default(now())
 
-  request PaymentRequest @relation(fields: [requestId], references: [id])
+  request PaymentRequest @relation(fields: [paymentRequestId], references: [id])
 
-  @@index([requestId, createdAt])
+  @@index([paymentRequestId, createdAt])
 }
 
 model PaymentAccount {
   id                String        @id @default(cuid())
+  paymentSettingsId String?
   method            PaymentMethod @default(INSTAPAY)
   displayName       String        @default("")
   accountIdentifier String        @default("")
+  label             String?
   accountName       String        @default("")
   accountNumber     String        @default("")
+  iban              String?
+  swift             String?
   phoneNumber       String?
   bankName          String?
+  instructions      String?
+  notes             String?
   qrAssetId         String?
   isActive          Boolean       @default(true)
   sortOrder         Int           @default(0)
   deletedAt         DateTime?
 
-  qrAsset MediaAsset? @relation("PaymentQRCode", fields: [qrAssetId], references: [id])
+  paymentSettings PaymentSettings? @relation(fields: [paymentSettingsId], references: [id])
+  qrAsset         MediaAsset?      @relation("PaymentQRCode", fields: [qrAssetId], references: [id])
+  requests        PaymentRequest[]
 
+  @@index([paymentSettingsId])
   @@index([method, isActive, sortOrder])
 }
 
@@ -622,6 +654,7 @@ model Notification {
   type      String
   title     String
   body      String
+  priority  String?   @default("info")
   readAt    DateTime?
   createdAt DateTime  @default(now())
   deletedAt DateTime?
@@ -721,6 +754,7 @@ model FeatureFlag {
   siteId    String?
   enabled   Boolean          @default(false)
   value     Json?
+  createdAt DateTime         @default(now())
   updatedAt DateTime         @updatedAt
 
   tenant Tenant? @relation(fields: [tenantId], references: [id])
@@ -747,11 +781,32 @@ model BackupJob {
   @@index([status, createdAt])
 }
 
+model PaymentSettings {
+  id              String        @id @default(cuid())
+  paymentMethod   PaymentMethod @unique
+  isActive        Boolean       @default(true)
+  label           String?
+  description     String?
+  config          Json          @default("{}")
+  qrCodeAssetId   String?
+  sortOrder       Int           @default(0)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  accounts PaymentAccount[]
+  qrCodeAsset MediaAsset? @relation("PaymentQRCodeSettings", fields: [qrCodeAssetId], references: [id])
+
+  @@index([isActive, sortOrder])
+}
+
 model BackupSettings {
   type            String   @id
   enabled         Boolean  @default(true)
   schedule        String   @default("0 2 * * *")
   retentionCount  Int      @default(7)
+  compression     String?  @default("zstd")
+  encryption      Boolean? @default(true)
+  githubBranch    String?  @default("platform-backups")
   lastRunAt       DateTime?
   nextRunAt       DateTime?
   createdAt       DateTime @default(now())
