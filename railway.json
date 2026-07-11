@@ -5,8 +5,7 @@
     "buildCommand": "rm -rf .next && npm run build"
   },
   "deploy": {
-    "preDeployCommand": "npm run db:deploy",
-    "startCommand": "npm run start",
+    "startCommand": "npm run start:railway",
     "healthcheckPath": "/api/health",
     "healthcheckTimeout": 300,
     "restartPolicyType": "ON_FAILURE",
