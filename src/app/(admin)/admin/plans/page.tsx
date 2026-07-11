@@ -1,5 +1,3 @@
-import { CreditCard, Search } from "lucide-react";
-
 import { AdminPageShell } from "@/components/layout/admin-page-shell";
 import { prisma } from "@/lib/prisma";
 import { requireAdminPermission } from "@/modules/admin/admin-permission-guards";
@@ -51,9 +49,8 @@ export default async function AdminPlansPage({ searchParams }: Props) {
     <AdminPageShell
       badge="المال"
       title="إدارة الباقات"
-      description="إدارة مرئية بسيطة للباقات كما تظهر للعميل: الاسم، السعر، الشارة، الوصف، وسطور المميزات بدون أي أكواد."
+      description="إدارة الباقات من مكان واحد: عرض واضح، تعديل عند الطلب، وإجراءات موحدة بدون تكرار."
       breadcrumbs={[{ label: "المال", href: "/admin/billing" }, { label: "الباقات" }]}
-      actions={[{ label: "المدفوعات", href: "/admin/payments", icon: CreditCard }, { label: "البحث", href: "/admin/search", icon: Search }]}
     >
       <PlansManagerClient
         plans={plans.map((plan) => ({
