@@ -9,15 +9,15 @@ import {
   PLATFORM_SOCIAL_PREVIEW_CACHE_TAG,
   savePlatformSocialPreviewSettings,
 } from "@/modules/social-preview/platform-social-preview-settings";
-import { buildPlatformSocialImageUrl, PLATFORM_SOCIAL_IMAGE } from "@/modules/social-preview/social-preview";
 
 export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
 
 type Payload = {
   mode?: "default" | "custom";
   title?: string | null;
   description?: string | null;
+  imageUrl?: string | null;
+  storageKey?: string | null;
   deleteImage?: boolean;
 };
 
@@ -29,90 +29,58 @@ export async function PATCH(request: Request) {
     const mode = payload.mode === "custom" ? "custom" : "default";
     const deleteImage = payload.deleteImage === true;
 
-    const next = {
-      ...current,
+    const imageUrl = deleteImage ? null : cleanText(payload.imageUrl, 2048) ?? current.imageUrl;
+    const storageKey = deleteImage ? null : cleanText(payload.storageKey, 1024) ?? current.storageKey;
+    const title = cleanText(payload.title, 120);
+    const description = cleanText(payload.description, 240);
+
+    if (mode === "custom" && !imageUrl) {
+      return NextResponse.json({ ok: false, error: "ارفع صورة مخصصة واعتمد القص قبل الحفظ." }, { status: 400 });
+    }
+
+    await savePlatformSocialPreviewSettings({
       enabled: mode === "custom",
-      title: cleanText(payload.title, 120),
-      description: cleanText(payload.description, 240),
-      imageUrl: deleteImage ? null : current.imageData ? PLATFORM_SOCIAL_IMAGE : null,
-      storageKey: null,
-      imageData: deleteImage ? null : current.imageData,
-      imageMimeType: deleteImage ? null : current.imageMimeType,
-    };
-
-    if (mode === "custom" && (!next.imageData || !next.imageMimeType)) {
-      return NextResponse.json({ ok: false, error: "لا توجد صورة مرفوعة فعليًا. ارفع الصورة واعتمد القص أولًا." }, { status: 400 });
-    }
-
-    const saved = await savePlatformSocialPreviewSettings(next);
-    const persisted = await getPlatformSocialPreviewSettings();
-
-    if (persisted.enabled !== next.enabled) {
-      throw new Error("تعذر تأكيد وضع صورة المشاركة بعد الحفظ.");
-    }
-    if (mode === "custom" && (!persisted.imageData || !persisted.imageMimeType)) {
-      throw new Error("لم يتم العثور على الصورة المخصصة بعد الحفظ.");
-    }
-    if (deleteImage && persisted.imageData) {
-      throw new Error("تعذر حذف الصورة المخصصة من التخزين.");
-    }
-
-    const version = saved.updatedAt.getTime();
-
-    void writeAuditLog({
-      adminId: session.user.id,
-      adminEmail: session.user.email ?? null,
-      mode,
-      title: next.title,
-      description: next.description,
-      hasImage: Boolean(persisted.imageData),
-      deletedImage: deleteImage,
-      version,
+      title,
+      description,
+      imageUrl,
+      storageKey,
     });
 
-    safelyRevalidate();
+    await prisma.auditLog.create({
+      data: {
+        action: "PLATFORM_SOCIAL_PREVIEW_UPDATED",
+        entityType: "FeatureFlag",
+        metadata: {
+          adminId: session.user.id,
+          adminEmail: session.user.email,
+          mode,
+          title,
+          description,
+          imageUrl,
+          deletedImage: deleteImage,
+        } as Prisma.InputJsonObject,
+      },
+    });
+
+    revalidateTag(PLATFORM_SOCIAL_PREVIEW_CACHE_TAG);
+    revalidatePath("/", "layout");
+    revalidatePath("/templates");
+    revalidatePath("/admin/settings/social-preview");
 
     return NextResponse.json({
       ok: true,
       settings: {
-        enabled: persisted.enabled,
-        title: persisted.title,
-        description: persisted.description,
-        imageUrl: persisted.imageData ? buildPlatformSocialImageUrl("custom", version) : null,
-        defaultImageUrl: buildPlatformSocialImageUrl("default", version),
-        hasImage: Boolean(persisted.imageData),
-        version: String(version),
+        enabled: mode === "custom",
+        title,
+        description,
+        imageUrl,
+        storageKey,
       },
     });
   } catch (error) {
     console.error("[social-preview] save failed", error);
     const message = error instanceof Error ? error.message : "تعذر حفظ إعدادات معاينة المشاركة.";
     return NextResponse.json({ ok: false, error: message }, { status: 500 });
-  }
-}
-
-async function writeAuditLog(metadata: Prisma.InputJsonObject) {
-  try {
-    await prisma.auditLog.create({
-      data: {
-        action: "PLATFORM_SOCIAL_PREVIEW_UPDATED",
-        entityType: "FeatureFlag",
-        metadata,
-      },
-    });
-  } catch (error) {
-    console.error("[social-preview] audit log failed after successful save", error);
-  }
-}
-
-function safelyRevalidate() {
-  try {
-    revalidateTag(PLATFORM_SOCIAL_PREVIEW_CACHE_TAG);
-    revalidatePath("/", "layout");
-    revalidatePath("/templates");
-    revalidatePath("/admin/settings/social-preview");
-  } catch (error) {
-    console.error("[social-preview] cache revalidation failed after successful save", error);
   }
 }
 
