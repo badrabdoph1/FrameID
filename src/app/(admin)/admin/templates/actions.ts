@@ -45,112 +45,7 @@ function readStarterOverride(formData: FormData): Record<string, unknown> | null
   return entries.length ? Object.fromEntries(entries) : null;
 }
 
-function makePackageId(name: string, index: number) {
-  const base = name.toLowerCase().replace(/[^a-z0-9\u0600-\u06ff]+/giu, "-").replace(/^-+|-+$/gu, "").slice(0, 32);
-  return base || `package-${index + 1}`;
-}
-
-function formatMoney(amount: number, currency: string) {
-  return `${new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(amount)} ${currency === "EGP" ? "جنيه" : currency}`;
-}
-
-function readPackages(formData: FormData): JsonRecord[] {
-  const count = readInt(formData, "packageCount");
-  const packages: JsonRecord[] = [];
-
-  for (let index = 0; index < count; index += 1) {
-    const name = readString(formData, `package_${index}_name`);
-    if (!name) continue;
-    const currency = readString(formData, `package_${index}_currency`) || "EGP";
-    const priceAmount = readInt(formData, `package_${index}_priceAmount`);
-    packages.push({
-      id: readString(formData, `package_${index}_id`) || makePackageId(name, index),
-      name,
-      subtitle: readString(formData, `package_${index}_subtitle`),
-      price: readString(formData, `package_${index}_price`) || formatMoney(priceAmount, currency),
-      priceAmount,
-      currency,
-      imageUrl: readString(formData, `package_${index}_imageUrl`),
-      features: readFeatureLines(readString(formData, `package_${index}_features`)),
-      isHighlighted: readBool(formData, `package_${index}_isHighlighted`),
-      enabled: readBool(formData, `package_${index}_enabled`),
-    });
-  }
-
-  const newName = readString(formData, "newPackageName");
-  if (newName) {
-    const currency = readString(formData, "newPackageCurrency") || "EGP";
-    const priceAmount = readInt(formData, "newPackagePriceAmount");
-    packages.push({
-      id: makePackageId(newName, packages.length),
-      name: newName,
-      subtitle: readString(formData, "newPackageSubtitle"),
-      price: readString(formData, "newPackagePrice") || formatMoney(priceAmount, currency),
-      priceAmount,
-      currency,
-      imageUrl: readString(formData, "newPackageImageUrl"),
-      features: readFeatureLines(readString(formData, "newPackageFeatures")),
-      isHighlighted: readBool(formData, "newPackageIsHighlighted"),
-      enabled: true,
-    });
-  }
-
-  return packages;
-}
-
-function readExtras(formData: FormData): JsonRecord[] | null {
-  const count = readInt(formData, "extraCount");
-  if (count === 0 && !readString(formData, "newExtraName")) return null;
-  const extras: JsonRecord[] = [];
-
-  for (let index = 0; index < count; index += 1) {
-    const name = readString(formData, `extra_${index}_name`);
-    if (!name) continue;
-    const currency = readString(formData, `extra_${index}_currency`) || "EGP";
-    const priceAmount = readInt(formData, `extra_${index}_priceAmount`);
-    extras.push({
-      id: readString(formData, `extra_${index}_id`) || makePackageId(name, index),
-      name,
-      description: readString(formData, `extra_${index}_description`),
-      price: readString(formData, `extra_${index}_price`) || formatMoney(priceAmount, currency),
-      priceAmount,
-      currency,
-      iconKey: readString(formData, `extra_${index}_iconKey`) || "camera",
-      enabled: readBool(formData, `extra_${index}_enabled`),
-    });
-  }
-
-  const newName = readString(formData, "newExtraName");
-  if (newName) {
-    const currency = readString(formData, "newExtraCurrency") || "EGP";
-    const priceAmount = readInt(formData, "newExtraPriceAmount");
-    extras.push({
-      id: makePackageId(newName, extras.length),
-      name: newName,
-      description: readString(formData, "newExtraDescription"),
-      price: readString(formData, "newExtraPrice") || formatMoney(priceAmount, currency),
-      priceAmount,
-      currency,
-      iconKey: readString(formData, "newExtraIconKey") || "camera",
-      enabled: true,
-    });
-  }
-
-  return extras;
-}
-
-function readStarterOverride(formData: FormData): JsonRecord | null {
-  const override = {
-    photographerName: readString(formData, "starterOverridePhotographerName"),
-    studioName: readString(formData, "starterOverrideStudioName"),
-    description: readString(formData, "starterOverrideDescription"),
-    heroImageUrl: readString(formData, "starterOverrideHeroImageUrl"),
-  };
-  const entries = Object.entries(override).filter(([, value]) => Boolean(value));
-  return entries.length ? Object.fromEntries(entries) : null;
-}
-
-async function auditTemplate(input: { adminId: string; adminEmail?: string; action: string; templateId: string; code: string; metadata?: JsonRecord }) {
+async function auditTemplate(input: { adminId: string; adminEmail?: string; action: string; templateId: string; code: string; metadata?: Record<string, unknown> }) {
   await prisma.auditLog.create({
     data: {
       action: input.action,
@@ -172,9 +67,8 @@ export async function saveTemplateAction(formData: FormData) {
   if (!current) redirect("/admin/templates?error=template-not-found");
 
   try {
-    const basePreview = readJsonObject(readString(formData, "previewDataJson"), isRecord(current.previewData) ? current.previewData : {});
-    const baseSettings = readJsonObject(readString(formData, "settingsJson"), isRecord(current.settings) ? current.settings : {});
-
+    const preview = cleanTemplatePreview(current.previewData);
+    const settings = isRecord(current.settings) ? { ...current.settings } : {};
     const previewTitle = readString(formData, "previewTitle");
     const previewDescription = readString(formData, "previewDescription");
     const previewImage = readString(formData, "previewImage");
@@ -182,20 +76,14 @@ export async function saveTemplateAction(formData: FormData) {
     const version = readString(formData, "version");
     const themeId = readString(formData, "themeId");
 
-    if (previewTitle) {
-      basePreview.title = previewTitle;
-      basePreview.headline = previewTitle;
-    }
-    if (previewDescription) {
-      basePreview.description = previewDescription;
-      basePreview.subtitle = previewDescription;
-    }
-    if (previewImage) basePreview.previewImage = previewImage;
-    if (callToAction) basePreview.callToAction = callToAction;
-
-    const starterOverride = readStarterOverride(formData);
-    if (starterOverride) basePreview.starterContentOverride = starterOverride;
-    else delete basePreview.starterContentOverride;
+    if (previewTitle) { preview.title = previewTitle; preview.headline = previewTitle; }
+    else { delete preview.title; delete preview.headline; }
+    if (previewDescription) { preview.description = previewDescription; preview.subtitle = previewDescription; }
+    else { delete preview.description; delete preview.subtitle; }
+    if (previewImage) preview.previewImage = previewImage;
+    else delete preview.previewImage;
+    if (callToAction) preview.callToAction = callToAction;
+    else delete preview.callToAction;
 
     const starterOverride = readStarterOverride(formData);
     if (starterOverride) preview.starterContentOverride = starterOverride;
@@ -233,8 +121,8 @@ export async function saveTemplateAction(formData: FormData) {
       metadata: {
         status: updated.status,
         hasStarterOverride: Boolean(starterOverride),
-        packagesCount: Array.isArray(basePreview.packages) ? basePreview.packages.length : 0,
-        activePackagesCount: Array.isArray(basePreview.packages) ? basePreview.packages.filter((item) => isRecord(item) && item.enabled !== false).length : 0,
+        contentSource: "starter-content-defaults",
+        duplicatedContentRemoved: true,
       },
     });
   } catch (error) {
