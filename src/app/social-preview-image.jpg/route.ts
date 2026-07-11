@@ -3,6 +3,7 @@ import { getPlatformSocialPreviewSettings } from "@/modules/social-preview/platf
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 const COMMON_HEADERS = {
   "Cache-Control": "public, max-age=300, stale-while-revalidate=86400",
