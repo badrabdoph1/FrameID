@@ -2,7 +2,6 @@ import { getContent } from "@/lib/content";
 import { getPlatformSocialPreviewSettings } from "@/modules/social-preview/platform-social-preview-settings";
 
 export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
 
 const IMAGE_HEADERS = {
   "Content-Disposition": "inline; filename=frameid-social-preview.jpg",
@@ -35,7 +34,8 @@ export async function GET(request: Request) {
   const heroUrl = buildOpenGraphHeroUrl(homepage.hero.heroImage);
   const upstream = await fetch(heroUrl, {
     cache: "no-store",
-    headers: { Accept: "image/jpeg,image/*;q=0.8" },
+    headers: { Accept: "image/jpeg,image/png,image/webp,image/*;q=0.8" },
+    signal: AbortSignal.timeout(10000),
   });
 
   if (!upstream.ok) {

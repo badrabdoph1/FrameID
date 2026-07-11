@@ -2,8 +2,6 @@ import { getContent } from "@/lib/content";
 import { getPlatformSocialPreviewSettings } from "@/modules/social-preview/platform-social-preview-settings";
 
 export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
 
 type RouteContext = {
   params: Promise<{ mode: string; version: string }>;
@@ -11,11 +9,11 @@ type RouteContext = {
 
 type ResolvedImage = {
   bytes: ArrayBuffer;
+  contentType: string;
   etag: string;
 };
 
 const COMMON_HEADERS = {
-  "Content-Type": "image/jpeg",
   "Content-Disposition": "inline; filename=frameid-social-preview.jpg",
   "Cache-Control": "public, max-age=31536000, immutable",
   "X-Content-Type-Options": "nosniff",
@@ -31,6 +29,7 @@ export async function GET(request: Request, context: RouteContext) {
       status: 200,
       headers: {
         ...COMMON_HEADERS,
+        "Content-Type": image.contentType,
         "Content-Length": String(image.bytes.byteLength),
         "ETag": image.etag,
       },
@@ -48,6 +47,7 @@ export async function HEAD(request: Request, context: RouteContext) {
       status: 200,
       headers: {
         ...COMMON_HEADERS,
+        "Content-Type": image.contentType,
         "Content-Length": String(image.bytes.byteLength),
         "ETag": image.etag,
       },
@@ -70,7 +70,8 @@ async function resolveImage(request: Request, context: RouteContext): Promise<Re
     if (buffer.byteLength > 0) {
       return {
         bytes: toArrayBuffer(buffer),
-        etag: `\"custom-${version}-${buffer.byteLength}\"`,
+        contentType: settings.imageMimeType || "image/jpeg",
+        etag: `"custom-${version}-${buffer.byteLength}"`,
       };
     }
   }
@@ -79,36 +80,49 @@ async function resolveImage(request: Request, context: RouteContext): Promise<Re
   const hero = await fetchImage(buildHeroJpegUrl(homepage.hero.heroImage));
   if (hero) {
     return {
-      bytes: hero,
-      etag: `\"hero-${version}-${hero.byteLength}\"`,
+      bytes: hero.bytes,
+      contentType: hero.contentType,
+      etag: `"hero-${version}-${hero.bytes.byteLength}"`,
     };
   }
 
   const origin = new URL(request.url).origin;
   const fallback = await fetchImage(`${origin}/opengraph-image`, "FrameID-SocialPreview-Fallback/1.0");
-  if (!fallback) throw new Error("Both hero and internal fallback images are unavailable");
+  if (fallback) {
+    return {
+      bytes: fallback.bytes,
+      contentType: fallback.contentType,
+      etag: `"fallback-${version}-${fallback.bytes.byteLength}"`,
+    };
+  }
 
-  return {
-    bytes: fallback,
-    etag: `\"fallback-${version}-${fallback.byteLength}\"`,
-  };
+  const placeholder = await fetchImage(`${origin}/photographer-placeholder`, "FrameID-SocialPreview-Placeholder/1.0");
+  if (placeholder) {
+    return {
+      bytes: placeholder.bytes,
+      contentType: placeholder.contentType,
+      etag: `"placeholder-${placeholder.bytes.byteLength}"`,
+    };
+  }
+
+  throw new Error("All social image sources are unavailable");
 }
 
-async function fetchImage(url: string, userAgent = "FrameID-SocialPreview/1.0"): Promise<ArrayBuffer | null> {
+async function fetchImage(url: string, userAgent = "FrameID-SocialPreview/1.0"): Promise<{ bytes: ArrayBuffer; contentType: string } | null> {
   try {
     const response = await fetch(url, {
       cache: "no-store",
       headers: {
-        Accept: "image/jpeg,image/png,image/*;q=0.8",
+        Accept: "image/jpeg,image/png,image/webp,image/*;q=0.8",
         "User-Agent": userAgent,
       },
-      signal: AbortSignal.timeout(8000),
+      signal: AbortSignal.timeout(10000),
     });
     if (!response.ok) return null;
-    const contentType = response.headers.get("content-type") ?? "";
+    const contentType = response.headers.get("content-type") ?? "image/jpeg";
     if (!contentType.startsWith("image/")) return null;
     const bytes = await response.arrayBuffer();
-    return bytes.byteLength > 0 ? bytes : null;
+    return bytes.byteLength > 0 ? { bytes, contentType } : null;
   } catch {
     return null;
   }
