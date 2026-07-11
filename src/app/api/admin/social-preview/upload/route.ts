@@ -7,7 +7,7 @@ import {
   getPlatformSocialPreviewSettings,
   savePlatformSocialPreviewSettings,
 } from "@/modules/social-preview/platform-social-preview-settings";
-import { PLATFORM_SOCIAL_IMAGE } from "@/modules/social-preview/social-preview";
+import { buildPlatformSocialImageUrl, PLATFORM_SOCIAL_IMAGE } from "@/modules/social-preview/social-preview";
 
 export const runtime = "nodejs";
 
@@ -44,11 +44,11 @@ export async function POST(request: Request) {
       imageUrl: PLATFORM_SOCIAL_IMAGE,
       storageKey: null,
       imageData,
-      imageMimeType: file.type,
+      imageMimeType: "image/jpeg",
     });
 
     const persisted = await getPlatformSocialPreviewSettings();
-    if (!persisted.imageData || persisted.imageMimeType !== file.type) {
+    if (!persisted.imageData) {
       throw new Error("تم إرسال الصورة لكن تعذر تثبيتها في قاعدة البيانات.");
     }
 
@@ -65,7 +65,7 @@ export async function POST(request: Request) {
     const version = saved.updatedAt.getTime();
     return NextResponse.json({
       ok: true,
-      imageUrl: `${PLATFORM_SOCIAL_IMAGE}?mode=custom&v=${version}`,
+      imageUrl: buildPlatformSocialImageUrl("custom", version),
       version: String(version),
       bytes: persistedBytes.byteLength,
       sha256: persistedHash.toString("hex"),
