@@ -1,17 +1,17 @@
 "use client";
 
 import { Check, Crop, ImagePlus, LoaderCircle, RotateCcw, Save, Trash2, UploadCloud, X } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 
 import type { PlatformSocialPreviewSettings } from "@/modules/social-preview/social-preview";
-
-type PreviewMode = "default" | "custom";
-type Notice = { tone: "success" | "error" | "info"; message: string } | null;
-type CropSource = { file: File; url: string; width: number; height: number };
 
 const TARGET_WIDTH = 1200;
 const TARGET_HEIGHT = 630;
 const MAX_SOURCE_BYTES = 10 * 1024 * 1024;
+
+type PreviewMode = "default" | "custom";
+type Notice = { tone: "success" | "error" | "info"; message: string } | null;
+type CropSource = { file: File; url: string; width: number; height: number };
 
 export function SocialPreviewForm({ settings, defaultTitle, defaultDescription, defaultImageUrl }: {
   settings: PlatformSocialPreviewSettings;
@@ -19,10 +19,12 @@ export function SocialPreviewForm({ settings, defaultTitle, defaultDescription, 
   defaultDescription: string;
   defaultImageUrl: string;
 }) {
+  const initialVersion = settings.imageVersion ?? "initial";
   const [mode, setMode] = useState<PreviewMode>(settings.enabled ? "custom" : "default");
   const [title, setTitle] = useState(settings.title ?? "");
   const [description, setDescription] = useState(settings.description ?? "");
-  const [customImageUrl, setCustomImageUrl] = useState(settings.imageData ? `/api/social-preview/platform-image?v=${Date.now()}` : "");
+  const [customImageUrl, setCustomImageUrl] = useState(settings.imageData ? `/social-preview-image?mode=custom&v=${initialVersion}` : "");
+  const [defaultUrl, setDefaultUrl] = useState(`${defaultImageUrl}${defaultImageUrl.includes("?") ? "&" : "?"}boot=${initialVersion}`);
   const [cropSource, setCropSource] = useState<CropSource | null>(null);
   const [zoom, setZoom] = useState(1);
   const [panX, setPanX] = useState(0);
@@ -30,9 +32,10 @@ export function SocialPreviewForm({ settings, defaultTitle, defaultDescription, 
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [uploadPhase, setUploadPhase] = useState<"idle" | "uploading" | "processing" | "done">("idle");
   const [isSaving, setIsSaving] = useState(false);
-  const [notice, setNotice] = useState<Notice>(null);
   const [deleteImage, setDeleteImage] = useState(false);
+  const [notice, setNotice] = useState<Notice>(null);
   const [imageError, setImageError] = useState(false);
+
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const cropFrameRef = useRef<HTMLDivElement | null>(null);
   const dragRef = useRef<{ x: number; y: number; panX: number; panY: number } | null>(null);
@@ -43,10 +46,12 @@ export function SocialPreviewForm({ settings, defaultTitle, defaultDescription, 
   }, []);
 
   const hasCustomImage = Boolean(customImageUrl) && !deleteImage;
-  const activeImage = mode === "custom" && hasCustomImage ? customImageUrl : defaultImageUrl;
-  const activeTitle = mode === "custom" && title.trim() ? title.trim() : defaultTitle;
-  const activeDescription = mode === "custom" && description.trim() ? description.trim() : defaultDescription;
+  const activeImage = mode === "custom" && hasCustomImage ? customImageUrl : defaultUrl;
+  const activeTitle = title.trim() || defaultTitle;
+  const activeDescription = description.trim() || defaultDescription;
   const busy = isSaving || uploadPhase === "uploading" || uploadPhase === "processing";
+
+  useEffect(() => setImageError(false), [activeImage, mode]);
 
   async function chooseFile(file?: File) {
     setNotice(null);
@@ -69,13 +74,13 @@ export function SocialPreviewForm({ settings, defaultTitle, defaultDescription, 
     }
   }
 
-  function startDrag(event: React.PointerEvent<HTMLDivElement>) {
+  function startDrag(event: ReactPointerEvent<HTMLDivElement>) {
     if (!cropSource) return;
     event.currentTarget.setPointerCapture(event.pointerId);
     dragRef.current = { x: event.clientX, y: event.clientY, panX, panY };
   }
 
-  function moveDrag(event: React.PointerEvent<HTMLDivElement>) {
+  function moveDrag(event: ReactPointerEvent<HTMLDivElement>) {
     const start = dragRef.current;
     const frame = cropFrameRef.current;
     if (!start || !frame) return;
@@ -93,13 +98,13 @@ export function SocialPreviewForm({ settings, defaultTitle, defaultDescription, 
     try {
       const file = await renderCrop(cropSource, zoom, panX, panY);
       setUploadPhase("uploading");
-      const result = await uploadImage(file, (progress) => setUploadProgress(progress), () => setUploadPhase("processing"));
-      setCustomImageUrl(`${result.imageUrl}${result.imageUrl.includes("?") ? "&" : "?"}preview=${Date.now()}`);
+      const result = await uploadImage(file, setUploadProgress, () => setUploadPhase("processing"));
+      setCustomImageUrl(result.imageUrl);
       setDeleteImage(false);
       setCropSource(null);
       setUploadProgress(100);
       setUploadPhase("done");
-      setNotice({ tone: "success", message: "تم رفع الصورة وتثبيتها بنجاح. اضغط حفظ لتفعيلها." });
+      setNotice({ tone: "success", message: "تم رفع الصورة وتخزينها فعليًا. المعاينة الجانبية تعرضها الآن." });
       window.setTimeout(() => { setUploadProgress(null); setUploadPhase("idle"); }, 1200);
     } catch (error) {
       setUploadProgress(null);
@@ -121,11 +126,17 @@ export function SocialPreviewForm({ settings, defaultTitle, defaultDescription, 
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ mode, title, description, deleteImage }),
       });
-      const payload = await response.json() as { ok: boolean; error?: string; settings?: { imageUrl?: string | null; hasImage?: boolean } };
+      const payload = await response.json() as {
+        ok: boolean;
+        error?: string;
+        settings?: { imageUrl?: string | null; defaultImageUrl?: string; hasImage?: boolean; version?: string };
+      };
       if (!response.ok || !payload.ok) throw new Error(payload.error ?? "تعذر حفظ الإعدادات.");
-      if (payload.settings?.hasImage) setCustomImageUrl(`${payload.settings.imageUrl ?? "/api/social-preview/platform-image"}?v=${Date.now()}`);
+      if (payload.settings?.imageUrl) setCustomImageUrl(payload.settings.imageUrl);
+      if (payload.settings?.defaultImageUrl) setDefaultUrl(payload.settings.defaultImageUrl);
       setDeleteImage(false);
-      setNotice({ tone: "success", message: mode === "custom" ? "تم تفعيل الصورة المخصصة بنجاح." : "تم تفعيل الصورة الافتراضية بنجاح." });
+      setImageError(false);
+      setNotice({ tone: "success", message: mode === "custom" ? "تم تفعيل الصورة المخصصة وتحديث رابط المشاركة." : "تم تفعيل الصورة الافتراضية وتحديث رابط المشاركة." });
     } catch (error) {
       setNotice({ tone: "error", message: error instanceof Error ? error.message : "تعذر حفظ الإعدادات." });
     } finally {
@@ -135,16 +146,15 @@ export function SocialPreviewForm({ settings, defaultTitle, defaultDescription, 
 
   function removeImage() {
     setDeleteImage(true);
-    setCustomImageUrl("");
     setMode("default");
     setNotice({ tone: "info", message: "سيتم حذف الصورة المخصصة نهائيًا بعد الضغط على حفظ." });
   }
 
   return (
-    <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_400px]">
+    <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_420px]">
       <section className="rounded-3xl border border-white/8 bg-white/[0.03] p-4 md:p-6">
         <h2 className="text-lg font-black text-[#fff7e8]">صورة معاينة روابط FrameID</h2>
-        <p className="mt-1 text-sm font-bold leading-7 text-white/45">اختر الصورة الافتراضية أو ارفع صورة مخصصة. الحفظ لا ينجح إلا بعد التأكد من وجود الصورة فعليًا.</p>
+        <p className="mt-1 text-sm font-bold leading-7 text-white/45">الصورة والنص في المعاينة الجانبية يتغيران لحظيًا، والحفظ يحدّث رابط Open Graph الفعلي.</p>
 
         {notice ? <NoticeBox notice={notice} /> : null}
 
@@ -153,25 +163,25 @@ export function SocialPreviewForm({ settings, defaultTitle, defaultDescription, 
           <ModeButton active={mode === "custom"} title="صورة مخصصة" description={hasCustomImage ? "الصورة محفوظة وجاهزة" : "ارفع صورة واضبط القص"} icon={<ImagePlus className="size-5" />} onClick={() => { setMode("custom"); setNotice(null); }} />
         </div>
 
+        <div className="mt-5 grid gap-4 rounded-2xl border border-white/8 bg-black/15 p-4">
+          <label className="grid gap-2"><span className="text-xs font-black text-white/45">عنوان المشاركة</span><input maxLength={120} value={title} onChange={(e) => setTitle(e.target.value)} placeholder={defaultTitle} className="min-h-12 rounded-2xl border border-white/10 bg-black/25 px-4 text-sm font-black text-white outline-none focus:border-amber-300/40" /></label>
+          <label className="grid gap-2"><span className="text-xs font-black text-white/45">وصف المشاركة</span><textarea maxLength={240} rows={4} value={description} onChange={(e) => setDescription(e.target.value)} placeholder={defaultDescription} className="rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm font-bold leading-7 text-white outline-none focus:border-amber-300/40" /></label>
+        </div>
+
         {mode === "custom" ? (
           <div className="mt-5 grid gap-4 rounded-2xl border border-amber-300/15 bg-amber-300/[0.035] p-4">
             <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={(event) => void chooseFile(event.target.files?.[0])} />
             <button type="button" disabled={busy} onClick={() => fileInputRef.current?.click()} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-dashed border-white/20 bg-black/20 px-4 text-sm font-black text-white hover:border-amber-300/40 disabled:opacity-50">
               <UploadCloud className="size-4 text-amber-300" /> {hasCustomImage ? "رفع صورة بديلة" : "اختيار صورة"}
             </button>
-            <p className="text-center text-xs font-bold text-white/40">الصورة النهائية 1200×630 — يتم تخزينها بشكل دائم داخل إعدادات المنصة.</p>
+            <p className="text-center text-xs font-bold text-white/40">القص والمعاينة بنفس النسبة الحقيقية 1200×630 على الكمبيوتر والموبايل.</p>
 
             {uploadProgress !== null ? (
               <div className="grid gap-2 rounded-2xl border border-sky-300/15 bg-sky-300/[0.05] p-3">
-                <div className="flex items-center justify-between text-xs font-black text-sky-100">
-                  <span>{uploadPhase === "uploading" ? "جاري نقل الصورة" : uploadPhase === "done" ? "اكتمل الرفع" : "جاري تثبيت الصورة"}</span><span>{uploadProgress}%</span>
-                </div>
+                <div className="flex items-center justify-between text-xs font-black text-sky-100"><span>{uploadPhase === "uploading" ? "جاري نقل الصورة" : uploadPhase === "done" ? "اكتمل الرفع" : "جاري تثبيت الصورة"}</span><span>{uploadProgress}%</span></div>
                 <div className="h-2 overflow-hidden rounded-full bg-white/10"><div className="h-full rounded-full bg-sky-300 transition-all" style={{ width: `${uploadProgress}%` }} /></div>
               </div>
             ) : null}
-
-            <label className="grid gap-2"><span className="text-xs font-black text-white/45">عنوان المشاركة</span><input maxLength={120} value={title} onChange={(e) => setTitle(e.target.value)} placeholder={defaultTitle} className="min-h-12 rounded-2xl border border-white/10 bg-black/25 px-4 text-sm font-black text-white outline-none focus:border-amber-300/40" /></label>
-            <label className="grid gap-2"><span className="text-xs font-black text-white/45">وصف المشاركة</span><textarea maxLength={240} rows={4} value={description} onChange={(e) => setDescription(e.target.value)} placeholder={defaultDescription} className="rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm font-bold leading-7 text-white outline-none focus:border-amber-300/40" /></label>
 
             {hasCustomImage ? <button type="button" disabled={busy} onClick={removeImage} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-red-300/20 bg-red-300/[0.05] px-4 text-sm font-black text-red-200"><Trash2 className="size-4" /> حذف الصورة المخصصة</button> : null}
           </div>
@@ -183,10 +193,10 @@ export function SocialPreviewForm({ settings, defaultTitle, defaultDescription, 
       </section>
 
       <aside className="self-start rounded-3xl border border-white/8 bg-[#11151d] p-4 xl:sticky xl:top-6">
-        <div className="mb-3 flex items-center justify-between"><div><h2 className="text-sm font-black text-[#fff7e8]">المعاينة الفعلية</h2><p className="mt-1 text-xs font-bold text-white/40">{mode === "custom" ? "الصورة المخصصة" : "الصورة الافتراضية"}</p></div><span className="rounded-full bg-emerald-300/10 px-2.5 py-1 text-[.68rem] font-black text-emerald-200">{mode.toUpperCase()}</span></div>
+        <div className="mb-3 flex items-center justify-between"><div><h2 className="text-sm font-black text-[#fff7e8]">معاينة مباشرة</h2><p className="mt-1 text-xs font-bold text-white/40">نفس الصورة والنص المستخدمين في المشاركة</p></div><span className="rounded-full bg-emerald-300/10 px-2.5 py-1 text-[.68rem] font-black text-emerald-200">LIVE</span></div>
         <div className="overflow-hidden rounded-2xl border border-white/10 bg-black/30">
-          <div className="aspect-[1200/630] bg-black/25">
-            {!imageError ? <img key={activeImage} src={activeImage} alt="معاينة المشاركة" className="size-full object-cover" onLoad={() => setImageError(false)} onError={() => setImageError(true)} /> : <div className="grid size-full place-items-center p-6 text-center text-sm font-black text-red-200">تعذر تحميل الصورة من المسار الفعلي. لن يعتبر الحفظ ناجحًا للصورة المخصصة بدون ملف مخزن.</div>}
+          <div className="relative w-full overflow-hidden bg-black/25" style={{ aspectRatio: `${TARGET_WIDTH} / ${TARGET_HEIGHT}` }}>
+            {cropSource && mode === "custom" ? <CropImage source={cropSource} zoom={zoom} panX={panX} panY={panY} /> : !imageError ? <img key={activeImage} src={activeImage} alt="معاينة المشاركة" className="size-full object-cover" onLoad={() => setImageError(false)} onError={() => setImageError(true)} /> : <div className="grid size-full place-items-center p-6 text-center text-sm font-black text-red-200">تعذر تحميل الصورة الفعلية من رابط المشاركة.</div>}
           </div>
           <div className="grid gap-2 p-4"><span className="text-[.7rem] font-black uppercase tracking-[.12em] text-white/35">frameid.app</span><strong className="text-base font-black leading-7 text-white">{activeTitle}</strong><p className="line-clamp-3 text-sm font-bold leading-6 text-white/50">{activeDescription}</p></div>
         </div>
@@ -195,10 +205,10 @@ export function SocialPreviewForm({ settings, defaultTitle, defaultDescription, 
       {cropSource ? (
         <div className="fixed inset-0 z-[100] grid place-items-center bg-black/85 p-3 backdrop-blur-sm">
           <div className="w-full max-w-5xl rounded-3xl border border-white/10 bg-[#11151d] p-4 shadow-2xl md:p-6">
-            <div className="mb-4 flex items-center justify-between"><div><h3 className="text-lg font-black text-white">قص صورة المشاركة</h3><p className="text-xs font-bold text-white/45">الإطار نفسه بنسبة 1200×630. اسحب الصورة بالماوس أو اللمس.</p></div><button type="button" onClick={() => setCropSource(null)} className="grid size-10 place-items-center rounded-full bg-white/5 text-white"><X className="size-5" /></button></div>
-            <div ref={cropFrameRef} className="relative mx-auto aspect-[1200/630] w-full max-w-[900px] cursor-grab overflow-hidden rounded-2xl bg-black active:cursor-grabbing touch-none" onPointerDown={startDrag} onPointerMove={moveDrag} onPointerUp={endDrag} onPointerCancel={endDrag}>
+            <div className="mb-4 flex items-center justify-between"><div><h3 className="text-lg font-black text-white">قص صورة المشاركة</h3><p className="text-xs font-bold text-white/45">الإطار بنفس نسبة 1200×630 على كل المقاسات. اسحب الصورة بالماوس أو اللمس.</p></div><button type="button" onClick={() => setCropSource(null)} className="grid size-10 place-items-center rounded-full bg-white/5 text-white"><X className="size-5" /></button></div>
+            <div ref={cropFrameRef} className="relative mx-auto w-full max-w-[900px] cursor-grab overflow-hidden rounded-2xl bg-black active:cursor-grabbing touch-none" style={{ aspectRatio: `${TARGET_WIDTH} / ${TARGET_HEIGHT}` }} onPointerDown={startDrag} onPointerMove={moveDrag} onPointerUp={endDrag} onPointerCancel={endDrag}>
               <CropImage source={cropSource} zoom={zoom} panX={panX} panY={panY} />
-              <div className="pointer-events-none absolute inset-0 border-2 border-amber-300/70 shadow-[inset_0_0_0_9999px_rgba(0,0,0,.08)]" />
+              <div className="pointer-events-none absolute inset-0 border-2 border-amber-300/70" />
             </div>
             <div className="mx-auto mt-4 grid max-w-[900px] gap-3"><label className="grid gap-2"><span className="text-xs font-black text-white/55">التكبير: {zoom.toFixed(2)}×</span><input type="range" min="1" max="3" step="0.01" value={zoom} onChange={(e) => setZoom(Number(e.target.value))} /></label><div className="flex flex-col gap-2 sm:flex-row"><button type="button" onClick={() => { setZoom(1); setPanX(0); setPanY(0); }} className="min-h-11 flex-1 rounded-2xl border border-white/10 text-sm font-black text-white">إعادة الضبط</button><button type="button" onClick={() => void approveCrop()} className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-2xl bg-amber-300 text-sm font-black text-[#17120a]"><Crop className="size-4" /> اعتماد القص ورفع الصورة</button></div></div>
           </div>
@@ -220,7 +230,7 @@ function CropImage({ source, zoom, panX, panY }: { source: CropSource; zoom: num
   return <img src={source.url} alt="قص الصورة" draggable={false} className="pointer-events-none absolute max-w-none select-none" style={{ width: `${width}%`, height: `${height}%`, left: `calc(50% + ${panX * maxX}%)`, top: `calc(50% + ${panY * maxY}%)`, transform: "translate(-50%, -50%)", objectFit: "fill" }} />;
 }
 
-function ModeButton({ active, title, description, icon, onClick }: { active: boolean; title: string; description: string; icon: React.ReactNode; onClick: () => void }) {
+function ModeButton({ active, title, description, icon, onClick }: { active: boolean; title: string; description: string; icon: ReactNode; onClick: () => void }) {
   return <button type="button" onClick={onClick} className={`relative min-h-24 rounded-2xl border p-4 text-start transition ${active ? "border-amber-300/45 bg-amber-300/10 text-white" : "border-white/10 bg-black/20 text-white/55"}`}>{active ? <span className="absolute start-3 top-3 grid size-6 place-items-center rounded-full bg-amber-300 text-[#17120a]"><Check className="size-4" /></span> : null}<span className="mb-3 inline-flex text-amber-300">{icon}</span><strong className="block text-sm font-black">{title}</strong><span className="mt-1 block text-xs font-bold opacity-65">{description}</span></button>;
 }
 
@@ -236,7 +246,8 @@ async function getImageDimensions(url: string): Promise<{ width: number; height:
 async function renderCrop(source: CropSource, zoom: number, panX: number, panY: number): Promise<File> {
   const image = await loadImage(source.url);
   const canvas = document.createElement("canvas");
-  canvas.width = TARGET_WIDTH; canvas.height = TARGET_HEIGHT;
+  canvas.width = TARGET_WIDTH;
+  canvas.height = TARGET_HEIGHT;
   const context = canvas.getContext("2d");
   if (!context) throw new Error("المتصفح لا يدعم تجهيز الصورة.");
   const scale = Math.max(TARGET_WIDTH / source.width, TARGET_HEIGHT / source.height) * zoom;
@@ -247,7 +258,7 @@ async function renderCrop(source: CropSource, zoom: number, panX: number, panY: 
   const x = -overflowX / 2 + panX * overflowX / 2;
   const y = -overflowY / 2 + panY * overflowY / 2;
   context.drawImage(image, x, y, drawWidth, drawHeight);
-  const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.86));
+  const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.88));
   if (!blob) throw new Error("تعذر إنشاء الصورة النهائية.");
   return new File([blob], `social-preview-${Date.now()}.jpg`, { type: "image/jpeg" });
 }
@@ -258,7 +269,8 @@ function clamp(value: number, min: number, max: number) { return Math.min(max, M
 function uploadImage(file: File, onProgress: (value: number) => void, onProcessing: () => void): Promise<{ imageUrl: string }> {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
-    const form = new FormData(); form.append("image", file);
+    const form = new FormData();
+    form.append("image", file);
     xhr.open("POST", "/api/admin/social-preview/upload");
     xhr.upload.onprogress = (event) => { if (event.lengthComputable) onProgress(Math.min(95, Math.round(event.loaded / event.total * 95))); };
     xhr.upload.onload = () => { onProgress(96); onProcessing(); };
@@ -267,7 +279,8 @@ function uploadImage(file: File, onProgress: (value: number) => void, onProcessi
       let payload: { ok?: boolean; imageUrl?: string; error?: string } = {};
       try { payload = JSON.parse(xhr.responseText) as typeof payload; } catch { /* noop */ }
       if (xhr.status < 200 || xhr.status >= 300 || !payload.ok || !payload.imageUrl) return reject(new Error(payload.error ?? "فشل تثبيت الصورة على الخادم."));
-      onProgress(100); resolve({ imageUrl: payload.imageUrl });
+      onProgress(100);
+      resolve({ imageUrl: payload.imageUrl });
     };
     xhr.send(form);
   });
