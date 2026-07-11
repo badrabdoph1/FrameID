@@ -64,7 +64,12 @@ jobs:
         run: npm run typecheck
 
       - name: Lint
-        run: npm run lint
+        shell: bash
+        run: |
+          if ! npm run lint > /tmp/frameid-lint.log 2>&1; then
+            tail -n 120 /tmp/frameid-lint.log
+            exit 1
+          fi
 
       - name: Test critical flows
         run: npx vitest run tests/template-starter-data.test.ts tests/signup-auto-publish.test.ts tests/media-upload-service.test.ts tests/platform-image-upload.test.ts
