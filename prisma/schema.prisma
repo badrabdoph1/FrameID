@@ -530,7 +530,7 @@ model PaymentRequest {
   reviewedByUserId  String?
   reviewedAt        DateTime?
   createdAt         DateTime      @default(now())
-  updatedAt         DateTime      @updatedAt
+  updatedAt         DateTime      @default(now())
   deletedAt         DateTime?
 
   tenant       Tenant      @relation(fields: [tenantId], references: [id])
@@ -561,8 +561,8 @@ model PaymentRequestLog {
 
 model PaymentAccount {
   id                String        @id @default(cuid())
-  method            PaymentMethod
-  displayName       String
+  method            PaymentMethod @default(INSTAPAY)
+  displayName       String        @default("")
   accountIdentifier String        @default("")
   accountName       String        @default("")
   accountNumber     String        @default("")
