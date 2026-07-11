@@ -9,7 +9,7 @@ import { Activity, Shield } from "lucide-react"
 import type {
   CustomerDetail, CustomerMediaAsset, CustomerNotification,
   CustomerAdminNote, CustomerSubscriptionInfo,
-} from "./components/customer-types"
+} from "@/modules/admin/customers/customer-types"
 
 import { CustomerInfoPanel } from "./components/customer-info-panel"
 import { CustomerStatsRow } from "./components/customer-stats-row"

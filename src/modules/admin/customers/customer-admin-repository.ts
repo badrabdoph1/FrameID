@@ -128,8 +128,7 @@ export function createCustomerAdminRepository(prisma: PrismaClient) {
           include: {
             theme: { select: { name: true, code: true } },
             domains: {
-              where: { deletedAt: null },
-              select: { domain: true, status: true },
+              select: { hostname: true, status: true },
             },
             seoSettings: {
               select: { title: true, description: true },
@@ -137,8 +136,8 @@ export function createCustomerAdminRepository(prisma: PrismaClient) {
             _count: {
               select: {
                 packages: true,
-                albums: true,
-                extras: true,
+                galleryAlbums: true,
+                extraServices: true,
               },
             },
           },
@@ -154,13 +153,13 @@ export function createCustomerAdminRepository(prisma: PrismaClient) {
           take: 10,
           include: {
             proofAsset: { select: { url: true } },
-            reviewedBy: { select: { name: true } },
+            reviewer: { select: { name: true } },
           },
         },
         supportCases: {
           orderBy: { createdAt: "desc" },
           take: 10,
-          select: { id: true, subject: true, status: true, priority: true, createdAt: true },
+          select: { id: true, subject: true, status: true, createdAt: true },
         },
         _count: {
           select: {
@@ -246,7 +245,6 @@ export function createCustomerAdminRepository(prisma: PrismaClient) {
         planCode: sub.plan?.code ?? null,
         currentPeriodStart: sub.currentPeriodStart?.toISOString() ?? null,
         currentPeriodEnd: sub.currentPeriodEnd?.toISOString() ?? null,
-        activatedAt: sub.activatedAt?.toISOString() ?? null,
         expiresAt: sub.expiresAt?.toISOString() ?? null,
         createdAt: sub.createdAt.toISOString(),
       })),
@@ -280,7 +278,6 @@ export function createCustomerAdminRepository(prisma: PrismaClient) {
         id: sc.id,
         subject: sc.subject,
         status: sc.status,
-        priority: sc.priority,
         createdAt: sc.createdAt.toISOString(),
       })),
     };
@@ -292,15 +289,13 @@ export function createCustomerAdminRepository(prisma: PrismaClient) {
     title: string;
     description: string | null;
     status: string;
-    locale: string;
     isPublished: boolean;
-    publishedVersion: number;
     createdAt: Date;
     updatedAt: Date;
     theme: { name: string; code: string } | null;
-    domains: { domain: string; status: string }[];
+    domains: { hostname: string; status: string }[];
     seoSettings: { title: string; description: string | null } | null;
-    _count: { packages: number; albums: number; extras: number };
+    _count: { packages: number; galleryAlbums: number; extraServices: number };
   }): CustomerSiteInfo {
     return {
       id: site.id,
@@ -311,16 +306,14 @@ export function createCustomerAdminRepository(prisma: PrismaClient) {
       themeName: site.theme?.name ?? null,
       themeCode: site.theme?.code ?? null,
       templateName: null,
-      domain: site.domains[0]?.domain ?? null,
-      domains: site.domains.map((d) => ({ domain: d.domain, status: d.status })),
+      domain: site.domains[0]?.hostname ?? null,
+      domains: site.domains.map((d) => ({ domain: d.hostname, status: d.status })),
       isPublished: site.isPublished,
-      publishedVersion: site.publishedVersion,
-      locale: site.locale,
       createdAt: site.createdAt.toISOString(),
       updatedAt: site.updatedAt.toISOString(),
       packagesCount: site._count.packages,
-      albumsCount: site._count.albums,
-      extrasCount: site._count.extras,
+      albumsCount: site._count.galleryAlbums,
+      extrasCount: site._count.extraServices,
       seo: site.seoSettings ? {
         title: site.seoSettings.title,
         description: site.seoSettings.description,
@@ -334,7 +327,6 @@ export function createCustomerAdminRepository(prisma: PrismaClient) {
     plan: { name: string; priceAmount: number; code: string } | null;
     currentPeriodStart: Date | null;
     currentPeriodEnd: Date | null;
-    activatedAt: Date | null;
     expiresAt: Date | null;
     createdAt: Date;
   }): CustomerSubscriptionInfo {
@@ -346,7 +338,6 @@ export function createCustomerAdminRepository(prisma: PrismaClient) {
       planCode: sub.plan?.code ?? null,
       currentPeriodStart: sub.currentPeriodStart?.toISOString() ?? null,
       currentPeriodEnd: sub.currentPeriodEnd?.toISOString() ?? null,
-      activatedAt: sub.activatedAt?.toISOString() ?? null,
       expiresAt: sub.expiresAt?.toISOString() ?? null,
       createdAt: sub.createdAt.toISOString(),
     };
@@ -361,9 +352,9 @@ export function createCustomerAdminRepository(prisma: PrismaClient) {
     reference: string | null;
     createdAt: Date;
     reviewedAt: Date | null;
-    adminNote: string | null;
+    note: string | null;
     proofAsset: { url: string } | null;
-    reviewedBy: { name: string } | null;
+    reviewer: { name: string } | null;
   }): CustomerPaymentInfo {
     return {
       id: p.id,
@@ -373,8 +364,8 @@ export function createCustomerAdminRepository(prisma: PrismaClient) {
       status: p.status,
       reference: p.reference,
       proofUrl: p.proofAsset?.url ?? null,
-      reviewedByName: p.reviewedBy?.name ?? null,
-      adminNote: p.adminNote,
+      reviewedByName: p.reviewer?.name ?? null,
+      note: p.note,
       createdAt: p.createdAt.toISOString(),
       reviewedAt: p.reviewedAt?.toISOString() ?? null,
     };
@@ -426,7 +417,7 @@ export function createCustomerAdminRepository(prisma: PrismaClient) {
       orderBy: { createdAt: "desc" },
       include: {
         proofAsset: { select: { url: true } },
-        reviewedBy: { select: { name: true } },
+        reviewer: { select: { name: true } },
       },
     });
     return payments.map(mapPaymentInfo);
@@ -523,9 +514,8 @@ export function createCustomerAdminRepository(prisma: PrismaClient) {
         },
       });
 
-      await tx.siteDomain.updateMany({
+      await tx.domain.deleteMany({
         where: { siteId: { in: tenant.sites.map((s) => s.id) } },
-        data: { deletedAt: new Date() },
       });
 
       await tx.site.updateMany({
@@ -533,9 +523,8 @@ export function createCustomerAdminRepository(prisma: PrismaClient) {
         data: { deletedAt: new Date() },
       });
 
-      await tx.subscription.updateMany({
+      await tx.subscription.deleteMany({
         where: { tenantId: id },
-        data: { deletedAt: new Date() },
       });
 
       await tx.paymentRequest.updateMany({
@@ -582,7 +571,7 @@ export function createCustomerAdminRepository(prisma: PrismaClient) {
 
   async function getAllSubscriptions(tenantId: string): Promise<CustomerSubscriptionInfo[]> {
     const subscriptions = await prisma.subscription.findMany({
-      where: { tenantId, deletedAt: null },
+      where: { tenantId },
       orderBy: { createdAt: "desc" },
       include: { plan: { select: { name: true, priceAmount: true, code: true } } },
     });
@@ -595,7 +584,6 @@ export function createCustomerAdminRepository(prisma: PrismaClient) {
       planCode: sub.plan?.code ?? null,
       currentPeriodStart: sub.currentPeriodStart?.toISOString() ?? null,
       currentPeriodEnd: sub.currentPeriodEnd?.toISOString() ?? null,
-      activatedAt: sub.activatedAt?.toISOString() ?? null,
       expiresAt: sub.expiresAt?.toISOString() ?? null,
       createdAt: sub.createdAt.toISOString(),
     }));
@@ -646,7 +634,6 @@ export function createCustomerAdminRepository(prisma: PrismaClient) {
       type: n.type,
       title: n.title,
       body: n.body,
-      priority: n.priority,
       readAt: n.readAt?.toISOString() ?? null,
       createdAt: n.createdAt.toISOString(),
     }));
@@ -654,7 +641,7 @@ export function createCustomerAdminRepository(prisma: PrismaClient) {
 
   async function getCustomerAdminNotes(tenantId: string): Promise<CustomerAdminNote[]> {
     const notes = await prisma.adminNote.findMany({
-      where: { tenantId, deletedAt: null },
+      where: { tenantId },
       orderBy: { createdAt: "desc" },
       include: { author: { select: { name: true } } },
     });
@@ -674,9 +661,8 @@ export function createCustomerAdminRepository(prisma: PrismaClient) {
   }
 
   async function deleteAdminNote(noteId: string): Promise<void> {
-    await prisma.adminNote.update({
+    await prisma.adminNote.delete({
       where: { id: noteId },
-      data: { deletedAt: new Date() },
     });
   }
 
@@ -710,7 +696,7 @@ export function createCustomerAdminRepository(prisma: PrismaClient) {
   async function activateSubscription(subscriptionId: string): Promise<void> {
     await prisma.subscription.update({
       where: { id: subscriptionId },
-      data: { status: "ACTIVE", activatedAt: new Date() },
+      data: { status: "ACTIVE" },
     });
   }
 
@@ -735,14 +721,13 @@ export function createCustomerAdminRepository(prisma: PrismaClient) {
     });
   }
 
-  async function createNotification(tenantId: string, type: string, title: string, body: string, priority?: string): Promise<void> {
+  async function createNotification(tenantId: string, type: string, title: string, body: string): Promise<void> {
     await prisma.notification.create({
       data: {
         tenantId,
         type,
         title,
         body,
-        priority: priority ?? "info",
       },
     });
   }

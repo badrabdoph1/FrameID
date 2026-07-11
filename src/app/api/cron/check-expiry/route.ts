@@ -22,7 +22,6 @@ export async function GET() {
       where: {
         status: "ACTIVE",
         currentPeriodEnd: { lte: now },
-        deletedAt: null,
       },
       select: { id: true, tenantId: true },
     });
@@ -60,7 +59,7 @@ export async function GET() {
           data: { status: "TRIAL_EXPIRED" },
         }),
         prisma.subscription.updateMany({
-          where: { tenantId: tenant.id, deletedAt: null },
+          where: { tenantId: tenant.id },
           data: { status: "EXPIRED" },
         }),
       ]);

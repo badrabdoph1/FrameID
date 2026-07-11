@@ -619,7 +619,7 @@ export default async function AdminPaymentSettingsPage({ searchParams }: Props) 
   const params = await searchParams;
 
   const service = createPaymentSettingsService(
-    createPrismaPaymentSettingsRepository(prisma),
+    createPrismaPaymentSettingsRepository(prisma as never),
   );
   const methods = await service.getAllPaymentMethods();
 

@@ -101,7 +101,7 @@ export async function savePlanAction(formData: FormData) {
     const saved = existing
       ? await prisma.plan.update({
           where: { id: existing.id },
-          data: { code, name, priceAmount, currency, billingInterval, features, isActive, deletedAt: null } as never,
+          data: { code, name, priceAmount, currency, billingInterval, features, isActive } as never,
         })
       : await prisma.plan.create({
           data: { code, name, priceAmount, currency, billingInterval, features, isActive } as never,
@@ -166,7 +166,7 @@ export async function archivePlanAction(formData: FormData) {
   if (!current) redirectPlanError("plan-not-found");
 
   try {
-    const archived = await prisma.plan.update({ where: { id }, data: { isActive: false, deletedAt: new Date() } });
+    const archived = await prisma.plan.update({ where: { id }, data: { isActive: false } });
     await auditPlan({
       adminId: admin.id,
       adminEmail: admin.email,

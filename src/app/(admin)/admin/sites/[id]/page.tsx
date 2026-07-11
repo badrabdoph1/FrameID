@@ -127,10 +127,10 @@ export default async function AdminSiteWorkspacePage({ params }: Props) {
               {site.domains.map((domain) => (
                 <div key={domain.id} className="rounded-xl border border-white/8 bg-black/16 p-3">
                   <div className="flex flex-wrap items-center gap-2">
-                    <strong className="font-mono text-sm text-white/80">{domain.domain}</strong>
+                    <strong className="font-mono text-sm text-white/80">{domain.hostname}</strong>
                     <span className={`rounded-full border px-2 py-0.5 text-[0.68rem] font-black ${domainTone(domain.status)}`}>{domain.status}</span>
                   </div>
-                  <p className="mt-2 text-xs font-bold text-white/35">Token: <span dir="ltr" className="font-mono">{domain.verificationToken}</span></p>
+
                   <p className="mt-1 text-xs font-bold text-white/35">Verified: {dateLabel(domain.verifiedAt)}</p>
                 </div>
               ))}
@@ -142,7 +142,7 @@ export default async function AdminSiteWorkspacePage({ params }: Props) {
           <div className="grid gap-3 sm:grid-cols-2">
             <Info label="Theme" value={site.theme.name} />
             <Info label="Code" value={site.theme.code} dir="ltr" />
-            <Info label="Category" value={site.theme.category} />
+            <Info label="Category" value={site.theme.category ?? "—"} />
             <Info label="Version" value={`v${site.theme.version}`} />
             <Info label="Status" value={site.theme.status} />
             <Info label="Theme config" value={site.themeConfigs[0] ? "موجود" : "غير مخصص"} />

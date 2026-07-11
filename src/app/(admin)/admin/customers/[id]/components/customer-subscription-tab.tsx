@@ -35,7 +35,6 @@ export function CustomerSubscriptionTab({ customer, allSubscriptions, onAction }
               <SubRow label="بداية الفترة" value={formatDate(customer.subscription.currentPeriodStart)} />
               <SubRow label="نهاية الفترة" value={formatDate(customer.subscription.currentPeriodEnd)} />
               {customer.subscription.expiresAt && <SubRow label="تاريخ الانتهاء" value={formatDate(customer.subscription.expiresAt)} />}
-              {customer.subscription.activatedAt && <SubRow label="تاريخ التفعيل" value={formatDate(customer.subscription.activatedAt)} />}
             </div>
             <div className="mt-4 flex flex-wrap gap-2">
               {customer.subscription.status !== "ACTIVE" && (

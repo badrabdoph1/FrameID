@@ -53,7 +53,6 @@ type ExtraData = {
   priceAmount: number;
   currency: string;
   iconKey: string | null;
-  isHighlighted: boolean;
   isActive: boolean;
   sortOrder: number;
 };
@@ -330,7 +329,6 @@ function ExtraRow({ extra, editing, confirmingDelete, isFirst, isLast, onEdit, o
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <h3 className="truncate text-sm font-black text-[#fff7e8]">{extra.name}</h3>
-            {extra.isHighlighted ? <span className="rounded-full bg-amber-300/12 px-2.5 py-1 text-[0.68rem] font-black text-[#f3cf73]">مميزة</span> : null}
             <span className={extra.isActive ? "rounded-full bg-emerald-300/10 px-2.5 py-1 text-[0.68rem] font-black text-emerald-300" : "rounded-full bg-white/8 px-2.5 py-1 text-[0.68rem] font-black text-white/45"}>{extra.isActive ? "ظاهرة" : "مخفية"}</span>
           </div>
           {extra.description ? <p className="mt-1 text-xs font-bold leading-5 text-white/45">{extra.description}</p> : null}
@@ -368,7 +366,6 @@ function ExtraForm({ mode, extra, onCancel }: { mode: "create" | "edit"; extra?:
       </div>
       <Field label="وصف قصير"><Input name="description" defaultValue={extra?.description ?? ""} placeholder="خدمة اختيارية تضيف قيمة للباقة" /></Field>
       <div className="grid gap-2 sm:grid-cols-2">
-        <label className="flex min-h-11 items-center gap-2 rounded-2xl border border-white/10 bg-black/15 px-3 text-sm font-black text-white/65"><input type="checkbox" name="isHighlighted" defaultChecked={extra?.isHighlighted ?? false} className="size-4 accent-[#f3cf73]" /> مميزة</label>
         <label className="flex min-h-11 items-center gap-2 rounded-2xl border border-white/10 bg-black/15 px-3 text-sm font-black text-white/65"><input type="checkbox" name="isActive" defaultChecked={extra?.isActive ?? true} className="size-4 accent-[#f3cf73]" /> ظاهرة للعميل</label>
       </div>
       <div className="grid grid-cols-2 gap-2">

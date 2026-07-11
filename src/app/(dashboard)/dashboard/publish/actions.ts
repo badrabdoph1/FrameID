@@ -66,7 +66,6 @@ export async function publishSiteAction() {
       data: {
         status: "PUBLISHED",
         isPublished: true,
-        publishedVersion: { increment: 1 },
       },
     });
   } catch (error) {

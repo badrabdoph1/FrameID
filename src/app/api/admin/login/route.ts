@@ -105,7 +105,7 @@ export async function POST(request: Request) {
 
     const resultFromEnv = getEnvAdminLogin(identifier, password);
     const result = resultFromEnv ?? await withTimeout(
-      createAdminLoginService(createPrismaAdminAuthRepository(prisma)).login({ identifier, password }),
+      createAdminLoginService(createPrismaAdminAuthRepository(prisma as never)).login({ identifier, password }),
       8000,
     );
     const statelessResult = resultFromEnv ?? createStatelessAdminLoginResult(

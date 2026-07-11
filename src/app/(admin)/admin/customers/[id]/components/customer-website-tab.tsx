@@ -48,11 +48,9 @@ export function CustomerWebsiteTab({ customer, onAction }: {
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             {[
               { label: "القالب", value: site.themeName ?? "—" },
-              { label: "الإصدار", value: `v${site.publishedVersion}` },
               { label: "الباقات", value: site.packagesCount },
               { label: "الألبومات", value: site.albumsCount },
               { label: "الخدمات الإضافية", value: site.extrasCount },
-              { label: "اللغة", value: site.locale === "ar" ? "العربية" : site.locale },
               { label: "تاريخ الإنشاء", value: formatDate(site.createdAt) },
               { label: "آخر تحديث", value: formatDate(site.updatedAt) },
             ].map((item) => (

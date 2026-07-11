@@ -35,7 +35,7 @@ export default async function DashboardPublishPage({
     }),
     prisma.site.findUnique({
       where: { id: session.site.id },
-      select: { status: true, isPublished: true, publishedVersion: true },
+      select: { status: true, isPublished: true },
     }),
     prisma.package.count({ where: { siteId: session.site.id, deletedAt: null } }),
     prisma.galleryImage.count({
@@ -85,7 +85,7 @@ export default async function DashboardPublishPage({
       updated={updated}
       error={error}
       isPublished={site?.status === "PUBLISHED" || site?.isPublished === true}
-      publishedVersion={site?.publishedVersion ?? 0}
+      publishedVersion={0}
       readinessItems={readinessItems}
       canPublish={canPublish}
     />

@@ -10,7 +10,6 @@ export type SiteRow = {
   slug: string;
   title: string;
   status: string;
-  locale: string;
   isPublished: boolean;
   createdAt: string;
   tenantName: string;
@@ -61,11 +60,7 @@ const columns: Column<SiteRow>[] = [
       <Badge tone={toneMap[r.status] || "neutral"}>{r.status}</Badge>
     ),
   },
-  {
-    key: "locale",
-    header: "اللغة",
-    render: (r) => (r.locale === "ar" ? "العربية" : r.locale),
-  },
+
   {
     key: "createdAt",
     header: "تاريخ الإنشاء",

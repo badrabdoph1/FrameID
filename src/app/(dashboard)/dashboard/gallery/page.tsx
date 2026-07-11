@@ -40,7 +40,7 @@ export default async function DashboardGalleryPage({
       where: { siteId: session.site.id, deletedAt: null },
       orderBy: { sortOrder: "asc" },
       include: {
-        coverAsset: { select: { url: true } },
+        cover: { select: { url: true } },
         images: {
           where: { deletedAt: null },
           orderBy: { sortOrder: "asc" },

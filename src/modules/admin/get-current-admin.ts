@@ -21,14 +21,14 @@ export async function getCurrentAdmin(): Promise<CurrentAdmin> {
   }
 
   const tokenHash = hashAdminSessionToken(rawToken);
-  const session = await prisma.adminSession.findFirst({
+  const session = await prisma.session.findFirst({
     where: {
       tokenHash,
       revokedAt: null,
       expiresAt: { gt: new Date() },
     },
     select: {
-      adminUser: {
+      user: {
         select: { id: true, email: true, name: true, role: true },
       },
     },
@@ -38,5 +38,5 @@ export async function getCurrentAdmin(): Promise<CurrentAdmin> {
     redirect("/admin/login");
   }
 
-  return session.adminUser;
+  return session.user;
 }

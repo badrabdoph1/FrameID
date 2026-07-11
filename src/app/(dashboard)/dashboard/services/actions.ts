@@ -265,7 +265,6 @@ export async function addExtraAction(formData: FormData) {
         currency: readString(formData, "currency") || "EGP",
         iconKey: readString(formData, "iconKey") || null,
         description: readString(formData, "description") || null,
-        isHighlighted: readBool(formData, "isHighlighted"),
         isActive: true,
         sortOrder,
       },
@@ -299,7 +298,6 @@ export async function updateExtraAction(formData: FormData) {
         currency: readString(formData, "currency") || "EGP",
         iconKey: readString(formData, "iconKey") || null,
         description: readString(formData, "description") || null,
-        isHighlighted: readBool(formData, "isHighlighted"),
         isActive: readBool(formData, "isActive"),
       },
     });
@@ -362,7 +360,6 @@ export async function duplicateExtraAction(formData: FormData) {
         currency: original.currency,
         iconKey: original.iconKey,
         description: original.description,
-        isHighlighted: false,
         isActive: false,
         sortOrder,
       },

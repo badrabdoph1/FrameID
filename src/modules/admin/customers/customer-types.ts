@@ -83,8 +83,6 @@ export type CustomerSiteInfo = {
   domain: string | null;
   domains: { domain: string; status: string }[];
   isPublished: boolean;
-  publishedVersion: number;
-  locale: string;
   createdAt: string;
   updatedAt: string;
   packagesCount: number;
@@ -101,7 +99,6 @@ export type CustomerSubscriptionInfo = {
   planCode: string | null;
   currentPeriodStart: string | null;
   currentPeriodEnd: string | null;
-  activatedAt: string | null;
   expiresAt: string | null;
   createdAt: string;
 };
@@ -115,7 +112,7 @@ export type CustomerPaymentInfo = {
   reference: string | null;
   proofUrl: string | null;
   reviewedByName: string | null;
-  adminNote: string | null;
+  note: string | null;
   createdAt: string;
   reviewedAt: string | null;
 };
@@ -144,7 +141,6 @@ export type CustomerSupportCaseInfo = {
   id: string;
   subject: string;
   status: string;
-  priority: string;
   createdAt: string;
 };
 
@@ -164,7 +160,6 @@ export type CustomerNotification = {
   type: string;
   title: string;
   body: string;
-  priority: string;
   readAt: string | null;
   createdAt: string;
 };

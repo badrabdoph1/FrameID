@@ -28,10 +28,6 @@ function createRepository(
       calls.push("slugs");
       return new Set(existingSlugs);
     },
-    async getTemplateStarterData(templateCode) {
-      calls.push(`starter:${templateCode}`);
-      return getTemplateStarterData(templateCode);
-    },
     async createAccountWithSite(input) {
       calls.push("transaction");
       calls.push(`packages:${input.defaultContent.packages.length}`);

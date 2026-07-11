@@ -71,7 +71,7 @@ type LogData = {
   id: string;
   action: string;
   actorName: string | null;
-  note: string | null;
+  metadata: unknown;
   createdAt: Date;
 };
 

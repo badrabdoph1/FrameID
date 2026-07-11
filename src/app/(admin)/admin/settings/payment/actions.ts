@@ -10,7 +10,7 @@ import { createPaymentSettingsService } from "@/modules/billing/payment-settings
 import { createPrismaPaymentSettingsRepository } from "@/modules/billing/prisma-payment-settings-repository";
 
 const service = createPaymentSettingsService(
-  createPrismaPaymentSettingsRepository(prisma),
+  createPrismaPaymentSettingsRepository(prisma as never),
 );
 
 export async function updatePaymentSettingsAction(formData: FormData) {
@@ -196,7 +196,7 @@ export async function movePaymentAccountAction(formData: FormData) {
   try {
     const current = await prisma.paymentAccount.findUnique({
       where: { id },
-      select: { id: true, sortOrder: true, paymentSettingsId: true },
+      select: { id: true, sortOrder: true },
     });
 
     if (!current) {
@@ -205,7 +205,6 @@ export async function movePaymentAccountAction(formData: FormData) {
 
     const adjacent = await prisma.paymentAccount.findFirst({
       where: {
-        paymentSettingsId: current.paymentSettingsId,
         isActive: true,
         sortOrder: direction === "up"
           ? { lt: current.sortOrder }

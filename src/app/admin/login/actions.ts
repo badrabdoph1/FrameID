@@ -16,7 +16,7 @@ export async function adminLoginAction(formData: FormData) {
 
   try {
     const loginService = createAdminLoginService(
-      createPrismaAdminAuthRepository(prisma),
+      createPrismaAdminAuthRepository(prisma as never),
     );
     const result = await loginService.login({
       email: readFormString(formData, "email"),

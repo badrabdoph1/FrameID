@@ -17,7 +17,7 @@ export default async function AdminPlansPage({ searchParams }: Props) {
   const q = (params.q ?? "").trim();
   const state = (params.state ?? "").trim();
 
-  const where: Record<string, unknown> = { deletedAt: null };
+  const where: Record<string, unknown> = {};
   if (q) {
     const contains = { contains: q, mode: "insensitive" };
     where.OR = [{ code: contains }, { name: contains }, { currency: contains }, { billingInterval: contains }];
@@ -31,8 +31,8 @@ export default async function AdminPlansPage({ searchParams }: Props) {
       orderBy: [{ isActive: "desc" }, { priceAmount: "asc" }],
       include: { _count: { select: { subscriptions: true, paymentRequests: true } } },
     }),
-    prisma.plan.count({ where: { deletedAt: null } }),
-    prisma.plan.count({ where: { deletedAt: null, isActive: true } }),
+    prisma.plan.count({ where: {} }),
+    prisma.plan.count({ where: { isActive: true } }),
     prisma.subscription.count({ where: {} }),
     prisma.paymentRequest.count({ where: { deletedAt: null } }),
   ]);

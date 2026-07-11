@@ -69,15 +69,6 @@ export default async function AdminPaymentsPage({ searchParams }: Props) {
           },
         },
         plan: { select: { name: true, priceAmount: true } },
-        subscription: { select: { id: true } },
-        paymentAccount: {
-          select: {
-            label: true,
-            accountName: true,
-            accountNumber: true,
-            bankName: true,
-          },
-        },
         proofAsset: {
           select: {
             url: true,
@@ -87,7 +78,7 @@ export default async function AdminPaymentsPage({ searchParams }: Props) {
             sizeBytes: true,
           },
         },
-        reviewedBy: { select: { name: true } },
+        reviewer: { select: { name: true } },
         logs: {
           orderBy: { createdAt: "desc" },
           select: {

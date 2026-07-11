@@ -37,7 +37,7 @@ export default async function BillingPage({
 
   const [plans, paymentRequest, paymentMethods] = await Promise.all([
     prisma.plan.findMany({
-      where: { isActive: true, deletedAt: null },
+      where: { isActive: true },
       orderBy: { priceAmount: "asc" },
       take: 2,
     }),
@@ -45,7 +45,7 @@ export default async function BillingPage({
       repository: createPrismaBillingActivationRepository(prisma),
     }).getCustomerActivePaymentRequest(session.tenant.id),
     createPaymentSettingsService(
-      createPrismaPaymentSettingsRepository(prisma),
+      createPrismaPaymentSettingsRepository(prisma as never),
     ).getActivePaymentMethods(),
   ]);
 
@@ -59,15 +59,15 @@ export default async function BillingPage({
     },
   });
 
-  let logs: Array<{ id: string; action: string; actorName: string | null; note: string | null; createdAt: Date }> = [];
+  let logs: Array<{ id: string; action: string; actorName: string | null; metadata: unknown; createdAt: Date }> = [];
 
   let proofUrl: string | null = null;
 
   if (paymentRequest) {
     logs = await prisma.paymentRequestLog.findMany({
-      where: { paymentRequestId: paymentRequest.id },
+      where: { requestId: paymentRequest.id },
       orderBy: { createdAt: "asc" },
-      select: { id: true, action: true, actorName: true, note: true, createdAt: true },
+      select: { id: true, action: true, actorName: true, metadata: true, createdAt: true },
     });
 
     if (paymentRequest.proofAssetId) {

@@ -97,9 +97,20 @@ export default async function AdminTemplatesPage({ searchParams }: Props) {
 
       <TemplateManager
         templates={templates.map((template) => ({
-          ...template,
+          id: template.id,
+          name: template.name,
+          code: template.code,
           status: String(template.status),
-          theme: { ...template.theme, status: String(template.theme.status) },
+          showroomOrder: template.showroomOrder,
+          previewData: template.previewData,
+          settings: template.settings,
+          theme: {
+            id: template.theme.id,
+            name: template.theme.name,
+            code: template.theme.code,
+            category: template.theme.category ?? "",
+            status: String(template.theme.status),
+          },
         }))}
         themes={themes.map((theme) => ({ ...theme, status: String(theme.status) }))}
         message={getMessage(params)}

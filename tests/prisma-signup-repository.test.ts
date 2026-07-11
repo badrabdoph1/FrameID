@@ -96,12 +96,6 @@ describe("prisma signup repository", () => {
           return { id: "contact_1" };
         }
       },
-      contactProfile: {
-        async create() {
-          operations.push("contact");
-          return { id: "contact_1" };
-        }
-      },
       package: {
         async createMany(args: { data: unknown[] }) {
           operations.push(`packages:${args.data.length}`);

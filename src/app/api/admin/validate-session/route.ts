@@ -16,7 +16,7 @@ export async function GET(request: Request) {
 
   const tokenHash = hashAdminSessionToken(rawToken);
 
-  const session = await prisma.adminSession.findFirst({
+  const session = await prisma.session.findFirst({
     where: {
       tokenHash,
       revokedAt: null,

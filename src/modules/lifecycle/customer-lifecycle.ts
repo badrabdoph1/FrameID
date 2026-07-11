@@ -138,7 +138,7 @@ export async function applyDefaultTrialDurationFromRegistration(prisma: Lifecycl
       data: { trialStartedAt: start, trialEndsAt: end, trialDays: days },
     });
     await prisma.subscription.updateMany({
-      where: { tenantId: tenant.id, deletedAt: null, status: "TRIAL" },
+      where: { tenantId: tenant.id, status: "TRIAL" },
       data: { currentPeriodStart: start, currentPeriodEnd: end, expiresAt: end },
     });
   }
@@ -152,8 +152,8 @@ async function notifyLifecycleExpired(prisma: LifecyclePrismaClient, tenant: { i
     ? "انتهت فترة التجربة المجانية. يمكنك تفعيل الاشتراك لإعادة تشغيل الموقع."
     : "انتهت مدة الاشتراك. يمكنك تجديد الاشتراك لإعادة تشغيل الموقع.";
 
-  await prisma.notification.create({ data: { tenantId: tenant.id, type: `${type}_expired`, title, body, priority: "high" } }).catch(() => undefined);
-  await prisma.notificationLog.create({ data: { type: "danger", title, body, category: "lifecycle", tenantId: tenant.id, userId: tenant.ownerUserId ?? null } }).catch(() => undefined);
+  await prisma.notification.create({ data: { tenantId: tenant.id, type: `${type}_expired`, title, body } }).catch(() => undefined);
+  await prisma.notificationLog.create({ data: { type: "danger", title, body, category: "lifecycle", tenantId: tenant.id } }).catch(() => undefined);
 }
 
 export async function syncCustomerLifecycle(prisma: LifecyclePrismaClient, options: { tenantId?: string; now?: Date; limit?: number } = {}) {
@@ -218,7 +218,7 @@ export async function applyTrialTimerToTenants(prisma: LifecyclePrismaClient, te
 export async function applySubscriptionTimerToTenants(prisma: LifecyclePrismaClient, tenantIds: string[], preset: LifecycleDurationPreset, customDays: number) {
   const now = new Date();
   const subscriptions = await prisma.subscription.findMany({
-    where: { tenantId: { in: tenantIds }, deletedAt: null, status: { in: ["ACTIVE", "EXPIRED", "PAST_DUE"] } },
+    where: { tenantId: { in: tenantIds }, status: { in: ["ACTIVE", "EXPIRED", "PAST_DUE"] } },
     orderBy: { createdAt: "desc" },
     select: { id: true, tenantId: true, currentPeriodStart: true, currentPeriodEnd: true, expiresAt: true },
   });
@@ -233,7 +233,7 @@ export async function applySubscriptionTimerToTenants(prisma: LifecyclePrismaCli
   for (const sub of latestSubscriptions) {
     const currentEnd = sub.currentPeriodEnd ?? sub.expiresAt ?? null;
     const end = preset === "keep" ? currentEnd : getLifecycleEndDate(now, preset, customDays);
-    await prisma.subscription.update({ where: { id: sub.id }, data: { status: "ACTIVE", activatedAt: sub.currentPeriodStart ?? now, currentPeriodStart: sub.currentPeriodStart ?? now, currentPeriodEnd: end, expiresAt: end } });
+    await prisma.subscription.update({ where: { id: sub.id }, data: { status: "ACTIVE", currentPeriodStart: sub.currentPeriodStart ?? now, ...(end ? { currentPeriodEnd: end, expiresAt: end } : {}) } });
     await prisma.tenant.update({ where: { id: sub.tenantId }, data: { status: "ACTIVE", gracePeriodEndsAt: null } });
   }
 

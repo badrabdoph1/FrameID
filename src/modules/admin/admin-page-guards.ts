@@ -27,18 +27,18 @@ export async function getCurrentAdmin() {
 
   const tokenHash = hashAdminSessionToken(rawToken);
 
-  const session = await prisma.adminSession.findFirst({
+  const session = await prisma.session.findFirst({
     where: {
       tokenHash,
       revokedAt: null,
       expiresAt: { gt: new Date() },
     },
-    include: { adminUser: true },
+    include: { user: true },
   });
 
-  if (!session?.adminUser) return null;
+  if (!session?.user) return null;
 
-  return session.adminUser;
+  return session.user;
 }
 
 export async function requireSuperAdminSession() {

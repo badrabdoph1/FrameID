@@ -61,7 +61,6 @@ export async function POST(request: Request) {
         title,
         body: buildBody(payload),
         category: clean(payload.category, 80) ?? null,
-        userId: clean(payload.userId, 80) ?? null,
         tenantId: clean(payload.tenantId, 80) ?? null,
       },
     });

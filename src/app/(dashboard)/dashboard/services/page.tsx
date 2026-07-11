@@ -56,7 +56,6 @@ export default async function DashboardServicesPage({
         priceAmount: extra.priceAmount,
         currency: extra.currency,
         iconKey: extra.iconKey,
-        isHighlighted: extra.isHighlighted,
         isActive: extra.isActive,
         sortOrder: extra.sortOrder,
       }))}

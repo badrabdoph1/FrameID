@@ -59,7 +59,7 @@ async function assertEditableOwnedDraft(draftId: string, tenantId: string) {
 
 async function validatePlan(planId: string) {
   const basicPlan = await prisma.plan.findFirst({
-    where: { isActive: true, deletedAt: null },
+    where: { isActive: true },
     orderBy: { priceAmount: "asc" },
     select: { id: true },
   });
@@ -77,7 +77,7 @@ async function validatePaymentAccount(method: PaymentMethod, accountId: string) 
       id: accountId,
       isActive: true,
       deletedAt: null,
-      paymentSettings: { paymentMethod: method, isActive: true },
+      method,
     },
     select: { id: true },
   });

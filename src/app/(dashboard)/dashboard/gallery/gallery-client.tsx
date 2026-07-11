@@ -55,7 +55,7 @@ type AlbumWithImages = {
   title: string;
   slug: string;
   description: string | null;
-  coverAsset: { url: string } | null;
+  cover: { url: string } | null;
   sortOrder: number;
   images: GalleryImageInfo[];
 };
@@ -80,7 +80,7 @@ type GalleryClientProps = {
 };
 
 function getCoverUrl(album: AlbumWithImages): string | null {
-  if (album.coverAsset) return album.coverAsset.url;
+  if (album.cover) return album.cover.url;
   if (album.images.length > 0) return album.images[0].asset.url;
   return null;
 }
