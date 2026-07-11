@@ -28,10 +28,8 @@ export type PublicSiteRecord = {
     email: string | null;
     instagram: string | null;
     facebook: string | null;
-    avatarAsset?: {
-      url: string;
-      deletedAt: Date | null;
-    } | null;
+    avatarUrl?: string | null;
+    coverUrl?: string | null;
   } | null;
   sections: Array<{
     type: string;
@@ -139,44 +137,36 @@ const NEUTRAL_PHOTOGRAPHER_DESCRIPTION = "معرض أعمال وباقات وخ�
 
 export function createPublicSiteViewModel({
   site,
-  platformBaseUrl
+  platformBaseUrl,
+  platformSocialImageUrl = "/opengraph-image",
 }: {
   site: PublicSiteRecord;
   platformBaseUrl: string;
+  platformSocialImageUrl?: string;
 }): PublicSiteViewModel {
   const publicUrl = `${platformBaseUrl.replace(/\/$/u, "")}/p/${site.slug}`;
   const heroSection = findSection(site, "hero");
   const contactSection = findSection(site, "contact");
-  const photographerName = site.tenant.displayName.trim() || site.title;
-  const socialTitle = site.contactProfile?.studioName?.trim() || photographerName;
-  const heroSubheadline = readNullableString(heroSection?.data.subheadline);
-  const socialDescription =
-    site.description?.trim() ||
-    site.contactProfile?.longDescription?.trim() ||
-    site.contactProfile?.bio?.trim() ||
-    heroSubheadline ||
-    NEUTRAL_PHOTOGRAPHER_DESCRIPTION;
-  const metadataTitle = site.seoSettings?.title ?? site.title;
-  const metadataDescription = site.seoSettings?.description ?? socialDescription;
+  const studioName = readNullableString(site.contactProfile?.studioName);
+  const photographerName = readString(site.title, site.tenant.displayName);
+  const metadataTitle = studioName ?? photographerName;
+  const metadataDescription = firstText(
+    site.contactProfile?.bio,
+    site.contactProfile?.longDescription,
+    site.description,
+    site.seoSettings?.description,
+    `موقع ${photographerName} للتصوير.`,
+  );
   const canonical = site.seoSettings?.canonicalUrl ?? publicUrl;
-  const rawHeroImageUrl = readNullableString(heroSection?.data.imageUrl);
-  const heroImageUrl = rawHeroImageUrl ?? FALLBACK_HERO_IMAGE;
-  const profilePhotoUrl =
-    site.contactProfile?.avatarAsset && !site.contactProfile.avatarAsset.deletedAt
-      ? site.contactProfile.avatarAsset.url
-      : null;
-  const socialPreview = resolvePhotographerSocialPreview({
-    kind: "photographer",
-    title: socialTitle,
-    description: socialDescription,
-    profilePhotoUrl,
-    heroCoverUrl: rawHeroImageUrl,
-  });
-  const socialMetadata = buildSocialMetadata({
-    preview: socialPreview,
-    canonicalUrl: canonical,
-    siteName: socialTitle,
-  });
+  const heroImageUrl = readString(
+    heroSection?.data.imageUrl,
+    site.contactProfile?.coverUrl ?? FALLBACK_HERO_IMAGE,
+  );
+  const socialImageUrl = firstText(
+    site.contactProfile?.avatarUrl,
+    heroSection?.data.imageUrl,
+    platformSocialImageUrl,
+  );
   const shouldIndex = site.seoSettings?.robotsIndex ?? site.isPublished;
 
   return {
@@ -186,23 +176,35 @@ export function createPublicSiteViewModel({
     metadata: {
       title: metadataTitle,
       description: metadataDescription,
-      alternates: {
-        canonical
+      alternates: { canonical },
+      robots: { index: shouldIndex, follow: shouldIndex },
+      openGraph: {
+        type: "website",
+        title: metadataTitle,
+        description: metadataDescription,
+        url: canonical,
+        images: [
+          {
+            url: socialImageUrl,
+            alt: metadataTitle,
+          },
+        ],
       },
-      robots: {
-        index: shouldIndex,
-        follow: shouldIndex
+      twitter: {
+        card: "summary_large_image",
+        title: metadataTitle,
+        description: metadataDescription,
+        images: [socialImageUrl],
       },
-      ...socialMetadata,
     },
     structuredData:
       (site.seoSettings?.structuredDataOverrides as Record<string, unknown> | null) ??
       {
         "@context": "https://schema.org",
         "@type": "LocalBusiness",
-        name: socialTitle,
+        name: metadataTitle,
         url: publicUrl,
-        description: socialDescription
+        description: metadataDescription,
       },
     sections: Object.fromEntries(
       [...site.sections].sort((a, b) => a.sortOrder - b.sortOrder).map((section) => [
@@ -219,23 +221,20 @@ export function createPublicSiteViewModel({
       headline: readString(heroSection?.data.headline, site.title),
       subheadline: readString(
         heroSection?.data.subheadline,
-        site.description ?? `تصوير احترافي مع ${site.tenant.displayName}.`
+        site.description ?? `تصوير احترافي مع ${site.tenant.displayName}.`,
       ),
-      imageUrl: heroImageUrl
+      imageUrl: heroImageUrl,
     },
     contact: {
       studioName: site.contactProfile?.studioName ?? null,
       bio: site.contactProfile?.bio ?? null,
       longDescription: site.contactProfile?.longDescription ?? null,
-      callToAction: readString(
-        contactSection?.data.callToAction,
-        "احجز جلستك الآن"
-      ),
+      callToAction: readString(contactSection?.data.callToAction, "احجز جلستك الآن"),
       phone: site.contactProfile?.phone ?? null,
       whatsapp: site.contactProfile?.whatsapp ?? null,
       email: site.contactProfile?.email ?? null,
       instagram: site.contactProfile?.instagram ?? null,
-      facebook: site.contactProfile?.facebook ?? null
+      facebook: site.contactProfile?.facebook ?? null,
     },
     packages: site.packages.map((item) => ({
       id: item.id,
@@ -246,7 +245,7 @@ export function createPublicSiteViewModel({
       currency: item.currency,
       features: readStringList(item.features),
       imageUrl: item.imageUrl,
-      isHighlighted: item.isHighlighted
+      isHighlighted: item.isHighlighted,
     })),
     extras: site.extras.map((item) => ({
       id: item.id,
@@ -255,14 +254,14 @@ export function createPublicSiteViewModel({
       price: formatMoney(item.priceAmount, item.currency),
       priceAmount: item.priceAmount,
       currency: item.currency,
-      iconKey: item.iconKey
+      iconKey: item.iconKey,
     })),
     gallery: site.gallery.map((item) => ({
       id: item.id,
       url: item.url,
       alt: item.alt ?? item.caption ?? site.title,
-      caption: item.caption
-    }))
+      caption: item.caption,
+    })),
   };
 }
 
@@ -272,8 +271,15 @@ function findSection(site: PublicSiteRecord, type: string) {
     .find((section) => section.type === type);
 }
 
+function firstText(...values: unknown[]): string {
+  for (const value of values) {
+    if (typeof value === "string" && value.trim()) return value.trim();
+  }
+  return "";
+}
+
 function readString(value: unknown, fallback: string): string {
-  return typeof value === "string" && value.trim() ? value : fallback;
+  return typeof value === "string" && value.trim() ? value.trim() : fallback;
 }
 
 function readNullableString(value: unknown): string | null {
@@ -281,18 +287,15 @@ function readNullableString(value: unknown): string | null {
 }
 
 function readStringList(value: unknown): string[] {
-  if (!Array.isArray(value)) {
-    return [];
-  }
-
+  if (!Array.isArray(value)) return [];
   return value.filter(
-    (item): item is string => typeof item === "string" && Boolean(item.trim())
+    (item): item is string => typeof item === "string" && Boolean(item.trim()),
   );
 }
 
 function formatMoney(amount: number, currency: string): string {
   return `${new Intl.NumberFormat("en-US", {
-    maximumFractionDigits: 0
+    maximumFractionDigits: 0,
   }).format(amount)} ${formatCurrencyLabel(currency)}`;
 }
 

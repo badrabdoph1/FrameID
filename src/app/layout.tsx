@@ -4,12 +4,10 @@ import type { ReactNode } from "react";
 
 import { Analytics } from "@/components/analytics";
 import { ToastRootProvider } from "@/components/errors/toast-root-provider";
-import { getPlatformSocialPreviewSettings } from "@/modules/social-preview/platform-social-preview-settings";
 import {
-  buildSocialMetadata,
-  PLATFORM_DEFAULT_SOCIAL_IMAGE,
-  resolvePlatformSocialPreview,
-} from "@/modules/social-preview/social-preview";
+  loadPlatformSocialPreview,
+  resolvePlatformSocialImage,
+} from "@/modules/seo/platform-social-preview";
 import "./globals.css";
 
 export const dynamic = "force-dynamic";
@@ -29,34 +27,18 @@ const playfair = Playfair_Display({
 });
 
 const seoBaseUrl = "https://frameid.app";
-const defaultTitle = "FrameID | موقع احترافي لكل مصور";
-const defaultDescription =
-  "FrameID منصة عربية للمصورين تساعدك تنشئ موقعًا احترافيًا ورابطًا واحدًا يجمع صورك وباقاتك وأسعارك وبيانات التواصل.";
 
 export async function generateMetadata(): Promise<Metadata> {
-  const settings = await getPlatformSocialPreviewSettings();
-  const preview = resolvePlatformSocialPreview({
-    kind: "platform",
-    defaults: {
-      title: defaultTitle,
-      description: defaultDescription,
-      imageUrl: PLATFORM_DEFAULT_SOCIAL_IMAGE,
-    },
-    settings,
-  });
-  const socialMetadata = buildSocialMetadata({
-    preview,
-    canonicalUrl: seoBaseUrl,
-    siteName: "FrameID",
-  });
+  const socialPreview = await loadPlatformSocialPreview();
+  const socialImage = resolvePlatformSocialImage(socialPreview);
 
   return {
     metadataBase: new URL(seoBaseUrl),
     title: {
-      default: defaultTitle,
+      default: socialPreview.title,
       template: "%s | FrameID"
     },
-    description: defaultDescription,
+    description: socialPreview.description,
     applicationName: "FrameID",
     referrer: "origin-when-cross-origin",
     keywords: [
@@ -72,9 +54,7 @@ export async function generateMetadata(): Promise<Metadata> {
     creator: "FrameID",
     publisher: "FrameID",
     category: "SaaS",
-    alternates: {
-      canonical: "/"
-    },
+    alternates: { canonical: "/" },
     robots: {
       index: true,
       follow: true,
@@ -86,7 +66,28 @@ export async function generateMetadata(): Promise<Metadata> {
         "max-video-preview": -1
       }
     },
-    ...socialMetadata,
+    openGraph: {
+      type: "website",
+      locale: "ar_EG",
+      siteName: "FrameID",
+      url: seoBaseUrl,
+      title: socialPreview.title,
+      description: socialPreview.description,
+      images: [
+        {
+          url: socialImage,
+          width: 1200,
+          height: 630,
+          alt: socialPreview.title
+        }
+      ]
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: socialPreview.title,
+      description: socialPreview.description,
+      images: [socialImage]
+    },
     manifest: "/manifest.webmanifest",
     appleWebApp: {
       capable: true,

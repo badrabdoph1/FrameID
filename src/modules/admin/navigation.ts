@@ -147,6 +147,7 @@ export const adminSections: AdminSection[] = [
       { href: "/admin/templates", label: "القوالب", icon: Layout },
       { href: "/admin/themes", label: "الثيمات", icon: Palette },
       { href: "/admin/media", label: "الوسائط", icon: Image },
+      { href: "/admin/social-preview", label: "معاينة المشاركة", icon: Share2 },
       { href: "/admin/content/marketing/homepage", label: "محتوى الموقع", icon: FileText },
     ],
   },
