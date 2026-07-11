@@ -1,0 +1,51 @@
+/*
+ * Presentation-only fallback for Android/WebView GPU combinations that can
+ * corrupt composited fixed or sticky layers using backdrop blur.
+ */
+
+html.frameid-rendering-safe .customer-desktop-shell [class*="backdrop-blur"],
+html.frameid-rendering-safe .fixed[class*="backdrop-blur"],
+html.frameid-rendering-safe .sticky[class*="backdrop-blur"] {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+html.frameid-rendering-safe .customer-desktop-shell > header.sticky {
+  background-color: rgba(9, 11, 16, 0.99) !important;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.22) !important;
+}
+
+html.frameid-rendering-safe .customer-desktop-shell > nav.fixed {
+  background-color: rgba(9, 11, 16, 0.995) !important;
+  box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.2) !important;
+}
+
+html.frameid-rendering-safe #dashboard-mobile-menu > button {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  background-color: rgba(0, 0, 0, 0.72) !important;
+}
+
+html.frameid-rendering-safe #dashboard-mobile-menu > section {
+  box-shadow: 0 16px 44px rgba(0, 0, 0, 0.34) !important;
+}
+
+html.frameid-rendering-safe .fixed[class*="transition"][class*="translate"],
+html.frameid-rendering-safe .fixed[class*="transition"][class*="scale"] {
+  transform: none !important;
+  transition-property: opacity, color, background-color, border-color !important;
+}
+
+html.frameid-rendering-safe .customer-desktop-shell,
+html.frameid-rendering-safe .customer-desktop-main {
+  isolation: auto;
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .customer-desktop-shell [class*="backdrop-blur"],
+  .fixed[class*="backdrop-blur"],
+  .sticky[class*="backdrop-blur"] {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+}
