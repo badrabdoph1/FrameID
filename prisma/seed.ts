@@ -39,8 +39,9 @@ async function main() {
         themeId: theme.id,
         name: template.name,
         status: template.status,
+        version: template.version,
         showroomOrder: template.showroomOrder,
-        previewData: template.previewData as Prisma.InputJsonValue,
+        previewData: template.previewData === null ? Prisma.JsonNull : template.previewData as Prisma.InputJsonValue,
         settings: template.settings as Prisma.InputJsonValue
       },
       create: {
@@ -48,8 +49,9 @@ async function main() {
         code: template.code,
         name: template.name,
         status: template.status,
+        version: template.version,
         showroomOrder: template.showroomOrder,
-        previewData: template.previewData as Prisma.InputJsonValue,
+        previewData: template.previewData === null ? Prisma.JsonNull : template.previewData as Prisma.InputJsonValue,
         settings: template.settings as Prisma.InputJsonValue
       }
     });

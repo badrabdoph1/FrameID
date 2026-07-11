@@ -13,8 +13,13 @@ export const metadata: Metadata = {
 
 export const dynamic = "force-dynamic";
 
-export default async function TemplatesPage() {
+type TemplatesPageProps = {
+  searchParams: Promise<{ selected?: string; contentReset?: string; error?: string }>;
+};
+
+export default async function TemplatesPage({ searchParams }: TemplatesPageProps) {
   const session = await getCurrentRequestSession();
+  const params = await searchParams;
 
   if (!session) {
     redirect("/login");
@@ -41,6 +46,15 @@ export default async function TemplatesPage() {
       templates={templates}
       currentThemeName={currentSite?.theme.name ?? null}
       currentThemeCode={currentThemeCode}
+      message={
+        params.error
+          ? { tone: "error", text: decodeURIComponent(params.error) }
+          : params.contentReset
+            ? { tone: "success", text: "تم استبدال محتوى الموقع بالكامل بعد حفظ Snapshot سريع للمحتوى السابق." }
+            : params.selected
+              ? { tone: "success", text: "تم تغيير شكل الموقع فقط بدون تعديل المحتوى." }
+              : null
+      }
     />
   );
 }

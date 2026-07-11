@@ -11,7 +11,8 @@ type PrismaSiteThemeSelectionClient = {
     update(input: unknown): Promise<unknown>;
   };
   siteThemeConfig: {
-    upsert(input: unknown): Promise<unknown>;
+    updateMany(input: unknown): Promise<{ count: number }>;
+    create(input: unknown): Promise<unknown>;
   };
 };
 
@@ -58,14 +59,15 @@ export function createPrismaSiteThemeSelectionRepository(
           code: input.template.code,
           name: input.template.name,
           status: input.template.status.toUpperCase(),
+          version: input.theme.version,
           showroomOrder: input.template.showroomOrder,
-          previewData: {},
-          settings: {}
+          settings: input.template.starterContent.themeSettings
         },
         update: {
           themeId: theme.id,
           name: input.template.name,
           status: input.template.status.toUpperCase(),
+          version: input.theme.version,
           showroomOrder: input.template.showroomOrder
         },
         select: {
@@ -78,24 +80,32 @@ export function createPrismaSiteThemeSelectionRepository(
           id: input.siteId
         },
         data: {
-          themeId: theme.id
+          themeId: theme.id,
+          templateCode: input.template.code,
+          templateVersion: input.theme.version
         }
       });
 
-      await prisma.siteThemeConfig.upsert({
+      const updatedConfigs = await prisma.siteThemeConfig.updateMany({
         where: {
-          siteId: input.siteId
-        },
-        create: {
           siteId: input.siteId,
-          themeId: theme.id,
-          config: input.theme.defaultConfig
+          deletedAt: null
         },
-        update: {
+        data: {
           themeId: theme.id,
-          config: input.theme.defaultConfig
+          config: input.template.starterContent.themeSettings
         }
       });
+
+      if (updatedConfigs.count === 0) {
+        await prisma.siteThemeConfig.create({
+          data: {
+            siteId: input.siteId,
+            themeId: theme.id,
+            config: input.template.starterContent.themeSettings
+          }
+        });
+      }
     }
   };
 }

@@ -4,7 +4,7 @@ import { createPrismaSiteThemeSelectionRepository } from "@/modules/themes/prism
 import { themeRegistry, getTemplateByCode } from "@/modules/themes/theme-registry";
 
 describe("prisma site theme selection repository", () => {
-  it("upserts theme and template records, updates site theme, and stores config", async () => {
+  it("upserts theme/template records and updates design settings without touching content", async () => {
     const calls: string[] = [];
     const prisma = {
       theme: {
@@ -20,20 +20,23 @@ describe("prisma site theme selection repository", () => {
         }
       },
       site: {
-        async update(args: { where: { id: string }; data: { themeId: string } }) {
-          calls.push(`site:${args.where.id}:${args.data.themeId}`);
+        async update(args: { where: { id: string }; data: { themeId: string; templateCode: string; templateVersion: string } }) {
+          calls.push(`site:${args.where.id}:${args.data.themeId}:${args.data.templateCode}:${args.data.templateVersion}`);
           return {};
         }
       },
       siteThemeConfig: {
-        async upsert(args: {
-          where: { siteId: string };
-          create: { siteId: string; themeId: string };
-          update: { themeId: string };
+        async updateMany(args: {
+          where: { siteId: string; deletedAt: null };
+          data: { themeId: string; config: unknown };
         }) {
-          calls.push(
-            `config:${args.where.siteId}:${args.create.themeId}:${args.update.themeId}`
-          );
+          calls.push(`config-update:${args.where.siteId}:${args.data.themeId}`);
+          return { count: 1 };
+        },
+        async create(args: {
+          data: { siteId: string; themeId: string; config: unknown };
+        }) {
+          calls.push(`config-create:${args.data.siteId}:${args.data.themeId}`);
           return {};
         }
       }
@@ -55,8 +58,8 @@ describe("prisma site theme selection repository", () => {
     expect(calls).toEqual([
       "theme:noir-gold:noir-gold",
       "template:noir-gold:noir-gold",
-      "site:site_1:theme_1",
-      "config:site_1:theme_1:theme_1"
+      "site:site_1:theme_1:noir-gold:1.0.0",
+      "config-update:site_1:theme_1"
     ]);
   });
 });

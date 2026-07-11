@@ -19,6 +19,15 @@ export const templateStarterContentSchema = z.object({
       subheadline: z.string().trim().min(1).max(500),
       imageUrl: urlSchema
     }),
+    gallery: sectionSchema.extend({
+      description: z.string().trim().min(1).max(500)
+    }),
+    packages: sectionSchema.extend({
+      description: z.string().trim().min(1).max(500)
+    }),
+    extras: sectionSchema.extend({
+      description: z.string().trim().min(1).max(500)
+    }),
     contact: sectionSchema.extend({
       callToAction: z.string().trim().min(1).max(120)
     })
@@ -53,6 +62,7 @@ export const templateStarterContentSchema = z.object({
       z.object({
         id: z.string().trim().min(1).max(80),
         name: z.string().trim().min(1).max(120),
+        description: z.string().trim().min(1).max(320),
         priceAmount: z.number().int().nonnegative(),
         currency: z.string().trim().length(3),
         iconKey: z.string().trim().min(1).max(80),
@@ -73,7 +83,8 @@ export const templateStarterContentSchema = z.object({
           url: urlSchema,
           alt: z.string().trim().min(1).max(240),
           caption: z.string().trim().min(1).max(320),
-          sortOrder: z.number().int().nonnegative()
+          sortOrder: z.number().int().nonnegative(),
+          isFeatured: z.boolean().default(false)
         })
       )
       .min(1)

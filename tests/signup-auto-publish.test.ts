@@ -3,12 +3,14 @@ import { describe, expect, it } from "vitest";
 import { createPrismaSignupProvisioningRepository } from "@/modules/onboarding/prisma-signup-repository";
 import type { AccountCreationInput } from "@/modules/onboarding/signup-provisioning";
 import {
-  createSignupContentFromStarter,
-  getTemplateStarterData,
-  personalizeTemplateStarterData
-} from "@/modules/themes/template-starter-data";
+  createTemplateProvisioningPayload,
+  getTemplateContentSource
+} from "@/modules/templates/template-content-source";
 
-const starter = personalizeTemplateStarterData(getTemplateStarterData("noir-gold")!, "Ali Ahmed");
+const templatePayload = createTemplateProvisioningPayload(
+  getTemplateContentSource("noir-gold")!,
+  { ownerName: "Ali Ahmed" }
+);
 
 const accountInput: AccountCreationInput = {
   user: {
@@ -25,17 +27,18 @@ const accountInput: AccountCreationInput = {
   },
   site: {
     slug: "ali-ahmed",
-    title: starter.title,
-    description: starter.description,
-    themeCode: starter.themeCode,
-    templateCode: starter.code
+    title: templatePayload.site.title,
+    description: templatePayload.site.description,
+    themeCode: templatePayload.themeCode,
+    templateCode: templatePayload.templateCode,
+    templateVersion: templatePayload.templateVersion
   },
   subscription: {
     status: "TRIAL",
     trialStartedAt: new Date("2026-07-10T12:00:00.000Z"),
     trialEndsAt: new Date("2026-07-24T12:00:00.000Z")
   },
-  defaultContent: createSignupContentFromStarter(starter)
+  defaultContent: templatePayload
 };
 
 describe("signup site publication", () => {
@@ -93,7 +96,7 @@ describe("signup site publication", () => {
       studioName: "Ali Ahmed"
     });
     expect(createdSeoData).toMatchObject({
-      title: "Ali Ahmed — تصوير زفاف فاخر"
+      title: "Ali Ahmed"
     });
     expect(result).toMatchObject({
       siteId: "site_1",

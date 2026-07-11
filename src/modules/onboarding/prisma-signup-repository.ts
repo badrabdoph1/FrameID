@@ -1,9 +1,4 @@
 import { themeRegistry } from "@/modules/themes/theme-registry";
-import {
-  getTemplateStarterData,
-  mergeTemplatePreviewData,
-  templateStarterToPreviewData
-} from "@/modules/themes/template-starter-data";
 import type {
   AccountCreationInput,
   ProvisionedAccountResult,
@@ -31,7 +26,7 @@ type PrismaSignupTransaction = {
 type PrismaSignupClient = {
   user: { count(input: unknown): Promise<number>; };
   site: { findMany(input: unknown): Promise<Array<{ slug: string }>>; };
-  template: { findUnique(input: unknown): Promise<{ status: string; deletedAt: Date | null; previewData: unknown } | null>; };
+  template: { findUnique(input: unknown): Promise<{ status: string; deletedAt: Date | null } | null>; };
   $transaction: unknown;
 };
 
@@ -56,18 +51,18 @@ export function createPrismaSignupProvisioningRepository(prisma: PrismaSignupCli
       const sites = await prisma.site.findMany({ select: { slug: true }, where: { deletedAt: null } });
       return new Set(sites.map((site) => site.slug));
     },
-    async getTemplateStarterData(templateCode) {
+    async isTemplateAvailable(templateCode) {
       const registryTemplate = themeRegistry.getTemplate(templateCode);
-      if (!registryTemplate || registryTemplate.status !== "published") return null;
+      if (!registryTemplate || registryTemplate.status !== "published") return false;
 
       const row = await prisma.template.findUnique({
         where: { code: templateCode },
-        select: { status: true, deletedAt: true, previewData: true }
+        select: { status: true, deletedAt: true }
       });
 
-      if (row?.deletedAt) return null;
-      if (row && row.status !== "PUBLISHED") return null;
-      return mergeTemplatePreviewData(templateCode, row?.previewData ?? null);
+      if (row?.deletedAt) return false;
+      if (row && row.status !== "PUBLISHED") return false;
+      return true;
     },
     async createAccountWithSite(input) {
       return (prisma.$transaction as PrismaTransactionRunner)(async (transaction) => {
@@ -101,7 +96,9 @@ export function createPrismaSignupProvisioningRepository(prisma: PrismaSignupCli
             title: input.site.title,
             description: input.site.description,
             status: "PUBLISHED",
-            isPublished: true
+            isPublished: true,
+            templateCode: input.site.templateCode,
+            templateVersion: input.site.templateVersion
           },
           select: { id: true, slug: true }
         });
@@ -162,13 +159,21 @@ export function createPrismaSignupProvisioningRepository(prisma: PrismaSignupCli
           }))
         });
 
-        await copyGallery(transaction, { tenantId: tenant.id, siteId: site.id, templateCode: input.site.templateCode, images: input.defaultContent.gallery });
+        await copyGallery(transaction, {
+          tenantId: tenant.id,
+          siteId: site.id,
+          templateCode: input.site.templateCode,
+          templateVersion: input.site.templateVersion,
+          album: input.defaultContent.gallery.album,
+          images: input.defaultContent.gallery.images,
+        });
 
         await transaction.sEOSettings.create({
           data: {
             siteId: site.id,
             title: input.defaultContent.seo.title,
             description: input.defaultContent.seo.description,
+            canonicalUrl: input.defaultContent.seo.canonicalUrl,
             robotsIndex: input.defaultContent.seo.robotsIndex,
             structuredDataOverrides: input.defaultContent.seo.structuredDataOverrides
           }
@@ -199,16 +204,23 @@ export function createPrismaSignupProvisioningRepository(prisma: PrismaSignupCli
 
 async function copyGallery(
   transaction: PrismaSignupTransaction,
-  input: { tenantId: string; siteId: string; templateCode: string; images: AccountCreationInput["defaultContent"]["gallery"]; }
+  input: {
+    tenantId: string;
+    siteId: string;
+    templateCode: string;
+    templateVersion: string;
+    album: AccountCreationInput["defaultContent"]["gallery"]["album"];
+    images: AccountCreationInput["defaultContent"]["gallery"]["images"];
+  }
 ) {
   const album = await transaction.galleryAlbum.create({
     data: {
       siteId: input.siteId,
-      title: "معرض الأعمال",
+      title: input.album.title,
       slug: "main-gallery",
-      description: "صور من بيانات بداية القالب المختار.",
+      description: input.album.description,
       isVisible: true,
-      sortOrder: 0
+      sortOrder: input.album.sortOrder
     },
     select: { id: true }
   });
@@ -219,11 +231,16 @@ async function copyGallery(
         tenantId: input.tenantId,
         kind: "image",
         url: image.url,
-        storageKey: `template-starter/${input.templateCode}/${input.siteId}/${image.sortOrder}-${image.id}`,
+        storageKey: `template-content-source/${input.templateCode}/${input.templateVersion}/${input.siteId}/${image.sortOrder}-${image.id}`,
         mimeType: "image/jpeg",
         sizeBytes: 0,
         alt: image.alt,
-        metadata: { source: "template-starter-data", templateCode: input.templateCode, starterImageId: image.id }
+        metadata: {
+          source: "template-content-source",
+          templateCode: input.templateCode,
+          templateVersion: input.templateVersion,
+          templateImageId: image.id
+        }
       },
       select: { id: true }
     });
@@ -272,9 +289,6 @@ async function upsertTemplate(transaction: PrismaSignupTransaction, input: Accou
   const template = themeRegistry.getTemplate(input.site.templateCode);
   if (!template) throw new Error(`Missing template definition: ${input.site.templateCode}`);
 
-  const starter = getTemplateStarterData(template.code);
-  const previewData = starter ? templateStarterToPreviewData(starter) : {};
-
   return transaction.template.upsert({
     where: { code: template.code },
     create: {
@@ -282,14 +296,15 @@ async function upsertTemplate(transaction: PrismaSignupTransaction, input: Accou
       code: template.code,
       name: template.name,
       status: template.status.toUpperCase(),
+      version: input.site.templateVersion,
       showroomOrder: template.showroomOrder,
-      previewData,
       settings: input.defaultContent.themeConfig
     },
     update: {
       themeId,
       name: template.name,
       status: template.status.toUpperCase(),
+      version: input.site.templateVersion,
       showroomOrder: template.showroomOrder
     },
     select: { id: true }

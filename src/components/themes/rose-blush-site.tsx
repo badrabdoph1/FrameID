@@ -27,6 +27,8 @@ import {
   getThemeFeaturedImage,
   getThemeHeroImage,
   getThemeMobileCaption,
+  getThemeSectionCopy,
+  isThemeSectionVisible,
   normalizeThemeSocialUrl
 } from "@/components/themes/theme-contract";
 
@@ -48,6 +50,21 @@ export function RoseBlushSite({ site }: RoseBlushSiteProps) {
   const featuredImage = getThemeFeaturedImage(site);
   const displayName = getThemeDisplayName(site);
   const mobileHeaderCaption = getThemeMobileCaption(site, displayName);
+  const gallerySection = getThemeSectionCopy(site, "gallery", {
+    title: "لحظات لا تُنسى",
+    description: "مجموعة مختارة من أعمال التصوير كما تظهر من معرض العميل نفسه."
+  });
+  const packagesSection = getThemeSectionCopy(site, "packages", {
+    title: "اختر باقتك",
+    description: "اختار التغطية الأنسب ليومك، ويمكنك إضافة أي خدمة تحتاجها قبل تأكيد الحجز."
+  });
+  const extrasSection = getThemeSectionCopy(site, "extras", {
+    title: "لمسة إضافية",
+    description: "أضف خدمة تصوير أو ألبوم أو فيديو حسب احتياج اليوم."
+  });
+  const showGallery = isThemeSectionVisible(site, "gallery") && site.gallery.length > 0;
+  const showPackages = isThemeSectionVisible(site, "packages") && site.packages.length > 0;
+  const showExtras = isThemeSectionVisible(site, "extras") && site.extras.length > 0;
 
   const total = useMemo(() => {
     return (selectedPackage?.priceAmount ?? 0) + selectedExtras.reduce((sum, item) => sum + item.priceAmount, 0);
@@ -174,10 +191,10 @@ export function RoseBlushSite({ site }: RoseBlushSiteProps) {
         </div>
       </section>
 
-      {site.gallery.length ? (
+      {showGallery ? (
         <section id="gallery" className="bg-white py-16 md:py-28">
           <div className="container-page">
-            <SectionHeading eyebrow="معرض الأعمال" title="لحظات لا تُنسى" description="مجموعة مختارة من أعمال التصوير كما تظهر من معرض العميل نفسه." />
+            <SectionHeading eyebrow="معرض الأعمال" title={gallerySection.title} description={gallerySection.description ?? undefined} />
             <div className="mt-10 grid gap-3 sm:grid-cols-2 md:grid-cols-12 md:grid-rows-[230px_230px] md:gap-4 lg:grid-rows-[280px_280px]">
               {galleryImages.map((image, index) => (
                 <figure key={image.id} className={cn("group relative overflow-hidden rounded-[1.6rem] border border-[#eaddd4]/70 bg-white shadow-[0_24px_70px_rgba(44,24,16,0.08)] transition duration-500 hover:-translate-y-1 hover:shadow-[0_32px_90px_rgba(212,138,158,0.14)]", index === 0 ? "sm:col-span-2 md:col-span-6 md:row-span-2" : index === 1 ? "md:col-span-6" : "md:col-span-3")}> 
@@ -193,9 +210,10 @@ export function RoseBlushSite({ site }: RoseBlushSiteProps) {
         </section>
       ) : null}
 
+      {showPackages ? (
       <section id="packages" className="bg-[#fff8f4] py-16 md:py-28">
         <div className="container-page">
-          <SectionHeading eyebrow="باقات التصوير" title="اختر باقتك" description="اختار التغطية الأنسب ليومك، ويمكنك إضافة أي خدمة تحتاجها قبل تأكيد الحجز." />
+          <SectionHeading eyebrow="باقات التصوير" title={packagesSection.title} description={packagesSection.description ?? undefined} />
           <div className="mt-10 grid gap-5 md:grid-cols-3 md:gap-6">
             {site.packages.map((item, index) => {
               const selected = selectedPackageId === item.id;
@@ -231,11 +249,12 @@ export function RoseBlushSite({ site }: RoseBlushSiteProps) {
           </div>
         </div>
       </section>
+      ) : null}
 
-      {site.extras.length ? (
+      {showExtras ? (
         <section id="extras" className="bg-white py-16 md:py-28">
           <div className="container-page">
-            <SectionHeading eyebrow="خدمات إضافية" title="لمسة إضافية" description="أضف خدمة تصوير أو ألبوم أو فيديو حسب احتياج اليوم." />
+            <SectionHeading eyebrow="خدمات إضافية" title={extrasSection.title} description={extrasSection.description ?? undefined} />
             <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {site.extras.map((extra) => {
                 const selected = selectedExtraIds.includes(extra.id);

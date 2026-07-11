@@ -15,6 +15,7 @@ type RawPublicSiteRecord = Omit<
     type: string;
     title: string | null;
     sortOrder: number;
+    isVisible: boolean;
     data: unknown;
   }>;
   packages: Array<{
@@ -103,6 +104,7 @@ export function createPrismaPublicSiteRepository(
               type: true,
               title: true,
               sortOrder: true,
+              isVisible: true,
               data: true
             }
           },
@@ -136,6 +138,7 @@ export function createPrismaPublicSiteRepository(
             select: {
               id: true,
               name: true,
+              description: true,
               priceAmount: true,
               currency: true,
               iconKey: true

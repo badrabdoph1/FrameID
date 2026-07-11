@@ -1,8 +1,4 @@
 import { templateDefinitions, themeDefinitions } from "@/modules/themes/definitions";
-import {
-  getTemplateStarterData,
-  templateStarterToPreviewData
-} from "@/modules/themes/template-starter-data";
 import { BACKUP_POLICY } from "@/modules/backups/backup-policy";
 
 export function getPlatformSeedData() {
@@ -19,15 +15,15 @@ export function getPlatformSeedData() {
       }
     })),
     templates: templateDefinitions.map((template) => {
-      const starter = getTemplateStarterData(template.code);
       return {
         code: template.code,
         themeCode: template.themeCode,
         name: template.name,
         status: template.status.toUpperCase() as "DRAFT" | "PUBLISHED" | "ARCHIVED",
+        version: themeDefinitions.find((theme) => theme.code === template.themeCode)?.version ?? "1.0.0",
         showroomOrder: template.showroomOrder,
-        previewData: starter ? templateStarterToPreviewData(starter) : {},
-        settings: starter?.themeConfig ?? {}
+        previewData: null,
+        settings: template.starterContent.themeSettings
       };
     }),
     plans: [

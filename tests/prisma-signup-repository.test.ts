@@ -3,15 +3,14 @@ import { describe, expect, it } from "vitest";
 import { createPrismaSignupProvisioningRepository } from "@/modules/onboarding/prisma-signup-repository";
 import type { AccountCreationInput } from "@/modules/onboarding/signup-provisioning";
 import {
-  createSignupContentFromStarter,
-  getTemplateStarterData,
-  personalizeTemplateStarterData
-} from "@/modules/themes/template-starter-data";
+  createTemplateProvisioningPayload,
+  getTemplateContentSource
+} from "@/modules/templates/template-content-source";
 
 function createAccountInput(): AccountCreationInput {
-  const starter = personalizeTemplateStarterData(
-    getTemplateStarterData("noir-gold")!,
-    "Ali Ahmed"
+  const templatePayload = createTemplateProvisioningPayload(
+    getTemplateContentSource("noir-gold")!,
+    { ownerName: "Ali Ahmed" }
   );
 
   return {
@@ -29,17 +28,18 @@ function createAccountInput(): AccountCreationInput {
     },
     site: {
       slug: "ali-ahmed",
-      title: starter.title,
-      description: starter.description,
-      themeCode: starter.themeCode,
-      templateCode: starter.code
+      title: templatePayload.site.title,
+      description: templatePayload.site.description,
+      themeCode: templatePayload.themeCode,
+      templateCode: templatePayload.templateCode,
+      templateVersion: templatePayload.templateVersion
     },
     subscription: {
       status: "TRIAL",
       trialStartedAt: new Date("2026-07-06T12:00:00.000Z"),
       trialEndsAt: new Date("2026-07-20T12:00:00.000Z")
     },
-    defaultContent: createSignupContentFromStarter(starter)
+    defaultContent: templatePayload
   };
 }
 
@@ -192,10 +192,8 @@ describe("prisma signup repository", () => {
       "sections:5",
       "contact",
       "packages:3",
-      "extras:4",
+      "extras:3",
       "gallery-album",
-      "media-asset",
-      "gallery-image",
       "media-asset",
       "gallery-image",
       "media-asset",

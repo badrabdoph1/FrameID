@@ -42,6 +42,26 @@ export function getThemeFeaturedImage(site: PublicSiteViewModel) {
   return site.gallery[1]?.url ?? site.gallery[0]?.url ?? null;
 }
 
+export function getThemeSectionCopy(
+  site: PublicSiteViewModel,
+  type: "hero" | "gallery" | "packages" | "extras" | "contact",
+  fallback: { title: string; description?: string | null },
+) {
+  const section = site.sections[type];
+
+  return {
+    title: cleanString(section?.title) ?? fallback.title,
+    description: cleanString(section?.description) ?? fallback.description ?? null,
+  };
+}
+
+export function isThemeSectionVisible(
+  site: PublicSiteViewModel,
+  type: "hero" | "gallery" | "packages" | "extras" | "contact",
+) {
+  return site.sections[type]?.isVisible ?? true;
+}
+
 export function createThemeBookingHref({
   site,
   selectedPackage,

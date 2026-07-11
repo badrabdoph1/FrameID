@@ -4,7 +4,10 @@ import Link from "next/link";
 import { CheckCircle2, Eye, Palette, WandSparkles } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { selectTemplateAction } from "@/app/(dashboard)/dashboard/design/actions";
+import {
+  resetSiteFromTemplateAction,
+  selectTemplateAction,
+} from "@/app/(dashboard)/dashboard/design/actions";
 import { TemplateLivePreview } from "@/components/themes/template-live-preview";
 import type { TemplateSummary } from "@/modules/themes/theme-registry";
 
@@ -12,9 +15,10 @@ type TemplatesClientProps = {
   templates: TemplateSummary[];
   currentThemeName: string | null;
   currentThemeCode: string | null;
+  message?: { tone: "success" | "error"; text: string } | null;
 };
 
-export function TemplatesClient({ templates, currentThemeName, currentThemeCode }: TemplatesClientProps) {
+export function TemplatesClient({ templates, currentThemeName, currentThemeCode, message }: TemplatesClientProps) {
   return (
     <main className="mx-auto grid w-full max-w-6xl gap-4 pb-4">
       <section className="rounded-[1.6rem] border border-white/10 bg-[radial-gradient(circle_at_top_right,rgba(243,207,115,0.14),transparent_36%),rgba(255,255,255,0.035)] p-4 sm:p-5">
@@ -35,6 +39,12 @@ export function TemplatesClient({ templates, currentThemeName, currentThemeCode 
           </div>
         </div>
       </section>
+
+      {message ? (
+        <section className={message.tone === "success" ? "rounded-2xl border border-emerald-300/20 bg-emerald-300/10 px-4 py-3 text-sm font-black text-emerald-200" : "rounded-2xl border border-red-300/20 bg-red-500/10 px-4 py-3 text-sm font-black text-red-200"}>
+          {message.text}
+        </section>
+      ) : null}
 
       <section className="grid gap-3 rounded-[1.35rem] border border-white/10 bg-white/[0.035] p-3 sm:p-4">
         <div className="flex items-start gap-3">
@@ -99,6 +109,39 @@ function TemplateCard({ template, isCurrent }: { template: TemplateSummary; isCu
             </Button>
           </form>
         </div>
+
+        <details className="rounded-2xl border border-red-300/15 bg-red-500/[0.055] p-3">
+          <summary className="cursor-pointer text-xs font-black leading-6 text-red-100">
+            استبدال محتوى الموقع بالكامل من هذا القالب
+          </summary>
+          <form
+            action={resetSiteFromTemplateAction}
+            className="mt-3 grid gap-2"
+            onSubmit={(event) => {
+              if (!window.confirm("سيتم حفظ Snapshot سريع ثم استبدال النصوص والصور والباقات والخدمات وSEO بالكامل. هل أنت متأكد؟")) {
+                event.preventDefault();
+              }
+            }}
+          >
+            <input name="templateCode" type="hidden" value={template.code} />
+            <p className="text-xs font-bold leading-6 text-white/52">
+              هذا الإجراء لا يشبه تشغيل القالب. سيستبدل محتوى موقعك الحالي بالكامل بعد إنشاء Snapshot للرجوع.
+            </p>
+            <label className="grid gap-1">
+              <span className="text-[0.68rem] font-black text-red-100">
+                اكتب: استبدال المحتوى
+              </span>
+              <input
+                name="confirmation"
+                className="min-h-10 rounded-xl border border-red-300/20 bg-black/20 px-3 text-sm font-black text-white outline-none"
+                autoComplete="off"
+              />
+            </label>
+            <Button type="submit" variant="secondary" className="min-h-10 rounded-xl border-red-300/20 bg-red-500/15 text-red-100 hover:bg-red-500/25">
+              استبدال محتوى الموقع بالكامل
+            </Button>
+          </form>
+        </details>
       </div>
     </article>
   );

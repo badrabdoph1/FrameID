@@ -28,6 +28,7 @@ export type PublicSiteRecord = {
     type: string;
     title: string | null;
     sortOrder: number;
+    isVisible?: boolean;
     data: Record<string, unknown>;
   }>;
   packages: Array<{
@@ -43,6 +44,7 @@ export type PublicSiteRecord = {
   extras: Array<{
     id: string;
     name: string;
+    description?: string | null;
     priceAmount: number;
     currency: string;
     iconKey: string | null;
@@ -69,6 +71,15 @@ export type PublicSiteViewModel = {
   publicUrl: string;
   metadata: Metadata;
   structuredData: Record<string, unknown>;
+  sections: Record<
+    string,
+    {
+      title: string;
+      description: string | null;
+      sortOrder: number;
+      isVisible: boolean;
+    }
+  >;
   hero: {
     headline: string;
     subheadline: string;
@@ -99,6 +110,7 @@ export type PublicSiteViewModel = {
   extras: Array<{
     id: string;
     name: string;
+    description?: string | null;
     price: string;
     priceAmount: number;
     currency: string;
@@ -179,6 +191,17 @@ export function createPublicSiteViewModel({
         url: publicUrl,
         description: metadataDescription
       },
+    sections: Object.fromEntries(
+      [...site.sections].sort((a, b) => a.sortOrder - b.sortOrder).map((section) => [
+        section.type,
+        {
+          title: section.title ?? section.type,
+          description: readNullableString(section.data.description),
+          sortOrder: section.sortOrder,
+          isVisible: section.isVisible ?? true,
+        },
+      ]),
+    ),
     hero: {
       headline: readString(heroSection?.data.headline, site.title),
       subheadline: readString(
@@ -215,6 +238,7 @@ export function createPublicSiteViewModel({
     extras: site.extras.map((item) => ({
       id: item.id,
       name: item.name,
+      description: item.description ?? null,
       price: formatMoney(item.priceAmount, item.currency),
       priceAmount: item.priceAmount,
       currency: item.currency,
@@ -237,6 +261,10 @@ function findSection(site: PublicSiteRecord, type: string) {
 
 function readString(value: unknown, fallback: string): string {
   return typeof value === "string" && value.trim() ? value : fallback;
+}
+
+function readNullableString(value: unknown): string | null {
+  return typeof value === "string" && value.trim() ? value : null;
 }
 
 function readStringList(value: unknown): string[] {

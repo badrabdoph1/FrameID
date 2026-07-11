@@ -6,15 +6,11 @@ import {
   normalizeSlugInput,
   validateSiteSlug
 } from "@/modules/sites/slug-policy";
-import { getTemplateByCode } from "@/modules/themes/theme-registry";
 import {
-  createSignupContentFromStarter,
-  getDefaultTemplateStarterCode,
-  personalizeTemplateStarterData,
-  validateTemplateStarterData,
-  type TemplateSignupContent,
-  type TemplateStarterData
-} from "@/modules/themes/template-starter-data";
+  createTemplateProvisioningService,
+  type TemplateProvisioningRepository,
+} from "@/modules/templates/template-provisioning-service";
+import type { ProvisionedTemplatePayload } from "@/modules/templates/template-content-source";
 
 export type ProvisionedAccountResult = {
   userId: string;
@@ -43,23 +39,24 @@ export type AccountCreationInput = {
     description: string;
     themeCode: string;
     templateCode: string;
+    templateVersion: string;
   };
   subscription: {
     status: "TRIAL";
     trialStartedAt: Date;
     trialEndsAt: Date;
   };
-  defaultContent: TemplateSignupContent;
+  defaultContent: ProvisionedTemplatePayload;
 };
 
 export type SignupProvisioningRepository = {
   identifierExists(input: { email: string; phone: string | null }): Promise<boolean>;
   getUnavailableSlugs(): Promise<ReadonlySet<string>>;
-  getTemplateStarterData(templateCode: string): Promise<TemplateStarterData | null>;
+  isTemplateAvailable(templateCode: string): Promise<boolean>;
   createAccountWithSite(
     input: AccountCreationInput
   ): Promise<ProvisionedAccountResult>;
-};
+} & TemplateProvisioningRepository;
 
 export type SignupProvisioningService = {
   provisionTrialSite(
@@ -78,25 +75,20 @@ export function createSignupProvisioningService({
   repository,
   now = () => new Date(),
   trialDays = 14,
-  defaultTemplateCode = getDefaultTemplateStarterCode()
+  defaultTemplateCode
 }: SignupProvisioningServiceOptions): SignupProvisioningService {
+  const templateProvisioning = createTemplateProvisioningService({
+    repository,
+    ...(defaultTemplateCode ? { defaultTemplateCode } : {}),
+  });
+
   return {
     async provisionTrialSite(rawInput) {
       const input = parseSignupInput(rawInput);
-      const templateCode = input.selectedTemplateCode ?? defaultTemplateCode;
-      const template = getTemplateByCode(templateCode);
-
-      if (!template || template.status !== "published") {
-        throw new Error("Selected template is not available");
-      }
-
-      const starter = await repository.getTemplateStarterData(templateCode);
-      if (!starter) {
-        throw new Error("Selected template is not available");
-      }
-
-      const personalizedStarter = personalizeTemplateStarterData(starter, input.name);
-      validateTemplateStarterData(personalizedStarter);
+      const templateContent = await templateProvisioning.buildSiteFromTemplate({
+        templateCode: input.selectedTemplateCode,
+        ownerName: input.name,
+      });
 
       if (await repository.identifierExists({ email: input.email, phone: input.phone })) {
         throw new Error("رقم الهاتف أو البريد الإلكتروني مستخدم بالفعل");
@@ -123,17 +115,18 @@ export function createSignupProvisioningService({
         },
         site: {
           slug,
-          title: personalizedStarter.title,
-          description: personalizedStarter.description,
-          themeCode: personalizedStarter.themeCode,
-          templateCode: personalizedStarter.code
+          title: templateContent.site.title,
+          description: templateContent.site.description,
+          themeCode: templateContent.themeCode,
+          templateCode: templateContent.templateCode,
+          templateVersion: templateContent.templateVersion
         },
         subscription: {
           status: "TRIAL",
           trialStartedAt: currentTime,
           trialEndsAt
         },
-        defaultContent: createSignupContentFromStarter(personalizedStarter)
+        defaultContent: templateContent
       });
 
       return {

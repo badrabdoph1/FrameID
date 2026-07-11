@@ -18,6 +18,10 @@ import {
 
 import type { PublicSiteViewModel } from "@/modules/public-sites/public-site-view-model";
 import { cn } from "@/lib/utils/cn";
+import {
+  getThemeSectionCopy,
+  isThemeSectionVisible
+} from "@/components/themes/theme-contract";
 
 type AliAhmedLuxurySiteProps = {
   site: PublicSiteViewModel;
@@ -37,6 +41,21 @@ export function AliAhmedLuxurySite({ site }: AliAhmedLuxurySiteProps) {
   const featuredImage = galleryImages[1]?.url ?? galleryImages[0]?.url;
   const displayName = getSiteDisplayName(site);
   const mobileHeaderCaption = getMobileHeaderCaption(site, displayName);
+  const gallerySection = getThemeSectionCopy(site, "gallery", {
+    title: "لمحات من الأعمال",
+    description: "مختارات من جلسات الزفاف والخطوبة بتفاصيل قريبة وإضاءة طبيعية."
+  });
+  const packagesSection = getThemeSectionCopy(site, "packages", {
+    title: "اختر باقتك",
+    description: "اختار التغطية الأنسب ليومك، ويمكنك إضافة أي خدمة تحتاجها قبل تأكيد الحجز."
+  });
+  const extrasSection = getThemeSectionCopy(site, "extras", {
+    title: "إضافات مميزة",
+    description: "أضف خدمة تصوير أو ألبوم أو فيديو حسب احتياج اليوم."
+  });
+  const showGallery = isThemeSectionVisible(site, "gallery") && site.gallery.length > 0;
+  const showPackages = isThemeSectionVisible(site, "packages") && site.packages.length > 0;
+  const showExtras = isThemeSectionVisible(site, "extras") && site.extras.length > 0;
 
   const total = useMemo(() => {
     return (selectedPackage?.priceAmount ?? 0) + selectedExtras.reduce((sum, item) => sum + item.priceAmount, 0);
@@ -171,9 +190,9 @@ export function AliAhmedLuxurySite({ site }: AliAhmedLuxurySiteProps) {
         </div>
       </section>
 
-      {site.gallery.length ? (
+      {showGallery ? (
         <section id="gallery" className="container-page scroll-mt-24 py-14 md:py-28">
-          <SectionHeading eyebrow="أعمال مختارة" title="لمحات من الأعمال" description="مختارات من جلسات الزفاف والخطوبة بتفاصيل قريبة وإضاءة طبيعية." />
+          <SectionHeading eyebrow="أعمال مختارة" title={gallerySection.title} description={gallerySection.description ?? undefined} />
           <div className="-mx-4 mt-10 flex snap-x gap-4 overflow-x-auto px-4 pb-3 [scrollbar-width:none] md:mx-0 md:grid md:grid-cols-12 md:grid-rows-[230px_230px] md:overflow-visible md:px-0 md:pb-0 lg:grid-rows-[280px_280px] [&::-webkit-scrollbar]:hidden">
             {galleryImages.map((image, index) => (
               <figure
@@ -200,9 +219,10 @@ export function AliAhmedLuxurySite({ site }: AliAhmedLuxurySiteProps) {
         </section>
       ) : null}
 
+      {showPackages ? (
       <section id="packages" className="scroll-mt-24 border-y border-white/6 bg-[radial-gradient(circle_at_top,rgba(229,192,123,.10),transparent_32%),#070707] py-14 md:py-28">
         <div className="container-page">
-          <SectionHeading eyebrow="باقات التصوير" title="اختر باقتك" description="اختار التغطية الأنسب ليومك، ويمكنك إضافة أي خدمة تحتاجها قبل تأكيد الحجز." />
+          <SectionHeading eyebrow="باقات التصوير" title={packagesSection.title} description={packagesSection.description ?? undefined} />
           <div className="mt-9 grid gap-4 md:mt-10 lg:grid-cols-3 lg:gap-5">
             {site.packages.map((item, index) => {
               const selected = selectedPackageId === item.id;
@@ -262,11 +282,12 @@ export function AliAhmedLuxurySite({ site }: AliAhmedLuxurySiteProps) {
           </div>
         </div>
       </section>
+      ) : null}
 
-      {site.extras.length ? (
+      {showExtras ? (
         <section id="extras" className="scroll-mt-24 bg-[#050505] py-14 md:py-28">
           <div className="container-page">
-            <SectionHeading eyebrow="خدمات إضافية" title="إضافات مميزة" description="أضف خدمة تصوير أو ألبوم أو فيديو حسب احتياج اليوم." />
+            <SectionHeading eyebrow="خدمات إضافية" title={extrasSection.title} description={extrasSection.description ?? undefined} />
             <div className="mt-9 grid gap-3 sm:grid-cols-2 md:mt-10 xl:grid-cols-4">
               {site.extras.map((extra) => {
                 const selected = selectedExtraIds.includes(extra.id);

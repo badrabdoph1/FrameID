@@ -6,10 +6,7 @@ import { notFound } from "next/navigation";
 import { getThemeSiteComponent } from "@/components/themes/theme-components";
 import { TemplatePreviewGuard } from "@/components/themes/template-preview-guard";
 import { prisma } from "@/lib/prisma";
-import {
-  buildPreviewSiteFromStarter,
-  mergeTemplatePreviewData
-} from "@/modules/themes/template-starter-data";
+import { buildTemplatePreviewViewModel, getTemplateContentSource } from "@/modules/templates/template-content-source";
 import { getTemplateByCode } from "@/modules/themes/theme-registry";
 
 export const metadata: Metadata = {
@@ -38,16 +35,21 @@ export default async function TemplatePreviewPage({ params, searchParams }: Prop
 
   const editableTemplate = await prisma.template.findUnique({
     where: { code },
-    select: { status: true, deletedAt: true, previewData: true }
+    select: { status: true, deletedAt: true }
   });
 
   if (editableTemplate?.deletedAt || (editableTemplate && editableTemplate.status !== "PUBLISHED")) {
     notFound();
   }
 
-  const starter = mergeTemplatePreviewData(code, editableTemplate?.previewData ?? null);
-  const ThemeComponent = getThemeSiteComponent(starter.themeCode);
-  const siteData = buildPreviewSiteFromStarter(starter);
+  const source = getTemplateContentSource(code);
+
+  if (!source) {
+    notFound();
+  }
+
+  const ThemeComponent = getThemeSiteComponent(source.themeCode);
+  const siteData = buildTemplatePreviewViewModel(source);
   const isEmbed = query?.embed === "1";
 
   return (

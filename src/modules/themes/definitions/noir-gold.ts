@@ -35,9 +35,27 @@ export const noirGoldTemplate: TemplateSummary = {
         subheadline: "نصنع ذكريات تبقى للأبد بتصوير زفاف وخطوبة يوازن بين الفخامة واللحظة الحقيقية.",
         imageUrl: "https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1800&q=85"
       },
+      gallery: {
+        title: "لمحات من الأعمال",
+        sortOrder: 1,
+        isVisible: true,
+        description: "مختارات من جلسات الزفاف والخطوبة بتفاصيل قريبة وإضاءة طبيعية."
+      },
+      packages: {
+        title: "اختر باقتك",
+        sortOrder: 2,
+        isVisible: true,
+        description: "اختار التغطية الأنسب ليومك، ويمكنك إضافة أي خدمة تحتاجها قبل تأكيد الحجز."
+      },
+      extras: {
+        title: "إضافات مميزة",
+        sortOrder: 3,
+        isVisible: true,
+        description: "أضف خدمة تصوير أو ألبوم أو فيديو حسب احتياج اليوم."
+      },
       contact: {
         title: "التواصل",
-        sortOrder: 10,
+        sortOrder: 4,
         isVisible: true,
         callToAction: "احجز موعدك الآن"
       }
@@ -58,16 +76,16 @@ export const noirGoldTemplate: TemplateSummary = {
       { id: "noir-gold", name: "الباقة الذهبية", subtitle: "تغطية يوم كامل", priceAmount: 8500, currency: "EGP", features: ["يوم كامل", "فيديو سينمائي", "تسليم سريع"], imageUrl: "https://images.unsplash.com/photo-1474552226712-ac0f0961a954?auto=format&fit=crop&w=900&q=85", isHighlighted: false, sortOrder: 2 }
     ],
     extras: [
-      { id: "noir-cinematic", name: "فيديو سينمائي", priceAmount: 3000, currency: "EGP", iconKey: "video", sortOrder: 0 },
-      { id: "noir-drone", name: "تصوير جوي", priceAmount: 2500, currency: "EGP", iconKey: "camera", sortOrder: 1 },
-      { id: "noir-album", name: "ألبوم فاخر", priceAmount: 1500, currency: "EGP", iconKey: "album", sortOrder: 2 }
+      { id: "noir-cinematic", name: "فيديو سينمائي", description: "فيلم قصير يلخص أجمل لحظات اليوم.", priceAmount: 3000, currency: "EGP", iconKey: "video", sortOrder: 0 },
+      { id: "noir-drone", name: "تصوير جوي", description: "لقطات جوية للمكان والاحتفال.", priceAmount: 2500, currency: "EGP", iconKey: "camera", sortOrder: 1 },
+      { id: "noir-album", name: "ألبوم فاخر", description: "ألبوم مطبوع بتغليف فاخر.", priceAmount: 1500, currency: "EGP", iconKey: "album", sortOrder: 2 }
     ],
     gallery: {
       album: { title: "مختارات من أعمالنا", description: "لحظات عاطفية وتفاصيل أنيقة من حفلات حقيقية.", sortOrder: 0 },
       images: [
-        { id: "noir-gallery-1", url: "https://images.unsplash.com/photo-1511285560929-80b456fea0bc?auto=format&fit=crop&w=1200&q=85", alt: "عروسان في حفل خارجي", caption: "لحظة تبادل الخواتم", sortOrder: 0 },
-        { id: "noir-gallery-2", url: "https://images.unsplash.com/photo-1465495976277-4387d4b0b4c6?auto=format&fit=crop&w=1200&q=85", alt: "تفاصيل باقة ورد", caption: "تفاصيل لا تتكرر", sortOrder: 1 },
-        { id: "noir-gallery-3", url: "https://images.unsplash.com/photo-1529636798458-92182e662485?auto=format&fit=crop&w=1200&q=85", alt: "ديكور حفل زفاف", caption: "إضاءة المساء", sortOrder: 2 }
+        { id: "noir-gallery-1", url: "https://images.unsplash.com/photo-1511285560929-80b456fea0bc?auto=format&fit=crop&w=1200&q=85", alt: "عروسان في حفل خارجي", caption: "لحظة تبادل الخواتم", sortOrder: 0, isFeatured: true },
+        { id: "noir-gallery-2", url: "https://images.unsplash.com/photo-1465495976277-4387d4b0b4c6?auto=format&fit=crop&w=1200&q=85", alt: "تفاصيل باقة ورد", caption: "تفاصيل لا تتكرر", sortOrder: 1, isFeatured: false },
+        { id: "noir-gallery-3", url: "https://images.unsplash.com/photo-1529636798458-92182e662485?auto=format&fit=crop&w=1200&q=85", alt: "ديكور حفل زفاف", caption: "إضاءة المساء", sortOrder: 2, isFeatured: false }
       ]
     },
     seo: { title: "استوديو كريم مجدي", description: "تصوير زفاف وخطوبة بأسلوب سينمائي هادئ.", canonicalUrl: null, robotsIndex: true, structuredData: { "@context": "https://schema.org", "@type": "ProfessionalService", name: "استوديو كريم مجدي", description: "تصوير زفاف وخطوبة بأسلوب سينمائي هادئ." } },
