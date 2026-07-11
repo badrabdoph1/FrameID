@@ -142,7 +142,6 @@ export function createPrismaSignupProvisioningRepository(prisma: PrismaSignupCli
             priceAmount: item.priceAmount,
             currency: item.currency,
             features: item.features,
-            imageUrl: item.imageUrl,
             isHighlighted: item.isHighlighted,
             sortOrder: item.sortOrder,
             isActive: true
