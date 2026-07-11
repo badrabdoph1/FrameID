@@ -16,11 +16,13 @@ import {
 
 const PAGE_PATH = "/admin/settings/social-preview";
 
+type PreviewMode = "default" | "custom";
+
 export async function savePlatformSocialPreviewAction(formData: FormData) {
   const session = await requireSuperAdminSession();
   const current = await getPlatformSocialPreviewSettings();
-  const enabled = formData.get("enabled") === "on";
-  const removeImage = formData.get("removeImage") === "on";
+  const mode = readMode(formData);
+  const removeImage = formData.get("removeImage") === "true";
   const title = readOptionalText(formData, "title", 120);
   const description = readOptionalText(formData, "description", 240);
   const file = formData.get("previewImage");
@@ -35,12 +37,12 @@ export async function savePlatformSocialPreviewAction(formData: FormData) {
       storageKey = uploaded.storageKey;
     }
 
-    if (enabled && !imageUrl) {
-      throw new Error("ارفع صورة معاينة قبل تفعيل الاستخدام المخصص.");
+    if (mode === "custom" && !imageUrl) {
+      throw new Error("اختر صورة مخصصة أولًا، ثم احفظ الإعدادات.");
     }
 
     await savePlatformSocialPreviewSettings({
-      enabled,
+      enabled: mode === "custom",
       title,
       description,
       imageUrl,
@@ -54,7 +56,7 @@ export async function savePlatformSocialPreviewAction(formData: FormData) {
         metadata: {
           adminId: session.user.id,
           adminEmail: session.user.email,
-          enabled,
+          mode,
           title,
           description,
           imageUrl,
@@ -64,7 +66,7 @@ export async function savePlatformSocialPreviewAction(formData: FormData) {
     });
   } catch (error) {
     const { userError } = await processError(error, {
-      metadata: { action: "savePlatformSocialPreview" },
+      metadata: { action: "savePlatformSocialPreview", mode },
     });
     redirect(`${PAGE_PATH}?error=${encodeURIComponent(userError.message)}`);
   }
@@ -73,7 +75,11 @@ export async function savePlatformSocialPreviewAction(formData: FormData) {
   revalidatePath("/", "layout");
   revalidatePath("/templates");
   revalidatePath(PAGE_PATH);
-  redirect(`${PAGE_PATH}?saved=1`);
+  redirect(`${PAGE_PATH}?saved=1&mode=${mode}`);
+}
+
+function readMode(formData: FormData): PreviewMode {
+  return formData.get("mode") === "custom" ? "custom" : "default";
 }
 
 function readOptionalText(formData: FormData, key: string, maxLength: number): string | null {
