@@ -1,5 +1,6 @@
 import type { TemplateSummary, ThemeDefinition } from "@/modules/themes/theme-registry";
 import { parseTemplateStarterContent } from "@/modules/themes/template-starter-content";
+import { OFFICIAL_TEMPLATE_STARTER_DEFAULTS as defaults } from "@/modules/themes/template-starter-defaults";
 
 export const roseBlushTheme: ThemeDefinition = {
   code: "rose-blush",
@@ -7,11 +8,7 @@ export const roseBlushTheme: ThemeDefinition = {
   version: "1.0.0",
   status: "published",
   supportedSections: ["hero", "gallery", "packages", "extras", "contact"],
-  defaultConfig: {
-    colorPreset: "rose",
-    layoutDensity: "spacious",
-    motion: "gentle"
-  }
+  defaultConfig: { colorPreset: "rose", layoutDensity: "spacious", motion: "gentle" }
 };
 
 export const roseBlushTemplate: TemplateSummary = {
@@ -22,15 +19,15 @@ export const roseBlushTemplate: TemplateSummary = {
   showroomOrder: 2,
   description: "قالب فاتح أنيق بألوان الورد والمريمية، مثالي للمصورين الذين يفضلون التصميم الناعم العصري.",
   starterContent: parseTemplateStarterContent({
-    site: { title: "استوديو نور علي", description: "تصوير ناعم وعصري للاحتفالات والقصص العائلية الصغيرة." },
+    site: { title: defaults.photographerName, description: defaults.description },
     sections: {
-      hero: { title: "الرئيسية", sortOrder: 0, isVisible: true, headline: "استوديو نور علي", subheadline: "نلتقط الحب والبهجة بصور خفيفة وحقيقية تناسب أجمل أيامكم.", imageUrl: "https://images.unsplash.com/photo-1519225421980-715cb0215aed?auto=format&fit=crop&w=1800&q=85" },
+      hero: { title: "الرئيسية", sortOrder: 0, isVisible: true, headline: defaults.photographerName, subheadline: defaults.description, imageUrl: "https://images.unsplash.com/photo-1519225421980-715cb0215aed?auto=format&fit=crop&w=1800&q=85" },
       gallery: { title: "لحظات لا تُنسى", sortOrder: 1, isVisible: true, description: "كل صورة تحكي قصة، وكل قصة تستحق أن تُروى بجمال." },
       packages: { title: "اختاري باقتك المثالية", sortOrder: 2, isVisible: true, description: "باقات مرنة تناسب كل مناسبة، مع لمسات احترافية لا تُنسى." },
       extras: { title: "لمسة إضافية", sortOrder: 3, isVisible: true, description: "اجعل تجربتك أكثر تميزًا مع هذه الإضافات." },
       contact: { title: "التواصل", sortOrder: 4, isVisible: true, callToAction: "لنخطط لجلسة جميلة" }
     },
-    contact: { studioName: "استوديو نور علي", bio: "مصورات نحب الضوء الطبيعي والتفاصيل الرقيقة.", longDescription: "نصمم تجربة تصوير مريحة من أول مكالمة حتى تسليم معرضكم، لنترك لكم مساحة للعيش في اللحظة.", phone: "+201000000002", whatsapp: "+201000000002", email: "hello@noorali.example", instagram: "noorali.photo", facebook: "noorali.photo" },
+    contact: { studioName: defaults.studioName, bio: defaults.description, longDescription: defaults.description, phone: "+201000000002", whatsapp: "+201000000002", email: "hello@noorali.example", instagram: "noorali.photo", facebook: "noorali.photo" },
     packages: [
       { id: "rose-mini", name: "جلسة الورد", subtitle: "جلسة قصيرة ومبهجة", priceAmount: 2200, currency: "EGP", features: ["ساعتان", "50 صورة معدلة", "معرض خاص"], imageUrl: "https://images.unsplash.com/photo-1516589178581-6cd7833ae3b2?auto=format&fit=crop&w=900&q=85", isHighlighted: false, sortOrder: 0 },
       { id: "rose-story", name: "باقة الحكاية", subtitle: "تغطية نصف يوم", priceAmount: 4800, currency: "EGP", features: ["نصف يوم", "150 صورة معدلة", "فيلم مختصر"], imageUrl: "https://images.unsplash.com/photo-1507504031003-b417219a0fde?auto=format&fit=crop&w=900&q=85", isHighlighted: true, sortOrder: 1 },
@@ -49,7 +46,7 @@ export const roseBlushTemplate: TemplateSummary = {
         { id: "rose-gallery-3", url: "https://images.unsplash.com/photo-1516589178581-6cd7833ae3b2?auto=format&fit=crop&w=1200&q=85", alt: "احتفال عائلي", caption: "فرح بسيط", sortOrder: 2, isFeatured: false }
       ]
     },
-    seo: { title: "استوديو نور علي", description: "تصوير احتفالات وقصص عائلية بأسلوب ناعم وعصري.", canonicalUrl: null, robotsIndex: true, structuredData: { "@context": "https://schema.org", "@type": "ProfessionalService", name: "استوديو نور علي", description: "تصوير احتفالات وقصص عائلية بأسلوب ناعم وعصري." } },
+    seo: { title: defaults.photographerName, description: defaults.description, canonicalUrl: null, robotsIndex: true, structuredData: { "@context": "https://schema.org", "@type": "ProfessionalService", name: defaults.photographerName, description: defaults.description } },
     themeSettings: { colorPreset: "rose", layoutDensity: "spacious", motion: "gentle" }
   })
 };

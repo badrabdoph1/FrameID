@@ -117,8 +117,9 @@ export function personalizeTemplateStarterContent(
   const name = z.string().trim().min(1).max(120).parse(photographerName);
   const personalized = structuredClone(content);
 
+  // Only photographer identity changes during signup. Shared studio and description
+  // defaults remain untouched until the customer edits them from the dashboard.
   personalized.site.title = name;
-  personalized.contact.studioName = name;
   personalized.sections.hero.headline = name;
   personalized.seo.title = name;
   personalized.seo.structuredData.name = name;

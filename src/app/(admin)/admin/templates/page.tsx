@@ -4,6 +4,12 @@ import { AdminPageShell } from "@/components/layout/admin-page-shell";
 import { prisma } from "@/lib/prisma";
 import { requireAdminPermission } from "@/modules/admin/admin-permission-guards";
 import { TemplateManager } from "@/app/(admin)/admin/templates/template-manager";
+import { StarterDefaultsCard } from "@/app/(admin)/admin/templates/starter-defaults-card";
+import {
+  normalizeTemplateStarterSharedDefaults,
+  OFFICIAL_TEMPLATE_STARTER_DEFAULTS,
+  TEMPLATE_STARTER_DEFAULTS_CODE,
+} from "@/modules/themes/template-starter-defaults";
 
 export const dynamic = "force-dynamic";
 
@@ -17,14 +23,14 @@ type Props = {
     archived?: string;
     coverSaved?: string;
     visualSaved?: string;
+    starterDefaultsSaved?: string;
     error?: string;
   }>;
 };
 
 function getMessage(params: Awaited<Props["searchParams"]>) {
-  if (params.error) {
-    return { tone: "danger" as const, text: decodeURIComponent(params.error) };
-  }
+  if (params.error) return { tone: "danger" as const, text: decodeURIComponent(params.error) };
+  if (params.starterDefaultsSaved) return { tone: "success" as const, text: "تم حفظ بيانات البداية المشتركة لكل القوالب." };
   if (params.visualSaved) return { tone: "success" as const, text: "تم تحديث صورة القالب من الجهاز." };
   if (params.coverSaved) return { tone: "success" as const, text: "تم تحديث غلاف بطاقة القالب." };
   if (params.created) return { tone: "success" as const, text: "تم إنشاء القالب كمسودة ويمكنك تعديله الآن." };
@@ -40,9 +46,9 @@ export default async function AdminTemplatesPage({ searchParams }: Props) {
   await requireAdminPermission("templates", "view");
   const params = await searchParams;
 
-  const [templates, themes, publishedTemplates] = await Promise.all([
+  const [templates, themes, publishedTemplates, sharedDefaultsRow] = await Promise.all([
     prisma.template.findMany({
-      where: { deletedAt: null },
+      where: { deletedAt: null, code: { not: TEMPLATE_STARTER_DEFAULTS_CODE } },
       orderBy: [{ status: "desc" }, { showroomOrder: "asc" }, { updatedAt: "desc" }],
       select: {
         id: true,
@@ -52,15 +58,7 @@ export default async function AdminTemplatesPage({ searchParams }: Props) {
         showroomOrder: true,
         previewData: true,
         settings: true,
-        theme: {
-          select: {
-            id: true,
-            name: true,
-            code: true,
-            category: true,
-            status: true,
-          },
-        },
+        theme: { select: { id: true, name: true, code: true, category: true, status: true } },
       },
     }),
     prisma.theme.findMany({
@@ -68,14 +66,27 @@ export default async function AdminTemplatesPage({ searchParams }: Props) {
       orderBy: [{ status: "desc" }, { name: "asc" }],
       select: { id: true, name: true, code: true, status: true },
     }),
-    prisma.template.count({ where: { deletedAt: null, status: "PUBLISHED" } }),
+    prisma.template.count({
+      where: { deletedAt: null, status: "PUBLISHED", code: { not: TEMPLATE_STARTER_DEFAULTS_CODE } },
+    }),
+    prisma.template.findUnique({
+      where: { code: TEMPLATE_STARTER_DEFAULTS_CODE },
+      select: { previewData: true },
+    }),
   ]);
+
+  const sharedDefaultsSource = isRecord(sharedDefaultsRow?.previewData)
+    ? sharedDefaultsRow.previewData.sharedDefaults
+    : null;
+  const sharedDefaults = sharedDefaultsSource
+    ? normalizeTemplateStarterSharedDefaults(sharedDefaultsSource)
+    : OFFICIAL_TEMPLATE_STARTER_DEFAULTS;
 
   return (
     <AdminPageShell
       badge="المحتوى"
       title="إدارة القوالب الجاهزة"
-      description="أنشئ القوالب وعدّل النصوص والصور والباقات والإضافات من واجهة واضحة، ثم عاين النتيجة وانشرها."
+      description="أدر بيانات البداية المشتركة مرة واحدة، ثم خصص القوالب فقط عند وجود استثناء حقيقي."
       breadcrumbs={[{ label: "المحتوى", href: "/admin/content" }, { label: "القوالب" }]}
       actions={[
         { label: "الثيمات", href: "/admin/themes", icon: Palette },
@@ -94,6 +105,8 @@ export default async function AdminTemplatesPage({ searchParams }: Props) {
         <Metric label="قوالب منشورة" value={publishedTemplates} accent icon={LayoutTemplate} />
         <Metric label="الثيمات المتاحة" value={themes.length} icon={Palette} />
       </section>
+
+      <StarterDefaultsCard defaults={sharedDefaults} />
 
       <TemplateManager
         templates={templates.map((template) => ({
@@ -126,4 +139,8 @@ function Metric({ label, value, accent, icon: Icon }: { label: string; value: nu
       <span><strong className={accent ? "block text-2xl font-black text-amber-200" : "block text-2xl font-black text-[#fff7e8]"}>{value.toLocaleString("ar-EG")}</strong><small className="mt-1 block text-xs font-black text-white/38">{label}</small></span>
     </div>
   );
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
