@@ -1,15 +1,7 @@
 import type { Metadata } from "next";
 
-export const PLATFORM_DEFAULT_SOCIAL_IMAGE = "/api/social-preview/default-image";
-export const PLATFORM_CUSTOM_SOCIAL_IMAGE = "/api/social-preview/platform-image";
+export const PLATFORM_DEFAULT_SOCIAL_IMAGE = "/opengraph-image";
 export const PHOTOGRAPHER_PLACEHOLDER_IMAGE = "/photographer-placeholder";
-
-export type PlatformSocialImageMode = "default" | "custom";
-
-export function buildPlatformSocialImageUrl(mode: PlatformSocialImageMode, version: string | number): string {
-  const safeVersion = encodeURIComponent(String(version || "current"));
-  return `${PLATFORM_SOCIAL_IMAGE}/${mode}/${safeVersion}/image.jpg`;
-}
 
 export type SocialPreviewImageSource =
   | "platform-custom"
@@ -39,13 +31,15 @@ export type PlatformSocialPreviewSettings = {
   description: string | null;
   imageUrl: string | null;
   storageKey: string | null;
-  imageData?: string | null;
-  imageMimeType?: string | null;
 };
 
 export type PlatformSocialPreviewContext = {
   kind: "platform";
-  defaults: { title: string; description: string; imageUrl: string };
+  defaults: {
+    title: string;
+    description: string;
+    imageUrl: string;
+  };
   settings: PlatformSocialPreviewSettings;
 };
 
@@ -66,24 +60,48 @@ export interface SocialPreviewImageProvider<TContext extends SocialPreviewContex
 const platformProviders: Array<SocialPreviewImageProvider<PlatformSocialPreviewContext>> = [
   {
     resolve(context) {
-      if (!context.settings.enabled || !context.settings.imageData) return null;
-      return image(PLATFORM_CUSTOM_SOCIAL_IMAGE, "platform-custom", context.settings.title ?? context.defaults.title);
+      if (!context.settings.enabled || !isUsableUrl(context.settings.imageUrl)) return null;
+      return image(context.settings.imageUrl, "platform-custom", context.settings.title ?? context.defaults.title);
     },
   },
-  { resolve(context) { return image(context.defaults.imageUrl, "platform-default", context.defaults.title); } },
+  {
+    resolve(context) {
+      return image(context.defaults.imageUrl, "platform-default", context.defaults.title);
+    },
+  },
 ];
 
 const photographerProviders: Array<SocialPreviewImageProvider<PhotographerSocialPreviewContext>> = [
-  { resolve(context) { return isUsableUrl(context.profilePhotoUrl) ? image(context.profilePhotoUrl, "profile-photo", context.title) : null; } },
-  { resolve(context) { return isUsableUrl(context.heroCoverUrl) ? image(context.heroCoverUrl, "hero-cover", context.title) : null; } },
-  { resolve(context) { return image(PHOTOGRAPHER_PLACEHOLDER_IMAGE, "photographer-placeholder", context.title); } },
+  {
+    resolve(context) {
+      return isUsableUrl(context.profilePhotoUrl)
+        ? image(context.profilePhotoUrl, "profile-photo", context.title)
+        : null;
+    },
+  },
+  {
+    resolve(context) {
+      return isUsableUrl(context.heroCoverUrl)
+        ? image(context.heroCoverUrl, "hero-cover", context.title)
+        : null;
+    },
+  },
+  {
+    resolve(context) {
+      return image(PHOTOGRAPHER_PLACEHOLDER_IMAGE, "photographer-placeholder", context.title);
+    },
+  },
 ];
 
 export function resolvePlatformSocialPreview(context: PlatformSocialPreviewContext): ResolvedSocialPreview {
+  const resolvedImage = firstResolved(platformProviders, context);
   return {
     title: context.settings.enabled && context.settings.title ? context.settings.title : context.defaults.title,
-    description: context.settings.enabled && context.settings.description ? context.settings.description : context.defaults.description,
-    image: firstResolved(platformProviders, context),
+    description:
+      context.settings.enabled && context.settings.description
+        ? context.settings.description
+        : context.defaults.description,
+    image: resolvedImage,
   };
 }
 
@@ -91,10 +109,19 @@ export function resolvePhotographerSocialPreview(
   context: PhotographerSocialPreviewContext,
   providers: Array<SocialPreviewImageProvider<PhotographerSocialPreviewContext>> = photographerProviders,
 ): ResolvedSocialPreview {
-  return { title: context.title, description: context.description, image: firstResolved(providers, context) };
+  return {
+    title: context.title,
+    description: context.description,
+    image: firstResolved(providers, context),
+  };
 }
 
-export function buildSocialMetadata({ preview, canonicalUrl, siteName, locale = "ar_EG" }: {
+export function buildSocialMetadata({
+  preview,
+  canonicalUrl,
+  siteName,
+  locale = "ar_EG",
+}: {
   preview: ResolvedSocialPreview;
   canonicalUrl: string;
   siteName?: string;
@@ -102,19 +129,39 @@ export function buildSocialMetadata({ preview, canonicalUrl, siteName, locale = 
 }): Pick<Metadata, "openGraph" | "twitter"> {
   return {
     openGraph: {
-      type: "website", locale, siteName, url: canonicalUrl,
-      title: preview.title, description: preview.description,
-      images: [{ url: preview.image.url, width: preview.image.width, height: preview.image.height, alt: preview.image.alt }],
+      type: "website",
+      locale,
+      siteName,
+      url: canonicalUrl,
+      title: preview.title,
+      description: preview.description,
+      images: [
+        {
+          url: preview.image.url,
+          width: preview.image.width,
+          height: preview.image.height,
+          alt: preview.image.alt,
+        },
+      ],
     },
-    twitter: { card: "summary_large_image", title: preview.title, description: preview.description, images: [preview.image.url] },
+    twitter: {
+      card: "summary_large_image",
+      title: preview.title,
+      description: preview.description,
+      images: [preview.image.url],
+    },
   };
 }
 
-function firstResolved<TContext extends SocialPreviewContext>(providers: Array<SocialPreviewImageProvider<TContext>>, context: TContext): ResolvedSocialPreviewImage {
+function firstResolved<TContext extends SocialPreviewContext>(
+  providers: Array<SocialPreviewImageProvider<TContext>>,
+  context: TContext,
+): ResolvedSocialPreviewImage {
   for (const provider of providers) {
     const result = provider.resolve(context);
     if (result) return result;
   }
+
   throw new Error("Social preview provider chain did not produce an image.");
 }
 
@@ -122,4 +169,6 @@ function image(url: string, source: SocialPreviewImageSource, alt: string): Reso
   return { url, width: 1200, height: 630, alt, source };
 }
 
-function isUsableUrl(value: string | null): value is string { return Boolean(value?.trim()); }
+function isUsableUrl(value: string | null): value is string {
+  return Boolean(value?.trim());
+}

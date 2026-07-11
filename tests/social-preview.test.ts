@@ -9,7 +9,7 @@ import {
 } from "@/modules/social-preview/social-preview";
 
 describe("platform social preview", () => {
-  it("uses the custom platform preview only when enabled and image data exists", () => {
+  it("uses the custom platform preview only when enabled", () => {
     const preview = resolvePlatformSocialPreview({
       kind: "platform",
       defaults: {
@@ -23,9 +23,6 @@ describe("platform social preview", () => {
         description: "Custom description",
         imageUrl: "/uploads/custom.webp",
         storageKey: "platform/social-preview/custom.webp",
-        imageData: "base64-encoded-image-data",
-        imageMimeType: "image/webp",
-        imageVersion: "12345",
       },
     });
 
@@ -34,7 +31,7 @@ describe("platform social preview", () => {
     expect(preview.image.source).toBe("platform-custom");
   });
 
-  it("falls back to the default platform preview when custom is disabled", () => {
+  it("falls back to the existing platform preview when disabled", () => {
     const preview = resolvePlatformSocialPreview({
       kind: "platform",
       defaults: {
@@ -51,7 +48,7 @@ describe("platform social preview", () => {
       },
     });
 
-    expect(preview.title).toBe("Ignored");
+    expect(preview.title).toBe("FrameID");
     expect(preview.image.source).toBe("platform-default");
   });
 });
@@ -147,11 +144,9 @@ describe("photographer social preview", () => {
     expect(metadata.openGraph?.images).toEqual([
       {
         url: "/profile.webp",
-        secureUrl: "/profile.webp",
         width: 1200,
         height: 630,
         alt: "Studio",
-        type: "image/jpeg",
       },
     ]);
     expect(metadata.twitter?.images).toEqual(["/profile.webp"]);
