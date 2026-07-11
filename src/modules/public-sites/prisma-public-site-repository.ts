@@ -96,7 +96,13 @@ export function createPrismaPublicSiteRepository(
               whatsapp: true,
               email: true,
               instagram: true,
-              facebook: true
+              facebook: true,
+              avatarAsset: {
+                select: {
+                  url: true,
+                  deletedAt: true,
+                },
+              },
             }
           },
           sections: {
