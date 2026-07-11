@@ -26,6 +26,7 @@ async function getArtifact(backupJobId: string) {
   if (!isSupportedBackupType(job.type)) throw new Error("نوع النسخة غير مدعوم.");
   if (!job.filePath) throw new Error("معرّف ملف النسخة غير متاح.");
 
+  const backupType = job.type;
   const expectedRoot = resolve(process.env.BACKUP_DIR || resolve(process.cwd(), "backups"));
   const backupDir = resolve(job.filePath);
   if (!backupDir.startsWith(`${expectedRoot}/`)) throw new Error("مسار النسخة غير صالح.");
@@ -36,10 +37,11 @@ async function getArtifact(backupJobId: string) {
 
   return {
     job,
+    type: backupType,
     backupDir,
     backupRoot: dirname(backupDir),
     artifactId: basename(backupDir),
-    branch: getGitHubBackupBranch(job.type),
+    branch: getGitHubBackupBranch(backupType),
     githubPath: typeof metadata.githubPath === "string" ? metadata.githubPath : null,
   };
 }
@@ -56,7 +58,7 @@ export async function restoreWorkspaceBackupAction(formData: FormData) {
   try {
     const artifact = await getArtifact(backupJobId);
     const service = createRestoreService();
-    const available = await service.ensureBackupAvailable({ backupId: artifact.artifactId, backupRoot: artifact.backupRoot, type: artifact.job.type, githubToken: env.BACKUP_GITHUB_TOKEN, githubRepository: process.env.BACKUP_GITHUB_REPOSITORY, githubBranch: artifact.branch });
+    const available = await service.ensureBackupAvailable({ backupId: artifact.artifactId, backupRoot: artifact.backupRoot, type: artifact.type, githubToken: env.BACKUP_GITHUB_TOKEN, githubRepository: process.env.BACKUP_GITHUB_REPOSITORY, githubBranch: artifact.branch });
     const validation = await service.validateBackup({ backupId: artifact.artifactId, backupRoot: artifact.backupRoot });
 
     if (!validation.valid) {
@@ -73,7 +75,7 @@ export async function restoreWorkspaceBackupAction(formData: FormData) {
 
     await audit({ actorId: session.user.id, action: "RESTORE_STARTED", entityId: backupJobId, metadata: { restoreJobId, source: available.source } });
 
-    const result = await service.executeRestore({ backupId: artifact.artifactId, backupRoot: artifact.backupRoot, databaseUrl: env.DATABASE_URL, type: artifact.job.type, githubToken: env.BACKUP_GITHUB_TOKEN, githubRepository: process.env.BACKUP_GITHUB_REPOSITORY, githubBranch: artifact.branch });
+    const result = await service.executeRestore({ backupId: artifact.artifactId, backupRoot: artifact.backupRoot, databaseUrl: env.DATABASE_URL, type: artifact.type, githubToken: env.BACKUP_GITHUB_TOKEN, githubRepository: process.env.BACKUP_GITHUB_REPOSITORY, githubBranch: artifact.branch });
     if (!result.success) throw new Error(result.errors.join("; ") || "فشلت الاستعادة.");
 
     const postValidation = await service.validatePostRestore(env.DATABASE_URL);
@@ -103,7 +105,7 @@ export async function verifyWorkspaceBackupAction(formData: FormData) {
   try {
     const artifact = await getArtifact(backupJobId);
     const service = createRestoreService();
-    const available = await service.ensureBackupAvailable({ backupId: artifact.artifactId, backupRoot: artifact.backupRoot, type: artifact.job.type, githubToken: env.BACKUP_GITHUB_TOKEN, githubRepository: process.env.BACKUP_GITHUB_REPOSITORY, githubBranch: artifact.branch });
+    const available = await service.ensureBackupAvailable({ backupId: artifact.artifactId, backupRoot: artifact.backupRoot, type: artifact.type, githubToken: env.BACKUP_GITHUB_TOKEN, githubRepository: process.env.BACKUP_GITHUB_REPOSITORY, githubBranch: artifact.branch });
     const result = await createVerificationService().verifyBackup(artifact.artifactId, artifact.backupRoot);
     valid = result.valid;
     await audit({ actorId: session.user.id, action: valid ? "BACKUP_VERIFIED" : "BACKUP_VERIFICATION_FAILED", entityId: backupJobId, metadata: { source: available.source, errors: result.errors, durationMs: result.durationMs } });
