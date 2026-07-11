@@ -53,11 +53,26 @@ export type RenderingMetadata = {
   route: string;
 };
 
+export type BrowserDiagnosticEvent = {
+  id: string;
+  type: string;
+  timestamp: string;
+  route: string;
+  details?: Record<string, string | number | boolean | null>;
+};
+
 const DEVICE_ID_KEY = "frameid:rendering-device-id";
+const EVENT_BUFFER_KEY = "frameid:browser-event-buffer";
+const EVENT_BUFFER_LIMIT = 20;
 
 function randomDeviceId() {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) return crypto.randomUUID();
   return `device-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}`;
+}
+
+function randomEventId() {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) return crypto.randomUUID();
+  return `event-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
 }
 
 export function getOrCreateRenderingDeviceId(): string {
@@ -70,6 +85,59 @@ export function getOrCreateRenderingDeviceId(): string {
     return created;
   } catch {
     return "storage-unavailable";
+  }
+}
+
+function sanitizeEventDetails(details: BrowserDiagnosticEvent["details"]) {
+  if (!details) return undefined;
+  return Object.fromEntries(
+    Object.entries(details)
+      .slice(0, 20)
+      .map(([key, value]) => [key.slice(0, 80), typeof value === "string" ? value.slice(0, 500) : value]),
+  );
+}
+
+export function getBrowserDiagnosticEvents(): BrowserDiagnosticEvent[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = window.sessionStorage.getItem(EVENT_BUFFER_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed.slice(-EVENT_BUFFER_LIMIT) as BrowserDiagnosticEvent[] : [];
+  } catch {
+    return [];
+  }
+}
+
+export function recordBrowserDiagnosticEvent(
+  type: string,
+  details?: BrowserDiagnosticEvent["details"],
+): BrowserDiagnosticEvent | null {
+  if (typeof window === "undefined") return null;
+  const event: BrowserDiagnosticEvent = {
+    id: randomEventId(),
+    type: type.slice(0, 100),
+    timestamp: new Date().toISOString(),
+    route: `${window.location.pathname}${window.location.search}`,
+    details: sanitizeEventDetails(details),
+  };
+
+  try {
+    const events = [...getBrowserDiagnosticEvents(), event].slice(-EVENT_BUFFER_LIMIT);
+    window.sessionStorage.setItem(EVENT_BUFFER_KEY, JSON.stringify(events));
+  } catch {
+    // The buffer is best-effort and must never affect the dashboard.
+  }
+
+  return event;
+}
+
+export function clearBrowserDiagnosticEvents() {
+  if (typeof window === "undefined") return;
+  try {
+    window.sessionStorage.removeItem(EVENT_BUFFER_KEY);
+  } catch {
+    // Ignore restricted storage environments.
   }
 }
 
