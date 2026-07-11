@@ -7,14 +7,12 @@ import { getThemeSiteComponent } from "@/components/themes/theme-components";
 import { TemplatePreviewGuard } from "@/components/themes/template-preview-guard";
 import { prisma } from "@/lib/prisma";
 import { buildTemplatePreviewViewModel, getTemplateContentSource } from "@/modules/templates/template-content-source";
+import { loadTemplateContentSourceOptions } from "@/modules/templates/template-starter-defaults-repository";
 import { getTemplateByCode } from "@/modules/themes/theme-registry";
 
 export const metadata: Metadata = {
   title: "معاينة القالب",
-  robots: {
-    index: false,
-    follow: false
-  }
+  robots: { index: false, follow: false }
 };
 
 export const dynamic = "force-dynamic";
@@ -29,9 +27,7 @@ export default async function TemplatePreviewPage({ params, searchParams }: Prop
   const query = await searchParams;
   const template = getTemplateByCode(code);
 
-  if (!template || template.status !== "published") {
-    notFound();
-  }
+  if (!template || template.status !== "published") notFound();
 
   const editableTemplate = await prisma.template.findUnique({
     where: { code },
@@ -42,11 +38,9 @@ export default async function TemplatePreviewPage({ params, searchParams }: Prop
     notFound();
   }
 
-  const source = getTemplateContentSource(code);
-
-  if (!source) {
-    notFound();
-  }
+  const sourceOptions = await loadTemplateContentSourceOptions(code);
+  const source = getTemplateContentSource(code, sourceOptions);
+  if (!source) notFound();
 
   const ThemeComponent = getThemeSiteComponent(source.themeCode);
   const siteData = buildTemplatePreviewViewModel(source);
