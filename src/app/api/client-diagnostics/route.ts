@@ -14,7 +14,6 @@ function sanitizeJsonScalar(value: unknown): Prisma.InputJsonValue | undefined {
   if (typeof value === "string") return value.slice(0, 1024);
   if (typeof value === "number" && Number.isFinite(value)) return value;
   if (typeof value === "boolean") return value;
-  if (value === null) return null;
   return undefined;
 }
 
@@ -81,14 +80,15 @@ export async function POST(request: Request) {
 
   const isRenderingReport = category === "rendering-report";
   const metadata = sanitizeMetadata(body.metadata);
+  const stack = text(body.stack, 8000);
   const logMetadata: Prisma.InputJsonObject = {
     tenantId: session.tenant.id,
     siteId: session.site.id,
     siteSlug: session.site.slug,
     diagnosticType: category,
-    stack: text(body.stack, 8000),
     rendering: metadata,
   };
+  if (stack) logMetadata.stack = stack;
 
   await prisma.errorLog.create({
     data: {
