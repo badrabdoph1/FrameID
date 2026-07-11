@@ -1,15 +1,38 @@
-function getEnvVar(key: string): string {
+function requireEnv(key: string): string {
   const value = process.env[key];
   if (!value) {
-    if (typeof window !== "undefined") return "";
     throw new Error(`Environment variable ${key} is required but not set.`);
   }
   return value;
 }
 
-export const env = {
-  DATABASE_URL: getEnvVar("DATABASE_URL"),
-  SESSION_SECRET: getEnvVar("SESSION_SECRET"),
+
+export interface Env {
+  readonly DATABASE_URL: string;
+  readonly SESSION_SECRET: string;
+  readonly NEXT_PUBLIC_APP_URL: string;
+  readonly NEXT_PUBLIC_GA_ID: string;
+  readonly BACKUP_GITHUB_TOKEN: string;
+  readonly BACKUP_ENCRYPTION_KEY: string;
+  readonly BACKUP_DIR: string;
+  readonly CRON_SECRET: string;
+  readonly SMTP_HOST: string;
+  readonly SMTP_PORT: number;
+  readonly SMTP_SECURE: boolean;
+  readonly SMTP_USERNAME: string;
+  readonly SMTP_PASSWORD: string;
+  readonly SMTP_FROM_NAME: string;
+  readonly SMTP_FROM_EMAIL: string;
+  readonly PASSWORD_RESET_DELIVERY_MODE: "console" | "email";
+  readonly SEED_SUPER_ADMIN_EMAIL: string;
+  readonly SEED_SUPER_ADMIN_PASSWORD: string;
+  readonly isDev: boolean;
+  readonly isProd: boolean;
+}
+
+export const env: Env = {
+  get DATABASE_URL() { return requireEnv("DATABASE_URL"); },
+  get SESSION_SECRET() { return requireEnv("SESSION_SECRET"); },
   NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
   NEXT_PUBLIC_GA_ID: process.env.NEXT_PUBLIC_GA_ID || "",
   BACKUP_GITHUB_TOKEN: process.env.BACKUP_GITHUB_TOKEN || "",
@@ -28,6 +51,4 @@ export const env = {
   SEED_SUPER_ADMIN_PASSWORD: process.env.SEED_SUPER_ADMIN_PASSWORD || "",
   isDev: process.env.NODE_ENV === "development",
   isProd: process.env.NODE_ENV === "production",
-} as const;
-
-export type Env = typeof env;
+};

@@ -5,6 +5,8 @@ import { createBackupJobService } from "@/modules/backups/backup-job-service";
 import { env } from "@/lib/env";
 import { isSupportedBackupType } from "@/modules/backups/backup-policy";
 
+export const dynamic = "force-dynamic";
+
 export async function POST(request: NextRequest) {
   try {
     const authHeader = request.headers.get("authorization");
