@@ -1,9 +1,16 @@
 import type { Metadata } from "next";
 
-export const PLATFORM_SOCIAL_IMAGE = "https://frameid.app/social-preview-image";
-export const PLATFORM_DEFAULT_SOCIAL_IMAGE = `${PLATFORM_SOCIAL_IMAGE}?mode=default&v=default-v3`;
-export const PLATFORM_CUSTOM_SOCIAL_IMAGE = `${PLATFORM_SOCIAL_IMAGE}?mode=custom`;
+export const PLATFORM_SOCIAL_IMAGE = "https://frameid.app/og/frameid";
+export const PLATFORM_DEFAULT_SOCIAL_IMAGE = buildPlatformSocialImageUrl("default", "default-v4");
+export const PLATFORM_CUSTOM_SOCIAL_IMAGE = buildPlatformSocialImageUrl("custom", "current");
 export const PHOTOGRAPHER_PLACEHOLDER_IMAGE = "/photographer-placeholder";
+
+export type PlatformSocialImageMode = "default" | "custom";
+
+export function buildPlatformSocialImageUrl(mode: PlatformSocialImageMode, version: string | number): string {
+  const safeVersion = encodeURIComponent(String(version || "current"));
+  return `${PLATFORM_SOCIAL_IMAGE}/${mode}/${safeVersion}/image.jpg`;
+}
 
 export type SocialPreviewImageSource =
   | "platform-custom"
@@ -62,14 +69,14 @@ const platformProviders: Array<SocialPreviewImageProvider<PlatformSocialPreviewC
   {
     resolve(context) {
       if (!context.settings.enabled || !context.settings.imageData) return null;
-      const version = encodeURIComponent(context.settings.imageVersion ?? "custom");
-      return image(`${PLATFORM_SOCIAL_IMAGE}?v=${version}`, "platform-custom", context.settings.title ?? context.defaults.title);
+      const version = context.settings.imageVersion ?? "custom";
+      return image(buildPlatformSocialImageUrl("custom", version), "platform-custom", context.settings.title ?? context.defaults.title);
     },
   },
   {
     resolve(context) {
-      const version = encodeURIComponent(context.settings.imageVersion ?? "default-v3");
-      return image(`${PLATFORM_SOCIAL_IMAGE}?mode=default&v=${version}`, "platform-default", context.settings.title ?? context.defaults.title);
+      const version = context.settings.imageVersion ?? "default-v4";
+      return image(buildPlatformSocialImageUrl("default", version), "platform-default", context.settings.title ?? context.defaults.title);
     },
   },
 ];
