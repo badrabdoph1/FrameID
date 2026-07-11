@@ -12,6 +12,9 @@ import {
 } from "@/modules/social-preview/social-preview";
 import "./globals.css";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 const tajawal = Tajawal({
   subsets: ["arabic", "latin"],
   weight: ["400", "500", "700"],

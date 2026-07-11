@@ -14,12 +14,15 @@ const DEFAULT_SETTINGS: PlatformSocialPreviewSettings = {
   storageKey: null,
   imageData: null,
   imageMimeType: null,
+  imageVersion: "default-v3",
 };
 
 type StoredValue = Partial<Record<keyof PlatformSocialPreviewSettings, unknown>>;
 
-function parseValue(value: unknown, enabled: boolean): PlatformSocialPreviewSettings {
-  if (!value || typeof value !== "object" || Array.isArray(value)) return { ...DEFAULT_SETTINGS, enabled };
+function parseValue(value: unknown, enabled: boolean, updatedAt?: Date): PlatformSocialPreviewSettings {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return { ...DEFAULT_SETTINGS, enabled, imageVersion: updatedAt ? String(updatedAt.getTime()) : DEFAULT_SETTINGS.imageVersion };
+  }
   const record = value as StoredValue;
   return {
     enabled,
@@ -29,13 +32,14 @@ function parseValue(value: unknown, enabled: boolean): PlatformSocialPreviewSett
     storageKey: readText(record.storageKey),
     imageData: readText(record.imageData),
     imageMimeType: readText(record.imageMimeType),
+    imageVersion: updatedAt ? String(updatedAt.getTime()) : readText(record.imageVersion) ?? DEFAULT_SETTINGS.imageVersion,
   };
 }
 
 async function readRow() {
   return prisma.featureFlag.findFirst({
     where: { key: PLATFORM_SOCIAL_PREVIEW_KEY, scope: "PLATFORM", tenantId: null, siteId: null } as never,
-    select: { id: true, enabled: true, value: true },
+    select: { id: true, enabled: true, value: true, updatedAt: true },
   });
 }
 
@@ -43,8 +47,9 @@ export async function getPlatformSocialPreviewSettings(): Promise<PlatformSocial
   noStore();
   try {
     const row = await readRow();
-    return row ? parseValue(row.value, row.enabled) : { ...DEFAULT_SETTINGS };
-  } catch {
+    return row ? parseValue(row.value, row.enabled, row.updatedAt) : { ...DEFAULT_SETTINGS };
+  } catch (error) {
+    console.error("[social-preview] settings read failed", error);
     return { ...DEFAULT_SETTINGS };
   }
 }
@@ -61,19 +66,18 @@ export async function savePlatformSocialPreviewSettings(settings: PlatformSocial
   };
 
   if (existing) {
-    await prisma.featureFlag.update({ where: { id: existing.id }, data: { enabled: settings.enabled, value } as never });
-  } else {
-    await prisma.featureFlag.create({
-      data: {
-        key: PLATFORM_SOCIAL_PREVIEW_KEY,
-        scope: "PLATFORM",
-        tenantId: null,
-        siteId: null,
-        enabled: settings.enabled,
-        value,
-      } as never,
-    });
+    return prisma.featureFlag.update({ where: { id: existing.id }, data: { enabled: settings.enabled, value } as never });
   }
+  return prisma.featureFlag.create({
+    data: {
+      key: PLATFORM_SOCIAL_PREVIEW_KEY,
+      scope: "PLATFORM",
+      tenantId: null,
+      siteId: null,
+      enabled: settings.enabled,
+      value,
+    } as never,
+  });
 }
 
 function readText(value: unknown): string | null {

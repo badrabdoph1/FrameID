@@ -9,7 +9,7 @@ import {
   PLATFORM_SOCIAL_PREVIEW_CACHE_TAG,
   savePlatformSocialPreviewSettings,
 } from "@/modules/social-preview/platform-social-preview-settings";
-import { PLATFORM_CUSTOM_SOCIAL_IMAGE } from "@/modules/social-preview/social-preview";
+import { PLATFORM_SOCIAL_IMAGE } from "@/modules/social-preview/social-preview";
 
 export const runtime = "nodejs";
 
@@ -33,7 +33,7 @@ export async function PATCH(request: Request) {
       enabled: mode === "custom",
       title: cleanText(payload.title, 120),
       description: cleanText(payload.description, 240),
-      imageUrl: deleteImage ? null : current.imageData ? PLATFORM_CUSTOM_SOCIAL_IMAGE : null,
+      imageUrl: deleteImage ? null : current.imageData ? PLATFORM_SOCIAL_IMAGE : null,
       storageKey: null,
       imageData: deleteImage ? null : current.imageData,
       imageMimeType: deleteImage ? null : current.imageMimeType,
@@ -43,7 +43,9 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ ok: false, error: "لا توجد صورة مرفوعة فعلًا. ارفع الصورة واعتمد القص أولًا." }, { status: 400 });
     }
 
-    await savePlatformSocialPreviewSettings(next);
+    const saved = await savePlatformSocialPreviewSettings(next);
+    const version = saved.updatedAt.getTime();
+
     await prisma.auditLog.create({
       data: {
         action: "PLATFORM_SOCIAL_PREVIEW_UPDATED",
@@ -56,6 +58,7 @@ export async function PATCH(request: Request) {
           description: next.description,
           hasImage: Boolean(next.imageData),
           deletedImage: deleteImage,
+          version,
         } as Prisma.InputJsonObject,
       },
     });
@@ -71,8 +74,10 @@ export async function PATCH(request: Request) {
         enabled: next.enabled,
         title: next.title,
         description: next.description,
-        imageUrl: next.imageData ? `${PLATFORM_CUSTOM_SOCIAL_IMAGE}?v=${Date.now()}` : null,
+        imageUrl: next.imageData ? `${PLATFORM_SOCIAL_IMAGE}?mode=custom&v=${version}` : null,
+        defaultImageUrl: `${PLATFORM_SOCIAL_IMAGE}?mode=default&v=${version}`,
         hasImage: Boolean(next.imageData),
+        version: String(version),
       },
     });
   } catch (error) {
