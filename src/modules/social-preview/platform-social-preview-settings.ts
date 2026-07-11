@@ -43,16 +43,21 @@ async function readRow() {
   });
 }
 
-export async function getPlatformSocialPreviewSettings(): Promise<PlatformSocialPreviewSettings> {
-  noStore();
-  try {
-    const row = await readRow();
-    return row ? parseValue(row.value, row.enabled, row.updatedAt) : { ...DEFAULT_SETTINGS };
-  } catch (error) {
-    console.error("[social-preview] settings read failed", error);
-    return { ...DEFAULT_SETTINGS };
-  }
-}
+export const getPlatformSocialPreviewSettings = unstable_cache(
+  async () => {
+    try {
+      const row = await readRow();
+      return row ? parseValue(row.value, row.enabled) : { ...DEFAULT_SETTINGS };
+    } catch {
+      // Railway's build environment cannot always resolve private service DNS.
+      // Metadata generation must stay deterministic and build-safe, so we fall
+      // back to the existing platform defaults until runtime database access is available.
+      return { ...DEFAULT_SETTINGS };
+    }
+  },
+  [PLATFORM_SOCIAL_PREVIEW_KEY],
+  { tags: [PLATFORM_SOCIAL_PREVIEW_CACHE_TAG] },
+);
 
 export async function savePlatformSocialPreviewSettings(settings: PlatformSocialPreviewSettings) {
   const existing = await readRow();
