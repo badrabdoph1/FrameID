@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import type { LucideIcon } from "lucide-react";
+import { MoreHorizontal, type LucideIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils/cn";
 
@@ -144,3 +144,20 @@ export function AdminBanner({ tone, children }: { tone: "success" | "danger"; ch
     </div>
   );
 }
+
+export function AdminActionMenu({ label = "المزيد", children }: { label?: string; children: ReactNode }) {
+  return (
+    <details className="group relative">
+      <summary className="inline-flex min-h-11 cursor-pointer list-none items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3 text-xs font-black text-white/65 transition hover:bg-white/[0.08] hover:text-white [&::-webkit-details-marker]:hidden">
+        <MoreHorizontal className="size-4" />
+        {label}
+      </summary>
+      <div className="absolute left-0 z-30 mt-2 min-w-44 overflow-hidden rounded-xl border border-white/10 bg-[#111318] p-1.5 shadow-2xl">
+        {children}
+      </div>
+    </details>
+  );
+}
+
+export const adminActionItemClass =
+  "flex min-h-10 w-full items-center gap-2 rounded-lg px-3 text-right text-xs font-black transition hover:bg-white/[0.07]";
