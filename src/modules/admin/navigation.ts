@@ -22,6 +22,7 @@ import {
   Search,
   BriefcaseBusiness,
   MessageSquareText,
+  Share2,
   type LucideIcon,
 } from "lucide-react";
 
@@ -178,6 +179,7 @@ export const adminSections: AdminSection[] = [
       { href: "/admin/backups", label: "النسخ الاحتياطي", icon: DatabaseBackup },
       { href: "/admin/audit", label: "السجلات", icon: ClipboardList },
       { href: "/admin/settings", label: "إعدادات المنصة", icon: Settings },
+      { href: "/admin/settings/social-preview", label: "معاينة المشاركة", icon: Share2 },
     ],
   },
 ];
