@@ -30,7 +30,7 @@ export async function checkSiteAccessBySlug(slug: string): Promise<{ result: Acc
           status: true,
           trialEndsAt: true,
           gracePeriodEndsAt: true,
-          subscriptions: { where: { deletedAt: null }, orderBy: { createdAt: "desc" }, take: 1, select: { id: true, status: true, currentPeriodEnd: true, expiresAt: true } }
+          subscriptions: { where: {}, orderBy: { createdAt: "desc" }, take: 1, select: { id: true, status: true, currentPeriodEnd: true, expiresAt: true } }
         }
       }
     }
@@ -49,7 +49,7 @@ export async function checkTenantAccessById(tenantId: string): Promise<AccessChe
       status: true,
       trialEndsAt: true,
       gracePeriodEndsAt: true,
-      subscriptions: { where: { deletedAt: null }, orderBy: { createdAt: "desc" }, take: 1, select: { id: true, status: true, currentPeriodEnd: true, expiresAt: true } }
+      subscriptions: { where: {}, orderBy: { createdAt: "desc" }, take: 1, select: { id: true, status: true, currentPeriodEnd: true, expiresAt: true } }
     }
   });
   if (!tenant) return { allowed: false, reason: "NO_SUBSCRIPTION" };

@@ -33,13 +33,6 @@ export type PaymentRequestFull = {
     owner: { name: string; email: string };
   };
   plan: { name: string; priceAmount: number } | null;
-  subscription: { id: string };
-  paymentAccount: {
-    label: string | null;
-    accountName: string;
-    accountNumber: string;
-    bankName: string | null;
-  } | null;
   proofAsset: {
     url: string;
     mimeType: string;
@@ -52,7 +45,7 @@ export type PaymentRequestFull = {
     id: string;
     action: string;
     actorName: string | null;
-    note: string | null;
+    metadata: unknown;
     createdAt: Date;
   }[];
 };
@@ -101,7 +94,7 @@ export default async function AdminPaymentsPage({ searchParams }: Props) {
             id: true,
             action: true,
             actorName: true,
-            note: true,
+            metadata: true,
             createdAt: true,
           },
         },

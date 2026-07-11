@@ -78,13 +78,13 @@ export default async function AdminOperationsPage() {
       where: { status: { in: ["FAILED", "VERIFICATION_FAILED", "UPLOAD_FAILED"] } } as never,
       orderBy: { createdAt: "desc" },
       take: 8,
-      select: { id: true, type: true, status: true, trigger: true, createdAt: true, completedAt: true },
+      select: { id: true, type: true, status: true, createdAt: true, completedAt: true, metadata: true },
     }),
     prisma.restoreJob.findMany({
       where: { status: { in: ["FAILED", "VALIDATION_FAILED", "POST_VALIDATION_FAILED"] } } as never,
       orderBy: { createdAt: "desc" },
       take: 5,
-      select: { id: true, type: true, status: true, errorMessage: true, createdAt: true },
+      select: { id: true, status: true, errorMessage: true, createdAt: true },
     }),
     prisma.errorLog.findMany({
       where: { resolved: false, level: { in: ["error", "critical", "fatal"] } } as never,
@@ -94,9 +94,9 @@ export default async function AdminOperationsPage() {
     }),
     prisma.supportCase.findMany({
       where: { deletedAt: null, status: { in: ["OPEN", "PENDING_CUSTOMER"] } } as never,
-      orderBy: [{ priority: "desc" }, { createdAt: "asc" }],
+      orderBy: { createdAt: "asc" },
       take: 8,
-      select: { id: true, subject: true, status: true, priority: true, createdAt: true, tenant: { select: { id: true, displayName: true } } },
+      select: { id: true, subject: true, status: true, createdAt: true, tenant: { select: { id: true, displayName: true } } },
     }),
     prisma.auditLog.findMany({
       where: {
@@ -170,18 +170,18 @@ export default async function AdminOperationsPage() {
 
         <QueuePanel title="أخطاء حرجة" icon={AlertTriangle} href="/admin/errors">
           {unresolvedErrors.map((error) => (
-            <QueueItem key={error.id} href={`/admin/errors?search=${encodeURIComponent(error.code)}`} title={error.code} subtitle={error.message} meta={`${error.level} · ${error.category} · ${dateLabel(error.createdAt)}`} />
+             <QueueItem key={error.id} href={`/admin/errors?search=${encodeURIComponent(error.code ?? "")}`} title={error.code ?? "بدون كود"} subtitle={error.message} meta={`${error.level} · ${error.category} · ${dateLabel(error.createdAt)}`} />
           ))}
         </QueuePanel>
 
         <QueuePanel title="الدعم المفتوح" icon={Headphones} href="/admin/support">
           {openSupport.map((ticket) => (
-            <QueueItem key={ticket.id} href="/admin/support" title={ticket.subject} subtitle={ticket.tenant.displayName} meta={`${ticket.status} · ${ticket.priority} · ${dateLabel(ticket.createdAt)}`} />
+             <QueueItem key={ticket.id} href="/admin/support" title={ticket.subject} subtitle={ticket.tenant.displayName} meta={`${ticket.status} · ${dateLabel(ticket.createdAt)}`} />
           ))}
         </QueuePanel>
 
         <QueuePanel title="Backup / Restore failures" icon={DatabaseBackup} href="/admin/backups">
-          {[...failedBackups.map((backup) => ({ id: backup.id, title: `${backup.type} backup`, subtitle: `${backup.trigger}`, meta: `${backup.status} · ${dateLabel(backup.createdAt)}` })), ...failedRestores.map((restore) => ({ id: restore.id, title: `${restore.type} restore`, subtitle: restore.errorMessage ?? "Restore failed", meta: `${restore.status} · ${dateLabel(restore.createdAt)}` }))].map((item) => (
+          {[...failedBackups.map((backup) => ({ id: backup.id, title: `${backup.type} backup`, subtitle: `${backup.metadata && typeof backup.metadata === 'object' && 'trigger' in (backup.metadata as Record<string, unknown>) ? (backup.metadata as Record<string, unknown>).trigger : "unknown"}`, meta: `${backup.status} · ${dateLabel(backup.createdAt)}` })), ...failedRestores.map((restore) => ({ id: restore.id, title: `restore`, subtitle: restore.errorMessage ?? "Restore failed", meta: `${restore.status} · ${dateLabel(restore.createdAt)}` }))].map((item) => (
             <QueueItem key={item.id} href="/admin/backups" title={item.title} subtitle={item.subtitle} meta={item.meta} />
           ))}
         </QueuePanel>

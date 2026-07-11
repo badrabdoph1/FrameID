@@ -178,6 +178,9 @@ model Tenant {
   auditLogs             AuditLog[]
   adminNotes            AdminNote[]
   supportCases          SupportCase[]
+  lifecycleEvents       LifecycleEvent[]
+  featureFlags          FeatureFlag[]
+  impersonationSessions ImpersonationSession[]
 
   @@index([ownerUserId, status])
 }
@@ -475,6 +478,7 @@ model Plan {
   isActive        Boolean  @default(true)
   sortOrder       Int      @default(0)
   subscriptions   Subscription[]
+  paymentRequests PaymentRequest[]
   changesFrom     SubscriptionChange[] @relation("FromPlan")
   changesTo       SubscriptionChange[] @relation("ToPlan")
 

@@ -212,7 +212,7 @@ async function getSearchGroups(query: string): Promise<ResultGroup[]> {
           { category: contains },
         ],
       } as never,
-      orderBy: { updatedAt: "desc" },
+      orderBy: { name: "desc" },
       take: RESULT_LIMIT,
       select: { id: true, code: true, name: true, status: true, category: true, version: true },
     }),
@@ -242,17 +242,15 @@ async function getSearchGroups(query: string): Promise<ResultGroup[]> {
     }),
     prisma.supportCase.findMany({
       where: {
-        deletedAt: null,
         OR: [
           { id: contains },
           { subject: contains },
-          { priority: contains },
           { tenant: { displayName: contains } },
         ],
       } as never,
       orderBy: { createdAt: "desc" },
       take: RESULT_LIMIT,
-      select: { id: true, subject: true, status: true, priority: true, createdAt: true, tenant: { select: { id: true, displayName: true } } },
+      select: { id: true, subject: true, status: true, createdAt: true, tenant: { select: { id: true, displayName: true } } },
     }),
     prisma.errorLog.findMany({
       where: {
@@ -299,15 +297,14 @@ async function getSearchGroups(query: string): Promise<ResultGroup[]> {
       where: {
         OR: [
           { id: contains },
-          { trigger: contains },
-          { note: contains },
-          { githubPath: contains },
-          { localPath: contains },
+          { type: contains as never },
+          { status: contains as never },
+          { filePath: contains },
         ],
       } as never,
       orderBy: { createdAt: "desc" },
       take: RESULT_LIMIT,
-      select: { id: true, type: true, status: true, trigger: true, createdAt: true, completedAt: true },
+      select: { id: true, type: true, status: true, createdAt: true, completedAt: true },
     }),
     prisma.featureFlag.findMany({
       where: {
@@ -341,12 +338,11 @@ async function getSearchGroups(query: string): Promise<ResultGroup[]> {
           { body: contains },
           { category: contains },
           { tenantId: contains },
-          { userId: contains },
         ],
       } as never,
       orderBy: { createdAt: "desc" },
       take: RESULT_LIMIT,
-      select: { id: true, type: true, title: true, category: true, tenantId: true, userId: true, createdAt: true },
+      select: { id: true, type: true, title: true, category: true, tenantId: true, createdAt: true },
     }),
   ]);
 
@@ -464,7 +460,7 @@ async function getSearchGroups(query: string): Promise<ResultGroup[]> {
         id: supportCase.id,
         title: supportCase.subject,
         subtitle: supportCase.tenant.displayName,
-        meta: `${supportCase.status} · ${supportCase.priority} · ${toDateLabel(supportCase.createdAt)}`,
+        meta: `${supportCase.status} · ${toDateLabel(supportCase.createdAt)}`,
         href: "/admin/support",
       })),
     },
@@ -475,10 +471,10 @@ async function getSearchGroups(query: string): Promise<ResultGroup[]> {
       icon: Activity,
       results: errors.map((error) => ({
         id: error.id,
-        title: error.code,
-        subtitle: error.message,
+        title: error.code ?? "N/A",
+        subtitle: error.message ?? "",
         meta: `${error.level} · ${error.category} · ${error.resolved ? "محلول" : "مفتوح"}`,
-        href: `/admin/errors?search=${encodeURIComponent(error.code)}`,
+        href: `/admin/errors?search=${encodeURIComponent(error.code ?? "")}`,
       })),
     },
     {
@@ -502,7 +498,7 @@ async function getSearchGroups(query: string): Promise<ResultGroup[]> {
       results: backups.map((backup) => ({
         id: backup.id,
         title: `${backup.type} backup`,
-        subtitle: `${backup.trigger} · ${backup.status}`,
+        subtitle: `${backup.status}`,
         meta: `${toDateLabel(backup.createdAt)} → ${toDateLabel(backup.completedAt)}`,
         href: "/admin/backups",
       })),
@@ -529,7 +525,7 @@ async function getSearchGroups(query: string): Promise<ResultGroup[]> {
         id: notification.id,
         title: notification.title,
         subtitle: `${notification.type}${notification.category ? ` · ${notification.category}` : ""}`,
-        meta: `${notification.tenantId ?? notification.userId ?? "system"} · ${toDateLabel(notification.createdAt)}`,
+        meta: `${notification.tenantId ?? "system"} · ${toDateLabel(notification.createdAt)}`,
         href: "/admin/notifications",
       })),
     },

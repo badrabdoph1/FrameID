@@ -3,22 +3,19 @@ import { describe, expect, it } from "vitest";
 import { createPrismaBackupJobRepository } from "@/modules/backups/prisma-backup-job-repository";
 
 describe("prisma backup job repository", () => {
-  it("persists backup jobs, manifests, completion state and audit events", async () => {
+  it("persists backup jobs, completion state and audit events", async () => {
     const calls: string[] = [];
     const prisma = {
       backupJob: {
-        async create(args: { data: { type: string; trigger: string } }) {
-          calls.push(`job:${args.data.type}:${args.data.trigger}`);
+        async create(args: { data: { type: string; metadata?: Record<string, unknown> } }) {
+          const trigger = args.data.metadata && typeof args.data.metadata === 'object' && 'trigger' in args.data.metadata
+            ? (args.data.metadata as Record<string, unknown>).trigger
+            : "unknown";
+          calls.push(`job:${args.data.type}:${trigger}`);
           return { id: "backup_1" };
         },
         async update(args: { where: { id: string }; data: { status: string } }) {
           calls.push(`job-update:${args.where.id}:${args.data.status}`);
-          return {};
-        },
-      },
-      backupManifest: {
-        async create(args: { data: { backupJobId: string } }) {
-          calls.push(`manifest:${args.data.backupJobId}`);
           return {};
         },
       },
@@ -85,7 +82,6 @@ describe("prisma backup job repository", () => {
 
     expect(calls).toEqual([
       "job:DATABASE:MANUAL",
-      "manifest:backup_1",
       "job-update:backup_1:COMPLETED",
       "audit:BACKUP_COMPLETED:backup_1",
     ]);

@@ -9,14 +9,13 @@ export default async function AdminSupportPage() {
   await requireSuperAdminSession();
 
   const cases = await prisma.supportCase.findMany({
-    where: { deletedAt: null },
+    where: {},
     orderBy: { createdAt: "desc" },
     take: 50,
     select: {
       id: true,
       subject: true,
       status: true,
-      priority: true,
       createdAt: true,
       tenant: { select: { displayName: true } },
     },
@@ -26,7 +25,6 @@ export default async function AdminSupportPage() {
     id: c.id,
     subject: c.subject,
     status: c.status,
-    priority: c.priority,
     tenantName: c.tenant.displayName,
     createdAt: c.createdAt.toISOString(),
   }));

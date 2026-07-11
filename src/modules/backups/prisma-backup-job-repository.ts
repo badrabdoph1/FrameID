@@ -6,9 +6,6 @@ type PrismaBackupJobClient = {
     create(input: unknown): Promise<{ id: string }>;
     update(input: unknown): Promise<unknown>;
   };
-  backupManifest: {
-    create(input: unknown): Promise<unknown>;
-  };
   user: { count(input: unknown): Promise<number> };
   tenant: { count(input: unknown): Promise<number> };
   site: { count(input: unknown): Promise<number> };
@@ -27,10 +24,8 @@ export function createPrismaBackupJobRepository(
         data: {
           type: input.type,
           status: "RUNNING",
-          trigger: input.trigger,
-          initiatedById: input.initiatedById,
-          note: input.note,
-          startedAt: new Date()
+          triggeredById: input.initiatedById,
+          metadata: { trigger: input.trigger, note: input.note } as Record<string, unknown>,
         },
         select: {
           id: true
@@ -53,23 +48,9 @@ export function createPrismaBackupJobRepository(
         mediaFilesCount
       };
     },
-    async saveManifest(input: BackupManifest) {
-      await prisma.backupManifest.create({
-        data: {
-          backupJobId: input.backupJobId,
-          platformVersion: input.appVersion,
-          usersCount: input.usersCount,
-          tenantsCount: input.tenantsCount,
-          sitesCount: input.sitesCount,
-          mediaFilesCount: input.mediaFilesCount,
-          compressedSizeBytes: input.totalSizeBytes,
-          compressionAlgorithm: input.compressionAlgorithm,
-          encryptionEnabled: input.encryptionEnabled,
-          sha256Checksum: input.checksum,
-          localVerificationStatus: "PASSED",
-          githubUploadStatus: "PENDING"
-        }
-      });
+    async saveManifest(_input: BackupManifest) {
+      // Manifest is persisted to disk by backup-package-creator and local-backup-artifact-writer.
+      // No database model exists for BackupManifest; this is intentionally a no-op.
     },
     async markCompleted(input) {
       await prisma.backupJob.update({
@@ -80,7 +61,7 @@ export function createPrismaBackupJobRepository(
           status: "COMPLETED",
           checksumSha256: input.checksumSha256,
           sizeBytes: input.sizeBytes,
-          localPath: input.localPath,
+          filePath: input.localPath,
           completedAt: input.completedAt
         }
       });
@@ -92,7 +73,7 @@ export function createPrismaBackupJobRepository(
         },
         data: {
           status: "FAILED",
-          note: input.reason
+          errorMessage: input.reason
         }
       });
     },

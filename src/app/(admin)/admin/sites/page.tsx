@@ -16,7 +16,6 @@ export default async function AdminSitesPage() {
       slug: true,
       title: true,
       status: true,
-      locale: true,
       isPublished: true,
       createdAt: true,
       tenant: {
@@ -33,7 +32,6 @@ export default async function AdminSitesPage() {
     slug: s.slug,
     title: s.title,
     status: s.status,
-    locale: s.locale,
     isPublished: s.isPublished,
     createdAt: s.createdAt.toISOString(),
     tenantName: s.tenant.displayName,

@@ -37,15 +37,15 @@ export default async function AdminDashboardPage() {
   ] = await Promise.all([
     prisma.tenant.count({ where: { deletedAt: null } }),
     prisma.tenant.count({ where: { deletedAt: null, status: "TRIAL" } }),
-    prisma.tenant.count({ where: { deletedAt: null, status: "ACTIVE", subscriptions: { some: { deletedAt: null, status: "ACTIVE" } } } }),
+    prisma.tenant.count({ where: { deletedAt: null, status: "ACTIVE", subscriptions: { some: { status: "ACTIVE" } } } }),
     prisma.tenant.count({ where: { deletedAt: null, status: "TRIAL", trialEndsAt: { gte: now, lte: week } } }),
-    prisma.subscription.count({ where: { deletedAt: null, status: "ACTIVE", OR: [{ currentPeriodEnd: { gte: now, lte: week } }, { expiresAt: { gte: now, lte: week } }] } }),
-    prisma.tenant.count({ where: { deletedAt: null, OR: [{ status: { in: ["EXPIRED", "TRIAL_EXPIRED"] } }, { subscriptions: { some: { deletedAt: null, status: "EXPIRED" } } }] } }),
+    prisma.subscription.count({ where: { status: "ACTIVE", OR: [{ currentPeriodEnd: { gte: now, lte: week } }, { expiresAt: { gte: now, lte: week } }] } }),
+    prisma.tenant.count({ where: { deletedAt: null, OR: [{ status: { in: ["EXPIRED", "TRIAL_EXPIRED"] } }, { subscriptions: { some: { status: "EXPIRED" } } }] } }),
     prisma.paymentRequest.count({ where: { deletedAt: null, status: { in: ["SUBMITTED", "PENDING", "UNDER_REVIEW"] } } }),
     prisma.tenant.count({ where: { deletedAt: null, status: "TRIAL_EXPIRED", payments: { none: { status: "APPROVED" } } } }),
     prisma.tenant.count({ where: { deletedAt: null, OR: [{ status: "TRIAL_EXPIRED" }, { payments: { some: { deletedAt: null, status: { in: ["SUBMITTED", "PENDING", "UNDER_REVIEW"] } } } }, { sites: { none: { deletedAt: null, isPublished: true } } }] } }),
     prisma.paymentRequest.aggregate({ where: { deletedAt: null, status: "APPROVED", reviewedAt: { gte: monthStart } }, _sum: { amount: true } }),
-    prisma.tenant.findMany({ where: { deletedAt: null }, orderBy: { createdAt: "desc" }, take: 6, select: { id: true, displayName: true, status: true, owner: { select: { email: true } }, subscriptions: { where: { deletedAt: null }, orderBy: { createdAt: "desc" }, take: 1, select: { status: true, currentPeriodEnd: true, expiresAt: true } } } }),
+    prisma.tenant.findMany({ where: { deletedAt: null }, orderBy: { createdAt: "desc" }, take: 6, select: { id: true, displayName: true, status: true, owner: { select: { email: true } }, subscriptions: { where: {}, orderBy: { createdAt: "desc" }, take: 1, select: { status: true, currentPeriodEnd: true, expiresAt: true } } } }),
   ]);
 
   const lifecycleCards = [

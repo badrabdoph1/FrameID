@@ -63,10 +63,9 @@ export default async function AdminCustomer360Page({ params }: Props) {
       sites: {
         where: { deletedAt: null },
         orderBy: { createdAt: "desc" },
-        select: { id: true, title: true, slug: true, status: true, isPublished: true, publishedVersion: true, createdAt: true, theme: { select: { name: true, code: true } } },
+        select: { id: true, title: true, slug: true, status: true, isPublished: true, createdAt: true, theme: { select: { name: true, code: true } } },
       },
       subscriptions: {
-        where: { deletedAt: null },
         orderBy: { currentPeriodStart: "desc" },
         take: 5,
         include: { plan: { select: { id: true, code: true, name: true, priceAmount: true, currency: true, billingInterval: true } } },

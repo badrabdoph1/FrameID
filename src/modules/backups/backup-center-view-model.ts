@@ -55,9 +55,9 @@ type BackupCenterDeps = {
       findMany(input: unknown): Promise<unknown>;
       count(input: { where: { status: string; createdAt?: { gte: Date } } }): Promise<number>;
       aggregate(input: {
-        _avg: { sizeBytes: true; durationMs: true };
+        _avg: { sizeBytes: boolean };
         where: { status: string; createdAt?: { gte: Date } };
-      }): Promise<{ _avg: { sizeBytes: number | null; durationMs: number | null } }>;
+      }): Promise<{ _avg: { sizeBytes: number | null } }>;
     };
     restoreJob: {
       findMany(input: unknown): Promise<unknown>;
@@ -91,7 +91,7 @@ export async function buildBackupCenterViewModel(
       where: { status: "FAILED", createdAt: { gte: last30Days } },
     }),
     deps.prisma.backupJob.aggregate({
-      _avg: { sizeBytes: true, durationMs: true },
+      _avg: { sizeBytes: true },
       where: { status: "COMPLETED", createdAt: { gte: last30Days } },
     }),
   ]);
@@ -187,9 +187,7 @@ export async function buildBackupCenterViewModel(
     },
     {
       label: "Avg Duration",
-      value: avgStats._avg.durationMs
-        ? `${Math.round(avgStats._avg.durationMs / 1000)}s`
-        : "N/A",
+      value: "N/A",
       unit: "seconds",
       tone: "default",
     },
@@ -276,7 +274,7 @@ export async function buildBackupCenterViewModel(
       invalid: invalidJobs,
       totalSizeBytes,
       storageUsedBytes: healthCheck.details.storageUsedBytes,
-      averageDurationMs: avgStats._avg.durationMs ?? 0,
+      averageDurationMs: 0,
       averageSizeBytes: avgStats._avg.sizeBytes ?? 0,
     },
     restoreSummary: {

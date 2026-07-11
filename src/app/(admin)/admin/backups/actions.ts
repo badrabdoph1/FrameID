@@ -81,12 +81,10 @@ export async function restoreBackupAction(formData: FormData) {
 
     await (prisma as unknown as { restoreJob: { create: (args: { data: Record<string, unknown> }) => Promise<unknown> } }).restoreJob.create({
       data: {
-        backupId,
-        type,
-        status: validation.valid ? "VALIDATED" : "VALIDATION_FAILED",
-        initiatedById: session.user.id,
-        manifest: validation.manifest,
-        validationJson: validation.validation,
+        backupJobId: backupId,
+        status: validation.valid ? "PENDING" : "FAILED",
+        triggeredById: session.user.id,
+        errorMessage: validation.valid ? null : "Validation failed",
       },
     });
 
@@ -100,10 +98,9 @@ export async function restoreBackupAction(formData: FormData) {
     });
 
     await (prisma as unknown as { restoreJob: { updateMany: (args: { where: Record<string, unknown>, data: Record<string, unknown> }) => Promise<unknown> } }).restoreJob.updateMany({
-      where: { backupId, status: "VALIDATED" },
+      where: { backupJobId: backupId, status: "PENDING" },
       data: {
         status: result.success ? "COMPLETED" : "FAILED",
-        resultJson: result,
         errorMessage: result.errors.join("; ") || null,
         completedAt: new Date(),
       },

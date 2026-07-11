@@ -126,8 +126,8 @@ export async function applyLifecycleTimerAction(formData: FormData) {
     } else if (timerType === "subscription") {
       const tenants = await prisma.tenant.findMany({
         where: audience === "all"
-          ? { deletedAt: null, status: "ACTIVE", subscriptions: { some: { deletedAt: null, status: "ACTIVE" } } }
-          : { id: { in: selectedTenantIds }, deletedAt: null, status: "ACTIVE", subscriptions: { some: { deletedAt: null, status: "ACTIVE" } } },
+          ? { deletedAt: null, status: "ACTIVE", subscriptions: { some: { status: "ACTIVE" } } }
+          : { id: { in: selectedTenantIds }, deletedAt: null, status: "ACTIVE", subscriptions: { some: { status: "ACTIVE" } } },
         select: { id: true },
       });
       if (tenants.length === 0) throw new Error("لا يوجد مشتركين مطابقين.");

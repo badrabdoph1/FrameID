@@ -44,12 +44,10 @@ export default async function AdminBillingWorkspacePage() {
     }),
     prisma.subscription.groupBy({
       by: ["status"],
-      where: { deletedAt: null },
       _count: { _all: true },
     }),
     prisma.subscription.findMany({
       where: {
-        deletedAt: null,
         status: { in: ["TRIAL", "ACTIVE", "PAST_DUE"] },
         OR: [
           { currentPeriodEnd: { gte: now, lte: soon } },

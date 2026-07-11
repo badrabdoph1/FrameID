@@ -51,13 +51,13 @@ export default async function AdminSiteWorkspacePage({ params }: Props) {
     include: {
       tenant: { select: { id: true, displayName: true, status: true, owner: { select: { name: true, email: true } } } },
       theme: { select: { id: true, code: true, name: true, status: true, category: true, version: true } },
-      domains: { where: { deletedAt: null }, orderBy: { createdAt: "desc" } },
-      themeConfig: true,
-      sections: { where: { deletedAt: null }, orderBy: { sortOrder: "asc" } },
-      packages: { where: { deletedAt: null }, orderBy: { sortOrder: "asc" } },
-      extras: { where: { deletedAt: null }, orderBy: { sortOrder: "asc" } },
-      albums: { where: { deletedAt: null }, orderBy: { sortOrder: "asc" }, include: { images: { where: { deletedAt: null }, take: 3 } } },
-      contact: true,
+      domains: { orderBy: { createdAt: "desc" } },
+      themeConfigs: true,
+      sections: { orderBy: { sortOrder: "asc" } },
+      packages: { orderBy: { sortOrder: "asc" }, where: { isActive: true } },
+      extraServices: { orderBy: { sortOrder: "asc" }, where: { isActive: true } },
+      galleryAlbums: { orderBy: { sortOrder: "asc" }, where: { deletedAt: null }, include: { images: true } },
+      contactProfile: true,
       seoSettings: true,
       featureFlags: { orderBy: { updatedAt: "desc" } },
     },
@@ -90,7 +90,7 @@ export default async function AdminSiteWorkspacePage({ params }: Props) {
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
         <Metric label="الحالة" value={site.status} />
         <Metric label="النشر" value={site.isPublished ? "منشور" : "غير منشور"} accent={site.isPublished} />
-        <Metric label="الإصدار" value={`v${site.publishedVersion}`} />
+        <Metric label="الإصدار" value={`v${site.theme.version}`} />
         <Metric label="الدومينات" value={site.domains.length.toLocaleString("ar-EG")} />
         <Metric label="الوسائط" value={mediaCount.toLocaleString("ar-EG")} />
       </section>
@@ -100,10 +100,8 @@ export default async function AdminSiteWorkspacePage({ params }: Props) {
           <div className="grid gap-3 sm:grid-cols-2">
             <Info label="Slug" value={`/p/${site.slug}`} dir="ltr" />
             <Info label="Public URL" value={publicUrl} dir="ltr" />
-            <Info label="Locale" value={site.locale} />
             <Info label="Created" value={dateLabel(site.createdAt)} />
             <Info label="Updated" value={dateLabel(site.updatedAt)} />
-            <Info label="Slug change used" value={site.slugChangeUsed ? "نعم" : "لا"} />
           </div>
           {site.description ? <p className="mt-4 rounded-xl border border-white/8 bg-black/18 p-3 text-sm font-bold leading-7 text-white/55">{site.description}</p> : null}
         </Panel>
@@ -147,7 +145,7 @@ export default async function AdminSiteWorkspacePage({ params }: Props) {
             <Info label="Category" value={site.theme.category} />
             <Info label="Version" value={`v${site.theme.version}`} />
             <Info label="Status" value={site.theme.status} />
-            <Info label="Theme config" value={site.themeConfig ? "موجود" : "غير مخصص"} />
+            <Info label="Theme config" value={site.themeConfigs[0] ? "موجود" : "غير مخصص"} />
           </div>
         </Panel>
       </section>
@@ -159,8 +157,8 @@ export default async function AdminSiteWorkspacePage({ params }: Props) {
         <CollectionPanel title="Packages" icon={PackageCheck} count={site.packages.length}>
           {site.packages.map((pkg) => <CompactItem key={pkg.id} title={pkg.name} subtitle={`${pkg.priceAmount.toLocaleString("ar-EG")} ${pkg.currency} · ${pkg.isHighlighted ? "Highlighted" : "Standard"}`} />)}
         </CollectionPanel>
-        <CollectionPanel title="Extras" icon={Boxes} count={site.extras.length}>
-          {site.extras.map((extra) => <CompactItem key={extra.id} title={extra.name} subtitle={`${extra.priceAmount.toLocaleString("ar-EG")} ${extra.currency} · ${extra.isActive ? "Active" : "Inactive"}`} />)}
+        <CollectionPanel title="Extras" icon={Boxes} count={site.extraServices.length}>
+          {site.extraServices.map((extra) => <CompactItem key={extra.id} title={extra.name} subtitle={`${extra.priceAmount.toLocaleString("ar-EG")} ${extra.currency} · ${extra.isActive ? "Active" : "Inactive"}`} />)}
         </CollectionPanel>
       </section>
 
@@ -170,9 +168,9 @@ export default async function AdminSiteWorkspacePage({ params }: Props) {
             <Info label="SEO title" value={site.seoSettings?.title ?? "غير مضبوط"} />
             <Info label="Robots index" value={site.seoSettings?.robotsIndex ? "Index" : "No index"} />
             <Info label="Canonical" value={site.seoSettings?.canonicalUrl ?? "—"} dir="ltr" />
-            <Info label="Contact email" value={site.contact?.email ?? "—"} dir="ltr" />
-            <Info label="Phone" value={site.contact?.phone ?? "—"} dir="ltr" />
-            <Info label="Website" value={site.contact?.website ?? "—"} dir="ltr" />
+            <Info label="Contact email" value={site.contactProfile?.email ?? "—"} dir="ltr" />
+            <Info label="Phone" value={site.contactProfile?.phone ?? "—"} dir="ltr" />
+            <Info label="Website" value={site.contactProfile?.website ?? "—"} dir="ltr" />
           </div>
         </Panel>
 
@@ -189,9 +187,9 @@ export default async function AdminSiteWorkspacePage({ params }: Props) {
       </section>
 
       <Panel title="Gallery Albums" icon={Image}>
-        {site.albums.length === 0 ? <Empty text="لا توجد ألبومات." /> : (
+        {site.galleryAlbums.length === 0 ? <Empty text="لا توجد ألبومات." /> : (
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-            {site.albums.map((album) => (
+            {site.galleryAlbums.map((album) => (
               <div key={album.id} className="rounded-xl border border-white/8 bg-black/16 p-3">
                 <strong className="block truncate text-sm font-black text-white/82">{album.title}</strong>
                 <p className="mt-1 text-xs font-bold text-white/38">{album.images.length} عينات معروضة · {album.isVisible ? "visible" : "hidden"}</p>

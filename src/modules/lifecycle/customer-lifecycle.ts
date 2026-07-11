@@ -169,7 +169,7 @@ export async function syncCustomerLifecycle(prisma: LifecyclePrismaClient, optio
 
   for (const tenant of expiredTrials) {
     await prisma.tenant.update({ where: { id: tenant.id }, data: { status: "TRIAL_EXPIRED", gracePeriodEndsAt: null } });
-    await prisma.subscription.updateMany({ where: { tenantId: tenant.id, deletedAt: null, status: "TRIAL" }, data: { status: "EXPIRED", currentPeriodEnd: tenant.trialEndsAt, expiresAt: tenant.trialEndsAt } });
+    await prisma.subscription.updateMany({ where: { tenantId: tenant.id, status: "TRIAL" }, data: { status: "EXPIRED", currentPeriodEnd: tenant.trialEndsAt, expiresAt: tenant.trialEndsAt } });
     await prisma.site.updateMany({ where: { tenantId: tenant.id, deletedAt: null }, data: { status: "EXPIRED", isPublished: false } });
     await notifyLifecycleExpired(prisma, tenant, "trial");
     await prisma.auditLog.create({ data: { actorId: null, tenantId: tenant.id, action: "TRIAL_AUTO_EXPIRED", entityType: "Tenant", entityId: tenant.id, metadata: { expiredAt: now.toISOString(), trialEndsAt: tenant.trialEndsAt.toISOString() } } }).catch(() => undefined);
@@ -177,7 +177,6 @@ export async function syncCustomerLifecycle(prisma: LifecyclePrismaClient, optio
 
   const expiredSubscriptions = await prisma.subscription.findMany({
     where: {
-      deletedAt: null,
       status: "ACTIVE",
       OR: [{ currentPeriodEnd: { lte: now } }, { expiresAt: { lte: now } }],
       tenant: { ...tenantScope, deletedAt: null },
@@ -208,7 +207,7 @@ export async function applyTrialTimerToTenants(prisma: LifecyclePrismaClient, te
     const end = days === "keep" && tenant.trialEndsAt > now ? tenant.trialEndsAt : addDays(tenant.createdAt, typeof days === "number" ? days : defaultLifecycleTimerSettings.trial.defaultDays);
     const appliedDays = Math.max(1, Math.ceil((end.getTime() - tenant.createdAt.getTime()) / DAY_MS));
     await prisma.tenant.update({ where: { id: tenant.id }, data: { status: "TRIAL", trialStartedAt: tenant.createdAt, trialEndsAt: end, trialDays: appliedDays, gracePeriodEndsAt: null } });
-    await prisma.subscription.updateMany({ where: { tenantId: tenant.id, deletedAt: null, status: { in: ["TRIAL", "EXPIRED"] } }, data: { status: "TRIAL", currentPeriodStart: tenant.createdAt, currentPeriodEnd: end, expiresAt: end } });
+    await prisma.subscription.updateMany({ where: { tenantId: tenant.id, status: { in: ["TRIAL", "EXPIRED"] } }, data: { status: "TRIAL", currentPeriodStart: tenant.createdAt, currentPeriodEnd: end, expiresAt: end } });
   }
 
   await prisma.site.updateMany({ where: { tenantId: { in: tenants.map((tenant) => tenant.id) }, deletedAt: null }, data: { status: "PUBLISHED", isPublished: true } });

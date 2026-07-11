@@ -258,3 +258,23 @@ function MetricCard({ label, value, icon: Icon, danger }: { label: string; value
     </div>
   );
 }
+
+function InsightPanel({ title, items }: { title: string; items: Array<{ label: string; count: number }> }) {
+  return (
+    <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-4">
+      <h3 className="text-sm font-black text-[#fff7e8]">{title}</h3>
+      <div className="mt-3 grid gap-2">
+        {items.length === 0 ? (
+          <p className="text-xs font-bold text-white/40">لا توجد بيانات بعد.</p>
+        ) : (
+          items.slice(0, 8).map((item) => (
+            <div key={item.label} className="flex items-center justify-between gap-2 text-xs font-bold text-white/55">
+              <span className="truncate">{item.label}</span>
+              <span className="shrink-0 text-amber-300">{item.count}</span>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}

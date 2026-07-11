@@ -7,7 +7,6 @@ export type CaseRow = {
   id: string;
   subject: string;
   status: string;
-  priority: string;
   tenantName: string;
   createdAt: string;
 };
@@ -43,13 +42,6 @@ const columns: Column<CaseRow>[] = [
     header: "الحالة",
     render: (r) => (
       <Badge tone={statusToneMap[r.status] || "neutral"}>{r.status}</Badge>
-    ),
-  },
-  {
-    key: "priority",
-    header: "الأولوية",
-    render: (r) => (
-      <Badge tone={priorityToneMap[r.priority] || "neutral"}>{r.priority}</Badge>
     ),
   },
   {

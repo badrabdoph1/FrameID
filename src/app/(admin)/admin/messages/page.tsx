@@ -64,7 +64,7 @@ export default async function AdminMessagesPage({ searchParams }: Props) {
       select: { id: true, displayName: true, status: true, trialEndsAt: true, owner: { select: { email: true, name: true } } },
     }),
     prisma.tenant.findMany({
-      where: { deletedAt: null, status: "ACTIVE", subscriptions: { some: { deletedAt: null, status: "ACTIVE" } } },
+      where: { deletedAt: null, status: "ACTIVE", subscriptions: { some: { status: "ACTIVE" } } },
       orderBy: { updatedAt: "desc" },
       take: 200,
       select: {
@@ -72,7 +72,7 @@ export default async function AdminMessagesPage({ searchParams }: Props) {
         displayName: true,
         status: true,
         owner: { select: { email: true, name: true } },
-        subscriptions: { where: { deletedAt: null, status: "ACTIVE" }, orderBy: { currentPeriodEnd: "desc" }, take: 1, select: { currentPeriodEnd: true, expiresAt: true } },
+        subscriptions: { where: { status: "ACTIVE" }, orderBy: { currentPeriodEnd: "desc" }, take: 1, select: { currentPeriodEnd: true, expiresAt: true } },
       },
     }),
     prisma.notificationLog.findMany({ where: { category: CUSTOMER_BROADCAST_CATEGORY, deletedAt: null }, orderBy: { createdAt: "desc" }, take: 8, select: { id: true, type: true, title: true, body: true, tenantId: true, createdAt: true } }),

@@ -8,10 +8,10 @@ export default async function AdminSubscriptionsPage() {
   await requireSuperAdminSession();
 
   const [trial, active, expired, pastDue] = await Promise.all([
-    prisma.subscription.count({ where: { status: "TRIAL", deletedAt: null } }),
-    prisma.subscription.count({ where: { status: "ACTIVE", deletedAt: null } }),
-    prisma.subscription.count({ where: { status: "EXPIRED", deletedAt: null } }),
-    prisma.subscription.count({ where: { status: "PAST_DUE", deletedAt: null } }),
+    prisma.subscription.count({ where: { status: "TRIAL" } }),
+    prisma.subscription.count({ where: { status: "ACTIVE" } }),
+    prisma.subscription.count({ where: { status: "EXPIRED" } }),
+    prisma.subscription.count({ where: { status: "PAST_DUE" } }),
   ]);
 
   const cards = [

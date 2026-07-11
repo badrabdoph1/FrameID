@@ -139,7 +139,7 @@ export function createRestoreService(): RestoreService {
         ["tenantsCount", `SELECT COUNT(*) FROM "Tenant" WHERE "deletedAt" IS NULL`],
         ["sitesCount", `SELECT COUNT(*) FROM "Site" WHERE "deletedAt" IS NULL`],
         ["mediaAssetsCount", `SELECT COUNT(*) FROM "MediaAsset" WHERE "deletedAt" IS NULL`],
-        ["subscriptionsCount", `SELECT COUNT(*) FROM "Subscription" WHERE "deletedAt" IS NULL`],
+        ["subscriptionsCount", `SELECT COUNT(*) FROM "Subscription"`],
         ["paymentsCount", `SELECT COUNT(*) FROM "PaymentRequest"`],
       ];
 

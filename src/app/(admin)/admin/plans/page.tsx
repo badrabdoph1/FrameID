@@ -33,7 +33,7 @@ export default async function AdminPlansPage({ searchParams }: Props) {
     }),
     prisma.plan.count({ where: { deletedAt: null } }),
     prisma.plan.count({ where: { deletedAt: null, isActive: true } }),
-    prisma.subscription.count({ where: { deletedAt: null } }),
+    prisma.subscription.count({ where: {} }),
     prisma.paymentRequest.count({ where: { deletedAt: null } }),
   ]);
 

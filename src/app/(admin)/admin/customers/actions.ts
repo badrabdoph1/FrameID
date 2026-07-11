@@ -179,7 +179,7 @@ export async function bulkCustomerLifecycleAction(formData: FormData) {
     } else if (action === "activate") {
       const now = new Date();
       const end = preset === "forever" ? new Date("2099-12-31") : addDays(now, preset === "custom" ? customDays : Number(preset === "keep" ? "30" : preset));
-      const subscriptions = await prisma.subscription.findMany({ where: { tenantId: { in: tenantIds }, deletedAt: null }, select: { id: true, tenantId: true } });
+      const subscriptions = await prisma.subscription.findMany({ where: { tenantId: { in: tenantIds } }, select: { id: true, tenantId: true } });
       for (const subscription of subscriptions) await prisma.subscription.update({ where: { id: subscription.id }, data: { status: "ACTIVE", currentPeriodStart: now, currentPeriodEnd: end, expiresAt: end } });
       await prisma.tenant.updateMany({ where: { id: { in: tenantIds }, deletedAt: null }, data: { status: "ACTIVE", gracePeriodEndsAt: null } });
       await prisma.site.updateMany({ where: { tenantId: { in: tenantIds }, deletedAt: null }, data: { status: "PUBLISHED", isPublished: true } });
@@ -187,7 +187,7 @@ export async function bulkCustomerLifecycleAction(formData: FormData) {
       await auditBulkAction({ action: "CUSTOMERS_BULK_ACTIVATED", tenantIds, metadata: { preset, customDays, endAt: end?.toISOString() ?? null } as Prisma.InputJsonObject });
     } else if (action === "suspend") {
       await prisma.tenant.updateMany({ where: { id: { in: tenantIds }, deletedAt: null }, data: { status: "SUSPENDED" } });
-      await prisma.subscription.updateMany({ where: { tenantId: { in: tenantIds }, deletedAt: null }, data: { status: "SUSPENDED" } });
+      await prisma.subscription.updateMany({ where: { tenantId: { in: tenantIds } }, data: { status: "SUSPENDED" } });
       await prisma.site.updateMany({ where: { tenantId: { in: tenantIds }, deletedAt: null }, data: { status: "SUSPENDED", isPublished: false } });
       doneCount = tenantIds.length;
       await auditBulkAction({ action: "CUSTOMERS_BULK_SUSPENDED", tenantIds });

@@ -35,7 +35,7 @@ export default async function AdminSystemWorkspacePage() {
   ] = await Promise.all([
     prisma.errorLog.count({ where: { resolved: false } }),
     prisma.errorLog.count({ where: { resolved: false, level: { in: ["ERROR", "FATAL"] } } }),
-    prisma.notificationLog.count({ where: { readAt: null, deletedAt: null } }),
+    prisma.notificationLog.count({ where: { deletedAt: null } }),
     prisma.errorLog.findMany({
       where: { resolved: false },
       orderBy: { createdAt: "desc" },
@@ -46,12 +46,12 @@ export default async function AdminSystemWorkspacePage() {
       where: { deletedAt: null },
       orderBy: { createdAt: "desc" },
       take: 6,
-      select: { id: true, type: true, title: true, body: true, category: true, createdAt: true, readAt: true },
+      select: { id: true, type: true, title: true, body: true, category: true, createdAt: true },
     }),
     prisma.backupJob.findMany({
       orderBy: { createdAt: "desc" },
       take: 5,
-      select: { id: true, type: true, status: true, trigger: true, sizeBytes: true, createdAt: true, completedAt: true },
+      select: { id: true, type: true, status: true, sizeBytes: true, createdAt: true, completedAt: true },
     }),
     prisma.backupJob.count({ where: { status: { in: ["FAILED", "VERIFICATION_FAILED", "UPLOAD_FAILED"] } } }),
     prisma.auditLog.count(),
@@ -104,7 +104,7 @@ export default async function AdminSystemWorkspacePage() {
                   <strong className="text-lg font-black text-[#fff7e8]">{latestBackup ? latestBackup.type : "لا توجد"}</strong>
                   {latestBackup ? <StatusBadge status={latestBackup.status} /> : null}
                 </div>
-                <p className="mt-2 text-xs font-bold text-white/45">{latestBackup ? `${formatDate(latestBackup.completedAt ?? latestBackup.createdAt)} · ${formatBytes(latestBackup.sizeBytes)} · ${latestBackup.trigger}` : "لم يتم تسجيل عمليات نسخ بعد."}</p>
+                <p className="mt-2 text-xs font-bold text-white/45">{latestBackup ? `${formatDate(latestBackup.completedAt ?? latestBackup.createdAt)} · ${formatBytes(latestBackup.sizeBytes)}` : "لم يتم تسجيل عمليات نسخ بعد."}</p>
               </div>
               <div className="grid gap-2">
                 {latestBackups.slice(0, 4).map((job) => (
@@ -131,7 +131,7 @@ export default async function AdminSystemWorkspacePage() {
                       <strong className="block truncate text-sm font-black text-[#fff7e8]">{item.title}</strong>
                       <small className="mt-1 block text-xs font-bold text-white/38">{item.category ?? item.type} · {formatDate(item.createdAt)}</small>
                     </span>
-                    <StatusBadge status={item.readAt ? "READ" : "NEW"} />
+                    <StatusBadge status="NEW" />
                   </div>
                   {item.body ? <p className="mt-2 line-clamp-2 text-xs font-bold leading-5 text-white/48">{item.body}</p> : null}
                 </Link>
