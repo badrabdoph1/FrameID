@@ -41,19 +41,19 @@ export function buildTemplateDefaults(input: {
   description?: string | null;
   themeDefaultConfig?: Record<string, unknown> | null;
 }): TemplateAdminDefaults {
+  const cardDescription = input.description?.trim() || "قالب جاهز للتخصيص من لوحة FrameID.";
+
   return {
     previewData: {
       title: input.name.trim(),
       headline: input.name.trim(),
-      description: input.description?.trim() || "قالب جاهز للتخصيص من لوحة FrameID.",
-      subtitle: input.description?.trim() || "قالب جاهز للتخصيص من لوحة FrameID.",
+      description: cardDescription,
+      subtitle: cardDescription,
       callToAction: "احجز الآن",
-      hero: {
-        headline: input.name.trim(),
-        subheadline: input.description?.trim() || "اعرض أعمالك وخدماتك بأسلوب احترافي.",
-      },
       packages: [],
       extras: [],
+      // Starter identity is intentionally absent. It is inherited from the
+      // shared Template Content Source defaults unless an explicit override is saved.
     },
     settings: { ...(input.themeDefaultConfig ?? {}) },
   };
