@@ -12,6 +12,7 @@ import {
 import { PLATFORM_SOCIAL_IMAGE } from "@/modules/social-preview/social-preview";
 
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 type Payload = {
   mode?: "default" | "custom";
@@ -39,44 +40,47 @@ export async function PATCH(request: Request) {
       imageMimeType: deleteImage ? null : current.imageMimeType,
     };
 
-    if (mode === "custom" && !next.imageData) {
-      return NextResponse.json({ ok: false, error: "لا توجد صورة مرفوعة فعلًا. ارفع الصورة واعتمد القص أولًا." }, { status: 400 });
+    if (mode === "custom" && (!next.imageData || !next.imageMimeType)) {
+      return NextResponse.json({ ok: false, error: "لا توجد صورة مرفوعة فعليًا. ارفع الصورة واعتمد القص أولًا." }, { status: 400 });
     }
 
     const saved = await savePlatformSocialPreviewSettings(next);
+    const persisted = await getPlatformSocialPreviewSettings();
+
+    if (persisted.enabled !== next.enabled) {
+      throw new Error("تعذر تأكيد وضع صورة المشاركة بعد الحفظ.");
+    }
+    if (mode === "custom" && (!persisted.imageData || !persisted.imageMimeType)) {
+      throw new Error("لم يتم العثور على الصورة المخصصة بعد الحفظ.");
+    }
+    if (deleteImage && persisted.imageData) {
+      throw new Error("تعذر حذف الصورة المخصصة من التخزين.");
+    }
+
     const version = saved.updatedAt.getTime();
 
-    await prisma.auditLog.create({
-      data: {
-        action: "PLATFORM_SOCIAL_PREVIEW_UPDATED",
-        entityType: "FeatureFlag",
-        metadata: {
-          adminId: session.user.id,
-          adminEmail: session.user.email,
-          mode,
-          title: next.title,
-          description: next.description,
-          hasImage: Boolean(next.imageData),
-          deletedImage: deleteImage,
-          version,
-        } as Prisma.InputJsonObject,
-      },
+    void writeAuditLog({
+      adminId: session.user.id,
+      adminEmail: session.user.email ?? null,
+      mode,
+      title: next.title,
+      description: next.description,
+      hasImage: Boolean(persisted.imageData),
+      deletedImage: deleteImage,
+      version,
     });
 
-    revalidateTag(PLATFORM_SOCIAL_PREVIEW_CACHE_TAG);
-    revalidatePath("/", "layout");
-    revalidatePath("/templates");
-    revalidatePath("/admin/settings/social-preview");
+    safelyRevalidate();
 
     return NextResponse.json({
       ok: true,
       settings: {
-        enabled: next.enabled,
-        title: next.title,
-        description: next.description,
-        imageUrl: next.imageData ? `${PLATFORM_SOCIAL_IMAGE}?mode=custom&v=${version}` : null,
-        defaultImageUrl: `${PLATFORM_SOCIAL_IMAGE}?mode=default&v=${version}`,
-        hasImage: Boolean(next.imageData),
+        enabled: persisted.enabled,
+        title: persisted.title,
+        description: persisted.description,
+        imageUrl: persisted.imageData ? `/social-preview-image?mode=custom&v=${version}` : null,
+        defaultImageUrl: `/social-preview-image?mode=default&v=${version}`,
+        hasImage: Boolean(persisted.imageData),
         version: String(version),
       },
     });
@@ -84,6 +88,31 @@ export async function PATCH(request: Request) {
     console.error("[social-preview] save failed", error);
     const message = error instanceof Error ? error.message : "تعذر حفظ إعدادات معاينة المشاركة.";
     return NextResponse.json({ ok: false, error: message }, { status: 500 });
+  }
+}
+
+async function writeAuditLog(metadata: Prisma.InputJsonObject) {
+  try {
+    await prisma.auditLog.create({
+      data: {
+        action: "PLATFORM_SOCIAL_PREVIEW_UPDATED",
+        entityType: "FeatureFlag",
+        metadata,
+      },
+    });
+  } catch (error) {
+    console.error("[social-preview] audit log failed after successful save", error);
+  }
+}
+
+function safelyRevalidate() {
+  try {
+    revalidateTag(PLATFORM_SOCIAL_PREVIEW_CACHE_TAG);
+    revalidatePath("/", "layout");
+    revalidatePath("/templates");
+    revalidatePath("/admin/settings/social-preview");
+  } catch (error) {
+    console.error("[social-preview] cache revalidation failed after successful save", error);
   }
 }
 
