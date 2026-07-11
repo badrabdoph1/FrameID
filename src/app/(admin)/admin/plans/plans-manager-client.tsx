@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState, type ReactNode } from "react";
-import { Archive, BadgeCheck, Check, Eye, EyeOff, Flame, Pencil, Plus, Save, Trash2, X } from "lucide-react";
+import { Archive, BadgeCheck, Check, Eye, EyeOff, Pencil, Plus, Save, Trash2, X } from "lucide-react";
 
 import { archivePlanAction, savePlanAction, togglePlanAction } from "@/app/(admin)/admin/plans/actions";
 import {
