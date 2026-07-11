@@ -6,6 +6,8 @@ import { getCurrentRequestSession } from "@/modules/auth/request-session";
 
 const ALLOWED_CATEGORIES = new Set(["rendering-report", "client-error"]);
 
+type MutableJsonObject = Record<string, Prisma.InputJsonValue>;
+
 function text(value: unknown, maxLength: number) {
   return typeof value === "string" ? value.slice(0, maxLength) : null;
 }
@@ -51,7 +53,7 @@ function sanitizeMetadata(value: unknown): Prisma.InputJsonObject {
     "route",
   ];
 
-  const sanitized: Prisma.InputJsonObject = {};
+  const sanitized: MutableJsonObject = {};
   for (const key of allowedKeys) {
     if (!(key in source)) continue;
     const safeValue = sanitizeJsonScalar(source[key]);
@@ -81,7 +83,7 @@ export async function POST(request: Request) {
   const isRenderingReport = category === "rendering-report";
   const metadata = sanitizeMetadata(body.metadata);
   const stack = text(body.stack, 8000);
-  const logMetadata: Prisma.InputJsonObject = {
+  const logMetadata: MutableJsonObject = {
     tenantId: session.tenant.id,
     siteId: session.site.id,
     siteSlug: session.site.slug,
