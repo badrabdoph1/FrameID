@@ -1,3 +1,4 @@
+import type { Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
 
 import { prisma } from "@/lib/prisma";
@@ -9,7 +10,15 @@ function text(value: unknown, maxLength: number) {
   return typeof value === "string" ? value.slice(0, maxLength) : null;
 }
 
-function sanitizeMetadata(value: unknown) {
+function sanitizeJsonScalar(value: unknown): Prisma.InputJsonValue | undefined {
+  if (typeof value === "string") return value.slice(0, 1024);
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "boolean") return value;
+  if (value === null) return null;
+  return undefined;
+}
+
+function sanitizeMetadata(value: unknown): Prisma.InputJsonObject {
   if (!value || typeof value !== "object" || Array.isArray(value)) return {};
   const source = value as Record<string, unknown>;
   const allowedKeys = [
@@ -43,11 +52,14 @@ function sanitizeMetadata(value: unknown) {
     "route",
   ];
 
-  return Object.fromEntries(
-    allowedKeys
-      .filter((key) => key in source)
-      .map((key) => [key, typeof source[key] === "string" ? String(source[key]).slice(0, 1024) : source[key]]),
-  );
+  const sanitized: Prisma.InputJsonObject = {};
+  for (const key of allowedKeys) {
+    if (!(key in source)) continue;
+    const safeValue = sanitizeJsonScalar(source[key]);
+    if (safeValue !== undefined) sanitized[key] = safeValue;
+  }
+
+  return sanitized;
 }
 
 export async function POST(request: Request) {
@@ -69,6 +81,14 @@ export async function POST(request: Request) {
 
   const isRenderingReport = category === "rendering-report";
   const metadata = sanitizeMetadata(body.metadata);
+  const logMetadata: Prisma.InputJsonObject = {
+    tenantId: session.tenant.id,
+    siteId: session.site.id,
+    siteSlug: session.site.slug,
+    diagnosticType: category,
+    stack: text(body.stack, 8000),
+    rendering: metadata,
+  };
 
   await prisma.errorLog.create({
     data: {
@@ -78,14 +98,7 @@ export async function POST(request: Request) {
       message,
       route: text(metadata.route, 500),
       userId: session.user.id,
-      metadata: {
-        tenantId: session.tenant.id,
-        siteId: session.site.id,
-        siteSlug: session.site.slug,
-        diagnosticType: category,
-        stack: text(body.stack, 8000),
-        rendering: metadata,
-      },
+      metadata: logMetadata,
     },
   });
 
