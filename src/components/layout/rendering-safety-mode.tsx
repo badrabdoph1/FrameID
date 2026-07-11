@@ -5,6 +5,7 @@ import { useEffect } from "react";
 import {
   collectRenderingMetadata,
   getOrCreateRenderingDeviceId,
+  recordBrowserDiagnosticEvent,
   reportRenderingDiagnostic,
   type RenderingSafetyConfig,
 } from "@/lib/client/rendering-diagnostics";
@@ -32,13 +33,12 @@ function readManualPreference(): boolean | null {
   return null;
 }
 
-function persistManualPreference(value: boolean | null) {
-  try {
-    if (value === null) window.localStorage.removeItem(STORAGE_KEY);
-    else window.localStorage.setItem(STORAGE_KEY, value ? "1" : "0");
-  } catch {
-    // Safe mode still works for the current page when storage is blocked.
-  }
+function readTemporaryDebugOverride(): boolean | null {
+  const value = new URLSearchParams(window.location.search).get("safe-rendering")?.toLowerCase();
+  if (!value || value === "auto" || value === "reset") return null;
+  if (ENABLE_VALUES.has(value)) return true;
+  if (DISABLE_VALUES.has(value)) return false;
+  return null;
 }
 
 function matchesKnownSignature(config: RenderingSafetyConfig | undefined, metadata: Awaited<ReturnType<typeof collectRenderingMetadata>>) {
@@ -75,15 +75,17 @@ function shouldSendError(key: string) {
 export function RenderingSafetyMode({ config, userId }: RenderingSafetyModeProps) {
   useEffect(() => {
     let cancelled = false;
+    let resizeTimer: number | undefined;
     const root = document.documentElement;
-    const searchParams = new URLSearchParams(window.location.search);
-    const queryPreference = searchParams.get("safe-rendering")?.toLowerCase();
 
-    if (queryPreference && ENABLE_VALUES.has(queryPreference)) persistManualPreference(true);
-    if (queryPreference && DISABLE_VALUES.has(queryPreference)) persistManualPreference(false);
-    if (queryPreference === "auto" || queryPreference === "reset") persistManualPreference(null);
+    recordBrowserDiagnosticEvent("dashboard-mounted", {
+      viewportWidth: window.innerWidth,
+      viewportHeight: window.innerHeight,
+      online: navigator.onLine,
+    });
 
     async function resolveMode() {
+      const debugOverride = readTemporaryDebugOverride();
       const manualPreference = readManualPreference();
       const deviceId = getOrCreateRenderingDeviceId();
       const supportsBackdropFilter = typeof CSS !== "undefined" && (
@@ -94,7 +96,12 @@ export function RenderingSafetyMode({ config, userId }: RenderingSafetyModeProps
       let reason = "full-rendering-default";
       let enabled = false;
 
-      if (manualPreference !== null) {
+      // Query-string control is intentionally a temporary developer override.
+      // It affects only the current page load and never writes to local storage.
+      if (debugOverride !== null) {
+        enabled = debugOverride;
+        reason = debugOverride ? "debug-query-safe" : "debug-query-full";
+      } else if (manualPreference !== null) {
         enabled = manualPreference;
         reason = manualPreference ? "manual-local-storage" : "manual-full-rendering";
       } else if (config?.forceUserIds?.includes(userId ?? "")) {
@@ -116,11 +123,20 @@ export function RenderingSafetyMode({ config, userId }: RenderingSafetyModeProps
       root.classList.toggle(SAFE_RENDERING_CLASS, enabled);
       root.dataset.renderingMode = enabled ? "safe" : "full";
       root.dataset.renderingModeReason = reason;
+      recordBrowserDiagnosticEvent("rendering-mode-resolved", {
+        mode: enabled ? "safe" : "full",
+        reason,
+        backdropFilterSupported: supportsBackdropFilter,
+      });
     }
 
     void resolveMode();
 
     const report = () => {
+      recordBrowserDiagnosticEvent("manual-rendering-report-requested", {
+        renderingMode: root.dataset.renderingMode ?? "unknown",
+        renderingReason: root.dataset.renderingModeReason ?? "unknown",
+      });
       void reportRenderingDiagnostic("rendering-report", {
         message: "Manual rendering issue report",
       });
@@ -129,6 +145,12 @@ export function RenderingSafetyMode({ config, userId }: RenderingSafetyModeProps
     const handleWindowError = (event: ErrorEvent) => {
       const message = event.message || "Unhandled client error";
       const key = `${message}:${event.filename}:${event.lineno}:${event.colno}`;
+      recordBrowserDiagnosticEvent("window-error", {
+        message,
+        filename: event.filename || null,
+        line: event.lineno || 0,
+        column: event.colno || 0,
+      });
       if (!shouldSendError(key)) return;
       void reportRenderingDiagnostic("client-error", {
         message,
@@ -140,6 +162,7 @@ export function RenderingSafetyMode({ config, userId }: RenderingSafetyModeProps
     const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
       const reason = event.reason;
       const message = reason instanceof Error ? reason.message : String(reason ?? "Unhandled promise rejection");
+      recordBrowserDiagnosticEvent("unhandled-rejection", { message });
       if (!shouldSendError(`promise:${message}`)) return;
       void reportRenderingDiagnostic("client-error", {
         message,
@@ -148,15 +171,51 @@ export function RenderingSafetyMode({ config, userId }: RenderingSafetyModeProps
       });
     };
 
+    const handleVisibilityChange = () => {
+      recordBrowserDiagnosticEvent("visibility-change", { state: document.visibilityState });
+    };
+    const handleOnline = () => recordBrowserDiagnosticEvent("network-change", { online: true });
+    const handleOffline = () => recordBrowserDiagnosticEvent("network-change", { online: false });
+    const handleOrientationChange = () => recordBrowserDiagnosticEvent("orientation-change", {
+      angle: window.screen.orientation?.angle ?? null,
+      viewportWidth: window.innerWidth,
+      viewportHeight: window.innerHeight,
+    });
+    const handleResize = () => {
+      if (resizeTimer) window.clearTimeout(resizeTimer);
+      resizeTimer = window.setTimeout(() => {
+        recordBrowserDiagnosticEvent("viewport-resize", {
+          viewportWidth: window.innerWidth,
+          viewportHeight: window.innerHeight,
+          devicePixelRatio: window.devicePixelRatio,
+        });
+      }, 180);
+    };
+    const handlePageHide = () => recordBrowserDiagnosticEvent("page-hide", { persisted: false });
+
     window.addEventListener("frameid:report-rendering", report);
     window.addEventListener("error", handleWindowError);
     window.addEventListener("unhandledrejection", handleUnhandledRejection);
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+    window.addEventListener("orientationchange", handleOrientationChange);
+    window.addEventListener("resize", handleResize);
+    window.addEventListener("pagehide", handlePageHide);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
       cancelled = true;
+      if (resizeTimer) window.clearTimeout(resizeTimer);
+      recordBrowserDiagnosticEvent("dashboard-unmounted");
       window.removeEventListener("frameid:report-rendering", report);
       window.removeEventListener("error", handleWindowError);
       window.removeEventListener("unhandledrejection", handleUnhandledRejection);
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+      window.removeEventListener("orientationchange", handleOrientationChange);
+      window.removeEventListener("resize", handleResize);
+      window.removeEventListener("pagehide", handlePageHide);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
       root.classList.remove(SAFE_RENDERING_CLASS);
       delete root.dataset.renderingMode;
       delete root.dataset.renderingModeReason;
