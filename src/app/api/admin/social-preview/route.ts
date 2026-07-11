@@ -9,7 +9,7 @@ import {
   PLATFORM_SOCIAL_PREVIEW_CACHE_TAG,
   savePlatformSocialPreviewSettings,
 } from "@/modules/social-preview/platform-social-preview-settings";
-import { PLATFORM_SOCIAL_IMAGE } from "@/modules/social-preview/social-preview";
+import { buildPlatformSocialImageUrl, PLATFORM_SOCIAL_IMAGE } from "@/modules/social-preview/social-preview";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -78,8 +78,8 @@ export async function PATCH(request: Request) {
         enabled: persisted.enabled,
         title: persisted.title,
         description: persisted.description,
-        imageUrl: persisted.imageData ? `/social-preview-image?mode=custom&v=${version}` : null,
-        defaultImageUrl: `/social-preview-image?mode=default&v=${version}`,
+        imageUrl: persisted.imageData ? buildPlatformSocialImageUrl("custom", version) : null,
+        defaultImageUrl: buildPlatformSocialImageUrl("default", version),
         hasImage: Boolean(persisted.imageData),
         version: String(version),
       },
