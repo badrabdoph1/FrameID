@@ -32,8 +32,8 @@ export type PlatformSocialPreviewSettings = {
   description: string | null;
   imageUrl: string | null;
   storageKey: string | null;
-  imageData: string | null;
-  imageMimeType: string | null;
+  imageData?: string | null;
+  imageMimeType?: string | null;
 };
 
 export type PlatformSocialPreviewContext = {
