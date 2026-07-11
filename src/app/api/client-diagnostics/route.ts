@@ -67,13 +67,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid diagnostic payload" }, { status: 400 });
   }
 
+  const isRenderingReport = category === "rendering-report";
   const metadata = sanitizeMetadata(body.metadata);
 
   await prisma.errorLog.create({
     data: {
-      category: category === "rendering-report" ? "CLIENT_RENDERING" : "CLIENT_ERROR",
-      level: category === "rendering-report" ? "warning" : "error",
-      code: text(body.code, 120),
+      category: isRenderingReport ? "CLIENT_RENDERING" : "CLIENT_ERROR",
+      level: isRenderingReport ? "WARN" : "ERROR",
+      code: text(body.code, 120) ?? (isRenderingReport ? "FID-RENDER-001" : "FID-CLIENT-001"),
       message,
       route: text(metadata.route, 500),
       userId: session.user.id,
