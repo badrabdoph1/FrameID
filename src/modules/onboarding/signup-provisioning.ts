@@ -88,6 +88,9 @@ export function createSignupProvisioningService({
       const templateContent = await templateProvisioning.buildSiteFromTemplate({
         templateCode: input.selectedTemplateCode,
         ownerName: input.name,
+        registrationIdentity: input.identifierKind === "phone"
+          ? { identifierKind: "phone", phone: input.phone! }
+          : { identifierKind: "email", email: input.email },
       });
 
       if (await repository.identifierExists({ email: input.email, phone: input.phone })) {
