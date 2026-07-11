@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   createSignupProvisioningService,
   resolveAvailableSlug,
+  type AccountCreationInput,
   type SignupProvisioningRepository
 } from "@/modules/onboarding/signup-provisioning";
 
@@ -10,27 +11,31 @@ function createRepository(
   existingSlugs: string[] = []
 ): SignupProvisioningRepository & {
   calls: string[];
+  createdInput: AccountCreationInput | null;
 } {
-  const calls: string[] = [];
-
-  return {
-    calls,
+  const repository: SignupProvisioningRepository & {
+    calls: string[];
+    createdInput: AccountCreationInput | null;
+  } = {
+    calls: [],
+    createdInput: null,
     async isTemplateAvailable(templateCode) {
-      calls.push(`template:${templateCode}`);
+      repository.calls.push(`template:${templateCode}`);
       return templateCode === "noir-gold" || templateCode === "rose-blush";
     },
     async identifierExists({ email, phone }) {
-      calls.push(`identifier:${email}:${phone ?? "none"}`);
+      repository.calls.push(`identifier:${email}:${phone ?? "none"}`);
       return email === "used@example.com";
     },
     async getUnavailableSlugs() {
-      calls.push("slugs");
+      repository.calls.push("slugs");
       return new Set(existingSlugs);
     },
     async createAccountWithSite(input) {
-      calls.push("transaction");
-      calls.push(`packages:${input.defaultContent.packages.length}`);
-      calls.push(`extras:${input.defaultContent.extras.length}`);
+      repository.createdInput = input;
+      repository.calls.push("transaction");
+      repository.calls.push(`packages:${input.defaultContent.packages.length}`);
+      repository.calls.push(`extras:${input.defaultContent.extras.length}`);
       return {
         userId: "user_1",
         tenantId: "tenant_1",
@@ -40,6 +45,8 @@ function createRepository(
       };
     }
   };
+
+  return repository;
 }
 
 describe("signup provisioning", () => {
@@ -73,6 +80,40 @@ describe("signup provisioning", () => {
       subscriptionStatus: "TRIAL",
       redirectTo: "/dashboard"
     });
+  });
+
+  it("uses signup email while keeping template phone and WhatsApp", async () => {
+    const repository = createRepository();
+    const service = createSignupProvisioningService({ repository });
+
+    await service.provisionTrialSite({
+      name: "Ali Ahmed",
+      identifier: "ali@example.com",
+      password: "StrongPass123!",
+      selectedTemplateCode: "noir-gold"
+    });
+
+    expect(repository.createdInput?.defaultContent.contact.email).toBe("ali@example.com");
+    expect(repository.createdInput?.defaultContent.contact.phone).toBe("+201000000001");
+    expect(repository.createdInput?.defaultContent.contact.whatsapp).toBe("+201000000001");
+    expect(repository.createdInput?.defaultContent.contact.studioName).toBe("Photography");
+  });
+
+  it("uses signup phone for phone and WhatsApp while keeping template email", async () => {
+    const repository = createRepository();
+    const service = createSignupProvisioningService({ repository });
+
+    await service.provisionTrialSite({
+      name: "Ali Ahmed",
+      identifier: "+201012345678",
+      password: "StrongPass123!",
+      selectedTemplateCode: "noir-gold"
+    });
+
+    expect(repository.createdInput?.defaultContent.contact.phone).toBe("+201012345678");
+    expect(repository.createdInput?.defaultContent.contact.whatsapp).toBe("+201012345678");
+    expect(repository.createdInput?.defaultContent.contact.email).toBe("hello@kareemmagdy.example");
+    expect(repository.createdInput?.defaultContent.contact.studioName).toBe("Photography");
   });
 
   it("stops before provisioning when the identifier is already used", async () => {
