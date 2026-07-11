@@ -12,7 +12,7 @@ const COMMON_HEADERS = {
 } as const;
 
 type ResolvedImage = {
-  bytes: Uint8Array;
+  bytes: Buffer;
   contentType: string;
   etag: string;
 };
@@ -86,7 +86,7 @@ async function resolveImage(request: Request): Promise<ResolvedImage> {
   const contentType = upstream.headers.get("content-type") ?? "image/jpeg";
   if (!contentType.startsWith("image/")) throw new Error("Hero source did not return an image");
 
-  const bytes = new Uint8Array(await upstream.arrayBuffer());
+  const bytes = Buffer.from(await upstream.arrayBuffer());
   if (bytes.byteLength === 0) throw new Error("Hero image is empty");
 
   return {
