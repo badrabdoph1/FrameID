@@ -32,7 +32,7 @@ export function parseEmailOrPhoneIdentifier(value: string): AuthIdentifier {
   if (raw.includes("@")) {
     const email = raw.toLowerCase();
     if (!isValidEmail(email)) {
-      throw new Error("البريد الإلكتروني غير صحيح.");
+      throw new Error("البريد الإلكتروني غلط.");
     }
 
     return {
@@ -78,7 +78,7 @@ export function normalizePhoneIdentifier(value: string): string {
   const normalized = `+${digits.replace(/[^0-9]/g, "")}`;
 
   if (!/^\+[0-9]{8,15}$/u.test(normalized)) {
-    throw new Error("رقم الهاتف غير صحيح.");
+    throw new Error("رقم الهاتف غلط.");
   }
 
   return normalized;

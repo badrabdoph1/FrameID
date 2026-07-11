@@ -5,7 +5,7 @@ import { parseEmailOrPhoneIdentifier } from "@/modules/auth/auth-identifier";
 const loginBaseSchema = z.object({
   identifier: z.string().trim().max(160).optional(),
   email: z.string().trim().max(160).optional(),
-  password: z.string().min(1, "Password is required").max(128)
+  password: z.string().min(1, "كلمة المرور لازم تكون مكتوبة.").max(128)
 });
 
 export type LoginInput = z.infer<typeof loginBaseSchema> & {

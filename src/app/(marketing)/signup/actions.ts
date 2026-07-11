@@ -20,16 +20,16 @@ function redirectSignupError(message: string): never {
 
 function getSignupErrorMessage(error: unknown) {
   if (error instanceof ZodError) {
-    return error.issues[0]?.message ?? "راجع البيانات واكتبها بشكل صحيح.";
+    return error.issues[0]?.message ?? "البيانات غلط. ادخلها تاني.";
   }
 
   if (error instanceof Error) {
     if (error.message === "اكتب رقم الهاتف أو البريد الإلكتروني.") return error.message;
-    if (error.message === "البريد الإلكتروني غير صحيح.") return error.message;
-    if (error.message === "رقم الهاتف غير صحيح.") return "رقم الهاتف غير صحيح. اكتب رقم مصري مثل 01000000000 أو بريد إلكتروني صحيح.";
-    if (error.message === "Email already exists") return "هذا الحساب موجود بالفعل. سجل دخول بدل إنشاء حساب جديد.";
-    if (error.message === "رقم الهاتف أو البريد الإلكتروني مستخدم بالفعل") return "رقم الهاتف أو البريد الإلكتروني مستخدم بالفعل. سجل دخول بدل إنشاء حساب جديد.";
-    if (error.message === "Selected template is not available") return "القالب المحدد غير متاح حاليًا. اختر قالبًا آخر من صفحة القوالب.";
+    if (error.message === "البريد الإلكتروني غلط.") return error.message;
+    if (error.message === "رقم الهاتف غلط.") return "رقم الهاتف غلط. ادخل رقم زي 01000000000 أو بريد إلكتروني صحيح.";
+    if (error.message === "Email already exists") return "الحساب ده موجود قبل كده. سجل دخول بدل ما تعمل حساب جديد.";
+    if (error.message === "رقم الهاتف أو البريد الإلكتروني مستخدم بالفعل") return "الرقم أو البريد ده مستخدم قبل كده. سجل دخول بدل ما تعمل حساب جديد.";
+    if (error.message === "Selected template is not available") return "القالب ده مش متاح دلوقتي. اختر قالب تاني من صفحة القوالب.";
   }
 
   return null;

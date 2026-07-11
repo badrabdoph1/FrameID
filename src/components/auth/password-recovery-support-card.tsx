@@ -3,7 +3,7 @@ import { MessageCircle } from "lucide-react";
 import { getSupportSettings, toWhatsappHref } from "@/modules/support/support-settings";
 
 export const PASSWORD_RECOVERY_SUPPORT_MESSAGE =
-  "نأسف لا يمكن استرداد كلمة المرور في الوقت الحالي، برجاء التواصل مع الدعم الفني.";
+  "مقدرش ارجع لك كلمة المرور دلوقتي. كلم الدعم الفني عشان يساعدك.";
 
 export async function PasswordRecoverySupportCard() {
   let whatsappHref = toWhatsappHref("01038434472", "مرحبًا، لا أستطيع استرداد كلمة المرور في FrameID وأحتاج دعم فني.");

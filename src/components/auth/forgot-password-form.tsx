@@ -22,7 +22,7 @@ export function ForgotPasswordForm({ sent, error }: ForgotPasswordFormProps) {
     <>
       {sent ? (
         <div className="mb-4 rounded-[var(--radius-panel)] border border-success/20 bg-success-soft px-4 py-3 text-sm text-success">
-          لو الحساب مسجل ببريد إلكتروني، تم إرسال رابط الاستعادة.
+          لو الحساب مسجل ببريد إلكتروني، هنرسل لك رابط استعادة على البريد.
         </div>
       ) : null}
       {error ? <PasswordRecoverySupportCard /> : null}

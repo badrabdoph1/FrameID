@@ -91,16 +91,16 @@ function extractPrismaMessage(error: Error): string | undefined {
   const msg = error.message;
 
   if (msg.includes("P1001") || msg.includes("Can't reach database server")) {
-    return "تعذر الاتصال بقاعدة البيانات. حاول مرة أخرى بعد قليل.";
+    return "مقدرش اتصل بقاعدة البيانات. حاول تاني بعد شوية.";
   }
   if (msg.includes("P2002")) {
-    return "البيانات موجودة مسبقاً.";
+    return "البيانات دي موجودة قبل كده.";
   }
   if (msg.includes("P2025")) {
-    return "السجل المطلوب غير موجود.";
+    return "البيانات اللي انت بتدور عليها مش موجودة.";
   }
   if (msg.includes("P2003")) {
-    return "بيانات غير صالحة. تأكد من صحة العلاقات.";
+    return "البيانات غلط. تأكد إن العلاقات صح.";
   }
   return undefined;
 }
@@ -160,7 +160,7 @@ function classifyErrorCode(error: unknown): ErrorCodeDef {
     }
 
     if (msg.includes("email already exists") || msg.includes("Email already exists")) return getErrorCodeDef("FID-AUTH-002");
-    if (msg.includes("Invalid email or password")) return getErrorCodeDef("FID-AUTH-001");
+    if (msg.includes("Invalid phone/email or password") || msg.includes("Invalid email or password")) return getErrorCodeDef("FID-AUTH-001");
   }
 
   return getErrorCodeDef("FID-UNK-001");
