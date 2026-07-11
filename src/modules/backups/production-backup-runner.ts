@@ -22,10 +22,11 @@ export async function runDueBackups(now = new Date()): Promise<void> {
 
   for (const setting of settings) {
     if (!isSupportedBackupType(setting.type)) continue;
+    const backupType = setting.type;
     if (setting.nextRunAt && setting.nextRunAt > now) continue;
 
     const claimed = await prisma.backupSettings.updateMany({
-      where: { type: setting.type, enabled: true, OR: [{ nextRunAt: null }, { nextRunAt: { lte: now } }] },
+      where: { type: backupType, enabled: true, OR: [{ nextRunAt: null }, { nextRunAt: { lte: now } }] },
       data: { nextRunAt: nextDailyRun(setting.schedule, now) },
     });
     if (claimed.count !== 1) continue;
@@ -41,8 +42,8 @@ export async function runDueBackups(now = new Date()): Promise<void> {
       backupRoot: process.env.BACKUP_DIR || undefined,
     });
 
-    const result = await service.runScheduledBackup(setting.type);
-    if (result) await prisma.backupSettings.update({ where: { type: setting.type }, data: { lastRunAt: now } });
+    const result = await service.runScheduledBackup(backupType);
+    if (result) await prisma.backupSettings.update({ where: { type: backupType }, data: { lastRunAt: now } });
   }
 }
 
