@@ -8,7 +8,7 @@ type PrismaPublicSiteClient = {
 
 type RawPublicSiteRecord = Omit<
   PublicSiteRecord,
-  "sections" | "seoSettings" | "packages" | "gallery"
+  "sections" | "seoSettings" | "packages" | "gallery" | "extras"
 > & {
   contactProfile: PublicSiteRecord["contactProfile"];
   sections: Array<{
@@ -27,7 +27,15 @@ type RawPublicSiteRecord = Omit<
     features: unknown;
     isHighlighted: boolean;
   }>;
-  albums: Array<{
+  extraServices: Array<{
+    id: string;
+    name: string;
+    description: string | null;
+    priceAmount: number;
+    currency: string;
+    iconKey: string | null;
+  }>;
+  galleryAlbums: Array<{
     images: Array<{
       id: string;
       caption: string | null;
@@ -125,7 +133,7 @@ export function createPrismaPublicSiteRepository(
               isHighlighted: true
             }
           },
-          extras: {
+          extraServices: {
             where: {
               deletedAt: null,
               isActive: true
@@ -142,7 +150,7 @@ export function createPrismaPublicSiteRepository(
               iconKey: true
             }
           },
-          albums: {
+          galleryAlbums: {
             where: {
               deletedAt: null,
               isVisible: true
@@ -209,8 +217,9 @@ export function createPrismaPublicSiteRepository(
           ...item,
           imageUrl: null
         })),
+        extras: site.extraServices,
         contactProfile: site.contactProfile,
-        gallery: site.albums.flatMap((album) =>
+        gallery: site.galleryAlbums.flatMap((album) =>
           album.images.map((image) => ({
             id: image.id,
             url: image.asset.url,
