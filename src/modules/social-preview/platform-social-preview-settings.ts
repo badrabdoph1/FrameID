@@ -1,4 +1,4 @@
-import { unstable_cache } from "next/cache";
+import { unstable_noStore as noStore } from "next/cache";
 
 import { prisma } from "@/lib/prisma";
 import type { PlatformSocialPreviewSettings } from "@/modules/social-preview/social-preview";
@@ -43,21 +43,18 @@ async function readRow() {
   });
 }
 
-export const getPlatformSocialPreviewSettings = unstable_cache(
-  async () => {
-    try {
-      const row = await readRow();
-      return row ? parseValue(row.value, row.enabled) : { ...DEFAULT_SETTINGS };
-    } catch {
-      // Railway's build environment cannot always resolve private service DNS.
-      // Metadata generation must stay deterministic and build-safe, so we fall
-      // back to the existing platform defaults until runtime database access is available.
-      return { ...DEFAULT_SETTINGS };
-    }
-  },
-  [PLATFORM_SOCIAL_PREVIEW_KEY],
-  { tags: [PLATFORM_SOCIAL_PREVIEW_CACHE_TAG] },
-);
+export async function getPlatformSocialPreviewSettings(): Promise<PlatformSocialPreviewSettings> {
+  noStore();
+
+  try {
+    const row = await readRow();
+    return row ? parseValue(row.value, row.enabled) : { ...DEFAULT_SETTINGS };
+  } catch {
+    // Build and offline-safe fallback. Runtime requests read the database again
+    // instead of keeping the build-time fallback in a persistent Next.js cache.
+    return { ...DEFAULT_SETTINGS };
+  }
+}
 
 export async function savePlatformSocialPreviewSettings(settings: PlatformSocialPreviewSettings) {
   const existing = await readRow();
