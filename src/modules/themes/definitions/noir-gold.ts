@@ -1,5 +1,6 @@
 import type { TemplateSummary, ThemeDefinition } from "@/modules/themes/theme-registry";
 import { parseTemplateStarterContent } from "@/modules/themes/template-starter-content";
+import { OFFICIAL_TEMPLATE_STARTER_DEFAULTS as defaults } from "@/modules/themes/template-starter-defaults";
 
 export const noirGoldTheme: ThemeDefinition = {
   code: "noir-gold",
@@ -7,11 +8,7 @@ export const noirGoldTheme: ThemeDefinition = {
   version: "1.0.0",
   status: "published",
   supportedSections: ["hero", "gallery", "packages", "extras", "contact"],
-  defaultConfig: {
-    colorPreset: "champagne",
-    layoutDensity: "editorial",
-    motion: "quiet"
-  }
+  defaultConfig: { colorPreset: "champagne", layoutDensity: "editorial", motion: "quiet" }
 };
 
 export const noirGoldTemplate: TemplateSummary = {
@@ -22,54 +19,15 @@ export const noirGoldTemplate: TemplateSummary = {
   showroomOrder: 1,
   description: "قالب كلاسيكي داكن بلمسة ذهبية، مناسب للمصورين الذين يريدون موقعًا فاخرًا وواضحًا للباقات والحجز.",
   starterContent: parseTemplateStarterContent({
-    site: {
-      title: "استوديو كريم مجدي",
-      description: "تصوير زفاف وخطوبة بأسلوب سينمائي هادئ يلتقط التفاصيل الصادقة."
-    },
+    site: { title: defaults.photographerName, description: defaults.description },
     sections: {
-      hero: {
-        title: "الرئيسية",
-        sortOrder: 0,
-        isVisible: true,
-        headline: "استوديو كريم مجدي",
-        subheadline: "نصنع ذكريات تبقى للأبد بتصوير زفاف وخطوبة يوازن بين الفخامة واللحظة الحقيقية.",
-        imageUrl: "https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1800&q=85"
-      },
-      gallery: {
-        title: "لمحات من الأعمال",
-        sortOrder: 1,
-        isVisible: true,
-        description: "مختارات من جلسات الزفاف والخطوبة بتفاصيل قريبة وإضاءة طبيعية."
-      },
-      packages: {
-        title: "اختر باقتك",
-        sortOrder: 2,
-        isVisible: true,
-        description: "اختار التغطية الأنسب ليومك، ويمكنك إضافة أي خدمة تحتاجها قبل تأكيد الحجز."
-      },
-      extras: {
-        title: "إضافات مميزة",
-        sortOrder: 3,
-        isVisible: true,
-        description: "أضف خدمة تصوير أو ألبوم أو فيديو حسب احتياج اليوم."
-      },
-      contact: {
-        title: "التواصل",
-        sortOrder: 4,
-        isVisible: true,
-        callToAction: "احجز موعدك الآن"
-      }
+      hero: { title: "الرئيسية", sortOrder: 0, isVisible: true, headline: defaults.photographerName, subheadline: defaults.description, imageUrl: "https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1800&q=85" },
+      gallery: { title: "لمحات من الأعمال", sortOrder: 1, isVisible: true, description: "مختارات من جلسات الزفاف والخطوبة بتفاصيل قريبة وإضاءة طبيعية." },
+      packages: { title: "اختر باقتك", sortOrder: 2, isVisible: true, description: "اختار التغطية الأنسب ليومك، ويمكنك إضافة أي خدمة تحتاجها قبل تأكيد الحجز." },
+      extras: { title: "إضافات مميزة", sortOrder: 3, isVisible: true, description: "أضف خدمة تصوير أو ألبوم أو فيديو حسب احتياج اليوم." },
+      contact: { title: "التواصل", sortOrder: 4, isVisible: true, callToAction: "احجز موعدك الآن" }
     },
-    contact: {
-      studioName: "استوديو كريم مجدي",
-      bio: "مصور زفاف وخطوبة يوثق التفاصيل الهادئة واللحظات الكبيرة.",
-      longDescription: "نبدأ من قصتك ونصنع صورًا دافئة ومتوازنة تظل قريبة منكم حتى بعد مرور السنوات.",
-      phone: "+201000000001",
-      whatsapp: "+201000000001",
-      email: "hello@kareemmagdy.example",
-      instagram: "kareemmagdy.photo",
-      facebook: "kareemmagdy.photo"
-    },
+    contact: { studioName: defaults.studioName, bio: defaults.description, longDescription: defaults.description, phone: "+201000000001", whatsapp: "+201000000001", email: "hello@kareemmagdy.example", instagram: "kareemmagdy.photo", facebook: "kareemmagdy.photo" },
     packages: [
       { id: "noir-bronze", name: "الباقة البرونزية", subtitle: "جلسة تصوير بسيطة", priceAmount: 2500, currency: "EGP", features: ["3 ساعات", "جميع الصور المعدلة", "معرض إلكتروني"], imageUrl: "https://images.unsplash.com/photo-1511285560929-80b456fea0bc?auto=format&fit=crop&w=900&q=85", isHighlighted: false, sortOrder: 0 },
       { id: "noir-silver", name: "الباقة الفضية", subtitle: "نصف يوم تصوير", priceAmount: 5000, currency: "EGP", features: ["نصف يوم", "ألبوم فاخر", "فيديو مختصر"], imageUrl: "https://images.unsplash.com/photo-1465495976277-4387d4b0b4c6?auto=format&fit=crop&w=900&q=85", isHighlighted: true, sortOrder: 1 },
@@ -88,7 +46,7 @@ export const noirGoldTemplate: TemplateSummary = {
         { id: "noir-gallery-3", url: "https://images.unsplash.com/photo-1529636798458-92182e662485?auto=format&fit=crop&w=1200&q=85", alt: "ديكور حفل زفاف", caption: "إضاءة المساء", sortOrder: 2, isFeatured: false }
       ]
     },
-    seo: { title: "استوديو كريم مجدي", description: "تصوير زفاف وخطوبة بأسلوب سينمائي هادئ.", canonicalUrl: null, robotsIndex: true, structuredData: { "@context": "https://schema.org", "@type": "ProfessionalService", name: "استوديو كريم مجدي", description: "تصوير زفاف وخطوبة بأسلوب سينمائي هادئ." } },
+    seo: { title: defaults.photographerName, description: defaults.description, canonicalUrl: null, robotsIndex: true, structuredData: { "@context": "https://schema.org", "@type": "ProfessionalService", name: defaults.photographerName, description: defaults.description } },
     themeSettings: { colorPreset: "champagne", layoutDensity: "editorial", motion: "quiet" }
   })
 };
