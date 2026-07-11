@@ -59,34 +59,52 @@ ALTER TABLE "BackupSettings" ADD COLUMN IF NOT EXISTS "encryption" BOOLEAN NOT N
 ALTER TABLE "BackupSettings" ADD COLUMN IF NOT EXISTS "githubBranch" TEXT NOT NULL DEFAULT 'platform-backups';
 
 -- 12. Create PaymentSettings table (may be dropped by db push)
-CREATE TABLE IF NOT EXISTS "PaymentSettings" (
-    "id" TEXT NOT NULL,
-    "paymentMethod" "PaymentMethod" NOT NULL,
-    "isActive" BOOLEAN NOT NULL DEFAULT true,
-    "label" TEXT,
-    "description" TEXT,
-    "config" JSONB NOT NULL DEFAULT '{}',
-    "qrCodeAssetId" TEXT,
-    "sortOrder" INTEGER NOT NULL DEFAULT 0,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-    CONSTRAINT "PaymentSettings_pkey" PRIMARY KEY ("id")
-);
+DO $$
+BEGIN
+  -- Only create table if it doesn't exist
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.tables 
+    WHERE table_name = 'PaymentSettings'
+  ) THEN
+    CREATE TABLE "PaymentSettings" (
+      "id" TEXT NOT NULL,
+      "paymentMethod" "PaymentMethod" NOT NULL,
+      "isActive" BOOLEAN NOT NULL DEFAULT true,
+      "label" TEXT,
+      "description" TEXT,
+      "config" JSONB NOT NULL DEFAULT '{}',
+      "qrCodeAssetId" TEXT,
+      "sortOrder" INTEGER NOT NULL DEFAULT 0,
+      "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT "PaymentSettings_pkey" PRIMARY KEY ("id")
+    );
+  END IF;
+END $$;
 
 -- Add unique constraint for paymentMethod (exception-safe)
 DO $$
 BEGIN
-  ALTER TABLE "PaymentSettings" ADD CONSTRAINT "PaymentSettings_paymentMethod_key" UNIQUE ("paymentMethod");
+  -- Check if constraint already exists before adding
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint 
+    WHERE conname = 'PaymentSettings_paymentMethod_key'
+  ) THEN
+    ALTER TABLE "PaymentSettings" ADD CONSTRAINT "PaymentSettings_paymentMethod_key" UNIQUE ("paymentMethod");
+  END IF;
 EXCEPTION WHEN duplicate_object THEN
-  -- constraint already exists, ignore
   NULL;
 END $$;
 
 -- Add index for PaymentSettings (exception-safe)
 DO $$
 BEGIN
-  CREATE INDEX "PaymentSettings_isActive_sortOrder_idx" ON "PaymentSettings"("isActive", "sortOrder");
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_indexes 
+    WHERE indexname = 'PaymentSettings_isActive_sortOrder_idx'
+  ) THEN
+    CREATE INDEX "PaymentSettings_isActive_sortOrder_idx" ON "PaymentSettings"("isActive", "sortOrder");
+  END IF;
 EXCEPTION WHEN duplicate_table THEN
   NULL;
 END $$;
