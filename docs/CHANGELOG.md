@@ -15,6 +15,15 @@ This is an append-only architectural and product change log. Never delete older 
 
 ---
 
+## 2026-07-11 — Fix/Documentation — Subscription soft-delete alignment
+
+- **Affected files/modules:** `prisma/schema.prisma`, `prisma/migrations/20260711000100_restore_dropped_columns/migration.sql`, subscription reads, and `docs/features/subscriptions.md`.
+- **Reason:** add and document `Subscription.deletedAt` so soft-deleted subscriptions can be excluded from normal reads without losing historical records.
+- **System impact:** subscription queries and lifecycle logic must respect soft-deletion while preserving audit and recovery history.
+- **Breaking changes:** No intended public breaking change.
+- **Migration required:** Yes; the compatibility migration adds the nullable `deletedAt` column when missing.
+- **Related documentation:** subscription feature documentation and database soft-delete rules reviewed.
+
 ## 2026-07-11 — Documentation/Governance — Final Living Documentation system
 
 - **Affected files:** `docs/README.md`, `docs/AI_DEVELOPMENT_RULES.md`, `docs/PROJECT_ARCHITECTURE.md`, `docs/ROADMAP.md`, `docs/features/*`, `docs/CHANGELOG.md`, and final consistency review of all files under `docs/`.
