@@ -5,7 +5,13 @@ import { spawn } from "node:child_process";
 import { createGunzip } from "node:zlib";
 import { pipeline } from "node:stream/promises";
 
-import { createSha256Checksum, validateBackupManifest, type RestoreValidationResult, type BackupManifest, type BackupType } from "@/modules/backups/backup-manifest";
+import {
+  createSha256Checksum,
+  validateBackupManifest,
+  type RestoreValidationResult,
+  type BackupManifest,
+  type BackupType,
+} from "@/modules/backups/backup-manifest";
 
 export type RestoreOptions = {
   backupId: string;
@@ -40,15 +46,57 @@ function emptyValidation(errors: string[]): RestoreValidationResult {
   return { valid: false, checks: { manifestValid: false, versionCompatibility: false, schemaCompatibility: false, filesIntegrity: false, integrity: false }, errors };
 }
 
+async function waitForProcess(child: ReturnType<typeof spawn>, label: string): Promise<void> {
+  let stderr = "";
+  child.stderr?.on("data", (chunk) => { stderr += String(chunk); });
+  await new Promise<void>((resolve, reject) => {
+    child.on("close", (code) => code === 0 ? resolve() : reject(new Error(stderr.trim() || `${label} exited with code ${code}`)));
+    child.on("error", reject);
+  });
+}
+
+async function verifyCustomPostgresDump(dumpPath: string): Promise<void> {
+  const gunzip = createGunzip();
+  const pgRestore = spawn("pg_restore", ["--list", "-"], { stdio: ["pipe", "ignore", "pipe"] });
+  const processPromise = waitForProcess(pgRestore, "pg_restore verification");
+  await pipeline(createReadStream(dumpPath), gunzip, pgRestore.stdin);
+  await processPromise;
+}
+
+async function restoreCustomPostgresDump(databaseUrl: string, dumpPath: string): Promise<void> {
+  const parsed = parseDatabaseUrl(databaseUrl);
+  const env = { ...process.env, PGPASSWORD: parsed.password };
+  const pgRestore = spawn("pg_restore", [
+    `--host=${parsed.host}`,
+    `--port=${parsed.port}`,
+    `--username=${parsed.user}`,
+    "--no-password",
+    `--dbname=${parsed.database}`,
+    "--clean",
+    "--if-exists",
+    "--no-owner",
+    "--no-acl",
+    "--exit-on-error",
+    "-",
+  ], { env, stdio: ["pipe", "inherit", "pipe"] });
+  const processPromise = waitForProcess(pgRestore, "pg_restore");
+  await pipeline(createReadStream(dumpPath), createGunzip(), pgRestore.stdin);
+  await processPromise;
+}
+
+async function extractArchive(archivePath: string, targetDir: string): Promise<void> {
+  await mkdir(targetDir, { recursive: true });
+  const tar = spawn("tar", ["-xzf", archivePath, "-C", targetDir, "--strip-components=1"], { stdio: ["ignore", "inherit", "pipe"] });
+  await waitForProcess(tar, "tar restore");
+}
+
 async function runPsqlCommand(databaseUrl: string, sql: string): Promise<string> {
   const parsed = parseDatabaseUrl(databaseUrl);
   const env = { ...process.env, PGPASSWORD: parsed.password };
   const child = spawn("psql", [`--host=${parsed.host}`, `--port=${parsed.port}`, `--username=${parsed.user}`, "--no-password", `--dbname=${parsed.database}`, "--tuples-only", "--no-align", `--command=${sql}`], { env, stdio: ["ignore", "pipe", "pipe"] });
   let stdout = "";
-  let stderr = "";
   child.stdout.on("data", (chunk) => { stdout += String(chunk); });
-  child.stderr.on("data", (chunk) => { stderr += String(chunk); });
-  await new Promise<void>((resolve, reject) => { child.on("close", (code) => code === 0 ? resolve() : reject(new Error(stderr || `psql exited with code ${code}`))); child.on("error", reject); });
+  await waitForProcess(child, "psql");
   return stdout.trim();
 }
 
@@ -65,7 +113,11 @@ export function createRestoreService(): RestoreService {
       catch { return { valid: false, manifest: null, validation: emptyValidation(["Invalid JSON in manifest.json"]) }; }
 
       const validation = validateBackupManifest(manifest);
-      if (await fileExists(checksumPath)) {
+      if (!(await fileExists(checksumPath))) {
+        validation.valid = false;
+        validation.checks.integrity = false;
+        validation.errors.push("checksum.sha256 not found");
+      } else {
         const expectedChecksum = (await readFile(checksumPath, "utf-8")).trim();
         const actualChecksum = createSha256Checksum(manifestContent);
         if (expectedChecksum !== actualChecksum) { validation.valid = false; validation.checks.integrity = false; validation.errors.push("Manifest checksum mismatch"); }
@@ -78,6 +130,17 @@ export function createRestoreService(): RestoreService {
         if (!(await fileExists(join(backupDir, fileName)))) { validation.valid = false; validation.checks.filesIntegrity = false; validation.errors.push(`Required file not found: ${fileName}`); }
       }
 
+      const dumpPath = join(backupDir, "database.sql.gz");
+      if (await fileExists(dumpPath)) {
+        try { await verifyCustomPostgresDump(dumpPath); }
+        catch (error) {
+          validation.valid = false;
+          validation.checks.filesIntegrity = false;
+          validation.errors.push(error instanceof Error ? error.message : "Invalid PostgreSQL dump");
+        }
+      }
+
+      validation.valid = validation.errors.length === 0;
       return { valid: validation.valid, manifest, validation };
     },
 
@@ -101,30 +164,24 @@ export function createRestoreService(): RestoreService {
       const validationResult = await this.validateBackup({ backupId: options.backupId, backupRoot });
       if (!validationResult.valid && !options.skipChecksumVerification) return { success: false, backupId: options.backupId, type: options.type, validation: validationResult.validation, steps, durationMs: Date.now() - startTime, errors: validationResult.validation.errors };
 
-      const dumpPath = join(backupDir, "database.sql.gz");
-      if (await fileExists(dumpPath)) {
-        try {
-          const parsed = parseDatabaseUrl(options.databaseUrl);
-          const env = { ...process.env, PGPASSWORD: parsed.password };
-          const psql = spawn("psql", [`--host=${parsed.host}`, `--port=${parsed.port}`, `--username=${parsed.user}`, "--no-password", `--dbname=${parsed.database}`], { env, stdio: ["pipe", "inherit", "pipe"] });
-          await pipeline(createReadStream(dumpPath), createGunzip(), psql.stdin);
-          await new Promise<void>((resolve, reject) => { psql.on("close", (code) => code === 0 ? resolve() : reject(new Error(`psql exited with code ${code}`))); psql.on("error", reject); });
-          steps.database = true;
-        } catch (error) { errors.push(error instanceof Error ? error.message : "Database restore failed"); }
-      } else errors.push("Database dump file not found");
+      try {
+        await restoreCustomPostgresDump(options.databaseUrl, join(backupDir, "database.sql.gz"));
+        steps.database = true;
+      } catch (error) { errors.push(error instanceof Error ? error.message : "Database restore failed"); }
 
-      if (options.type === "FULL") {
+      if (options.type === "FULL" && errors.length === 0) {
         const archivePath = join(backupDir, "uploads.tar.gz");
         const targetDir = options.uploadsDir ?? join(process.cwd(), "public", "uploads");
-        if (await fileExists(archivePath)) {
-          try {
-            await mkdir(targetDir, { recursive: true });
-            const tar = spawn("tar", ["-xzf", archivePath, "-C", targetDir], { stdio: "inherit" });
-            await new Promise<void>((resolve, reject) => { tar.on("close", (code) => code === 0 ? resolve() : reject(new Error(`tar exited with code ${code}`))); tar.on("error", reject); });
-            steps.uploads = true;
-          } catch (error) { errors.push(error instanceof Error ? error.message : "Uploads restore failed"); }
-        } else errors.push("Uploads archive not found");
-      } else steps.uploads = true;
+        try { await extractArchive(archivePath, targetDir); steps.uploads = true; }
+        catch (error) { errors.push(error instanceof Error ? error.message : "Uploads restore failed"); }
+      } else if (options.type !== "FULL") steps.uploads = true;
+
+      const contentArchive = join(backupDir, "content.tar.gz");
+      if (await fileExists(contentArchive) && errors.length === 0) {
+        const targetDir = options.contentDir ?? join(process.cwd(), "content");
+        try { await extractArchive(contentArchive, targetDir); steps.content = true; }
+        catch (error) { errors.push(error instanceof Error ? error.message : "Content restore failed"); }
+      }
 
       return { success: errors.length === 0, backupId: options.backupId, type: options.type, validation: validationResult.validation, steps, durationMs: Date.now() - startTime, errors };
     },
@@ -138,19 +195,11 @@ export function createRestoreService(): RestoreService {
         ["usersCount", `SELECT COUNT(*) FROM "User" WHERE "deletedAt" IS NULL`],
         ["tenantsCount", `SELECT COUNT(*) FROM "Tenant" WHERE "deletedAt" IS NULL`],
         ["sitesCount", `SELECT COUNT(*) FROM "Site" WHERE "deletedAt" IS NULL`],
-        ["mediaAssetsCount", `SELECT COUNT(*) FROM "MediaAsset" WHERE "deletedAt" IS NULL`],
-        ["subscriptionsCount", `SELECT COUNT(*) FROM "Subscription"`],
-        ["paymentsCount", `SELECT COUNT(*) FROM "PaymentRequest"`],
       ];
-
       for (const [key, query] of queries) {
-        try {
-          const count = parseInt(await runPsqlCommand(databaseUrl, query), 10);
-          counts[key] = Number.isFinite(count) ? count : -1;
-          checks[key] = counts[key] >= 0;
-        } catch (error) { errors.push(error instanceof Error ? error.message : `Failed to check ${key}`); counts[key] = -1; checks[key] = false; }
+        try { const value = Number.parseInt(await runPsqlCommand(databaseUrl, query), 10); counts[key] = Number.isFinite(value) ? value : 0; checks[key] = Number.isFinite(value); }
+        catch (error) { checks[key] = false; errors.push(error instanceof Error ? error.message : `Failed check: ${key}`); }
       }
-
       return { passed: errors.length === 0, checks, counts, durationMs: Date.now() - startTime, errors };
     },
   };

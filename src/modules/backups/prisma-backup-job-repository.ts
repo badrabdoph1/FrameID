@@ -15,6 +15,10 @@ type PrismaBackupJobClient = {
   };
 };
 
+function isSystemActor(value: string | undefined): boolean {
+  return value === "scheduler" || value === "cli-script" || value === "system";
+}
+
 export function createPrismaBackupJobRepository(
   prisma: PrismaBackupJobClient
 ): BackupJobRepository {
@@ -24,12 +28,16 @@ export function createPrismaBackupJobRepository(
         data: {
           type: input.type,
           status: "RUNNING",
-          triggeredById: input.initiatedById,
-          metadata: { trigger: input.trigger, note: input.note } as Record<string, unknown>,
+          triggeredById: input.initiatedById && !isSystemActor(input.initiatedById)
+            ? input.initiatedById
+            : undefined,
+          metadata: {
+            trigger: input.trigger,
+            note: input.note,
+            initiatedBy: input.initiatedById ?? "system",
+          } as Record<string, unknown>,
         },
-        select: {
-          id: true
-        }
+        select: { id: true },
       });
     },
     async collectStats() {
@@ -38,55 +46,47 @@ export function createPrismaBackupJobRepository(
           prisma.user.count({ where: { deletedAt: null } }),
           prisma.tenant.count({ where: { deletedAt: null } }),
           prisma.site.count({ where: { deletedAt: null } }),
-          prisma.mediaAsset.count({ where: { deletedAt: null } })
+          prisma.mediaAsset.count({ where: { deletedAt: null } }),
         ]);
 
-      return {
-        usersCount,
-        tenantsCount,
-        sitesCount,
-        mediaFilesCount
-      };
+      return { usersCount, tenantsCount, sitesCount, mediaFilesCount };
     },
     async saveManifest(_input: BackupManifest) {
-      // Manifest is persisted to disk by backup-package-creator and local-backup-artifact-writer.
-      // No database model exists for BackupManifest; this is intentionally a no-op.
+      // The manifest is persisted with the artifact. There is intentionally no duplicate DB source of truth.
     },
     async markCompleted(input) {
       await prisma.backupJob.update({
-        where: {
-          id: input.backupJobId
-        },
+        where: { id: input.backupJobId },
         data: {
           status: "COMPLETED",
           checksumSha256: input.checksumSha256,
           sizeBytes: input.sizeBytes,
           filePath: input.localPath,
-          completedAt: input.completedAt
-        }
+          completedAt: input.completedAt,
+        },
       });
     },
     async markFailed(input) {
       await prisma.backupJob.update({
-        where: {
-          id: input.backupJobId
-        },
-        data: {
-          status: "FAILED",
-          errorMessage: input.reason
-        }
+        where: { id: input.backupJobId },
+        data: { status: "FAILED", errorMessage: input.reason, completedAt: new Date() },
       });
     },
     async recordAudit(input) {
       await prisma.auditLog.create({
         data: {
-          actorId: input.actorUserId,
+          actorId: input.actorUserId && !isSystemActor(input.actorUserId)
+            ? input.actorUserId
+            : undefined,
           action: input.action,
           entityType: input.entityType,
           entityId: input.entityId,
-          metadata: input.metadata
-        }
+          metadata: {
+            ...input.metadata,
+            actor: input.actorUserId ?? "system",
+          },
+        },
       });
-    }
+    },
   };
 }

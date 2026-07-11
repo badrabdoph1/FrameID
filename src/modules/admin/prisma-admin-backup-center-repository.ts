@@ -24,21 +24,29 @@ type RawBackupJob = {
   id: string;
   type: string;
   status: string;
-  trigger: string;
   sizeBytes: number | null;
   checksumSha256: string | null;
-  localPath: string | null;
+  filePath: string | null;
+  errorMessage: string | null;
+  metadata: unknown;
   createdAt: Date;
+  completedAt: Date | null;
 };
 
 type RawRestoreJob = {
   id: string;
-  backupId: string;
-  type: string;
+  backupJobId: string;
   status: string;
   errorMessage: string | null;
   createdAt: Date;
+  completedAt: Date | null;
 };
+
+function readTrigger(metadata: unknown): string {
+  if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) return "UNKNOWN";
+  const trigger = (metadata as Record<string, unknown>).trigger;
+  return typeof trigger === "string" ? trigger : "UNKNOWN";
+}
 
 export function createPrismaAdminBackupCenterRepository(
   prisma: PrismaAdminBackupCenterClient
@@ -47,9 +55,7 @@ export function createPrismaAdminBackupCenterRepository(
     async getBackupCenter() {
       const [settings, jobs, restores, restoreCount] = await Promise.all([
         prisma.backupSettings.findMany({
-          orderBy: {
-            type: "asc",
-          },
+          orderBy: { type: "asc" },
           select: {
             type: true,
             enabled: true,
@@ -60,47 +66,60 @@ export function createPrismaAdminBackupCenterRepository(
           },
         }) as Promise<RawBackupSetting[]>,
         prisma.backupJob.findMany({
-          orderBy: {
-            createdAt: "desc",
-          },
-          take: 20,
+          orderBy: { createdAt: "desc" },
+          take: 30,
           select: {
             id: true,
             type: true,
             status: true,
-            trigger: true,
             sizeBytes: true,
             checksumSha256: true,
-            localPath: true,
+            filePath: true,
+            errorMessage: true,
+            metadata: true,
             createdAt: true,
+            completedAt: true,
           },
         }) as Promise<RawBackupJob[]>,
         prisma.restoreJob.findMany({
-          orderBy: {
-            createdAt: "desc",
-          },
+          orderBy: { createdAt: "desc" },
           take: 20,
           select: {
             id: true,
-            backupId: true,
-            type: true,
+            backupJobId: true,
             status: true,
             errorMessage: true,
             createdAt: true,
+            completedAt: true,
           },
         }) as Promise<RawRestoreJob[]>,
         prisma.restoreJob.count({}) as Promise<number>,
       ]);
 
+      const jobTypeById = new Map(jobs.map((job) => [job.id, job.type]));
+
       return {
         settings,
         jobs: jobs.map((job) => ({
-          ...job,
+          id: job.id,
+          type: job.type,
+          status: job.status,
+          trigger: readTrigger(job.metadata),
+          sizeBytes: job.sizeBytes,
+          checksumSha256: job.checksumSha256,
+          localPath: job.filePath,
+          errorMessage: job.errorMessage,
           createdAt: job.createdAt.toISOString(),
+          completedAt: job.completedAt?.toISOString() ?? null,
         })),
-        restores: restores.map((r) => ({
-          ...r,
-          createdAt: r.createdAt.toISOString(),
+        restores: restores.map((restore) => ({
+          id: restore.id,
+          backupJobId: restore.backupJobId,
+          type: jobTypeById.get(restore.backupJobId) ?? "UNKNOWN",
+          status: restore.status,
+          errorMessage: restore.errorMessage,
+          createdAt: restore.createdAt.toISOString(),
+          completedAt: restore.completedAt?.toISOString() ?? null,
         })),
         restoreCount,
       };
