@@ -123,8 +123,8 @@ export function personalizeTemplateStarterContent(
   const name = z.string().trim().min(1).max(120).parse(photographerName);
   const personalized = structuredClone(content);
 
-  // Signup copies the selected template exactly, then changes only customer identity.
-  // Studio, description, imagery, packages, extras and social links stay untouched.
+  // Only photographer identity changes during signup. Shared studio and description
+  // defaults remain untouched until the customer edits them from the dashboard.
   personalized.site.title = name;
   personalized.sections.hero.headline = name;
   personalized.seo.title = name;

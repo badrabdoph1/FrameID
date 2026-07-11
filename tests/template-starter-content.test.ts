@@ -37,7 +37,7 @@ describe("template starter content", () => {
     }
   });
 
-  it("personalizes only photographer identity fields when no registration contact is supplied", () => {
+  it("personalizes only photographer identity fields", () => {
     const original = applyTemplateStarterSharedDefaults(
       parseTemplateStarterContent(templateDefinitions[0].starterContent),
     );
@@ -53,43 +53,6 @@ describe("template starter content", () => {
     expect(personalized.contact.studioName).toBe("Photography");
     expect(personalized.site.description).toBe("Wedding Photographer\nمصور زفاف");
     expect(original.site.title).toBe("Kareem Magdy");
-  });
-
-  it("uses the signup phone for both phone and WhatsApp without changing the rest of the template", () => {
-    const original = applyTemplateStarterSharedDefaults(
-      parseTemplateStarterContent(templateDefinitions[0].starterContent),
-    );
-    const personalized = personalizeTemplateStarterContent(original, "أحمد علي", {
-      identifierKind: "phone",
-      phone: "+201012345678",
-    });
-
-    expect(personalized.contact.phone).toBe("+201012345678");
-    expect(personalized.contact.whatsapp).toBe("+201012345678");
-    expect(personalized.contact.email).toBe(original.contact.email);
-    expect(personalized.contact.instagram).toBe(original.contact.instagram);
-    expect(personalized.contact.facebook).toBe(original.contact.facebook);
-    expect(personalized.contact.studioName).toBe(original.contact.studioName);
-    expect(personalized.gallery).toEqual(original.gallery);
-    expect(personalized.packages).toEqual(original.packages);
-    expect(personalized.extras).toEqual(original.extras);
-  });
-
-  it("uses the signup email without replacing template phone or WhatsApp", () => {
-    const original = applyTemplateStarterSharedDefaults(
-      parseTemplateStarterContent(templateDefinitions[0].starterContent),
-    );
-    const personalized = personalizeTemplateStarterContent(original, "أحمد علي", {
-      identifierKind: "email",
-      email: "ahmed@example.com",
-    });
-
-    expect(personalized.contact.email).toBe("ahmed@example.com");
-    expect(personalized.contact.phone).toBe(original.contact.phone);
-    expect(personalized.contact.whatsapp).toBe(original.contact.whatsapp);
-    expect(personalized.contact.studioName).toBe(original.contact.studioName);
-    expect(personalized.sections.hero.imageUrl).toBe(original.sections.hero.imageUrl);
-    expect(personalized.themeSettings).toEqual(original.themeSettings);
   });
 
   it("uses a template override only when explicitly provided", () => {

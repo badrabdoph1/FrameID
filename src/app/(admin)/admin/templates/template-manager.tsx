@@ -42,13 +42,81 @@ type JsonRecord = Record<string, unknown>;
 const inputClass = "min-h-11 w-full rounded-2xl border border-white/10 bg-black/18 px-3.5 text-sm font-extrabold text-[#fff8ea]/90 outline-none transition placeholder:text-white/25 focus:border-amber-300/55 focus:ring-4 focus:ring-amber-300/10";
 const textareaClass = `${inputClass} py-3`;
 
-function isRecord(value: unknown): value is JsonRecord { return typeof value === "object" && value !== null && !Array.isArray(value); }
-function stringFrom(value: unknown, fallback = "") { return typeof value === "string" ? value : value == null ? fallback : String(value); }
-function pickText(value: unknown, keys: string[], fallback = "") { if (!isRecord(value)) return fallback; for (const key of keys) { const item = value[key]; if (typeof item === "string" && item.trim()) return item.trim(); } return fallback; }
-function pickImage(value: unknown) { if (!isRecord(value)) return ""; const direct = value.previewImage ?? value.image ?? value.cover ?? value.thumbnail; return typeof direct === "string" ? direct : ""; }
-function starterOverrideFrom(value: unknown): JsonRecord { return isRecord(value) && isRecord(value.starterContentOverride) ? value.starterContentOverride : {}; }
-function statusLabel(status: string) { if (status === "PUBLISHED") return "منشور"; if (status === "ARCHIVED") return "مؤرشف"; return "مسودة"; }
-function settingsFrom(value: unknown): JsonRecord { return isRecord(value) ? value : {}; }
+function isRecord(value: unknown): value is JsonRecord {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function stringFrom(value: unknown, fallback = "") {
+  return typeof value === "string" ? value : value == null ? fallback : String(value);
+}
+
+function numberFrom(value: unknown, fallback = 0) {
+  const parsed = typeof value === "number" ? value : Number.parseInt(stringFrom(value), 10);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function boolFrom(value: unknown, fallback = false) {
+  if (value === true || value === "true" || value === "on") return true;
+  if (value === false || value === "false" || value === "off") return false;
+  return fallback;
+}
+
+function pickText(value: unknown, keys: string[], fallback = "") {
+  if (!isRecord(value)) return fallback;
+  for (const key of keys) {
+    const item = value[key];
+    if (typeof item === "string" && item.trim()) return item.trim();
+  }
+  return fallback;
+}
+
+function pickImage(value: unknown) {
+  if (!isRecord(value)) return "";
+  const direct = value.previewImage ?? value.image ?? value.cover ?? value.thumbnail;
+  return typeof direct === "string" ? direct : "";
+}
+
+function starterOverrideFrom(value: unknown): JsonRecord {
+  return isRecord(value) && isRecord(value.starterContentOverride)
+    ? value.starterContentOverride
+    : {};
+}
+
+function readPackages(value: unknown): PackageDraft[] {
+  if (!isRecord(value) || !Array.isArray(value.packages)) return [];
+  return value.packages.filter(isRecord).map((item, index) => ({
+    id: stringFrom(item.id, `package-${index + 1}`),
+    name: stringFrom(item.name, `باقة ${index + 1}`),
+    subtitle: stringFrom(item.subtitle),
+    price: stringFrom(item.price),
+    priceAmount: numberFrom(item.priceAmount),
+    currency: stringFrom(item.currency, "EGP"),
+    imageUrl: stringFrom(item.imageUrl),
+    features: Array.isArray(item.features) ? item.features.map((feature) => stringFrom(feature)).filter(Boolean) : [],
+    isHighlighted: boolFrom(item.isHighlighted),
+    enabled: boolFrom(item.enabled, item.isActive !== false),
+  }));
+}
+
+function readExtras(value: unknown): ExtraDraft[] {
+  if (!isRecord(value) || !Array.isArray(value.extras)) return [];
+  return value.extras.filter(isRecord).map((item, index) => ({
+    id: stringFrom(item.id, `extra-${index + 1}`),
+    name: stringFrom(item.name, `إضافة ${index + 1}`),
+    description: stringFrom(item.description),
+    price: stringFrom(item.price),
+    priceAmount: numberFrom(item.priceAmount),
+    currency: stringFrom(item.currency, "EGP"),
+    iconKey: stringFrom(item.iconKey, "camera"),
+    enabled: boolFrom(item.enabled, item.isActive !== false),
+  }));
+}
+
+function statusLabel(status: string) {
+  if (status === "PUBLISHED") return "منشور";
+  if (status === "ARCHIVED") return "مؤرشف";
+  return "مسودة";
+}
 
 export function TemplateManager({ templates, themes, message }: TemplateManagerProps) {
   const [selectedId, setSelectedId] = useState(templates[0]?.id ?? "");
@@ -62,9 +130,9 @@ export function TemplateManager({ templates, themes, message }: TemplateManagerP
       <section className="rounded-3xl border border-white/10 bg-white/[0.035] p-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <p className="text-xs font-black text-[#f3cf73]">2. قائمة القوالب</p>
-            <h2 className="mt-1 text-lg font-black text-[#fff7e8]">إدارة القالب نفسه</h2>
-            <p className="mt-1 text-xs font-bold leading-6 text-white/42">هذه المنطقة لا تعدل المحتوى المشترك. كل قالب يرث Starter Content Defaults ويحتفظ فقط بإعداداته والـOverrides الحقيقية.</p>
+            <p className="text-xs font-black text-[#f3cf73]">إدارة القوالب والاستثناءات</p>
+            <h2 className="mt-1 text-lg font-black text-[#fff7e8]">القوالب الجاهزة</h2>
+            <p className="mt-1 text-xs font-bold leading-6 text-white/42">كل قالب يرث Starter Content Defaults تلقائيًا. استخدم Override فقط عندما يحتاج القالب قيمة مختلفة فعلًا.</p>
           </div>
           <button type="button" onClick={() => setShowCreate((value) => !value)} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-[#f3cf73] px-4 text-sm font-black text-[#17120a]"><Plus className="size-4" /> قالب جديد</button>
         </div>
@@ -92,7 +160,21 @@ export function TemplateManager({ templates, themes, message }: TemplateManagerP
               return <button key={template.id} type="button" onClick={() => { setSelectedId(template.id); setShowCreate(false); }} className={cn("grid grid-cols-[64px_1fr] items-center gap-3 rounded-2xl border p-2.5 text-start transition", active ? "border-amber-300/35 bg-amber-300/10" : "border-white/8 bg-black/15 hover:border-white/16 hover:bg-white/[0.04]")}><span className="relative grid aspect-square overflow-hidden rounded-xl bg-black/30">{image ? <img src={image} alt="" className="size-full object-cover" /> : <ImageIcon className="m-auto size-5 text-white/25" />}</span><span className="min-w-0"><strong className="block truncate text-sm font-black text-[#fff7e8]">{template.name}</strong><small className="mt-1 block truncate font-mono text-[0.68rem] font-bold text-white/35">{template.code}</small><span className="mt-1 flex flex-wrap gap-1"><small className={template.status === "PUBLISHED" ? "text-[0.68rem] font-black text-emerald-300" : "text-[0.68rem] font-black text-white/42"}>{statusLabel(template.status)}</small>{hasOverride ? <small className="rounded-full bg-violet-400/10 px-1.5 text-[0.62rem] font-black text-violet-300">Override</small> : null}</span></span></button>;
             })}
           </aside>
-          {selected ? <div className="grid min-w-0 gap-4"><TemplateEditor key={selected.id} template={selected} themes={themes} /><TemplateImageCenter template={selected} /></div> : null}
+
+          {showCreate ? (
+            <form action={createTemplateAction} className="grid content-start gap-3 rounded-2xl border border-amber-300/20 bg-amber-300/[0.055] p-4 sm:grid-cols-2">
+              <div className="sm:col-span-2"><p className="text-xs font-black text-[#f3cf73]">قالب جديد</p><h2 className="mt-1 text-lg font-black text-[#fff7e8]">بيانات القالب الأساسية</h2><p className="mt-1 text-xs font-bold text-white/42">سيتم توريث بيانات البداية المشتركة تلقائيًا.</p></div>
+              <Field label="اسم القالب"><input name="name" required className={inputClass} placeholder="مثال: ستوديو كلاسيك" /></Field>
+              <Field label="كود القالب"><input name="code" className={inputClass} dir="ltr" placeholder="classic-studio" /></Field>
+              <Field label="الثيم الأساسي"><select name="themeId" required className={inputClass} defaultValue=""><option value="" disabled>اختر الثيم</option>{themes.map((theme) => <option key={theme.id} value={theme.id}>{theme.name} — {theme.code}</option>)}</select></Field>
+              <div className="flex items-end"><button className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl bg-[#f3cf73] px-4 text-sm font-black text-[#17120a]"><Plus className="size-4" /> إنشاء كمسودة</button></div>
+            </form>
+          ) : selected ? (
+            <div className="grid min-w-0 gap-4">
+              <TemplateEditor key={selected.id} template={selected} />
+              <TemplateImageCenter template={selected} />
+            </div>
+          ) : null}
         </section>
       )}
     </div>
@@ -104,7 +186,8 @@ function TemplateEditor({ template, themes }: { template: AdminTemplateItem; the
   const previewDescription = pickText(template.previewData, ["description", "subtitle", "tagline"], template.theme.category);
   const previewImage = pickImage(template.previewData);
   const starterOverride = starterOverrideFrom(template.previewData);
-  const settings = settingsFrom(template.settings);
+  const packages = readPackages(template.previewData);
+  const extras = readExtras(template.previewData);
 
   return (
     <article className="min-w-0 rounded-3xl border border-white/10 bg-white/[0.035] p-4">
@@ -119,9 +202,41 @@ function TemplateEditor({ template, themes }: { template: AdminTemplateItem; the
 
         <EditorSection icon={ImageIcon} title="بطاقة ومعاينة القالب" description="هذه بيانات عرض القالب في الكتالوج وليست محتوى الموقع الموروث."><div className="grid gap-3 sm:grid-cols-2"><Field label="عنوان البطاقة"><input name="previewTitle" defaultValue={previewTitle} className={inputClass} /></Field><Field label="وصف البطاقة"><input name="previewDescription" defaultValue={previewDescription} className={inputClass} /></Field><Field label="صورة المعاينة"><input name="previewImage" defaultValue={previewImage} className={inputClass} /></Field><Field label="نص زر المعاينة"><input name="callToAction" defaultValue={pickText(template.previewData, ["callToAction"], "معاينة القالب")} className={inputClass} /></Field></div></EditorSection>
 
-        <EditorSection icon={Sparkles} title="Override اختياري" description="اترك كل الحقول فارغة للوراثة الكاملة. لا يوجد هنا معرض أو باقات أو SEO لأنها تُدار من المصدر المشترك فقط."><div className="grid gap-3 sm:grid-cols-2"><Field label="اسم مصور مختلف"><input name="starterOverridePhotographerName" defaultValue={stringFrom(starterOverride.photographerName)} className={inputClass} /></Field><Field label="اسم استوديو مختلف"><input name="starterOverrideStudioName" defaultValue={stringFrom(starterOverride.studioName)} className={inputClass} /></Field><Field label="وصف مختلف"><textarea name="starterOverrideDescription" rows={3} defaultValue={stringFrom(starterOverride.description)} className={`${textareaClass} min-h-24`} /></Field><Field label="Hero مختلفة"><input name="starterOverrideHeroImageUrl" defaultValue={stringFrom(starterOverride.heroImageUrl)} className={inputClass} /></Field></div></EditorSection>
+        <EditorSection icon={ImageIcon} title="كارت القالب" description="النص والصورة اللذان يظهران للمستخدم قبل فتح المعاينة.">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field label="عنوان الكارت"><input name="previewTitle" defaultValue={previewTitle} className={inputClass} /></Field>
+            <Field label="وصف الكارت"><input name="previewDescription" defaultValue={previewDescription} className={inputClass} /></Field>
+            <Field label="صورة غلاف الكارت"><input name="previewImage" defaultValue={previewImage} className={inputClass} /></Field>
+            <Field label="نص زر الحجز"><input name="callToAction" defaultValue={pickText(template.previewData, ["callToAction"], "احجز الآن")} className={inputClass} /></Field>
+          </div>
+        </EditorSection>
 
-        <button className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-gradient-to-br from-[#f3cf73] to-[#d4af37] px-4 text-sm font-black text-[#17120a]"><Save className="size-4" /> حفظ إعدادات القالب</button>
+        <EditorSection icon={Sparkles} title="Starter Content Override — اختياري" description="اترك الحقول فارغة ليرث القالب القيم المشتركة. اكتب قيمة فقط لو هذا القالب يحتاج استثناءً.">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field label="اسم المصور المختلف"><input name="starterOverridePhotographerName" defaultValue={stringFrom(starterOverride.photographerName)} className={inputClass} placeholder="يرث Kareem Magdy" /></Field>
+            <Field label="اسم الاستوديو المختلف"><input name="starterOverrideStudioName" defaultValue={stringFrom(starterOverride.studioName)} className={inputClass} placeholder="يرث Photography" /></Field>
+            <Field label="الوصف المختلف"><textarea name="starterOverrideDescription" rows={3} defaultValue={stringFrom(starterOverride.description)} className={`${textareaClass} min-h-24`} placeholder="يرث الوصف المشترك" /></Field>
+            <Field label="صورة Hero مختلفة"><input name="starterOverrideHeroImageUrl" defaultValue={stringFrom(starterOverride.heroImageUrl)} className={inputClass} placeholder="يرث الصورة المشتركة أو صورة القالب" /></Field>
+          </div>
+        </EditorSection>
+
+        <EditorSection icon={PackagePlus} title="الباقات التجريبية" description="تظهر في معاينة القالب ويمكن إخفاء أي باقة بدون حذفها.">
+          <input type="hidden" name="packageCount" value={packages.length} />
+          <div className="grid gap-3">
+            {packages.map((item, index) => <PackageFields key={`${item.id}-${index}`} item={item} index={index} />)}
+            <NewPackageFields />
+          </div>
+        </EditorSection>
+
+        <EditorSection icon={Plus} title="الخدمات الإضافية" description="إضافات اختيارية تظهر في معاينة القالب.">
+          <input type="hidden" name="extraCount" value={extras.length} />
+          <div className="grid gap-3">
+            {extras.map((item, index) => <ExtraFields key={`${item.id}-${index}`} item={item} index={index} />)}
+            <NewExtraFields />
+          </div>
+        </EditorSection>
+
+        <button className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-gradient-to-br from-[#f3cf73] to-[#d4af37] px-4 text-sm font-black text-[#17120a] shadow-lg transition hover:-translate-y-0.5"><Save className="size-4" /> حفظ كل تعديلات القالب</button>
       </form>
 
       <section className="mt-4 grid gap-2 border-t border-white/8 pt-4 sm:grid-cols-2 xl:grid-cols-4">

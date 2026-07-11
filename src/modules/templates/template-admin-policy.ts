@@ -46,13 +46,14 @@ export function buildTemplateDefaults(input: {
   return {
     previewData: {
       title: input.name.trim(),
+      headline: input.name.trim(),
       description: cardDescription,
-      callToAction: "معاينة القالب",
-    },
-    settings: {
-      ...(input.themeDefaultConfig ?? {}),
-      version: "1.0.0",
-      contentSource: "starter-content-defaults",
+      subtitle: cardDescription,
+      callToAction: "احجز الآن",
+      packages: [],
+      extras: [],
+      // Starter identity is intentionally absent. It is inherited from the
+      // shared Template Content Source defaults unless an explicit override is saved.
     },
   };
 }
