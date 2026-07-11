@@ -5,7 +5,6 @@ import { AdminStatusBadge } from "@/components/layout/admin-status-badge";
 import { prisma } from "@/lib/prisma";
 import { requireSuperAdminSession } from "@/modules/admin/admin-page-guards";
 import {
-  createSnapshotAction,
   runBackupAction,
   updateBackupSettingsAction,
   verifyAllBackupsAction,
@@ -182,8 +181,11 @@ export default async function AdminBackupsPage({ searchParams }: Props) {
           </div>
           <div className="rounded-2xl border border-violet-400/15 bg-violet-500/5 p-4">
             <h2 className="text-sm font-black text-white">حزمة انتقال طارئة</h2>
-            <p className="mt-2 text-xs font-bold leading-6 text-white/45">الكود ينتقل من GitHub، والبيانات والملفات تنتقل من النسخة الكاملة.</p>
-            <form action={createSnapshotAction} className="mt-3"><button className="rounded-xl bg-violet-600/80 px-4 py-2 text-xs font-black text-white">إنشاء حزمة انتقال</button></form>
+            <p className="mt-2 text-xs font-bold leading-6 text-white/45">يتم إنشاؤها كنسخة كاملة عبر نفس المسار الرسمي: تحقق محلي، رفع GitHub، تحقق بعيد، ثم اعتماد النسخة.</p>
+            <form action={runBackupAction} className="mt-3">
+              <input type="hidden" name="type" value="FULL" />
+              <button className="rounded-xl bg-violet-600/80 px-4 py-2 text-xs font-black text-white">إنشاء نسخة كاملة للهجرة</button>
+            </form>
           </div>
         </div>
       </details>
@@ -196,7 +198,6 @@ function Feedback({ params }: { params: Record<string, string | undefined> }) {
   if (params.started) return <Banner tone="success">تم إنشاء النسخة بنجاح.</Banner>;
   if (params.restored) return <Banner tone="success">تمت الاستعادة بنجاح.</Banner>;
   if (params.deleted) return <Banner tone="success">تم حذف النسخة.</Banner>;
-  if (params.snapshot) return <Banner tone="success">تم إنشاء حزمة الانتقال.</Banner>;
   if (params.verified) return <Banner tone={params.verified === "1" ? "success" : "danger"}>{params.verified === "1" ? "النسخة سليمة." : "فشل التحقق من النسخة."}</Banner>;
   if (params["settings-updated"]) return <Banner tone="success">تم تحديث إعدادات النسخ.</Banner>;
   return null;
