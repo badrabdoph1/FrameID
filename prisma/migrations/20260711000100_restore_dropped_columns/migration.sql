@@ -29,8 +29,9 @@ ALTER TABLE "PaymentRequest" ADD COLUMN IF NOT EXISTS "submittedAt" TIMESTAMP(3)
 ALTER TABLE "PaymentRequest" ADD COLUMN IF NOT EXISTS "adminNote" TEXT;
 ALTER TABLE "PaymentRequest" ADD COLUMN IF NOT EXISTS "rejectionReason" TEXT;
 
--- 5. Subscription: restore activatedAt
+-- 5. Subscription: restore activatedAt, add deletedAt
 ALTER TABLE "Subscription" ADD COLUMN IF NOT EXISTS "activatedAt" TIMESTAMP(3);
+ALTER TABLE "Subscription" ADD COLUMN IF NOT EXISTS "deletedAt" TIMESTAMP(3);
 
 -- 6. SubscriptionChange: restore subscriptionId, fromStatus, toStatus, changeType, initiatedById
 ALTER TABLE "SubscriptionChange" ADD COLUMN IF NOT EXISTS "subscriptionId" TEXT;
