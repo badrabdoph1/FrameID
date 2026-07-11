@@ -2,20 +2,51 @@ import type { TemplateStarterContent } from "@/modules/themes/template-starter-c
 
 export const TEMPLATE_STARTER_DEFAULTS_CODE = "__starter-content-defaults__";
 
+export type TemplateStarterCommonTexts = {
+  galleryTitle?: string | null;
+  galleryDescription?: string | null;
+  packagesTitle?: string | null;
+  packagesDescription?: string | null;
+  extrasTitle?: string | null;
+  extrasDescription?: string | null;
+  contactTitle?: string | null;
+  contactCallToAction?: string | null;
+};
+
+export type TemplateStarterSeoDefaults = {
+  title?: string | null;
+  description?: string | null;
+  canonicalUrl?: string | null;
+  robotsIndex?: boolean;
+};
+
 export type TemplateStarterSharedDefaults = {
   photographerName: string;
   studioName: string;
   description: string;
   heroImageUrl?: string | null;
+  galleryImages?: TemplateStarterContent["gallery"]["images"] | null;
+  packages?: TemplateStarterContent["packages"] | null;
+  extras?: TemplateStarterContent["extras"] | null;
+  seo?: TemplateStarterSeoDefaults | null;
+  commonTexts?: TemplateStarterCommonTexts | null;
 };
 
-export type TemplateStarterSharedOverrides = Partial<TemplateStarterSharedDefaults>;
+export type TemplateStarterSharedOverrides = Partial<Pick<
+  TemplateStarterSharedDefaults,
+  "photographerName" | "studioName" | "description" | "heroImageUrl"
+>>;
 
 export const OFFICIAL_TEMPLATE_STARTER_DEFAULTS: TemplateStarterSharedDefaults = {
   photographerName: "Kareem Magdy",
   studioName: "Photography",
   description: "Wedding Photographer\nمصور زفاف",
   heroImageUrl: null,
+  galleryImages: null,
+  packages: null,
+  extras: null,
+  seo: null,
+  commonTexts: null,
 };
 
 export function normalizeTemplateStarterSharedDefaults(value: unknown): TemplateStarterSharedDefaults {
@@ -25,6 +56,25 @@ export function normalizeTemplateStarterSharedDefaults(value: unknown): Template
     studioName: readText(source.studioName, OFFICIAL_TEMPLATE_STARTER_DEFAULTS.studioName),
     description: readText(source.description, OFFICIAL_TEMPLATE_STARTER_DEFAULTS.description),
     heroImageUrl: readOptionalText(source.heroImageUrl),
+    galleryImages: readRecordArray(source.galleryImages) as TemplateStarterContent["gallery"]["images"] | null,
+    packages: readRecordArray(source.packages) as TemplateStarterContent["packages"] | null,
+    extras: readRecordArray(source.extras) as TemplateStarterContent["extras"] | null,
+    seo: isRecord(source.seo) ? {
+      title: readOptionalText(source.seo.title),
+      description: readOptionalText(source.seo.description),
+      canonicalUrl: readOptionalText(source.seo.canonicalUrl),
+      robotsIndex: typeof source.seo.robotsIndex === "boolean" ? source.seo.robotsIndex : undefined,
+    } : null,
+    commonTexts: isRecord(source.commonTexts) ? {
+      galleryTitle: readOptionalText(source.commonTexts.galleryTitle),
+      galleryDescription: readOptionalText(source.commonTexts.galleryDescription),
+      packagesTitle: readOptionalText(source.commonTexts.packagesTitle),
+      packagesDescription: readOptionalText(source.commonTexts.packagesDescription),
+      extrasTitle: readOptionalText(source.commonTexts.extrasTitle),
+      extrasDescription: readOptionalText(source.commonTexts.extrasDescription),
+      contactTitle: readOptionalText(source.commonTexts.contactTitle),
+      contactCallToAction: readOptionalText(source.commonTexts.contactCallToAction),
+    } : null,
   };
 }
 
@@ -55,10 +105,27 @@ export function applyTemplateStarterSharedDefaults(
   next.contact.studioName = resolved.studioName;
   next.contact.bio = resolved.description;
   next.contact.longDescription = resolved.description;
-  next.seo.title = resolved.photographerName;
-  next.seo.description = resolved.description;
+
+  if (resolved.galleryImages?.length) next.gallery.images = structuredClone(resolved.galleryImages);
+  if (resolved.packages?.length) next.packages = structuredClone(resolved.packages);
+  if (resolved.extras?.length) next.extras = structuredClone(resolved.extras);
+
+  const texts = resolved.commonTexts;
+  if (texts?.galleryTitle) next.sections.gallery.title = texts.galleryTitle;
+  if (texts?.galleryDescription) next.sections.gallery.description = texts.galleryDescription;
+  if (texts?.packagesTitle) next.sections.packages.title = texts.packagesTitle;
+  if (texts?.packagesDescription) next.sections.packages.description = texts.packagesDescription;
+  if (texts?.extrasTitle) next.sections.extras.title = texts.extrasTitle;
+  if (texts?.extrasDescription) next.sections.extras.description = texts.extrasDescription;
+  if (texts?.contactTitle) next.sections.contact.title = texts.contactTitle;
+  if (texts?.contactCallToAction) next.sections.contact.callToAction = texts.contactCallToAction;
+
+  next.seo.title = resolved.seo?.title || resolved.photographerName;
+  next.seo.description = resolved.seo?.description || resolved.description;
+  if (resolved.seo?.canonicalUrl !== undefined) next.seo.canonicalUrl = resolved.seo.canonicalUrl;
+  if (resolved.seo?.robotsIndex !== undefined) next.seo.robotsIndex = resolved.seo.robotsIndex;
   next.seo.structuredData.name = resolved.photographerName;
-  next.seo.structuredData.description = resolved.description;
+  next.seo.structuredData.description = next.seo.description;
 
   return next;
 }
@@ -75,6 +142,12 @@ function compact(value: TemplateStarterSharedOverrides): TemplateStarterSharedOv
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function readRecordArray(value: unknown): Record<string, unknown>[] | null {
+  if (!Array.isArray(value)) return null;
+  const records = value.filter(isRecord);
+  return records.length ? records : null;
 }
 
 function readText(value: unknown, fallback: string): string {
