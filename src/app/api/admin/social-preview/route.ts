@@ -9,6 +9,7 @@ import {
   PLATFORM_SOCIAL_PREVIEW_CACHE_TAG,
   savePlatformSocialPreviewSettings,
 } from "@/modules/social-preview/platform-social-preview-settings";
+import { PLATFORM_CUSTOM_SOCIAL_IMAGE } from "@/modules/social-preview/social-preview";
 
 export const runtime = "nodejs";
 
@@ -16,8 +17,6 @@ type Payload = {
   mode?: "default" | "custom";
   title?: string | null;
   description?: string | null;
-  imageUrl?: string | null;
-  storageKey?: string | null;
   deleteImage?: boolean;
 };
 
@@ -29,23 +28,22 @@ export async function PATCH(request: Request) {
     const mode = payload.mode === "custom" ? "custom" : "default";
     const deleteImage = payload.deleteImage === true;
 
-    const imageUrl = deleteImage ? null : cleanText(payload.imageUrl, 2048) ?? current.imageUrl;
-    const storageKey = deleteImage ? null : cleanText(payload.storageKey, 1024) ?? current.storageKey;
-    const title = cleanText(payload.title, 120);
-    const description = cleanText(payload.description, 240);
+    const next = {
+      ...current,
+      enabled: mode === "custom",
+      title: cleanText(payload.title, 120),
+      description: cleanText(payload.description, 240),
+      imageUrl: deleteImage ? null : current.imageData ? PLATFORM_CUSTOM_SOCIAL_IMAGE : null,
+      storageKey: null,
+      imageData: deleteImage ? null : current.imageData,
+      imageMimeType: deleteImage ? null : current.imageMimeType,
+    };
 
-    if (mode === "custom" && !imageUrl) {
-      return NextResponse.json({ ok: false, error: "ارفع صورة مخصصة واعتمد القص قبل الحفظ." }, { status: 400 });
+    if (mode === "custom" && !next.imageData) {
+      return NextResponse.json({ ok: false, error: "لا توجد صورة مرفوعة فعلًا. ارفع الصورة واعتمد القص أولًا." }, { status: 400 });
     }
 
-    await savePlatformSocialPreviewSettings({
-      enabled: mode === "custom",
-      title,
-      description,
-      imageUrl,
-      storageKey,
-    });
-
+    await savePlatformSocialPreviewSettings(next);
     await prisma.auditLog.create({
       data: {
         action: "PLATFORM_SOCIAL_PREVIEW_UPDATED",
@@ -54,9 +52,9 @@ export async function PATCH(request: Request) {
           adminId: session.user.id,
           adminEmail: session.user.email,
           mode,
-          title,
-          description,
-          imageUrl,
+          title: next.title,
+          description: next.description,
+          hasImage: Boolean(next.imageData),
           deletedImage: deleteImage,
         } as Prisma.InputJsonObject,
       },
@@ -70,11 +68,11 @@ export async function PATCH(request: Request) {
     return NextResponse.json({
       ok: true,
       settings: {
-        enabled: mode === "custom",
-        title,
-        description,
-        imageUrl,
-        storageKey,
+        enabled: next.enabled,
+        title: next.title,
+        description: next.description,
+        imageUrl: next.imageData ? `${PLATFORM_CUSTOM_SOCIAL_IMAGE}?v=${Date.now()}` : null,
+        hasImage: Boolean(next.imageData),
       },
     });
   } catch (error) {
