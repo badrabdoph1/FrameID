@@ -20,6 +20,7 @@ async function getArtifact(backupJobId: string) {
     select: { id: true, type: true, status: true, filePath: true },
   });
   if (!job) throw new Error("النسخة غير موجودة.");
+  if (job.status !== "COMPLETED") throw new Error("لا يمكن استخدام نسخة غير مكتملة.");
   if (!job.filePath) throw new Error("ملف النسخة غير متاح.");
 
   const expectedRoot = resolve(process.cwd(), "backups");
@@ -29,9 +30,27 @@ async function getArtifact(backupJobId: string) {
   return { job, backupDir, backupRoot: dirname(backupDir), artifactId: basename(backupDir) };
 }
 
+async function audit(input: {
+  actorId: string;
+  action: string;
+  entityId: string;
+  metadata?: Record<string, unknown>;
+}) {
+  await prisma.auditLog.create({
+    data: {
+      actorId: input.actorId,
+      action: input.action,
+      entityType: "BackupJob",
+      entityId: input.entityId,
+      metadata: input.metadata,
+    },
+  });
+}
+
 export async function restoreWorkspaceBackupAction(formData: FormData) {
   const session = await requireSuperAdminSession();
   const backupJobId = String(formData.get("backupJobId") ?? "");
+  let restoreJobId: string | null = null;
 
   try {
     const artifact = await getArtifact(backupJobId);
@@ -42,19 +61,40 @@ export async function restoreWorkspaceBackupAction(formData: FormData) {
       backupId: artifact.artifactId,
       backupRoot: artifact.backupRoot,
     });
-    const validationErrors = validation.validation.errors;
 
-    const restoreJob = await prisma.restoreJob.create({
-      data: {
-        backupJobId,
-        status: validation.valid ? "PENDING" : "FAILED",
-        triggeredById: session.user.id,
-        errorMessage: validation.valid ? null : validationErrors.join("; "),
-      },
-      select: { id: true },
+    if (!validation.valid) {
+      await audit({
+        actorId: session.user.id,
+        action: "RESTORE_REJECTED",
+        entityId: backupJobId,
+        metadata: { errors: validation.validation.errors },
+      });
+      throw new Error(validation.validation.errors.join("; ") || "فشل التحقق قبل الاستعادة.");
+    }
+
+    const restoreJob = await prisma.$transaction(async (tx) => {
+      const activeRestoreCount = await tx.restoreJob.count({
+        where: { status: { in: ["PENDING", "RUNNING"] } },
+      });
+      if (activeRestoreCount > 0) throw new Error("توجد عملية استعادة أخرى قيد التنفيذ.");
+
+      return tx.restoreJob.create({
+        data: {
+          backupJobId,
+          status: "RUNNING",
+          triggeredById: session.user.id,
+        },
+        select: { id: true },
+      });
+    }, { isolationLevel: "Serializable" });
+    restoreJobId = restoreJob.id;
+
+    await audit({
+      actorId: session.user.id,
+      action: "RESTORE_STARTED",
+      entityId: backupJobId,
+      metadata: { restoreJobId },
     });
-
-    if (!validation.valid) throw new Error(validationErrors.join("; ") || "فشل التحقق قبل الاستعادة.");
 
     const result = await service.executeRestore({
       backupId: artifact.artifactId,
@@ -63,19 +103,40 @@ export async function restoreWorkspaceBackupAction(formData: FormData) {
       type: artifact.job.type,
     });
 
+    if (!result.success) throw new Error(result.errors.join("; ") || "فشلت الاستعادة.");
+
+    const postValidation = await service.validatePostRestore(env.DATABASE_URL);
+    if (!postValidation.passed) {
+      throw new Error(postValidation.errors.join("; ") || "فشل التحقق بعد الاستعادة.");
+    }
+
     await prisma.restoreJob.update({
       where: { id: restoreJob.id },
-      data: {
-        status: result.success ? "COMPLETED" : "FAILED",
-        errorMessage: result.errors.join("; ") || null,
-        completedAt: new Date(),
-      },
+      data: { status: "COMPLETED", completedAt: new Date() },
     });
 
-    if (!result.success) throw new Error(result.errors.join("; ") || "فشلت الاستعادة.");
-    await service.validatePostRestore(env.DATABASE_URL);
+    await audit({
+      actorId: session.user.id,
+      action: "RESTORE_COMPLETED",
+      entityId: backupJobId,
+      metadata: { restoreJobId, durationMs: result.durationMs, counts: postValidation.counts },
+    });
     revalidatePath("/admin/backups");
   } catch (error) {
+    const message = error instanceof Error ? error.message : "فشلت الاستعادة.";
+    if (restoreJobId) {
+      await prisma.restoreJob.update({
+        where: { id: restoreJobId },
+        data: { status: "FAILED", errorMessage: message, completedAt: new Date() },
+      }).catch(() => undefined);
+      await audit({
+        actorId: session.user.id,
+        action: "RESTORE_FAILED",
+        entityId: backupJobId,
+        metadata: { restoreJobId, error: message },
+      }).catch(() => undefined);
+    }
+
     const { userError } = await processError(error, {
       userId: session.user.id,
       metadata: { action: "restoreWorkspaceBackup", backupJobId },
@@ -95,6 +156,12 @@ export async function verifyWorkspaceBackupAction(formData: FormData) {
     const artifact = await getArtifact(backupJobId);
     const result = await createVerificationService().verifyBackup(artifact.artifactId, artifact.backupRoot);
     valid = result.valid;
+    await audit({
+      actorId: session.user.id,
+      action: valid ? "BACKUP_VERIFIED" : "BACKUP_VERIFICATION_FAILED",
+      entityId: backupJobId,
+      metadata: { errors: result.errors, durationMs: result.durationMs },
+    });
     revalidatePath("/admin/backups");
   } catch (error) {
     const { userError } = await processError(error, {
@@ -114,6 +181,7 @@ export async function deleteWorkspaceBackupAction(formData: FormData) {
   try {
     const artifact = await getArtifact(backupJobId);
     if (existsSync(artifact.backupDir)) await rm(artifact.backupDir, { recursive: true, force: true });
+    await audit({ actorId: session.user.id, action: "BACKUP_DELETED", entityId: backupJobId });
     await prisma.restoreJob.deleteMany({ where: { backupJobId } });
     await prisma.backupJob.delete({ where: { id: backupJobId } });
     revalidatePath("/admin/backups");
