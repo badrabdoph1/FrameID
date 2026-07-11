@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
 import { captureClientError, reportCapturedError } from "@/lib/client/error-reporting";
@@ -46,7 +47,7 @@ export function GlobalErrorExperience({ error, onRetry }: { error: unknown; onRe
         <p style={{ margin: "16px auto 0", maxWidth: 430, color: "#6f6a61", fontSize: 16, lineHeight: 1.8 }}>في تحديث دلوقتي في الموقع، بنضيف لكم مميزات جديدة وبنطوّر الخدمات. جرّب تاني بعد لحظات.</p>
         <div style={{ display: "grid", gap: 12, marginTop: 28 }}>
           <button type="button" onClick={() => onRetry ? onRetry() : window.location.reload()} style={{ ...buttonBase, border: 0, background: "#111", color: "#fff" }}>إعادة المحاولة</button>
-          <a href="/" style={{ ...buttonBase, display: "grid", placeItems: "center", boxSizing: "border-box", border: "1px solid #ded7ca", background: "#fff", color: "#111", textDecoration: "none" }}>الصفحة الرئيسية</a>
+          <Link href="/" style={{ ...buttonBase, display: "grid", placeItems: "center", boxSizing: "border-box", border: "1px solid #ded7ca", background: "#fff", color: "#111", textDecoration: "none" }}>الصفحة الرئيسية</Link>
           <button type="button" onClick={() => void report()} disabled={status === "sending" || status === "sent"} style={{ ...buttonBase, border: "1px solid #d8b46a", background: "#f3e7c9", color: "#765216" }}>
             {status === "sending" ? "جاري إرسال البلاغ…" : status === "sent" ? "تم إبلاغ الإدارة" : "إبلاغ الإدارة بالمشكلة"}
           </button>
