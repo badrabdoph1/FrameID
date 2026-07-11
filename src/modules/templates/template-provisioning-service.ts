@@ -5,6 +5,7 @@ import {
   type ProvisionedTemplatePayload,
   type TemplateContentSourceOptions,
 } from "@/modules/templates/template-content-source";
+import { loadTemplateContentSourceOptions } from "@/modules/templates/template-starter-defaults-repository";
 
 export type TemplateProvisioningRepository = {
   isTemplateAvailable(templateCode: string): Promise<boolean>;
@@ -28,7 +29,9 @@ export function createTemplateProvisioningService({
   return {
     async buildSiteFromTemplate(input) {
       const templateCode = input.templateCode || defaultTemplateCode;
-      const options = await repository.getTemplateContentSourceOptions?.(templateCode) ?? {};
+      const options = repository.getTemplateContentSourceOptions
+        ? await repository.getTemplateContentSourceOptions(templateCode)
+        : await loadTemplateContentSourceOptions(templateCode);
       const source = getTemplateContentSource(templateCode, options);
 
       if (!source || !(await repository.isTemplateAvailable(templateCode))) {
