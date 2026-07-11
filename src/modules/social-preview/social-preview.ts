@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 
-export const PLATFORM_DEFAULT_SOCIAL_IMAGE = "/api/social-preview/default-image";
-export const PLATFORM_CUSTOM_SOCIAL_IMAGE = "/api/social-preview/platform-image";
+export const PLATFORM_SOCIAL_IMAGE = "https://frameid.app/social-preview-image";
+export const PLATFORM_DEFAULT_SOCIAL_IMAGE = `${PLATFORM_SOCIAL_IMAGE}?mode=default&v=default-v3`;
+export const PLATFORM_CUSTOM_SOCIAL_IMAGE = `${PLATFORM_SOCIAL_IMAGE}?mode=custom`;
 export const PHOTOGRAPHER_PLACEHOLDER_IMAGE = "/photographer-placeholder";
 
 export type SocialPreviewImageSource =
@@ -34,6 +35,7 @@ export type PlatformSocialPreviewSettings = {
   storageKey: string | null;
   imageData?: string | null;
   imageMimeType?: string | null;
+  imageVersion?: string | null;
 };
 
 export type PlatformSocialPreviewContext = {
@@ -60,10 +62,16 @@ const platformProviders: Array<SocialPreviewImageProvider<PlatformSocialPreviewC
   {
     resolve(context) {
       if (!context.settings.enabled || !context.settings.imageData) return null;
-      return image(PLATFORM_CUSTOM_SOCIAL_IMAGE, "platform-custom", context.settings.title ?? context.defaults.title);
+      const version = encodeURIComponent(context.settings.imageVersion ?? "custom");
+      return image(`${PLATFORM_SOCIAL_IMAGE}?v=${version}`, "platform-custom", context.settings.title ?? context.defaults.title);
     },
   },
-  { resolve(context) { return image(context.defaults.imageUrl, "platform-default", context.defaults.title); } },
+  {
+    resolve(context) {
+      const version = encodeURIComponent(context.settings.imageVersion ?? "default-v3");
+      return image(`${PLATFORM_SOCIAL_IMAGE}?mode=default&v=${version}`, "platform-default", context.defaults.title);
+    },
+  },
 ];
 
 const photographerProviders: Array<SocialPreviewImageProvider<PhotographerSocialPreviewContext>> = [
@@ -97,7 +105,7 @@ export function buildSocialMetadata({ preview, canonicalUrl, siteName, locale = 
     openGraph: {
       type: "website", locale, siteName, url: canonicalUrl,
       title: preview.title, description: preview.description,
-      images: [{ url: preview.image.url, width: preview.image.width, height: preview.image.height, alt: preview.image.alt }],
+      images: [{ url: preview.image.url, secureUrl: preview.image.url, width: preview.image.width, height: preview.image.height, alt: preview.image.alt, type: "image/jpeg" }],
     },
     twitter: { card: "summary_large_image", title: preview.title, description: preview.description, images: [preview.image.url] },
   };
