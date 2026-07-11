@@ -1,0 +1,268 @@
+name: Apply template hero presentation refresh
+
+on:
+  push:
+    branches:
+      - design/template-hero-presentation-refresh
+    paths:
+      - .github/workflows/apply-template-hero-refresh.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply-refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: design/template-hero-presentation-refresh
+          fetch-depth: 0
+
+      - name: Update presentation components only
+        shell: bash
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+          import re
+
+          def replace_once(text: str, old: str, new: str, label: str) -> str:
+              if text.count(old) != 1:
+                  raise SystemExit(f"Expected one {label} marker, found {text.count(old)}")
+              return text.replace(old, new, 1)
+
+          def replace_hero(path: str, hero: str) -> None:
+              file = Path(path)
+              text = file.read_text()
+              pattern = re.compile(r'      <section id="home".*?      </section>\n\n      \{showGallery', re.S)
+              updated, count = pattern.subn(hero + '\n\n      {showGallery', text, count=1)
+              if count != 1:
+                  raise SystemExit(f"Hero section not found exactly once in {path}: {count}")
+              file.write_text(updated)
+
+          noir_path = 'src/components/themes/ali-ahmed-luxury-site.tsx'
+          noir = Path(noir_path).read_text()
+          noir = replace_once(
+              noir,
+              '  const mobileHeaderCaption = getMobileHeaderCaption(site, displayName);',
+              '  const mobileHeaderCaption = getMobileHeaderCaption(site, displayName);\n  const studioSubtitle = site.contact.studioName?.trim() || "Photography";',
+              'noir studio subtitle',
+          )
+          Path(noir_path).write_text(noir)
+
+          noir_hero = '''      <section id="home" className="relative isolate overflow-hidden bg-[#050505] pt-28 md:min-h-screen md:pt-20">
+        {heroImage ? (
+          <Image
+            src={heroImage.url}
+            alt={heroImage.alt}
+            fill
+            priority
+            sizes="100vw"
+            className="object-cover opacity-52 md:opacity-24"
+          />
+        ) : null}
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(5,5,5,.28),rgba(5,5,5,.68)_48%,#050505_100%)] md:bg-[radial-gradient(circle_at_78%_18%,rgba(229,192,123,.16),transparent_28%),linear-gradient(90deg,#050505_0%,rgba(5,5,5,.96)_44%,rgba(5,5,5,.52)_72%,#050505_100%)]" />
+        <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-[#050505] to-transparent" />
+
+        <div className="container-page relative z-10 md:hidden">
+          <div className="flex min-h-[calc(100svh-7rem)] flex-col justify-end pb-[calc(1.5rem+env(safe-area-inset-bottom))] pt-8">
+            <div className="max-w-xl text-start">
+              <p className="mb-3 text-[0.68rem] font-black uppercase tracking-[0.28em] text-[#e5c07b]/90">Portraits · Stories · Light</p>
+              <h1 className="text-balance font-display text-[clamp(2.75rem,13vw,4.75rem)] font-bold leading-[0.98] tracking-[-0.04em] text-white drop-shadow-[0_12px_32px_rgba(0,0,0,.38)]">
+                {site.hero.headline}
+              </h1>
+              <p className="mt-4 font-display text-sm font-bold uppercase tracking-[0.24em] text-[#e5c07b]">
+                {studioSubtitle}
+              </p>
+              <p className="mt-4 max-w-lg text-sm leading-7 text-white/74 sm:text-base">
+                {site.hero.subheadline}
+              </p>
+            </div>
+
+            <div className="mt-7 flex items-center gap-2.5" aria-label="إجراءات سريعة">
+              <button
+                type="button"
+                onClick={() => scrollToSection("packages")}
+                className="inline-flex min-h-11 items-center gap-2 rounded-full border border-[#f4d89c]/35 bg-[#e5c07b] px-4 text-xs font-black text-black shadow-[0_14px_42px_rgba(229,192,123,.28)] backdrop-blur-xl transition active:scale-[0.98]"
+              >
+                <Camera className="size-4" />
+                الباقات
+              </button>
+              <button
+                type="button"
+                onClick={() => scrollToSection("gallery")}
+                className="inline-flex min-h-11 items-center gap-2 rounded-full border border-white/18 bg-black/38 px-4 text-xs font-bold text-white shadow-[0_14px_42px_rgba(0,0,0,.26)] backdrop-blur-xl transition active:scale-[0.98]"
+              >
+                <Images className="size-4" />
+                الأعمال
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div className="container-page relative z-10 hidden min-h-[calc(100vh-5rem)] grid-cols-[minmax(0,0.9fr)_minmax(360px,1.1fr)] items-center gap-12 py-16 md:grid lg:gap-20">
+          <div className="max-w-3xl text-start">
+            <div className="mb-7 flex items-center gap-4">
+              <span className="h-px w-14 bg-[#e5c07b]/70" />
+              <span className="text-xs font-black uppercase tracking-[0.3em] text-[#e5c07b]/86">Editorial Photography</span>
+            </div>
+            <h1 className="text-balance font-display text-6xl font-bold leading-[0.94] tracking-[-0.045em] text-white lg:text-8xl xl:text-[6.75rem]">
+              {site.hero.headline}
+            </h1>
+            <p className="mt-6 font-display text-sm font-bold uppercase tracking-[0.28em] text-[#e5c07b] lg:text-base">
+              {studioSubtitle}
+            </p>
+            <p className="mt-6 max-w-2xl text-lg leading-9 text-white/68 lg:text-xl lg:leading-10">
+              {site.hero.subheadline}
+            </p>
+          </div>
+
+          <div className="relative min-h-[620px]">
+            <div className="absolute inset-y-8 left-8 right-0 rounded-[2.75rem] border border-[#e5c07b]/14 bg-[#e5c07b]/[0.035]" />
+            <figure className="absolute inset-y-0 left-0 right-8 overflow-hidden rounded-[2.75rem] border border-white/10 bg-[#111] shadow-[0_42px_130px_rgba(0,0,0,.48)]">
+              {heroImage ? (
+                <Image src={heroImage.url} alt={heroImage.alt} fill priority sizes="50vw" className="object-cover" />
+              ) : null}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/62 via-transparent to-black/8" />
+              <div className="absolute inset-x-6 bottom-6 flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => scrollToSection("packages")}
+                  className="inline-flex min-h-11 items-center gap-2 rounded-full bg-[#e5c07b] px-5 text-xs font-black text-black shadow-[0_18px_50px_rgba(229,192,123,.3)] transition hover:-translate-y-0.5"
+                >
+                  <Camera className="size-4" />
+                  اختر باقتك
+                </button>
+                <button
+                  type="button"
+                  onClick={() => scrollToSection("gallery")}
+                  className="inline-flex min-h-11 items-center gap-2 rounded-full border border-white/20 bg-black/34 px-5 text-xs font-bold text-white backdrop-blur-xl transition hover:-translate-y-0.5 hover:bg-black/48"
+                >
+                  <Images className="size-4" />
+                  شاهد الأعمال
+                </button>
+              </div>
+            </figure>
+          </div>
+        </div>
+      </section>'''
+          replace_hero(noir_path, noir_hero)
+
+          rose_path = 'src/components/themes/rose-blush-site.tsx'
+          rose = Path(rose_path).read_text()
+          rose = replace_once(
+              rose,
+              '  const mobileHeaderCaption = getThemeMobileCaption(site, displayName);',
+              '  const mobileHeaderCaption = getThemeMobileCaption(site, displayName);\n  const studioSubtitle = site.contact.studioName?.trim() || "Photography";',
+              'rose studio subtitle',
+          )
+          Path(rose_path).write_text(rose)
+
+          rose_hero = '''      <section id="home" className="relative isolate overflow-hidden bg-[#fff8f4] pt-28 md:min-h-screen md:pt-20">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_12%_12%,rgba(212,138,158,.22),transparent_30%),radial-gradient(circle_at_88%_76%,rgba(143,184,154,.16),transparent_34%),linear-gradient(180deg,#fff8f4,#fffaf7)]" />
+
+        <div className="container-page relative z-10 md:hidden">
+          <div className="flex min-h-[calc(100svh-7rem)] flex-col pb-[calc(1.5rem+env(safe-area-inset-bottom))] pt-6">
+            <div className="text-center">
+              <span className="inline-flex items-center gap-2 rounded-full border border-[#8fb89a]/25 bg-white/64 px-3.5 py-2 text-[0.66rem] font-black uppercase tracking-[0.18em] text-[#6d9a78] shadow-[0_12px_34px_rgba(143,184,154,.1)] backdrop-blur">
+                <Heart className="size-3 fill-[#6d9a78]" />
+                Stories in bloom
+              </span>
+              <h1 className="mx-auto mt-5 max-w-[18ch] text-balance font-display text-[clamp(2.7rem,12vw,4.6rem)] font-bold leading-[1.02] tracking-[-0.04em] text-[#2c1810]">
+                {site.hero.headline}
+              </h1>
+              <p className="mt-3 font-display text-sm font-bold uppercase tracking-[0.22em] text-[#d48a9e]">
+                {studioSubtitle}
+              </p>
+              <p className="mx-auto mt-4 max-w-lg text-sm leading-7 text-[#6f5c55] sm:text-base">
+                {site.hero.subheadline}
+              </p>
+            </div>
+
+            <figure className="relative mt-6 min-h-[42svh] flex-1 overflow-hidden rounded-[2rem] border border-white bg-white shadow-[0_28px_80px_rgba(44,24,16,.14)]">
+              {heroImage ? (
+                <Image src={heroImage.url} alt={heroImage.alt} fill priority sizes="100vw" className="object-cover" />
+              ) : null}
+              <div className="absolute inset-0 bg-gradient-to-t from-[#2c1810]/48 via-transparent to-white/5" />
+              <div className="absolute inset-x-4 bottom-4 flex items-center justify-center gap-2.5" aria-label="إجراءات سريعة">
+                <button
+                  type="button"
+                  onClick={() => scrollToSection("packages")}
+                  className="inline-flex min-h-11 items-center gap-2 rounded-full bg-[#d48a9e] px-4 text-xs font-black text-white shadow-[0_16px_40px_rgba(212,138,158,.34)] transition active:scale-[0.98]"
+                >
+                  <Heart className="size-4 fill-current" />
+                  الباقات
+                </button>
+                <button
+                  type="button"
+                  onClick={() => scrollToSection("gallery")}
+                  className="inline-flex min-h-11 items-center gap-2 rounded-full border border-white/70 bg-white/78 px-4 text-xs font-black text-[#2c1810] shadow-[0_16px_40px_rgba(44,24,16,.14)] backdrop-blur-xl transition active:scale-[0.98]"
+                >
+                  <Images className="size-4" />
+                  الأعمال
+                </button>
+              </div>
+            </figure>
+          </div>
+        </div>
+
+        <div className="container-page relative z-10 hidden min-h-[calc(100vh-5rem)] grid-cols-[minmax(0,0.92fr)_minmax(440px,1.08fr)] items-center gap-14 py-16 md:grid lg:gap-20">
+          <div className="max-w-3xl text-start">
+            <span className="inline-flex items-center gap-2 rounded-full border border-[#8fb89a]/28 bg-white/58 px-4 py-2 text-xs font-black uppercase tracking-[0.18em] text-[#6d9a78] shadow-[0_16px_45px_rgba(143,184,154,.1)] backdrop-blur">
+              <Heart className="size-3 fill-[#6d9a78]" />
+              Fine art photography
+            </span>
+            <h1 className="mt-7 text-balance font-display text-6xl font-bold leading-[0.98] tracking-[-0.045em] text-[#2c1810] lg:text-8xl xl:text-[6.5rem]">
+              {site.hero.headline}
+            </h1>
+            <p className="mt-5 font-display text-sm font-bold uppercase tracking-[0.25em] text-[#d48a9e] lg:text-base">
+              {studioSubtitle}
+            </p>
+            <p className="mt-6 max-w-2xl text-lg leading-9 text-[#6f5c55] lg:text-xl lg:leading-10">
+              {site.hero.subheadline}
+            </p>
+          </div>
+
+          <div className="relative min-h-[610px]">
+            <div className="absolute inset-10 rounded-[3rem] border border-[#eaddd4] bg-white/44 shadow-[0_35px_110px_rgba(44,24,16,.09)]" />
+            <figure className="absolute inset-y-0 right-0 w-[76%] overflow-hidden rounded-[3rem] border border-white bg-white shadow-[0_42px_120px_rgba(44,24,16,.16)]">
+              {heroImage ? (
+                <Image src={heroImage.url} alt={heroImage.alt} fill priority sizes="45vw" className="object-cover" />
+              ) : null}
+              <div className="absolute inset-0 bg-gradient-to-t from-[#2c1810]/42 via-transparent to-white/8" />
+              <div className="absolute inset-x-6 bottom-6 flex items-center justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => scrollToSection("packages")}
+                  className="inline-flex min-h-11 items-center gap-2 rounded-full bg-[#d48a9e] px-5 text-xs font-black text-white shadow-[0_18px_48px_rgba(212,138,158,.34)] transition hover:-translate-y-0.5 hover:bg-[#be778b]"
+                >
+                  <Heart className="size-4 fill-current" />
+                  اختر باقتك
+                </button>
+                <button
+                  type="button"
+                  onClick={() => scrollToSection("gallery")}
+                  className="inline-flex min-h-11 items-center gap-2 rounded-full border border-white/75 bg-white/78 px-5 text-xs font-black text-[#2c1810] shadow-[0_18px_48px_rgba(44,24,16,.13)] backdrop-blur-xl transition hover:-translate-y-0.5 hover:bg-white"
+                >
+                  <Images className="size-4" />
+                  شاهد الأعمال
+                </button>
+              </div>
+            </figure>
+            {featuredImage ? (
+              <figure className="absolute bottom-8 left-0 h-52 w-64 overflow-hidden rounded-[2rem] border-8 border-[#fff8f4] bg-white shadow-[0_26px_78px_rgba(44,24,16,.17)]">
+                <Image src={featuredImage} alt={site.hero.headline} fill sizes="22vw" className="object-cover" />
+              </figure>
+            ) : null}
+          </div>
+        </div>
+      </section>'''
+          replace_hero(rose_path, rose_hero)
+          PY
+
+          rm -f .github/workflows/apply-template-hero-refresh.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/components/themes/ali-ahmed-luxury-site.tsx src/components/themes/rose-blush-site.tsx .github/workflows/apply-template-hero-refresh.yml
+          git commit -m "feat: refresh template hero presentation"
+          git push origin HEAD:design/template-hero-presentation-refresh
