@@ -75,7 +75,6 @@ export async function restoreWorkspaceBackupAction(formData: FormData) {
     if (!result.success) throw new Error(result.errors.join("; ") || "فشلت الاستعادة.");
     await service.validatePostRestore(env.DATABASE_URL);
     revalidatePath("/admin/backups");
-    redirect("/admin/backups?restored=1");
   } catch (error) {
     const { userError } = await processError(error, {
       userId: session.user.id,
@@ -83,17 +82,20 @@ export async function restoreWorkspaceBackupAction(formData: FormData) {
     });
     redirect(`/admin/backups?error=${encodeURIComponent(userError.message)}`);
   }
+
+  redirect("/admin/backups?restored=1");
 }
 
 export async function verifyWorkspaceBackupAction(formData: FormData) {
   const session = await requireSuperAdminSession();
   const backupJobId = String(formData.get("backupJobId") ?? "");
+  let valid = false;
 
   try {
     const artifact = await getArtifact(backupJobId);
     const result = await createVerificationService().verifyBackup(artifact.artifactId, artifact.backupRoot);
+    valid = result.valid;
     revalidatePath("/admin/backups");
-    redirect(`/admin/backups?verified=${result.valid ? "1" : "0"}`);
   } catch (error) {
     const { userError } = await processError(error, {
       userId: session.user.id,
@@ -101,6 +103,8 @@ export async function verifyWorkspaceBackupAction(formData: FormData) {
     });
     redirect(`/admin/backups?error=${encodeURIComponent(userError.message)}`);
   }
+
+  redirect(`/admin/backups?verified=${valid ? "1" : "0"}`);
 }
 
 export async function deleteWorkspaceBackupAction(formData: FormData) {
@@ -113,7 +117,6 @@ export async function deleteWorkspaceBackupAction(formData: FormData) {
     await prisma.restoreJob.deleteMany({ where: { backupJobId } });
     await prisma.backupJob.delete({ where: { id: backupJobId } });
     revalidatePath("/admin/backups");
-    redirect("/admin/backups?deleted=1");
   } catch (error) {
     const { userError } = await processError(error, {
       userId: session.user.id,
@@ -121,4 +124,6 @@ export async function deleteWorkspaceBackupAction(formData: FormData) {
     });
     redirect(`/admin/backups?error=${encodeURIComponent(userError.message)}`);
   }
+
+  redirect("/admin/backups?deleted=1");
 }
