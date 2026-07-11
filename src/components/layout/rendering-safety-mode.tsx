@@ -11,6 +11,7 @@ import {
 
 const SAFE_RENDERING_CLASS = "frameid-rendering-safe";
 const STORAGE_KEY = "frameid:safe-rendering";
+const ERROR_DEDUPE_PREFIX = "frameid:diagnostic:";
 const ENABLE_VALUES = new Set(["1", "true", "on", "enabled"]);
 const DISABLE_VALUES = new Set(["0", "false", "off", "disabled"]);
 
@@ -58,6 +59,17 @@ function matchesKnownSignature(config: RenderingSafetyConfig | undefined, metada
     const excluded = (signature.exclude ?? []).map((part) => part.trim().toLowerCase()).filter(Boolean);
     return required.length > 0 && required.every((part) => haystack.includes(part)) && excluded.every((part) => !haystack.includes(part));
   });
+}
+
+function shouldSendError(key: string) {
+  try {
+    const storageKey = `${ERROR_DEDUPE_PREFIX}${key.slice(0, 160)}`;
+    if (window.sessionStorage.getItem(storageKey)) return false;
+    window.sessionStorage.setItem(storageKey, "1");
+  } catch {
+    // If session storage is unavailable, still send the diagnostic.
+  }
+  return true;
 }
 
 export function RenderingSafetyMode({ config, userId }: RenderingSafetyModeProps) {
@@ -113,11 +125,38 @@ export function RenderingSafetyMode({ config, userId }: RenderingSafetyModeProps
         message: "Manual rendering issue report",
       });
     };
+
+    const handleWindowError = (event: ErrorEvent) => {
+      const message = event.message || "Unhandled client error";
+      const key = `${message}:${event.filename}:${event.lineno}:${event.colno}`;
+      if (!shouldSendError(key)) return;
+      void reportRenderingDiagnostic("client-error", {
+        message,
+        stack: event.error instanceof Error ? event.error.stack ?? null : null,
+        code: "window-error",
+      });
+    };
+
+    const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
+      const reason = event.reason;
+      const message = reason instanceof Error ? reason.message : String(reason ?? "Unhandled promise rejection");
+      if (!shouldSendError(`promise:${message}`)) return;
+      void reportRenderingDiagnostic("client-error", {
+        message,
+        stack: reason instanceof Error ? reason.stack ?? null : null,
+        code: "unhandled-rejection",
+      });
+    };
+
     window.addEventListener("frameid:report-rendering", report);
+    window.addEventListener("error", handleWindowError);
+    window.addEventListener("unhandledrejection", handleUnhandledRejection);
 
     return () => {
       cancelled = true;
       window.removeEventListener("frameid:report-rendering", report);
+      window.removeEventListener("error", handleWindowError);
+      window.removeEventListener("unhandledrejection", handleUnhandledRejection);
       root.classList.remove(SAFE_RENDERING_CLASS);
       delete root.dataset.renderingMode;
       delete root.dataset.renderingModeReason;
