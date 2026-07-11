@@ -7,6 +7,10 @@ import { prisma } from "@/lib/prisma";
 import { getPlatformBaseUrl } from "@/lib/platform-url";
 import { createPrismaPublicSiteRepository } from "@/modules/public-sites/prisma-public-site-repository";
 import { createPublicSiteViewModel } from "@/modules/public-sites/public-site-view-model";
+import {
+  loadPlatformSocialPreview,
+  resolvePlatformSocialImage,
+} from "@/modules/seo/platform-social-preview";
 import { checkSiteAccessBySlug } from "@/modules/subscription/subscription-access";
 import { SiteExpiredPage } from "@/components/site-expired-page";
 
@@ -16,15 +20,17 @@ type Props = {
 
 async function getPublicSite(slug: string) {
   const repository = createPrismaPublicSiteRepository(prisma);
-  const site = await repository.findBySlug(slug);
+  const [site, platformSocialPreview] = await Promise.all([
+    repository.findBySlug(slug),
+    loadPlatformSocialPreview(),
+  ]);
 
-  if (!site || site.status !== "PUBLISHED") {
-    return null;
-  }
+  if (!site || site.status !== "PUBLISHED") return null;
 
   return createPublicSiteViewModel({
     site,
-    platformBaseUrl: getPlatformBaseUrl()
+    platformBaseUrl: getPlatformBaseUrl(),
+    platformSocialImageUrl: resolvePlatformSocialImage(platformSocialPreview),
   });
 }
 
@@ -35,10 +41,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!site) {
     return {
       title: "الموقع غير موجود",
-      robots: {
-        index: false,
-        follow: false
-      }
+      robots: { index: false, follow: false },
     };
   }
 
@@ -49,15 +52,10 @@ export default async function PublicSitePage({ params }: Props) {
   const { slug } = await params;
   const site = await getPublicSite(slug);
 
-  if (!site) {
-    notFound();
-  }
+  if (!site) notFound();
 
   const { result: access } = await checkSiteAccessBySlug(slug);
-
-  if (!access.allowed) {
-    return <SiteExpiredPage />;
-  }
+  if (!access.allowed) return <SiteExpiredPage />;
 
   const ThemeSiteComponent = getThemeSiteComponent(site.themeCode);
 
@@ -66,9 +64,7 @@ export default async function PublicSitePage({ params }: Props) {
       <script
         type="application/ld+json"
         suppressHydrationWarning
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify(site.structuredData)
-        }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(site.structuredData) }}
       />
       <ThemeSiteComponent site={site} />
       <MissingContactGuard />
