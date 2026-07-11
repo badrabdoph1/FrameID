@@ -82,7 +82,7 @@ describe("signup provisioning", () => {
     });
   });
 
-  it("uses signup email and leaves phone and WhatsApp empty", async () => {
+  it("uses signup email while keeping template phone and WhatsApp", async () => {
     const repository = createRepository();
     const service = createSignupProvisioningService({ repository });
 
@@ -94,12 +94,12 @@ describe("signup provisioning", () => {
     });
 
     expect(repository.createdInput?.defaultContent.contact.email).toBe("ali@example.com");
-    expect(repository.createdInput?.defaultContent.contact.phone).toBeNull();
-    expect(repository.createdInput?.defaultContent.contact.whatsapp).toBeNull();
+    expect(repository.createdInput?.defaultContent.contact.phone).toBe("+201000000001");
+    expect(repository.createdInput?.defaultContent.contact.whatsapp).toBe("+201000000001");
     expect(repository.createdInput?.defaultContent.contact.studioName).toBe("Photography");
   });
 
-  it("uses signup phone for phone and WhatsApp and leaves email empty", async () => {
+  it("uses signup phone for phone and WhatsApp while keeping template email", async () => {
     const repository = createRepository();
     const service = createSignupProvisioningService({ repository });
 
@@ -112,7 +112,7 @@ describe("signup provisioning", () => {
 
     expect(repository.createdInput?.defaultContent.contact.phone).toBe("+201012345678");
     expect(repository.createdInput?.defaultContent.contact.whatsapp).toBe("+201012345678");
-    expect(repository.createdInput?.defaultContent.contact.email).toBeNull();
+    expect(repository.createdInput?.defaultContent.contact.email).toBe("hello@kareemmagdy.example");
     expect(repository.createdInput?.defaultContent.contact.studioName).toBe("Photography");
   });
 

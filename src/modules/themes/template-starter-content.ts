@@ -123,8 +123,8 @@ export function personalizeTemplateStarterContent(
   const name = z.string().trim().min(1).max(120).parse(photographerName);
   const personalized = structuredClone(content);
 
-  // Only photographer identity changes during signup. Shared studio and description
-  // defaults remain untouched until the customer edits them from the dashboard.
+  // Signup copies the selected template exactly, then changes only customer identity.
+  // Studio, description, imagery, packages, extras and social links stay untouched.
   personalized.site.title = name;
   personalized.sections.hero.headline = name;
   personalized.seo.title = name;
@@ -134,11 +134,8 @@ export function personalizeTemplateStarterContent(
     const phone = z.string().trim().min(1).max(40).parse(registrationIdentity.phone);
     personalized.contact.phone = phone;
     personalized.contact.whatsapp = phone;
-    personalized.contact.email = null;
   } else if (registrationIdentity?.identifierKind === "email") {
     personalized.contact.email = z.string().trim().email().parse(registrationIdentity.email);
-    personalized.contact.phone = null;
-    personalized.contact.whatsapp = null;
   }
 
   return personalized;
