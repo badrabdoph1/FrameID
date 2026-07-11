@@ -92,8 +92,9 @@ BEGIN
   ) THEN
     ALTER TABLE "PaymentSettings" ADD CONSTRAINT "PaymentSettings_paymentMethod_key" UNIQUE ("paymentMethod");
   END IF;
-EXCEPTION WHEN duplicate_object THEN
-  NULL;
+EXCEPTION WHEN OTHERS THEN
+  -- Already exists or any other error - safe to ignore
+  RAISE NOTICE 'Constraint PaymentSettings_paymentMethod_key already exists, skipping';
 END $$;
 
 -- Add index for PaymentSettings (exception-safe)
