@@ -20,26 +20,26 @@ describe("template admin policy", () => {
     expect(nextAvailableTemplateCode("classic-copy", new Set(["classic-copy", "classic-copy-2"]))).toBe("classic-copy-3");
   });
 
-  it("builds simple editable defaults without exposing technical json", () => {
-    expect(buildTemplateDefaults({
+  it("builds card defaults without duplicating shared starter identity", () => {
+    const defaults = buildTemplateDefaults({
       name: "Classic",
       description: "Premium template",
       themeDefaultConfig: { palette: "gold" },
-    })).toEqual({
+    });
+
+    expect(defaults).toEqual({
       previewData: {
         title: "Classic",
         headline: "Classic",
         description: "Premium template",
         subtitle: "Premium template",
         callToAction: "احجز الآن",
-        hero: {
-          headline: "Classic",
-          subheadline: "Premium template",
-        },
         packages: [],
         extras: [],
       },
       settings: { palette: "gold" },
     });
+    expect(defaults.previewData).not.toHaveProperty("hero");
+    expect(defaults.previewData).not.toHaveProperty("starterContentOverride");
   });
 });
