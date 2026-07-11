@@ -69,7 +69,7 @@ const platformProviders: Array<SocialPreviewImageProvider<PlatformSocialPreviewC
   {
     resolve(context) {
       const version = encodeURIComponent(context.settings.imageVersion ?? "default-v3");
-      return image(`${PLATFORM_SOCIAL_IMAGE}?mode=default&v=${version}`, "platform-default", context.defaults.title);
+      return image(`${PLATFORM_SOCIAL_IMAGE}?mode=default&v=${version}`, "platform-default", context.settings.title ?? context.defaults.title);
     },
   },
 ];
@@ -82,8 +82,8 @@ const photographerProviders: Array<SocialPreviewImageProvider<PhotographerSocial
 
 export function resolvePlatformSocialPreview(context: PlatformSocialPreviewContext): ResolvedSocialPreview {
   return {
-    title: context.settings.enabled && context.settings.title ? context.settings.title : context.defaults.title,
-    description: context.settings.enabled && context.settings.description ? context.settings.description : context.defaults.description,
+    title: context.settings.title ?? context.defaults.title,
+    description: context.settings.description ?? context.defaults.description,
     image: firstResolved(platformProviders, context),
   };
 }
