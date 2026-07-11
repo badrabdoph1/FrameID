@@ -5,7 +5,7 @@ type PrismaBackupJobClient = {
   backupJob: {
     create(input: unknown): Promise<{ id: string }>;
     update(input: unknown): Promise<unknown>;
-    findUnique(input: unknown): Promise<{ metadata: unknown } | null>;
+    findUnique?(input: unknown): Promise<{ metadata: unknown } | null>;
   };
   user: { count(input: unknown): Promise<number> };
   tenant: { count(input: unknown): Promise<number> };
@@ -50,7 +50,9 @@ export function createPrismaBackupJobRepository(prisma: PrismaBackupJobClient): 
       // The manifest is persisted inside the verified backup artifact.
     },
     async markCompleted(input) {
-      const current = await prisma.backupJob.findUnique({ where: { id: input.backupJobId }, select: { metadata: true } });
+      const current = prisma.backupJob.findUnique
+        ? await prisma.backupJob.findUnique({ where: { id: input.backupJobId }, select: { metadata: true } })
+        : null;
       await prisma.backupJob.update({
         where: { id: input.backupJobId },
         data: {
