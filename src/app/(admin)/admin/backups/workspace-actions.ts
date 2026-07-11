@@ -3,6 +3,7 @@
 import { existsSync } from "node:fs";
 import { rm } from "node:fs/promises";
 import { basename, dirname, resolve } from "node:path";
+import type { Prisma } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -47,7 +48,15 @@ async function getArtifact(backupJobId: string) {
 }
 
 async function audit(input: { actorId: string; action: string; entityId: string; metadata?: Record<string, unknown> }) {
-  await prisma.auditLog.create({ data: { actorId: input.actorId, action: input.action, entityType: "BackupJob", entityId: input.entityId, metadata: input.metadata } });
+  await prisma.auditLog.create({
+    data: {
+      actorId: input.actorId,
+      action: input.action,
+      entityType: "BackupJob",
+      entityId: input.entityId,
+      metadata: input.metadata as Prisma.InputJsonObject | undefined,
+    },
+  });
 }
 
 export async function restoreWorkspaceBackupAction(formData: FormData) {
