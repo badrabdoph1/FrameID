@@ -11,11 +11,11 @@ import { createBackupPackage } from "@/modules/backups/backup-package-creator";
 import { createLocalBackupArtifactWriter } from "@/modules/backups/local-backup-artifact-writer";
 import { createRetentionService } from "@/modules/backups/backup-retention";
 import { createVerificationService } from "@/modules/backups/backup-verification-service";
-import { createAutoRestoreService } from "@/modules/backups/backup-auto-restore-service";
-import { createSnapshotService, type SnapshotResult } from "@/modules/backups/backup-snapshot-service";
 import { createBackupScheduler, type BackupScheduler } from "@/modules/backups/backup-scheduler";
+import { createGitHubStorage } from "@/modules/backups/backup-storage-github";
 import { getBackupPolicy } from "@/modules/backups/backup-policy";
 import type { VerificationResult } from "@/modules/backups/backup-verification-service";
+import type { SnapshotResult } from "@/modules/backups/backup-snapshot-service";
 import type { AutoRestoreOptions } from "@/modules/backups/backup-auto-restore-service";
 
 export type BackupStats = {
@@ -42,10 +42,7 @@ export type BackupJobRepository = {
     githubPath?: string;
     completedAt: Date;
   }): Promise<void>;
-  markFailed(input: {
-    backupJobId: string;
-    reason: string;
-  }): Promise<void>;
+  markFailed(input: { backupJobId: string; reason: string }): Promise<void>;
   recordAudit(input: {
     actorUserId?: string;
     action: string;
@@ -101,11 +98,19 @@ type ExecuteBackupResult = {
   manifest: BackupManifest;
 };
 
+export function getGitHubBackupBranch(type: BackupType): string {
+  return type === "FULL"
+    ? process.env.BACKUP_GITHUB_FULL_BRANCH || "frameid-backups-full"
+    : process.env.BACKUP_GITHUB_DATABASE_BRANCH || "frameid-backups-database";
+}
+
 export function createBackupJobService({
   repository,
   databaseUrl,
   uploadsDir,
   backupRoot,
+  backupGitHubToken,
+  backupGitHubRepository,
   backupEncryptionKey,
   platformVersion,
   gitCommitSha,
@@ -117,29 +122,33 @@ export function createBackupJobService({
   contentDir?: string;
   backupRoot?: string;
   backupGitHubToken?: string;
+  backupGitHubRepository?: string;
   backupEncryptionKey?: string;
   platformVersion: string;
   gitCommitSha?: string;
   now?: () => Date;
 }): BackupJobService {
-  const root = backupRoot ?? join(process.cwd(), "backups");
+  const root = backupRoot ?? process.env.BACKUP_DIR ?? join(process.cwd(), "backups");
   const uploadRoot = uploadsDir ?? join(process.cwd(), "public", "uploads");
+  const githubStorage = createGitHubStorage(
+    backupGitHubToken ?? process.env.BACKUP_GITHUB_TOKEN ?? "",
+    backupGitHubRepository
+  );
 
   const dbDumper = createDatabaseDumper(databaseUrl);
   const uploadPkg = createUploadsPackager(uploadRoot);
   const writer = createLocalBackupArtifactWriter({ backupRoot: root });
   const retention = createRetentionService();
   const verification = createVerificationService();
-  const autoRestoreService = createAutoRestoreService();
-  const snapshotService = createSnapshotService();
   const scheduler = createBackupScheduler(
     { backupSettings: { findMany: () => Promise.resolve([]) } },
-    () => ({ runManualBackup: (input) => (service as BackupJobService).runManualBackup(input) })
+    () => ({
+      runManualBackup: (input) => (service as BackupJobService).runManualBackup(input),
+    })
   );
 
   async function executeBackup(input: ExecuteBackupInput): Promise<ExecuteBackupResult> {
     const createdAt = now();
-
     const job = await repository.createJob({
       type: input.type,
       trigger: input.trigger,
@@ -152,60 +161,52 @@ export function createBackupJobService({
       action: "BACKUP_STARTED",
       entityType: "BackupJob",
       entityId: job.id,
-      metadata: { type: input.type },
+      metadata: { type: input.type, requiredExternalStorage: "github" },
     });
 
     try {
-      const stats = await repository.collectStats();
-      const includeUploads = input.type === "FULL";
-
-      let databaseDumpPath: string | null = null;
-      let databaseSizeBytes = 0;
-      let uploadsArchivePath: string | null = null;
-      let uploadsSizeBytes = 0;
-      const contentArchivePath: string | null = null;
-      const contentSizeBytes = 0;
-
-      const dbResult = await dbDumper.dumpDatabase(root, job.id);
-      databaseDumpPath = dbResult.dumpPath;
-      databaseSizeBytes = dbResult.sizeBytes;
-
-      if (includeUploads) {
-        const upResult = await uploadPkg.packageUploads(root, job.id);
-        uploadsArchivePath = upResult.archivePath;
-        uploadsSizeBytes = upResult.sizeBytes;
+      if (!githubStorage) {
+        throw new Error(
+          "BACKUP_GITHUB_TOKEN is required. A backup cannot be completed without GitHub storage."
+        );
       }
 
+      const stats = await repository.collectStats();
+      const includeUploads = input.type === "FULL";
+      const dbResult = await dbDumper.dumpDatabase(root, job.id);
+      const uploadResult = includeUploads
+        ? await uploadPkg.packageUploads(root, job.id)
+        : null;
       const migrationVersion = await dbDumper.getMigrationVersion();
 
-      const manifestInput = createBackupManifest({
-        backupJobId: job.id,
-        backupType: input.type,
-        appVersion: platformVersion,
-        gitCommitSha: gitCommitSha ?? "",
-        databaseVersion: migrationVersion,
-        usersCount: stats.usersCount,
-        tenantsCount: stats.tenantsCount,
-        sitesCount: stats.sitesCount,
-        mediaFilesCount: stats.mediaFilesCount,
-        databaseSizeBytes,
-        uploadsSizeBytes,
-        contentSizeBytes,
-        compressionAlgorithm: "gzip",
-        encryptionEnabled: !!backupEncryptionKey,
-        createdAt: createdAt.toISOString(),
-      });
-
-      const manifest = addChecksumToManifest(manifestInput);
+      const manifest = addChecksumToManifest(
+        createBackupManifest({
+          backupJobId: job.id,
+          backupType: input.type,
+          appVersion: platformVersion,
+          gitCommitSha: gitCommitSha ?? "",
+          databaseVersion: migrationVersion,
+          usersCount: stats.usersCount,
+          tenantsCount: stats.tenantsCount,
+          sitesCount: stats.sitesCount,
+          mediaFilesCount: stats.mediaFilesCount,
+          databaseSizeBytes: dbResult.sizeBytes,
+          uploadsSizeBytes: uploadResult?.sizeBytes ?? 0,
+          contentSizeBytes: 0,
+          compressionAlgorithm: "gzip",
+          encryptionEnabled: !!backupEncryptionKey,
+          createdAt: createdAt.toISOString(),
+        })
+      );
 
       const backupPackage = await createBackupPackage(
         {
-          databaseDumpPath,
-          uploadsArchivePath,
-          contentArchivePath,
-          databaseSizeBytes,
-          uploadsSizeBytes,
-          contentSizeBytes,
+          databaseDumpPath: dbResult.dumpPath,
+          uploadsArchivePath: uploadResult?.archivePath ?? null,
+          contentArchivePath: null,
+          databaseSizeBytes: dbResult.sizeBytes,
+          uploadsSizeBytes: uploadResult?.sizeBytes ?? 0,
+          contentSizeBytes: 0,
           manifest,
         },
         root,
@@ -217,22 +218,71 @@ export function createBackupJobService({
         type: input.type,
         databaseDumpPath: backupPackage.databaseDumpPath ?? "",
         uploadsArchivePath: backupPackage.uploadsArchivePath,
-        contentArchivePath: backupPackage.contentArchivePath,
+        contentArchivePath: null,
         databaseSizeBytes: backupPackage.databaseSizeBytes,
         uploadsSizeBytes: backupPackage.uploadsSizeBytes,
-        contentSizeBytes: backupPackage.contentSizeBytes,
+        contentSizeBytes: 0,
         manifest,
         checksumSha256: backupPackage.checksumSha256,
       });
 
-      await repository.saveManifest(manifest);
+      const localVerification = await verification.verifyBackup(
+        backupPackage.backupId,
+        root
+      );
+      if (!localVerification.valid) {
+        throw new Error(
+          `Local verification failed: ${localVerification.errors.join("; ")}`
+        );
+      }
 
+      await repository.recordAudit({
+        actorUserId: input.initiatedById,
+        action: "BACKUP_LOCAL_VERIFIED",
+        entityType: "BackupJob",
+        entityId: job.id,
+        metadata: {
+          backupId: backupPackage.backupId,
+          durationMs: localVerification.durationMs,
+        },
+      });
+
+      const branch = getGitHubBackupBranch(input.type);
+      const uploaded = await githubStorage.uploadBackup(
+        backupPackage.backupDir,
+        backupPackage.backupId,
+        branch
+      );
+      const remoteVerification = await githubStorage.verifyBackup(
+        backupPackage.backupId,
+        branch
+      );
+      if (!remoteVerification.valid) {
+        throw new Error(
+          `GitHub verification failed: ${remoteVerification.errors.join("; ")}`
+        );
+      }
+
+      await repository.recordAudit({
+        actorUserId: input.initiatedById,
+        action: "BACKUP_GITHUB_VERIFIED",
+        entityType: "BackupJob",
+        entityId: job.id,
+        metadata: {
+          branch,
+          commitSha: uploaded.commitSha,
+          sizeBytes: remoteVerification.sizeBytes,
+        },
+      });
+
+      await repository.saveManifest(manifest);
       await repository.markCompleted({
         backupJobId: job.id,
         checksumSha256: backupPackage.checksumSha256,
         sizeBytes: backupPackage.totalSizeBytes,
         localPath: backupPackage.backupDir,
-        completedAt: createdAt,
+        githubPath: uploaded.url,
+        completedAt: now(),
       });
 
       await repository.recordAudit({
@@ -243,25 +293,24 @@ export function createBackupJobService({
         metadata: {
           checksum: backupPackage.checksumSha256,
           backupId: backupPackage.backupId,
-          backupDir: backupPackage.backupDir,
+          localPath: backupPackage.backupDir,
+          githubPath: uploaded.url,
+          githubCommitSha: uploaded.commitSha,
         },
       });
 
-      const settings = await getBackupSettings(input.type);
-      const retentionCount = settings?.retentionCount ?? getBackupPolicy(input.type).retentionCount;
-      if (retentionCount > 0) {
-        await retention.cleanupByType(root, input.type, retentionCount);
-      }
+      const retentionCount = getBackupPolicy(input.type).retentionCount;
+      await githubStorage.cleanupOldBackups(branch, retentionCount);
+      await retention.cleanupByType(root, input.type, retentionCount);
 
       return {
         backupJobId: job.id,
-        status: "COMPLETED" as const,
+        status: "COMPLETED",
         backupId: backupPackage.backupId,
         manifest,
       };
     } catch (error) {
       const reason = error instanceof Error ? error.message : "Unknown backup failure";
-
       await repository.markFailed({ backupJobId: job.id, reason });
       await repository.recordAudit({
         actorUserId: input.initiatedById,
@@ -270,20 +319,13 @@ export function createBackupJobService({
         entityId: job.id,
         metadata: { reason },
       });
-
       throw error;
     }
   }
 
   const service: BackupJobService = {
     async runManualBackup(input) {
-      const result = await executeBackup({
-        type: input.type,
-        trigger: "MANUAL",
-        initiatedById: input.initiatedById,
-        note: input.note,
-      });
-
+      const result = await executeBackup({ ...input, trigger: "MANUAL" });
       return {
         backupJobId: result.backupJobId,
         status: result.status,
@@ -296,10 +338,8 @@ export function createBackupJobService({
         const result = await executeBackup({
           type,
           trigger: "AUTO",
-          initiatedById: "scheduler",
           note: "scheduled backup",
         });
-
         return {
           backupJobId: result.backupJobId,
           status: result.status,
@@ -311,19 +351,32 @@ export function createBackupJobService({
     },
 
     async createSnapshot(input) {
-      return snapshotService.createSnapshot({
-        reason: input.reason,
-        databaseUrl: input.databaseUrl,
-        uploadsDir: uploadRoot,
-        contentDir: join(process.cwd(), "content"),
-        backupRoot: root,
-        platformVersion,
-        gitCommitSha,
-        initiatedById: input.initiatedById,
-      });
+      const startedAt = Date.now();
+      try {
+        const result = await executeBackup({
+          type: "FULL",
+          trigger: "MANUAL",
+          initiatedById: input.initiatedById,
+          note: input.reason || "migration full backup",
+        });
+        return {
+          backupId: result.backupId,
+          backupDir: join(root, result.backupId),
+          success: true,
+          durationMs: Date.now() - startedAt,
+        };
+      } catch (error) {
+        return {
+          backupId: "",
+          backupDir: "",
+          success: false,
+          error: error instanceof Error ? error.message : "Full backup failed",
+          durationMs: Date.now() - startedAt,
+        };
+      }
     },
 
-    async verifyBackup(backupId: string) {
+    async verifyBackup(backupId) {
       return verification.verifyBackup(backupId, root);
     },
 
@@ -331,13 +384,14 @@ export function createBackupJobService({
       return verification.verifyAllBackups(root);
     },
 
-    async checkAndAutoRestore(options) {
-      return autoRestoreService.checkAndRestore({
-        ...options,
-        backupRoot: root,
-        uploadsDir: uploadRoot,
-        contentDir: join(process.cwd(), "content"),
-      });
+    async checkAndAutoRestore(_options) {
+      return {
+        needed: false,
+        restored: false,
+        result: null,
+        reason:
+          "Legacy local auto-restore is disabled. Use the verified GitHub restore workflow.",
+      };
     },
 
     getScheduler() {
@@ -346,17 +400,4 @@ export function createBackupJobService({
   };
 
   return service;
-}
-
-async function getBackupSettings(backupType: BackupType): Promise<{ retentionCount: number } | null> {
-  try {
-    const { prisma } = await import("@/lib/prisma");
-    const settings = await prisma.backupSettings.findUnique({
-      where: { type: backupType },
-      select: { retentionCount: true },
-    });
-    return settings;
-  } catch {
-    return null;
-  }
 }

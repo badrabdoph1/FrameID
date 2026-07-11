@@ -1,229 +1,238 @@
-import { execSync } from "node:child_process";
 import { existsSync } from "node:fs";
-import { mkdtemp, rm, mkdir } from "node:fs/promises";
-import { join } from "node:path";
+import { cp, mkdir, mkdtemp, readFile, readdir, rm, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
+import { basename, join } from "node:path";
 import { spawn } from "node:child_process";
 
-function getRepoSlug(repoPath?: string): string {
-  if (repoPath) return repoPath;
-  try {
-    const result = execSync("git remote get-url origin", {
-      encoding: "utf-8",
-    });
-    const url = result.toString().trim();
-    const match = url.match(/[:/]([^/]+\/[^/.]+)(\.git)?$/);
-    if (match) return match[1];
-    return "";
-  } catch {
-    return "";
-  }
+import { createSha256Checksum } from "@/modules/backups/backup-manifest";
+
+export type GitHubBackupVerification = {
+  valid: boolean;
+  backupId: string;
+  branch: string;
+  commitSha: string | null;
+  sizeBytes: number;
+  errors: string[];
+};
+
+export type GitHubStorage = {
+  uploadBackup(backupDir: string, backupId: string, branch: string): Promise<{ url: string; commitSha: string }>;
+  downloadBackup(backupId: string, destDir: string, branch: string): Promise<string>;
+  verifyBackup(backupId: string, branch: string): Promise<GitHubBackupVerification>;
+  listBackups(branch: string): Promise<string[]>;
+  cleanupOldBackups(branch: string, retentionCount: number): Promise<string[]>;
+  deleteBackup(backupId: string, branch: string): Promise<void>;
+};
+
+function resolveRepoSlug(repoPath?: string): string {
+  const explicit = repoPath?.trim();
+  if (explicit) return explicit.replace(/^https?:\/\/github\.com\//, "").replace(/\.git$/, "");
+
+  const owner = process.env.RAILWAY_GIT_REPO_OWNER?.trim();
+  const name = process.env.RAILWAY_GIT_REPO_NAME?.trim();
+  if (owner && name) return `${owner}/${name}`;
+
+  const configured = process.env.BACKUP_GITHUB_REPOSITORY?.trim();
+  if (configured) return configured.replace(/^https?:\/\/github\.com\//, "").replace(/\.git$/, "");
+
+  throw new Error("BACKUP_GITHUB_REPOSITORY is required when Railway repository metadata is unavailable.");
 }
 
-function runGit(cwd: string, args: string[]): Promise<void> {
+function authenticatedUrl(token: string, repoSlug: string): string {
+  return `https://x-access-token:${encodeURIComponent(token)}@github.com/${repoSlug}.git`;
+}
+
+async function runGit(cwd: string, args: string[]): Promise<string> {
   return new Promise((resolve, reject) => {
-    const child = spawn("git", args, { cwd, stdio: "pipe" });
+    const child = spawn("git", args, {
+      cwd,
+      stdio: ["ignore", "pipe", "pipe"],
+      env: { ...process.env, GIT_ASKPASS: "echo", GIT_TERMINAL_PROMPT: "0" },
+    });
+    let stdout = "";
     let stderr = "";
-    child.stderr?.on("data", (d: Buffer) => { stderr += d.toString(); });
+    child.stdout?.on("data", (chunk: Buffer) => { stdout += chunk.toString(); });
+    child.stderr?.on("data", (chunk: Buffer) => { stderr += chunk.toString(); });
     child.on("close", (code) => {
-      if (code === 0) resolve();
-      else reject(new Error(`git ${args[0]}: ${stderr}`));
+      if (code === 0) resolve(stdout.trim());
+      else reject(new Error(stderr.trim() || `git ${args[0]} exited with code ${code}`));
     });
     child.on("error", reject);
   });
 }
 
-function createAuthenticatedUrl(repoSlug: string): string {
-  return `https://github.com/${repoSlug}.git`;
+async function cloneBranch(token: string, repoSlug: string, branch: string, targetDir: string): Promise<boolean> {
+  try {
+    await runGit(process.cwd(), ["clone", "--depth", "1", "--branch", branch, authenticatedUrl(token, repoSlug), targetDir]);
+    return true;
+  } catch {
+    await mkdir(targetDir, { recursive: true });
+    await runGit(targetDir, ["init"]);
+    await runGit(targetDir, ["checkout", "--orphan", branch]);
+    await runGit(targetDir, ["remote", "add", "origin", authenticatedUrl(token, repoSlug)]);
+    return false;
+  }
 }
 
-function writeGitCredentials(): void {
-  return;
+async function directorySize(path: string): Promise<number> {
+  let total = 0;
+  for (const entry of await readdir(path, { withFileTypes: true })) {
+    const itemPath = join(path, entry.name);
+    if (entry.isDirectory()) total += await directorySize(itemPath);
+    else total += (await stat(itemPath)).size;
+  }
+  return total;
 }
 
-export type GitHubStorage = {
-  uploadBackup(backupDir: string, backupId: string, branch: string): Promise<string>;
-  downloadBackup(backupId: string, destDir: string, branch: string): Promise<string>;
-  listBackups(branch: string): Promise<string[]>;
-  cleanupOldBackups(branch: string, retentionCount: number): Promise<void>;
-};
+async function verifyDirectory(backupDir: string, backupId: string, branch: string, commitSha: string | null): Promise<GitHubBackupVerification> {
+  const errors: string[] = [];
+  const manifestPath = join(backupDir, "manifest.json");
+  const checksumPath = join(backupDir, "checksum.sha256");
+  const databasePath = join(backupDir, "database.sql.gz");
 
-export function createGitHubStorage(token: string, repoPath?: string): GitHubStorage | null {
-  if (!token) return null;
+  if (!existsSync(manifestPath)) errors.push("manifest.json is missing");
+  if (!existsSync(checksumPath)) errors.push("checksum.sha256 is missing");
+  if (!existsSync(databasePath)) errors.push("database.sql.gz is missing");
+
+  if (errors.length === 0) {
+    const manifestContent = await readFile(manifestPath, "utf-8");
+    const expectedChecksum = (await readFile(checksumPath, "utf-8")).trim();
+    const actualChecksum = createSha256Checksum(manifestContent);
+    if (actualChecksum !== expectedChecksum) errors.push("Manifest checksum mismatch");
+
+    try {
+      const manifest = JSON.parse(manifestContent) as { backupType?: string };
+      if (manifest.backupType === "FULL" && !existsSync(join(backupDir, "uploads.tar.gz"))) {
+        errors.push("uploads.tar.gz is missing for FULL backup");
+      }
+    } catch {
+      errors.push("manifest.json is invalid JSON");
+    }
+
+    if ((await stat(databasePath)).size <= 0) errors.push("database.sql.gz is empty");
+  }
 
   return {
-    async uploadBackup(
-      backupDir: string,
-      backupId: string,
-      branch: string
-    ): Promise<string> {
-      const tmpDir = await mkdtemp(join(tmpdir(), "frameid-gh-backup-"));
-      const repoSlug = getRepoSlug(repoPath);
+    valid: errors.length === 0,
+    backupId,
+    branch,
+    commitSha,
+    sizeBytes: existsSync(backupDir) ? await directorySize(backupDir) : 0,
+    errors,
+  };
+}
 
-      try {
-        writeGitCredentials();
+export function createGitHubStorage(token: string, repoPath?: string): GitHubStorage | null {
+  if (!token.trim()) return null;
+  const repoSlug = resolveRepoSlug(repoPath);
 
-        await runGit(tmpDir, ["init"]);
-        await runGit(tmpDir, [
-          "remote", "add", "origin",
-          createAuthenticatedUrl(repoSlug),
-        ]);
+  async function withBranch<T>(branch: string, operation: (repoDir: string, existed: boolean) => Promise<T>): Promise<T> {
+    const tempRoot = await mkdtemp(join(tmpdir(), "frameid-github-backup-"));
+    const repoDir = join(tempRoot, "repo");
+    try {
+      const existed = await cloneBranch(token, repoSlug, branch, repoDir);
+      await runGit(repoDir, ["config", "user.email", "backup@frameid.app"]);
+      await runGit(repoDir, ["config", "user.name", "FrameID Backup"]);
+      return await operation(repoDir, existed);
+    } finally {
+      await rm(tempRoot, { recursive: true, force: true });
+    }
+  }
 
-        const backupPath = join(tmpDir, "backups", backupId);
-        await mkdir(backupPath, { recursive: true });
+  async function push(repoDir: string, branch: string, message: string): Promise<string> {
+    await runGit(repoDir, ["add", "-A"]);
+    const status = await runGit(repoDir, ["status", "--porcelain"]);
+    if (status) await runGit(repoDir, ["commit", "-m", message]);
+    else await runGit(repoDir, ["commit", "--allow-empty", "-m", message]);
+    await runGit(repoDir, ["push", "origin", `${branch}:${branch}`, "--force-with-lease"])
+      .catch(() => runGit(repoDir, ["push", "origin", `${branch}:${branch}`, "--force"]));
+    return runGit(repoDir, ["rev-parse", "HEAD"]);
+  }
 
-        await runGit(tmpDir, ["fetch", "origin", branch, "--depth=1"]).catch(() => {});
-        await runGit(tmpDir, ["checkout", branch]).catch(() =>
-          runGit(tmpDir, ["checkout", "--orphan", branch])
-        );
+  return {
+    async uploadBackup(backupDir, backupId, branch) {
+      if (!existsSync(backupDir)) throw new Error(`Local backup directory not found: ${backupDir}`);
+      const localVerification = await verifyDirectory(backupDir, backupId, branch, null);
+      if (!localVerification.valid) throw new Error(`Local backup verification failed: ${localVerification.errors.join("; ")}`);
 
-        await runGit(tmpDir, ["config", "user.email", "backup@frameid.app"]);
-        await runGit(tmpDir, ["config", "user.name", "FrameID Backup"]);
+      const commitSha = await withBranch(branch, async (repoDir) => {
+        const target = join(repoDir, "backups", backupId);
+        await rm(target, { recursive: true, force: true });
+        await mkdir(target, { recursive: true });
+        await cp(backupDir, target, { recursive: true, force: true });
+        return push(repoDir, branch, `backup(${branch}): ${backupId}`);
+      });
 
-        await runGit(tmpDir, ["add", "-A"]);
-        await runGit(tmpDir, ["commit", "-m", `backup: ${backupId}`, "--allow-empty"]);
-
-        const pushUrl = `https://x-access-token:${token}@github.com/${repoSlug}.git`;
-
-        await new Promise<void>((resolve, reject) => {
-          const child = spawn("git", ["push", pushUrl, `${branch}:${branch}`, "--force"], {
-            cwd: tmpDir,
-            stdio: "pipe",
-            env: { ...process.env, GIT_ASKPASS: "echo", GIT_TERMINAL_PROMPT: "0" },
-          });
-          let stderr = "";
-          child.stderr?.on("data", (d: Buffer) => { stderr += d.toString(); });
-          child.on("close", (code) => {
-            if (code === 0) resolve();
-            else reject(new Error(`git push: ${stderr}`));
-          });
-          child.on("error", reject);
-        });
-
-        return `https://github.com/${repoSlug}/tree/${branch}/backups/${backupId}`;
-      } finally {
-        await rm(tmpDir, { recursive: true, force: true });
+      const remoteVerification = await this.verifyBackup(backupId, branch);
+      if (!remoteVerification.valid) {
+        throw new Error(`GitHub backup verification failed: ${remoteVerification.errors.join("; ")}`);
       }
+      return {
+        url: `https://github.com/${repoSlug}/tree/${branch}/backups/${backupId}`,
+        commitSha,
+      };
     },
 
-    async downloadBackup(
-      backupId: string,
-      destDir: string,
-      branch: string
-    ): Promise<string> {
-      const repoSlug = getRepoSlug(repoPath);
-      const tmpDir = await mkdtemp(join(tmpdir(), "frameid-gh-restore-"));
-
-      try {
-        writeGitCredentials();
-
-        const cloneUrl = `https://x-access-token:${token}@github.com/${repoSlug}.git`;
-
-        await new Promise<void>((resolve, reject) => {
-          const child = spawn("git", [
-            "clone", "--depth", "1", "--branch", branch,
-            cloneUrl, tmpDir,
-          ], {
-            stdio: "pipe",
-            env: { ...process.env, GIT_ASKPASS: "echo", GIT_TERMINAL_PROMPT: "0" },
-          });
-          let stderr = "";
-          child.stderr?.on("data", (d: Buffer) => { stderr += d.toString(); });
-          child.on("close", (code) => {
-            if (code === 0) resolve();
-            else reject(new Error(`git clone: ${stderr}`));
-          });
-          child.on("error", reject);
-        });
-
-        const backupPath = join(tmpDir, "backups", backupId);
-        if (!existsSync(backupPath)) {
-          throw new Error(`Backup ${backupId} not found in GitHub branch ${branch}`);
-        }
-
-        await runGit(tmpDir, ["clone", "-c", `credential.helper=store --file ${tmpDir}/.git-credentials`]);
-        execSync(`cp -r "${backupPath}/." "${destDir}/"`);
+    async downloadBackup(backupId, destDir, branch) {
+      return withBranch(branch, async (repoDir) => {
+        const source = join(repoDir, "backups", backupId);
+        if (!existsSync(source)) throw new Error(`Backup ${backupId} not found in GitHub branch ${branch}`);
+        await rm(destDir, { recursive: true, force: true });
+        await mkdir(destDir, { recursive: true });
+        await cp(source, destDir, { recursive: true, force: true });
+        const verification = await verifyDirectory(destDir, backupId, branch, await runGit(repoDir, ["rev-parse", "HEAD"]));
+        if (!verification.valid) throw new Error(`Downloaded backup verification failed: ${verification.errors.join("; ")}`);
         return destDir;
-      } finally {
-        await rm(tmpDir, { recursive: true, force: true });
-      }
+      });
     },
 
-    async listBackups(branch: string): Promise<string[]> {
-      const repoSlug = getRepoSlug(repoPath);
-      const tmpDir = await mkdtemp(join(tmpdir(), "frameid-gh-list-"));
+    async verifyBackup(backupId, branch) {
+      return withBranch(branch, async (repoDir) => {
+        const backupDir = join(repoDir, "backups", backupId);
+        if (!existsSync(backupDir)) {
+          return { valid: false, backupId, branch, commitSha: await runGit(repoDir, ["rev-parse", "HEAD"]).catch(() => null), sizeBytes: 0, errors: ["Backup not found in GitHub"] };
+        }
+        return verifyDirectory(backupDir, backupId, branch, await runGit(repoDir, ["rev-parse", "HEAD"]));
+      });
+    },
 
-      try {
-        writeGitCredentials();
-        const cloneUrl = `https://x-access-token:${token}@github.com/${repoSlug}.git`;
-
-        await new Promise<void>((resolve, reject) => {
-          const child = spawn("git", [
-            "clone", "--depth", "1", "--branch", branch, cloneUrl, tmpDir,
-          ], {
-            stdio: "pipe",
-            env: { ...process.env, GIT_ASKPASS: "echo", GIT_TERMINAL_PROMPT: "0" },
-          });
-          let stderr = "";
-          child.stderr?.on("data", (d: Buffer) => { stderr += d.toString(); });
-          child.on("close", (code) => {
-            if (code === 0) resolve();
-            else reject(new Error(`git clone: ${stderr}`));
-          });
-          child.on("error", reject);
-        });
-
-        const backupsDir = join(tmpDir, "backups");
+    async listBackups(branch) {
+      return withBranch(branch, async (repoDir) => {
+        const backupsDir = join(repoDir, "backups");
         if (!existsSync(backupsDir)) return [];
-
-        const result = execSync(`ls -1 "${backupsDir}"`, {
-          cwd: tmpDir,
-          encoding: "utf-8",
-        });
-        return result
-          .trim()
-          .split("\n")
-          .filter(Boolean)
+        return (await readdir(backupsDir, { withFileTypes: true }))
+          .filter((entry) => entry.isDirectory())
+          .map((entry) => basename(entry.name))
           .sort()
           .reverse();
-      } finally {
-        await rm(tmpDir, { recursive: true, force: true });
-      }
+      });
     },
 
-    async cleanupOldBackups(
-      branch: string,
-      retentionCount: number
-    ): Promise<void> {
-      const backups = await this.listBackups(branch);
-      if (backups.length <= retentionCount) return;
+    async cleanupOldBackups(branch, retentionCount) {
+      if (retentionCount < 1) return [];
+      return withBranch(branch, async (repoDir) => {
+        const backupsDir = join(repoDir, "backups");
+        if (!existsSync(backupsDir)) return [];
+        const backups = (await readdir(backupsDir, { withFileTypes: true }))
+          .filter((entry) => entry.isDirectory())
+          .map((entry) => entry.name)
+          .sort()
+          .reverse();
+        const removed = backups.slice(retentionCount);
+        if (removed.length === 0) return [];
+        for (const backupId of removed) await rm(join(backupsDir, backupId), { recursive: true, force: true });
+        await push(repoDir, branch, `retention(${branch}): remove ${removed.length} old backup(s)`);
+        return removed;
+      });
+    },
 
-      const toDelete = backups.slice(retentionCount);
-      const repoSlug = getRepoSlug(repoPath);
-      const tmpDir = await mkdtemp(join(tmpdir(), "frameid-gh-clean-"));
-
-      try {
-        writeGitCredentials();
-        const cloneUrl = `https://x-access-token:${token}@github.com/${repoSlug}.git`;
-
-        await runGit(tmpDir, [
-          "clone", "--depth", "1", "--branch", branch, cloneUrl, tmpDir,
-        ]);
-
-        for (const backupId of toDelete) {
-          execSync(`rm -rf "${join(tmpDir, "backups", backupId)}"`);
-        }
-
-        await runGit(tmpDir, ["config", "user.email", "backup@frameid.app"]);
-        await runGit(tmpDir, ["config", "user.name", "FrameID Backup"]);
-        await runGit(tmpDir, ["add", "-A"]);
-        await runGit(tmpDir, ["commit", "-m", "cleanup: remove old backups", "--allow-empty"]);
-
-        const pushUrl = `https://x-access-token:${token}@github.com/${repoSlug}.git`;
-        await runGit(tmpDir, ["push", pushUrl, `${branch}:${branch}`, "--force"]);
-      } finally {
-        await rm(tmpDir, { recursive: true, force: true });
-      }
+    async deleteBackup(backupId, branch) {
+      await withBranch(branch, async (repoDir) => {
+        const target = join(repoDir, "backups", backupId);
+        if (!existsSync(target)) return;
+        await rm(target, { recursive: true, force: true });
+        await push(repoDir, branch, `delete(${branch}): ${backupId}`);
+      });
     },
   };
 }

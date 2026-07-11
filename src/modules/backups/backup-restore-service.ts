@@ -12,6 +12,7 @@ import {
   type BackupManifest,
   type BackupType,
 } from "@/modules/backups/backup-manifest";
+import { createGitHubStorage } from "@/modules/backups/backup-storage-github";
 
 export type RestoreOptions = {
   backupId: string;
@@ -21,14 +22,18 @@ export type RestoreOptions = {
   contentDir?: string;
   type: BackupType;
   skipChecksumVerification?: boolean;
+  githubToken?: string;
+  githubRepository?: string;
+  githubBranch?: string;
 };
 
 export type RestoreStepResult = { database: boolean; uploads: boolean; content: boolean };
-export type RestoreResult = { success: boolean; backupId: string; type: string; validation: RestoreValidationResult; steps: RestoreStepResult; durationMs: number; errors: string[] };
+export type RestoreResult = { success: boolean; backupId: string; type: string; validation: RestoreValidationResult; steps: RestoreStepResult; durationMs: number; errors: string[]; source: "LOCAL" | "GITHUB" };
 export type PostRestoreValidationResult = { passed: boolean; checks: Record<string, boolean>; counts: Record<string, number>; durationMs: number; errors: string[] };
 export type RestorePreview = { backupId: string; type: string; usersCount: number; tenantsCount: number; sitesCount: number; mediaFilesCount: number; databaseSizeBytes: number; uploadsSizeBytes: number; contentSizeBytes: number; totalSizeBytes: number; createdAt: string; appVersion: string; compressionAlgorithm: string; encryptionEnabled: boolean };
 
 export type RestoreService = {
+  ensureBackupAvailable(input: { backupId: string; backupRoot: string; type: BackupType; githubToken?: string; githubRepository?: string; githubBranch?: string }): Promise<{ backupDir: string; source: "LOCAL" | "GITHUB" }>;
   validateBackup(input: { backupId: string; backupRoot: string }): Promise<{ valid: boolean; manifest: BackupManifest | null; validation: RestoreValidationResult }>;
   getRestorePreview(input: { backupId: string; backupRoot: string }): Promise<RestorePreview | null>;
   executeRestore(options: RestoreOptions): Promise<RestoreResult>;
@@ -36,6 +41,7 @@ export type RestoreService = {
 };
 
 async function fileExists(path: string): Promise<boolean> { try { await stat(path); return true; } catch { return false; } }
+function backupBranch(type: BackupType): string { return type === "FULL" ? process.env.BACKUP_GITHUB_FULL_BRANCH || "frameid-backups-full" : process.env.BACKUP_GITHUB_DATABASE_BRANCH || "frameid-backups-database"; }
 
 function parseDatabaseUrl(url: string): { host: string; port: string; user: string; password: string; database: string } {
   const u = new URL(url);
@@ -56,29 +62,18 @@ async function waitForProcess(child: ReturnType<typeof spawn>, label: string): P
 }
 
 async function verifyCustomPostgresDump(dumpPath: string): Promise<void> {
-  const gunzip = createGunzip();
   const pgRestore = spawn("pg_restore", ["--list", "-"], { stdio: ["pipe", "ignore", "pipe"] });
   const processPromise = waitForProcess(pgRestore, "pg_restore verification");
-  await pipeline(createReadStream(dumpPath), gunzip, pgRestore.stdin);
+  await pipeline(createReadStream(dumpPath), createGunzip(), pgRestore.stdin);
   await processPromise;
 }
 
 async function restoreCustomPostgresDump(databaseUrl: string, dumpPath: string): Promise<void> {
   const parsed = parseDatabaseUrl(databaseUrl);
-  const env = { ...process.env, PGPASSWORD: parsed.password };
   const pgRestore = spawn("pg_restore", [
-    `--host=${parsed.host}`,
-    `--port=${parsed.port}`,
-    `--username=${parsed.user}`,
-    "--no-password",
-    `--dbname=${parsed.database}`,
-    "--clean",
-    "--if-exists",
-    "--no-owner",
-    "--no-acl",
-    "--exit-on-error",
-    "-",
-  ], { env, stdio: ["pipe", "inherit", "pipe"] });
+    `--host=${parsed.host}`, `--port=${parsed.port}`, `--username=${parsed.user}`, "--no-password",
+    `--dbname=${parsed.database}`, "--clean", "--if-exists", "--no-owner", "--no-acl", "--exit-on-error", "-",
+  ], { env: { ...process.env, PGPASSWORD: parsed.password }, stdio: ["pipe", "inherit", "pipe"] });
   const processPromise = waitForProcess(pgRestore, "pg_restore");
   await pipeline(createReadStream(dumpPath), createGunzip(), pgRestore.stdin);
   await processPromise;
@@ -92,8 +87,7 @@ async function extractArchive(archivePath: string, targetDir: string): Promise<v
 
 async function runPsqlCommand(databaseUrl: string, sql: string): Promise<string> {
   const parsed = parseDatabaseUrl(databaseUrl);
-  const env = { ...process.env, PGPASSWORD: parsed.password };
-  const child = spawn("psql", [`--host=${parsed.host}`, `--port=${parsed.port}`, `--username=${parsed.user}`, "--no-password", `--dbname=${parsed.database}`, "--tuples-only", "--no-align", `--command=${sql}`], { env, stdio: ["ignore", "pipe", "pipe"] });
+  const child = spawn("psql", [`--host=${parsed.host}`, `--port=${parsed.port}`, `--username=${parsed.user}`, "--no-password", `--dbname=${parsed.database}`, "--tuples-only", "--no-align", `--command=${sql}`], { env: { ...process.env, PGPASSWORD: parsed.password }, stdio: ["ignore", "pipe", "pipe"] });
   let stdout = "";
   child.stdout.on("data", (chunk) => { stdout += String(chunk); });
   await waitForProcess(child, "psql");
@@ -102,6 +96,19 @@ async function runPsqlCommand(databaseUrl: string, sql: string): Promise<string>
 
 export function createRestoreService(): RestoreService {
   return {
+    async ensureBackupAvailable(input) {
+      const backupDir = join(input.backupRoot, input.backupId);
+      if (existsSync(backupDir)) return { backupDir, source: "LOCAL" };
+
+      const github = createGitHubStorage(input.githubToken ?? process.env.BACKUP_GITHUB_TOKEN ?? "", input.githubRepository);
+      if (!github) throw new Error("النسخة غير موجودة محليًا وBACKUP_GITHUB_TOKEN غير مضبوط لتنزيلها من GitHub.");
+      const branch = input.githubBranch ?? backupBranch(input.type);
+      await github.downloadBackup(input.backupId, backupDir, branch);
+      const remote = await github.verifyBackup(input.backupId, branch);
+      if (!remote.valid) throw new Error(`فشل التحقق من نسخة GitHub: ${remote.errors.join("; ")}`);
+      return { backupDir, source: "GITHUB" };
+    },
+
     async validateBackup(input) {
       const manifestPath = join(input.backupRoot, input.backupId, "manifest.json");
       const checksumPath = join(input.backupRoot, input.backupId, "checksum.sha256");
@@ -133,11 +140,7 @@ export function createRestoreService(): RestoreService {
       const dumpPath = join(backupDir, "database.sql.gz");
       if (await fileExists(dumpPath)) {
         try { await verifyCustomPostgresDump(dumpPath); }
-        catch (error) {
-          validation.valid = false;
-          validation.checks.filesIntegrity = false;
-          validation.errors.push(error instanceof Error ? error.message : "Invalid PostgreSQL dump");
-        }
+        catch (error) { validation.valid = false; validation.checks.filesIntegrity = false; validation.errors.push(error instanceof Error ? error.message : "Invalid PostgreSQL dump"); }
       }
 
       validation.valid = validation.errors.length === 0;
@@ -157,36 +160,33 @@ export function createRestoreService(): RestoreService {
       const startTime = Date.now();
       const errors: string[] = [];
       const steps: RestoreStepResult = { database: false, uploads: false, content: true };
-      const backupRoot = options.backupRoot ?? join(process.cwd(), "backups");
-      const backupDir = join(backupRoot, options.backupId);
-      if (!existsSync(backupDir)) return { success: false, backupId: options.backupId, type: options.type, validation: emptyValidation(["Backup directory not found"]), steps, durationMs: Date.now() - startTime, errors: [`Backup directory not found: ${backupDir}`] };
-
-      const validationResult = await this.validateBackup({ backupId: options.backupId, backupRoot });
-      if (!validationResult.valid && !options.skipChecksumVerification) return { success: false, backupId: options.backupId, type: options.type, validation: validationResult.validation, steps, durationMs: Date.now() - startTime, errors: validationResult.validation.errors };
+      const backupRoot = options.backupRoot ?? process.env.BACKUP_DIR ?? join(process.cwd(), "backups");
+      let source: "LOCAL" | "GITHUB" = "LOCAL";
 
       try {
-        await restoreCustomPostgresDump(options.databaseUrl, join(backupDir, "database.sql.gz"));
-        steps.database = true;
-      } catch (error) { errors.push(error instanceof Error ? error.message : "Database restore failed"); }
+        const available = await this.ensureBackupAvailable({ backupId: options.backupId, backupRoot, type: options.type, githubToken: options.githubToken, githubRepository: options.githubRepository, githubBranch: options.githubBranch });
+        source = available.source;
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Backup is unavailable";
+        return { success: false, backupId: options.backupId, type: options.type, validation: emptyValidation([message]), steps, durationMs: Date.now() - startTime, errors: [message], source };
+      }
+
+      const backupDir = join(backupRoot, options.backupId);
+      const validationResult = await this.validateBackup({ backupId: options.backupId, backupRoot });
+      if (!validationResult.valid && !options.skipChecksumVerification) return { success: false, backupId: options.backupId, type: options.type, validation: validationResult.validation, steps, durationMs: Date.now() - startTime, errors: validationResult.validation.errors, source };
+
+      try { await restoreCustomPostgresDump(options.databaseUrl, join(backupDir, "database.sql.gz")); steps.database = true; }
+      catch (error) { errors.push(error instanceof Error ? error.message : "Database restore failed"); }
 
       if (options.type === "FULL" && errors.length === 0) {
-        const archivePath = join(backupDir, "uploads.tar.gz");
-        const targetDir = options.uploadsDir ?? join(process.cwd(), "public", "uploads");
-        try { await extractArchive(archivePath, targetDir); steps.uploads = true; }
+        try { await extractArchive(join(backupDir, "uploads.tar.gz"), options.uploadsDir ?? join(process.cwd(), "public", "uploads")); steps.uploads = true; }
         catch (error) { errors.push(error instanceof Error ? error.message : "Uploads restore failed"); }
       } else if (options.type !== "FULL") steps.uploads = true;
 
-      const contentArchive = join(backupDir, "content.tar.gz");
-      if (await fileExists(contentArchive) && errors.length === 0) {
-        const targetDir = options.contentDir ?? join(process.cwd(), "content");
-        try { await extractArchive(contentArchive, targetDir); steps.content = true; }
-        catch (error) { errors.push(error instanceof Error ? error.message : "Content restore failed"); }
-      }
-
-      return { success: errors.length === 0, backupId: options.backupId, type: options.type, validation: validationResult.validation, steps, durationMs: Date.now() - startTime, errors };
+      return { success: errors.length === 0, backupId: options.backupId, type: options.type, validation: validationResult.validation, steps, durationMs: Date.now() - startTime, errors, source };
     },
 
-    async validatePostRestore(databaseUrl: string): Promise<PostRestoreValidationResult> {
+    async validatePostRestore(databaseUrl) {
       const startTime = Date.now();
       const errors: string[] = [];
       const counts: Record<string, number> = {};
