@@ -45,8 +45,15 @@ async function readRow() {
 
 export const getPlatformSocialPreviewSettings = unstable_cache(
   async () => {
-    const row = await readRow();
-    return row ? parseValue(row.value, row.enabled) : DEFAULT_SETTINGS;
+    try {
+      const row = await readRow();
+      return row ? parseValue(row.value, row.enabled) : { ...DEFAULT_SETTINGS };
+    } catch {
+      // Railway's build environment cannot always resolve private service DNS.
+      // Metadata generation must stay deterministic and build-safe, so we fall
+      // back to the existing platform defaults until runtime database access is available.
+      return { ...DEFAULT_SETTINGS };
+    }
   },
   [PLATFORM_SOCIAL_PREVIEW_KEY],
   { tags: [PLATFORM_SOCIAL_PREVIEW_CACHE_TAG] },
