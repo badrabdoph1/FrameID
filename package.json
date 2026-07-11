@@ -4,7 +4,8 @@
   "private": true,
   "type": "module",
   "engines": {
-    "node": ">=20.0.0"
+    "node": "22.x",
+    "npm": ">=10 <12"
   },
   "scripts": {
     "dev": "node scripts/ensure-prisma-schema-compat.mjs && next dev",
