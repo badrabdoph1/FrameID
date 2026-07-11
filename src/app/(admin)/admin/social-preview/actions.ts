@@ -81,11 +81,12 @@ export async function saveSocialPreviewAction(formData: FormData) {
 
   await prisma.auditLog.create({
     data: {
-      actorId: admin.id,
       action: "PLATFORM_SOCIAL_PREVIEW_UPDATED",
       entityType: "FeatureFlag",
       entityId: saved.id,
       metadata: {
+        adminId: admin.id,
+        adminEmail: admin.email,
         enabled: settings.enabled,
         hasCustomImage: Boolean(settings.imageUrl),
       } as Prisma.InputJsonObject,
