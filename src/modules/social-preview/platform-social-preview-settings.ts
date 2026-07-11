@@ -12,15 +12,14 @@ const DEFAULT_SETTINGS: PlatformSocialPreviewSettings = {
   description: null,
   imageUrl: null,
   storageKey: null,
+  imageData: null,
+  imageMimeType: null,
 };
 
 type StoredValue = Partial<Record<keyof PlatformSocialPreviewSettings, unknown>>;
 
 function parseValue(value: unknown, enabled: boolean): PlatformSocialPreviewSettings {
-  if (!value || typeof value !== "object" || Array.isArray(value)) {
-    return { ...DEFAULT_SETTINGS, enabled };
-  }
-
+  if (!value || typeof value !== "object" || Array.isArray(value)) return { ...DEFAULT_SETTINGS, enabled };
   const record = value as StoredValue;
   return {
     enabled,
@@ -28,30 +27,24 @@ function parseValue(value: unknown, enabled: boolean): PlatformSocialPreviewSett
     description: readText(record.description),
     imageUrl: readText(record.imageUrl),
     storageKey: readText(record.storageKey),
+    imageData: readText(record.imageData),
+    imageMimeType: readText(record.imageMimeType),
   };
 }
 
 async function readRow() {
   return prisma.featureFlag.findFirst({
-    where: {
-      key: PLATFORM_SOCIAL_PREVIEW_KEY,
-      scope: "PLATFORM",
-      tenantId: null,
-      siteId: null,
-    } as never,
+    where: { key: PLATFORM_SOCIAL_PREVIEW_KEY, scope: "PLATFORM", tenantId: null, siteId: null } as never,
     select: { id: true, enabled: true, value: true },
   });
 }
 
 export async function getPlatformSocialPreviewSettings(): Promise<PlatformSocialPreviewSettings> {
   noStore();
-
   try {
     const row = await readRow();
     return row ? parseValue(row.value, row.enabled) : { ...DEFAULT_SETTINGS };
   } catch {
-    // Build and offline-safe fallback. Runtime requests read the database again
-    // instead of keeping the build-time fallback in a persistent Next.js cache.
     return { ...DEFAULT_SETTINGS };
   }
 }
@@ -63,13 +56,12 @@ export async function savePlatformSocialPreviewSettings(settings: PlatformSocial
     description: settings.description,
     imageUrl: settings.imageUrl,
     storageKey: settings.storageKey,
+    imageData: settings.imageData,
+    imageMimeType: settings.imageMimeType,
   };
 
   if (existing) {
-    await prisma.featureFlag.update({
-      where: { id: existing.id },
-      data: { enabled: settings.enabled, value } as never,
-    });
+    await prisma.featureFlag.update({ where: { id: existing.id }, data: { enabled: settings.enabled, value } as never });
   } else {
     await prisma.featureFlag.create({
       data: {
