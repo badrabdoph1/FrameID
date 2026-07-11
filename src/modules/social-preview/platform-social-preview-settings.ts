@@ -48,10 +48,9 @@ export async function getPlatformSocialPreviewSettings(): Promise<PlatformSocial
 
   try {
     const row = await readRow();
-    return row ? parseValue(row.value, row.enabled) : { ...DEFAULT_SETTINGS };
-  } catch {
-    // Build and offline-safe fallback. Runtime requests read the database again
-    // instead of keeping the build-time fallback in a persistent Next.js cache.
+    return row ? parseValue(row.value, row.enabled, row.updatedAt) : { ...DEFAULT_SETTINGS };
+  } catch (error) {
+    console.error("[social-preview] settings read failed", error);
     return { ...DEFAULT_SETTINGS };
   }
 }

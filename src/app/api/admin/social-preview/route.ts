@@ -9,6 +9,7 @@ import {
   PLATFORM_SOCIAL_PREVIEW_CACHE_TAG,
   savePlatformSocialPreviewSettings,
 } from "@/modules/social-preview/platform-social-preview-settings";
+import { PLATFORM_SOCIAL_IMAGE } from "@/modules/social-preview/social-preview";
 
 export const runtime = "nodejs";
 
@@ -29,22 +30,23 @@ export async function PATCH(request: Request) {
     const mode = payload.mode === "custom" ? "custom" : "default";
     const deleteImage = payload.deleteImage === true;
 
-    const imageUrl = deleteImage ? null : cleanText(payload.imageUrl, 2048) ?? current.imageUrl;
-    const storageKey = deleteImage ? null : cleanText(payload.storageKey, 1024) ?? current.storageKey;
-    const title = cleanText(payload.title, 120);
-    const description = cleanText(payload.description, 240);
+    const next = {
+      ...current,
+      enabled: mode === "custom",
+      title: cleanText(payload.title, 120),
+      description: cleanText(payload.description, 240),
+      imageUrl: deleteImage ? null : current.imageData ? PLATFORM_SOCIAL_IMAGE : null,
+      storageKey: null,
+      imageData: deleteImage ? null : current.imageData,
+      imageMimeType: deleteImage ? null : current.imageMimeType,
+    };
 
     if (mode === "custom" && !imageUrl) {
       return NextResponse.json({ ok: false, error: "ارفع صورة مخصصة واعتمد القص قبل الحفظ." }, { status: 400 });
     }
 
-    await savePlatformSocialPreviewSettings({
-      enabled: mode === "custom",
-      title,
-      description,
-      imageUrl,
-      storageKey,
-    });
+    const saved = await savePlatformSocialPreviewSettings(next);
+    const version = saved.updatedAt.getTime();
 
     await prisma.auditLog.create({
       data: {
@@ -58,6 +60,7 @@ export async function PATCH(request: Request) {
           description,
           imageUrl,
           deletedImage: deleteImage,
+          version,
         } as Prisma.InputJsonObject,
       },
     });
@@ -70,11 +73,13 @@ export async function PATCH(request: Request) {
     return NextResponse.json({
       ok: true,
       settings: {
-        enabled: mode === "custom",
-        title,
-        description,
-        imageUrl,
-        storageKey,
+        enabled: next.enabled,
+        title: next.title,
+        description: next.description,
+        imageUrl: next.imageData ? `${PLATFORM_SOCIAL_IMAGE}?mode=custom&v=${version}` : null,
+        defaultImageUrl: `${PLATFORM_SOCIAL_IMAGE}?mode=default&v=${version}`,
+        hasImage: Boolean(next.imageData),
+        version: String(version),
       },
     });
   } catch (error) {
