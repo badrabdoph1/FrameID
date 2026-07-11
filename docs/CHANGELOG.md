@@ -15,6 +15,15 @@ This is an append-only architectural and product change log. Never delete older 
 
 ---
 
+## 2026-07-11 — Documentation/Architecture — Architecture decisions and project conventions
+
+- **Affected files:** `docs/ARCHITECTURE_DECISIONS.md`, `docs/PROJECT_CONVENTIONS.md`, `docs/README.md`, `docs/AI_DEVELOPMENT_RULES.md`, `docs/PROJECT_ARCHITECTURE.md`, `docs/TEMPLATE_ARCHITECTURE.md`, `docs/CHANGELOG.md`.
+- **Reason:** record the rationale behind major architecture choices, establish one official implementation convention guide, strengthen code/documentation drift handling, and remove overlap between current-state documentation, decision rationale, conventions, and change history.
+- **System impact:** every developer and AI tool now has a mandatory reading sequence, explicit source-of-truth boundaries, rules for services/repositories/actions/routes/media/data, and an ADR process for architectural decisions. Template switching and destructive content replacement boundaries are explicitly documented.
+- **Breaking changes:** No runtime breaking change. Development governance becomes stricter.
+- **Migration required:** No.
+- **Related documentation:** all affected documents updated in the same documentation change.
+
 ## 2026-07-11 — Documentation — Living documentation system
 
 - **Affected files:** all files under `docs/`.
