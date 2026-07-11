@@ -85,7 +85,7 @@ function readPackages(formData: FormData): JsonRecord[] {
       imageUrl: readString(formData, "newPackageImageUrl"),
       features: readFeatureLines(readString(formData, "newPackageFeatures")),
       isHighlighted: readBool(formData, "newPackageIsHighlighted"),
-      enabled: readBool(formData, "newPackageEnabled") || true,
+      enabled: true,
     });
   }
 
@@ -96,6 +96,7 @@ function readExtras(formData: FormData): JsonRecord[] | null {
   const count = readInt(formData, "extraCount");
   if (count === 0 && !readString(formData, "newExtraName")) return null;
   const extras: JsonRecord[] = [];
+
   for (let index = 0; index < count; index += 1) {
     const name = readString(formData, `extra_${index}_name`);
     if (!name) continue;
@@ -128,7 +129,19 @@ function readExtras(formData: FormData): JsonRecord[] | null {
       enabled: true,
     });
   }
+
   return extras;
+}
+
+function readStarterOverride(formData: FormData): JsonRecord | null {
+  const override = {
+    photographerName: readString(formData, "starterOverridePhotographerName"),
+    studioName: readString(formData, "starterOverrideStudioName"),
+    description: readString(formData, "starterOverrideDescription"),
+    heroImageUrl: readString(formData, "starterOverrideHeroImageUrl"),
+  };
+  const entries = Object.entries(override).filter(([, value]) => Boolean(value));
+  return entries.length ? Object.fromEntries(entries) : null;
 }
 
 async function auditTemplate(input: { adminId: string; adminEmail?: string; action: string; templateId: string; code: string; metadata?: JsonRecord }) {
@@ -157,14 +170,10 @@ export async function saveTemplateAction(formData: FormData) {
   try {
     const basePreview = readJsonObject(readString(formData, "previewDataJson"), isRecord(current.previewData) ? current.previewData : {});
     const baseSettings = readJsonObject(readString(formData, "settingsJson"), isRecord(current.settings) ? current.settings : {});
-    const hero = isRecord(basePreview.hero) ? { ...basePreview.hero } : {};
 
     const previewTitle = readString(formData, "previewTitle");
     const previewDescription = readString(formData, "previewDescription");
     const previewImage = readString(formData, "previewImage");
-    const heroHeadline = readString(formData, "heroHeadline");
-    const heroSubheadline = readString(formData, "heroSubheadline");
-    const heroImageUrl = readString(formData, "heroImageUrl");
     const callToAction = readString(formData, "callToAction");
 
     if (previewTitle) {
@@ -177,10 +186,10 @@ export async function saveTemplateAction(formData: FormData) {
     }
     if (previewImage) basePreview.previewImage = previewImage;
     if (callToAction) basePreview.callToAction = callToAction;
-    if (heroHeadline) hero.headline = heroHeadline;
-    if (heroSubheadline) hero.subheadline = heroSubheadline;
-    if (heroImageUrl) hero.imageUrl = heroImageUrl;
-    basePreview.hero = hero;
+
+    const starterOverride = readStarterOverride(formData);
+    if (starterOverride) basePreview.starterContentOverride = starterOverride;
+    else delete basePreview.starterContentOverride;
 
     const packages = readPackages(formData);
     if (packages.length > 0) basePreview.packages = packages;
@@ -208,6 +217,7 @@ export async function saveTemplateAction(formData: FormData) {
       code: updated.code,
       metadata: {
         status: updated.status,
+        hasStarterOverride: Boolean(starterOverride),
         packagesCount: Array.isArray(basePreview.packages) ? basePreview.packages.length : 0,
         activePackagesCount: Array.isArray(basePreview.packages) ? basePreview.packages.filter((item) => isRecord(item) && item.enabled !== false).length : 0,
       },
