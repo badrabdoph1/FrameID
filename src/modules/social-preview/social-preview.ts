@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
-export const PLATFORM_SOCIAL_IMAGE = "https://frameid.app/social-preview-image";
-export const PLATFORM_DEFAULT_SOCIAL_IMAGE = `${PLATFORM_SOCIAL_IMAGE}?mode=default&v=default-v3`;
+export const PLATFORM_SOCIAL_IMAGE = "https://frameid.app/social-preview-image.jpg";
+export const PLATFORM_DEFAULT_SOCIAL_IMAGE = `${PLATFORM_SOCIAL_IMAGE}?mode=default&v=default-v4`;
 export const PLATFORM_CUSTOM_SOCIAL_IMAGE = `${PLATFORM_SOCIAL_IMAGE}?mode=custom`;
 export const PHOTOGRAPHER_PLACEHOLDER_IMAGE = "/photographer-placeholder";
 
@@ -63,12 +63,12 @@ const platformProviders: Array<SocialPreviewImageProvider<PlatformSocialPreviewC
     resolve(context) {
       if (!context.settings.enabled || !context.settings.imageData) return null;
       const version = encodeURIComponent(context.settings.imageVersion ?? "custom");
-      return image(`${PLATFORM_SOCIAL_IMAGE}?v=${version}`, "platform-custom", context.settings.title ?? context.defaults.title);
+      return image(`${PLATFORM_SOCIAL_IMAGE}?mode=custom&v=${version}`, "platform-custom", context.settings.title ?? context.defaults.title);
     },
   },
   {
     resolve(context) {
-      const version = encodeURIComponent(context.settings.imageVersion ?? "default-v3");
+      const version = encodeURIComponent(context.settings.imageVersion ?? "default-v4");
       return image(`${PLATFORM_SOCIAL_IMAGE}?mode=default&v=${version}`, "platform-default", context.settings.title ?? context.defaults.title);
     },
   },
@@ -103,11 +103,27 @@ export function buildSocialMetadata({ preview, canonicalUrl, siteName, locale = 
 }): Pick<Metadata, "openGraph" | "twitter"> {
   return {
     openGraph: {
-      type: "website", locale, siteName, url: canonicalUrl,
-      title: preview.title, description: preview.description,
-      images: [{ url: preview.image.url, secureUrl: preview.image.url, width: preview.image.width, height: preview.image.height, alt: preview.image.alt, type: "image/jpeg" }],
+      type: "website",
+      locale,
+      siteName,
+      url: canonicalUrl,
+      title: preview.title,
+      description: preview.description,
+      images: [{
+        url: preview.image.url,
+        secureUrl: preview.image.url,
+        width: preview.image.width,
+        height: preview.image.height,
+        alt: preview.image.alt,
+        type: "image/jpeg",
+      }],
     },
-    twitter: { card: "summary_large_image", title: preview.title, description: preview.description, images: [preview.image.url] },
+    twitter: {
+      card: "summary_large_image",
+      title: preview.title,
+      description: preview.description,
+      images: [preview.image.url],
+    },
   };
 }
 
