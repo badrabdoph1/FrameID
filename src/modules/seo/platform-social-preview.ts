@@ -4,15 +4,20 @@ import { prisma } from "@/lib/prisma";
 
 export const PLATFORM_SOCIAL_PREVIEW_FLAG_KEY = "platform-social-preview";
 
-export const DEFAULT_PLATFORM_SOCIAL_PREVIEW = {
+export type PlatformSocialPreviewSettings = {
+  enabled: boolean;
+  title: string;
+  description: string;
+  imageUrl: string | null;
+};
+
+export const DEFAULT_PLATFORM_SOCIAL_PREVIEW: PlatformSocialPreviewSettings = {
   enabled: false,
   title: "FrameID | موقع احترافي لكل مصور",
   description:
     "FrameID منصة عربية للمصورين تساعدك تنشئ موقعًا احترافيًا ورابطًا واحدًا يجمع صورك وباقاتك وأسعارك وبيانات التواصل.",
-  imageUrl: null as string | null,
+  imageUrl: null,
 };
-
-export type PlatformSocialPreviewSettings = typeof DEFAULT_PLATFORM_SOCIAL_PREVIEW;
 
 export function normalizePlatformSocialPreview(value: unknown): PlatformSocialPreviewSettings {
   const source = isRecord(value) ? value : {};
@@ -27,21 +32,26 @@ export function normalizePlatformSocialPreview(value: unknown): PlatformSocialPr
 export async function loadPlatformSocialPreview(): Promise<PlatformSocialPreviewSettings> {
   if (process.env.NODE_ENV === "test") return DEFAULT_PLATFORM_SOCIAL_PREVIEW;
 
-  const row = await prisma.featureFlag.findFirst({
-    where: {
-      key: PLATFORM_SOCIAL_PREVIEW_FLAG_KEY,
-      scope: "PLATFORM",
-      tenantId: null,
-      siteId: null,
-    },
-    select: { enabled: true, value: true },
-  });
+  try {
+    const row = await prisma.featureFlag.findFirst({
+      where: {
+        key: PLATFORM_SOCIAL_PREVIEW_FLAG_KEY,
+        scope: "PLATFORM",
+        tenantId: null,
+        siteId: null,
+      },
+      select: { enabled: true, value: true },
+    });
 
-  if (!row) return DEFAULT_PLATFORM_SOCIAL_PREVIEW;
-  return normalizePlatformSocialPreview({
-    ...(isRecord(row.value) ? row.value : {}),
-    enabled: row.enabled,
-  });
+    if (!row) return DEFAULT_PLATFORM_SOCIAL_PREVIEW;
+    return normalizePlatformSocialPreview({
+      ...(isRecord(row.value) ? row.value : {}),
+      enabled: row.enabled,
+    });
+  } catch {
+    // Metadata must remain available during builds and temporary database outages.
+    return DEFAULT_PLATFORM_SOCIAL_PREVIEW;
+  }
 }
 
 export function resolvePlatformSocialImage(settings: PlatformSocialPreviewSettings): string {
