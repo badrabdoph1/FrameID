@@ -31,12 +31,12 @@ export function normalizeTemplateStarterSharedDefaults(value: unknown): Template
 export function readTemplateStarterSharedOverrides(value: unknown): TemplateStarterSharedOverrides {
   if (!isRecord(value) || !isRecord(value.starterContentOverride)) return {};
   const override = value.starterContentOverride;
-  return {
+  return compact({
     photographerName: readOptionalText(override.photographerName) ?? undefined,
     studioName: readOptionalText(override.studioName) ?? undefined,
     description: readOptionalText(override.description) ?? undefined,
-    heroImageUrl: readOptionalText(override.heroImageUrl),
-  };
+    heroImageUrl: readOptionalText(override.heroImageUrl) ?? undefined,
+  });
 }
 
 export function applyTemplateStarterSharedDefaults(
@@ -68,7 +68,9 @@ export function serializeTemplateStarterDefaults(defaults: TemplateStarterShared
 }
 
 function compact(value: TemplateStarterSharedOverrides): TemplateStarterSharedOverrides {
-  return Object.fromEntries(Object.entries(value).filter(([, item]) => item !== undefined && item !== "")) as TemplateStarterSharedOverrides;
+  return Object.fromEntries(
+    Object.entries(value).filter(([, item]) => item !== undefined && item !== ""),
+  ) as TemplateStarterSharedOverrides;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
