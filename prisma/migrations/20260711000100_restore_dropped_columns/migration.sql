@@ -1,5 +1,5 @@
 -- Restore columns and tables dropped by prisma db push --accept-data-loss
--- All statements use IF NOT EXISTS for idempotency.
+-- Uses EXCEPTION handling for idempotent constraint creation (works across sessions).
 
 -- 1. PaymentRequestLog: rename requestId back to paymentRequestId (code uses this name)
 DO $$
@@ -58,7 +58,7 @@ ALTER TABLE "BackupSettings" ADD COLUMN IF NOT EXISTS "compression" TEXT NOT NUL
 ALTER TABLE "BackupSettings" ADD COLUMN IF NOT EXISTS "encryption" BOOLEAN NOT NULL DEFAULT true;
 ALTER TABLE "BackupSettings" ADD COLUMN IF NOT EXISTS "githubBranch" TEXT NOT NULL DEFAULT 'platform-backups';
 
--- 12. Create PaymentSettings table (dropped entirely by db push)
+-- 12. Create PaymentSettings table (may be dropped by db push)
 CREATE TABLE IF NOT EXISTS "PaymentSettings" (
     "id" TEXT NOT NULL,
     "paymentMethod" "PaymentMethod" NOT NULL,
@@ -74,18 +74,22 @@ CREATE TABLE IF NOT EXISTS "PaymentSettings" (
     CONSTRAINT "PaymentSettings_pkey" PRIMARY KEY ("id")
 );
 
--- Add unique constraint for paymentMethod if not exists
+-- Add unique constraint for paymentMethod (exception-safe)
 DO $$
 BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_constraint WHERE conname = 'PaymentSettings_paymentMethod_key'
-  ) THEN
-    ALTER TABLE "PaymentSettings" ADD CONSTRAINT "PaymentSettings_paymentMethod_key" UNIQUE ("paymentMethod");
-  END IF;
+  ALTER TABLE "PaymentSettings" ADD CONSTRAINT "PaymentSettings_paymentMethod_key" UNIQUE ("paymentMethod");
+EXCEPTION WHEN duplicate_object THEN
+  -- constraint already exists, ignore
+  NULL;
 END $$;
 
--- Add index for PaymentSettings
-CREATE INDEX IF NOT EXISTS "PaymentSettings_isActive_sortOrder_idx" ON "PaymentSettings"("isActive", "sortOrder");
+-- Add index for PaymentSettings (exception-safe)
+DO $$
+BEGIN
+  CREATE INDEX "PaymentSettings_isActive_sortOrder_idx" ON "PaymentSettings"("isActive", "sortOrder");
+EXCEPTION WHEN duplicate_table THEN
+  NULL;
+END $$;
 
 -- 13. PaymentAccount: restore paymentSettingsId, label, instructions, notes, iban, swift
 ALTER TABLE "PaymentAccount" ADD COLUMN IF NOT EXISTS "paymentSettingsId" TEXT;
@@ -95,29 +99,39 @@ ALTER TABLE "PaymentAccount" ADD COLUMN IF NOT EXISTS "notes" TEXT;
 ALTER TABLE "PaymentAccount" ADD COLUMN IF NOT EXISTS "iban" TEXT;
 ALTER TABLE "PaymentAccount" ADD COLUMN IF NOT EXISTS "swift" TEXT;
 
--- Add index for PaymentAccount.paymentSettingsId
-CREATE INDEX IF NOT EXISTS "PaymentAccount_paymentSettingsId_idx" ON "PaymentAccount"("paymentSettingsId");
-
--- 14. Add foreign key constraints (only if they don't exist)
+-- Add index for PaymentAccount.paymentSettingsId (exception-safe)
 DO $$
 BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'PaymentRequest_subscriptionId_fkey') THEN
-    ALTER TABLE "PaymentRequest" ADD CONSTRAINT "PaymentRequest_subscriptionId_fkey"
-      FOREIGN KEY ("subscriptionId") REFERENCES "Subscription"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-  END IF;
+  CREATE INDEX "PaymentAccount_paymentSettingsId_idx" ON "PaymentAccount"("paymentSettingsId");
+EXCEPTION WHEN duplicate_table THEN
+  NULL;
+END $$;
 
-  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'PaymentRequest_paymentAccountId_fkey') THEN
-    ALTER TABLE "PaymentRequest" ADD CONSTRAINT "PaymentRequest_paymentAccountId_fkey"
-      FOREIGN KEY ("paymentAccountId") REFERENCES "PaymentAccount"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-  END IF;
+-- 14. Add foreign key constraints (exception-safe)
+DO $$
+BEGIN
+  ALTER TABLE "PaymentRequest" ADD CONSTRAINT "PaymentRequest_subscriptionId_fkey"
+    FOREIGN KEY ("subscriptionId") REFERENCES "Subscription"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
-  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'PaymentAccount_paymentSettingsId_fkey') THEN
-    ALTER TABLE "PaymentAccount" ADD CONSTRAINT "PaymentAccount_paymentSettingsId_fkey"
-      FOREIGN KEY ("paymentSettingsId") REFERENCES "PaymentSettings"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-  END IF;
+DO $$
+BEGIN
+  ALTER TABLE "PaymentRequest" ADD CONSTRAINT "PaymentRequest_paymentAccountId_fkey"
+    FOREIGN KEY ("paymentAccountId") REFERENCES "PaymentAccount"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
-  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'PaymentSettings_qrCodeAssetId_fkey') THEN
-    ALTER TABLE "PaymentSettings" ADD CONSTRAINT "PaymentSettings_qrCodeAssetId_fkey"
-      FOREIGN KEY ("qrCodeAssetId") REFERENCES "MediaAsset"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-  END IF;
+DO $$
+BEGIN
+  ALTER TABLE "PaymentAccount" ADD CONSTRAINT "PaymentAccount_paymentSettingsId_fkey"
+    FOREIGN KEY ("paymentSettingsId") REFERENCES "PaymentSettings"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$
+BEGIN
+  ALTER TABLE "PaymentSettings" ADD CONSTRAINT "PaymentSettings_qrCodeAssetId_fkey"
+    FOREIGN KEY ("qrCodeAssetId") REFERENCES "MediaAsset"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
