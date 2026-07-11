@@ -6,20 +6,21 @@ import { getCurrentRequestSession } from "@/modules/auth/request-session";
 
 const ALLOWED_CATEGORIES = new Set(["rendering-report", "client-error"]);
 
-type MutableJsonObject = Record<string, Prisma.InputJsonValue>;
+type JsonScalar = string | number | boolean;
+type MutableJsonObject = Record<string, JsonScalar | MutableJsonObject>;
 
 function text(value: unknown, maxLength: number) {
   return typeof value === "string" ? value.slice(0, maxLength) : null;
 }
 
-function sanitizeJsonScalar(value: unknown): Prisma.InputJsonValue | undefined {
+function sanitizeJsonScalar(value: unknown): JsonScalar | undefined {
   if (typeof value === "string") return value.slice(0, 1024);
   if (typeof value === "number" && Number.isFinite(value)) return value;
   if (typeof value === "boolean") return value;
   return undefined;
 }
 
-function sanitizeMetadata(value: unknown): Prisma.InputJsonObject {
+function sanitizeMetadata(value: unknown): Record<string, JsonScalar> {
   if (!value || typeof value !== "object" || Array.isArray(value)) return {};
   const source = value as Record<string, unknown>;
   const allowedKeys = [
@@ -51,11 +52,10 @@ function sanitizeMetadata(value: unknown): Prisma.InputJsonObject {
     "gpuVendor",
     "gpuRenderer",
     "route",
-  ];
+  ] as const;
 
-  const sanitized: MutableJsonObject = {};
+  const sanitized: Record<string, JsonScalar> = {};
   for (const key of allowedKeys) {
-    if (!(key in source)) continue;
     const safeValue = sanitizeJsonScalar(source[key]);
     if (safeValue !== undefined) sanitized[key] = safeValue;
   }
@@ -98,9 +98,9 @@ export async function POST(request: Request) {
       level: isRenderingReport ? "WARN" : "ERROR",
       code: text(body.code, 120) ?? (isRenderingReport ? "FID-RENDER-001" : "FID-CLIENT-001"),
       message,
-      route: text(metadata.route, 500),
+      route: typeof metadata.route === "string" ? metadata.route.slice(0, 500) : null,
       userId: session.user.id,
-      metadata: logMetadata,
+      metadata: logMetadata as Prisma.InputJsonObject,
     },
   });
 
