@@ -42,18 +42,19 @@ export async function restoreWorkspaceBackupAction(formData: FormData) {
       backupId: artifact.artifactId,
       backupRoot: artifact.backupRoot,
     });
+    const validationErrors = validation.validation.errors;
 
     const restoreJob = await prisma.restoreJob.create({
       data: {
         backupJobId,
         status: validation.valid ? "PENDING" : "FAILED",
         triggeredById: session.user.id,
-        errorMessage: validation.valid ? null : validation.errors.join("; "),
+        errorMessage: validation.valid ? null : validationErrors.join("; "),
       },
       select: { id: true },
     });
 
-    if (!validation.valid) throw new Error(validation.errors.join("; ") || "فشل التحقق قبل الاستعادة.");
+    if (!validation.valid) throw new Error(validationErrors.join("; ") || "فشل التحقق قبل الاستعادة.");
 
     const result = await service.executeRestore({
       backupId: artifact.artifactId,
