@@ -7,7 +7,9 @@ import { getCurrentRequestSession } from "@/modules/auth/request-session";
 const ALLOWED_CATEGORIES = new Set(["rendering-report", "client-error"]);
 
 type JsonScalar = string | number | boolean;
-type MutableJsonObject = Record<string, JsonScalar | MutableJsonObject>;
+interface MutableJsonObject {
+  [key: string]: JsonScalar | MutableJsonObject;
+}
 
 function text(value: unknown, maxLength: number) {
   return typeof value === "string" ? value.slice(0, maxLength) : null;
