@@ -2,13 +2,21 @@
 
 ## Responsibility
 
-This file describes how FrameID is currently structured. Architectural rationale belongs in `ARCHITECTURE_DECISIONS.md`; implementation rules belong in `PROJECT_CONVENTIONS.md`.
+This file describes how FrameID is currently structured across system boundaries. Architectural rationale belongs in [ARCHITECTURE_DECISIONS.md](ARCHITECTURE_DECISIONS.md); implementation rules belong in [PROJECT_CONVENTIONS.md](PROJECT_CONVENTIONS.md); subsystem detail belongs under [docs/features/](features/README.md).
 
-## System purpose
+## Official Reference Model
+
+The repository code is the **Executable Source of Truth** because it represents the behavior that actually runs.
+
+The `docs/` directory is the **Official Knowledge Base** for understanding that implementation, its architecture, decisions, feature boundaries, conventions, roadmap, and delivery rules.
+
+Documentation is not a competing runtime source of truth. If code and documentation differ, inspect the code first, identify the mismatch, correct the wrong side, and restore alignment before completing the task.
+
+## System Purpose
 
 FrameID is a multi-tenant SaaS platform that provisions and publishes photographer websites. It includes customer onboarding and dashboard workflows, public sites, reusable themes/templates, subscriptions and lifecycle controls, media management, payment workflows, backups, and a role-based administration area.
 
-## Runtime stack
+## Runtime Stack
 
 - Next.js 15 App Router
 - React 19 and TypeScript
@@ -18,9 +26,9 @@ FrameID is a multi-tenant SaaS platform that provisions and publishes photograph
 - Vitest for tests and ESLint for static analysis
 - Node.js 20+
 
-## High-level layers
+## High-Level Layers
 
-### 1. Presentation layer
+### 1. Presentation Layer
 
 Located primarily under `src/app/` and `src/components/`.
 
@@ -32,24 +40,24 @@ Located primarily under `src/app/` and `src/components/`.
 
 Presentation code must not become a second owner of business rules.
 
-### 2. Application/domain layer
+### 2. Application/Domain Layer
 
 Located primarily under `src/modules/`.
 
 This layer owns reusable behavior such as:
 
-- authentication and session resolution
-- signup provisioning
-- customer lifecycle synchronization
-- theme/template registry and starter content
-- media upload validation and persistence coordination
-- admin RBAC and guards
-- public-site read models
-- payments, backups, and operational workflows
+- authentication and session resolution;
+- signup provisioning;
+- customer lifecycle synchronization;
+- theme/template registry and starter content;
+- media upload validation and persistence coordination;
+- admin RBAC and guards;
+- public-site read models;
+- payments, backups, and operational workflows.
 
 Business rules should be implemented here when they are reused or represent product policy.
 
-### 3. Persistence layer
+### 3. Persistence Layer
 
 - `prisma/schema.prisma` is the database-shape contract.
 - PostgreSQL is the authoritative runtime store for customer and operational data.
@@ -58,38 +66,41 @@ Business rules should be implemented here when they are reused or represent prod
 
 Do not create parallel JSON files, client stores, caches, or configuration records that compete with persisted customer or operational data.
 
-### 4. Platform content layer
+### 4. Platform Content Layer
 
 Git-versioned platform content includes executable theme/template definitions, starter content, supported sections, defaults, migrations, documentation, and architecture decisions.
 
 The Template Content Source and registry are the authoritative contract for platform template content. Database template/theme records hold operational state and supported overrides, not an independent renderer contract.
 
-### 5. Operational layer
+### 5. Operational Layer
 
 - Package scripts define build, validation, database deployment, seed, backup, and restore commands.
 - GitHub Actions validates type safety, linting, focused tests, diagnostics, and production builds.
 - Railway-compatible startup uses the safe database deployment command before starting the application.
 
-## Primary sources of truth
+## Primary Runtime and Knowledge Owners
 
-| Concern | Source of truth |
+| Concern | Official owner |
 |---|---|
+| Executable behavior | Repository code |
+| Official system understanding and governance | `docs/` Official Knowledge Base |
 | Platform code and platform-owned content | Git repository |
 | Database shape | `prisma/schema.prisma` |
 | Customer and operational runtime data | PostgreSQL through Prisma |
-| Platform template content and executable compatibility | Template Content Source, theme definitions, template definitions, and `theme-registry.ts` |
-| Template operational state and supported overrides | PostgreSQL `Theme` and `Template` records constrained by the code-defined contract |
-| Customer site content | tenant-scoped normalized site tables, media metadata, and content snapshots in PostgreSQL |
-| Uploaded binary image content | approved storage provider; ownership and metadata remain in PostgreSQL |
+| Platform template content and executable compatibility | Template Content Source, theme/template definitions, and `theme-registry.ts` |
+| Template operational state and supported overrides | PostgreSQL `Theme` and `Template` records constrained by the code contract |
+| Customer site content | Tenant-scoped normalized site tables, media metadata, and content snapshots in PostgreSQL |
+| Uploaded binary content | Approved storage provider; ownership and metadata remain in PostgreSQL |
 | Authentication sessions | `Session` rows plus hashed opaque cookie tokens |
-| Admin authorization | role/permission definitions and server-side admin permission guards |
-| Subscription/trial state | tenant, subscription, lifecycle services, and admin lifecycle settings |
-| Public URL | platform URL resolver and site slug/domain records |
+| Admin authorization | Role/permission definitions and server-side admin permission guards |
+| Subscription/trial state | Tenant, subscription, lifecycle services, and admin lifecycle settings |
+| Public URL | Platform URL resolver and site slug/domain records |
 | Architectural rationale | `docs/ARCHITECTURE_DECISIONS.md` |
 | Development conventions | `docs/PROJECT_CONVENTIONS.md` |
+| Feature delivery status | `docs/ROADMAP.md` |
 | Change history | Git history, audit logs, and `docs/CHANGELOG.md` |
 
-## Data ownership boundary
+## Data Ownership Boundary
 
 Platform-owned definitions and customer-owned content must remain separate.
 
@@ -99,11 +110,11 @@ Platform-owned definitions and customer-owned content must remain separate.
 - Later template changes must not silently overwrite customer content.
 - Destructive content replacement requires an explicit workflow and a prior content snapshot.
 
-## Multi-tenancy
+## Multi-Tenancy
 
 A `User` owns one or more `Tenant` records. Tenant-owned data includes sites, media assets, subscriptions, payments, notifications, support cases, audit records, feature flags, and lifecycle events. Queries and mutations must remain tenant-scoped.
 
-## Compatibility principles
+## Compatibility Principles
 
 - Existing sites must continue to render after template or schema evolution.
 - Soft-deleted records must remain excluded from normal reads.
@@ -112,8 +123,19 @@ A `User` owns one or more `Tenant` records. Tenant-owned data includes sites, me
 - Public routes must not depend on admin-only or client-only state.
 - Stable template codes, routes, slugs, enum values, and persisted identifiers must not be reused for incompatible behavior.
 
-## Architectural change rule
+## Documentation Scope Rule
 
-Any change that adds a layer, moves data ownership, changes module boundaries, changes a source of truth, or changes a cross-module contract must update this file, `DATA_FLOW.md`, the related domain document, `CHANGELOG.md`, and `ARCHITECTURE_DECISIONS.md` when the decision itself changes, all within the same commit.
+Core architecture files describe cross-system boundaries only. Detailed subsystem behavior belongs in the matching file under [docs/features/](features/README.md). Do not copy feature manuals into this file.
+
+## Architectural Change Rule
+
+Any change that adds a layer, moves data ownership, changes module boundaries, changes a runtime owner, or changes a cross-module contract must update in the same commit:
+
+- this file;
+- [DATA_FLOW.md](DATA_FLOW.md) when flow changes;
+- the related domain and feature documentation;
+- [CHANGELOG.md](CHANGELOG.md);
+- [ROADMAP.md](ROADMAP.md) when delivery status changes;
+- [ARCHITECTURE_DECISIONS.md](ARCHITECTURE_DECISIONS.md) when the decision changes.
 
 If this document and the implementation disagree, inspect the code first and restore alignment before completing the task.
