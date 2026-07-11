@@ -4,6 +4,10 @@ import {
   parseTemplateStarterContent,
   personalizeTemplateStarterContent
 } from "@/modules/themes/template-starter-content";
+import {
+  applyTemplateStarterSharedDefaults,
+  OFFICIAL_TEMPLATE_STARTER_DEFAULTS,
+} from "@/modules/themes/template-starter-defaults";
 import { templateDefinitions } from "@/modules/themes/definitions";
 
 describe("template starter content", () => {
@@ -20,20 +24,45 @@ describe("template starter content", () => {
     }
   });
 
+  it("applies the official shared identity to every registered template", () => {
+    for (const template of templateDefinitions) {
+      const content = applyTemplateStarterSharedDefaults(
+        parseTemplateStarterContent(template.starterContent),
+      );
+
+      expect(content.site.title).toBe("Kareem Magdy");
+      expect(content.contact.studioName).toBe("Photography");
+      expect(content.site.description).toBe("Wedding Photographer\nمصور زفاف");
+      expect(content.sections.hero.subheadline).toBe(OFFICIAL_TEMPLATE_STARTER_DEFAULTS.description);
+    }
+  });
+
   it("personalizes only photographer identity fields", () => {
-    const original = parseTemplateStarterContent(
-      templateDefinitions[0].starterContent
+    const original = applyTemplateStarterSharedDefaults(
+      parseTemplateStarterContent(templateDefinitions[0].starterContent),
     );
     const personalized = personalizeTemplateStarterContent(original, "ليلى أحمد");
     const expected = structuredClone(original);
 
     expected.site.title = "ليلى أحمد";
-    expected.contact.studioName = "ليلى أحمد";
     expected.sections.hero.headline = "ليلى أحمد";
     expected.seo.title = "ليلى أحمد";
     expected.seo.structuredData.name = "ليلى أحمد";
 
     expect(personalized).toEqual(expected);
-    expect(original.site.title).not.toBe("ليلى أحمد");
+    expect(personalized.contact.studioName).toBe("Photography");
+    expect(personalized.site.description).toBe("Wedding Photographer\nمصور زفاف");
+    expect(original.site.title).toBe("Kareem Magdy");
+  });
+
+  it("uses a template override only when explicitly provided", () => {
+    const content = applyTemplateStarterSharedDefaults(
+      parseTemplateStarterContent(templateDefinitions[0].starterContent),
+      OFFICIAL_TEMPLATE_STARTER_DEFAULTS,
+      { studioName: "Editorial House" },
+    );
+
+    expect(content.contact.studioName).toBe("Editorial House");
+    expect(content.site.title).toBe("Kareem Magdy");
   });
 });
