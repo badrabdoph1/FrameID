@@ -2,7 +2,7 @@
 
 This is an append-only architectural and product change log. Never delete older entries; corrections must be added as new entries.
 
-## Entry format
+## Entry Format
 
 - Date
 - Type: Feature, Fix, Refactor, Migration, Security, Operations, Documentation
@@ -14,6 +14,15 @@ This is an append-only architectural and product change log. Never delete older 
 - Related documentation updated
 
 ---
+
+## 2026-07-11 — Documentation/Governance — Final Living Documentation system
+
+- **Affected files:** `docs/README.md`, `docs/AI_DEVELOPMENT_RULES.md`, `docs/PROJECT_ARCHITECTURE.md`, `docs/ROADMAP.md`, `docs/features/*`, `docs/CHANGELOG.md`, and final consistency review of all files under `docs/`.
+- **Reason:** finalize FrameID's Official Knowledge Base, distinguish it from the code as the Executable Source of Truth, add focused feature documentation, introduce delivery-status tracking, and prevent duplicated or scattered documentation.
+- **System impact:** developers and AI tools now have a complete mandatory reading sequence, one official documentation location per concern, feature-specific maintenance files, roadmap governance, and same-commit rules covering architecture, changelog, roadmap, ADRs, and feature documentation.
+- **Breaking changes:** No runtime breaking change. Development and documentation governance becomes stricter.
+- **Migration required:** No.
+- **Related documentation:** all governance, architecture index, roadmap, and feature documentation updated in the same change.
 
 ## 2026-07-11 — Documentation/Architecture — Architecture decisions, conventions, and documentation review
 
