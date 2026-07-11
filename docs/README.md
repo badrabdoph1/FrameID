@@ -48,7 +48,7 @@ A task is not complete when code alone changes, or when documentation no longer 
 
 ## Code/documentation drift rule
 
-The code is the executable source of truth. The documentation is the official maintained reference for understanding and governing that code.
+The code is the executable source of truth. The documentation in this directory is the official and mandatory reference for understanding, maintaining, and governing that code.
 
 When code and documentation differ:
 
@@ -57,6 +57,8 @@ When code and documentation differ:
 3. decide whether the code or documentation is wrong;
 4. update the required side so they match again;
 5. do not complete the task while the contradiction remains.
+
+The documentation must never be treated as a substitute for inspecting the implementation before making changes.
 
 ## Current technical baseline
 
