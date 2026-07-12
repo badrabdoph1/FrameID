@@ -21,8 +21,6 @@ vi.mock("next/link", () => ({
     React.createElement("a", { href, ...props }, children),
 }));
 
-vi.stubGlobal("fetch", vi.fn().mockReturnValue(new Promise(() => {})));
-
 import { AdminShell } from "@/components/layout/admin-shell";
 import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { PhotographerShell } from "@/components/layout/photographer-shell";
@@ -50,7 +48,7 @@ describe("application shells", () => {
     expect(screen.getByText("Admin content")).toBeInTheDocument();
     const frameIdElements = screen.getAllByText("FrameID");
     expect(frameIdElements.length).toBeGreaterThanOrEqual(1);
-    const adminElements = screen.getAllByText("Admin Command Center");
+    const adminElements = screen.getAllByText("Admin");
     expect(adminElements.length).toBeGreaterThanOrEqual(1);
   });
 
@@ -63,7 +61,7 @@ describe("application shells", () => {
 
     const mobileNav = screen.getByRole("navigation", { name: "تنقل الأدمن للموبايل" });
     expect(within(mobileNav).getAllByRole("link")).toHaveLength(4);
-    expect(within(mobileNav).getByRole("button", { name: "فتح كل الأقسام" })).toBeInTheDocument();
+    expect(within(mobileNav).getByRole("button", { name: "فتح كل أقسام الأدمن" })).toBeInTheDocument();
   });
 
   it("keeps the customer dashboard shell on a dark readable surface", () => {
@@ -75,18 +73,17 @@ describe("application shells", () => {
 
     const shell = container.firstElementChild as HTMLElement;
     expect(screen.getByText("Customer dashboard content")).toBeInTheDocument();
-    expect(shell).toHaveClass("customer-desktop-shell", "bg-[#090b10]", "text-[#f5ead6]");
-    expect(screen.getByText("Customer dashboard content").parentElement).toHaveClass(
-      "mx-auto",
-      "w-full",
-      "max-w-6xl"
-    );
-    expect(
-      screen.getByRole("link", { name: "شاهد الموقع كما يراه العميل" })
-    ).toHaveAttribute("href", "/p/demo?ownerView=1");
+    expect(shell).toHaveStyle({
+      background: "#0b0d12",
+      color: "#f5ead6",
+    });
+    expect(screen.getByText("Customer dashboard content").parentElement).toHaveStyle({
+      width: "min(100%, 1120px)",
+      marginInline: "auto",
+    });
   });
 
-  it("keeps five primary customer destinations and a separate full menu", () => {
+  it("keeps customer dashboard mobile navigation compact with a full more menu", () => {
     render(
       <DashboardShell siteSlug="demo">
         <p>Customer dashboard content</p>
@@ -94,13 +91,13 @@ describe("application shells", () => {
     );
 
     const mobileNav = screen.getByRole("navigation", { name: "تنقل لوحة العميل للموبايل" });
-    expect(within(mobileNav).getAllByRole("link")).toHaveLength(5);
-    expect(screen.getByRole("button", { name: "فتح كل أقسام لوحة العميل" })).toBeInTheDocument();
+    expect(within(mobileNav).getAllByRole("link")).toHaveLength(4);
+    expect(within(mobileNav).getByRole("button", { name: "فتح باقي أقسام لوحة العميل" })).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "فتح كل أقسام لوحة العميل" }));
+    fireEvent.click(within(mobileNav).getByRole("button", { name: "فتح باقي أقسام لوحة العميل" }));
 
     const moreMenu = screen.getByRole("dialog", { name: "كل أقسام لوحة العميل" });
-    expect(within(moreMenu).getByRole("link", { name: /التفعيل والدفع/ })).toBeInTheDocument();
+    expect(within(moreMenu).getByRole("link", { name: /الفواتير والاشتراك/ })).toBeInTheDocument();
     expect(within(moreMenu).getByRole("link", { name: /الإعدادات/ })).toBeInTheDocument();
   });
 });

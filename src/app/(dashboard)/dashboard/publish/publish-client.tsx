@@ -6,6 +6,7 @@ import {
   AlertTriangle,
   CheckCircle2,
   Circle,
+  Copy,
   ExternalLink,
   Globe2,
   PauseCircle,
@@ -26,7 +27,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ImageUploader } from "@/components/dashboard/image-uploader";
-import { DashboardSiteActions } from "@/components/dashboard/dashboard-site-actions";
 import { BuilderNotice } from "@/components/dashboard/builder-primitives";
 
 type ReadinessItem = {
@@ -67,6 +67,7 @@ export function PublishClient({
   readinessItems,
   canPublish,
 }: PublishClientProps) {
+  const [copied, setCopied] = useState(false);
   const [robots, setRobots] = useState(initialRobots);
   const [ogUrl, setOgUrl] = useState(ogImageUrl ?? "");
   const [shareImageState, setShareImageState] = useState<string | null>(null);
@@ -76,6 +77,12 @@ export function PublishClient({
   const displayDescription = seoDescription || `${siteTitle} — موقع تصوير فوتوغرافي احترافي.`;
   const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(siteUrl)}`;
   const doneCount = readinessItems.filter((item) => item.done).length;
+
+  async function copyLink() {
+    await navigator.clipboard?.writeText(siteUrl);
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 1800);
+  }
 
   async function handleShareImageUpload(files: File[]) {
     const file = files[0];
@@ -99,7 +106,16 @@ export function PublishClient({
               دي آخر محطة في رحلة العميل: تأكد من الجاهزية، اضبط شكل المشاركة، انشر الموقع، ثم انسخ الرابط أو QR لعملائك.
             </p>
           </div>
-          <DashboardSiteActions siteUrl={siteUrl} />
+          <div className="grid gap-2 sm:flex">
+            <Button variant="luxury" className="min-h-11 rounded-2xl font-black" onClick={copyLink}>
+              {copied ? <CheckCircle2 className="size-4" /> : <Copy className="size-4" />}
+              {copied ? "اتنسخ" : "نسخ الرابط"}
+            </Button>
+            <a href={siteUrl} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-4 text-sm font-black text-white/75 no-underline transition hover:bg-white/[0.08] hover:text-white">
+              <ExternalLink className="size-4" />
+              فتح الموقع
+            </a>
+          </div>
         </div>
       </section>
 
@@ -151,7 +167,7 @@ export function PublishClient({
 
         <Panel icon={AlertTriangle} title="قبل إرسال الرابط" description="مراجعة سريعة تمنع أغلب مشاكل أول انطباع.">
           <div className="grid gap-2 text-sm font-bold leading-7 text-white/58">
-            <p>شاهد الموقع كما يراه العميل وتأكد أن أول شاشة واضحة.</p>
+            <p>افتح الموقع كعميل وتأكد أن أول شاشة واضحة.</p>
             <p>تأكد أن واتساب أو الهاتف موجودان للحجز السريع.</p>
             <p>اختبر شكل الرابط في واتساب بعد حفظ صورة المشاركة.</p>
             <p>لو الاشتراك Trial، فعّل الاشتراك قبل نهاية التجربة.</p>
@@ -160,12 +176,21 @@ export function PublishClient({
       </section>
 
       <section className="grid gap-3 lg:grid-cols-[1fr_0.7fr]">
-        <Panel icon={Globe2} title="الرابط الذي سترسله لعملائك" description="ده الرابط اللي هتبعته للعملاء أو تحطه في السوشيال.">
+        <Panel icon={Globe2} title="رابط الموقع" description="ده الرابط اللي هتبعته للعملاء أو تحطه في السوشيال.">
           <div className="grid gap-3">
             <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
               <p dir="ltr" className="break-all text-sm font-black leading-7 text-[#f3cf73]">{siteUrl}</p>
             </div>
-            <DashboardSiteActions siteUrl={siteUrl} />
+            <div className="grid gap-2 sm:grid-cols-2">
+              <Button type="button" variant="luxury" className="rounded-2xl font-black" onClick={copyLink}>
+                {copied ? <CheckCircle2 className="size-4" /> : <Copy className="size-4" />}
+                {copied ? "اتنسخ" : "نسخ الرابط"}
+              </Button>
+              <a href={siteUrl} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-4 text-sm font-black text-white/75 no-underline">
+                <ExternalLink className="size-4" />
+                معاينة كعميل
+              </a>
+            </div>
           </div>
         </Panel>
 

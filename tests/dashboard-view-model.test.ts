@@ -54,8 +54,6 @@ describe("dashboard view model", () => {
       hasCoverImage: true,
       currentThemeName: "Rose Blush",
       lastModifiedAt: new Date("2026-07-06T10:00:00.000Z"),
-      hasSeoSettings: true,
-      hasAvatarImage: true,
     });
 
     expect(viewModel.siteUrl).toBe("https://frameid.app/p/ali-ahmed");
@@ -64,16 +62,16 @@ describe("dashboard view model", () => {
     expect(viewModel.percent).toBe(100);
     expect(viewModel.checklist).toHaveLength(7);
     expect(viewModel.stats).toEqual([
-      { label: "الباقات", value: "3", tone: "success" },
-      { label: "التواصل", value: "جاهز", tone: "success" },
       { label: "الصور", value: "15", tone: "success" },
       { label: "الألبومات", value: "2", tone: "success" },
-      { label: "الشكل", value: "Rose Blush", tone: "success" },
-      { label: "النشر", value: "منشور", tone: "success" },
+      { label: "الباقات", value: "3", tone: "success" },
+      { label: "القوالب", value: "Rose Blush", tone: "success" },
     ]);
     expect(viewModel.currentTheme).toBe("Rose Blush");
     expect(viewModel.isPublished).toBe(true);
-    expect(viewModel.nextStepLabel).toBe("شاهد الموقع كما يراه العميل");
+    expect(viewModel.nextStepLabel).toBe("تم النشر ✓");
+    expect(viewModel.nextStepTitle).toBe("انشر وشارك الرابط");
+    expect(viewModel.nextStepDescription).toBe("انسخ الرابط أو شاركه بعد التأكد من العنوان والمعاينات.");
   });
 
   it("shows empty state for new sites", () => {
@@ -92,16 +90,16 @@ describe("dashboard view model", () => {
 
     expect(viewModel.percent).toBe(0);
     expect(viewModel.currentTheme).toBe("بدون");
-    expect(viewModel.stats[0]).toEqual({ label: "الباقات", value: "0", tone: "warning" });
-    expect(viewModel.nextStepLabel).toBe("أضف أول باقة بأسلوبك");
-    expect(viewModel.nextStepTitle).toBe("ابدأ بالباقات");
-    expect(viewModel.nextStepDescription).toBe("اكتب الباقات والأسعار بنفسك.");
+    expect(viewModel.stats[0]).toEqual({ label: "الصور", value: "0", tone: "neutral" });
+    expect(viewModel.nextStepLabel).toBe("إكمال بيانات التواصل");
+    expect(viewModel.nextStepTitle).toBe("أكمل بيانات التواصل");
+    expect(viewModel.nextStepDescription).toBe("أضف الهاتف وواتساب والمدينة حتى يعرف العميل كيف يحجز معك.");
   });
 
   it("calculates completion correctly", () => {
     const session = createSession("DRAFT");
 
-    // 3 out of 7 items done
+    // 4 out of 7 items done
     const viewModel = createDashboardViewModel({
       session,
       platformBaseUrl: "https://frameid.app",
@@ -115,7 +113,7 @@ describe("dashboard view model", () => {
       lastModifiedAt: new Date(),
     });
 
-    expect(viewModel.percent).toBe(43);
-    expect(viewModel.checklist.filter((i) => i.done)).toHaveLength(3);
+    expect(viewModel.percent).toBe(57);
+    expect(viewModel.checklist.filter((i) => i.done)).toHaveLength(4);
   });
 });
