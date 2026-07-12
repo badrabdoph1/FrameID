@@ -112,7 +112,7 @@ async function main() {
   }
 
   const backupSettingsData = [
-    { type: "DATABASE", enabled: true, schedule: "0 2 * * *", retentionCount: 20 },
+    { type: "DATABASE", enabled: true, schedule: "0 */12 * * *", retentionCount: 20 },
     { type: "FULL", enabled: true, schedule: "0 3 */3 * *", retentionCount: 10 },
   ];
   for (const setting of backupSettingsData) {

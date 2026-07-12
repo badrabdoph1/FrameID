@@ -188,32 +188,26 @@ export default async function AdminBackupsPage({ searchParams }: Props) {
         </div>
       </WorkspaceSection>
 
-      <details className="rounded-2xl border border-white/[0.07] bg-white/[0.02] p-5">
-        <summary className="cursor-pointer text-base font-black text-[#fff7e8]">الإعدادات المتقدمة</summary>
-        <div className="mt-5 space-y-5">
-          <div>
-            <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-              <div><h2 className="text-sm font-black text-white">الجدولة والاحتفاظ</h2><p className="mt-1 text-xs font-bold text-white/40">تحكم في جدولة النسخ التلقائية وعدد النسخ المحفوظة.</p></div>
-              <form action={verifyAllBackupsAction}><button className="rounded-xl border border-white/10 px-3 py-2 text-xs font-black text-white/70">تحقق من الجميع</button></form>
-            </div>
-            <div className="grid gap-3 lg:grid-cols-2">
-              {settings.map((setting) => (
-                <form key={setting.type} action={updateBackupSettingsAction} className="rounded-2xl border border-white/[0.06] bg-black/20 p-4">
-                  <input type="hidden" name="type" value={setting.type} />
-                  <div className="mb-3 flex justify-between gap-3"><h3 className="text-sm font-black text-white">{BACKUP_TYPE_LABELS[setting.type]}</h3><AdminStatusBadge tone={setting.enabled ? "success" : "default"}>{setting.enabled ? "مفعل" : "متوقف"}</AdminStatusBadge></div>
-                  <div className="grid gap-3 md:grid-cols-3">
-                    <Field label="الحالة"><select name="enabled" defaultValue={setting.enabled ? "true" : "false"} className={inputClass}><option value="true">مفعل</option><option value="false">متوقف</option></select></Field>
-                    <Field label="الجدول"><input name="schedule" defaultValue={setting.schedule} className={`${inputClass} font-mono`} /></Field>
-                    <Field label="الاحتفاظ"><input name="retentionCount" type="number" min="1" max="100" defaultValue={setting.retentionCount} className={inputClass} /></Field>
-                  </div>
-                  <p className="mt-3 text-xs font-bold text-white/35">آخر تشغيل: {setting.lastRunAt ? formatDate(setting.lastRunAt.toISOString()) : "لم يتم"} · القادم: {setting.nextRunAt ? formatDate(setting.nextRunAt.toISOString()) : "غير محسوب"}</p>
-                  <button className="mt-3 w-full rounded-xl border border-amber-300/20 px-3 py-2 text-xs font-black text-[#f3cf73]">حفظ الإعدادات</button>
-                </form>
-              ))}
-            </div>
-          </div>
+      <WorkspaceSection title="الجدولة والاحتفاظ" description="تحكم في جدولة النسخ التلقائية وعدد النسخ المحفوظة.">
+        <div className="mb-3 flex flex-wrap items-center justify-end gap-3">
+          <form action={verifyAllBackupsAction}><button className="rounded-xl border border-white/10 px-3 py-2 text-xs font-black text-white/70">تحقق من الجميع</button></form>
         </div>
-      </details>
+        <div className="grid gap-3 lg:grid-cols-2">
+          {settings.map((setting) => (
+            <form key={setting.type} action={updateBackupSettingsAction} className="rounded-2xl border border-white/[0.06] bg-black/20 p-4">
+              <input type="hidden" name="type" value={setting.type} />
+              <div className="mb-3 flex justify-between gap-3"><h3 className="text-sm font-black text-white">{BACKUP_TYPE_LABELS[setting.type]}</h3><AdminStatusBadge tone={setting.enabled ? "success" : "default"}>{setting.enabled ? "مفعل" : "متوقف"}</AdminStatusBadge></div>
+              <div className="grid gap-3 md:grid-cols-3">
+                <Field label="الحالة"><select name="enabled" defaultValue={setting.enabled ? "true" : "false"} className={inputClass}><option value="true">مفعل</option><option value="false">متوقف</option></select></Field>
+                <Field label="الجدول"><input name="schedule" defaultValue={setting.schedule} className={`${inputClass} font-mono`} /></Field>
+                <Field label="الاحتفاظ"><input name="retentionCount" type="number" min="1" max="100" defaultValue={setting.retentionCount} className={inputClass} /></Field>
+              </div>
+              <p className="mt-3 text-xs font-bold text-white/35">آخر تشغيل: {setting.lastRunAt ? formatDate(setting.lastRunAt.toISOString()) : "لم يتم"} · القادم: {setting.nextRunAt ? formatDate(setting.nextRunAt.toISOString()) : "غير محسوب"}</p>
+              <button className="mt-3 w-full rounded-xl border border-amber-300/20 px-3 py-2 text-xs font-black text-[#f3cf73]">حفظ الإعدادات</button>
+            </form>
+          ))}
+        </div>
+      </WorkspaceSection>
     </AdminPageShell>
   );
 }

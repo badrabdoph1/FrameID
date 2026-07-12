@@ -34,8 +34,8 @@ export function createBackupScheduler(
   const backupTypes: BackupType[] = [...SUPPORTED_BACKUP_TYPES];
 
   function parseCronExpression(cronExpr: string): {
-    minute: number | "*";
-    hour: number | "*";
+    minute: number | "*" | { every: number };
+    hour: number | "*" | { every: number };
     dayOfMonth: number | "*";
     month: number | "*";
     dayOfWeek: number | "*";
@@ -44,13 +44,27 @@ export function createBackupScheduler(
     if (parts.length < 5) {
       return { minute: "*", hour: "*", dayOfMonth: "*", month: "*", dayOfWeek: "*" };
     }
+    function parseField(field: string): number | "*" | { every: number } {
+      if (field === "*") return "*";
+      if (field.startsWith("*/")) {
+        const step = parseInt(field.slice(2), 10);
+        return Number.isFinite(step) && step > 0 ? { every: step } : "*";
+      }
+      return parseInt(field, 10);
+    }
     return {
-      minute: parts[0] === "*" ? "*" : parseInt(parts[0], 10),
-      hour: parts[1] === "*" ? "*" : parseInt(parts[1], 10),
+      minute: parseField(parts[0]),
+      hour: parseField(parts[1]),
       dayOfMonth: parts[2] === "*" ? "*" : parseInt(parts[2], 10),
       month: parts[3] === "*" ? "*" : parseInt(parts[3], 10),
       dayOfWeek: parts[4] === "*" ? "*" : parseInt(parts[4], 10),
     };
+  }
+
+  function matchesCronField(field: number | "*" | { every: number }, value: number): boolean {
+    if (field === "*") return true;
+    if (typeof field === "object" && "every" in field) return value % field.every === 0;
+    return field === value;
   }
 
   function matchesCron(cron: ReturnType<typeof parseCronExpression>, now: Date): boolean {
@@ -60,8 +74,8 @@ export function createBackupScheduler(
     const month = now.getUTCMonth() + 1;
     const dayOfWeek = now.getUTCDay();
 
-    if (cron.minute !== "*" && cron.minute !== minute) return false;
-    if (cron.hour !== "*" && cron.hour !== hour) return false;
+    if (!matchesCronField(cron.minute, minute)) return false;
+    if (!matchesCronField(cron.hour, hour)) return false;
     if (cron.dayOfMonth !== "*" && cron.dayOfMonth !== dayOfMonth) return false;
     if (cron.month !== "*" && cron.month !== month) return false;
     if (cron.dayOfWeek !== "*" && cron.dayOfWeek !== dayOfWeek) return false;

@@ -8,7 +8,17 @@ const DEFAULT_INTERVAL_MS = 60_000;
 function nextDailyRun(schedule: string, now: Date): Date {
   const [minuteRaw = "0", hourRaw = "2"] = schedule.trim().split(/\s+/);
   const minute = minuteRaw === "*" ? now.getUTCMinutes() : Number.parseInt(minuteRaw, 10);
-  const hour = hourRaw === "*" ? now.getUTCHours() : Number.parseInt(hourRaw, 10);
+  let hour: number;
+  if (hourRaw === "*") {
+    hour = now.getUTCHours();
+  } else if (hourRaw.startsWith("*/")) {
+    const step = Number.parseInt(hourRaw.slice(2), 10);
+    const currentHour = now.getUTCHours();
+    hour = Number.isFinite(step) && step > 0 ? Math.ceil(currentHour / step) * step : 2;
+    if (hour >= 24) hour = 0;
+  } else {
+    hour = Number.parseInt(hourRaw, 10);
+  }
   const next = new Date(now);
   next.setUTCSeconds(0, 0);
   next.setUTCMinutes(Number.isFinite(minute) ? minute : 0);
