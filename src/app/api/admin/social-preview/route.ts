@@ -56,7 +56,6 @@ export async function PATCH(request: Request) {
           description: next.description,
           hasImage: Boolean(next.imageData),
           deletedImage: deleteImage,
-          version,
         } as Prisma.InputJsonObject,
       },
     });

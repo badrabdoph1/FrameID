@@ -20,24 +20,21 @@ export async function POST(request: NextRequest) {
     const requestedType = body.type || "FULL";
 
     if (!isSupportedBackupType(requestedType)) {
-      return NextResponse.json(
-        { error: "Invalid backup type. Must be DATABASE or FULL" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Invalid backup type. Must be DATABASE or FULL" }, { status: 400 });
     }
 
     const databaseUrl = env.DATABASE_URL;
     if (!databaseUrl) {
-      return NextResponse.json(
-        { error: "DATABASE_URL is not configured" },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: "DATABASE_URL is not configured" }, { status: 500 });
     }
 
     const service = createBackupJobService({
       repository: createPrismaBackupJobRepository(prisma as never),
       databaseUrl,
       platformVersion: process.env.npm_package_version ?? "0.1.0",
+      backupGitHubToken: env.BACKUP_GITHUB_TOKEN,
+      backupEncryptionKey: env.BACKUP_ENCRYPTION_KEY,
+      backupGitHubRepository: process.env.BACKUP_GITHUB_REPOSITORY,
     });
 
     const result = await service.runManualBackup({
