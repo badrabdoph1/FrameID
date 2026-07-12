@@ -215,8 +215,8 @@ export default async function AdminBackupsPage({ searchParams }: Props) {
               <div className="mb-3 flex justify-between gap-3"><h3 className="text-sm font-black text-white">{BACKUP_TYPE_LABELS[setting.type]}</h3><AdminStatusBadge tone={setting.enabled ? "success" : "default"}>{setting.enabled ? "مفعل" : "متوقف"}</AdminStatusBadge></div>
               <div className="grid gap-3 md:grid-cols-3">
                 <Field label="الحالة"><select name="enabled" defaultValue={setting.enabled ? "true" : "false"} className={inputClass}><option value="true">مفعل</option><option value="false">متوقف</option></select></Field>
-                <Field label="الجدول"><input name="schedule" defaultValue={setting.schedule} className={`${inputClass} font-mono`} /></Field>
-                <Field label="الاحتفاظ"><input name="retentionCount" type="number" min="1" max="100" defaultValue={setting.retentionCount} className={inputClass} /></Field>
+                <Field label="الجدول الرسمي"><input readOnly value={getBackupPolicy(setting.type).schedule} className={`${inputClass} font-mono opacity-70`} /></Field>
+                <Field label="الاحتفاظ الرسمي"><input readOnly value={getBackupPolicy(setting.type).retentionCount} className={`${inputClass} opacity-70`} /></Field>
               </div>
               <p className="mt-3 text-xs font-bold text-white/35">آخر تشغيل: {setting.lastRunAt ? formatDate(setting.lastRunAt.toISOString()) : "لم يتم"} · القادم: {setting.nextRunAt ? formatDate(setting.nextRunAt.toISOString()) : "غير محسوب"}</p>
               <PendingButton pendingText="جاري الحفظ..." className="mt-3 w-full rounded-xl border border-amber-300/20 px-3 py-2 text-xs font-black text-[#f3cf73] transition hover:bg-[#f3cf73]/10">حفظ الإعدادات</PendingButton>

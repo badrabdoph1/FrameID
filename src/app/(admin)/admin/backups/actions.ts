@@ -176,26 +176,23 @@ export async function updateBackupSettingsAction(formData: FormData) {
   const session = await requireSuperAdminSession();
   const type = readBackupType(formData.get("type"));
   const enabled = formData.get("enabled") === "true";
-  const schedule = String(formData.get("schedule") ?? "");
-  const retentionRaw = Number(formData.get("retentionCount"));
   if (!type) redirect("/admin/backups?error=invalid-type");
 
   const policy = getBackupPolicy(type);
-  const retentionCount = Number.isFinite(retentionRaw) && retentionRaw >= 1 ? Math.min(retentionRaw, 100) : policy.retentionCount;
 
   try {
     await prisma.backupSettings.upsert({
       where: { type },
       update: {
         enabled,
-        schedule: schedule || policy.schedule,
-        retentionCount,
+        schedule: policy.schedule,
+        retentionCount: policy.retentionCount,
       },
       create: {
         type,
         enabled,
-        schedule: schedule || policy.schedule,
-        retentionCount,
+        schedule: policy.schedule,
+        retentionCount: policy.retentionCount,
       },
     });
 
