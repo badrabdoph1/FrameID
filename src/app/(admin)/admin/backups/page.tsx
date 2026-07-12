@@ -24,6 +24,7 @@ import {
   getBackupTypeLabel,
   type SupportedBackupType,
 } from "@/modules/backups/backup-policy";
+import { PendingForm, PendingButton } from "@/components/admin/pending-button";
 
 export const dynamic = "force-dynamic";
 
@@ -104,12 +105,12 @@ export default async function AdminBackupsPage({ searchParams }: Props) {
       <WorkspaceSection title="إنشاء نسخة" description="اختر نوع النسخة واضغط الزر. النسخة تُحفظ محلياً وعلى GitHub إن وُجد.">
         <div className="grid gap-3 md:grid-cols-2">
           {SUPPORTED_BACKUP_TYPES.map((type) => (
-            <form key={type} action={runBackupAction} className="rounded-2xl border border-white/[0.07] bg-black/20 p-4">
+            <PendingForm key={type} action={runBackupAction} className="rounded-2xl border border-white/[0.07] bg-black/20 p-4">
               <input type="hidden" name="type" value={type} />
               <h3 className="text-sm font-black text-white">{BACKUP_TYPE_LABELS[type]}</h3>
               <p className="mt-2 min-h-10 text-xs font-bold leading-5 text-white/45">{BACKUP_TYPE_DESCRIPTIONS[type]}</p>
-              <button className="mt-4 w-full rounded-xl bg-[#f3cf73] px-4 py-2.5 text-sm font-black text-[#17120a]">إنشاء النسخة</button>
-            </form>
+              <PendingButton pendingText="جاري الإنشاء..." className="mt-4 w-full rounded-xl bg-[#f3cf73] px-4 py-2.5 text-sm font-black text-[#17120a] transition hover:brightness-110">إنشاء النسخة</PendingButton>
+            </PendingForm>
           ))}
         </div>
       </WorkspaceSection>
@@ -122,10 +123,10 @@ export default async function AdminBackupsPage({ searchParams }: Props) {
                 <p className="text-sm font-black text-emerald-300">آخر نسخة مكتملة: {getBackupTypeLabel(latestCompleted.type)}</p>
                 <p className="mt-1 text-xs font-bold text-white/45">{formatDate(latestCompleted.createdAt)} · {latestCompleted.sizeBytes ? formatBytes(latestCompleted.sizeBytes) : "—"}</p>
               </div>
-              <form action={restoreWorkspaceBackupAction} className="flex gap-2">
+              <PendingForm action={restoreWorkspaceBackupAction} className="flex gap-2">
                 <input type="hidden" name="backupJobId" value={latestCompleted.id} />
-                <button className="rounded-xl bg-emerald-500 px-6 py-3 text-sm font-black text-white transition hover:bg-emerald-400">استعادة هذه النسخة</button>
-              </form>
+                <PendingButton pendingText="جاري الاستعادة..." className="rounded-xl bg-emerald-500 px-6 py-3 text-sm font-black text-white transition hover:bg-emerald-400">استعادة هذه النسخة</PendingButton>
+              </PendingForm>
             </div>
           </div>
         ) : (
@@ -164,23 +165,23 @@ export default async function AdminBackupsPage({ searchParams }: Props) {
 
                 <div className="mt-4 flex flex-wrap gap-2">
                   {ready ? (
-                    <form action={restoreWorkspaceBackupAction}>
+                    <PendingForm action={restoreWorkspaceBackupAction}>
                       <input type="hidden" name="backupJobId" value={job.id} />
-                      <button className="rounded-xl bg-emerald-500 px-4 py-2 text-xs font-black text-white transition hover:bg-emerald-400">استعادة</button>
-                    </form>
+                      <PendingButton pendingText="..." className="rounded-xl bg-emerald-500 px-4 py-2 text-xs font-black text-white transition hover:bg-emerald-400">استعادة</PendingButton>
+                    </PendingForm>
                   ) : (
                     <button disabled className="rounded-xl border border-white/10 px-4 py-2 text-xs font-bold text-white/35 disabled:cursor-not-allowed disabled:opacity-35">استعادة</button>
                   )}
                   {ready ? (
-                    <form action={verifyWorkspaceBackupAction}>
+                    <PendingForm action={verifyWorkspaceBackupAction}>
                       <input type="hidden" name="backupJobId" value={job.id} />
-                      <button className="rounded-xl border border-white/10 px-4 py-2 text-xs font-black text-white/70 transition hover:border-amber-300/30 hover:text-white">تحقق</button>
-                    </form>
+                      <PendingButton pendingText="..." className="rounded-xl border border-white/10 px-4 py-2 text-xs font-black text-white/70 transition hover:border-amber-300/30 hover:text-white">تحقق</PendingButton>
+                    </PendingForm>
                   ) : null}
-                  <form action={deleteWorkspaceBackupAction} className="ms-auto">
+                  <PendingForm action={deleteWorkspaceBackupAction} className="ms-auto">
                     <input type="hidden" name="backupJobId" value={job.id} />
-                    <button disabled={!artifactId && !ready} className="rounded-xl border border-red-500/30 px-4 py-2 text-xs font-bold text-red-300 transition hover:border-red-500/50 hover:text-red-200 disabled:cursor-not-allowed disabled:opacity-35">حذف</button>
-                  </form>
+                    <PendingButton pendingText="..." disabled={!artifactId && !ready} className="rounded-xl border border-red-500/30 px-4 py-2 text-xs font-bold text-red-300 transition hover:border-red-500/50 hover:text-red-200 disabled:cursor-not-allowed disabled:opacity-35">حذف</PendingButton>
+                  </PendingForm>
                 </div>
               </article>
             );
@@ -190,11 +191,11 @@ export default async function AdminBackupsPage({ searchParams }: Props) {
 
       <WorkspaceSection title="الجدولة والاحتفاظ" description="تحكم في جدولة النسخ التلقائية وعدد النسخ المحفوظة.">
         <div className="mb-3 flex flex-wrap items-center justify-end gap-3">
-          <form action={verifyAllBackupsAction}><button className="rounded-xl border border-white/10 px-3 py-2 text-xs font-black text-white/70">تحقق من الجميع</button></form>
+          <PendingForm action={verifyAllBackupsAction}><PendingButton pendingText="جاري التحقق..." className="rounded-xl border border-white/10 px-3 py-2 text-xs font-black text-white/70 transition hover:border-amber-300/30">تحقق من الجميع</PendingButton></PendingForm>
         </div>
         <div className="grid gap-3 lg:grid-cols-2">
           {settings.map((setting) => (
-            <form key={setting.type} action={updateBackupSettingsAction} className="rounded-2xl border border-white/[0.06] bg-black/20 p-4">
+            <PendingForm key={setting.type} action={updateBackupSettingsAction} className="rounded-2xl border border-white/[0.06] bg-black/20 p-4">
               <input type="hidden" name="type" value={setting.type} />
               <div className="mb-3 flex justify-between gap-3"><h3 className="text-sm font-black text-white">{BACKUP_TYPE_LABELS[setting.type]}</h3><AdminStatusBadge tone={setting.enabled ? "success" : "default"}>{setting.enabled ? "مفعل" : "متوقف"}</AdminStatusBadge></div>
               <div className="grid gap-3 md:grid-cols-3">
@@ -203,8 +204,8 @@ export default async function AdminBackupsPage({ searchParams }: Props) {
                 <Field label="الاحتفاظ"><input name="retentionCount" type="number" min="1" max="100" defaultValue={setting.retentionCount} className={inputClass} /></Field>
               </div>
               <p className="mt-3 text-xs font-bold text-white/35">آخر تشغيل: {setting.lastRunAt ? formatDate(setting.lastRunAt.toISOString()) : "لم يتم"} · القادم: {setting.nextRunAt ? formatDate(setting.nextRunAt.toISOString()) : "غير محسوب"}</p>
-              <button className="mt-3 w-full rounded-xl border border-amber-300/20 px-3 py-2 text-xs font-black text-[#f3cf73]">حفظ الإعدادات</button>
-            </form>
+              <PendingButton pendingText="جاري الحفظ..." className="mt-3 w-full rounded-xl border border-amber-300/20 px-3 py-2 text-xs font-black text-[#f3cf73] transition hover:bg-[#f3cf73]/10">حفظ الإعدادات</PendingButton>
+            </PendingForm>
           ))}
         </div>
       </WorkspaceSection>
