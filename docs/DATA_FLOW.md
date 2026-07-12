@@ -1,5 +1,9 @@
 # Data Flow
 
+## Backup and restore
+
+Manual وAuto وMigration وCLI وGitHub Actions تمر إلى `FrameID Backup Pipeline`. GitHub Actions Trigger فقط. الإكمال يتطلب Local Verify ثم GitHub Upload ثم Remote Verify ثم Retention ثم Audit. الاستعادة تستخدم المحلي أو تنزل من GitHub ثم تتحقق وتستعيد وتتحقق بعد الاستعادة.
+
 ## Request lifecycle
 
 1. A browser request enters a Next.js route.

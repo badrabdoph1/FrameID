@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
     const authHeader = request.headers.get("authorization");
     const cronSecret = env.CRON_SECRET;
 
-    if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+    if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
       log("warn", "Unauthorized access attempt");
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -57,9 +57,11 @@ export async function POST(request: NextRequest) {
       backupGitHubRepository: process.env.BACKUP_GITHUB_REPOSITORY,
     });
 
-    const result = await service.runManualBackup({
+    const trigger = request.headers.get("x-frameid-backup-trigger") === "GITHUB_ACTIONS" ? "GITHUB_ACTIONS" : "CLI";
+    const result = await service.runBackup({
       type: requestedType,
-      initiatedById: "api",
+      trigger,
+      initiatedById: trigger === "GITHUB_ACTIONS" ? "github-actions" : "api",
       note: `Manual API backup ${new Date().toISOString()}`,
     });
 

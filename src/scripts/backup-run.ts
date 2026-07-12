@@ -29,8 +29,9 @@ async function main() {
   });
 
   try {
-    const result = await service.runManualBackup({
+    const result = await service.runBackup({
       type,
+      trigger: "CLI",
       initiatedById: "cli-script",
       note: "CLI backup",
     });

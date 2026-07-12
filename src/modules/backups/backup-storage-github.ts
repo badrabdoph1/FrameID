@@ -1,10 +1,10 @@
 import { existsSync } from "node:fs";
-import { cp, mkdir, mkdtemp, readFile, readdir, rm, stat } from "node:fs/promises";
+import { cp, mkdir, mkdtemp, readdir, rm, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { basename, join } from "node:path";
+import { basename, dirname, join } from "node:path";
 import { spawn } from "node:child_process";
 
-import { createSha256Checksum } from "@/modules/backups/backup-manifest";
+import { createVerificationService } from "@/modules/backups/backup-verification-service";
 
 export type GitHubBackupVerification = {
   valid: boolean;
@@ -85,40 +85,15 @@ async function directorySize(path: string): Promise<number> {
 }
 
 async function verifyDirectory(backupDir: string, backupId: string, branch: string, commitSha: string | null): Promise<GitHubBackupVerification> {
-  const errors: string[] = [];
-  const manifestPath = join(backupDir, "manifest.json");
-  const checksumPath = join(backupDir, "checksum.sha256");
-  const databasePath = join(backupDir, "database.sql.gz");
-
-  if (!existsSync(manifestPath)) errors.push("manifest.json is missing");
-  if (!existsSync(checksumPath)) errors.push("checksum.sha256 is missing");
-  if (!existsSync(databasePath)) errors.push("database.sql.gz is missing");
-
-  if (errors.length === 0) {
-    const manifestContent = await readFile(manifestPath, "utf-8");
-    const expectedChecksum = (await readFile(checksumPath, "utf-8")).trim();
-    const actualChecksum = createSha256Checksum(manifestContent);
-    if (actualChecksum !== expectedChecksum) errors.push("Manifest checksum mismatch");
-
-    try {
-      const manifest = JSON.parse(manifestContent) as { backupType?: string };
-      if (manifest.backupType === "FULL" && !existsSync(join(backupDir, "uploads.tar.gz"))) {
-        errors.push("uploads.tar.gz is missing for FULL backup");
-      }
-    } catch {
-      errors.push("manifest.json is invalid JSON");
-    }
-
-    if ((await stat(databasePath)).size <= 0) errors.push("database.sql.gz is empty");
-  }
+  const result = await createVerificationService().verifyBackup(backupId, dirname(backupDir));
 
   return {
-    valid: errors.length === 0,
+    valid: result.valid,
     backupId,
     branch,
     commitSha,
     sizeBytes: existsSync(backupDir) ? await directorySize(backupDir) : 0,
-    errors,
+    errors: result.errors,
   };
 }
 
@@ -152,8 +127,6 @@ export function createGitHubStorage(token: string, repoPath?: string): GitHubSto
   return {
     async uploadBackup(backupDir, backupId, branch) {
       if (!existsSync(backupDir)) throw new Error(`Local backup directory not found: ${backupDir}`);
-      const localVerification = await verifyDirectory(backupDir, backupId, branch, null);
-      if (!localVerification.valid) throw new Error(`Local backup verification failed: ${localVerification.errors.join("; ")}`);
 
       const commitSha = await withBranch(branch, async (repoDir) => {
         const target = join(repoDir, "backups", backupId);
@@ -163,10 +136,6 @@ export function createGitHubStorage(token: string, repoPath?: string): GitHubSto
         return push(repoDir, branch, `backup(${branch}): ${backupId}`);
       });
 
-      const remoteVerification = await this.verifyBackup(backupId, branch);
-      if (!remoteVerification.valid) {
-        throw new Error(`GitHub backup verification failed: ${remoteVerification.errors.join("; ")}`);
-      }
       return {
         url: `https://github.com/${repoSlug}/tree/${branch}/backups/${backupId}`,
         commitSha,

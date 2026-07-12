@@ -28,7 +28,6 @@
     "backup": "tsx src/scripts/backup-run.ts",
     "restore": "tsx src/scripts/backup-restore.ts",
     "backup:db": "tsx src/scripts/backup-run.ts DATABASE",
-    "backup:uploads": "tsx src/scripts/backup-run.ts UPLOADS",
     "backup:full": "tsx src/scripts/backup-run.ts FULL",
     "check": "npm run validate:env && npm run typecheck && npm run lint && npm run test && npm run build"
   },

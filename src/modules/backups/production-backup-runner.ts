@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { createBackupJobService, getGitHubBackupBranch } from "@/modules/backups/backup-job-service";
+import { createBackupJobService } from "@/modules/backups/backup-job-service";
 import { createPrismaBackupJobRepository } from "@/modules/backups/prisma-backup-job-repository";
 import { isSupportedBackupType } from "@/modules/backups/backup-policy";
 
@@ -122,7 +122,7 @@ export async function runDueBackups(now = new Date()): Promise<void> {
     });
 
     try {
-      const result = await service.runScheduledBackup(backupType);
+      const result = await service.runBackup({ type: backupType, trigger: "AUTO", initiatedById: "scheduler", note: "نسخة تلقائية" });
       const durationMs = Date.now() - startedAt;
 
       if (result) {
@@ -132,8 +132,6 @@ export async function runDueBackups(now = new Date()): Promise<void> {
           backupJobId: result.backupJobId,
           durationMs,
         });
-      } else {
-        log("error", `✗ Scheduled ${backupType} backup returned null (failed silently)`, { durationMs });
       }
     } catch (error) {
       const durationMs = Date.now() - startedAt;
@@ -157,7 +155,7 @@ export function startProductionBackupRunner(): void {
     return;
   }
   if (!process.env.BACKUP_GITHUB_TOKEN) {
-    log("warn", "BACKUP_GITHUB_TOKEN is not set. Backups will run as local-only (not uploaded to GitHub).");
+    log("warn", "BACKUP_GITHUB_TOKEN غير مضبوط؛ ستفشل النسخ ولن تسجل كمكتملة.");
   } else {
     log("info", "GitHub token configured — backups will be uploaded to GitHub");
   }

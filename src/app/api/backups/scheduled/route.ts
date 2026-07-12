@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { createPrismaBackupJobRepository } from "@/modules/backups/prisma-backup-job-repository";
-import { createBackupJobService, getGitHubBackupBranch } from "@/modules/backups/backup-job-service";
+import { createBackupJobService } from "@/modules/backups/backup-job-service";
 import { isSupportedBackupType } from "@/modules/backups/backup-policy";
 
 export const dynamic = "force-dynamic";
@@ -72,7 +72,7 @@ export async function GET(request: NextRequest) {
     }
 
     if (!process.env.BACKUP_GITHUB_TOKEN) {
-      log("warn", "BACKUP_GITHUB_TOKEN not configured — backups will be local-only");
+      log("warn", "BACKUP_GITHUB_TOKEN غير مضبوط؛ ستفشل النسخ ولن تسجل كمكتملة");
     }
 
     const enabledTypes = await prisma.backupSettings.findMany({
@@ -112,8 +112,9 @@ export async function GET(request: NextRequest) {
           backupGitHubRepository: process.env.BACKUP_GITHUB_REPOSITORY,
         });
 
-        const result = await service.runManualBackup({
+        const result = await service.runBackup({
           type: setting.type,
+          trigger: "AUTO",
           initiatedById: "scheduler",
           note: `Backup auto ${new Date().toISOString()}`,
         });

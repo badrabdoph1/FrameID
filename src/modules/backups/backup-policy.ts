@@ -14,7 +14,7 @@ export const BACKUP_TYPE_DESCRIPTIONS: Record<SupportedBackupType, string> = {
 
 export const BACKUP_POLICY: Record<SupportedBackupType, { schedule: string; retentionCount: number }> = {
   DATABASE: { schedule: "0 */12 * * *", retentionCount: 20 },
-  FULL: { schedule: "0 3 */3 * *", retentionCount: 10 },
+  FULL: { schedule: "0 3 */2 * *", retentionCount: 10 },
 };
 
 export function isSupportedBackupType(value: unknown): value is SupportedBackupType {

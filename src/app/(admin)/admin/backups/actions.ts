@@ -37,8 +37,9 @@ export async function runBackupAction(formData: FormData) {
   if (!type) redirect("/admin/backups?error=invalid-type");
 
   try {
-    await createOfficialBackupService().runManualBackup({
+    await createOfficialBackupService().runBackup({
       type,
+      trigger: "MANUAL",
       initiatedById: session.user.id,
       note: type === "FULL" ? "نسخة كاملة عبر المسار الرسمي" : "نسخة قاعدة بيانات عبر المسار الرسمي",
     });
@@ -54,23 +55,6 @@ export async function runBackupAction(formData: FormData) {
   redirect("/admin/backups?started=1");
 }
 
-/** Legacy compatibility export. Restore must use restoreWorkspaceBackupAction. */
-export async function restoreBackupAction() {
-  await requireSuperAdminSession();
-  redirect("/admin/backups?error=legacy-restore-disabled-use-workspace");
-}
-
-/** Legacy compatibility export. Local directory enumeration is not a DR source. */
-export async function listLocalBackupsAction() {
-  await requireSuperAdminSession();
-  return [];
-}
-
-/** Legacy compatibility export. Verify must use verifyWorkspaceBackupAction. */
-export async function verifyBackupAction() {
-  await requireSuperAdminSession();
-  redirect("/admin/backups?error=legacy-verify-disabled-use-workspace");
-}
 
 export async function verifyAllBackupsAction() {
   const session = await requireSuperAdminSession();
@@ -133,11 +117,6 @@ export async function verifyAllBackupsAction() {
   }
 }
 
-/** Legacy compatibility export. Delete must use deleteWorkspaceBackupAction. */
-export async function deleteBackupAction() {
-  await requireSuperAdminSession();
-  redirect("/admin/backups?error=legacy-delete-disabled-use-workspace");
-}
 
 /**
  * Compatibility action for old migration links.
@@ -147,8 +126,9 @@ export async function createSnapshotAction() {
   const session = await requireSuperAdminSession();
 
   try {
-    await createOfficialBackupService().runManualBackup({
+    await createOfficialBackupService().runBackup({
       type: "FULL",
+      trigger: "MIGRATION",
       initiatedById: session.user.id,
       note: "حزمة انتقال عبر النسخة الكاملة الرسمية",
     });
@@ -164,36 +144,27 @@ export async function createSnapshotAction() {
   redirect("/admin/backups?started=1");
 }
 
-/** Legacy local-only automatic restore is intentionally disabled. */
-export async function checkAutoRestoreAction() {
-  await requireSuperAdminSession();
-  redirect("/admin/backups?error=legacy-auto-restore-disabled-use-verified-github-restore");
-}
-
 export async function updateBackupSettingsAction(formData: FormData) {
   const session = await requireSuperAdminSession();
   const type = readBackupType(formData.get("type"));
   const enabled = formData.get("enabled") === "true";
-  const schedule = String(formData.get("schedule") ?? "");
-  const retentionRaw = Number(formData.get("retentionCount"));
   if (!type) redirect("/admin/backups?error=invalid-type");
 
   const policy = getBackupPolicy(type);
-  const retentionCount = Number.isFinite(retentionRaw) && retentionRaw >= 1 ? Math.min(retentionRaw, 100) : policy.retentionCount;
 
   try {
     await prisma.backupSettings.upsert({
       where: { type },
       update: {
         enabled,
-        schedule: schedule || policy.schedule,
-        retentionCount,
+        schedule: policy.schedule,
+        retentionCount: policy.retentionCount,
       },
       create: {
         type,
         enabled,
-        schedule: schedule || policy.schedule,
-        retentionCount,
+        schedule: policy.schedule,
+        retentionCount: policy.retentionCount,
       },
     });
 

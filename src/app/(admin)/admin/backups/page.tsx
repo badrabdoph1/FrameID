@@ -13,6 +13,7 @@ import {
 import {
   deleteWorkspaceBackupAction,
   restoreWorkspaceBackupAction,
+  restoreLatestGitHubBackupAction,
   verifyWorkspaceBackupAction,
 } from "@/app/(admin)/admin/backups/workspace-actions";
 import { createPrismaAdminBackupCenterRepository } from "@/modules/admin/prisma-admin-backup-center-repository";
@@ -129,6 +130,7 @@ export default async function AdminBackupsPage({ searchParams }: Props) {
       </WorkspaceSection>
 
       <WorkspaceSection title="استعادة البيانات" description="استعادة نسخة احتياطية سابقة. يمكن تنزيل النسخة من GitHub إذا لم تكن موجودة محلياً.">
+        <PendingForm action={restoreLatestGitHubBackupAction} className="mb-3 rounded-2xl border border-amber-300/20 bg-amber-300/5 p-5"><div className="flex flex-wrap items-center justify-between gap-4"><div><p className="text-sm font-black text-[#f3cf73]">عودة طوارئ من GitHub</p><p className="mt-1 text-xs font-bold text-white/45">استعادة آخر FULL حتى بعد حذف ملفات Railway.</p></div><PendingButton pendingText="جاري العودة..." className="rounded-xl bg-[#f3cf73] px-6 py-3 text-sm font-black text-[#17120a]">عودة</PendingButton></div></PendingForm>
         {latestCompleted ? (
           <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-5">
             <div className="flex flex-wrap items-center justify-between gap-4">
@@ -213,8 +215,8 @@ export default async function AdminBackupsPage({ searchParams }: Props) {
               <div className="mb-3 flex justify-between gap-3"><h3 className="text-sm font-black text-white">{BACKUP_TYPE_LABELS[setting.type]}</h3><AdminStatusBadge tone={setting.enabled ? "success" : "default"}>{setting.enabled ? "مفعل" : "متوقف"}</AdminStatusBadge></div>
               <div className="grid gap-3 md:grid-cols-3">
                 <Field label="الحالة"><select name="enabled" defaultValue={setting.enabled ? "true" : "false"} className={inputClass}><option value="true">مفعل</option><option value="false">متوقف</option></select></Field>
-                <Field label="الجدول"><input name="schedule" defaultValue={setting.schedule} className={`${inputClass} font-mono`} /></Field>
-                <Field label="الاحتفاظ"><input name="retentionCount" type="number" min="1" max="100" defaultValue={setting.retentionCount} className={inputClass} /></Field>
+                <Field label="الجدول الرسمي"><input readOnly value={getBackupPolicy(setting.type).schedule} className={`${inputClass} font-mono opacity-70`} /></Field>
+                <Field label="الاحتفاظ الرسمي"><input readOnly value={getBackupPolicy(setting.type).retentionCount} className={`${inputClass} opacity-70`} /></Field>
               </div>
               <p className="mt-3 text-xs font-bold text-white/35">آخر تشغيل: {setting.lastRunAt ? formatDate(setting.lastRunAt.toISOString()) : "لم يتم"} · القادم: {setting.nextRunAt ? formatDate(setting.nextRunAt.toISOString()) : "غير محسوب"}</p>
               <PendingButton pendingText="جاري الحفظ..." className="mt-3 w-full rounded-xl border border-amber-300/20 px-3 py-2 text-xs font-black text-[#f3cf73] transition hover:bg-[#f3cf73]/10">حفظ الإعدادات</PendingButton>

@@ -1,5 +1,9 @@
 # FrameID Changelog
 
+## 2026-07-13 — Operations/Architecture — FrameID Backup Pipeline
+
+- توحيد جميع مشغلات النسخ والاستعادة في Pipeline واحدة، وتحديث معمارية النسخ وADR ودليل التعافي لتطابق التنفيذ.
+
 This is an append-only architectural and product change log. Never delete older entries; corrections must be added as new entries.
 
 ## Entry Format

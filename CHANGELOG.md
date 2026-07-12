@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-07-13 — توحيد FrameID Backup Pipeline
+
+- توحيد الإنشاء والاستعادة والتحقق والرفع والاحتفاظ والسجلات.
+- تحويل GitHub Actions إلى Trigger فقط ومنع نجاح local-only.
+- تثبيت DATABASE كل 12 ساعة/20 وFULL كل 48 ساعة/10.
+- دعم العودة من آخر FULL على GitHub وإزالة المسارات القديمة.
+
 ## 2026-07-11 — Backup and disaster recovery
 
 - Rebuilt the super-admin backup workspace and fixed the Prisma field mismatch that crashed the page.
