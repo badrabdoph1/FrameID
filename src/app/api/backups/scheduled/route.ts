@@ -7,55 +7,6 @@ import { isSupportedBackupType, type SupportedBackupType } from "@/modules/backu
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
-async function getScheduledTypes(): Promise<SupportedBackupType[]> {
-  try {
-    const settings = await prisma.backupSettings.findMany({
-      where: { enabled: true },
-      select: { type: true },
-    });
-    return settings.map((s) => s.type).filter(isSupportedBackupType);
-  } catch {
-    return ["DATABASE"];
-  }
-}
-
-async function shouldRunNow(type: SupportedBackupType): Promise<boolean> {
-  const now = new Date();
-  const currentHour = now.getUTCHours();
-  const currentDay = now.getUTCDay();
-
-  try {
-    const setting = await prisma.backupSettings.findUnique({
-      where: { type },
-      select: { schedule: true, lastRunAt: true },
-    });
-
-    if (!setting || !setting.schedule) return false;
-
-    if (setting.lastRunAt) {
-      const hoursSinceLastRun =
-        (now.getTime() - setting.lastRunAt.getTime()) / (1000 * 60 * 60);
-      if (hoursSinceLastRun < 23) return false;
-    }
-
-    const [, hour, , , dayOfWeek] = setting.schedule.split(" ");
-
-    if (hour !== "*") {
-      const scheduledHour = parseInt(hour, 10);
-      if (currentHour !== scheduledHour) return false;
-    }
-
-    if (dayOfWeek !== "*") {
-      const scheduledDay = parseInt(dayOfWeek, 10);
-      if (currentDay !== scheduledDay) return false;
-    }
-
-    return true;
-  } catch {
-    return false;
-  }
-}
-
 export async function GET(request: NextRequest) {
   try {
     const authHeader = request.headers.get("authorization");
@@ -65,25 +16,28 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const types = await getScheduledTypes();
-    const results: Array<{
-      type: string;
-      status: string;
-      backupId?: string;
-      error?: string;
-    }> = [];
-
     const databaseUrl = process.env.DATABASE_URL;
     if (!databaseUrl) {
-      return NextResponse.json(
-        { error: "DATABASE_URL not configured" },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: "DATABASE_URL not configured" }, { status: 500 });
     }
 
-    for (const type of types) {
-      if (!(await shouldRunNow(type))) {
-        results.push({ type, status: "SKIPPED" });
+    if (!process.env.BACKUP_GITHUB_TOKEN) {
+      return NextResponse.json({ error: "BACKUP_GITHUB_TOKEN not configured" }, { status: 500 });
+    }
+
+    const enabledTypes = await prisma.backupSettings.findMany({
+      where: { enabled: true },
+      select: { type: true, schedule: true, lastRunAt: true },
+    });
+
+    const results: Array<{ type: string; status: string; backupId?: string; error?: string }> = [];
+
+    for (const setting of enabledTypes) {
+      if (!isSupportedBackupType(setting.type)) continue;
+
+      const shouldRun = shouldRunScheduledBackup(setting.schedule, setting.lastRunAt);
+      if (!shouldRun) {
+        results.push({ type: setting.type, status: "SKIPPED" });
         continue;
       }
 
@@ -94,25 +48,23 @@ export async function GET(request: NextRequest) {
           platformVersion: process.env.npm_package_version ?? "0.1.0",
           backupGitHubToken: process.env.BACKUP_GITHUB_TOKEN,
           backupEncryptionKey: process.env.BACKUP_ENCRYPTION_KEY,
+          backupGitHubRepository: process.env.BACKUP_GITHUB_REPOSITORY,
         });
 
         const result = await service.runManualBackup({
-          type,
+          type: setting.type,
           initiatedById: "scheduler",
           note: "Scheduled automated backup",
         });
 
-        results.push({
-          type,
-          status: "COMPLETED",
-          backupId: result.backupId,
+        await prisma.backupSettings.update({
+          where: { type: setting.type },
+          data: { lastRunAt: new Date() },
         });
+
+        results.push({ type: setting.type, status: "COMPLETED", backupId: result.backupId });
       } catch (error) {
-        results.push({
-          type,
-          status: "FAILED",
-          error: error instanceof Error ? error.message : "Unknown error",
-        });
+        results.push({ type: setting.type, status: "FAILED", error: error instanceof Error ? error.message : "Unknown error" });
       }
     }
 
@@ -123,8 +75,31 @@ export async function GET(request: NextRequest) {
   }
 }
 
+function shouldRunScheduledBackup(schedule: string, lastRunAt: Date | null): boolean {
+  const now = new Date();
+  if (lastRunAt) {
+    const hoursSinceLastRun = (now.getTime() - lastRunAt.getTime()) / (1000 * 60 * 60);
+    if (hoursSinceLastRun < 23) return false;
+  }
+
+  try {
+    const parts = schedule.trim().split(/\s+/);
+    if (parts.length < 5) return true;
+    const [minuteStr, hourStr, , , dowStr] = parts;
+    if (hourStr !== "*") {
+      const scheduledHour = parseInt(hourStr, 10);
+      if (now.getUTCHours() !== scheduledHour) return false;
+    }
+    if (dowStr !== "*") {
+      const scheduledDay = parseInt(dowStr, 10);
+      if (now.getUTCDay() !== scheduledDay) return false;
+    }
+    return true;
+  } catch {
+    return true;
+  }
+}
+
 export async function POST() {
-  return NextResponse.json({
-    message: "Use GET to trigger scheduled backups",
-  });
+  return NextResponse.json({ message: "Use GET to trigger scheduled backups" });
 }

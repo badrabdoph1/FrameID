@@ -31,6 +31,8 @@ export async function runDueBackups(now = new Date()): Promise<void> {
     });
     if (claimed.count !== 1) continue;
 
+    console.log(`[backup-runner] Running scheduled ${backupType} backup`);
+
     const service = createBackupJobService({
       repository: createPrismaBackupJobRepository(prisma as never),
       databaseUrl: process.env.DATABASE_URL ?? "",
@@ -43,7 +45,12 @@ export async function runDueBackups(now = new Date()): Promise<void> {
     });
 
     const result = await service.runScheduledBackup(backupType);
-    if (result) await prisma.backupSettings.update({ where: { type: backupType }, data: { lastRunAt: now } });
+    if (result) {
+      await prisma.backupSettings.update({ where: { type: backupType }, data: { lastRunAt: now } });
+      console.log(`[backup-runner] Scheduled ${backupType} backup completed: ${result.backupId}`);
+    } else {
+      console.error(`[backup-runner] Scheduled ${backupType} backup failed`);
+    }
   }
 }
 
@@ -51,10 +58,16 @@ export function startProductionBackupRunner(): void {
   if (process.env.NODE_ENV !== "production") return;
   if (process.env.BACKUP_SCHEDULER_ENABLED === "false") return;
   if (!process.env.DATABASE_URL) return;
+  if (!process.env.BACKUP_GITHUB_TOKEN) {
+    console.warn("[backup-runner] BACKUP_GITHUB_TOKEN is not set. Scheduled backups will not run until it is configured.");
+    return;
+  }
 
   const globalState = globalThis as typeof globalThis & { __frameIdBackupRunnerStarted?: boolean };
   if (globalState.__frameIdBackupRunnerStarted) return;
   globalState.__frameIdBackupRunnerStarted = true;
+
+  console.log("[backup-runner] Starting production backup scheduler");
 
   const tick = () => {
     runDueBackups().catch((error) => console.error("[backup-runner] scheduled backup tick failed", error));

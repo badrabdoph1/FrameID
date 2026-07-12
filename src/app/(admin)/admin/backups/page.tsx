@@ -3,6 +3,7 @@ import { basename } from "node:path";
 import { AdminPageShell } from "@/components/layout/admin-page-shell";
 import { AdminStatusBadge } from "@/components/layout/admin-status-badge";
 import { prisma } from "@/lib/prisma";
+import { isGitHubBackupConfigured } from "@/lib/env";
 import { requireSuperAdminSession } from "@/modules/admin/admin-page-guards";
 import {
   runBackupAction,
@@ -90,6 +91,7 @@ export default async function AdminBackupsPage({ searchParams }: Props) {
   return (
     <AdminPageShell badge="النظام" title="مركز النسخ الاحتياطي" description="إنشاء النسخ والتحقق منها واستعادتها من مساحة عمل واحدة آمنة وواضحة.">
       <Feedback params={params} />
+      <GitHubStatusBanner />
 
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <Metric label="آخر نسخة" value={jobs[0] ? formatDate(jobs[0].createdAt) : "لم يتم"} />
@@ -179,14 +181,6 @@ export default async function AdminBackupsPage({ searchParams }: Props) {
               ))}
             </div>
           </div>
-          <div className="rounded-2xl border border-violet-400/15 bg-violet-500/5 p-4">
-            <h2 className="text-sm font-black text-white">حزمة انتقال طارئة</h2>
-            <p className="mt-2 text-xs font-bold leading-6 text-white/45">يتم إنشاؤها كنسخة كاملة عبر نفس المسار الرسمي: تحقق محلي، رفع GitHub، تحقق بعيد، ثم اعتماد النسخة.</p>
-            <form action={runBackupAction} className="mt-3">
-              <input type="hidden" name="type" value="FULL" />
-              <button className="rounded-xl bg-violet-600/80 px-4 py-2 text-xs font-black text-white">إنشاء نسخة كاملة للهجرة</button>
-            </form>
-          </div>
         </div>
       </details>
     </AdminPageShell>
@@ -206,6 +200,22 @@ function Feedback({ params }: { params: Record<string, string | undefined> }) {
   if (params.verified) return <Banner tone={params.verified === "1" ? "success" : "danger"}>{params.verified === "1" ? "النسخة سليمة." : "فشل التحقق من النسخة."}</Banner>;
   if (params["settings-updated"]) return <Banner tone="success">تم تحديث إعدادات النسخ.</Banner>;
   return null;
+}
+
+function GitHubStatusBanner() {
+  const configured = isGitHubBackupConfigured();
+  if (configured) {
+    return (
+      <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 px-4 py-3 text-xs font-bold text-emerald-300">
+        GitHub مُعد للنسخ الاحتياطي — التخزين السحابي مفعّل.
+      </div>
+    );
+  }
+  return (
+    <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 px-4 py-3 text-xs font-bold text-amber-300">
+      تحذير: المتغير البيئي <span className="font-mono">BACKUP_GITHUB_TOKEN</span> غير مُعد. النسخ الاحتياطي لن يعمل بدونه. أضفه من Railway Variables.
+    </div>
+  );
 }
 function WorkspaceSection({ title, description, children }: { title: string; description: string; children: React.ReactNode }) { return <section className="rounded-2xl border border-white/[0.07] bg-white/[0.02] p-5"><div className="mb-4"><h2 className="text-base font-black text-[#fff7e8]">{title}</h2><p className="mt-1 text-xs font-bold text-white/40">{description}</p></div>{children}</section>; }
 function Banner({ tone, children }: { tone: "success" | "danger"; children: React.ReactNode }) { return <div className={tone === "success" ? "rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm font-bold text-emerald-300" : "rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm font-bold text-red-300"}>{children}</div>; }

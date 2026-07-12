@@ -6,7 +6,6 @@ function requireEnv(key: string): string {
   return value;
 }
 
-
 export interface Env {
   readonly DATABASE_URL: string;
   readonly SESSION_SECRET: string;
@@ -52,3 +51,8 @@ export const env: Env = {
   isDev: process.env.NODE_ENV === "development",
   isProd: process.env.NODE_ENV === "production",
 };
+
+export function isGitHubBackupConfigured(): boolean {
+  const token = process.env.BACKUP_GITHUB_TOKEN || "";
+  return token.trim().length > 0;
+}

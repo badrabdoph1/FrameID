@@ -111,6 +111,18 @@ async function main() {
     }
   }
 
+  const backupSettingsData = [
+    { type: "DATABASE", enabled: true, schedule: "0 2 * * *", retentionCount: 20 },
+    { type: "FULL", enabled: true, schedule: "0 3 */3 * *", retentionCount: 10 },
+  ];
+  for (const setting of backupSettingsData) {
+    await prisma.backupSettings.upsert({
+      where: { type: setting.type },
+      update: { enabled: setting.enabled, schedule: setting.schedule, retentionCount: setting.retentionCount },
+      create: setting,
+    });
+  }
+
   await seedSuperAdmin();
 }
 

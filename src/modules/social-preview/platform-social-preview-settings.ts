@@ -12,6 +12,8 @@ const DEFAULT_SETTINGS: PlatformSocialPreviewSettings = {
   description: null,
   imageUrl: null,
   storageKey: null,
+  imageData: null,
+  imageMimeType: null,
 };
 
 type StoredValue = Partial<Record<keyof PlatformSocialPreviewSettings, unknown>>;
@@ -28,6 +30,8 @@ function parseValue(value: unknown, enabled: boolean): PlatformSocialPreviewSett
     description: readText(record.description),
     imageUrl: readText(record.imageUrl),
     storageKey: readText(record.storageKey),
+    imageData: readText(record.imageData),
+    imageMimeType: readText(record.imageMimeType),
   };
 }
 
