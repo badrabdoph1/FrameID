@@ -155,7 +155,7 @@ export function startProductionBackupRunner(): void {
     return;
   }
   if (!process.env.BACKUP_GITHUB_TOKEN) {
-    log("warn", "BACKUP_GITHUB_TOKEN is not set. Backups will run as local-only (not uploaded to GitHub).");
+    log("warn", "BACKUP_GITHUB_TOKEN غير مضبوط؛ ستفشل النسخ ولن تسجل كمكتملة.");
   } else {
     log("info", "GitHub token configured — backups will be uploaded to GitHub");
   }

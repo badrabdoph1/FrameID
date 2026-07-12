@@ -1,30 +1,5 @@
-# Backup System
+# نظام النسخ الاحتياطي
 
-## Goal
+الواجهة تعرض DATABASE وFULL اليدوية، النسخ التلقائي، السجلات، والإحصائيات، ومسار «ذهاب/عودة». كل إجراء يستدعي Pipeline نفسها. «ذهاب» ينشئ FULL وينتظر Remote Verify، و«عودة» تستعيد آخر FULL من GitHub حتى بعد فقد قرص Railway.
 
-Protect PostgreSQL data, uploaded files, and complete recoverable platform state through verified backup and restore workflows.
-
-## Components
-
-- backup job orchestration;
-- database dumping;
-- uploads/content packaging;
-- manifests and checksums;
-- restore jobs;
-- scheduling, retention, locks, verification, and storage providers.
-
-## Data Flow
-
-An admin, script, or scheduler creates a backup job. The service collects the requested artifacts, packages them, writes integrity metadata, persists job state, verifies output, and applies retention. Restore validates the selected artifact before applying database or file changes.
-
-## Important Files
-
-- `src/modules/backups/`
-- `src/scripts/backup-run.ts`
-- `src/scripts/backup-restore.ts`
-- `prisma/schema.prisma`
-- `docs/BACKUP_ARCHITECTURE.md`
-
-## Development Notes
-
-Keep orchestration in backup services, never bypass verification for destructive restore operations, document storage or retention changes, and preserve compatibility with existing backup artifacts where feasible.
+السياسة ثابتة: DATABASE كل 12 ساعة/20 نسخة، وFULL كل 48 ساعة/10 نسخ.

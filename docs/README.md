@@ -1,5 +1,7 @@
 # FrameID Living Documentation
 
+معمارية النسخ المغلقة موثقة في `BACKUP_ARCHITECTURE.md`، ومسار فقد Railway الكامل في `DISASTER_RECOVERY.md`، وقرار المصدر الوحيد في `ARCHITECTURE_DECISIONS.md`.
+
 This directory is the **Official Knowledge Base** for FrameID. It is part of the product and the delivery process, not an optional appendix.
 
 The repository code is the **Executable Source of Truth** because it represents the behavior that actually runs. The documentation explains that implementation, records its architecture and decisions, and defines the rules for changing it safely.

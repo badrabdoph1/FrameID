@@ -72,7 +72,7 @@ export async function GET(request: NextRequest) {
     }
 
     if (!process.env.BACKUP_GITHUB_TOKEN) {
-      log("warn", "BACKUP_GITHUB_TOKEN not configured — backups will be local-only");
+      log("warn", "BACKUP_GITHUB_TOKEN غير مضبوط؛ ستفشل النسخ ولن تسجل كمكتملة");
     }
 
     const enabledTypes = await prisma.backupSettings.findMany({

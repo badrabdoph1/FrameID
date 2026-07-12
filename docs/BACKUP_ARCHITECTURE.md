@@ -1,114 +1,28 @@
-# Backup Architecture
+# معمارية FrameID Backup Pipeline
 
-This document is the maintained backup and restore contract for FrameID. It must be updated in the same commit as any change to backup formats, storage, verification, scheduling, retention, restore, or operational recovery.
+هذه الوثيقة هي العقد الرسمي المغلق لنظام النسخ والاستعادة.
 
-## Supported backup types
+## المصدر التنفيذي الوحيد
 
-- `DATABASE` — PostgreSQL state.
-- `UPLOADS` — files under the configured upload storage.
-- `FULL` — coordinated database, uploads, and content recovery package.
+`FrameID Backup Pipeline` في `src/modules/backups/frameid-backup-pipeline.ts` هي المنسق الوحيد للإنشاء والتحقق والرفع والاحتفاظ والسجلات والاستعادة والتحقق اللاحق. أزرار الإدارة وCLI والـScheduler وGitHub Actions مشغلات فقط.
 
-Package commands are defined in `package.json`: `backup`, `restore`, `backup:db`, `backup:uploads`, and `backup:full`.
+## الأنواع والسياسة
 
-## Main components
+- `DATABASE`: PostgreSQL فقط، كل 12 ساعة، آخر 20 نسخة.
+- `FULL`: PostgreSQL و`public/uploads` فقط، كل 48 ساعة، آخر 10 نسخ.
+- `UPLOADS` قيمة قديمة في Prisma فقط ولا توجد في أي سطح تشغيلي.
+- ملفات المنصة لا تدخل النسخة؛ مصدرها Git.
 
-The backup subsystem under `src/modules/backups/` contains the orchestration and adapters for:
+## إنشاء النسخة
 
-- backup job execution;
-- PostgreSQL dump and restore;
-- uploads/content archive packaging;
-- manifests and SHA-256 verification;
-- local and provider-based artifact storage;
-- encryption where configured;
-- retention cleanup;
-- scheduling and locking;
-- startup health checks;
-- trial restore/validation;
-- admin backup-center read models;
-- auto-restore safeguards.
+`Create -> Local Verify -> GitHub Upload -> Remote Verify -> Retention -> Audit -> COMPLETED -> Local Cleanup`.
 
-The exact implementation files are the executable source of truth. This document governs their boundaries.
+أي فشل، بما فيه غياب GitHub أو فشل Retention أو Audit، ينتج `FAILED`. القرص المحلي مؤقت وليس Disaster Recovery.
 
-## Persistent operational state
+## التحقق والاستعادة
 
-Prisma models and enums record backup/restore execution and administrative settings. `BackupType` supports `DATABASE`, `UPLOADS`, and `FULL`. `BackupStatus` supports `PENDING`, `RUNNING`, `COMPLETED`, `FAILED`, `VERIFICATION_FAILED`, and `UPLOAD_FAILED`.
+`backup-verification-service.ts` هو تطبيق التحقق الوحيد. والاستعادة تستخدم المحلي إن وجد، وإلا تنزل من GitHub، ثم تتحقق وتستعيد PostgreSQL وuploads للنوع FULL وتتحقق بعد الاستعادة وتسجل Audit. الأمر `npm run restore -- latest FULL` لا يحتاج سجلات BackupJob القديمة.
 
-A generated artifact is not considered recoverable until storage and verification complete successfully.
+## GitHub Actions والأسرار
 
-## Backup creation flow
-
-1. An authorized admin, CLI command, or scheduler requests a backup.
-2. A backup job is created and locked against conflicting execution.
-3. The service collects relevant counts and platform metadata.
-4. According to type, it creates a PostgreSQL dump and/or packages uploads/content.
-5. A manifest records type, platform/schema information, artifact inventory, sizes, and checksums.
-6. Artifacts are written through the configured storage provider.
-7. Verification confirms manifest/checksum/artifact integrity.
-8. The job is marked completed or with a precise failure state.
-9. Audit and retention operations run.
-
-## Restore flow
-
-1. Resolve an eligible completed backup.
-2. Verify the manifest, checksums, and required artifacts.
-3. Create a separate restore job and acquire the restore lock.
-4. Restore database and/or file artifacts into explicitly configured targets.
-5. Run post-restore validation and record the outcome.
-6. Release locks and retain diagnostics without leaking secrets.
-
-Never restore from failed, unverified, missing, or incompatible artifacts.
-
-## Database recovery
-
-Database backups must be able to reconstruct the PostgreSQL state required by users, tenants, sites, templates, subscriptions, media metadata, content, admin state, and audit records. Restore tooling must use argument arrays rather than shell-interpolated commands and must not log credentials.
-
-## Upload recovery
-
-`MediaAsset` rows reference stored bytes through URLs and storage keys. Database and uploads must therefore be restored as a compatible pair. Restoring one side without the other can leave broken media references.
-
-## Full backups
-
-A full backup is the preferred disaster-recovery unit. Its manifest must unambiguously pair database, uploads, and content artifacts and identify platform/schema compatibility.
-
-## Verification and health
-
-Verification must check, as applicable:
-
-- backup directory/provider object availability;
-- valid manifest structure;
-- checksum match;
-- required artifact presence and non-zero size;
-- compatibility metadata;
-- restore-tool availability;
-- storage readability/writability;
-- age and status of the latest usable backup.
-
-Trial restore is stronger evidence than archive existence and should be used before changing production recovery assumptions.
-
-## Scheduling and locks
-
-Backup schedules are stored in platform settings and triggered by the supported scheduled endpoint/runner. Scheduler authorization must use server-side secrets. Database/in-memory locks prevent overlapping backup or restore operations.
-
-## Retention and cleanup
-
-Retention must coordinate persistent job/manifest records with stored artifacts. Deleting only one side creates either storage leakage or false recoverability. Cleanup must be auditable and must never delete the only known usable backup without explicit policy.
-
-## Security
-
-- restrict backup and restore operations through admin RBAC;
-- keep database URLs, encryption keys, provider tokens, and cron secrets server-only;
-- avoid secrets and unnecessary personal data in logs/manifests;
-- encrypt artifacts when required by the configured provider/policy;
-- validate archive extraction paths and command arguments;
-- audit manual backup, restore, deletion, and settings changes.
-
-## Change checklist
-
-Any backup change requires:
-
-1. implementation and failure-mode tests;
-2. schema/migration review;
-3. restore compatibility review;
-4. updates to this file and `DATA_FLOW.md`;
-5. a `CHANGELOG.md` entry stating breaking and migration impact;
-6. successful typecheck, lint, relevant tests, and production build.
+Workflow يرسل طلبًا مصادقًا إلى `/api/backups/run` فقط. يجب جعل المستودع Private قبل الإطلاق، ولا تُتبع ملفات البيئة، ويلزم تدوير أي رمز سبق كشفه.

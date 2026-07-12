@@ -1,5 +1,13 @@
 # Architecture Decisions
 
+## ADR-009 — FrameID Backup Pipeline هي المسار الوحيد
+
+**القرار:** Pipeline واحدة تنسق النسخ والتحقق والرفع والاستعادة والاحتفاظ والسجلات. GitHub هو التخزين الخارجي الرسمي في المستودع الخاص الحالي، وRailway disk مؤقت.
+
+**المرفوض:** Pipeline ثانية، نجاح local-only، ومنطق Backup داخل Workflow أو Scheduler أو CLI.
+
+**الأثر:** لا تصبح النسخة `COMPLETED` قبل Remote Verify وRetention وAudit، والاستعادة تنزل من GitHub عند غياب المحلي.
+
 This file is the official Architecture Decision Record for FrameID. It documents why important architectural choices exist. It does not replace the domain documentation or executable code.
 
 ## Decision format
