@@ -1,0 +1,124 @@
+name: FrameID Automated Backup
+
+on:
+  schedule:
+    - cron: '0 */12 * * *'  # كل 12 ساعة للنسخ القاعدي
+    - cron: '0 3 */3 * *'   # كل 3 أيام في 3 صباحاً للنسخ الكامل
+  workflow_dispatch:
+    inputs:
+      type:
+        description: 'نوع النسخ الاحتياطي'
+        required: true
+        default: 'DATABASE'
+        type: choice
+        options:
+          - DATABASE
+          - FULL
+
+concurrency:
+  group: frameid-backup-${{ github.ref }}-${{ github.event.inputs.type || 'scheduled' }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  backup:
+    name: Backup ${{ github.event.inputs.type || 'scheduled' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      BACKUP_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      BACKUP_GITHUB_REPOSITORY: ${{ github.repository }}
+      BACKUP_GITHUB_DATABASE_BRANCH: frameid-backups-database
+      BACKUP_GITHUB_FULL_BRANCH: frameid-backups-full
+      BACKUP_ENCRYPTION_KEY: ${{ secrets.BACKUP_ENCRYPTION_KEY }}
+      NODE_VERSION: '22'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update && sudo apt-get install -y postgresql-client-18
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npx prisma generate
+
+      - name: Determine backup type
+        id: backup_type
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "type=${{ github.event.inputs.type }}" >> $GITHUB_OUTPUT
+          else
+            # تحديد النوع بناءً على الجدول
+            HOUR=$(date +%H)
+            DAY=$(date +%d)
+            if [ "$HOUR" = "03" ] && [ $((DAY % 3)) -eq 0 ]; then
+              echo "type=FULL" >> $GITHUB_OUTPUT
+            else
+              echo "type=DATABASE" >> $GITHUB_OUTPUT
+            fi
+          fi
+
+      - name: Run backup
+        run: npm run backup:${{ steps.backup_type.outputs.type | lower }}
+        env:
+          RAILWAY_GIT_COMMIT_SHA: ${{ github.sha }}
+
+      - name: Verify backup was created
+        run: |
+          ls -la backups/
+          if [ "${{ steps.backup_type.outputs.type }}" = "DATABASE" ]; then
+            if [ ! -f backups/database.sql.gz ]; then
+              echo "❌ Database backup not found!"
+              exit 1
+            fi
+            echo "✅ Database backup created: $(du -h backups/database.sql.gz)"
+          else
+            if [ ! -f backups/uploads.tar.gz ]; then
+              echo "❌ Full backup uploads not found!"
+              exit 1
+            fi
+            echo "✅ Full backup created: $(du -h backups/uploads.tar.gz)"
+          fi
+
+      - name: Push backup to GitHub
+        if: always()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          BRANCH="${{ steps.backup_type.outputs.type == 'FULL' && 'frameid-backups-full' || 'frameid-backups-database' }}"
+          
+          # إنشاء branch جديد أو تحديث الموجود
+          git checkout -B "$BRANCH"
+          
+          # نسخ ملفات الباكب إلى الجذر
+          cp -r backups/* . 2>/dev/null || true
+          
+          # إضافة ملفات الباكب
+          git add -A
+          
+          # التحقق من وجود تغييرات
+          if git diff --staged --quiet; then
+            echo "لا توجد تغييرات جديدة في الباكب"
+          else
+            git commit -m "backup: ${{ steps.backup_type.outputs.type }} - ${{ github.event_name == 'schedule' && 'مجدول' || 'يدوي' }} - $(date -u +'%Y-%m-%d %H:%M:%S UTC') - ${{ github.sha }}"
+            git push origin "$BRANCH" --force
+            echo "✅ تم رفع الباكب إلى branch: $BRANCH"
+          fi
