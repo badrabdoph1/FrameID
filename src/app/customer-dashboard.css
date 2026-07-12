@@ -1,4 +1,21 @@
+.customer-published-site-frame {
+  width: 1180px;
+  height: 760px;
+  transform: scale(0.28);
+  transform-origin: top right;
+}
+
+@media (min-width: 640px) {
+  .customer-published-site-frame {
+    transform: scale(0.34);
+  }
+}
+
 @media (min-width: 1024px) {
+  .customer-published-site-frame {
+    transform: scale(0.38);
+  }
+
   .customer-desktop-shell {
     position: relative;
     min-height: 100vh;
@@ -107,6 +124,8 @@
   }
 
   .customer-dashboard-url-card,
+  .customer-dashboard-published-card,
+  .customer-dashboard-context-notice,
   .customer-dashboard-readiness-card,
   .customer-dashboard-panel,
   .customer-dashboard-action-card {

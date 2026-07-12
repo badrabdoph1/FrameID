@@ -103,7 +103,7 @@ function DashboardTitleBadge({ compact = false }: { compact?: boolean }) {
           "truncate whitespace-nowrap bg-gradient-to-l from-[#fff7e8] via-[#f3cf73] to-[#fff7e8] bg-clip-text font-black tracking-tight text-transparent drop-shadow-[0_0_18px_rgba(243,207,115,0.22)]",
           compact ? "text-[0.68rem] xs:text-[0.72rem] sm:text-sm" : "text-sm md:text-2xl"
         )}>
-          صفحة التحكم في موقعك
+          لوحة إدارة موقعك
         </h1>
       </div>
     </div>
@@ -249,9 +249,9 @@ export function DashboardShell({ children, siteSlug }: { children: ReactNode; si
 
           <div className="mt-auto grid gap-2 border-t border-white/8 pt-3">
             {siteSlug ? (
-              <Link href={`/p/${siteSlug}`} target="_blank" className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-amber-300/18 bg-amber-300/10 px-3 text-sm font-black text-[#f3cf73] no-underline transition hover:bg-amber-300/16 hover:text-[#ffe9a8]">
+              <Link href={`/p/${siteSlug}?ownerView=1`} target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-amber-300/18 bg-amber-300/10 px-3 text-sm font-black text-[#f3cf73] no-underline transition hover:bg-amber-300/16 hover:text-[#ffe9a8]">
                 <ExternalLink className="size-4" aria-hidden />
-                فتح الموقع
+                شاهد الموقع كما يراه العميل
               </Link>
             ) : null}
             <form action={logoutAction}>
