@@ -58,7 +58,7 @@ export function TemplateDesktopPreview({ template, compact = false }: TemplateDe
           <div className="h-1.5 w-20 rounded-full bg-current/12" />
         </div>
 
-        <div className={cn("grid gap-3 p-3", compact ? "min-h-[178px]" : "min-h-[236px]")}>
+          <div className={cn("grid gap-3 p-3", compact ? "min-h-[168px]" : "min-h-[170px] md:min-h-[236px]")}>
           <div className="flex items-center justify-between gap-3">
             <div className="h-2.5 w-20 rounded-full" style={{ background: style.accent }} />
             <div className="hidden items-center gap-2 sm:flex">
