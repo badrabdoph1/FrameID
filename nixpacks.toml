@@ -1,5 +1,5 @@
 [phases.setup]
-aptPkgs = ["postgresql-client-16"]
+nixPkgs = ["nodejs_22", "postgresql_18"]
 
 [phases.build]
 cmds = ["DATABASE_URL=postgresql://dummy:dummy@localhost:5432/dummy npm run build"]
