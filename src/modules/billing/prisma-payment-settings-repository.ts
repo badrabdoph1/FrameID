@@ -13,30 +13,46 @@ type PrismaPaymentClient = {
     update(input: unknown): Promise<unknown>;
   };
   paymentAccount: {
+    findMany(input: unknown): Promise<unknown[]>;
     create(input: unknown): Promise<unknown>;
     update(input: unknown): Promise<unknown>;
   };
 };
 
-function transformSettings(
-  row: Record<string, unknown>,
-): PaymentMethodWithAccounts {
-  const qrAsset = row.qrCodeAsset as Record<string, unknown> | null;
-  return {
-    id: row.id as string,
-    paymentMethod: row.paymentMethod as PaymentMethodWithAccounts["paymentMethod"],
-    isActive: row.isActive as boolean,
-    label: (row.label as string) ?? null,
-    description: (row.description as string) ?? null,
-    config: (row.config as Record<string, unknown>) ?? {},
-    qrCodeAssetId: (row.qrCodeAssetId as string) ?? null,
-    qrCodeUrl: qrAsset?.url ? (qrAsset.url as string) : null,
-    sortOrder: (row.sortOrder as number) ?? 0,
-    accounts: ((row.accounts as Record<string, unknown>[]) ?? []).map(
-      (a): PaymentAccountItem => ({
+export function createPrismaPaymentSettingsRepository(
+  prisma: PrismaPaymentClient,
+): PaymentSettingsRepository {
+  async function getAccountsGroupedByMethod(onlyActive: boolean) {
+    const where: Record<string, unknown> = { deletedAt: null };
+    if (onlyActive) where.isActive = true;
+
+    const accounts = (await prisma.paymentAccount.findMany({
+      where,
+      orderBy: [{ method: "asc" as const }, { sortOrder: "asc" as const }],
+    })) as Record<string, unknown>[];
+
+    const grouped = new Map<string, Record<string, unknown>[]>();
+    for (const account of accounts) {
+      const method = account.method as string;
+      if (!grouped.has(method)) grouped.set(method, []);
+      grouped.get(method)!.push(account);
+    }
+
+    const labelMap: Record<string, string> = { INSTAPAY: "إنستا باي", VODAFONE_CASH: "فودافون كاش", STRIPE: "Stripe", PAYPAL: "PayPal" };
+    return Array.from(grouped.entries()).map(([method, methodAccounts]) => ({
+      id: `method-${method}`,
+      paymentMethod: method as PaymentMethodWithAccounts["paymentMethod"],
+      isActive: true,
+      label: labelMap[method] ?? method,
+      description: method === "INSTAPAY" ? "تحويل فوري عبر تطبيق InstaPay ثم رفع صورة إثبات الدفع." : method === "VODAFONE_CASH" ? "تحويل يدوي عبر Vodafone Cash ثم رفع صورة إثبات الدفع." : null,
+      config: {},
+      qrCodeAssetId: null,
+      qrCodeUrl: null,
+      sortOrder: method === "INSTAPAY" ? 10 : method === "VODAFONE_CASH" ? 20 : 30,
+      accounts: methodAccounts.map((a) => ({
         id: a.id as string,
-        paymentSettingsId: a.paymentSettingsId as string,
-        label: (a.label as string) ?? null,
+        paymentSettingsId: a.paymentSettingsId as string ?? "",
+        label: (a.label as string) ?? (a.displayName as string) ?? null,
         accountName: a.accountName as string,
         accountNumber: a.accountNumber as string,
         bankName: (a.bankName as string) ?? null,
@@ -47,48 +63,22 @@ function transformSettings(
         notes: (a.notes as string) ?? null,
         isActive: a.isActive as boolean,
         sortOrder: (a.sortOrder as number) ?? 0,
-      }),
-    ),
-  };
-}
+      })),
+    }));
+  }
 
-const settingsInclude = {
-  accounts: {
-    where: { isActive: true },
-    orderBy: { sortOrder: "asc" as const },
-  },
-  qrCodeAsset: {
-    select: { url: true },
-  },
-};
-
-export function createPrismaPaymentSettingsRepository(
-  prisma: PrismaPaymentClient,
-): PaymentSettingsRepository {
   return {
     async getActivePaymentMethods() {
-      const rows = (await prisma.paymentSettings.findMany({
-        where: { isActive: true },
-        orderBy: { sortOrder: "asc" },
-        include: settingsInclude,
-      })) as Record<string, unknown>[];
-      return rows.map(transformSettings);
+      return getAccountsGroupedByMethod(true);
     },
 
     async getPaymentMethod(method: string) {
-      const row = (await prisma.paymentSettings.findUnique({
-        where: { paymentMethod: method as never },
-        include: settingsInclude,
-      })) as Record<string, unknown> | null;
-      return row ? transformSettings(row) : null;
+      const methods = await getAccountsGroupedByMethod(false);
+      return methods.find((m) => m.paymentMethod === method) ?? null;
     },
 
     async getAllPaymentMethods() {
-      const rows = (await prisma.paymentSettings.findMany({
-        orderBy: { sortOrder: "asc" },
-        include: settingsInclude,
-      })) as Record<string, unknown>[];
-      return rows.map(transformSettings);
+      return getAccountsGroupedByMethod(false);
     },
 
     async updatePaymentSettings(id: string, data: Partial<PaymentSettingsData>) {

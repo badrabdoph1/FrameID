@@ -1,7 +1,14 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, beforeAll } from "vitest";
 
 import { uploadPlatformTemplateImage } from "@/modules/media/platform-image-upload";
-import type { MediaStorageAdapter } from "@/modules/media/media-upload-service";
+import type { MediaStorageAdapter, MediaUploadRepository } from "@/modules/media/media-upload-service";
+import { createTestPng, createTestFile } from "./test-image-helpers";
+
+let testPng: Buffer;
+
+beforeAll(async () => {
+  testPng = await createTestPng(200, 200);
+});
 
 function createStorage(): MediaStorageAdapter & { saved: string[] } {
   const saved: string[] = [];
@@ -14,13 +21,24 @@ function createStorage(): MediaStorageAdapter & { saved: string[] } {
   };
 }
 
-function createFile(bytes: Uint8Array, name: string, type: string): File {
+function createRepository(): MediaUploadRepository & { created: string[] } {
+  const created: string[] = [];
+  return {
+    created,
+    async createAsset(input) {
+      created.push(`${input.tenantId}:${input.storageKey}:${input.mimeType}`);
+      return { id: `asset_${input.storageKey}`, url: input.url };
+    },
+  };
+}
+
+function createFile(bytes: Buffer, name: string, type: string): File {
   return {
     name,
     type,
-    size: bytes.byteLength,
+    size: bytes.length,
     async arrayBuffer() {
-      return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
+      return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.length);
     },
   } as File;
 }
@@ -28,28 +46,32 @@ function createFile(bytes: Uint8Array, name: string, type: string): File {
 describe("platform template image upload", () => {
   it("stores a verified template image under the platform namespace", async () => {
     const storage = createStorage();
-    const png = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00]);
+    const repository = createRepository();
 
-    await expect(uploadPlatformTemplateImage(
-      createFile(png, "Template Cover.PNG", "image/png"),
-      { storage, createId: () => "cover-id" },
-    )).resolves.toEqual({
-      storageKey: "platform/templates/cover-id-template-cover.png",
+    const result = await uploadPlatformTemplateImage(
+      createFile(testPng, "Template Cover.PNG", "image/png"),
+      { storage, repository, createId: () => "cover-id" },
+    );
+
+    expect(result).toEqual({
+      storageKey: "asset_platform/templates/cover-id-template-cover.png",
       url: "/uploads/platform/templates/cover-id-template-cover.png",
     });
 
-    expect(storage.saved).toEqual([
-      "platform/templates/cover-id-template-cover.png:image/png:9",
-    ]);
+    expect(storage.saved[0]).toContain("platform/templates/cover-id-template-cover.png");
+    expect(storage.saved[0]).toContain("image/webp");
+    expect(repository.created).toContain("platform:platform/templates/cover-id-template-cover.png:image/webp");
   });
 
   it("rejects a file whose bytes do not match the declared image type", async () => {
     const storage = createStorage();
-    const fake = createFile(new TextEncoder().encode("MZ executable"), "cover.jpg", "image/jpeg");
+    const repository = createRepository();
+    const fake = createFile(Buffer.from("MZ executable"), "cover.jpg", "image/jpeg");
 
-    await expect(uploadPlatformTemplateImage(fake, { storage })).rejects.toThrow(
-      "محتوى الملف لا يطابق صيغة الصورة",
+    await expect(uploadPlatformTemplateImage(fake, { storage, repository })).rejects.toThrow(
+      "Invalid image/jpeg signature",
     );
     expect(storage.saved).toEqual([]);
+    expect(repository.created).toEqual([]);
   });
 });

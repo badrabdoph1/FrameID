@@ -109,10 +109,12 @@ export function sanitizeFilename(filename: string): string {
 export function generateStorageKey(
   tenantId: string,
   originalFilename: string,
-  createId: () => string
+  createId: () => string,
+  directory?: string
 ): string {
   const sanitized = sanitizeFilename(originalFilename);
-  return `${tenantId}/${createId()}-${sanitized}`;
+  const prefix = directory ? `${directory}/` : "";
+  return `${tenantId}/${prefix}${createId()}-${sanitized}`;
 }
 
 export async function processImageFromFile(
