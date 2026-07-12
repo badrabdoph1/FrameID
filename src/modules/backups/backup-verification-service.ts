@@ -1,8 +1,13 @@
 import { stat } from "node:fs/promises";
-import { existsSync } from "node:fs";
+import { createReadStream, createWriteStream, existsSync } from "node:fs";
 import { join } from "node:path";
+import { mkdtemp, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { createGunzip } from "node:zlib";
+import { pipeline } from "node:stream/promises";
+import { spawn } from "node:child_process";
 
-import { createSha256Checksum, type BackupManifest } from "./backup-manifest";
+import { createFileSha256Checksum, createSha256Checksum, validateBackupManifest, type BackupManifest } from "./backup-manifest";
 
 export type VerificationResult = {
   valid: boolean;
@@ -28,7 +33,28 @@ export type VerificationService = {
   verifyAllBackups(backupRoot: string): Promise<{ results: VerificationResult[]; total: number; valid: number; invalid: number }>;
 };
 
-export function createVerificationService(): VerificationService {
+async function runCommand(command: string, args: string[]): Promise<void> {
+  await new Promise<void>((resolve, reject) => {
+    const child = spawn(command, args, { stdio: ["ignore", "ignore", "pipe"] });
+    let stderr = "";
+    child.stderr?.on("data", (chunk) => { stderr += String(chunk); });
+    child.on("error", reject);
+    child.on("close", (code) => code === 0 ? resolve() : reject(new Error(stderr.trim() || `${command} exited with ${code}`)));
+  });
+}
+
+async function verifyPostgresDump(path: string): Promise<void> {
+  const tempRoot = await mkdtemp(join(tmpdir(), "frameid-backup-verify-"));
+  const dumpPath = join(tempRoot, "database.dump");
+  try {
+    await pipeline(createReadStream(path), createGunzip(), createWriteStream(dumpPath));
+    await runCommand("pg_restore", ["--list", dumpPath]);
+  } finally {
+    await rm(tempRoot, { recursive: true, force: true });
+  }
+}
+
+export function createVerificationService({ verifyPayloadTools = true }: { verifyPayloadTools?: boolean } = {}): VerificationService {
   return {
     async verifyBackup(backupId: string, backupRoot: string): Promise<VerificationResult> {
       const startTime = Date.now();
@@ -72,6 +98,8 @@ export function createVerificationService(): VerificationService {
           if (!checks.manifestIntegrity) errors.push("Manifest checksum mismatch");
 
           const manifest = JSON.parse(manifestContent) as BackupManifest;
+          const manifestValidation = validateBackupManifest(manifest);
+          if (!manifestValidation.valid) errors.push(...manifestValidation.errors);
           const requiresUploads = manifest.backupType === "FULL";
 
           checks.databaseDumpExists = existsSync(dbDumpPath);
@@ -80,6 +108,14 @@ export function createVerificationService(): VerificationService {
             sizes.databaseBytes = s.size;
             checks.databaseDumpNonEmpty = s.size > 0;
             if (!checks.databaseDumpNonEmpty) errors.push("Database dump is empty");
+            if (checks.databaseDumpNonEmpty) {
+              const checksum = await createFileSha256Checksum(dbDumpPath);
+              if (checksum !== manifest.artifactChecksums?.database) errors.push("Database artifact checksum mismatch");
+              if (verifyPayloadTools) {
+                try { await verifyPostgresDump(dbDumpPath); }
+                catch (error) { errors.push(error instanceof Error ? error.message : "Invalid PostgreSQL dump"); }
+              }
+            }
           } else {
             errors.push("database.sql.gz not found");
           }
@@ -90,6 +126,14 @@ export function createVerificationService(): VerificationService {
             sizes.uploadsBytes = s.size;
             checks.uploadsArchiveNonEmpty = s.size > 0;
             if (requiresUploads && !checks.uploadsArchiveNonEmpty) errors.push("Uploads archive is empty");
+            if (requiresUploads && checks.uploadsArchiveNonEmpty) {
+              const checksum = await createFileSha256Checksum(uploadsPath);
+              if (checksum !== manifest.artifactChecksums?.uploads) errors.push("Uploads artifact checksum mismatch");
+              if (verifyPayloadTools) {
+                try { await runCommand("tar", ["-tzf", uploadsPath]); }
+                catch (error) { errors.push(error instanceof Error ? error.message : "Invalid uploads archive"); }
+              }
+            }
           } else if (requiresUploads) {
             checks.uploadsArchiveNonEmpty = false;
             errors.push("uploads.tar.gz not found");

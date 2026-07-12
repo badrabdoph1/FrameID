@@ -122,7 +122,7 @@ export async function runDueBackups(now = new Date()): Promise<void> {
     });
 
     try {
-      const result = await service.runScheduledBackup(backupType);
+      const result = await service.runBackup({ type: backupType, trigger: "AUTO", initiatedById: "scheduler", note: "نسخة تلقائية" });
       const durationMs = Date.now() - startedAt;
 
       if (result) {
@@ -132,8 +132,6 @@ export async function runDueBackups(now = new Date()): Promise<void> {
           backupJobId: result.backupJobId,
           durationMs,
         });
-      } else {
-        log("error", `✗ Scheduled ${backupType} backup returned null (failed silently)`, { durationMs });
       }
     } catch (error) {
       const durationMs = Date.now() - startedAt;

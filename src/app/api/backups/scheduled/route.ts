@@ -112,8 +112,9 @@ export async function GET(request: NextRequest) {
           backupGitHubRepository: process.env.BACKUP_GITHUB_REPOSITORY,
         });
 
-        const result = await service.runManualBackup({
+        const result = await service.runBackup({
           type: setting.type,
+          trigger: "AUTO",
           initiatedById: "scheduler",
           note: `Backup auto ${new Date().toISOString()}`,
         });

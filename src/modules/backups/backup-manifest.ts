@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { createReadStream } from "node:fs";
 import { readFile, stat } from "node:fs/promises";
 import { isSupportedBackupType, type SupportedBackupType } from "@/modules/backups/backup-policy";
 
@@ -23,6 +24,7 @@ export type BackupManifest = {
   totalSizeBytes: number;
   compressionAlgorithm: string;
   encryptionEnabled: boolean;
+  artifactChecksums: { database: string; uploads: string | null };
   files: {
     database: string;
     uploads: string | null;
@@ -49,6 +51,17 @@ export function createSha256Checksum(payload: string | Uint8Array): string {
   return createHash("sha256").update(payload).digest("hex");
 }
 
+export async function createFileSha256Checksum(filePath: string): Promise<string> {
+  const hash = createHash("sha256");
+  await new Promise<void>((resolve, reject) => {
+    const stream = createReadStream(filePath);
+    stream.on("data", (chunk) => hash.update(chunk));
+    stream.on("error", reject);
+    stream.on("end", resolve);
+  });
+  return hash.digest("hex");
+}
+
 export function createBackupManifest(input: {
   backupJobId: string;
   backupType: BackupType;
@@ -64,6 +77,7 @@ export function createBackupManifest(input: {
   contentSizeBytes: number;
   compressionAlgorithm: string;
   encryptionEnabled: boolean;
+  artifactChecksums: { database: string; uploads: string | null };
   createdAt: string;
 }): Omit<BackupManifest, "checksum"> {
   return {

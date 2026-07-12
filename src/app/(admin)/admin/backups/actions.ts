@@ -37,8 +37,9 @@ export async function runBackupAction(formData: FormData) {
   if (!type) redirect("/admin/backups?error=invalid-type");
 
   try {
-    await createOfficialBackupService().runManualBackup({
+    await createOfficialBackupService().runBackup({
       type,
+      trigger: "MANUAL",
       initiatedById: session.user.id,
       note: type === "FULL" ? "نسخة كاملة عبر المسار الرسمي" : "نسخة قاعدة بيانات عبر المسار الرسمي",
     });
@@ -147,8 +148,9 @@ export async function createSnapshotAction() {
   const session = await requireSuperAdminSession();
 
   try {
-    await createOfficialBackupService().runManualBackup({
+    await createOfficialBackupService().runBackup({
       type: "FULL",
+      trigger: "MIGRATION",
       initiatedById: session.user.id,
       note: "حزمة انتقال عبر النسخة الكاملة الرسمية",
     });

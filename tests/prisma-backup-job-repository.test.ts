@@ -58,6 +58,7 @@ describe("prisma backup job repository", () => {
       totalSizeBytes: 100,
       compressionAlgorithm: "zstd",
       encryptionEnabled: true,
+      artifactChecksums: { database: "d".repeat(64), uploads: null },
       files: {
         database: "database.sql.gz",
         uploads: "uploads.tar.gz",
@@ -72,6 +73,7 @@ describe("prisma backup job repository", () => {
       checksumSha256: "checksum",
       sizeBytes: 100,
       localPath: "backups/2026-07-06/",
+      githubPath: "https://github.com/example/repo/tree/backups/id",
       completedAt: new Date("2026-07-06T12:00:00.000Z"),
     });
     await repository.recordAudit({

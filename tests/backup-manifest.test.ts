@@ -31,6 +31,7 @@ describe("backup manifest", () => {
       contentSizeBytes: 0,
       compressionAlgorithm: "gzip",
       encryptionEnabled: true,
+      artifactChecksums: { database: "d".repeat(64), uploads: null },
       createdAt: "2026-07-06T12:00:00.000Z",
     });
 
@@ -62,6 +63,7 @@ describe("backup manifest", () => {
         contentSizeBytes: 512,
         compressionAlgorithm: "gzip",
         encryptionEnabled: false,
+        artifactChecksums: { database: "d".repeat(64), uploads: "u".repeat(64) },
         createdAt: "2026-07-06T12:00:00.000Z",
       })
     );
