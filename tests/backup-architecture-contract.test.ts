@@ -10,4 +10,11 @@ describe("عقد Backup Architecture", () => {
     expect(text).not.toContain('schedule: "0 3 */3 * *"');
   });
   it("يجعل Actions مشغلاً فقط", async () => { const text = await readFile(".github/workflows/backup.yml", "utf8"); expect(text).not.toMatch(/pg_dump|pg_restore|git\s+push|checksum|retention|npm run backup/i); expect(text).toContain("/api/backups/run"); });
+  it("يوثق هوية GitHub Actions عبر OIDC دون أسرار يدوية", async () => {
+    const text = await readFile(".github/workflows/backup.yml", "utf8");
+    expect(text).toContain("id-token: write");
+    expect(text).toContain("ACTIONS_ID_TOKEN_REQUEST_URL");
+    expect(text).toContain("audience=frameid-backup");
+    expect(text).not.toContain("secrets.FRAMEID_BACKUP");
+  });
 });
