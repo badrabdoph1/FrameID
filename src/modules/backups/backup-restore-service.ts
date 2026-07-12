@@ -64,7 +64,12 @@ async function waitForProcess(child: ReturnType<typeof spawn>, label: string): P
 async function verifyCustomPostgresDump(dumpPath: string): Promise<void> {
   const pgRestore = spawn("pg_restore", ["--list", "-"], { stdio: ["pipe", "ignore", "pipe"] });
   const processPromise = waitForProcess(pgRestore, "pg_restore verification");
-  await pipeline(createReadStream(dumpPath), createGunzip(), pgRestore.stdin);
+  try {
+    await pipeline(createReadStream(dumpPath), createGunzip(), pgRestore.stdin);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    if (!msg.includes("EPIPE") && !msg.includes("ERR_STREAM_PREMATURE_CLOSE")) throw err;
+  }
   await processPromise;
 }
 
@@ -75,7 +80,12 @@ async function restoreCustomPostgresDump(databaseUrl: string, dumpPath: string):
     `--dbname=${parsed.database}`, "--clean", "--if-exists", "--no-owner", "--no-acl", "--exit-on-error", "-",
   ], { env: { ...process.env, PGPASSWORD: parsed.password }, stdio: ["pipe", "inherit", "pipe"] });
   const processPromise = waitForProcess(pgRestore, "pg_restore");
-  await pipeline(createReadStream(dumpPath), createGunzip(), pgRestore.stdin);
+  try {
+    await pipeline(createReadStream(dumpPath), createGunzip(), pgRestore.stdin);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    if (!msg.includes("EPIPE") && !msg.includes("ERR_STREAM_PREMATURE_CLOSE")) throw err;
+  }
   await processPromise;
 }
 
