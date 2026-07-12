@@ -52,7 +52,7 @@ export function createMemoryBackupLock(): BackupLock {
 export function createDatabaseBackupLock(
   prisma: {
     backupJob: {
-      count(input: { where: { type: string; status: string; startedAt: { gte: Date } } }): Promise<number>;
+      count(input: { where: { type: string; status: string; createdAt: { gte: Date } } }): Promise<number>;
     };
   }
 ): BackupLock {
@@ -62,7 +62,7 @@ export function createDatabaseBackupLock(
         where: {
           type,
           status: "RUNNING",
-          startedAt: {
+          createdAt: {
             gte: new Date(Date.now() - 30 * 60 * 1000),
           },
         },
@@ -79,7 +79,7 @@ export function createDatabaseBackupLock(
         where: {
           type,
           status: "RUNNING",
-          startedAt: {
+          createdAt: {
             gte: new Date(Date.now() - 30 * 60 * 1000),
           },
         },

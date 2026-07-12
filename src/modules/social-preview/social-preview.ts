@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 
 export const PLATFORM_DEFAULT_SOCIAL_IMAGE = "/opengraph-image";
-export const PLATFORM_CUSTOM_SOCIAL_IMAGE = "/social-preview-image?mode=custom";
 export const PHOTOGRAPHER_PLACEHOLDER_IMAGE = "/photographer-placeholder";
 
 export type SocialPreviewImageSource =
@@ -32,8 +31,6 @@ export type PlatformSocialPreviewSettings = {
   description: string | null;
   imageUrl: string | null;
   storageKey: string | null;
-  imageData?: string | null;
-  imageMimeType?: string | null;
 };
 
 export type PlatformSocialPreviewContext = {

@@ -1,4 +1,6 @@
 import { join } from "node:path";
+import { unlink } from "node:fs/promises";
+import { existsSync } from "node:fs";
 import {
   createBackupManifest,
   addChecksumToManifest,
@@ -226,6 +228,11 @@ export function createBackupJobService({
         manifest,
         checksumSha256: backupPackage.checksumSha256,
       });
+
+      const rootLevelDump = join(root, "database.sql.gz");
+      if (existsSync(rootLevelDump) && backupPackage.databaseDumpPath !== rootLevelDump) {
+        await unlink(rootLevelDump).catch(() => undefined);
+      }
 
       const localVerification = await verification.verifyBackup(
         backupPackage.backupId,

@@ -3,6 +3,7 @@ import { ImageResponse } from "next/og";
 import { getPlatformSocialPreviewSettings } from "@/modules/social-preview/platform-social-preview-settings";
 
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
