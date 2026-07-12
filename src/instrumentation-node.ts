@@ -1,11 +1,19 @@
 import "server-only";
 
+import { mkdir } from "node:fs/promises";
+import { join } from "node:path";
 import { startProductionBackupRunner } from "@/modules/backups/production-backup-runner";
 import { createAutoRestoreService } from "@/modules/backups/backup-auto-restore-service";
 
 export function registerNodeInstrumentation(): void {
+  ensureBackupDir();
   startProductionBackupRunner();
   runAutoRestore();
+}
+
+function ensureBackupDir(): void {
+  const backupRoot = process.env.BACKUP_DIR || join(process.cwd(), "backups");
+  mkdir(backupRoot, { recursive: true }).catch(() => {});
 }
 
 async function runAutoRestore(): Promise<void> {
