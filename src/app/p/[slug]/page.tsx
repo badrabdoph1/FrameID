@@ -1,13 +1,10 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
-import { PublicSiteOwnerBanner } from "@/components/public-sites/public-site-owner-banner";
 import { getThemeSiteComponent } from "@/components/themes/theme-components";
 import { MissingContactGuard } from "@/components/themes/missing-contact-guard";
 import { prisma } from "@/lib/prisma";
 import { getPlatformBaseUrl } from "@/lib/platform-url";
-import { getCurrentRequestSession } from "@/modules/auth/request-session";
-import { shouldShowOwnerView } from "@/modules/public-sites/owner-view";
 import { createPrismaPublicSiteRepository } from "@/modules/public-sites/prisma-public-site-repository";
 import { createPublicSiteViewModel } from "@/modules/public-sites/public-site-view-model";
 import {
@@ -19,7 +16,6 @@ import { SiteExpiredPage } from "@/components/site-expired-page";
 
 type Props = {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ ownerView?: string | string[] }>;
 };
 
 async function getPublicSite(slug: string) {
@@ -52,24 +48,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return site.metadata;
 }
 
-export default async function PublicSitePage({ params, searchParams }: Props) {
-  const [{ slug }, resolvedSearchParams] = await Promise.all([params, searchParams]);
-  const requestedOwnerView = resolvedSearchParams.ownerView === "1";
-  const [site, { result: access }] = await Promise.all([
-    getPublicSite(slug),
-    checkSiteAccessBySlug(slug),
-  ]);
+export default async function PublicSitePage({ params }: Props) {
+  const { slug } = await params;
+  const site = await getPublicSite(slug);
 
   if (!site) notFound();
 
+  const { result: access } = await checkSiteAccessBySlug(slug);
   if (!access.allowed) return <SiteExpiredPage />;
 
-  const ownerSession = requestedOwnerView ? await getCurrentRequestSession() : null;
-  const showOwnerView = shouldShowOwnerView({
-    requested: requestedOwnerView,
-    requestedSlug: slug,
-    sessionSiteSlug: ownerSession?.site.slug ?? null,
-  });
   const ThemeSiteComponent = getThemeSiteComponent(site.themeCode);
 
   return (
@@ -79,7 +66,6 @@ export default async function PublicSitePage({ params, searchParams }: Props) {
         suppressHydrationWarning
         dangerouslySetInnerHTML={{ __html: JSON.stringify(site.structuredData) }}
       />
-      {showOwnerView ? <PublicSiteOwnerBanner /> : null}
       <ThemeSiteComponent site={site} />
       <MissingContactGuard />
     </>

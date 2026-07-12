@@ -18,15 +18,13 @@ export function createPrismaMediaUploadRepository(
           url: input.url,
           mimeType: input.mimeType,
           sizeBytes: input.sizeBytes,
-          width: input.width,
-          height: input.height,
-          alt: input.alt,
+          alt: input.alt
         },
         select: {
           id: true,
-          url: true,
-        },
+          url: true
+        }
       });
-    },
+    }
   };
 }

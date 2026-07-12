@@ -90,8 +90,8 @@ export async function restoreWorkspaceBackupAction(formData: FormData) {
     const postValidation = await service.validatePostRestore(env.DATABASE_URL);
     if (!postValidation.passed) throw new Error(postValidation.errors.join("; ") || "فشل التحقق بعد الاستعادة.");
 
-    await prisma.restoreJob.update({ where: { id: restoreJob.id }, data: { status: "COMPLETED", completedAt: new Date() } }).catch(() => undefined);
-    await audit({ actorId: session.user.id, action: "RESTORE_COMPLETED", entityId: backupJobId, metadata: { restoreJobId, source: result.source, durationMs: result.durationMs, counts: postValidation.counts } }).catch(() => undefined);
+    await prisma.restoreJob.update({ where: { id: restoreJob.id }, data: { status: "COMPLETED", completedAt: new Date() } });
+    await audit({ actorId: session.user.id, action: "RESTORE_COMPLETED", entityId: backupJobId, metadata: { restoreJobId, source: result.source, durationMs: result.durationMs, counts: postValidation.counts } });
     revalidatePath("/admin/backups");
   } catch (error) {
     const message = error instanceof Error ? error.message : "فشلت الاستعادة.";

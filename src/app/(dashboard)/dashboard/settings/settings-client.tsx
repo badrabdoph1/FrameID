@@ -1,8 +1,10 @@
 "use client";
 
-import { CheckCircle2, Clock, Globe2, Link2, ShieldCheck, Trash2, User, XCircle } from "lucide-react";
+import { useState } from "react";
+import { CheckCircle2, Clock, Copy, ExternalLink, Globe2, Link2, ShieldCheck, Trash2, User, XCircle } from "lucide-react";
+import Link from "next/link";
 
-import { DashboardSiteActions } from "@/components/dashboard/dashboard-site-actions";
+import { Button } from "@/components/ui/button";
 import { SlugEditor } from "@/components/dashboard/slug-editor";
 import { getPublicAccountIdentifier, isPhoneStorageEmail } from "@/modules/auth/auth-identifier";
 
@@ -32,10 +34,17 @@ const roleLabel: Record<string, string> = {
 };
 
 export function SettingsClient({ userName, userEmail, userPhone, userRole, siteTitle, siteSlug, siteStatus, siteUrl, slugChangeUsed }: SettingsClientProps) {
+  const [copied, setCopied] = useState(false);
   const badge = statusBadge[siteStatus] ?? { label: siteStatus, color: "rgba(245, 234, 214, 0.5)", bg: "rgba(245, 234, 214, 0.05)", icon: ShieldCheck };
   const StatusIcon = badge.icon;
   const loginIdentifier = getPublicAccountIdentifier({ email: userEmail, phone: userPhone });
   const showRealEmail = !isPhoneStorageEmail(userEmail);
+
+  async function copyUrl() {
+    await navigator.clipboard?.writeText(siteUrl);
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 1800);
+  }
 
   return (
     <main className="mx-auto grid w-full max-w-6xl gap-4 pb-4">
@@ -48,7 +57,16 @@ export function SettingsClient({ userName, userEmail, userPhone, userRole, siteT
               معلومات الحساب الأساسية، حالة الموقع، والرابط العام. خلي بالك: تغيير الرابط متاح مرة واحدة فقط.
             </p>
           </div>
-          <DashboardSiteActions siteUrl={siteUrl} />
+          <div className="grid gap-2 sm:flex">
+            <Button type="button" variant="luxury" className="min-h-11 rounded-2xl font-black" onClick={copyUrl}>
+              {copied ? <CheckCircle2 className="size-4" /> : <Copy className="size-4" />}
+              {copied ? "اتنسخ" : "نسخ الرابط"}
+            </Button>
+            <Link href={`/p/${siteSlug}`} target="_blank" className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-4 text-sm font-black text-white/75 no-underline transition hover:bg-white/[0.08] hover:text-white">
+              <ExternalLink className="size-4" />
+              فتح الموقع
+            </Link>
+          </div>
         </div>
       </section>
 
@@ -67,7 +85,7 @@ export function SettingsClient({ userName, userEmail, userPhone, userRole, siteT
           <div className="grid gap-2">
             <InfoRow label="العنوان" value={siteTitle} />
             <div className="rounded-2xl border border-white/8 bg-black/15 p-3">
-              <p className="text-xs font-black text-white/40">الرابط الذي سترسله لعملائك</p>
+              <p className="text-xs font-black text-white/40">الرابط</p>
               <p dir="ltr" className="mt-1 break-all text-sm font-black leading-6 text-[#f3cf73]">{siteUrl}</p>
             </div>
             <div className="flex items-center justify-between gap-3 rounded-2xl border border-white/8 bg-black/15 p-3">
