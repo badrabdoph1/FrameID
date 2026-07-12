@@ -133,11 +133,11 @@ model User {
   deletedAt       DateTime?
 
   ownedTenants          Tenant[]
-  auditLogs             AuditLog[]             @relation("AuditActor")
+  // auditLogs removed: actorId stores plain ID, no FK to User
   adminNotes            AdminNote[]            @relation("AdminNoteAuthor")
   reviewedPayments      PaymentRequest[]       @relation("PaymentReviewer")
   // backupJobs removed: triggeredById stores plain ID, no FK to User
-  backupRestores        RestoreJob[]           @relation("RestoreInitiator")
+  // backupRestores removed: same reason
   impersonationSessions ImpersonationSession[] @relation("ImpersonationAdmin")
   sessions              Session[]
   passwordResetTokens   PasswordResetToken[]
@@ -665,7 +665,7 @@ model AuditLog {
 
   tenant  Tenant? @relation(fields: [tenantId], references: [id])
   tenantId String?
-  actor   User?   @relation("AuditActor", fields: [actorId], references: [id])
+  // actorId stores AdminUser or User ID (no FK — admins ≠ users)
 
   @@index([actorId, createdAt])
   @@index([tenantId, createdAt])

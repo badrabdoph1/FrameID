@@ -43,7 +43,6 @@ export async function runBackupAction(formData: FormData) {
       note: type === "FULL" ? "نسخة كاملة عبر المسار الرسمي" : "نسخة قاعدة بيانات عبر المسار الرسمي",
     });
   } catch (error) {
-    console.error("[BACKUP_ACTION] Real error:", error);
     const { userError } = await processError(error, {
       userId: session.user.id,
       metadata: { action: "runBackup", type },

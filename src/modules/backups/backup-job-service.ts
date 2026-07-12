@@ -168,10 +168,10 @@ export function createBackupJobService({
     });
 
     try {
-      if (!githubStorage) {
-        throw new Error(
-          "BACKUP_GITHUB_TOKEN is required. A backup cannot be completed without GitHub storage."
-        );
+      const hasGitHub = Boolean(githubStorage);
+
+      if (!hasGitHub) {
+        console.warn("[BACKUP] BACKUP_GITHUB_TOKEN not configured — running local-only backup.");
       }
 
       const stats = await repository.collectStats();
@@ -255,33 +255,39 @@ export function createBackupJobService({
         },
       });
 
-      const branch = getGitHubBackupBranch(input.type);
-      const uploaded = await githubStorage.uploadBackup(
-        backupPackage.backupDir,
-        backupPackage.backupId,
-        branch
-      );
-      const remoteVerification = await githubStorage.verifyBackup(
-        backupPackage.backupId,
-        branch
-      );
-      if (!remoteVerification.valid) {
-        throw new Error(
-          `GitHub verification failed: ${remoteVerification.errors.join("; ")}`
+      let uploadedUrl = "";
+      let uploadedCommitSha = "";
+      if (hasGitHub) {
+        const branch = getGitHubBackupBranch(input.type);
+        const uploaded = await githubStorage!.uploadBackup(
+          backupPackage.backupDir,
+          backupPackage.backupId,
+          branch
         );
-      }
+        const remoteVerification = await githubStorage!.verifyBackup(
+          backupPackage.backupId,
+          branch
+        );
+        if (!remoteVerification.valid) {
+          throw new Error(
+            `GitHub verification failed: ${remoteVerification.errors.join("; ")}`
+          );
+        }
 
-      await repository.recordAudit({
-        actorUserId: input.initiatedById,
-        action: "BACKUP_GITHUB_VERIFIED",
-        entityType: "BackupJob",
-        entityId: job.id,
-        metadata: {
-          branch,
-          commitSha: uploaded.commitSha,
-          sizeBytes: remoteVerification.sizeBytes,
-        },
-      });
+        await repository.recordAudit({
+          actorUserId: input.initiatedById,
+          action: "BACKUP_GITHUB_VERIFIED",
+          entityType: "BackupJob",
+          entityId: job.id,
+          metadata: {
+            branch,
+            commitSha: uploaded.commitSha,
+            sizeBytes: remoteVerification.sizeBytes,
+          },
+        });
+        uploadedUrl = uploaded.url;
+        uploadedCommitSha = uploaded.commitSha;
+      }
 
       await repository.saveManifest(manifest);
       await repository.markCompleted({
@@ -289,7 +295,7 @@ export function createBackupJobService({
         checksumSha256: backupPackage.checksumSha256,
         sizeBytes: backupPackage.totalSizeBytes,
         localPath: backupPackage.backupDir,
-        githubPath: uploaded.url,
+        githubPath: uploadedUrl || undefined,
         completedAt: now(),
       });
 
@@ -302,13 +308,17 @@ export function createBackupJobService({
           checksum: backupPackage.checksumSha256,
           backupId: backupPackage.backupId,
           localPath: backupPackage.backupDir,
-          githubPath: uploaded.url,
-          githubCommitSha: uploaded.commitSha,
+          githubPath: uploadedUrl,
+          githubCommitSha: uploadedCommitSha,
+          localOnly: !hasGitHub,
         },
       });
 
       const retentionCount = getBackupPolicy(input.type).retentionCount;
-      await githubStorage.cleanupOldBackups(branch, retentionCount);
+      if (hasGitHub) {
+        const branch = getGitHubBackupBranch(input.type);
+        await githubStorage!.cleanupOldBackups(branch, retentionCount);
+      }
       await retention.cleanupByType(root, input.type, retentionCount);
 
       return {

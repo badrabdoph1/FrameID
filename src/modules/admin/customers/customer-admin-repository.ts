@@ -186,9 +186,7 @@ export function createCustomerAdminRepository(prisma: PrismaClient) {
       where: { tenantId: id },
       orderBy: { createdAt: "desc" },
       take: 10,
-      include: {
-        actor: { select: { name: true } },
-      },
+      select: { id: true, action: true, entityType: true, entityId: true, metadata: true, actorId: true, createdAt: true },
     });
 
     const sessions = await prisma.session.findMany({
@@ -377,7 +375,7 @@ export function createCustomerAdminRepository(prisma: PrismaClient) {
     entityType: string;
     entityId: string | null;
     metadata: unknown;
-    actor: { name: string } | null;
+    actorId: string | null;
     createdAt: Date;
   }): CustomerActivityEntry {
     return {
@@ -386,7 +384,7 @@ export function createCustomerAdminRepository(prisma: PrismaClient) {
       entityType: a.entityType,
       entityId: a.entityId,
       metadata: a.metadata as Record<string, unknown> | null,
-      actorName: a.actor?.name ?? null,
+      actorName: a.actorId ?? null,
       createdAt: a.createdAt.toISOString(),
     };
   }
@@ -430,7 +428,7 @@ export function createCustomerAdminRepository(prisma: PrismaClient) {
       where: { tenantId },
       orderBy: { createdAt: "desc" },
       take: 100,
-      include: { actor: { select: { name: true } } },
+      select: { id: true, action: true, entityType: true, entityId: true, metadata: true, actorId: true, createdAt: true },
     });
     return activity.map(mapActivityEntry);
   }

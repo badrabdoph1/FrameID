@@ -87,7 +87,7 @@ export default async function AdminCustomer360Page({ params }: Props) {
         include: { author: { select: { name: true, email: true } } },
       },
       featureFlags: { orderBy: { updatedAt: "desc" }, take: 8 },
-      auditLogs: { orderBy: { createdAt: "desc" }, take: 10, include: { actor: { select: { name: true, email: true } } } },
+      auditLogs: { orderBy: { createdAt: "desc" }, take: 10, select: { id: true, action: true, entityType: true, entityId: true, actorId: true, createdAt: true } },
       notifications: { where: { deletedAt: null }, orderBy: { createdAt: "desc" }, take: 8 },
       mediaAssets: { where: { deletedAt: null }, orderBy: { createdAt: "desc" }, take: 8 },
     },
@@ -194,7 +194,7 @@ export default async function AdminCustomer360Page({ params }: Props) {
       <section className="grid gap-4 xl:grid-cols-2">
         <Panel title={`Audit Timeline · ${allAuditCount.toLocaleString("ar-EG")}`} icon={Activity}>
           <div className="grid gap-2">
-            {customer.auditLogs.length === 0 ? <Empty text="لا توجد أحداث." /> : customer.auditLogs.map((log) => <CompactItem key={log.id} title={log.action} subtitle={`${log.entityType} · ${log.actor?.email ?? log.actor?.name ?? "system"} · ${dateLabel(log.createdAt)}`} />)}
+            {customer.auditLogs.length === 0 ? <Empty text="لا توجد أحداث." /> : customer.auditLogs.map((log) => <CompactItem key={log.id} title={log.action} subtitle={`${log.entityType} · ${log.actorId ?? "system"} · ${dateLabel(log.createdAt)}`} />)}
           </div>
         </Panel>
         <Panel title="Admin Notes" icon={NotebookText}>

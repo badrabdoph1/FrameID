@@ -85,8 +85,7 @@ export default async function AdminAuditPage({ searchParams }: Props) {
       { entityType: contains },
       { entityId: contains },
       { metadata: contains },
-      { actor: { email: contains } },
-      { actor: { name: contains } },
+      { actorId: contains },
       { tenant: { displayName: contains } },
     ];
   }
@@ -108,8 +107,8 @@ export default async function AdminAuditPage({ searchParams }: Props) {
       orderBy: { createdAt: "desc" },
       skip: (page - 1) * PAGE_SIZE,
       take: PAGE_SIZE,
-      include: {
-        actor: { select: { id: true, name: true, email: true, role: true } },
+      select: {
+        id: true, action: true, entityType: true, entityId: true, metadata: true, actorId: true, createdAt: true,
         tenant: { select: { id: true, displayName: true, status: true } },
       },
     }),
@@ -192,8 +191,8 @@ export default async function AdminAuditPage({ searchParams }: Props) {
                     <span className="font-mono text-[0.68rem] text-white/30">{shortId(entry.entityId)}</span>
                   </div>
                   <div className="min-w-0 text-sm font-bold text-white/62">
-                    <span className="block truncate">{entry.actor?.name ?? "النظام"}</span>
-                    <span className="block truncate text-xs text-white/32">{entry.actor?.email ?? entry.actorId ?? "system"}</span>
+                    <span className="block truncate">{entry.actorId ?? "النظام"}</span>
+                    <span className="block truncate text-xs text-white/32">{entry.actorId ?? "system"}</span>
                   </div>
                   <div className="min-w-0 text-sm font-bold text-white/62">
                     {entry.tenant ? (

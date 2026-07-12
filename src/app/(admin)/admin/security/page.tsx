@@ -17,7 +17,7 @@ export default async function AdminSecurityPage() {
       entityType: true,
       entityId: true,
       createdAt: true,
-      actor: { select: { email: true, name: true } },
+      actorId: true,
     },
   });
 
@@ -26,7 +26,7 @@ export default async function AdminSecurityPage() {
     action: l.action,
     entityType: l.entityType,
     entityId: l.entityId,
-    actorEmail: l.actor?.email ?? null,
+    actorEmail: l.actorId ?? null,
     createdAt: l.createdAt.toISOString(),
   }));
 

@@ -115,7 +115,7 @@ export default async function AdminOperationsPage() {
       } as never,
       orderBy: { createdAt: "desc" },
       take: 8,
-      include: { actor: { select: { name: true, email: true } }, tenant: { select: { id: true, displayName: true } } },
+      select: { id: true, action: true, entityType: true, entityId: true, createdAt: true, actorId: true, tenant: { select: { id: true, displayName: true } } },
     }),
     prisma.featureFlag.findMany({
       where: { enabled: true },
@@ -188,7 +188,7 @@ export default async function AdminOperationsPage() {
 
         <QueuePanel title="آخر العمليات الحساسة" icon={Sparkles} href="/admin/audit">
           {riskyAudit.map((log) => (
-            <QueueItem key={log.id} href={`/admin/audit?q=${encodeURIComponent(log.action)}`} title={log.action} subtitle={log.tenant?.displayName ?? log.entityType} meta={`${log.actor?.email ?? log.actor?.name ?? "system"} · ${dateLabel(log.createdAt)}`} />
+            <QueueItem key={log.id} href={`/admin/audit?q=${encodeURIComponent(log.action)}`} title={log.action} subtitle={log.tenant?.displayName ?? log.entityType} meta={`${log.actorId ?? "system"} · ${dateLabel(log.createdAt)}`} />
           ))}
         </QueuePanel>
       </section>
