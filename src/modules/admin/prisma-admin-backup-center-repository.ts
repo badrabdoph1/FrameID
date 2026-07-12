@@ -48,6 +48,20 @@ function readTrigger(metadata: unknown): string {
   return typeof trigger === "string" ? trigger : "UNKNOWN";
 }
 
+function readMetadata(metadata: unknown): Record<string, unknown> {
+  return metadata && typeof metadata === "object" && !Array.isArray(metadata)
+    ? metadata as Record<string, unknown>
+    : {};
+}
+
+function readText(metadata: Record<string, unknown>, key: string): string | null {
+  return typeof metadata[key] === "string" ? metadata[key] as string : null;
+}
+
+function readFlag(metadata: Record<string, unknown>, key: string): boolean {
+  return metadata[key] === true;
+}
+
 export function createPrismaAdminBackupCenterRepository(
   prisma: PrismaAdminBackupCenterClient
 ) {
@@ -100,7 +114,11 @@ export function createPrismaAdminBackupCenterRepository(
 
       return {
         settings,
-        jobs: jobs.map((job) => ({
+        jobs: jobs.map((job) => {
+          const metadata = readMetadata(job.metadata);
+          const githubPath = readText(metadata, "githubPath");
+          const branchFromPath = githubPath?.match(/\/tree\/([^/]+)\//)?.[1] ?? null;
+          return {
           id: job.id,
           type: job.type,
           status: job.status,
@@ -111,7 +129,16 @@ export function createPrismaAdminBackupCenterRepository(
           errorMessage: job.errorMessage,
           createdAt: job.createdAt.toISOString(),
           completedAt: job.completedAt?.toISOString() ?? null,
-        })),
+          githubPath,
+          githubBranch: readText(metadata, "githubBranch") ?? branchFromPath,
+          githubCommitSha: readText(metadata, "githubCommitSha"),
+          localVerified: readFlag(metadata, "localVerified"),
+          githubUploaded: readFlag(metadata, "githubUploaded"),
+          remoteVerified: readFlag(metadata, "remoteVerified"),
+          retentionApplied: readFlag(metadata, "retentionApplied"),
+          auditLogged: readFlag(metadata, "auditLogged"),
+        };
+        }),
         restores: restores.map((restore) => ({
           id: restore.id,
           backupJobId: restore.backupJobId,

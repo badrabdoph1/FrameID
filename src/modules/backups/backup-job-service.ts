@@ -14,7 +14,7 @@ export type BackupStats = { usersCount: number; tenantsCount: number; sitesCount
 export type BackupJobRepository = {
   createJob(input: { type: BackupType; trigger: BackupTrigger; initiatedById?: string; note?: string }): Promise<{ id: string }>;
   collectStats(): Promise<BackupStats>; saveManifest(input: BackupManifest): Promise<void>;
-  markCompleted(input: { backupJobId: string; checksumSha256: string; sizeBytes: number; localPath?: string; githubPath: string; completedAt: Date }): Promise<void>;
+  markCompleted(input: { backupJobId: string; checksumSha256: string; sizeBytes: number; localPath?: string; githubPath: string; githubBranch: string; githubCommitSha: string; completedAt: Date }): Promise<void>;
   markFailed(input: { backupJobId: string; reason: string }): Promise<void>;
   recordAudit(input: { actorUserId?: string; action: string; entityType: string; entityId: string; metadata?: Record<string, unknown> }): Promise<void>;
 };
@@ -35,7 +35,7 @@ export function createBackupJobService(options: { repository: BackupJobRepositor
     async uploadArtifact(a) { if (!github) throw new Error("BACKUP_GITHUB_TOKEN مطلوب؛ النسخة المحلية لا تعتبر مكتملة"); branch = getGitHubBackupBranch(a.type); const u = await github.uploadBackup(a.backupDir, a.backupId, branch); return { branch, commitSha: u.commitSha, remotePath: u.url }; },
     async applyRetention({ type, branch: b }) { if (!github) throw new Error("GitHub غير متاح"); return { removed: await github.cleanupOldBackups(b, getBackupPolicy(type).retentionCount) }; },
     recordAudit: (e) => repository.recordAudit({ actorUserId: e.actorId, action: e.action, entityType: "BackupJob", entityId: e.jobId, metadata: e.metadata }),
-    markCompleted: (e) => repository.markCompleted({ backupJobId: e.jobId, checksumSha256: e.artifact.checksumSha256, sizeBytes: e.artifact.sizeBytes, localPath: join(root, e.artifact.backupId), githubPath: e.remotePath, completedAt: now() }),
+    markCompleted: (e) => repository.markCompleted({ backupJobId: e.jobId, checksumSha256: e.artifact.checksumSha256, sizeBytes: e.artifact.sizeBytes, localPath: join(root, e.artifact.backupId), githubPath: e.remotePath, githubBranch: e.branch, githubCommitSha: e.commitSha, completedAt: now() }),
     markFailed: (e) => repository.markFailed({ backupJobId: e.jobId, reason: e.reason }),
     async cleanupLocalArtifact(a) { if (existsSync(a.backupDir)) await rm(a.backupDir, { recursive: true, force: true }); },
   });

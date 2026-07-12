@@ -61,7 +61,7 @@ export function createPrismaBackupJobRepository(prisma: PrismaBackupJobClient): 
           sizeBytes: input.sizeBytes,
           filePath: input.localPath,
           completedAt: input.completedAt,
-          metadata: { ...asMetadata(current?.metadata), githubPath: input.githubPath, externalStorage: "github", localVerified: true, githubUploaded: true, remoteVerified: true, retentionApplied: true, auditLogged: true },
+          metadata: { ...asMetadata(current?.metadata), githubPath: input.githubPath, githubBranch: input.githubBranch, githubCommitSha: input.githubCommitSha, externalStorage: "github", localVerified: true, githubUploaded: true, remoteVerified: true, retentionApplied: true, auditLogged: true },
         },
       });
     },
