@@ -55,23 +55,6 @@ export async function runBackupAction(formData: FormData) {
   redirect("/admin/backups?started=1");
 }
 
-/** Legacy compatibility export. Restore must use restoreWorkspaceBackupAction. */
-export async function restoreBackupAction() {
-  await requireSuperAdminSession();
-  redirect("/admin/backups?error=legacy-restore-disabled-use-workspace");
-}
-
-/** Legacy compatibility export. Local directory enumeration is not a DR source. */
-export async function listLocalBackupsAction() {
-  await requireSuperAdminSession();
-  return [];
-}
-
-/** Legacy compatibility export. Verify must use verifyWorkspaceBackupAction. */
-export async function verifyBackupAction() {
-  await requireSuperAdminSession();
-  redirect("/admin/backups?error=legacy-verify-disabled-use-workspace");
-}
 
 export async function verifyAllBackupsAction() {
   const session = await requireSuperAdminSession();
@@ -134,11 +117,6 @@ export async function verifyAllBackupsAction() {
   }
 }
 
-/** Legacy compatibility export. Delete must use deleteWorkspaceBackupAction. */
-export async function deleteBackupAction() {
-  await requireSuperAdminSession();
-  redirect("/admin/backups?error=legacy-delete-disabled-use-workspace");
-}
 
 /**
  * Compatibility action for old migration links.
@@ -164,12 +142,6 @@ export async function createSnapshotAction() {
 
   revalidatePath("/admin/backups");
   redirect("/admin/backups?started=1");
-}
-
-/** Legacy local-only automatic restore is intentionally disabled. */
-export async function checkAutoRestoreAction() {
-  await requireSuperAdminSession();
-  redirect("/admin/backups?error=legacy-auto-restore-disabled-use-verified-github-restore");
 }
 
 export async function updateBackupSettingsAction(formData: FormData) {

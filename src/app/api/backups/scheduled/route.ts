@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { createPrismaBackupJobRepository } from "@/modules/backups/prisma-backup-job-repository";
-import { createBackupJobService, getGitHubBackupBranch } from "@/modules/backups/backup-job-service";
+import { createBackupJobService } from "@/modules/backups/backup-job-service";
 import { isSupportedBackupType } from "@/modules/backups/backup-policy";
 
 export const dynamic = "force-dynamic";

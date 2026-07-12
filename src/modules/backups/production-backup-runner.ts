@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { createBackupJobService, getGitHubBackupBranch } from "@/modules/backups/backup-job-service";
+import { createBackupJobService } from "@/modules/backups/backup-job-service";
 import { createPrismaBackupJobRepository } from "@/modules/backups/prisma-backup-job-repository";
 import { isSupportedBackupType } from "@/modules/backups/backup-policy";
 
