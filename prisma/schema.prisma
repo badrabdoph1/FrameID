@@ -136,7 +136,7 @@ model User {
   auditLogs             AuditLog[]             @relation("AuditActor")
   adminNotes            AdminNote[]            @relation("AdminNoteAuthor")
   reviewedPayments      PaymentRequest[]       @relation("PaymentReviewer")
-  backupJobs            BackupJob[]            @relation("BackupInitiator")
+  // backupJobs removed: triggeredById stores plain ID, no FK to User
   backupRestores        RestoreJob[]           @relation("RestoreInitiator")
   impersonationSessions ImpersonationSession[] @relation("ImpersonationAdmin")
   sessions              Session[]
@@ -850,7 +850,7 @@ model RestoreJob {
   createdAt       DateTime     @default(now())
   completedAt     DateTime?
 
-  triggeredBy User? @relation("RestoreInitiator", fields: [triggeredById], references: [id])
+  // triggeredById stores the AdminUser or User ID that initiated the restore (no FK — admins ≠ users)
 
   @@index([status, createdAt])
 }
