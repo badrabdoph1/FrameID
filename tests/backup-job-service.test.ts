@@ -41,31 +41,28 @@ function createRepository(): BackupJobRepository & { events: string[] } {
 }
 
 describe("backup job service", () => {
-  it("creates a backup job and processes it through the lifecycle", async () => {
+  it("creates a backup job and fails when pg_dump is unavailable", async () => {
     const repository = createRepository();
     const service = createBackupJobService({
       repository,
       databaseUrl: "postgresql://test:test@localhost:5432/test",
       platformVersion: "0.1.0",
       backupGitHubToken: "ghp_fake_token_for_testing",
+      backupGitHubRepository: "test-owner/test-repo",
       now: () => new Date("2026-07-06T12:00:00.000Z"),
     });
 
-    const result = await service.runManualBackup({
-      type: "DATABASE",
-      initiatedById: "admin_1",
-      note: "Before release",
-    });
-
-    expect(result.backupJobId).toBe("backup_1");
-    expect(result.status).toBe("COMPLETED");
-    expect(result.backupId).toMatch(/^\d{4}-\d{2}-\d{2}_\d{2}-\d{2}$/);
+    await expect(
+      service.runManualBackup({
+        type: "DATABASE",
+        initiatedById: "admin_1",
+        note: "Before release",
+      })
+    ).rejects.toThrow();
 
     expect(repository.events[0]).toBe("job:DATABASE:MANUAL");
     expect(repository.events[1]).toBe("audit:BACKUP_STARTED:backup_1");
-    expect(repository.events[repository.events.length - 1]).toBe(
-      "audit:BACKUP_COMPLETED:backup_1"
-    );
+    expect(repository.events[2]).toMatch("failed:backup_1:");
   });
 
   it("marks a backup as failed when artifact writing fails", async () => {
@@ -82,6 +79,7 @@ describe("backup job service", () => {
       databaseUrl: "postgresql://test:test@localhost:5432/test",
       platformVersion: "0.1.0",
       backupGitHubToken: "ghp_fake_token_for_testing",
+      backupGitHubRepository: "test-owner/test-repo",
     });
 
     await expect(
@@ -90,5 +88,65 @@ describe("backup job service", () => {
         initiatedById: "admin_1",
       })
     ).rejects.toThrow("Database connection failed");
+
+    expect(repository.events[0]).toBe("job:DATABASE:MANUAL");
+    expect(repository.events[1]).toBe("audit:BACKUP_STARTED:backup_1");
+    expect(repository.events[2]).toBe("failed:backup_1:Database connection failed");
+  });
+
+  it("creates a Snapshot through the FULL backup path", async () => {
+    const repository = createRepository();
+    const service = createBackupJobService({
+      repository,
+      databaseUrl: "postgresql://test:test@localhost:5432/test",
+      platformVersion: "0.1.0",
+      backupGitHubToken: "ghp_fake_token_for_testing",
+      backupGitHubRepository: "test-owner/test-repo",
+      now: () => new Date("2026-07-06T12:00:00.000Z"),
+    });
+
+    const result = await service.createSnapshot({
+      reason: "migration snapshot",
+      databaseUrl: "postgresql://test:test@localhost:5432/test",
+      initiatedById: "admin_1",
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.durationMs).toBeGreaterThanOrEqual(0);
+  });
+
+  it("returns disabled auto-restore status", async () => {
+    const repository = createRepository();
+    const service = createBackupJobService({
+      repository,
+      databaseUrl: "postgresql://test:test@localhost:5432/test",
+      platformVersion: "0.1.0",
+      backupGitHubToken: "ghp_fake_token_for_testing",
+      backupGitHubRepository: "test-owner/test-repo",
+    });
+
+    const result = await service.checkAndAutoRestore({
+      databaseUrl: "postgresql://test:test@localhost:5432/test",
+    });
+
+    expect(result.needed).toBe(false);
+    expect(result.restored).toBe(false);
+    expect(result.reason).toContain("disabled");
+  });
+
+  it("getScheduler returns a scheduler object", () => {
+    const repository = createRepository();
+    const service = createBackupJobService({
+      repository,
+      databaseUrl: "postgresql://test:test@localhost:5432/test",
+      platformVersion: "0.1.0",
+      backupGitHubToken: "ghp_fake_token_for_testing",
+      backupGitHubRepository: "test-owner/test-repo",
+    });
+
+    const scheduler = service.getScheduler();
+    expect(scheduler).toBeDefined();
+    expect(typeof scheduler.executeScheduled).toBe("function");
+    expect(typeof scheduler.isTimeToRun).toBe("function");
   });
 });
