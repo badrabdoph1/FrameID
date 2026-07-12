@@ -769,7 +769,7 @@ function SuccessReceiptCard({ receiptNumber, status, rejectionReason, copied, da
 }
 
 function CancelDraftForm({ draftId, cancelAction, pending }: { draftId: string; cancelAction: (payload: FormData) => void; pending: boolean }) {
-  return <form action={cancelAction}><input type="hidden" name="draftId" value={draftId} /><Button type="submit" variant="ghost" disabled={pending}>{pending ? <Loader2 className="size-4 animate-spin" /> : <X className="size-4" />}إلغاء الطلب</Button></form>;
+  return <form action={cancelAction}><input type="hidden" name="draftId" value={draftId} /><Button type="submit" variant="secondary" className="border border-red-500/40 text-red-300 hover:bg-red-500/10 hover:text-red-200" disabled={pending}>{pending ? <Loader2 className="size-4 animate-spin" /> : <X className="size-4" />}إلغاء الطلب</Button></form>;
 }
 
 function Actions({ children }: { children: ReactNode }) {
