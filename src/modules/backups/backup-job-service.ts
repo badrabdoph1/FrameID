@@ -151,6 +151,7 @@ export function createBackupJobService({
   );
 
   async function executeBackup(input: ExecuteBackupInput): Promise<ExecuteBackupResult> {
+    const startedAt = Date.now();
     const createdAt = now();
     const job = await repository.createJob({
       type: input.type,
@@ -159,12 +160,14 @@ export function createBackupJobService({
       note: input.note,
     });
 
+    console.log(`[BACKUP] Started ${input.type} backup (job: ${job.id}, trigger: ${input.trigger})`);
+
     await repository.recordAudit({
       actorUserId: input.initiatedById,
       action: "BACKUP_STARTED",
       entityType: "BackupJob",
       entityId: job.id,
-      metadata: { type: input.type, requiredExternalStorage: "github" },
+      metadata: { type: input.type, trigger: input.trigger, requiredExternalStorage: "github" },
     });
 
     try {
@@ -172,14 +175,24 @@ export function createBackupJobService({
 
       if (!hasGitHub) {
         console.warn("[BACKUP] BACKUP_GITHUB_TOKEN not configured — running local-only backup.");
+      } else {
+        console.log("[BACKUP] GitHub storage configured — will upload after dump");
       }
 
       const stats = await repository.collectStats();
+      console.log(`[BACKUP] Stats: ${stats.usersCount} users, ${stats.tenantsCount} tenants, ${stats.sitesCount} sites`);
+
       const includeUploads = input.type === "FULL";
+      console.log(`[BACKUP] Running pg_dump...`);
       const dbResult = await dbDumper.dumpDatabase(root, job.id);
+      console.log(`[BACKUP] pg_dump complete: ${(dbResult.sizeBytes / 1024).toFixed(1)} KB in ${dbResult.durationMs}ms`);
+
       const uploadResult = includeUploads
         ? await uploadPkg.packageUploads(root, job.id)
         : null;
+      if (uploadResult) {
+        console.log(`[BACKUP] Uploads packaged: ${(uploadResult.sizeBytes / 1024).toFixed(1)} KB (${uploadResult.fileCount} files)`);
+      }
       const migrationVersion = await dbDumper.getMigrationVersion();
 
       const manifest = addChecksumToManifest(
@@ -238,6 +251,7 @@ export function createBackupJobService({
         backupPackage.backupId,
         root
       );
+      console.log(`[BACKUP] Local verification: ${localVerification.valid ? "PASS" : "FAIL"} (${localVerification.durationMs}ms)`);
       if (!localVerification.valid) {
         throw new Error(
           `Local verification failed: ${localVerification.errors.join("; ")}`
@@ -259,15 +273,18 @@ export function createBackupJobService({
       let uploadedCommitSha = "";
       if (hasGitHub) {
         const branch = getGitHubBackupBranch(input.type);
+        console.log(`[BACKUP] Uploading to GitHub branch: ${branch}...`);
         const uploaded = await githubStorage!.uploadBackup(
           backupPackage.backupDir,
           backupPackage.backupId,
           branch
         );
+        console.log(`[BACKUP] GitHub upload complete: commit ${uploaded.commitSha?.substring(0, 8)}`);
         const remoteVerification = await githubStorage!.verifyBackup(
           backupPackage.backupId,
           branch
         );
+        console.log(`[BACKUP] GitHub verification: ${remoteVerification.valid ? "PASS" : "FAIL"}`);
         if (!remoteVerification.valid) {
           throw new Error(
             `GitHub verification failed: ${remoteVerification.errors.join("; ")}`
@@ -321,6 +338,9 @@ export function createBackupJobService({
       }
       await retention.cleanupByType(root, input.type, retentionCount);
 
+      const totalDurationMs = Date.now() - startedAt;
+      console.log(`[BACKUP] ✓ Backup completed: ${backupPackage.backupId} (${(backupPackage.totalSizeBytes / 1024).toFixed(1)} KB, ${totalDurationMs}ms, local+${hasGitHub ? "github" : "local-only"})`);
+
       return {
         backupJobId: job.id,
         status: "COMPLETED",
@@ -329,13 +349,15 @@ export function createBackupJobService({
       };
     } catch (error) {
       const reason = error instanceof Error ? error.message : "Unknown backup failure";
+      const totalDurationMs = Date.now() - startedAt;
+      console.error(`[BACKUP] ✗ Backup failed: ${reason} (${totalDurationMs}ms)`);
       await repository.markFailed({ backupJobId: job.id, reason });
       await repository.recordAudit({
         actorUserId: input.initiatedById,
         action: "BACKUP_FAILED",
         entityType: "BackupJob",
         entityId: job.id,
-        metadata: { reason },
+        metadata: { reason, durationMs: totalDurationMs },
       });
       throw error;
     }

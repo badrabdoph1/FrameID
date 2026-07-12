@@ -6,27 +6,47 @@ import { env } from "@/lib/env";
 import { isSupportedBackupType } from "@/modules/backups/backup-policy";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 300;
+
+function log(level: "info" | "warn" | "error", msg: string, meta?: Record<string, unknown>) {
+  const entry = { timestamp: new Date().toISOString(), level, ...meta };
+  if (level === "error") console.error(`[backup-api] ${msg}`, entry);
+  else if (level === "warn") console.warn(`[backup-api] ${msg}`, entry);
+  else console.log(`[backup-api] ${msg}`, entry);
+}
 
 export async function POST(request: NextRequest) {
+  const startedAt = Date.now();
+  log("info", "=== Manual backup requested ===");
+
   try {
     const authHeader = request.headers.get("authorization");
     const cronSecret = env.CRON_SECRET;
 
     if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+      log("warn", "Unauthorized access attempt");
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const body = await request.json().catch(() => ({}));
-    const requestedType = body.type || "FULL";
+    const requestedType = body.type || "DATABASE";
 
     if (!isSupportedBackupType(requestedType)) {
+      log("warn", `Invalid backup type requested: ${requestedType}`);
       return NextResponse.json({ error: "Invalid backup type. Must be DATABASE or FULL" }, { status: 400 });
     }
 
     const databaseUrl = env.DATABASE_URL;
     if (!databaseUrl) {
+      log("error", "DATABASE_URL is not configured");
       return NextResponse.json({ error: "DATABASE_URL is not configured" }, { status: 500 });
     }
+
+    log("info", `Starting ${requestedType} backup`, {
+      hasGitHubToken: Boolean(env.BACKUP_GITHUB_TOKEN),
+      hasEncryptionKey: Boolean(env.BACKUP_ENCRYPTION_KEY),
+      hasGitHubRepo: Boolean(process.env.BACKUP_GITHUB_REPOSITORY),
+    });
 
     const service = createBackupJobService({
       repository: createPrismaBackupJobRepository(prisma as never),
@@ -40,19 +60,24 @@ export async function POST(request: NextRequest) {
     const result = await service.runManualBackup({
       type: requestedType,
       initiatedById: "api",
-      note: "API-triggered backup",
+      note: `Manual API backup ${new Date().toISOString()}`,
     });
 
-    return NextResponse.json({ success: true, ...result });
+    const durationMs = Date.now() - startedAt;
+    log("info", `✓ Manual backup completed`, { ...result, durationMs });
+
+    return NextResponse.json({ success: true, ...result, durationMs });
   } catch (error) {
+    const durationMs = Date.now() - startedAt;
     const message = error instanceof Error ? error.message : "Backup failed";
-    return NextResponse.json({ error: message }, { status: 500 });
+    log("error", `✗ Manual backup failed`, { error: message, durationMs, stack: error instanceof Error ? error.stack : undefined });
+    return NextResponse.json({ error: message, durationMs }, { status: 500 });
   }
 }
 
 export async function GET() {
   return NextResponse.json({
     message: "Use POST to trigger a backup",
-    usage: { body: { type: "DATABASE | FULL" } },
+    usage: { method: "POST", body: { type: "DATABASE | FULL" }, auth: "Bearer CRON_SECRET" },
   });
 }
