@@ -1,6 +1,7 @@
 #!/usr/bin/env tsx
 import { join } from "node:path";
-import { createRestoreService } from "@/modules/backups/backup-restore-service";
+import { PrismaClient } from "@prisma/client";
+import { createOfficialRestorePipeline } from "@/modules/backups/frameid-restore-pipeline";
 import { createGitHubStorage } from "@/modules/backups/backup-storage-github";
 import { getGitHubBackupBranch } from "@/modules/backups/backup-job-service";
 import { SUPPORTED_BACKUP_TYPES, isSupportedBackupType } from "@/modules/backups/backup-policy";
@@ -18,11 +19,8 @@ async function main() {
   const branch = getGitHubBackupBranch(type);
   const backupId = requestedId === "latest" ? (await github.listBackups(branch))[0] : requestedId;
   if (!backupId) throw new Error(`لا توجد نسخة ${type} على GitHub`);
-  const service = createRestoreService();
-  const result = await service.executeRestore({ backupId, backupRoot: join(process.cwd(), "backups"), databaseUrl, type, githubToken: token, githubRepository: process.env.BACKUP_GITHUB_REPOSITORY, githubBranch: branch });
-  if (!result.success) throw new Error(result.errors.join("; "));
-  const post = await service.validatePostRestore(databaseUrl);
-  if (!post.passed) throw new Error(post.errors.join("; "));
-  console.log(JSON.stringify({ ...result, postRestore: post }, null, 2));
+  const prisma = new PrismaClient();
+  try { const pipeline = createOfficialRestorePipeline({ prisma: prisma as never, databaseUrl, backupRoot: join(process.cwd(), "backups"), githubToken: token, githubRepository: process.env.BACKUP_GITHUB_REPOSITORY }); const result = await pipeline.restore({ backupId, type, trigger: "CLI", actorId: "cli-script" }); console.log(JSON.stringify(result, null, 2)); }
+  finally { await prisma.$disconnect(); }
 }
 main().catch((error) => { console.error(error instanceof Error ? error.message : "فشلت الاستعادة"); process.exit(1); });

@@ -38,3 +38,15 @@ export function createFrameIdBackupPipeline(deps: BackupPipelineDependencies) {
     }
   }};
 }
+
+export type RestorePipelineDependencies = {
+  createJob(input: { backupId: string; type: BackupType; trigger: BackupTrigger; actorId?: string }): Promise<{ id: string }>;
+  resolve(input: { backupId: string; type: BackupType }): Promise<{ backupDir: string; source: "LOCAL" | "GITHUB" }>;
+  verify(input: { backupId: string; backupDir: string; type: BackupType }): Promise<{ valid: boolean; errors: string[] }>;
+  apply(input: { backupId: string; backupDir: string; type: BackupType }): Promise<void>;
+  verifyRestored(): Promise<{ valid: boolean; errors: string[] }>;
+  audit(input: { jobId: string; backupId: string; actorId?: string; action: "RESTORE_STARTED" | "RESTORE_COMPLETED" | "RESTORE_FAILED"; metadata: Record<string, unknown> }): Promise<void>;
+  complete(input: { jobId: string; source: "LOCAL" | "GITHUB" }): Promise<void>;
+  fail(input: { jobId: string; reason: string }): Promise<void>;
+};
+export function createFrameIdRestorePipeline(deps: RestorePipelineDependencies) { return { async restore(input: { backupId: string; type: BackupType; trigger: BackupTrigger; actorId?: string }) { const job = await deps.createJob(input); const started = Date.now(); let source: "LOCAL" | "GITHUB" = "LOCAL"; try { await deps.audit({ jobId: job.id, backupId: input.backupId, actorId: input.actorId, action: "RESTORE_STARTED", metadata: { type: input.type, trigger: input.trigger } }); const artifact = await deps.resolve(input); source = artifact.source; const check = await deps.verify({ ...input, backupDir: artifact.backupDir }); if (!check.valid) throw new Error(`فشل التحقق قبل الاستعادة: ${check.errors.join("; ")}`); await deps.apply({ ...input, backupDir: artifact.backupDir }); const post = await deps.verifyRestored(); if (!post.valid) throw new Error(`فشل التحقق بعد الاستعادة: ${post.errors.join("; ")}`); await deps.audit({ jobId: job.id, backupId: input.backupId, actorId: input.actorId, action: "RESTORE_COMPLETED", metadata: { type: input.type, trigger: input.trigger, source, durationMs: Date.now() - started } }); await deps.complete({ jobId: job.id, source }); return { restoreJobId: job.id, backupId: input.backupId, type: input.type, source, status: "COMPLETED" as const }; } catch (error) { const reason = error instanceof Error ? error.message : "فشل الاستعادة"; await deps.fail({ jobId: job.id, reason }); await deps.audit({ jobId: job.id, backupId: input.backupId, actorId: input.actorId, action: "RESTORE_FAILED", metadata: { reason, source, durationMs: Date.now() - started } }).catch(() => undefined); throw error; } } }; }

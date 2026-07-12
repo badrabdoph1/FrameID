@@ -16,6 +16,7 @@ import { createVerificationService } from "@/modules/backups/backup-verification
 import { createGitHubStorage } from "@/modules/backups/backup-storage-github";
 import { getGitHubBackupBranch } from "@/modules/backups/backup-job-service";
 import { isSupportedBackupType } from "@/modules/backups/backup-policy";
+import { createOfficialRestorePipeline } from "@/modules/backups/frameid-restore-pipeline";
 
 async function getArtifact(backupJobId: string) {
   const job = await prisma.backupJob.findUnique({
@@ -62,47 +63,30 @@ async function audit(input: { actorId: string; action: string; entityId: string;
 export async function restoreWorkspaceBackupAction(formData: FormData) {
   const session = await requireSuperAdminSession();
   const backupJobId = String(formData.get("backupJobId") ?? "");
-  let restoreJobId: string | null = null;
 
   try {
     const artifact = await getArtifact(backupJobId);
-    const service = createRestoreService();
-    const available = await service.ensureBackupAvailable({ backupId: artifact.artifactId, backupRoot: artifact.backupRoot, type: artifact.type, githubToken: env.BACKUP_GITHUB_TOKEN, githubRepository: process.env.BACKUP_GITHUB_REPOSITORY, githubBranch: artifact.branch });
-    const validation = await service.validateBackup({ backupId: artifact.artifactId, backupRoot: artifact.backupRoot });
-
-    if (!validation.valid) {
-      await audit({ actorId: session.user.id, action: "RESTORE_REJECTED", entityId: backupJobId, metadata: { source: available.source, errors: validation.validation.errors } });
-      throw new Error(validation.validation.errors.join("; ") || "فشل التحقق قبل الاستعادة.");
-    }
-
-    const restoreJob = await prisma.$transaction(async (tx) => {
-      const activeRestoreCount = await tx.restoreJob.count({ where: { status: { in: ["PENDING", "RUNNING"] } } });
-      if (activeRestoreCount > 0) throw new Error("توجد عملية استعادة أخرى قيد التنفيذ.");
-      return tx.restoreJob.create({ data: { backupJobId, status: "RUNNING", triggeredById: session.user.id }, select: { id: true } });
-    }, { isolationLevel: "Serializable" });
-    restoreJobId = restoreJob.id;
-
-    await audit({ actorId: session.user.id, action: "RESTORE_STARTED", entityId: backupJobId, metadata: { restoreJobId, source: available.source } });
-
-    const result = await service.executeRestore({ backupId: artifact.artifactId, backupRoot: artifact.backupRoot, databaseUrl: env.DATABASE_URL, type: artifact.type, githubToken: env.BACKUP_GITHUB_TOKEN, githubRepository: process.env.BACKUP_GITHUB_REPOSITORY, githubBranch: artifact.branch });
-    if (!result.success) throw new Error(result.errors.join("; ") || "فشلت الاستعادة.");
-
-    const postValidation = await service.validatePostRestore(env.DATABASE_URL);
-    if (!postValidation.passed) throw new Error(postValidation.errors.join("; ") || "فشل التحقق بعد الاستعادة.");
-
-    await prisma.restoreJob.update({ where: { id: restoreJob.id }, data: { status: "COMPLETED", completedAt: new Date() } });
-    await audit({ actorId: session.user.id, action: "RESTORE_COMPLETED", entityId: backupJobId, metadata: { restoreJobId, source: result.source, durationMs: result.durationMs, counts: postValidation.counts } });
+    const pipeline = createOfficialRestorePipeline({ prisma: prisma as never, databaseUrl: env.DATABASE_URL, backupRoot: artifact.backupRoot, githubToken: env.BACKUP_GITHUB_TOKEN, githubRepository: process.env.BACKUP_GITHUB_REPOSITORY });
+    await pipeline.restore({ backupId: artifact.artifactId, type: artifact.type, trigger: "MANUAL", actorId: session.user.id });
     revalidatePath("/admin/backups");
   } catch (error) {
-    const message = error instanceof Error ? error.message : "فشلت الاستعادة.";
-    if (restoreJobId) {
-      await prisma.restoreJob.update({ where: { id: restoreJobId }, data: { status: "FAILED", errorMessage: message, completedAt: new Date() } }).catch(() => undefined);
-      await audit({ actorId: session.user.id, action: "RESTORE_FAILED", entityId: backupJobId, metadata: { restoreJobId, error: message } }).catch(() => undefined);
-    }
     const { userError } = await processError(error, { userId: session.user.id, metadata: { action: "restoreWorkspaceBackup", backupJobId } });
     redirect(`/admin/backups?error=${encodeURIComponent(userError.message)}`);
   }
 
+  redirect("/admin/backups?restored=1");
+}
+
+export async function restoreLatestGitHubBackupAction() {
+  const session = await requireSuperAdminSession();
+  try {
+    const github = createGitHubStorage(env.BACKUP_GITHUB_TOKEN, process.env.BACKUP_GITHUB_REPOSITORY);
+    if (!github) throw new Error("GitHub غير مضبوط");
+    const backupId = (await github.listBackups(getGitHubBackupBranch("FULL")))[0];
+    if (!backupId) throw new Error("لا توجد نسخة FULL على GitHub");
+    const pipeline = createOfficialRestorePipeline({ prisma: prisma as never, databaseUrl: env.DATABASE_URL, githubToken: env.BACKUP_GITHUB_TOKEN, githubRepository: process.env.BACKUP_GITHUB_REPOSITORY });
+    await pipeline.restore({ backupId, type: "FULL", trigger: "MANUAL", actorId: session.user.id });
+  } catch (error) { const { userError } = await processError(error, { userId: session.user.id, metadata: { action: "restoreLatestGitHubBackup" } }); redirect(`/admin/backups?error=${encodeURIComponent(userError.message)}`); }
   redirect("/admin/backups?restored=1");
 }
 
