@@ -168,7 +168,7 @@ export function ImageUploader({
   onUpload,
   multiple = true,
   maxFiles = 20,
-  maxSizeMB = 30,
+  maxSizeMB = 20,
   accept,
   className,
   children,
@@ -182,7 +182,7 @@ export function ImageUploader({
   const compressedRef = useRef<Map<string, CompressedImage>>(new Map());
 
   const maxBytes = maxSizeMB * 1024 * 1024;
-  const rawMaxBytes = Math.max(maxBytes, 50 * 1024 * 1024);
+  const rawMaxBytes = Math.max(maxBytes, 20 * 1024 * 1024);
 
   const addFiles = useCallback(
     (incoming: File[]) => {

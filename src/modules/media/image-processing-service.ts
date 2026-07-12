@@ -130,7 +130,7 @@ export async function processImageFromFile(
 
   validateImageSignature(new Uint8Array(inputBuffer), file.type);
 
-  let sharpInstance = sharp(inputBuffer, { failOnError: false });
+  let sharpInstance = sharp(inputBuffer);
 
   sharpInstance = sharpInstance
     .rotate()
@@ -138,8 +138,7 @@ export async function processImageFromFile(
       fit: "inside",
       withoutEnlargement: true,
     })
-    .webp({ quality: WEBP_QUALITY, effort: 4, lossless: false })
-    .withMetadata({ exif: false, iptc: false, xmp: false });
+    .webp({ quality: WEBP_QUALITY, effort: 4, lossless: false });
 
   const processedBuffer = await sharpInstance.toBuffer();
   const metadata = await sharp(processedBuffer).metadata();
@@ -175,7 +174,7 @@ export async function processImageFromBuffer(
   validateFileSize(buffer.length, maxSizeBytes);
   validateImageSignature(new Uint8Array(buffer), mimeType);
 
-  let sharpInstance = sharp(buffer, { failOnError: false });
+  let sharpInstance = sharp(buffer);
 
   sharpInstance = sharpInstance
     .rotate()
@@ -183,8 +182,7 @@ export async function processImageFromBuffer(
       fit: "inside",
       withoutEnlargement: true,
     })
-    .webp({ quality: WEBP_QUALITY, effort: 4, lossless: false })
-    .withMetadata({ exif: false, iptc: false, xmp: false });
+    .webp({ quality: WEBP_QUALITY, effort: 4, lossless: false });
 
   const processedBuffer = await sharpInstance.toBuffer();
   const metadata = await sharp(processedBuffer).metadata();

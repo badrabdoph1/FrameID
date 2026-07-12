@@ -320,7 +320,7 @@ function ImageStageCard({ title, description, preview, onUpload, square }: { tit
           <img src={preview} alt={title} className="size-full object-cover" />
         ) : <div className="grid size-full place-items-center text-white/28"><ImagePlus className="size-10" /></div>}
       </div>
-      <ImageUploader onUpload={onUpload} multiple={false} maxFiles={1} maxSizeMB={square ? 10 : 15} />
+      <ImageUploader onUpload={onUpload} multiple={false} maxFiles={1} maxSizeMB={20} />
     </section>
   );
 }
@@ -384,7 +384,7 @@ function AlbumWorkspace({
         <div className="rounded-[1.2rem] border border-amber-300/18 bg-amber-300/8 p-4">
           <h3 className="text-base font-black text-[#fff7e8]">ارفع صور لـ {album.title}</h3>
           <p className="mt-1 text-xs font-bold leading-6 text-white/45">مسموح حالياً بخمس صور داخل كل ألبوم. باقي لك {remaining} صور.</p>
-          <div className="mt-3"><ImageUploader onUpload={handleUpload} multiple maxFiles={remaining} maxSizeMB={10} /></div>
+          <div className="mt-3"><ImageUploader onUpload={handleUpload} multiple maxFiles={remaining} maxSizeMB={20} /></div>
         </div>
       ) : null}
 

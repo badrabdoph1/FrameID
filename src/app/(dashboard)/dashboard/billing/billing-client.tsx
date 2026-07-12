@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useMemo, useState, type ChangeEvent, type ReactNode } from "react";
-import { AlertTriangle, Check, CheckCircle2, CreditCard, Loader2, Package, Sparkles, Upload, X } from "lucide-react";
+import { AlertTriangle, Check, CheckCircle2, Copy, CreditCard, Loader2, Package, Sparkles, Upload, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { BuilderPageHeader } from "@/components/dashboard/builder-primitives";
@@ -418,33 +418,37 @@ export function BillingClient({ session, plans, paymentMethods, paymentRequest, 
                       {getActionError(createState) ? <ErrorText text={getActionError(createState)!} /> : null}
                     </>
                   ) : (
-                    <>
-                      <PaymentInstructionCard
-                        account={selectedAccount}
-                        method={selectedMethod}
-                        fallbackMethod={paymentRequest?.method ?? null}
-                        copied={copiedKey === "pay-account"}
-                        onCopy={() => selectedAccount ? copyToClipboard(selectedAccount.phoneNumber ?? selectedAccount.accountNumber, "pay-account") : undefined}
-                      />
-                      <PaymentAmountCard plan={selectedPlan} request={paymentRequest} />
-                      <ProofSubmitCard
-                        draftId={draftState}
-                        proofFile={proofFile}
-                        proofUploaded={uploadSucceeded}
-                        pending={completePaymentPending}
-                        canSubmit={canUploadAndSubmit}
-                        action={completePaymentAction}
-                        onFileSelect={handleFileSelect}
-                      />
-                      {fileError ? <ErrorText text={fileError} /> : null}
-                      {getActionError(completePaymentState) ? <ErrorText text={getActionError(completePaymentState)!} /> : null}
-                      {uploadSucceeded && !submitted ? (
-                        <form action={submitAction}>
-                          <input type="hidden" name="draftId" value={draftState} />
-                          <Button type="submit" variant="luxury" disabled={!canSubmitExistingProof || submitPending}>{submitPending ? <Loader2 className="size-4 animate-spin" /> : <CheckCircle2 className="size-4" />}{submitPending ? "جاري تقديم الطلب..." : "تقديم الطلب الآن"}</Button>
-                        </form>
-                      ) : null}
-                    </>
+                    <div className="grid gap-4 lg:grid-cols-[1.3fr_1fr]">
+                      <div className="flex flex-col gap-3">
+                        <PaymentInstructionCard
+                          account={selectedAccount}
+                          method={selectedMethod}
+                          fallbackMethod={paymentRequest?.method ?? null}
+                          copied={copiedKey === "pay-account"}
+                          onCopy={() => selectedAccount ? copyToClipboard(selectedAccount.phoneNumber ?? selectedAccount.accountNumber, "pay-account") : undefined}
+                        />
+                        <PaymentAmountCard plan={selectedPlan} request={paymentRequest} />
+                      </div>
+                      <div className="flex flex-col gap-3">
+                        <ProofSubmitCard
+                          draftId={draftState}
+                          proofFile={proofFile}
+                          proofUploaded={uploadSucceeded}
+                          pending={completePaymentPending}
+                          canSubmit={canUploadAndSubmit}
+                          action={completePaymentAction}
+                          onFileSelect={handleFileSelect}
+                        />
+                        {fileError ? <ErrorText text={fileError} /> : null}
+                        {getActionError(completePaymentState) ? <ErrorText text={getActionError(completePaymentState)!} /> : null}
+                        {uploadSucceeded && !submitted ? (
+                          <form action={submitAction} className="mt-auto">
+                            <input type="hidden" name="draftId" value={draftState} />
+                            <Button type="submit" variant="luxury" className="w-full" disabled={!canSubmitExistingProof || submitPending}>{submitPending ? <Loader2 className="size-4 animate-spin" /> : <CheckCircle2 className="size-4" />}{submitPending ? "جاري تقديم الطلب..." : "تقديم الطلب الآن"}</Button>
+                          </form>
+                        ) : null}
+                      </div>
+                    </div>
                   )}
 
                   <Actions>
@@ -630,10 +634,18 @@ function PaymentMethodPicker({ methods, selectedMethodId, selectedPlanId, pendin
             <input type="hidden" name="method" value={method.paymentMethod} />
             <input type="hidden" name="paymentMethodId" value={method.id} />
             <input type="hidden" name="paymentAccountId" value={method.accounts[0]?.id ?? ""} />
-            <button type="submit" disabled={pending} onClick={() => onMethodSelect(method.id)} className={`flex min-h-32 w-full flex-col items-start justify-between rounded-3xl border p-4 text-right transition ${selected ? "border-amber-400/60 bg-amber-500/10" : "border-white/[0.08] bg-white/[0.025] hover:border-white/20"} ${pending ? "cursor-wait opacity-70" : ""}`}>
-              <span className="flex items-center gap-2 text-base font-black text-[#fff7e8]"><CreditCard className="size-4 text-[#f3cf73]" />{method.label ?? getPaymentMethodLabel(method.paymentMethod)}</span>
-              <span className="text-sm text-white/45">{method.description ?? "اضغط للذهاب للدفع مباشرة"}</span>
-              <span className="text-xs font-black text-[#f3cf73]">{pending ? "جاري تجهيز الدفع..." : "اختار وابدأ الدفع"}</span>
+            <button type="submit" disabled={pending} onClick={() => onMethodSelect(method.id)} className={`group relative flex min-h-36 w-full flex-col items-start justify-between overflow-hidden rounded-3xl border p-4 text-right transition sm:p-5 ${selected ? "border-amber-400/60 bg-amber-500/10" : "border-white/[0.08] bg-gradient-to-b from-white/[0.03] to-white/[0.01] hover:border-white/20"} ${pending ? "cursor-wait opacity-70" : ""}`}>
+              {selected ? <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(243,207,115,0.08),transparent_60%)]" /> : null}
+              <div className="flex items-center gap-3">
+                <div className="grid size-10 shrink-0 place-items-center rounded-2xl bg-white/[0.05] transition group-hover:bg-white/[0.08]">
+                  <CreditCard className="size-5 text-[#f3cf73]" />
+                </div>
+                <div>
+                  <span className="flex items-center gap-2 text-base font-black text-[#fff7e8]">{method.label ?? getPaymentMethodLabel(method.paymentMethod)}</span>
+                  <span className="mt-0.5 block text-xs text-white/40">{method.description ?? "تحويل يدوي"}</span>
+                </div>
+              </div>
+              <span className="mt-3 self-end rounded-full border border-amber-400/18 bg-amber-500/10 px-3 py-1 text-[0.55rem] font-black text-[#f3cf73] transition group-hover:bg-amber-500/15">{pending ? "جاري التجهيز..." : "اختار وابدأ"}</span>
             </button>
           </form>
         );
@@ -643,40 +655,99 @@ function PaymentMethodPicker({ methods, selectedMethodId, selectedPlanId, pendin
 }
 
 function PaymentInstructionCard({ account, method, fallbackMethod, copied, onCopy }: { account: PaymentAccountData | null | undefined; method: PaymentMethodData | null | undefined; fallbackMethod: string | null; copied: boolean; onCopy: () => void }) {
-  const accountValue = account?.phoneNumber ?? account?.accountNumber ?? "";
+  const accountNumber = account?.phoneNumber ?? account?.accountNumber ?? "";
+  const ownerName = "Badr A** B** H****";
   return (
-    <div className="rounded-3xl border border-amber-400/20 bg-amber-500/10 p-4">
-      <div className="flex items-start justify-between gap-3">
-        <div><p className="text-xs font-black text-[#f3cf73]">حوّل على</p><h3 className="mt-1 text-lg font-black text-[#fff7e8]">{method?.label ?? getPaymentMethodLabel(method?.paymentMethod ?? fallbackMethod ?? "الدفع")}</h3></div>
-        {accountValue ? <Button type="button" variant="secondary" onClick={onCopy}>{copied ? <CheckCircle2 className="size-4" /> : <CreditCard className="size-4" />}{copied ? "اتنسخ" : "نسخ"}</Button> : null}
+    <div className="overflow-hidden rounded-3xl border border-amber-400/20 bg-gradient-to-b from-amber-500/10 to-amber-500/[0.02]">
+      <div className="flex items-center justify-between border-b border-white/[0.04] px-4 py-3 sm:px-5">
+        <div className="flex items-center gap-3">
+          <div className="grid size-9 shrink-0 place-items-center rounded-xl bg-amber-500/15">
+            <CreditCard className="size-4 text-[#f3cf73]" />
+          </div>
+          <div>
+            <p className="text-[0.55rem] font-black tracking-[0.15em] text-white/25">حول على</p>
+            <h3 className="text-base font-black text-[#fff7e8]">{method?.label ?? getPaymentMethodLabel(method?.paymentMethod ?? fallbackMethod ?? "الدفع")}</h3>
+          </div>
+        </div>
+        <span className="rounded-full border border-amber-400/18 bg-amber-500/10 px-2.5 py-1 text-[0.5rem] font-black text-[#f3cf73]">يدوي</span>
       </div>
-      <div className="mt-3 rounded-2xl border border-white/[0.08] bg-black/20 p-3">
-        <p className="text-xs text-white/40">الحساب</p>
-        <p dir="ltr" className="mt-1 break-all text-lg font-black text-[#f3cf73]">{accountValue || "غير متاح"}</p>
+      <button type="button" onClick={onCopy} className="group relative w-full px-4 py-4 text-right transition hover:bg-white/[0.01] active:bg-white/[0.02] sm:px-5 sm:py-5">
+        <div className="flex items-center justify-between">
+          <p className="text-[0.55rem] font-black tracking-[0.15em] text-white/25">رقم الحساب</p>
+          <span className={`flex items-center gap-1 text-[0.55rem] font-black transition-all ${copied ? "text-emerald-400" : "text-white/20 opacity-0 group-hover:opacity-100"}`}>
+            {copied ? <><CheckCircle2 className="size-3" /> تم النسخ</> : <><Copy className="size-3" /> نسخ</>}
+          </span>
+        </div>
+        <div className="mt-1.5 flex items-center justify-between gap-3">
+          <p dir="ltr" className={`text-xl font-black tracking-wider transition-colors sm:text-2xl ${copied ? "text-emerald-400" : "text-[#f3cf73]"}`}>{accountNumber || "غير متاح"}</p>
+          <div className={`grid size-9 shrink-0 place-items-center rounded-xl transition-all ${copied ? "bg-emerald-500/15 text-emerald-400" : "bg-white/[0.04] text-white/25 group-hover:bg-white/[0.07] group-hover:text-white/50"}`}>
+            {copied ? <CheckCircle2 className="size-4" /> : <Copy className="size-4" />}
+          </div>
+        </div>
+      </button>
+      <div className="flex items-center justify-between border-t border-white/[0.04] px-4 py-2.5 sm:px-5">
+        <div>
+          <p className="text-[0.5rem] font-black tracking-[0.15em] text-white/20">صاحب الحساب</p>
+          <p className="mt-0.5 text-sm font-bold text-white/65" dir="ltr">{ownerName}</p>
+        </div>
+        <div className="shrink-0 rounded-lg bg-white/[0.03] px-2.5 py-1.5">
+          <p className="text-[0.5rem] font-black tracking-wider text-white/20">{method?.paymentMethod === "VODAFONE_CASH" ? "CASH" : "INSTAPAY"}</p>
+        </div>
       </div>
-      {account?.accountName ? <p className="mt-2 text-sm text-white/55">اسم الحساب: {account.accountName}</p> : null}
-      {account?.instructions ? <p className="mt-2 text-sm leading-6 text-white/55">{account.instructions}</p> : null}
+      {account?.instructions ? <p className="border-t border-white/[0.04] px-4 py-2.5 text-[0.7rem] leading-6 text-white/40 sm:px-5">{account.instructions}</p> : null}
     </div>
   );
 }
 
 function PaymentAmountCard({ plan, request }: { plan: PlanData | undefined; request: PaymentRequestData | null }) {
-  return <div className="rounded-2xl border border-white/[0.07] bg-white/[0.025] p-4"><p className="text-xs text-white/40">المبلغ المطلوب</p><p className="mt-1 text-2xl font-black text-[#fff7e8]">{(request?.amount ?? plan?.priceAmount ?? BASIC_PRICE_AMOUNT).toLocaleString()} <span className="text-sm text-white/40">{request?.currency ?? plan?.currency ?? BASIC_CURRENCY}</span></p></div>;
+  const amount = (request?.amount ?? plan?.priceAmount ?? BASIC_PRICE_AMOUNT).toLocaleString();
+  const currency = request?.currency ?? plan?.currency ?? BASIC_CURRENCY;
+  return (
+    <div className="overflow-hidden rounded-3xl border border-white/[0.08] bg-gradient-to-b from-white/[0.04] to-white/[0.01]">
+      <div className="flex items-center justify-between px-4 py-3 sm:px-5">
+        <div className="flex items-center gap-3">
+          <div className="grid size-9 shrink-0 place-items-center rounded-xl bg-emerald-500/12">
+            <CheckCircle2 className="size-4 text-emerald-400" />
+          </div>
+          <div>
+            <p className="text-[0.55rem] font-black tracking-[0.15em] text-white/25">المبلغ المطلوب</p>
+            <p className="mt-0.5 text-2xl font-black text-[#fff7e8] sm:text-3xl">{amount} <span className="text-sm font-black text-white/40">{currency}</span></p>
+          </div>
+        </div>
+        <div className="hidden items-center gap-1.5 rounded-full border border-white/[0.06] bg-white/[0.03] px-3 py-1.5 sm:flex">
+          <Package className="size-3 text-white/30" />
+          <span className="text-[0.55rem] font-black text-white/35">{plan?.name ?? "الباقة الأساسية"}</span>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function ProofSubmitCard({ draftId, proofFile, proofUploaded, pending, canSubmit, action, onFileSelect }: { draftId: string; proofFile: File | null; proofUploaded: boolean; pending: boolean; canSubmit: boolean; action: (payload: FormData) => void; onFileSelect: (event: ChangeEvent<HTMLInputElement>) => void }) {
   return (
-    <form action={action} className="rounded-3xl border border-white/[0.08] bg-white/[0.025] p-4">
-      <input type="hidden" name="draftId" value={draftId} />
-      <label className="flex min-h-36 cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-white/[0.14] bg-black/20 p-4 text-center">
-        <Upload className="size-7 text-[#f3cf73]" />
-        <span className="text-sm font-black text-[#fff7e8]">ارفع صورة إثبات الدفع</span>
-        <span className="text-xs text-white/40">JPEG / PNG / WebP — حتى 5MB</span>
-        <input type="file" name="proof" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={onFileSelect} />
-      </label>
-      {proofFile ? <p className="mt-2 text-xs font-bold text-emerald-300">تم اختيار: {proofFile.name}</p> : null}
-      {proofUploaded ? <p className="mt-2 text-xs font-bold text-emerald-300">تم رفع إثبات الدفع.</p> : null}
-      <Button type="submit" variant="luxury" className="mt-3 w-full" disabled={!canSubmit || pending}>{pending ? <Loader2 className="size-4 animate-spin" /> : <Upload className="size-4" />}{pending ? "جاري تقديم الطلب..." : "تم الدفع ~ قدم طلب"}</Button>
+    <form action={action} className="overflow-hidden rounded-3xl border border-white/[0.08] bg-gradient-to-b from-white/[0.04] to-white/[0.01]">
+      <div className="flex items-center gap-3 border-b border-white/[0.04] px-4 py-3 sm:px-5">
+        <div className="grid size-9 shrink-0 place-items-center rounded-xl bg-sky-500/12">
+          <Upload className="size-4 text-sky-400" />
+        </div>
+        <div>
+          <p className="text-[0.55rem] font-black tracking-[0.15em] text-white/25">الخطوة الأخيرة</p>
+          <h3 className="text-sm font-black text-[#fff7e8]">إثبات الدفع</h3>
+        </div>
+      </div>
+      <div className="p-4 sm:p-5">
+        <label className="flex min-h-40 cursor-pointer flex-col items-center justify-center gap-2.5 rounded-2xl border border-dashed border-white/[0.12] bg-black/20 p-5 text-center transition hover:border-amber-400/30 hover:bg-black/30">
+          <div className="grid size-12 place-items-center rounded-2xl bg-amber-500/10">
+            <Upload className="size-6 text-[#f3cf73]" />
+          </div>
+          <span className="text-sm font-black text-[#fff7e8]">ارفع صورة إثبات الدفع</span>
+          <span className="text-xs text-white/35">JPEG / PNG / WebP — حتى 5MB</span>
+          <input type="file" name="proof" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={onFileSelect} />
+        </label>
+        {proofFile ? <p className="mt-2 flex items-center gap-1.5 text-xs font-bold text-emerald-300"><CheckCircle2 className="size-3.5" /> تم اختيار: {proofFile.name}</p> : null}
+        {proofUploaded ? <p className="mt-2 flex items-center gap-1.5 text-xs font-bold text-emerald-300"><CheckCircle2 className="size-3.5" /> تم رفع إثبات الدفع بنجاح</p> : null}
+        <Button type="submit" variant="luxury" className="mt-4 w-full" disabled={!canSubmit || pending}>{pending ? <Loader2 className="size-4 animate-spin" /> : <Upload className="size-4" />}{pending ? "جاري رفع الصورة..." : "تم الدفع — قدم طلب التفعيل"}</Button>
+      </div>
     </form>
   );
 }

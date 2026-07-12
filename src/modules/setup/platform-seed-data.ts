@@ -93,7 +93,7 @@ export function getPlatformSeedData() {
         accounts: [
           {
             label: "حساب إنستا باي الرئيسي",
-            accountName: "FrameID",
+            accountName: "Badr A** B** H****",
             accountNumber: "01011511561",
             phoneNumber: "01011511561",
             instructions: "حوّل على رقم إنستا باي، ثم ارفع صورة إثبات الدفع من نفس الصفحة.",
@@ -111,7 +111,7 @@ export function getPlatformSeedData() {
         accounts: [
           {
             label: "محفظة فودافون كاش الرئيسية",
-            accountName: "FrameID",
+            accountName: "Badr A** B** H****",
             accountNumber: "01038434472",
             phoneNumber: "01038434472",
             instructions: "حوّل على رقم فودافون كاش، ثم ارفع صورة إثبات الدفع من نفس الصفحة.",

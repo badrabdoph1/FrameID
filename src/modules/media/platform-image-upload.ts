@@ -8,13 +8,18 @@ const MAX_PLATFORM_IMAGE_BYTES = 8 * 1024 * 1024;
 type UploadOptions = {
   createId?: () => string;
   maxSizeBytes?: number;
+  storage?: ReturnType<typeof createLocalMediaStorage>;
+  repository?: ReturnType<typeof createPrismaMediaUploadRepository>;
 };
 
-const uploadService = createMediaUploadService({
-  storage: createLocalMediaStorage(),
-  repository: createPrismaMediaUploadRepository(prisma),
-  maxSizeBytes: MAX_PLATFORM_IMAGE_BYTES,
-});
+function createUploadService(options: UploadOptions = {}) {
+  return createMediaUploadService({
+    storage: options.storage ?? createLocalMediaStorage(),
+    repository: options.repository ?? createPrismaMediaUploadRepository(prisma),
+    maxSizeBytes: options.maxSizeBytes ?? MAX_PLATFORM_IMAGE_BYTES,
+    createId: options.createId,
+  });
+}
 
 export async function uploadPlatformTemplateImage(
   file: File,
@@ -35,7 +40,8 @@ async function uploadPlatformImage(
   directory: string,
   options: UploadOptions,
 ): Promise<{ url: string; storageKey: string }> {
-  const asset = await uploadService.uploadImage({
+  const service = createUploadService(options);
+  const asset = await service.uploadImage({
     tenantId: "platform",
     file,
     alt: directory === "platform/social-preview" ? "معاينة منصة التواصل" : "قالب منصة",

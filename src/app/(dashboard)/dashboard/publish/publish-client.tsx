@@ -226,7 +226,7 @@ export function PublishClient({
 
         <Panel icon={UploadCloud} title="صورة المشاركة" description="ارفع صورة قوية، يفضل تكون أفقية وواضحة.">
           {shareImageState ? <BuilderNotice tone={shareImageOk ? "success" : "error"} title={shareImageState} /> : null}
-          <ImageUploader onUpload={handleShareImageUpload} multiple={false} maxFiles={1} maxSizeMB={30} />
+          <ImageUploader onUpload={handleShareImageUpload} multiple={false} maxFiles={1} maxSizeMB={20} />
         </Panel>
       </section>
 
