@@ -87,9 +87,10 @@ export default async function AdminBackupsPage({ searchParams }: Props) {
   const completed = jobs.filter((job) => job.status === "COMPLETED").length;
   const failed = jobs.filter((job) => job.status === "FAILED").length;
   const storageUsed = jobs.reduce((sum, job) => sum + (job.sizeBytes ?? 0), 0);
+  const latestCompleted = jobs.find((j) => j.status === "COMPLETED");
 
   return (
-    <AdminPageShell badge="النظام" title="مركز النسخ الاحتياطي" description="إنشاء النسخ والتحقق منها واستعادتها من مساحة عمل واحدة آمنة وواضحة.">
+    <AdminPageShell badge="النظام" title="مركز النسخ الاحتياطي" description="إنشاء النسخ الاحتياطية واستعادتها وحمايتك عند النقل بين الاستضافات.">
       <Feedback params={params} />
       <GitHubStatusBanner />
 
@@ -100,7 +101,7 @@ export default async function AdminBackupsPage({ searchParams }: Props) {
         <Metric label="المساحة المسجلة" value={formatBytes(storageUsed)} tone={failed ? "warning" : "default"} />
       </section>
 
-      <WorkspaceSection title="إنشاء نسخة" description="إجراء رئيسي واضح لكل نوع من أنواع النسخ الحالية.">
+      <WorkspaceSection title="إنشاء نسخة" description="اختر نوع النسخة واضغط الزر. النسخة تُحفظ محلياً وعلى GitHub إن وُجد.">
         <div className="grid gap-3 md:grid-cols-2">
           {SUPPORTED_BACKUP_TYPES.map((type) => (
             <form key={type} action={runBackupAction} className="rounded-2xl border border-white/[0.07] bg-black/20 p-4">
@@ -113,16 +114,42 @@ export default async function AdminBackupsPage({ searchParams }: Props) {
         </div>
       </WorkspaceSection>
 
-      <WorkspaceSection title="النسخ الحالية" description="كل نسخة لها بطاقة واحدة وقائمة إجراءات واحدة.">
+      <WorkspaceSection title="استعادة البيانات" description="استعادة نسخة احتياطية سابقة. يمكن تنزيل النسخة من GitHub إذا لم تكن موجودة محلياً.">
+        {latestCompleted ? (
+          <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-5">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <p className="text-sm font-black text-emerald-300">آخر نسخة مكتملة: {getBackupTypeLabel(latestCompleted.type)}</p>
+                <p className="mt-1 text-xs font-bold text-white/45">{formatDate(latestCompleted.createdAt)} · {latestCompleted.sizeBytes ? formatBytes(latestCompleted.sizeBytes) : "—"}</p>
+              </div>
+              <form action={restoreWorkspaceBackupAction} className="flex gap-2">
+                <input type="hidden" name="backupJobId" value={latestCompleted.id} />
+                <button className="rounded-xl bg-emerald-500 px-6 py-3 text-sm font-black text-white transition hover:bg-emerald-400">استعادة هذه النسخة</button>
+              </form>
+            </div>
+          </div>
+        ) : (
+          <div className="rounded-2xl border border-dashed border-white/12 p-8 text-center">
+            <p className="text-sm font-black text-white/60">لا توجد نسخ مكتملة للاستعادة منها.</p>
+            <p className="mt-1 text-xs font-bold text-white/35">أنشئ نسخة أولاً من القسم الموجود بالأعلى.</p>
+          </div>
+        )}
+      </WorkspaceSection>
+
+      <WorkspaceSection title="النسخ الاحتياطية" description="كل نسخة لها إجراءات واضحة.">
         <div className="space-y-3">
           {jobs.length === 0 ? <EmptyState /> : jobs.map((job) => {
             const artifactId = job.localPath ? basename(job.localPath) : null;
             const ready = job.status === "COMPLETED" && Boolean(artifactId);
+            const isLatest = job.id === latestCompleted?.id;
             return (
-              <article key={job.id} className="rounded-2xl border border-white/[0.07] bg-black/20 p-4">
+              <article key={job.id} className={`rounded-2xl border p-4 ${isLatest ? "border-emerald-500/20 bg-emerald-500/5" : "border-white/[0.07] bg-black/20"}`}>
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
-                    <h3 className="text-sm font-black text-white">{getBackupTypeLabel(job.type)}</h3>
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-sm font-black text-white">{getBackupTypeLabel(job.type)}</h3>
+                      {isLatest ? <span className="rounded-md bg-emerald-500/20 px-2 py-0.5 text-[10px] font-black text-emerald-300">الأحدث</span> : null}
+                    </div>
                     <p className="mt-1 text-xs font-bold text-white/35">{formatDate(job.createdAt)} · {translateTrigger(job.trigger)}</p>
                   </div>
                   <AdminStatusBadge tone={statusTone(job.status)}>{translateStatus(job.status)}</AdminStatusBadge>
@@ -131,26 +158,30 @@ export default async function AdminBackupsPage({ searchParams }: Props) {
                   <Info label="الحجم" value={job.sizeBytes ? formatBytes(job.sizeBytes) : "—"} />
                   <Info label="المدة" value={formatDuration(job.createdAt, job.completedAt)} />
                   <Info label="الملف" value={artifactId ?? "غير متاح"} />
-                  <Info label="سلامة السجل" value={job.checksumSha256 ? "Checksum مسجل" : "غير مسجل"} />
+                  <Info label="التحقق" value={job.checksumSha256 ? "Checksum مسجل" : "غير مسجل"} />
                 </div>
                 {job.errorMessage ? <p className="mt-3 rounded-xl border border-red-500/20 bg-red-500/10 p-3 text-xs font-bold text-red-300">{job.errorMessage}</p> : null}
-                <details className="mt-4">
-                  <summary className="cursor-pointer text-xs font-black text-[#f3cf73]">الإجراءات</summary>
-                  <div className="mt-3 flex flex-wrap gap-2">
+
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {ready ? (
                     <form action={restoreWorkspaceBackupAction}>
                       <input type="hidden" name="backupJobId" value={job.id} />
-                      <button disabled={!ready} className="rounded-lg border border-white/10 px-3 py-2 text-xs font-bold text-white/70 disabled:cursor-not-allowed disabled:opacity-35">استعادة</button>
+                      <button className="rounded-xl bg-emerald-500 px-4 py-2 text-xs font-black text-white transition hover:bg-emerald-400">استعادة</button>
                     </form>
+                  ) : (
+                    <button disabled className="rounded-xl border border-white/10 px-4 py-2 text-xs font-bold text-white/35 disabled:cursor-not-allowed disabled:opacity-35">استعادة</button>
+                  )}
+                  {ready ? (
                     <form action={verifyWorkspaceBackupAction}>
                       <input type="hidden" name="backupJobId" value={job.id} />
-                      <button disabled={!ready} className="rounded-lg border border-white/10 px-3 py-2 text-xs font-bold text-white/70 disabled:cursor-not-allowed disabled:opacity-35">تحقق</button>
+                      <button className="rounded-xl border border-white/10 px-4 py-2 text-xs font-black text-white/70 transition hover:border-amber-300/30 hover:text-white">تحقق</button>
                     </form>
-                    <form action={deleteWorkspaceBackupAction}>
-                      <input type="hidden" name="backupJobId" value={job.id} />
-                      <button disabled={!artifactId} className="rounded-lg border border-red-500/30 px-3 py-2 text-xs font-bold text-red-300 disabled:cursor-not-allowed disabled:opacity-35">حذف</button>
-                    </form>
-                  </div>
-                </details>
+                  ) : null}
+                  <form action={deleteWorkspaceBackupAction} className="ms-auto">
+                    <input type="hidden" name="backupJobId" value={job.id} />
+                    <button disabled={!artifactId && !ready} className="rounded-xl border border-red-500/30 px-4 py-2 text-xs font-bold text-red-300 transition hover:border-red-500/50 hover:text-red-200 disabled:cursor-not-allowed disabled:opacity-35">حذف</button>
+                  </form>
+                </div>
               </article>
             );
           })}
@@ -158,11 +189,11 @@ export default async function AdminBackupsPage({ searchParams }: Props) {
       </WorkspaceSection>
 
       <details className="rounded-2xl border border-white/[0.07] bg-white/[0.02] p-5">
-        <summary className="cursor-pointer text-base font-black text-[#fff7e8]">خيارات متقدمة</summary>
+        <summary className="cursor-pointer text-base font-black text-[#fff7e8]">الإعدادات المتقدمة</summary>
         <div className="mt-5 space-y-5">
           <div>
             <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-              <div><h2 className="text-sm font-black text-white">الجدولة والاحتفاظ</h2><p className="mt-1 text-xs font-bold text-white/40">لا تظهر في الاستخدام اليومي إلا عند الطلب.</p></div>
+              <div><h2 className="text-sm font-black text-white">الجدولة والاحتفاظ</h2><p className="mt-1 text-xs font-bold text-white/40">تحكم في جدولة النسخ التلقائية وعدد النسخ المحفوظة.</p></div>
               <form action={verifyAllBackupsAction}><button className="rounded-xl border border-white/10 px-3 py-2 text-xs font-black text-white/70">تحقق من الجميع</button></form>
             </div>
             <div className="grid gap-3 lg:grid-cols-2">
@@ -190,7 +221,7 @@ export default async function AdminBackupsPage({ searchParams }: Props) {
 function Feedback({ params }: { params: Record<string, string | undefined> }) {
   if (params.error) return <Banner tone="danger">{params.details ?? params.error}</Banner>;
   if (params.started) return <Banner tone="success">تم إنشاء النسخة بنجاح.</Banner>;
-  if (params.restored) return <Banner tone="success">تمت الاستعادة بنجاح.</Banner>;
+  if (params.restored) return <Banner tone="success">تمت الاستعادة بنجاح. قد تحتاج لتحديث الصفحة لرؤية التغييرات.</Banner>;
   if (params.deleted) return <Banner tone="success">تم حذف النسخة.</Banner>;
   if (params.verified && params.valid !== undefined) {
     const valid = Number(params.valid);
@@ -207,13 +238,13 @@ function GitHubStatusBanner() {
   if (configured) {
     return (
       <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 px-4 py-3 text-xs font-bold text-emerald-300">
-        GitHub مُعد للنسخ الاحتياطي — التخزين السحابي مفعّل.
+        GitHub مُعد — النسخ الاحتياطي يُحفظ محلياً + على GitHub للحماية عند النقل بين الاستضافات.
       </div>
     );
   }
   return (
     <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 px-4 py-3 text-xs font-bold text-amber-300">
-      تحذير: المتغير البيئي <span className="font-mono">BACKUP_GITHUB_TOKEN</span> غير مُعد. النسخ الاحتياطي لن يعمل بدونه. أضفه من Railway Variables.
+      النسخ الاحتياطي يعمل محلياً فقط. للحماية عند النقل، أضف <span className="font-mono">BACKUP_GITHUB_TOKEN</span> و <span className="font-mono">BACKUP_GITHUB_REPOSITORY</span> من Railway Variables.
     </div>
   );
 }

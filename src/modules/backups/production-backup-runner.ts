@@ -59,8 +59,7 @@ export function startProductionBackupRunner(): void {
   if (process.env.BACKUP_SCHEDULER_ENABLED === "false") return;
   if (!process.env.DATABASE_URL) return;
   if (!process.env.BACKUP_GITHUB_TOKEN) {
-    console.warn("[backup-runner] BACKUP_GITHUB_TOKEN is not set. Scheduled backups will not run until it is configured.");
-    return;
+    console.warn("[backup-runner] BACKUP_GITHUB_TOKEN is not set. Backups will run as local-only (not uploaded to GitHub).");
   }
 
   const globalState = globalThis as typeof globalThis & { __frameIdBackupRunnerStarted?: boolean };

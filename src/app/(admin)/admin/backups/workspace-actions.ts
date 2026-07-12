@@ -133,9 +133,11 @@ export async function deleteWorkspaceBackupAction(formData: FormData) {
 
   try {
     const artifact = await getArtifact(backupJobId);
-    const github = createGitHubStorage(env.BACKUP_GITHUB_TOKEN, process.env.BACKUP_GITHUB_REPOSITORY);
-    if (!github) throw new Error("لا يمكن حذف نسخة مكتملة بدون الاتصال بمخزن GitHub الرسمي.");
-    await github.deleteBackup(artifact.artifactId, artifact.branch);
+    const hasToken = Boolean(env.BACKUP_GITHUB_TOKEN);
+    if (hasToken) {
+      const github = createGitHubStorage(env.BACKUP_GITHUB_TOKEN, process.env.BACKUP_GITHUB_REPOSITORY);
+      if (github) await github.deleteBackup(artifact.artifactId, artifact.branch).catch(() => undefined);
+    }
     if (existsSync(artifact.backupDir)) await rm(artifact.backupDir, { recursive: true, force: true });
     await audit({ actorId: session.user.id, action: "BACKUP_DELETED", entityId: backupJobId, metadata: { branch: artifact.branch, githubPath: artifact.githubPath } });
     await prisma.restoreJob.deleteMany({ where: { backupJobId } });
