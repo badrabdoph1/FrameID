@@ -118,19 +118,24 @@ export function SocialPreviewForm({ settings, defaultTitle, defaultDescription, 
       const file = await renderCrop(cropSource, zoom, panX, panY);
       setUploadProgress(15);
       setUploadPhase("uploading");
-      const result = await uploadImage(file, setUploadProgress, () => {
-        setUploadPhase("persisting");
-        setUploadProgress(82);
-      });
 
-      setCustomImageUrl(result.imageUrl);
+      const formData = new FormData();
+      formData.append("image", file);
+
+      const result = await uploadSocialPreviewImageAction(formData);
+
+      if (!result.ok) {
+        throw new Error(result.message);
+      }
+
+      setCustomImageUrl(result.imageUrl!);
       setDeleteImage(false);
       setCropSource(null);
       setImageError(false);
       previewKeyRef.current += 1;
       setUploadProgress(100);
       setUploadPhase("done");
-      setNotice({ tone: "success", message: `تم رفع الصورة وتثبيتها فعليًا (${formatBytes(result.bytes)}). اضغط حفظ لتفعيلها.` });
+      setNotice({ tone: "success", message: `تم رفع الصورة وتثبيتها فعليًا (${formatBytes(result.bytes!)}). اضغط حفظ لتفعيلها.` });
       window.setTimeout(() => {
         setUploadProgress(null);
         setUploadPhase("idle");
