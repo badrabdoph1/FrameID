@@ -1,16 +1,11 @@
+import { SocialPreviewForm } from "@/app/(admin)/admin/settings/social-preview/social-preview-form";
 import { AdminPageShell } from "@/components/layout/admin-page-shell";
+import { getContent } from "@/lib/content";
 import { requireSuperAdminSession } from "@/modules/admin/admin-page-guards";
 import { getPlatformSocialPreviewSettings } from "@/modules/social-preview/platform-social-preview-settings";
-import {
-  PLATFORM_DEFAULT_SOCIAL_IMAGE,
-} from "@/modules/social-preview/social-preview";
-import { SocialPreviewForm } from "@/app/(admin)/admin/settings/social-preview/social-preview-form";
+import { PLATFORM_DEFAULT_SOCIAL_IMAGE } from "@/modules/social-preview/social-preview";
 
 export const dynamic = "force-dynamic";
-
-const DEFAULT_TITLE = "FrameID | موقع احترافي لكل مصور";
-const DEFAULT_DESCRIPTION =
-  "FrameID منصة عربية للمصورين تساعدك تنشئ موقعًا احترافيًا ورابطًا واحدًا يجمع صورك وباقاتك وأسعارك وبيانات التواصل.";
 
 type Props = {
   searchParams: Promise<{ saved?: string; error?: string }>;
@@ -20,6 +15,11 @@ export default async function SocialPreviewSettingsPage({ searchParams }: Props)
   await requireSuperAdminSession();
   const params = await searchParams;
   const settings = await getPlatformSocialPreviewSettings();
+  const homepage = getContent("marketing/homepage");
+  const defaultTitle = `${homepage.hero.headline} ${homepage.hero.headlineHighlight}`.trim();
+  const defaultDescription = homepage.hero.subheadline;
+  const heroVersion = encodeURIComponent(homepage._updatedAt || String(homepage._version));
+  const defaultImageUrl = `${PLATFORM_DEFAULT_SOCIAL_IMAGE}&content=${heroVersion}`;
 
   return (
     <AdminPageShell
@@ -40,9 +40,9 @@ export default async function SocialPreviewSettingsPage({ searchParams }: Props)
 
       <SocialPreviewForm
         settings={settings}
-        defaultTitle={DEFAULT_TITLE}
-        defaultDescription={DEFAULT_DESCRIPTION}
-        defaultImageUrl={PLATFORM_DEFAULT_SOCIAL_IMAGE}
+        defaultTitle={defaultTitle}
+        defaultDescription={defaultDescription}
+        defaultImageUrl={defaultImageUrl}
       />
     </AdminPageShell>
   );

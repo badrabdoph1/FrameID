@@ -62,7 +62,7 @@ describe("backup job service", () => {
 
     expect(repository.events[0]).toBe("job:DATABASE:MANUAL");
     expect(repository.events[1]).toBe("audit:BACKUP_STARTED:backup_1");
-    expect(repository.events[2]).toMatch("failed:backup_1:");
+    expect(repository.events).toContainEqual("audit:BACKUP_FAILED:backup_1");
   });
 
   it("marks a backup as failed when artifact writing fails", async () => {

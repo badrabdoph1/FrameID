@@ -34,6 +34,7 @@ export type PlatformSocialPreviewSettings = {
   storageKey: string | null;
   imageData?: string | null;
   imageMimeType?: string | null;
+  imageVersion?: string | null;
 };
 
 export type PlatformSocialPreviewContext = {
