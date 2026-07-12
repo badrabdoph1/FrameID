@@ -71,7 +71,6 @@ export function createDatabaseDumper(databaseUrl: string): DatabaseDumper {
         "--compress=9",
         "--no-owner",
         "--no-acl",
-        "--file=-",
         parsed.database,
       ];
 

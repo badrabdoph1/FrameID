@@ -30,12 +30,11 @@ const onboardingCopy: Record<string, { label: string; description: string }> = {
   album: { label: "غيّر صورك", description: "أضف أعمالك الحقيقية داخل الألبومات." },
 };
 
-export function DashboardHomeClient({ siteUrl, statusLabel, percent, checklist, lastModified, nextStepHref, nextStepLabel, subscription, customerMessages, activationMessages }: DashboardViewModel) {
+export function DashboardHomeClient({ siteUrl, statusLabel, percent, checklist, lastModified, nextStepHref, nextStepLabel, subscription, customerMessages }: DashboardViewModel) {
   const doneCount = checklist.filter((item) => item.done).length;
   const [copied, setCopied] = useState(false);
   const [checklistHidden, setChecklistHidden] = useState(false);
   const [checklistExpanded, setChecklistExpanded] = useState(true);
-  const activation = getActivationBanner(subscription, activationMessages);
 
   const onboardingItems = useMemo(
     () => checklist
@@ -75,18 +74,6 @@ export function DashboardHomeClient({ siteUrl, statusLabel, percent, checklist, 
 
   return (
     <main className="customer-dashboard-home mx-auto grid w-full max-w-5xl gap-5 pb-4 sm:gap-6 lg:max-w-[1180px] lg:gap-6">
-      <section className={activationNoticeClass(activation.tone)}>
-        <span className={activationGlowClass(activation.tone)} aria-hidden />
-        <div className="flex min-w-0 items-start gap-2 lg:gap-3">
-          <span className={activationDotClass(activation.tone)} aria-hidden />
-          <span className="min-w-0">
-            <strong className="block truncate text-xs font-black sm:text-sm lg:text-base">{activation.message}</strong>
-            {activation.description ? <small className="mt-0.5 block truncate text-[0.68rem] font-bold opacity-70 lg:text-xs">{activation.description}</small> : null}
-          </span>
-        </div>
-        <Link href="/dashboard/billing" className={activationLinkClass(activation.tone)}>{activation.action}</Link>
-      </section>
-
       {subscription?.showLifecycleCard ? <LifecycleStatusCard subscription={subscription} /> : null}
 
       {customerMessages.length > 0 ? <section className="grid gap-2 lg:grid-cols-2">{customerMessages.map((message) => <CustomerMessageBanner key={message.id} message={message} />)}</section> : null}
@@ -168,40 +155,30 @@ function LifecycleStatusCard({ subscription }: { subscription: NonNullable<Dashb
   const toneClasses = tone === "danger" ? "border-red-300/24 bg-red-500/[0.08] text-red-100" : tone === "warning" ? "border-amber-300/24 bg-amber-300/[0.08] text-amber-100" : "border-emerald-300/18 bg-emerald-300/[0.07] text-emerald-100";
   const barClass = tone === "danger" ? "bg-red-300" : tone === "warning" ? "bg-amber-300" : "bg-emerald-300";
   return (
-    <section className={`rounded-[1.35rem] border p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] ${toneClasses}`}>
-      <div className="grid gap-4 lg:grid-cols-[1fr_auto] lg:items-center">
-        <div className="flex min-w-0 items-start gap-3">
-          <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-white/10"><CalendarDays className="size-5" /></span>
-          <span className="min-w-0">
-            <p className="text-xs font-black opacity-70">حالة الحساب</p>
-            <h2 className="mt-1 text-lg font-black text-[#fff7e8]">{subscription.accountType} · {subscription.status}</h2>
-            <p className="mt-1 text-xs font-bold opacity-70">{subscription.planName ?? "بدون باقة محددة"} · ينتهي: {endDate}</p>
-          </span>
-        </div>
-        <Link href="/dashboard/billing" className="inline-flex min-h-11 items-center justify-center rounded-2xl bg-white/12 px-4 text-sm font-black text-white no-underline transition hover:bg-white/18">{subscription.isExpired ? "تجديد الاشتراك" : subscription.isTrial ? "تفعيل الحساب" : "إدارة الاشتراك"}</Link>
+    <section className={`flex flex-col gap-2 rounded-[1rem] border px-3 py-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] sm:flex-row sm:items-center sm:justify-between sm:gap-3 ${toneClasses}`}>
+      <div className="flex min-w-0 items-center gap-2.5">
+        <span className="grid size-8 shrink-0 place-items-center rounded-xl bg-white/10"><CalendarDays className="size-4" /></span>
+        <span className="min-w-0">
+          <span className="text-[0.68rem] font-black opacity-70">حالة الحساب</span>
+          <span className="mx-1.5 text-[0.68rem] font-black opacity-70">·</span>
+          <span className="text-xs font-black text-[#fff7e8]">{subscription.accountType} · {subscription.status}</span>
+          <span className="mx-1.5 text-[0.68rem] font-black opacity-70">·</span>
+          <span className="text-[0.68rem] font-bold opacity-70">{subscription.planName ?? "بدون باقة محددة"} · ينتهي: {endDate}</span>
+        </span>
       </div>
-      <div className="mt-4 grid gap-2">
-        <div className="flex items-center justify-between gap-3 text-xs font-black opacity-75"><span>{subscription.daysRemaining === null ? "اشتراك دائم" : `متبقي ${subscription.daysRemaining} يوم`}</span><span>{subscription.progressPercent ?? 0}%</span></div>
-        <div className="h-2 overflow-hidden rounded-full bg-black/25"><span className={`block h-full rounded-full ${barClass}`} style={{ width: `${subscription.progressPercent ?? 100}%` }} /></div>
+      <div className="flex items-center gap-3">
+        <span className="text-[0.68rem] font-black opacity-75">{subscription.daysRemaining === null ? "اشتراك دائم" : `متبقي ${subscription.daysRemaining} يوم`}</span>
+        <div className="h-1.5 w-20 overflow-hidden rounded-full bg-black/25 sm:w-24"><span className={`block h-full rounded-full ${barClass}`} style={{ width: `${subscription.progressPercent ?? 100}%` }} /></div>
+        <span className="text-[0.68rem] font-black opacity-75">{subscription.progressPercent ?? 0}%</span>
+        <Link href="/dashboard/billing" className="inline-flex min-h-8 shrink-0 items-center justify-center rounded-xl bg-white/12 px-3 text-[0.68rem] font-black text-white no-underline transition hover:bg-white/18">{subscription.isExpired ? "تجديد الاشتراك" : subscription.isTrial ? "تفعيل الحساب" : "إدارة الاشتراك"}</Link>
       </div>
     </section>
   );
-}
-
-function getActivationBanner(subscription: DashboardViewModel["subscription"], templates: DashboardViewModel["activationMessages"]) {
-  if (subscription?.hasPendingRequest) { const template = templates["pending-review"]; return { tone: template?.tone ?? "warning" as BannerTone, message: template?.title ?? "طلب التفعيل قيد المراجعة", description: template?.body ?? "تم إرسال إثبات الدفع. تابع حالة الطلب", action: "متابعة" }; }
-  if (subscription?.latestPaymentRequestStatus === "REJECTED") { const template = templates.rejected; return { tone: template?.tone ?? "danger" as BannerTone, message: template?.title ?? "تم رفض طلب التفعيل", description: template?.body ?? "برجاء مراجعة بيانات الدفع أو إرسال إثبات صحيح.", action: "إعادة الإرسال" }; }
-  if (subscription?.isActive) { const template = templates.active; return { tone: template?.tone ?? "success" as BannerTone, message: template?.title ?? "اشتراكك مفعل", description: template?.body ?? "اشتراكك مفعل والموقع جاهز للتشغيل", action: "إدارة" }; }
-  if (subscription?.isTrial) { const template = templates.trial; const days = subscription.daysRemaining !== null ? ` · متبقي ${subscription.daysRemaining} يوم` : ""; return { tone: template?.tone ?? (subscription.daysRemaining !== null && subscription.daysRemaining <= 3 ? "danger" as BannerTone : "warning" as BannerTone), message: `${template?.title ?? "حسابك تجريبي برجاء التأكد من التفعيل"}${days}`, description: template?.body ?? "فعّل الاشتراك قبل نهاية الفترة التجريبية.", action: "زر التفعيل" }; }
-  const template = templates.expired; return { tone: template?.tone ?? "danger" as BannerTone, message: template?.title ?? "الاشتراك يحتاج إجراء", description: template?.body ?? "راجع الاشتراك حتى يظل الموقع شغال للعملاء.", action: "تفعيل" };
 }
 
 function CustomerMessageBanner({ message }: { message: DashboardViewModel["customerMessages"][number] }) { return <section className={customerMessageClass(message.tone)}><span className={activationDotClass(message.tone)} aria-hidden /><span className="min-w-0"><strong className="block truncate text-xs font-black sm:text-sm">{message.title}</strong>{message.body ? <small className="mt-0.5 block truncate text-[0.68rem] font-bold opacity-70">{message.body}</small> : null}</span></section>; }
 
 function SetupStepRow({ item, index }: { item: DashboardViewModel["checklist"][number]; index: number }) { return <Link href={item.href} className={item.done ? "group grid min-h-14 grid-cols-[auto_auto_1fr_auto] items-center gap-2 rounded-2xl border border-emerald-300/16 bg-emerald-300/[0.055] px-3 py-2.5 no-underline transition hover:border-emerald-300/28 hover:bg-emerald-300/[0.09]" : "group grid min-h-14 grid-cols-[auto_auto_1fr_auto] items-center gap-2 rounded-2xl border border-white/10 bg-[#151a24] px-3 py-2.5 no-underline transition hover:-translate-y-0.5 hover:border-amber-300/25 hover:bg-[#1a202b]"}><span className={item.done ? "grid size-9 place-items-center rounded-2xl bg-emerald-300/12 text-emerald-300" : "grid size-9 place-items-center rounded-2xl bg-white/[0.055] text-white/42 group-hover:text-[#f3cf73]"}>{item.done ? <CheckCircle2 className="size-5" aria-hidden /> : <Circle className="size-5" aria-hidden />}</span><span className={item.done ? "text-[0.7rem] font-black text-emerald-200/70" : "text-[0.7rem] font-black text-[#f3cf73]/75"}>{index}</span><span className="min-w-0"><span className={item.done ? "block truncate text-sm font-black text-[#dffbea]" : "block truncate text-sm font-black text-[#fff7e8]"}>{item.label}</span><span className={item.done ? "mt-0.5 block truncate text-[0.7rem] font-bold text-emerald-100/46" : "mt-0.5 block truncate text-[0.7rem] font-bold text-white/52"}>{item.description}</span></span><ArrowLeft className={item.done ? "size-4 text-emerald-200/35 transition group-hover:text-emerald-200" : "size-4 text-white/30 transition group-hover:text-[#f3cf73]"} aria-hidden /></Link>; }
 
-function activationNoticeClass(tone: BannerTone) { const base = "relative flex min-h-10 items-center justify-between gap-2 overflow-hidden px-1 py-1"; if (tone === "success") return `${base} text-emerald-100 drop-shadow-[0_0_10px_rgba(110,231,183,0.22)]`; if (tone === "danger") return `${base} text-red-100 drop-shadow-[0_0_10px_rgba(248,113,113,0.24)]`; if (tone === "info") return `${base} text-sky-100 drop-shadow-[0_0_10px_rgba(125,211,252,0.22)]`; return `${base} text-amber-100 drop-shadow-[0_0_10px_rgba(243,207,115,0.24)]`; }
 function customerMessageClass(tone: BannerTone) { const base = "flex min-h-11 items-start gap-2 rounded-2xl border px-3 py-2"; if (tone === "success") return `${base} border-emerald-300/18 bg-emerald-300/[0.07] text-emerald-100`; if (tone === "danger") return `${base} border-red-300/18 bg-red-300/[0.07] text-red-100`; if (tone === "warning") return `${base} border-amber-300/18 bg-amber-300/[0.07] text-amber-100`; return `${base} border-sky-300/18 bg-sky-300/[0.07] text-sky-100`; }
-function activationGlowClass(tone: BannerTone) { if (tone === "success") return "pointer-events-none absolute inset-x-0 bottom-0 h-px bg-gradient-to-l from-transparent via-emerald-300/55 to-transparent shadow-[0_0_18px_rgba(110,231,183,0.5)]"; if (tone === "danger") return "pointer-events-none absolute inset-x-0 bottom-0 h-px bg-gradient-to-l from-transparent via-red-300/55 to-transparent shadow-[0_0_18px_rgba(248,113,113,0.5)]"; if (tone === "info") return "pointer-events-none absolute inset-x-0 bottom-0 h-px bg-gradient-to-l from-transparent via-sky-300/55 to-transparent shadow-[0_0_18px_rgba(125,211,252,0.45)]"; return "pointer-events-none absolute inset-x-0 bottom-0 h-px bg-gradient-to-l from-transparent via-amber-300/60 to-transparent shadow-[0_0_18px_rgba(243,207,115,0.55)]"; }
 function activationDotClass(tone: BannerTone) { if (tone === "success") return "mt-1.5 size-1.5 shrink-0 rounded-full bg-emerald-300 shadow-[0_0_12px_rgba(110,231,183,0.8)]"; if (tone === "danger") return "mt-1.5 size-1.5 shrink-0 rounded-full bg-red-300 shadow-[0_0_12px_rgba(248,113,113,0.8)]"; if (tone === "info") return "mt-1.5 size-1.5 shrink-0 rounded-full bg-sky-300 shadow-[0_0_12px_rgba(125,211,252,0.75)]"; return "mt-1.5 size-1.5 shrink-0 animate-pulse rounded-full bg-[#f3cf73] shadow-[0_0_12px_rgba(243,207,115,0.85)]"; }
-function activationLinkClass(tone: BannerTone) { if (tone === "success") return "shrink-0 text-xs font-black text-emerald-200 no-underline underline-offset-4 transition hover:text-white hover:underline"; if (tone === "danger") return "shrink-0 text-xs font-black text-red-200 no-underline underline-offset-4 transition hover:text-white hover:underline"; if (tone === "info") return "shrink-0 text-xs font-black text-sky-200 no-underline underline-offset-4 transition hover:text-white hover:underline"; return "shrink-0 text-xs font-black text-[#f3cf73] no-underline underline-offset-4 transition hover:text-white hover:underline"; }
