@@ -1,6 +1,5 @@
 "use server";
 
-import type { Prisma } from "@prisma/client";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -61,7 +60,7 @@ export async function savePlatformSocialPreviewAction(formData: FormData) {
           description,
           imageUrl,
           removedImage: removeImage,
-        } as Prisma.InputJsonObject,
+        } as never,
       },
     });
   } catch (error) {
@@ -76,6 +75,46 @@ export async function savePlatformSocialPreviewAction(formData: FormData) {
   revalidatePath("/templates");
   revalidatePath(PAGE_PATH);
   redirect(`${PAGE_PATH}?saved=1&mode=${mode}`);
+}
+
+export async function uploadSocialPreviewImageAction(
+  formData: FormData
+): Promise<{ ok: boolean; message: string; imageUrl?: string; bytes?: number }> {
+  const session = await requireSuperAdminSession();
+
+  const image = formData.get("image");
+
+  if (!(image instanceof File) || image.size === 0) {
+    return { ok: false, message: "اختر صورة صالحة للرفع." };
+  }
+
+  try {
+    const uploaded = await uploadPlatformSocialPreviewImage(image);
+
+    const current = await getPlatformSocialPreviewSettings();
+    await savePlatformSocialPreviewSettings({
+      ...current,
+      enabled: true,
+      imageUrl: uploaded.url,
+      storageKey: uploaded.storageKey,
+    });
+
+    revalidateTag(PLATFORM_SOCIAL_PREVIEW_CACHE_TAG);
+    revalidatePath("/", "layout");
+    revalidatePath("/templates");
+
+    return {
+      ok: true,
+      message: "تم رفع الصورة وتثبيتها بنجاح.",
+      imageUrl: uploaded.url,
+      bytes: image.size,
+    };
+  } catch (error) {
+    const { userError } = await processError(error, {
+      metadata: { action: "uploadSocialPreviewImage" },
+    });
+    return { ok: false, message: userError.message };
+  }
 }
 
 function readMode(formData: FormData): PreviewMode {

@@ -1,17 +1,20 @@
 import { createLocalMediaStorage } from "@/modules/media/local-media-storage";
-import {
-  readValidatedImageFile,
-  sanitizeUploadFilename,
-  type MediaStorageAdapter,
-} from "@/modules/media/media-upload-service";
+import { createMediaUploadService } from "@/modules/media/media-upload-service";
+import { createPrismaMediaUploadRepository } from "@/modules/media/prisma-media-upload-repository";
+import { prisma } from "@/lib/prisma";
 
 const MAX_PLATFORM_IMAGE_BYTES = 8 * 1024 * 1024;
 
 type UploadOptions = {
   createId?: () => string;
   maxSizeBytes?: number;
-  storage?: MediaStorageAdapter;
 };
+
+const uploadService = createMediaUploadService({
+  storage: createLocalMediaStorage(),
+  repository: createPrismaMediaUploadRepository(prisma),
+  maxSizeBytes: MAX_PLATFORM_IMAGE_BYTES,
+});
 
 export async function uploadPlatformTemplateImage(
   file: File,
@@ -32,17 +35,11 @@ async function uploadPlatformImage(
   directory: string,
   options: UploadOptions,
 ): Promise<{ url: string; storageKey: string }> {
-  const bytes = await readValidatedImageFile(
+  const asset = await uploadService.uploadImage({
+    tenantId: "platform",
     file,
-    options.maxSizeBytes ?? MAX_PLATFORM_IMAGE_BYTES,
-  );
-  const createId = options.createId ?? (() => crypto.randomUUID());
-  const storageKey = `${directory}/${createId()}-${sanitizeUploadFilename(file.name)}`;
-  const stored = await (options.storage ?? createLocalMediaStorage()).save({
-    storageKey,
-    bytes,
-    mimeType: file.type,
+    alt: directory === "platform/social-preview" ? "معاينة منصة التواصل" : "قالب منصة",
   });
 
-  return { url: stored.url, storageKey };
+  return { url: asset.url, storageKey: asset.id };
 }

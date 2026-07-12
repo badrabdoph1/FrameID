@@ -2,12 +2,13 @@
 
 import { Check, Crop, ImagePlus, LoaderCircle, RefreshCcw, RotateCcw, Save, Trash2, UploadCloud, X } from "lucide-react";
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
+import { uploadSocialPreviewImageAction } from "@/app/(admin)/admin/settings/social-preview/actions";
 
 import type { PlatformSocialPreviewSettings } from "@/modules/social-preview/social-preview";
 
 const TARGET_WIDTH = 1200;
 const TARGET_HEIGHT = 630;
-const MAX_SOURCE_BYTES = 10 * 1024 * 1024;
+const MAX_SOURCE_BYTES = 20 * 1024 * 1024;
 
 type PreviewMode = "default" | "custom";
 type Notice = { tone: "success" | "error" | "info"; message: string } | null;
