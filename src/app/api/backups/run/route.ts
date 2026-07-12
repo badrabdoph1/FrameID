@@ -4,6 +4,7 @@ import { createPrismaBackupJobRepository } from "@/modules/backups/prisma-backup
 import { createBackupJobService } from "@/modules/backups/backup-job-service";
 import { env } from "@/lib/env";
 import { isSupportedBackupType } from "@/modules/backups/backup-policy";
+import { verifyGitHubActionsOidcToken } from "@/modules/backups/github-actions-oidc";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
@@ -20,10 +21,17 @@ export async function POST(request: NextRequest) {
   log("info", "=== Manual backup requested ===");
 
   try {
-    const authHeader = request.headers.get("authorization");
-    const cronSecret = env.CRON_SECRET;
+    const authHeader = request.headers.get("authorization") ?? "";
+    const bearerToken = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
+    const requestedTrigger = request.headers.get("x-frameid-backup-trigger");
+    const repository = process.env.BACKUP_GITHUB_REPOSITORY
+      || [process.env.RAILWAY_GIT_REPO_OWNER, process.env.RAILWAY_GIT_REPO_NAME].filter(Boolean).join("/");
+    const isGitHubActions = requestedTrigger === "GITHUB_ACTIONS";
+    const authorized = isGitHubActions
+      ? Boolean(repository) && await verifyGitHubActionsOidcToken(bearerToken, repository)
+      : Boolean(env.CRON_SECRET) && authHeader === `Bearer ${env.CRON_SECRET}`;
 
-    if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
+    if (!authorized) {
       log("warn", "Unauthorized access attempt");
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -57,7 +65,7 @@ export async function POST(request: NextRequest) {
       backupGitHubRepository: process.env.BACKUP_GITHUB_REPOSITORY,
     });
 
-    const trigger = request.headers.get("x-frameid-backup-trigger") === "GITHUB_ACTIONS" ? "GITHUB_ACTIONS" : "CLI";
+    const trigger = isGitHubActions ? "GITHUB_ACTIONS" : "CLI";
     const result = await service.runBackup({
       type: requestedType,
       trigger,
