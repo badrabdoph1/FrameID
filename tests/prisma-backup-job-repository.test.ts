@@ -74,6 +74,8 @@ describe("prisma backup job repository", () => {
       sizeBytes: 100,
       localPath: "backups/2026-07-06/",
       githubPath: "https://github.com/example/repo/tree/backups/id",
+      githubBranch: "frameid-backups-database",
+      githubCommitSha: "abc123",
       completedAt: new Date("2026-07-06T12:00:00.000Z"),
     });
     await repository.recordAudit({
