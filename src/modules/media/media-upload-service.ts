@@ -48,7 +48,7 @@ export function createMediaUploadService({
       tenantId: string;
       file: File;
       alt?: string;
-    }): Promise<{ id: string; url: string; width: number; height: number; sizeBytes: number }> {
+    }): Promise<{ id: string; url: string }> {
       try {
         const processed = await processImageFromFile(input.file, {
           maxSizeBytes,

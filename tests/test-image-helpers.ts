@@ -1,10 +1,10 @@
 import sharp from "sharp";
 
-export async function createTestJpeg(): Promise<Buffer> {
+export async function createTestJpeg(width = 100, height = 100): Promise<Buffer> {
   return sharp({
     create: {
-      width: 100,
-      height: 100,
+      width,
+      height,
       channels: 3,
       background: { r: 255, g: 0, b: 0 },
     },
@@ -13,11 +13,11 @@ export async function createTestJpeg(): Promise<Buffer> {
     .toBuffer();
 }
 
-export async function createTestPng(): Promise<Buffer> {
+export async function createTestPng(width = 100, height = 100): Promise<Buffer> {
   return sharp({
     create: {
-      width: 100,
-      height: 100,
+      width,
+      height,
       channels: 4,
       background: { r: 0, g: 255, b: 0, alpha: 1 },
     },
@@ -26,11 +26,11 @@ export async function createTestPng(): Promise<Buffer> {
     .toBuffer();
 }
 
-export async function createTestWebp(): Promise<Buffer> {
+export async function createTestWebp(width = 100, height = 100): Promise<Buffer> {
   return sharp({
     create: {
-      width: 100,
-      height: 100,
+      width,
+      height,
       channels: 3,
       background: { r: 0, g: 0, b: 255 },
     },
