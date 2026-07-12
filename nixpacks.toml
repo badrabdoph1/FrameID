@@ -1,5 +1,8 @@
 [phases.setup]
-nixPkgs = ["nodejs_22", "postgresql_18"]
+nixPkgs = ["nodejs_22"]
+
+[phases.install]
+cmds = ["curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | gpg --dearmor -o /usr/share/keyrings/pgdg.gpg 2>/dev/null; . /etc/os-release && echo 'deb [signed-by=/usr/share/keyrings/pgdg.gpg] http://apt.postgresql.org/pub/repos/apt $VERSION_CODENAME-pgdg main' > /etc/apt/sources.list.d/pgdg.list; apt-get update -qq; apt-get install -y postgresql-client-18", "npm ci"]
 
 [phases.build]
 cmds = ["DATABASE_URL=postgresql://dummy:dummy@localhost:5432/dummy npm run build"]
