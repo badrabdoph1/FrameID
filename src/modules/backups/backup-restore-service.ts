@@ -1,9 +1,10 @@
-import { existsSync, createReadStream } from "node:fs";
-import { mkdir, readFile, stat } from "node:fs/promises";
+import { existsSync, createReadStream, createWriteStream } from "node:fs";
+import { mkdir, readFile, stat, mkdtemp, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { spawn } from "node:child_process";
 import { createGunzip } from "node:zlib";
 import { pipeline } from "node:stream/promises";
+import { tmpdir } from "node:os";
 
 import {
   createSha256Checksum,
@@ -62,21 +63,71 @@ async function waitForProcess(child: ReturnType<typeof spawn>, label: string): P
 }
 
 async function verifyCustomPostgresDump(dumpPath: string): Promise<void> {
-  const pgRestore = spawn("pg_restore", ["--list", "-"], { stdio: ["pipe", "ignore", "pipe"] });
-  const processPromise = waitForProcess(pgRestore, "pg_restore verification");
-  await pipeline(createReadStream(dumpPath), createGunzip(), pgRestore.stdin);
-  await processPromise;
+  const tempDir = await mkdtemp(join(tmpdir(), "pg-restore-verify-"));
+  const tempFile = join(tempDir, "dump.sql");
+  
+  try {
+    await pipeline(
+      createReadStream(dumpPath),
+      createGunzip(),
+      createWriteStream(tempFile)
+    );
+    
+    await new Promise<void>((resolve, reject) => {
+      const pgRestore = spawn("pg_restore", ["--list", tempFile], { stdio: ["ignore", "pipe", "pipe"] });
+      
+      let stderr = "";
+      pgRestore.stderr?.on("data", (chunk) => { stderr += String(chunk); });
+      
+      pgRestore.on("close", (code) => {
+        if (code === 0) {
+          resolve();
+        } else {
+          reject(new Error(stderr.trim() || `pg_restore verification exited with code ${code}`));
+        }
+      });
+      
+      pgRestore.on("error", reject);
+    });
+  } finally {
+    await rm(tempDir, { recursive: true, force: true }).catch(() => {});
+  }
 }
 
 async function restoreCustomPostgresDump(databaseUrl: string, dumpPath: string): Promise<void> {
   const parsed = parseDatabaseUrl(databaseUrl);
-  const pgRestore = spawn("pg_restore", [
-    `--host=${parsed.host}`, `--port=${parsed.port}`, `--username=${parsed.user}`, "--no-password",
-    `--dbname=${parsed.database}`, "--clean", "--if-exists", "--no-owner", "--no-acl", "--exit-on-error", "-",
-  ], { env: { ...process.env, PGPASSWORD: parsed.password }, stdio: ["pipe", "inherit", "pipe"] });
-  const processPromise = waitForProcess(pgRestore, "pg_restore");
-  await pipeline(createReadStream(dumpPath), createGunzip(), pgRestore.stdin);
-  await processPromise;
+  const tempDir = await mkdtemp(join(tmpdir(), "pg-restore-"));
+  const tempFile = join(tempDir, "dump.sql");
+  
+  try {
+    await pipeline(
+      createReadStream(dumpPath),
+      createGunzip(),
+      createWriteStream(tempFile)
+    );
+    
+    await new Promise<void>((resolve, reject) => {
+      const pgRestore = spawn("pg_restore", [
+        `--host=${parsed.host}`, `--port=${parsed.port}`, `--username=${parsed.user}`, "--no-password",
+        `--dbname=${parsed.database}`, "--clean", "--if-exists", "--no-owner", "--no-acl", "--exit-on-error", tempFile,
+      ], { env: { ...process.env, PGPASSWORD: parsed.password }, stdio: ["ignore", "inherit", "pipe"] });
+      
+      let stderr = "";
+      pgRestore.stderr?.on("data", (chunk) => { stderr += String(chunk); });
+      
+      pgRestore.on("close", (code) => {
+        if (code === 0) {
+          resolve();
+        } else {
+          reject(new Error(stderr.trim() || `pg_restore exited with code ${code}`));
+        }
+      });
+      
+      pgRestore.on("error", reject);
+    });
+  } finally {
+    await rm(tempDir, { recursive: true, force: true }).catch(() => {});
+  }
 }
 
 async function extractArchive(archivePath: string, targetDir: string): Promise<void> {

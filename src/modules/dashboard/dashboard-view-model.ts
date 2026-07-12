@@ -265,7 +265,7 @@ export function createDashboardViewModel({ session, platformBaseUrl, now, packag
     isPublished,
     isReadyToPublish,
     nextStepHref: activeStep.href,
-    nextStepLabel: incomplete ? incomplete.label : isPublished ? "افتح الموقع" : "نشر الموقع",
+    nextStepLabel: incomplete ? incomplete.label : isPublished ? "شاهد الموقع كما يراه العميل" : "نشر الموقع",
     nextStepTitle: activeCopy.title,
     nextStepDescription: activeCopy.description,
     subscription,

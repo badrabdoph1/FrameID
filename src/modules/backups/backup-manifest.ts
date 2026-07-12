@@ -1,4 +1,3 @@
-import "server-only";
 import { createHash } from "node:crypto";
 import { readFile, stat } from "node:fs/promises";
 import { isSupportedBackupType, type SupportedBackupType } from "@/modules/backups/backup-policy";
