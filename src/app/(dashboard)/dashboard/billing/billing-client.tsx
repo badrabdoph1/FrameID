@@ -628,6 +628,7 @@ function PaymentMethodPicker({ methods, selectedMethodId, selectedPlanId, pendin
     <div className="grid gap-3 md:grid-cols-2">
       {availableMethods.map((method) => {
         const selected = selectedMethodId === method.id;
+        const isInstapay = method.paymentMethod === "INSTAPAY";
         return (
           <form key={method.id} action={action}>
             <input type="hidden" name="planId" value={selectedPlanId} />
@@ -637,8 +638,8 @@ function PaymentMethodPicker({ methods, selectedMethodId, selectedPlanId, pendin
             <button type="submit" disabled={pending} onClick={() => onMethodSelect(method.id)} className={`group relative flex min-h-36 w-full flex-col items-start justify-between overflow-hidden rounded-3xl border p-4 text-right transition sm:p-5 ${selected ? "border-amber-400/60 bg-amber-500/10" : "border-white/[0.08] bg-gradient-to-b from-white/[0.03] to-white/[0.01] hover:border-white/20"} ${pending ? "cursor-wait opacity-70" : ""}`}>
               {selected ? <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(243,207,115,0.08),transparent_60%)]" /> : null}
               <div className="flex items-center gap-3">
-                <div className="grid size-10 shrink-0 place-items-center rounded-2xl bg-white/[0.05] transition group-hover:bg-white/[0.08]">
-                  <CreditCard className="size-5 text-[#f3cf73]" />
+                <div className={`grid size-10 shrink-0 place-items-center rounded-2xl transition ${isInstapay ? "bg-rose-500/12 group-hover:bg-rose-500/18" : "bg-red-500/12 group-hover:bg-red-500/18"}`}>
+                  <CreditCard className={`size-5 ${isInstapay ? "text-rose-400" : "text-red-400"}`} />
                 </div>
                 <div>
                   <span className="flex items-center gap-2 text-base font-black text-[#fff7e8]">{method.label ?? getPaymentMethodLabel(method.paymentMethod)}</span>

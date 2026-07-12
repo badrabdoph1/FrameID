@@ -6,14 +6,26 @@ import { isSupportedBackupType } from "@/modules/backups/backup-policy";
 const DEFAULT_INTERVAL_MS = 60_000;
 
 function nextDailyRun(schedule: string, now: Date): Date {
-  const [minuteRaw = "0", hourRaw = "2"] = schedule.trim().split(/\s+/);
+  const parts = schedule.trim().split(/\s+/);
+  const minuteRaw = parts[0] ?? "0";
+  const hourRaw = parts[1] ?? "2";
+  const dowRaw = parts[4] ?? "*";
+
   const minute = minuteRaw === "*" ? now.getUTCMinutes() : Number.parseInt(minuteRaw, 10);
   const hour = hourRaw === "*" ? now.getUTCHours() : Number.parseInt(hourRaw, 10);
+  const dow = dowRaw === "*" ? -1 : Number.parseInt(dowRaw, 10);
+
   const next = new Date(now);
   next.setUTCSeconds(0, 0);
   next.setUTCMinutes(Number.isFinite(minute) ? minute : 0);
   next.setUTCHours(Number.isFinite(hour) ? hour : 2);
+
   if (next <= now) next.setUTCDate(next.getUTCDate() + 1);
+
+  if (Number.isFinite(dow) && dow >= 0) {
+    while (next.getUTCDay() !== dow) next.setUTCDate(next.getUTCDate() + 1);
+  }
+
   return next;
 }
 
