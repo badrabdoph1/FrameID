@@ -36,6 +36,7 @@ export function SocialPreviewForm({ settings, defaultTitle, defaultDescription, 
   const [deleteImage, setDeleteImage] = useState(false);
   const [notice, setNotice] = useState<Notice>(null);
   const [imageError, setImageError] = useState(false);
+  const previewKeyRef = useRef(0);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const cropFrameRef = useRef<HTMLDivElement | null>(null);
@@ -125,6 +126,7 @@ export function SocialPreviewForm({ settings, defaultTitle, defaultDescription, 
       setDeleteImage(false);
       setCropSource(null);
       setImageError(false);
+      previewKeyRef.current += 1;
       setUploadProgress(100);
       setUploadPhase("done");
       setNotice({ tone: "success", message: `تم رفع الصورة وتثبيتها فعليًا (${formatBytes(result.bytes)}). اضغط حفظ لتفعيلها.` });
@@ -135,6 +137,7 @@ export function SocialPreviewForm({ settings, defaultTitle, defaultDescription, 
     } catch (error) {
       setUploadProgress(null);
       setUploadPhase("idle");
+      setCropSource(null);
       setNotice({ tone: "error", message: error instanceof Error ? error.message : "تعذر رفع الصورة." });
     }
   }
@@ -181,6 +184,7 @@ export function SocialPreviewForm({ settings, defaultTitle, defaultDescription, 
   function removeImage() {
     setDeleteImage(true);
     setMode("default");
+    previewKeyRef.current += 1;
     setNotice({ tone: "info", message: "سيتم حذف الصورة المخصصة نهائيًا بعد الضغط على حفظ." });
   }
 
@@ -225,7 +229,7 @@ export function SocialPreviewForm({ settings, defaultTitle, defaultDescription, 
         <div className="mb-3 flex items-center justify-between"><div><h2 className="text-sm font-black text-[#fff7e8]">معاينة مباشرة</h2><p className="mt-1 text-xs font-bold text-white/40">نفس الصورة والنص المستخدمين في المشاركة</p></div><span className="rounded-full bg-emerald-300/10 px-2.5 py-1 text-[.68rem] font-black text-emerald-200">LIVE</span></div>
         <div className="overflow-hidden rounded-2xl border border-white/10 bg-black/30">
           <div className="relative w-full overflow-hidden bg-black/25" style={{ aspectRatio: `${TARGET_WIDTH} / ${TARGET_HEIGHT}` }}>
-            {cropSource && mode === "custom" ? <CropImage source={cropSource} zoom={zoom} panX={panX} panY={panY} /> : !imageError ? <img key={activeImage} src={activeImage} alt="معاينة المشاركة" className="size-full object-cover" onLoad={() => setImageError(false)} onError={() => setImageError(true)} /> : <div className="grid size-full place-items-center p-6 text-center text-sm font-black text-red-200">تعذر تحميل الصورة. أعد فتح القسم أو ارفع صورة جديدة.</div>}
+            {cropSource && mode === "custom" ? <CropImage source={cropSource} zoom={zoom} panX={panX} panY={panY} /> : !imageError ? <img key={previewKeyRef.current} src={activeImage} alt="معاينة المشاركة" className="size-full object-cover" onLoad={() => setImageError(false)} onError={() => setImageError(true)} /> : <div className="grid size-full place-items-center p-6 text-center text-sm font-black text-red-200">تعذر تحميل الصورة. أعد فتح القسم أو ارفع صورة جديدة.</div>}
           </div>
           <div className="grid gap-2 p-4"><span className="text-[.7rem] font-black uppercase tracking-[.12em] text-white/35">frameid.app</span><strong className="text-base font-black leading-7 text-white">{activeTitle}</strong><p className="line-clamp-3 text-sm font-bold leading-6 text-white/50">{activeDescription}</p></div>
         </div>

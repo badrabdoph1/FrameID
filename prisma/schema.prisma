@@ -803,7 +803,7 @@ model BackupJob {
   createdAt        DateTime     @default(now())
   completedAt      DateTime?
 
-  triggeredBy User? @relation("BackupInitiator", fields: [triggeredById], references: [id])
+  // triggeredById stores the AdminUser or User ID that initiated the backup (no FK — admins ≠ users)
 
   @@index([status, createdAt])
 }
