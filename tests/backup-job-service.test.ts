@@ -47,6 +47,7 @@ describe("backup job service", () => {
       repository,
       databaseUrl: "postgresql://test:test@localhost:5432/test",
       platformVersion: "0.1.0",
+      backupGitHubToken: "ghp_fake_token_for_testing",
       now: () => new Date("2026-07-06T12:00:00.000Z"),
     });
 
@@ -80,6 +81,7 @@ describe("backup job service", () => {
       repository: failingRepo,
       databaseUrl: "postgresql://test:test@localhost:5432/test",
       platformVersion: "0.1.0",
+      backupGitHubToken: "ghp_fake_token_for_testing",
     });
 
     await expect(

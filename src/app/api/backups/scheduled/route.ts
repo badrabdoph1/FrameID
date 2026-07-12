@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { createPrismaBackupJobRepository } from "@/modules/backups/prisma-backup-job-repository";
 import { createBackupJobService } from "@/modules/backups/backup-job-service";
-import { isSupportedBackupType, type SupportedBackupType } from "@/modules/backups/backup-policy";
+import { isSupportedBackupType } from "@/modules/backups/backup-policy";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
@@ -85,7 +85,7 @@ function shouldRunScheduledBackup(schedule: string, lastRunAt: Date | null): boo
   try {
     const parts = schedule.trim().split(/\s+/);
     if (parts.length < 5) return true;
-    const [minuteStr, hourStr, , , dowStr] = parts;
+    const [, hourStr, , , dowStr] = parts;
     if (hourStr !== "*") {
       const scheduledHour = parseInt(hourStr, 10);
       if (now.getUTCHours() !== scheduledHour) return false;

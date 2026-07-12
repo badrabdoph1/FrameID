@@ -24,6 +24,8 @@ async function main() {
     platformVersion: process.env.npm_package_version ?? "0.1.0",
     backupGitHubToken: process.env.BACKUP_GITHUB_TOKEN,
     backupEncryptionKey: process.env.BACKUP_ENCRYPTION_KEY,
+    backupGitHubRepository: process.env.BACKUP_GITHUB_REPOSITORY,
+    gitCommitSha: process.env.RAILWAY_GIT_COMMIT_SHA,
   });
 
   try {
