@@ -68,4 +68,9 @@ describe("عقد Backup Architecture", () => {
     expect(page).toContain("اكتملت النسخة على Railway ووصلت إلى GitHub بعد Remote Verify");
     expect(page).toContain("فتح النسخة على GitHub");
   });
+  it("يعيد فهرسة النسخة المستعادة داخل القاعدة الجديدة", async () => {
+    const text = await readFile("src/modules/backups/frameid-restore-pipeline.ts", "utf8");
+    expect(text).toContain("input.prisma.backupJob.upsert");
+    expect(text).toContain("restoredManifest.backupJobId");
+  });
 });
