@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils/cn";
 import { formatErrorForClipboard } from "@/lib/errors/format-error";
+import { AdminPageShell } from "@/components/layout/admin-page-shell";
 import { getErrorLogs, getErrorStats, resolveError } from "./actions";
 
 type ErrorLogItem = {
@@ -105,15 +106,11 @@ export default function AdminErrorCenterPage() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold text-white">مركز الأخطاء</h1>
-          <p className="mt-1 text-sm text-white/40">
-            سجل الأخطاء وإدارة المشكلات
-          </p>
-        </div>
-      </div>
+    <AdminPageShell
+      badge="النظام"
+      title="مركز الأخطاء"
+      description="سجل الأخطاء وإدارة المشكلات"
+    >
 
       {/* Stats */}
       {stats && (
@@ -426,6 +423,6 @@ export default function AdminErrorCenterPage() {
           </div>
         </div>
       )}
-    </div>
+    </AdminPageShell>
   );
 }

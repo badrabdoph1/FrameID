@@ -3,39 +3,6 @@ import type { SourceAdapter } from "./adapters";
 import { getPageDefinition } from "./registry";
 import { createJsonFileAdapter } from "./adapters";
 
-export interface PageStudioState {
-  pageId: string;
-  pageDefinition: PageDefinition;
-  data: Record<string, unknown>;
-  version: number;
-  updatedAt: string;
-  sections: SectionInstance[];
-  hiddenSections: SectionInstance[];
-  history: HistoryEntry[];
-  historyIndex: number;
-  isDirty: boolean;
-  isSaving: boolean;
-  lastSavedVersion: number;
-}
-
-export interface SectionInstance {
-  id: string;
-  configId: string;
-  definition: PageSectionDefinition;
-  isVisible: boolean;
-  sortOrder: number;
-  data: Record<string, unknown>;
-}
-
-export interface HistoryEntry {
-  id: string;
-  timestamp: number;
-  data: Record<string, unknown>;
-  sections: SectionInstance[];
-  hiddenSections: SectionInstance[];
-  description: string;
-}
-
 class PageStudioService {
   private state: PageStudioState | null = null;
   private adapter: SourceAdapter | null = null;
@@ -106,7 +73,7 @@ class PageStudioService {
         definition: config,
         isVisible: true,
         sortOrder: index,
-        data: Array.isArray(sectionData) ? { items: sectionData } : sectionData,
+        data: Array.isArray(sectionData) ? { items: sectionData } : sectionData as Record<string, unknown>,
       };
     });
   }

@@ -64,7 +64,7 @@ export default async function AdminSettingsPage({ searchParams }: Props) {
             إدارة فريق الإدارة العليا والصلاحيات
           </p>
           <a
-            href="/admin/settings/team"
+            href="/admin/admin-users"
             className="mt-3 inline-flex text-sm text-champagne underline-offset-4 hover:underline"
           >
             إدارة الفريق

@@ -1,13 +1,13 @@
 "use client";
 
-import type { AuditLog } from "@prisma/client";
+import type { Prisma } from "@prisma/client";
 
 interface BackupLogsSectionProps {
   auditLogs: {
     id: string;
     action: string;
     entityId: string | null;
-    metadata: Record<string, unknown> | null;
+    metadata: Prisma.JsonValue;
     createdAt: Date;
   }[];
 }

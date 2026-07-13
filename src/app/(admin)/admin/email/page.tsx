@@ -8,7 +8,7 @@ import { requireAdminCenter } from "@/modules/admin/admin-permission-guards";
 export const dynamic = "force-dynamic";
 
 type Props = {
-  searchParams: Promise<{ q?: string; type?: string; state?: string }>;
+  searchParams: Promise<{ q?: string; type?: string }>;
 };
 
 function dateLabel(value: Date): string {
@@ -26,7 +26,6 @@ export default async function AdminEmailPage({ searchParams }: Props) {
   const params = await searchParams;
   const q = (params.q ?? "").trim();
   const type = (params.type ?? "").trim();
-  const state = (params.state ?? "").trim();
 
   const where: Record<string, unknown> = { deletedAt: null };
   if (q) {
@@ -34,13 +33,11 @@ export default async function AdminEmailPage({ searchParams }: Props) {
     where.OR = [{ id: contains }, { title: contains }, { body: contains }, { type: contains }, { category: contains }, { tenantId: contains }, { userId: contains }];
   }
   if (type) where.type = { contains: type, mode: "insensitive" };
-  if (state === "read") where.readAt = { not: null };
-  if (state === "unread") where.readAt = null;
 
   const [logs, total, unread, types] = await Promise.all([
     prisma.notificationLog.findMany({ where: where as never, orderBy: { createdAt: "desc" }, take: 100 }),
     prisma.notificationLog.count({ where: { deletedAt: null } }),
-    prisma.notificationLog.count({ where: { deletedAt: null } }),
+    prisma.notification.count({ where: { readAt: null, deletedAt: null } }),
     prisma.notificationLog.groupBy({ by: ["type"], _count: true, orderBy: { _count: { type: "desc" } }, take: 8 }),
   ]);
 
@@ -65,11 +62,6 @@ export default async function AdminEmailPage({ searchParams }: Props) {
             <div className="grid gap-3">
               <input name="q" defaultValue={q} placeholder="بحث في العنوان أو النوع أو العميل" className="h-10 rounded-xl border border-white/10 bg-black/20 px-3 text-sm font-bold text-white outline-none placeholder:text-white/25 focus:border-amber-400/40" />
               <input name="type" defaultValue={type} placeholder="type" className="h-10 rounded-xl border border-white/10 bg-black/20 px-3 text-sm font-bold text-white outline-none placeholder:text-white/25 focus:border-amber-400/40" />
-              <select name="state" defaultValue={state} className="h-10 rounded-xl border border-white/10 bg-black/20 px-3 text-sm font-bold text-white outline-none focus:border-amber-400/40">
-                <option value="">كل الحالات</option>
-                <option value="unread">Unread</option>
-                <option value="read">Read</option>
-              </select>
               <button className="h-10 rounded-xl border border-white/10 bg-white/5 text-sm font-black text-white/70 transition hover:bg-white/10 hover:text-white">تطبيق</button>
             </div>
           </form>

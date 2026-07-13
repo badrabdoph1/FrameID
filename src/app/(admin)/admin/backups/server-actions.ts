@@ -2,17 +2,18 @@
 
 import { runBackupAction } from "@/app/(admin)/admin/backups/actions";
 import { prepareMigrationBackupAction } from "@/app/(admin)/admin/backups/actions";
-import { restoreLatestGitHubBackupAction } from "@/app/(admin)/admin/backups/actions";
+import { restoreLatestGitHubBackupAction } from "@/app/(admin)/admin/backups/workspace-actions";
 import { restoreWorkspaceBackupAction } from "@/app/(admin)/admin/backups/workspace-actions";
 import { verifyWorkspaceBackupAction } from "@/app/(admin)/admin/backups/workspace-actions";
 import { deleteWorkspaceBackupAction } from "@/app/(admin)/admin/backups/workspace-actions";
 import { updateBackupSettingsAction } from "@/app/(admin)/admin/backups/actions";
 import { verifyAllBackupsAction } from "@/app/(admin)/admin/backups/actions";
-import { rebuildFromGitHubAction } from "@/app/(admin)/admin/backups/actions";
-import { SUPPORTED_BACKUP_TYPES, type SupportedBackupType } from "@/modules/backups/backup-policy";
+import type { SupportedBackupType } from "@/modules/backups/backup-policy";
 
 export async function handleCreateBackup(type: SupportedBackupType) {
-  await runBackupAction(type);
+  const formData = new FormData();
+  formData.set("type", type);
+  await runBackupAction(formData);
 }
 
 export async function handlePrepareMigrationBackup() {
@@ -24,15 +25,21 @@ export async function handleRestoreLatestGitHubBackup() {
 }
 
 export async function handleRestoreWorkspaceBackup(backupJobId: string) {
-  await restoreWorkspaceBackupAction(backupJobId);
+  const formData = new FormData();
+  formData.set("backupJobId", backupJobId);
+  await restoreWorkspaceBackupAction(formData);
 }
 
 export async function handleVerifyWorkspaceBackup(backupJobId: string) {
-  await verifyWorkspaceBackupAction(backupJobId);
+  const formData = new FormData();
+  formData.set("backupJobId", backupJobId);
+  await verifyWorkspaceBackupAction(formData);
 }
 
 export async function handleDeleteWorkspaceBackup(backupJobId: string) {
-  await deleteWorkspaceBackupAction(backupJobId);
+  const formData = new FormData();
+  formData.set("backupJobId", backupJobId);
+  await deleteWorkspaceBackupAction(formData);
 }
 
 export async function handleUpdateBackupSettings(
@@ -41,13 +48,14 @@ export async function handleUpdateBackupSettings(
   schedule: string,
   retentionCount: number
 ) {
-  await updateBackupSettingsAction(type, enabled, schedule, retentionCount);
+  const formData = new FormData();
+  formData.set("type", type);
+  formData.set("enabled", String(enabled));
+  formData.set("schedule", schedule);
+  formData.set("retentionCount", String(retentionCount));
+  await updateBackupSettingsAction(formData);
 }
 
 export async function handleVerifyAllBackups() {
   await verifyAllBackupsAction();
-}
-
-export async function handleRebuildFromGitHub() {
-  await rebuildFromGitHubAction();
 }

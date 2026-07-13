@@ -1,4 +1,5 @@
 import type { ZodSchema } from "zod";
+import type { SourceAdapter as _SourceAdapter, AdapterLoadResult as _AdapterLoadResult, AdapterSaveResult as _AdapterSaveResult, SaveOptions as _SaveOptions, AdapterFactory as _AdapterFactory } from "./adapters/types";
 
 export interface EditableFieldConfig {
   path: string;
@@ -72,38 +73,6 @@ export interface HistoryEntry {
   sections: SectionInstance[];
   hiddenSections: SectionInstance[];
   description: string;
-}
-
-export interface SourceAdapter {
-  load(pageId: string): Promise<AdapterLoadResult>;
-  save(pageId: string, data: Record<string, unknown>, options: SaveOptions): Promise<AdapterSaveResult>;
-  getSchema?(pageId: string): ZodSchema<unknown>;
-}
-
-export interface AdapterLoadResult {
-  data: Record<string, unknown>;
-  version: number;
-  updatedAt: string;
-}
-
-export interface SaveOptions {
-  actor: {
-    id: string;
-    name: string;
-    email: string;
-  };
-  changeDescription?: string;
-}
-
-export interface AdapterSaveResult {
-  success: boolean;
-  version?: number;
-  commitId?: string;
-  errors?: Array<{ path: string; message: string }>;
-}
-
-export interface AdapterFactory {
-  create(pageId: string): SourceAdapter;
 }
 
 export interface EditorAction {

@@ -43,6 +43,7 @@ interface PageStudioEditorProps {
 }
 
 export function PageStudioEditor({ pageId }: PageStudioEditorProps) {
+  const router = useRouter();
   const {
     state,
     isLoading,
@@ -110,7 +111,7 @@ export function PageStudioEditor({ pageId }: PageStudioEditorProps) {
   }, [selectedSectionId, duplicateSection, deleteSection]);
 
   const getNestedValue = useCallback((obj: Record<string, unknown>, path: string): unknown => {
-    return path.split(".").reduce((acc, key) => (acc as Record<string, unknown>)?.[key], obj);
+    return path.split(".").reduce<unknown>((acc, key) => (acc as Record<string, unknown>)?.[key], obj);
   }, []);
 
   if (isLoading) {
@@ -121,7 +122,7 @@ export function PageStudioEditor({ pageId }: PageStudioEditorProps) {
     );
   }
 
-  if (error || !state) {
+  if (error || !state || !pageDefinition) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
         <AlertTriangle className="size-12 text-red-400 mb-4" />
@@ -145,7 +146,7 @@ export function PageStudioEditor({ pageId }: PageStudioEditorProps) {
         pageDef={pageDefinition}
         state={state}
         previewMode={previewMode}
-        onPreviewToggle={setPreviewMode}
+        onPreviewToggle={() => setPreviewMode((p) => !p)}
         onSave={handleSave}
         onUndo={undo}
         onRedo={redo}
@@ -165,14 +166,12 @@ export function PageStudioEditor({ pageId }: PageStudioEditorProps) {
         <div className="relative flex-1 min-w-0 bg-white">
           <PagePreview
             pageUrl={pageDefinition.previewUrl}
-            pageDef={pageDefinition}
-            state={state}
             selectedSectionId={selectedSectionId}
             selectedTextPath={selectedTextPath}
             selectedImagePath={selectedImagePath}
-            onSelectSection={setSelectedSection}
-            onSelectText={setSelectedText}
-            onSelectImage={setSelectedImage}
+            onSectionClick={(sectionId) => setSelectedSection(sectionId)}
+            onTextClick={(path, _rect, value) => setSelectedText(path)}
+            onImageClick={(path, _rect, src) => setSelectedImage(path)}
             previewMode={previewMode}
           />
 
@@ -181,7 +180,7 @@ export function PageStudioEditor({ pageId }: PageStudioEditorProps) {
             <InlineTextEditor
               path={selectedTextPath}
               value={String(getNestedValue(state.data, selectedTextPath) ?? "")}
-              onSave={updateField}
+              onSave={(path, value) => updateField(selectedSectionId ?? "", path, value)}
               onClose={() => setSelectedText(null)}
             />
           )}
@@ -191,7 +190,7 @@ export function PageStudioEditor({ pageId }: PageStudioEditorProps) {
             <ImageReplaceDialog
               path={selectedImagePath}
               currentSrc={String(getNestedValue(state.data, selectedImagePath) ?? "")}
-              onReplace={(newUrl) => updateField(selectedImagePath, newUrl)}
+              onReplace={(newUrl) => updateField(selectedSectionId ?? "", selectedImagePath, newUrl)}
               onClose={() => setSelectedImage(null)}
             />
           )}
@@ -221,7 +220,7 @@ export function PageStudioEditor({ pageId }: PageStudioEditorProps) {
             onPermanentDelete={permanentlyDeleteSection}
             onReorder={reorderSections}
             showHiddenPanel={showHiddenPanel}
-            onToggleHiddenPanel={setShowHiddenPanel}
+            onToggleHiddenPanel={() => setShowHiddenPanel((p) => !p)}
           />
 
           {/* Hidden Sections Panel */}

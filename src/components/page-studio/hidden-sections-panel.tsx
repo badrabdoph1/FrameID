@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils/cn";
 import { RotateCcw, Trash2, X, ChevronDown } from "lucide-react";
 
 interface HiddenSectionsPanelProps {
-  sections: import("@/modules/page-studio/service").SectionInstance[];
+  sections: import("@/modules/page-studio/types").SectionInstance[];
   onRestore: (hiddenSectionId: string) => void;
   onPermanentDelete: (hiddenSectionId: string) => void;
   onClose: () => void;

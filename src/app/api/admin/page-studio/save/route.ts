@@ -1,7 +1,7 @@
+import { NextRequest } from "next/server";
 import { requireAdminPermission } from "@/modules/admin/admin-permission-guards";
 import { getCurrentAdmin } from "@/modules/admin/get-current-admin";
 import { saveContent } from "@/lib/content";
-import { ContentSchemas } from "@/lib/content";
 import type { ContentSchemaKey } from "@/lib/content";
 
 const schemaKeyMap: Record<string, string> = {
@@ -14,8 +14,8 @@ const schemaKeyMap: Record<string, string> = {
 };
 
 export async function POST(
-  request: Request,
-  { params }: { params: Promise<{ pageId: string }> }
+  request: NextRequest,
+  { params }: { params: Promise<Record<string, string>> }
 ) {
   try {
     await requireAdminPermission("page-studio", "edit");
@@ -31,17 +31,9 @@ export async function POST(
       );
     }
 
-    const schema = ContentSchemas[schemaKey as ContentSchemaKey];
-    if (!schema) {
-      return Response.json(
-        { success: false, errors: [{ path: "general", message: `No schema for: ${schemaKey}` }] },
-        { status: 400 }
-      );
-    }
-
     const admin = await getCurrentAdmin();
 
-    const result = await saveContent(schemaKey as ContentSchemaKey, schema, data, {
+    const result = await saveContent(schemaKey as ContentSchemaKey, data, {
       actor: admin
         ? { id: admin.id, name: admin.name, email: admin.email }
         : undefined,

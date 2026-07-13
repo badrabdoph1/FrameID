@@ -65,18 +65,20 @@ export const HOMEPAGE_SECTIONS: PageSectionDefinition[] = [
     title: "المميزات (Benefits)",
     description: "بطاقات المميزات التسع",
     contentPath: "benefits",
-    defaultData: [
-      { title: "أسعارك واضحة", body: "بدل ما ترد كل مرة، العميل يشوف الباقات والأسعار بنفسه." },
-      { title: "شغلك مترتب", body: "اعرض صورك في ألبومات منظمة تخلي العميل يشوف مستواك بسرعة." },
-      { title: "لينك واحد يكفي", body: "ابعت رابط واحد فيه شغلك، أسعارك، بياناتك، وكل صفحاتك." },
-      { title: "تعديل من غير انتظار", body: "غيّر الصور والأسعار والباقات بنفسك في أي وقت." },
-      { title: "تواصل وحجز أسرع", body: "العميل يوصلك من واتساب أو يحجز من غير لف ودوران." },
-      { title: "شكلك أشيك", body: "بدل صور متفرقة وملفات PDF، قدم نفسك بشكل يليق بشغلك." },
-      { title: "كل حساباتك في مكان", body: "فيسبوك، إنستجرام، تيك توك، واتساب، وكل روابطك في صفحة واحدة." },
-      { title: "أسئلة أقل", body: "لما كل التفاصيل واضحة، وقتك يروح للعميل الجاد مش للشرح المتكرر." },
-      { title: "يفتح من أي جهاز", body: "الموقع شكله مضبوط على الموبايل والتابلت والكمبيوتر." },
-      { title: "مشاركة أسهل", body: "حط الرابط في البايو، ابعته في الشات، أو ضيفه على كارتك." },
-    ],
+    defaultData: {
+      items: [
+        { title: "أسعارك واضحة", body: "بدل ما ترد كل مرة، العميل يشوف الباقات والأسعار بنفسه." },
+        { title: "شغلك مترتب", body: "اعرض صورك في ألبومات منظمة تخلي العميل يشوف مستواك بسرعة." },
+        { title: "لينك واحد يكفي", body: "ابعت رابط واحد فيه شغلك، أسعارك، بياناتك، وكل صفحاتك." },
+        { title: "تعديل من غير انتظار", body: "غيّر الصور والأسعار والباقات بنفسك في أي وقت." },
+        { title: "تواصل وحجز أسرع", body: "العميل يوصلك من واتساب أو يحجز من غير لف ودوران." },
+        { title: "شكلك أشيك", body: "بدل صور متفرقة وملفات PDF، قدم نفسك بشكل يليق بشغلك." },
+        { title: "كل حساباتك في مكان", body: "فيسبوك، إنستجرام، تيك توك، واتساب، وكل روابطك في صفحة واحدة." },
+        { title: "أسئلة أقل", body: "لما كل التفاصيل واضحة، وقتك يروح للعميل الجاد مش للشرح المتكرر." },
+        { title: "يفتح من أي جهاز", body: "الموقع شكله مضبوط على الموبايل والتابلت والكمبيوتر." },
+        { title: "مشاركة أسهل", body: "حط الرابط في البايو، ابعته في الشات، أو ضيفه على كارتك." },
+      ],
+    },
     editorConfig: {
       editableFields: [
         createField("title", "العنوان", "text", { required: true }),
@@ -93,12 +95,14 @@ export const HOMEPAGE_SECTIONS: PageSectionDefinition[] = [
     title: "كيف يعمل (How It Works)",
     description: "خطوات البدء الأربع",
     contentPath: "howItWorks",
-    defaultData: [
-      { step: 1, title: "اختار تصميم على ذوقك", body: "الاختيارات كتير. اختار براحتك الشكل اللي يليق بشغلك.", href: "/templates" },
-      { step: 2, title: "أنشئ حسابك مجانًا", body: "هيكون ليك لوحة تحكم تغيّر منها كل حاجة في موقعك.", href: "/signup" },
-      { step: 3, title: "ادخل لوحة التحكم", body: "هتلاقي رابط موقعك وكل الخطوات واضحة وسلسة.", href: "/dashboard" },
-      { step: 4, title: "ارجع عدّل في أي وقت", body: "سجّل دخولك تاني وغيّر الصور والأسعار براحتك.", href: "/login" },
-    ],
+    defaultData: {
+      items: [
+        { step: 1, title: "اختار تصميم على ذوقك", body: "الاختيارات كتير. اختار براحتك الشكل اللي يليق بشغلك.", href: "/templates" },
+        { step: 2, title: "أنشئ حسابك مجانًا", body: "هيكون ليك لوحة تحكم تغيّر منها كل حاجة في موقعك.", href: "/signup" },
+        { step: 3, title: "ادخل لوحة التحكم", body: "هتلاقي رابط موقعك وكل الخطوات واضحة وسلسة.", href: "/dashboard" },
+        { step: 4, title: "ارجع عدّل في أي وقت", body: "سجّل دخولك تاني وغيّر الصور والأسعار براحتك.", href: "/login" },
+      ],
+    },
     editorConfig: {
       editableFields: [
         createField("title", "العنوان", "text", { required: true }),
@@ -160,13 +164,15 @@ export const HOMEPAGE_SECTIONS: PageSectionDefinition[] = [
     title: "الأسئلة الشائعة (FAQ)",
     description: "قائمة الأسئلة والأجوبة",
     contentPath: "faq.items",
-    defaultData: [
-      { question: "هل أحتاج بطاقة ائتمان للتجربة؟", answer: "لا أبداً. ١٤ يوم مجاناً بدون إضافة أي بيانات دفع. جرب وقرر بعدين." },
-      { question: "وين راح يظهر موقعي؟", answer: "رابط خاص: frameid.app/p/اسمك. تقدر تشاركه في واتساب، إنستغرام، أو بطاقة عملك." },
-      { question: "وش يصير بعد التجربة؟", answer: "موقعك يبقى موجود ومحتواك محفوظ. تقدر تفعل الاشتراك بأي خطة تناسبك." },
-      { question: "هل ينفع موقعي لجوالات العملاء؟", answer: "كل القوالب مصممة للجوال والكمبيوتر—العميل يفتح الرابط ويشوف كل شيء بسرعة." },
-      { question: "كم التكلفة بعد التجربة؟", answer: "الخطط تبدأ من ٢٩ ريال شهرياً. تقدر تلغي أي وقت. وما نخزّن بيانات بطاقتك إلا لما تقرر الاشتراك." },
-    ],
+    defaultData: {
+      items: [
+        { question: "هل أحتاج بطاقة ائتمان للتجربة؟", answer: "لا أبداً. ١٤ يوم مجاناً بدون إضافة أي بيانات دفع. جرب وقرر بعدين." },
+        { question: "وين راح يظهر موقعي؟", answer: "رابط خاص: frameid.app/p/اسمك. تقدر تشاركه في واتساب، إنستغرام، أو بطاقة عملك." },
+        { question: "وش يصير بعد التجربة؟", answer: "موقعك يبقى موجود ومحتواك محفوظ. تقدر تفعل الاشتراك بأي خطة تناسبك." },
+        { question: "هل ينفع موقعي لجوالات العملاء؟", answer: "كل القوالب مصممة للجوال والكمبيوتر—العميل يفتح الرابط ويشوف كل شيء بسرعة." },
+        { question: "كم التكلفة بعد التجربة؟", answer: "الخطط تبدأ من ٢٩ ريال شهرياً. تقدر تلغي أي وقت. وما نخزّن بيانات بطاقتك إلا لما تقرر الاشتراك." },
+      ],
+    },
     editorConfig: {
       editableFields: [
         createField("question", "السؤال", "text", { required: true }),
@@ -228,14 +234,16 @@ export const HOMEPAGE_SECTIONS: PageSectionDefinition[] = [
     title: "أنواع المصورين (Photographer Types)",
     description: "قائمة أنواع المصورين المستهدفة",
     contentPath: "photographerTypes",
-    defaultData: [
-      { label: "مصورين زفاف" },
-      { label: "مصورين خطوبة" },
-      { label: "مصورين أطفال" },
-      { label: "مصورين تخرج" },
-      { label: "مصورين مناسبات" },
-      { label: "استوديوهات تصوير" },
-    ],
+    defaultData: {
+      items: [
+        { label: "مصورين زفاف" },
+        { label: "مصورين خطوبة" },
+        { label: "مصورين أطفال" },
+        { label: "مصورين تخرج" },
+        { label: "مصورين مناسبات" },
+        { label: "استوديوهات تصوير" },
+      ],
+    },
     editorConfig: {
       editableFields: [
         createField("label", "النوع", "text", { required: true }),
@@ -413,7 +421,7 @@ export const PRICING_SECTIONS: PageSectionDefinition[] = [
     title: "الخطط والباقات",
     description: "بطاقات عرض الخطط",
     contentPath: "plans",
-    defaultData: [],
+    defaultData: {},
     editorConfig: {
       editableFields: [
         createField("name", "اسم الخطة", "text", { required: true }),
@@ -437,7 +445,7 @@ export const PRICING_SECTIONS: PageSectionDefinition[] = [
     title: "الأسئلة الشائعة للأسعار",
     description: "أسئلة وأجوبة عن الخطط",
     contentPath: "faq.items",
-    defaultData: [],
+    defaultData: {},
     editorConfig: {
       editableFields: [
         createField("question", "السؤال", "text", { required: true }),
@@ -533,7 +541,7 @@ export const AUTH_SECTIONS: PageSectionDefinition[] = [
     title: "مميزات المنصة",
     description: "بطاقات المميزات الجانبية",
     contentPath: "benefits",
-    defaultData: [],
+    defaultData: {},
     editorConfig: {
       editableFields: [
         createField("icon", "الأيقونة", "text"),
@@ -642,7 +650,7 @@ export const CHECKOUT_SECTIONS: PageSectionDefinition[] = [
     title: "طرق الدفع",
     description: "خيارات الدفع المتاحة",
     contentPath: "paymentMethods",
-    defaultData: [],
+    defaultData: {},
     editorConfig: {
       editableFields: [
         createField("id", "المعرف", "text", { required: true }),
@@ -680,7 +688,7 @@ export const CHECKOUT_SECTIONS: PageSectionDefinition[] = [
     title: "شارات الثقة",
     description: "أيقونات الأمان والثقة",
     contentPath: "trustBadges",
-    defaultData: [],
+    defaultData: {},
     editorConfig: {
       editableFields: [
         createField("label", "النص", "text", { required: true }),

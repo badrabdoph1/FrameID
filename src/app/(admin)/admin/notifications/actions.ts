@@ -50,10 +50,15 @@ export async function getNotificationLogs(params?: {
 export async function getNotificationStats() {
   await requireSuperAdminSession();
 
-  const [total, unread, byType] = await Promise.all([
+  const [total, unread, byType, notificationLogTypes] = await Promise.all([
     prisma.notificationLog.count({}),
-    prisma.notificationLog.count({}),
+    prisma.notification.count({ where: { readAt: null, deletedAt: null } }),
     prisma.notificationLog.groupBy({
+      by: ["type"],
+      _count: true,
+      orderBy: { _count: { type: "desc" } },
+    }),
+    prisma.notification.groupBy({
       by: ["type"],
       _count: true,
       orderBy: { _count: { type: "desc" } },
@@ -64,5 +69,6 @@ export async function getNotificationStats() {
     total,
     unread,
     byType: byType.map((item) => ({ type: item.type, count: item._count })),
+    unreadByType: notificationLogTypes.map((item) => ({ type: item.type, count: item._count })),
   };
 }
