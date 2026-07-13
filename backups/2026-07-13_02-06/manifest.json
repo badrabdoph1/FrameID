@@ -1,7 +1,7 @@
 {
   "version": 2,
   "schemaVersion": 2,
-  "backupJobId": "cmril03670000mx5mfeb9q711",
+  "backupJobId": "cmril0e7g0003mx5m7brlladh",
   "backupType": "FULL",
   "appVersion": "0.1.0",
   "gitCommitSha": "f3577d39016760348f90c26e73d1b378d3801637",
@@ -42,17 +42,17 @@
     "customerErrorLogsCount": 36
   },
   "uploadsInventory": [],
-  "databaseSizeBytes": 43791,
+  "databaseSizeBytes": 44013,
   "uploadsSizeBytes": 45,
   "contentSizeBytes": 0,
   "compressionAlgorithm": "gzip",
   "encryptionEnabled": false,
   "artifactChecksums": {
-    "database": "70e9c8b78ace698ec6c1daa3330142aa8783ab67e57b49747d154f98796a1065",
+    "database": "045d2ce7698aa1af0a6ae396fca6bac18dac4b8b24a4fc0b3ac54cd5619242cd",
     "uploads": "85cea451eec057fa7e734548ca3ba6d779ed5836a3f9de14b8394575ef0d7d8e"
   },
-  "createdAt": "2026-07-13T02:06:40.424Z",
-  "totalSizeBytes": 43836,
+  "createdAt": "2026-07-13T02:06:54.718Z",
+  "totalSizeBytes": 44058,
   "files": {
     "database": "database.sql.gz",
     "uploads": "uploads.tar.gz",
@@ -60,5 +60,5 @@
     "manifest": "manifest.json",
     "checksum": "checksum.sha256"
   },
-  "checksum": "72875eccfb2899498a30ff4e9a29f048bfaf5ecf1e10d53654d4916b404057b5"
+  "checksum": "103fb78e056e68e77bba4ca2b82eb4f5c02af862647f473cd415d19f89d88fee"
 }
