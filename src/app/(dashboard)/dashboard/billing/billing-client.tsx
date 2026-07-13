@@ -5,6 +5,7 @@ import { AlertTriangle, Check, CheckCircle2, Copy, CreditCard, Loader2, Package,
 
 import { Button } from "@/components/ui/button";
 import { BuilderPageHeader } from "@/components/dashboard/builder-primitives";
+import type { ResolvedSubscriptionExperience } from "@/modules/subscription/subscription-experience";
 import {
   cancelPaymentRequestAction,
   createPaymentDraftAction,
@@ -101,6 +102,7 @@ type BillingClientProps = {
   paymentRequest: PaymentRequestData | null;
   logs: LogData[];
   daysRemaining: number;
+  subscriptionExperience: ResolvedSubscriptionExperience | null;
   requested?: boolean;
   draftId?: string;
   error?: string;
@@ -231,7 +233,7 @@ function buildBasicPlan(plan: PlanData | undefined): PlanData | null {
   };
 }
 
-export function BillingClient({ session, plans, paymentMethods, paymentRequest, daysRemaining, requested, draftId, error: urlError }: BillingClientProps) {
+export function BillingClient({ session, plans, paymentMethods, paymentRequest, daysRemaining, subscriptionExperience, requested, draftId, error: urlError }: BillingClientProps) {
   const subscriptionStatus = session.subscription?.status ?? session.tenant.status;
   const requestLocked = Boolean(paymentRequest && LOCKED_REQUEST_STATUSES.includes(paymentRequest.status));
   const siteHref = session.site.slug ? `/p/${session.site.slug}` : "/dashboard";
@@ -374,8 +376,18 @@ export function BillingClient({ session, plans, paymentMethods, paymentRequest, 
       />
 
       {urlError ? <Alert tone="danger" title="حدث خطأ" text={urlError === "no-subscription" ? "لا يوجد اشتراك نشط. يرجى إنشاء الموقع أولاً." : urlError} /> : null}
-      {subscriptionStatus === "ACTIVE" ? <Alert tone="success" title="تم التفعيل" text="الموقع مفعل بالفعل." /> : null}
-      {subscriptionStatus !== "ACTIVE" ? <TrialNotice daysRemaining={daysRemaining} submitted={submitted} status={paymentRequest?.status ?? null} /> : null}
+      {subscriptionExperience ? (
+        <SubscriptionExperienceAlert
+          experience={subscriptionExperience}
+          fallbackDaysRemaining={daysRemaining}
+          submitted={submitted}
+          status={paymentRequest?.status ?? null}
+        />
+      ) : subscriptionStatus === "ACTIVE" ? (
+        <Alert tone="success" title="تم التفعيل" text="الموقع مفعل بالفعل." />
+      ) : (
+        <TrialNotice daysRemaining={daysRemaining} submitted={submitted} status={paymentRequest?.status ?? null} />
+      )}
 
       {subscriptionStatus !== "ACTIVE" ? (
         <section className="rounded-[28px] border border-white/[0.08] bg-white/[0.03] p-3 sm:p-4">
@@ -388,7 +400,6 @@ export function BillingClient({ session, plans, paymentMethods, paymentRequest, 
                   {basicPlan ? (
                     <div className="grid gap-3 lg:grid-cols-[1.06fr_0.94fr]">
                       <BasicPlanCard
-                        plan={basicPlan}
                         selected={selectedPlanId === basicPlan.id}
                         disabled={Boolean(draftState || requestLocked)}
                         onSelect={() => handlePlanSelect(basicPlan.id)}
@@ -431,7 +442,6 @@ export function BillingClient({ session, plans, paymentMethods, paymentRequest, 
                       </div>
                       <div className="flex flex-col gap-3">
                         <ProofSubmitCard
-                          draftId={draftState}
                           proofFile={proofFile}
                           proofUploaded={uploadSucceeded}
                           pending={completePaymentPending}
@@ -503,6 +513,55 @@ function TrialNotice({ daysRemaining, submitted, status }: { daysRemaining: numb
   return <Alert tone="warning" title="الفترة التجريبية" text={daysRemaining > 0 ? `متبقي ${daysRemaining} يوم.` : "التجربة انتهت. فعّل الاشتراك للاستمرار."} />;
 }
 
+function SubscriptionExperienceAlert({
+  experience,
+  fallbackDaysRemaining,
+  submitted,
+  status,
+}: {
+  experience: ResolvedSubscriptionExperience;
+  fallbackDaysRemaining: number;
+  submitted: boolean;
+  status: string | null;
+}) {
+  if (submitted || status === "SUBMITTED" || status === "PENDING" || status === "UNDER_REVIEW") {
+    return <Alert tone="success" title="طلب التفعيل" text={`الحالة: ${REQUEST_STATUS_LABELS[status ?? "SUBMITTED"] ?? status ?? "تم الإرسال"}`} />;
+  }
+
+  const tone =
+    experience.message.tone === "danger"
+      ? "danger"
+      : experience.message.tone === "success"
+        ? "success"
+        : "warning";
+  const timerText =
+    experience.timer.enabled && experience.timer.daysRemaining !== null
+      ? ` متبقي ${experience.timer.daysRemaining} يوم.`
+      : experience.state === "trial" || experience.state === "trial-ending-soon"
+        ? ` متبقي ${fallbackDaysRemaining} يوم.`
+        : "";
+
+  return (
+    <div className="grid gap-2">
+      <Alert
+        tone={tone}
+        title={experience.message.title}
+        text={`${experience.message.description}${timerText}`.trim()}
+      />
+      {experience.action.visible && experience.action.href ? (
+        <a
+          href={experience.action.href}
+          target={experience.action.target}
+          rel={experience.action.target === "_blank" ? "noreferrer" : undefined}
+          className="inline-flex min-h-11 w-fit items-center justify-center rounded-2xl border border-amber-300/30 bg-amber-300/10 px-4 text-sm font-black text-[#f3cf73] no-underline transition hover:bg-amber-300/16"
+        >
+          {experience.action.label}
+        </a>
+      ) : null}
+    </div>
+  );
+}
+
 function StepTabs({ steps, current, onSelect }: { steps: StepConfig[]; current: CheckoutStep; onSelect: (step: CheckoutStep) => void }) {
   return (
     <div className="grid grid-cols-3 gap-2">
@@ -528,7 +587,7 @@ function CheckoutStage({ title, icon, children }: { title: string; icon: ReactNo
   );
 }
 
-function BasicPlanCard({ plan, selected, disabled, onSelect, onShowDetails }: { plan: PlanData; selected: boolean; disabled: boolean; onSelect: () => void; onShowDetails: () => void }) {
+function BasicPlanCard({ selected, disabled, onSelect, onShowDetails }: { selected: boolean; disabled: boolean; onSelect: () => void; onShowDetails: () => void }) {
   return (
     <article className={`relative overflow-hidden rounded-[1.65rem] border p-4 text-right shadow-2xl shadow-amber-950/20 ${selected ? "border-amber-300/75 bg-amber-500/12" : "border-amber-300/30 bg-[linear-gradient(145deg,rgba(243,207,115,0.13),rgba(255,255,255,0.035))]"}`}>
       <div className="pointer-events-none absolute inset-x-6 top-0 h-px bg-gradient-to-l from-transparent via-amber-200/70 to-transparent" />
@@ -723,7 +782,7 @@ function PaymentAmountCard({ plan, request }: { plan: PlanData | undefined; requ
   );
 }
 
-function ProofSubmitCard({ draftId, proofFile, proofUploaded, pending, canSubmit, action, onFileSelect }: { draftId: string; proofFile: File | null; proofUploaded: boolean; pending: boolean; canSubmit: boolean; action: (payload: FormData) => void; onFileSelect: (event: ChangeEvent<HTMLInputElement>) => void }) {
+function ProofSubmitCard({ proofFile, proofUploaded, pending, canSubmit, action, onFileSelect }: { proofFile: File | null; proofUploaded: boolean; pending: boolean; canSubmit: boolean; action: (payload: FormData) => void; onFileSelect: (event: ChangeEvent<HTMLInputElement>) => void }) {
   return (
     <form action={action} className="overflow-hidden rounded-3xl border border-white/[0.08] bg-gradient-to-b from-white/[0.04] to-white/[0.01]">
       <div className="flex items-center gap-3 border-b border-white/[0.04] px-4 py-3 sm:px-5">

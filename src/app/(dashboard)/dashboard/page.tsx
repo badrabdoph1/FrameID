@@ -7,14 +7,16 @@ import { createDashboardViewModel } from "@/modules/dashboard/dashboard-view-mod
 import { DashboardHomeClient } from "./home-client";
 import { prisma } from "@/lib/prisma";
 import { hasMeaningfulContactInfo } from "@/modules/dashboard/contact-completion";
-import { getLifecycleTimerSettings } from "@/modules/lifecycle/customer-lifecycle";
 import {
-  ACTIVATION_TEMPLATE_CATEGORY,
   CUSTOMER_BROADCAST_CATEGORY,
-  activationTemplateDefinitions,
-  parseActivationTemplatePayload,
   validateMessageTone,
 } from "@/modules/messages/customer-message-config";
+import {
+  getSubscriptionExperienceDefaults,
+  getTenantSubscriptionExperienceOverride,
+  resolveSubscriptionExperience,
+} from "@/modules/subscription/subscription-experience";
+import { getSupportSettings } from "@/modules/support/support-settings";
 
 export const metadata: Metadata = {
   title: "لوحة التحكم | FrameID"
@@ -39,8 +41,9 @@ export default async function DashboardPage() {
     latestPaymentRequest,
     seoSettings,
     customerMessages,
-    activationTemplateRows,
-    lifecycleTimerSettings,
+    subscriptionExperienceDefaults,
+    subscriptionExperienceOverride,
+    supportSettings,
   ] = await Promise.all([
     prisma.package.count({ where: { siteId: session.site.id, deletedAt: null } }),
     prisma.galleryImage.count({
@@ -81,16 +84,9 @@ export default async function DashboardPage() {
       take: 3,
       select: { id: true, type: true, title: true, body: true, createdAt: true },
     }),
-    prisma.notificationLog.findMany({
-      where: {
-        category: ACTIVATION_TEMPLATE_CATEGORY,
-        deletedAt: null,
-        title: { in: activationTemplateDefinitions.map((template) => template.key) },
-      },
-      orderBy: { createdAt: "desc" },
-      select: { id: true, type: true, title: true, body: true },
-    }),
-    getLifecycleTimerSettings(prisma),
+    getSubscriptionExperienceDefaults(prisma),
+    getTenantSubscriptionExperienceOverride(prisma, session.tenant.id),
+    getSupportSettings(),
   ]);
 
   const lastModified = siteTheme?.updatedAt ?? new Date();
@@ -99,7 +95,24 @@ export default async function DashboardPage() {
   const heroImageUrl = hasHeroCover && heroSection?.data && typeof heroSection.data === "object" && "imageUrl" in heroSection.data
     ? (heroSection.data as { imageUrl: string }).imageUrl
     : null;
-  const templateRowsByKey = new Map(activationTemplateRows.map((row) => [row.title, row]));
+  const subscriptionEndsAt =
+    session.subscription?.currentPeriodEnd ?? session.subscription?.expiresAt ?? null;
+  const subscriptionExperience =
+    session.subscription || session.tenant.status !== "ACTIVE"
+      ? resolveSubscriptionExperience({
+          defaults: subscriptionExperienceDefaults,
+          override: subscriptionExperienceOverride,
+          context: {
+            tenantStatus: session.tenant.status,
+            subscriptionStatus: session.subscription?.status ?? null,
+            trialEndsAt: session.tenant.trialEndsAt,
+            subscriptionEndsAt,
+            latestPaymentRequestStatus: latestPaymentRequest?.status ?? null,
+            supportWhatsappNumber: supportSettings.phone,
+          },
+          now: new Date(),
+        })
+      : null;
 
   const dashboard = createDashboardViewModel({
     session,
@@ -116,7 +129,6 @@ export default async function DashboardPage() {
     pendingRequestStatus: ["SUBMITTED", "PENDING", "UNDER_REVIEW"].includes(latestPaymentRequest?.status ?? "") ? latestPaymentRequest?.status ?? null : null,
     latestPaymentRequestStatus: latestPaymentRequest?.status ?? null,
     hasSeoSettings,
-    lifecycleTimerSettings,
     customerMessages: customerMessages.map((message) => ({
       id: message.id,
       tone: validateMessageTone(message.type),
@@ -124,16 +136,7 @@ export default async function DashboardPage() {
       body: message.body ?? "",
       createdAt: message.createdAt.toISOString(),
     })),
-    activationMessages: Object.fromEntries(
-      activationTemplateDefinitions.map((definition) => {
-        const row = templateRowsByKey.get(definition.key);
-        const payload = parseActivationTemplatePayload(row?.body, {
-          title: definition.defaultTitle,
-          body: definition.defaultBody,
-        });
-        return [definition.key, { ...payload, tone: validateMessageTone(row?.type ?? definition.tone) }];
-      }),
-    ),
+    subscriptionExperience,
     heroImageUrl,
   });
 

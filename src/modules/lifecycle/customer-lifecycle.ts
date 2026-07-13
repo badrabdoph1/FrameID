@@ -215,6 +215,68 @@ export async function applyTrialTimerToTenants(prisma: LifecyclePrismaClient, te
   return tenants.length;
 }
 
+export async function grantFreshTrialToTenants(
+  prisma: LifecyclePrismaClient,
+  tenantIds: string[],
+  days: number,
+  now = new Date(),
+) {
+  const normalizedDays = normalizeNumber(days, defaultLifecycleTimerSettings.trial.defaultDays);
+  const end = addDays(now, normalizedDays);
+
+  const tenants = await prisma.tenant.findMany({
+    where: { id: { in: tenantIds }, deletedAt: null },
+    select: { id: true },
+  });
+
+  if (tenants.length === 0) return 0;
+
+  for (const tenant of tenants) {
+    await prisma.tenant.update({
+      where: { id: tenant.id },
+      data: {
+        status: "TRIAL",
+        trialStartedAt: now,
+        trialEndsAt: end,
+        trialDays: normalizedDays,
+        gracePeriodEndsAt: null,
+      },
+    });
+
+    await prisma.subscription.updateMany({
+      where: { tenantId: tenant.id },
+      data: {
+        status: "TRIAL",
+        currentPeriodStart: now,
+        currentPeriodEnd: end,
+        expiresAt: end,
+      },
+    });
+  }
+
+  await prisma.site.updateMany({
+    where: { tenantId: { in: tenants.map((tenant) => tenant.id) }, deletedAt: null },
+    data: { status: "PUBLISHED", isPublished: true },
+  });
+
+  await prisma.auditLog.create({
+    data: {
+      actorId: null,
+      action: "TRIAL_FRESH_GRANT_APPLIED",
+      entityType: "Tenant",
+      metadata: {
+        count: tenants.length,
+        tenantIds: tenants.map((tenant) => tenant.id),
+        days: normalizedDays,
+        startedAt: now.toISOString(),
+        endsAt: end.toISOString(),
+      },
+    },
+  }).catch(() => undefined);
+
+  return tenants.length;
+}
+
 export async function applySubscriptionTimerToTenants(prisma: LifecyclePrismaClient, tenantIds: string[], preset: LifecycleDurationPreset, customDays: number) {
   const now = new Date();
   const subscriptions = await prisma.subscription.findMany({

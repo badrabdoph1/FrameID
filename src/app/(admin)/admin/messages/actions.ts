@@ -8,29 +8,30 @@ import { prisma } from "@/lib/prisma";
 import { processError } from "@/lib/errors";
 import { requireAdminPermission } from "@/modules/admin/admin-permission-guards";
 import { readFormString } from "@/modules/auth/auth-action-utils";
-import {
-  ACTIVATION_TEMPLATE_CATEGORY,
-  CUSTOMER_BROADCAST_CATEGORY,
-  type ActivationTemplateKey,
-  encodeActivationTemplatePayload,
-  getActivationTemplateDefinition,
-  validateMessageTone,
-} from "@/modules/messages/customer-message-config";
+import { validateMessageTone } from "@/modules/messages/customer-message-config";
 import {
   applyDefaultTrialDurationFromRegistration,
-  applySubscriptionTimerToTenants,
-  applyTrialTimerToTenants,
-  defaultLifecycleTimerSettings,
-  lifecycleDurationOptions,
-  normalizeLifecycleTimerSettings,
-  saveLifecycleTimerSettings,
+  grantFreshTrialToTenants,
   syncCustomerLifecycle,
-  type LifecycleDurationPreset,
 } from "@/modules/lifecycle/customer-lifecycle";
 import { syncPlatformConfigurationToGitHub } from "@/modules/setup/platform-configuration-git";
+import {
+  getSubscriptionExperienceDefaults,
+  getTenantSubscriptionExperienceOverride,
+  normalizeSubscriptionExperienceOverride,
+  saveSubscriptionExperienceDefaults,
+  saveTenantSubscriptionExperienceOverride,
+  subscriptionExperienceBucketDefinitions,
+  type SubscriptionExperienceActionKind,
+  type SubscriptionExperienceBucket,
+  type SubscriptionExperienceDefaults,
+  type SubscriptionExperienceOverride,
+} from "@/modules/subscription/subscription-experience";
 
-function redirectWithMessage(params: Record<string, string | number>): never {
-  const query = new URLSearchParams(Object.entries(params).map(([key, value]) => [key, String(value)]));
+function redirectWithMessage(params: Record<string, string | number>) {
+  const query = new URLSearchParams(
+    Object.entries(params).map(([key, value]) => [key, String(value)]),
+  );
   redirect(`/admin/messages?${query.toString()}`);
 }
 
@@ -44,195 +45,352 @@ function parseDays(value: string, fallback: number) {
   return Math.max(1, Math.min(3650, Math.round(parsed)));
 }
 
-function parsePreset(value: string): LifecycleDurationPreset {
-  return lifecycleDurationOptions.some((item) => item.value === value) ? value as LifecycleDurationPreset : "keep";
+function parseBucket(value: string): SubscriptionExperienceBucket {
+  return subscriptionExperienceBucketDefinitions.some(
+    (item) => item.value === value,
+  )
+    ? (value as SubscriptionExperienceBucket)
+    : "trial";
+}
+
+function parseActionKind(value: string): SubscriptionExperienceActionKind {
+  return [
+    "activate-default",
+    "billing-page",
+    "whatsapp",
+    "support",
+    "custom-link",
+    "hidden",
+  ].includes(value)
+    ? (value as SubscriptionExperienceActionKind)
+    : "billing-page";
 }
 
 function adminActorMetadata(admin: { id: string; email: string }) {
   return { adminActorId: admin.id, adminEmail: admin.email };
 }
 
-export async function saveLifecycleTimersAction(formData: FormData) {
-  const admin = await requireAdminPermission("messages", "edit");
-  const existing = await prisma.featureFlag.findFirst({
-    where: { key: "platform.lifecycle.timers", scope: "PLATFORM", tenantId: null, siteId: null },
-    select: { value: true },
-  });
-  const current = normalizeLifecycleTimerSettings(existing?.value);
-  const settings = {
-    trial: {
-      enabled: parseBool(readFormString(formData, "trialEnabled")),
-      useDefault: parseBool(readFormString(formData, "trialUseDefault")),
-      defaultDays: parseDays(readFormString(formData, "trialDays"), current.trial.defaultDays || defaultLifecycleTimerSettings.trial.defaultDays),
-    },
-    subscription: {
-      enabled: parseBool(readFormString(formData, "subscriptionEnabled")),
-      defaultPreset: parsePreset(readFormString(formData, "subscriptionPreset") || current.subscription.defaultPreset),
-      customDays: parseDays(readFormString(formData, "subscriptionCustomDays"), current.subscription.customDays || 30),
-    },
-  };
+function assertMessageFields(
+  enabled: boolean,
+  title: string,
+  description: string,
+) {
+  if (!enabled) return;
+  if (title.trim().length < 2) throw new Error("عنوان الرسالة مطلوب.");
+  if (description.trim().length < 2) throw new Error("وصف الرسالة مطلوب.");
+}
 
-  let defaultTrialApplied = 0;
+function buildBucketConfig(
+  formData: FormData,
+  bucket: SubscriptionExperienceBucket,
+  current: SubscriptionExperienceDefaults[SubscriptionExperienceBucket],
+) {
+  const messageEnabled = parseBool(readFormString(formData, `${bucket}MessageEnabled`));
+  const messageTitle =
+    readFormString(formData, `${bucket}MessageTitle`).trim() ||
+    current.message.title;
+  const messageDescription =
+    readFormString(formData, `${bucket}MessageDescription`).trim() ||
+    current.message.description;
+  const messageTone = validateMessageTone(
+    readFormString(formData, `${bucket}MessageTone`) || current.message.tone,
+  );
+  const actionKind = parseActionKind(
+    readFormString(formData, `${bucket}ActionKind`) || current.action.kind,
+  );
+  const actionLabel =
+    actionKind === "hidden"
+      ? ""
+      : readFormString(formData, `${bucket}ActionLabel`).trim() ||
+        current.action.label;
+  const actionHref =
+    actionKind === "custom-link"
+      ? readFormString(formData, `${bucket}ActionHref`).trim()
+      : null;
+
+  assertMessageFields(messageEnabled, messageTitle, messageDescription);
+  if (actionKind === "custom-link" && !actionHref) {
+    throw new Error("الرابط المخصص مطلوب عند اختيار زر برابط مخصص.");
+  }
+
+  return {
+    message: {
+      enabled: messageEnabled,
+      title: messageTitle,
+      description: messageDescription,
+      tone: messageTone,
+    },
+    action: {
+      kind: actionKind,
+      label: actionLabel,
+      href: actionKind === "custom-link" ? actionHref : null,
+    },
+    timer: current.timer
+      ? {
+          enabled: parseBool(readFormString(formData, `${bucket}TimerEnabled`)),
+        }
+      : undefined,
+  };
+}
+
+function buildOverrideBucketConfig(
+  formData: FormData,
+  bucket: SubscriptionExperienceBucket,
+) {
+  const messageEnabled = parseBool(readFormString(formData, "messageEnabled"));
+  const messageTitle = readFormString(formData, "messageTitle").trim();
+  const messageDescription = readFormString(formData, "messageDescription").trim();
+  const messageTone = validateMessageTone(readFormString(formData, "messageTone"));
+  const actionKind = parseActionKind(readFormString(formData, "actionKind"));
+  const actionLabel =
+    actionKind === "hidden" ? "" : readFormString(formData, "actionLabel").trim();
+  const actionHref =
+    actionKind === "custom-link"
+      ? readFormString(formData, "actionHref").trim()
+      : null;
+
+  assertMessageFields(messageEnabled, messageTitle, messageDescription);
+  if (actionKind === "custom-link" && !actionHref) {
+    throw new Error("الرابط المخصص مطلوب عند اختيار زر برابط مخصص.");
+  }
+
+  return {
+    [bucket]: {
+      message: {
+        enabled: messageEnabled,
+        title: messageTitle,
+        description: messageDescription,
+        tone: messageTone,
+      },
+      action: {
+        kind: actionKind,
+        label: actionLabel,
+        href: actionHref,
+      },
+      timer:
+        bucket === "trial"
+          ? {
+              enabled: parseBool(readFormString(formData, "timerEnabled")),
+            }
+          : undefined,
+    },
+  } satisfies SubscriptionExperienceOverride;
+}
+
+export async function saveSubscriptionExperienceDefaultsAction(formData: FormData) {
+  const admin = await requireAdminPermission("messages", "edit");
 
   try {
-    await saveLifecycleTimerSettings(prisma, settings);
+    const current = await getSubscriptionExperienceDefaults(prisma);
+    const defaults = {
+      trial: buildBucketConfig(formData, "trial", current.trial),
+      active: buildBucketConfig(formData, "active", current.active),
+      pendingReview: buildBucketConfig(
+        formData,
+        "pendingReview",
+        current.pendingReview,
+      ),
+      rejected: buildBucketConfig(formData, "rejected", current.rejected),
+      expired: buildBucketConfig(formData, "expired", current.expired),
+      trialPolicy: {
+        defaultDays: parseDays(
+          readFormString(formData, "trialPolicyDefaultDays"),
+          current.trialPolicy.defaultDays,
+        ),
+      },
+    } satisfies SubscriptionExperienceDefaults;
 
-    if (settings.trial.useDefault) {
-      defaultTrialApplied = await applyDefaultTrialDurationFromRegistration(prisma, settings.trial.defaultDays);
+    await saveSubscriptionExperienceDefaults(prisma, defaults);
+
+    let appliedCount = 0;
+    if (parseBool(readFormString(formData, "applyTrialDefaultsToCurrent"))) {
+      appliedCount = await applyDefaultTrialDurationFromRegistration(
+        prisma,
+        defaults.trialPolicy.defaultDays,
+      );
       await syncCustomerLifecycle(prisma);
     }
 
     await prisma.auditLog.create({
       data: {
         actorId: null,
-        action: "LIFECYCLE_TIMERS_UPDATED",
+        action: "SUBSCRIPTION_EXPERIENCE_DEFAULTS_UPDATED",
         entityType: "FeatureFlag",
-        entityId: "platform.lifecycle.timers",
-        metadata: { settings, defaultTrialApplied, ...adminActorMetadata(admin) } as Prisma.InputJsonObject,
+        entityId: "platform.subscription.experience.defaults",
+        metadata: {
+          defaults,
+          appliedCount,
+          ...adminActorMetadata(admin),
+        } as Prisma.InputJsonObject,
       },
     });
-    await syncPlatformConfigurationToGitHub({ actor: admin, reason: "تعديل مؤقتات المنصة" });
+
+    await syncPlatformConfigurationToGitHub({
+      actor: admin,
+      reason: "تحديث إعدادات رسائل الاشتراك والتفعيل",
+    });
+
     revalidatePath("/admin/messages");
     revalidatePath("/dashboard");
+    revalidatePath("/dashboard/billing");
     revalidatePath("/admin/customers");
   } catch (error) {
-    const { userError } = await processError(error, { metadata: { action: "saveLifecycleTimers", ...adminActorMetadata(admin) } });
+    const { userError } = await processError(error, {
+      metadata: {
+        action: "saveSubscriptionExperienceDefaults",
+        ...adminActorMetadata(admin),
+      },
+    });
     redirectWithMessage({ error: userError.message });
   }
 
-  redirectWithMessage({ timerSaved: defaultTrialApplied || "1" });
+  redirectWithMessage({ defaultsSaved: 1 });
 }
 
-export async function applyLifecycleTimerAction(formData: FormData) {
+export async function saveSubscriptionExperienceOverrideAction(formData: FormData) {
   const admin = await requireAdminPermission("messages", "edit");
-  const timerType = readFormString(formData, "timerType");
-  const audience = readFormString(formData, "audience") || "selected";
-  const timerMode = readFormString(formData, "timerMode") || "keep";
-  const selectedTenantIds = formData.getAll("tenantIds").map(String).filter(Boolean);
-  let appliedCount = 0;
+  const tenantIds = formData.getAll("tenantIds").map(String).filter(Boolean);
+  const bucket = parseBucket(readFormString(formData, "bucket"));
+
+  if (tenantIds.length === 0) redirectWithMessage({ error: "اختر عميلًا واحدًا على الأقل." });
 
   try {
-    if (audience !== "all" && selectedTenantIds.length === 0) {
-      throw new Error("اختر عميل واحد على الأقل أو اختر تطبيق على الكل.");
-    }
+    const overridePatch = buildOverrideBucketConfig(formData, bucket);
 
-    if (timerType === "trial") {
-      const tenants = await prisma.tenant.findMany({
-        where: audience === "all" ? { deletedAt: null, status: "TRIAL" } : { id: { in: selectedTenantIds }, deletedAt: null, status: "TRIAL" },
-        select: { id: true },
+    for (const tenantId of tenantIds) {
+      const current = (await getTenantSubscriptionExperienceOverride(
+        prisma,
+        tenantId,
+      )) ?? {};
+
+      await saveTenantSubscriptionExperienceOverride(prisma, tenantId, {
+        ...current,
+        ...overridePatch,
       });
-      if (tenants.length === 0) throw new Error("لا يوجد عملاء تجريبيون مطابقون.");
-      const days = timerMode === "days" ? parseDays(readFormString(formData, "trialDays"), defaultLifecycleTimerSettings.trial.defaultDays) : "keep";
-      appliedCount = await applyTrialTimerToTenants(prisma, tenants.map((tenant) => tenant.id), days);
-      await syncCustomerLifecycle(prisma);
-    } else if (timerType === "subscription") {
-      const tenants = await prisma.tenant.findMany({
-        where: audience === "all"
-          ? { deletedAt: null, status: "ACTIVE", subscriptions: { some: { status: "ACTIVE" } } }
-          : { id: { in: selectedTenantIds }, deletedAt: null, status: "ACTIVE", subscriptions: { some: { status: "ACTIVE" } } },
-        select: { id: true },
-      });
-      if (tenants.length === 0) throw new Error("لا يوجد مشتركين مطابقين.");
-      const preset = timerMode === "keep" ? "keep" : parsePreset(readFormString(formData, "subscriptionPreset"));
-      const customDays = parseDays(readFormString(formData, "subscriptionCustomDays"), 30);
-      appliedCount = await applySubscriptionTimerToTenants(prisma, tenants.map((tenant) => tenant.id), preset, customDays);
-    } else {
-      throw new Error("نوع المؤقت غير صحيح.");
     }
 
     await prisma.auditLog.create({
       data: {
         actorId: null,
-        action: timerType === "trial" ? "TRIAL_TIMER_APPLIED_FROM_MESSAGES" : "SUBSCRIPTION_TIMER_APPLIED_FROM_MESSAGES",
+        action: "SUBSCRIPTION_EXPERIENCE_OVERRIDE_SAVED",
+        entityType: "FeatureFlag",
+        metadata: {
+          tenantIds,
+          bucket,
+          ...adminActorMetadata(admin),
+        } as Prisma.InputJsonObject,
+      },
+    });
+
+    revalidatePath("/admin/messages");
+    revalidatePath("/dashboard");
+    revalidatePath("/dashboard/billing");
+    revalidatePath("/admin/customers");
+  } catch (error) {
+    const { userError } = await processError(error, {
+      metadata: {
+        action: "saveSubscriptionExperienceOverride",
+        bucket,
+        tenantIds,
+        ...adminActorMetadata(admin),
+      },
+    });
+    redirectWithMessage({ error: userError.message });
+  }
+
+  redirectWithMessage({ overrideSaved: tenantIds.length });
+}
+
+export async function clearSubscriptionExperienceOverrideAction(formData: FormData) {
+  const admin = await requireAdminPermission("messages", "edit");
+  const tenantIds = formData.getAll("tenantIds").map(String).filter(Boolean);
+  const bucket = parseBucket(readFormString(formData, "bucket"));
+
+  if (tenantIds.length === 0) redirectWithMessage({ error: "اختر عميلًا واحدًا على الأقل." });
+
+  try {
+    for (const tenantId of tenantIds) {
+      const current = await getTenantSubscriptionExperienceOverride(prisma, tenantId);
+      if (!current) continue;
+      const next = { ...current };
+      delete next[bucket];
+      await saveTenantSubscriptionExperienceOverride(
+        prisma,
+        tenantId,
+        normalizeSubscriptionExperienceOverride(next),
+      );
+    }
+
+    await prisma.auditLog.create({
+      data: {
+        actorId: null,
+        action: "SUBSCRIPTION_EXPERIENCE_OVERRIDE_CLEARED",
+        entityType: "FeatureFlag",
+        metadata: {
+          tenantIds,
+          bucket,
+          ...adminActorMetadata(admin),
+        } as Prisma.InputJsonObject,
+      },
+    });
+
+    revalidatePath("/admin/messages");
+    revalidatePath("/dashboard");
+    revalidatePath("/dashboard/billing");
+    revalidatePath("/admin/customers");
+  } catch (error) {
+    const { userError } = await processError(error, {
+      metadata: {
+        action: "clearSubscriptionExperienceOverride",
+        bucket,
+        tenantIds,
+        ...adminActorMetadata(admin),
+      },
+    });
+    redirectWithMessage({ error: userError.message });
+  }
+
+  redirectWithMessage({ overrideCleared: tenantIds.length });
+}
+
+export async function grantFreshTrialFromMessagesAction(formData: FormData) {
+  const admin = await requireAdminPermission("messages", "edit");
+  const tenantIds = formData.getAll("tenantIds").map(String).filter(Boolean);
+  const trialDays = parseDays(readFormString(formData, "trialDays"), 3);
+
+  if (tenantIds.length === 0) redirectWithMessage({ error: "اختر عميلًا واحدًا على الأقل." });
+
+  try {
+    const appliedCount = await grantFreshTrialToTenants(prisma, tenantIds, trialDays);
+
+    await prisma.auditLog.create({
+      data: {
+        actorId: null,
+        action: "TRIAL_FRESH_GRANT_FROM_MESSAGES",
         entityType: "Tenant",
-        metadata: { timerType, audience, timerMode, selectedTenantIds, appliedCount, ...adminActorMetadata(admin) } as Prisma.InputJsonObject,
+        metadata: {
+          tenantIds,
+          trialDays,
+          appliedCount,
+          ...adminActorMetadata(admin),
+        } as Prisma.InputJsonObject,
       },
     });
 
     revalidatePath("/admin/messages");
     revalidatePath("/admin/customers");
     revalidatePath("/dashboard");
+    revalidatePath("/dashboard/billing");
+    redirectWithMessage({ freshTrialGranted: appliedCount });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "فشل تطبيق المؤقت.";
-    await processError(error, { metadata: { action: "applyLifecycleTimer", timerType, ...adminActorMetadata(admin) } }).catch(() => undefined);
-    redirectWithMessage({ error: message });
-  }
-
-  redirectWithMessage({ timerApplied: appliedCount });
-}
-
-export async function sendCustomerMessageAction(formData: FormData) {
-  const admin = await requireAdminPermission("messages", "create");
-  const audience = readFormString(formData, "audience") || "selected";
-  const title = readFormString(formData, "title").trim();
-  const body = readFormString(formData, "body").trim();
-  const tone = validateMessageTone(readFormString(formData, "tone"));
-  const selectedTenantIds = formData.getAll("tenantIds").map((value) => String(value)).filter(Boolean);
-  let sentCount = 0;
-
-  if (!title || title.length < 2) redirectWithMessage({ error: "اكتب عنوان الرسالة." });
-  if (!body || body.length < 2) redirectWithMessage({ error: "اكتب نص الرسالة." });
-  if (audience !== "all" && selectedTenantIds.length === 0) redirectWithMessage({ error: "اختر عميل واحد على الأقل أو اختر الإرسال للكل." });
-
-  try {
-    const tenants = await prisma.tenant.findMany({
-      where: audience === "all" ? { deletedAt: null } : { id: { in: selectedTenantIds }, deletedAt: null },
-      select: { id: true, displayName: true },
-      orderBy: { createdAt: "desc" },
-    });
-
-    if (tenants.length === 0) throw new Error("لا يوجد عملاء مطابقين للإرسال.");
-
-    await prisma.notificationLog.createMany({
-      data: tenants.map((tenant) => ({ type: tone, title, body, category: CUSTOMER_BROADCAST_CATEGORY, tenantId: tenant.id })),
-    });
-    sentCount = tenants.length;
-
-    await prisma.auditLog.create({
-      data: {
-        actorId: null,
-        action: "CUSTOMER_MESSAGE_SENT",
-        entityType: "NotificationLog",
-        metadata: { title, tone, audience, count: tenants.length, tenantIds: audience === "all" ? "ALL" : tenants.map((tenant) => tenant.id), ...adminActorMetadata(admin) } as Prisma.InputJsonObject,
+    const { userError } = await processError(error, {
+      metadata: {
+        action: "grantFreshTrialFromMessages",
+        tenantIds,
+        trialDays,
+        ...adminActorMetadata(admin),
       },
     });
-
-    revalidatePath("/admin/messages");
-    revalidatePath("/admin/notifications");
-    revalidatePath("/dashboard");
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "فشل إرسال الرسالة.";
-    await processError(error, { metadata: { action: "sendCustomerMessage", audience, ...adminActorMetadata(admin) } }).catch(() => undefined);
-    redirectWithMessage({ error: message });
+    redirectWithMessage({ error: userError.message });
   }
-
-  redirectWithMessage({ sent: sentCount });
-}
-
-export async function saveActivationTemplateAction(formData: FormData) {
-  const admin = await requireAdminPermission("messages", "edit");
-  const key = readFormString(formData, "key").trim() as ActivationTemplateKey;
-  const title = readFormString(formData, "title").trim();
-  const body = readFormString(formData, "body").trim();
-  const tone = validateMessageTone(readFormString(formData, "tone"));
-  const definition = getActivationTemplateDefinition(key);
-
-  if (!definition) redirectWithMessage({ error: "نوع الرسالة غير صحيح." });
-  if (!title || title.length < 2) redirectWithMessage({ error: "اكتب عنوان قالب الرسالة." });
-  if (!body || body.length < 2) redirectWithMessage({ error: "اكتب نص قالب الرسالة." });
-
-  try {
-    await prisma.notificationLog.updateMany({ where: { category: ACTIVATION_TEMPLATE_CATEGORY, title: key, deletedAt: null }, data: { deletedAt: new Date() } });
-    await prisma.notificationLog.create({ data: { type: tone, title: key, body: encodeActivationTemplatePayload({ title, body }), category: ACTIVATION_TEMPLATE_CATEGORY } });
-    await prisma.auditLog.create({ data: { actorId: null, action: "ACTIVATION_MESSAGE_TEMPLATE_UPDATED", entityType: "NotificationLog", entityId: key, metadata: { key, title, body, tone, ...adminActorMetadata(admin) } as Prisma.InputJsonObject } });
-    await syncPlatformConfigurationToGitHub({ actor: admin, reason: "تعديل رسالة منصة" });
-    revalidatePath("/admin/messages");
-    revalidatePath("/dashboard");
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "فشل حفظ رسالة التفعيل.";
-    await processError(error, { metadata: { action: "saveActivationTemplate", key, ...adminActorMetadata(admin) } }).catch(() => undefined);
-    redirectWithMessage({ error: message });
-  }
-
-  redirectWithMessage({ templateSaved: key });
 }
