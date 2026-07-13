@@ -145,7 +145,7 @@ export const adminSections: AdminSection[] = [
     icon: ShieldCheck,
     links: [
       { href: "/admin/system", label: "نظرة عامة", icon: ShieldCheck },
-      { href: "/admin/errors", label: "الأخطاء", icon: Activity },
+      { href: "/admin/errors", label: "مشاكل العملاء", icon: Activity },
       { href: "/admin/audit", label: "السجلات", icon: ClipboardList },
       { href: "/admin/security", label: "الأمان", icon: ShieldCheck },
       { href: "/admin/feature-flags", label: "Feature Flags", icon: Flag },

@@ -3,6 +3,7 @@ import { AlertTriangle, ArrowLeft, CheckCircle2, Clock3, CreditCard, LifeBuoy, T
 
 import { prisma } from "@/lib/prisma";
 import { requireSuperAdminSession } from "@/modules/admin/admin-page-guards";
+import { getCustomerIssueStats } from "@/modules/customer-issues/admin-queries";
 
 export const dynamic = "force-dynamic";
 
@@ -34,6 +35,7 @@ export default async function AdminDashboardPage() {
     needsFollowUp,
     revenue,
     recentCustomers,
+    issueStats,
   ] = await Promise.all([
     prisma.tenant.count({ where: { deletedAt: null } }),
     prisma.tenant.count({ where: { deletedAt: null, status: "TRIAL" } }),
@@ -46,6 +48,7 @@ export default async function AdminDashboardPage() {
     prisma.tenant.count({ where: { deletedAt: null, OR: [{ status: "TRIAL_EXPIRED" }, { payments: { some: { deletedAt: null, status: { in: ["SUBMITTED", "PENDING", "UNDER_REVIEW"] } } } }, { sites: { none: { deletedAt: null, isPublished: true } } }] } }),
     prisma.paymentRequest.aggregate({ where: { deletedAt: null, status: "APPROVED", reviewedAt: { gte: monthStart } }, _sum: { amount: true } }),
     prisma.tenant.findMany({ where: { deletedAt: null }, orderBy: { createdAt: "desc" }, take: 6, select: { id: true, displayName: true, status: true, owner: { select: { email: true } }, subscriptions: { where: {}, orderBy: { createdAt: "desc" }, take: 1, select: { status: true, currentPeriodEnd: true, expiresAt: true } } } }),
+    getCustomerIssueStats(),
   ]);
 
   const lifecycleCards = [
@@ -73,6 +76,23 @@ export default async function AdminDashboardPage() {
             <MiniStat label="دخل الشهر" value={formatMoney(revenue._sum.amount ?? 0)} icon={WalletCards} href="/admin/payments" />
           </div>
         </div>
+      </section>
+
+      <section className="rounded-[1.4rem] border border-red-300/18 bg-[radial-gradient(circle_at_top_right,rgba(248,113,113,0.12),transparent_32%),rgba(255,255,255,0.035)] p-4">
+        <Link href="/admin/errors" className="grid gap-4 no-underline lg:grid-cols-[1fr_auto] lg:items-center">
+          <div>
+            <span className="inline-flex rounded-full border border-red-300/20 bg-red-400/10 px-3 py-1 text-xs font-black text-red-100">
+              {issueStats.new} بلاغ جديد
+            </span>
+            <h2 className="mt-3 text-xl font-black text-[#fff7e8]">مشاكل العملاء</h2>
+            <p className="mt-1 text-sm font-bold leading-6 text-white/52">البلاغات الجديدة تظهر هنا فورًا عشان الإدارة تبدأ المراجعة من غير ما العميل يشرح المشكلة.</p>
+          </div>
+          <div className="grid gap-2 sm:grid-cols-3 lg:min-w-[420px]">
+            <IssueMiniStat label="قيد المراجعة" value={`${issueStats.inReview} قيد المراجعة`} />
+            <IssueMiniStat label="محلولة" value={`${issueStats.resolved} محلولة`} />
+            <IssueMiniStat label="مغلقة" value={`${issueStats.closed} مغلقة`} />
+          </div>
+        </Link>
       </section>
 
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
@@ -110,6 +130,10 @@ export default async function AdminDashboardPage() {
 
 function MiniStat({ label, value, icon: Icon, href, urgent = false }: { label: string; value: string | number; icon: typeof Users; href: string; urgent?: boolean }) {
   return <Link href={href} className={`rounded-2xl border p-3 no-underline transition hover:-translate-y-0.5 ${urgent ? "border-red-300/20 bg-red-500/10" : "border-white/10 bg-white/[0.04]"}`}><Icon className="size-5 text-[#f3cf73]" /><p className="mt-2 text-xs font-black text-white/42">{label}</p><p className="mt-1 text-xl font-black text-[#fff7e8]">{value}</p></Link>;
+}
+
+function IssueMiniStat({ label, value }: { label: string; value: string }) {
+  return <span className="rounded-2xl border border-white/10 bg-black/18 p-3"><span className="block text-xs font-black text-white/38">{label}</span><strong className="mt-1 block text-sm font-black text-[#fff7e8]">{value}</strong></span>;
 }
 
 function LifecycleCard({ label, value, href, icon: Icon, tone }: { label: string; value: number; href: string; icon: typeof Users; tone: string }) {
