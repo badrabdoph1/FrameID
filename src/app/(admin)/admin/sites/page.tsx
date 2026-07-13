@@ -1,12 +1,12 @@
 import { AdminPageShell } from "@/components/layout/admin-page-shell";
 import { prisma } from "@/lib/prisma";
-import { requireSuperAdminSession } from "@/modules/admin/admin-page-guards";
+import { requireAdminPermission } from "@/modules/admin/admin-permission-guards";
 import { SitesTable, type SiteRow } from "@/app/(admin)/admin/sites/sites-table";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminSitesPage() {
-  await requireSuperAdminSession();
+  await requireAdminPermission("sites", "view");
 
   const sites = await prisma.site.findMany({
     where: { deletedAt: null },

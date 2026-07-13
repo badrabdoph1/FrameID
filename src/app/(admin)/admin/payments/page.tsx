@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { requireSuperAdminSession } from "@/modules/admin/admin-page-guards";
+import { requireAdminPermission } from "@/modules/admin/admin-permission-guards";
 import { AdminPaymentsClient } from "./admin-payments-client";
 
 export const dynamic = "force-dynamic";
@@ -51,7 +51,7 @@ export type PaymentRequestFull = {
 };
 
 export default async function AdminPaymentsPage({ searchParams }: Props) {
-  await requireSuperAdminSession();
+  await requireAdminPermission("payments", "view");
   const params = await searchParams;
 
   const [allPayments, pendingCount, approvedThisMonth, monthlyRevenue] = await Promise.all([

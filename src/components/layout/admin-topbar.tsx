@@ -159,9 +159,9 @@ export function AdminTopbar() {
           </span>
         </Link>
 
-        <Link href="/admin/customers/new" className="hidden min-h-11 items-center gap-2 rounded-2xl border border-[#f3cf73]/55 bg-gradient-to-br from-[#f3cf73] to-[#d4af37] px-4 text-sm font-extrabold text-[#17120a] no-underline shadow-[0_16px_32px_rgba(243,207,115,0.16)] transition hover:-translate-y-0.5 hover:shadow-[#f3cf73]/30 sm:inline-flex">
+        <Link href="/admin/customers" className="hidden min-h-11 items-center gap-2 rounded-2xl border border-[#f3cf73]/55 bg-gradient-to-br from-[#f3cf73] to-[#d4af37] px-4 text-sm font-extrabold text-[#17120a] no-underline shadow-[0_16px_32px_rgba(243,207,115,0.16)] transition hover:-translate-y-0.5 hover:shadow-[#f3cf73]/30 sm:inline-flex">
           <Plus size={18} />
-          إنشاء جديد
+          العملاء
         </Link>
 
         <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl border border-amber-300/24 bg-gradient-to-br from-amber-500/18 to-amber-500/8 text-sm font-black text-[#f3cf73] shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">

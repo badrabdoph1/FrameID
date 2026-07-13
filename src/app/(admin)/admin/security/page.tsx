@@ -1,12 +1,12 @@
 import { AdminPageShell } from "@/components/layout/admin-page-shell";
 import { prisma } from "@/lib/prisma";
-import { requireSuperAdminSession } from "@/modules/admin/admin-page-guards";
+import { requireAdminPermission } from "@/modules/admin/admin-permission-guards";
 import { SecurityTable, type LogRow } from "@/app/(admin)/admin/security/security-table";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminSecurityPage() {
-  await requireSuperAdminSession();
+  await requireAdminPermission("security", "view");
 
   const auditLogs = await prisma.auditLog.findMany({
     orderBy: { createdAt: "desc" },

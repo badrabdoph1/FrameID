@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { requireSuperAdminSession } from "@/modules/admin/admin-page-guards";
+import { requireAdminPermission } from "@/modules/admin/admin-permission-guards";
 import { CustomersTable } from "@/app/(admin)/admin/customers/customers-table";
 import { AdminPageShell } from "@/components/layout/admin-page-shell";
 import { AdminToolbar } from "@/components/layout/admin-toolbar";
@@ -60,7 +60,7 @@ function buildLifecycleWhere(filter: string, now: Date) {
 }
 
 export default async function AdminCustomersPage({ searchParams }: Props) {
-  await requireSuperAdminSession();
+  await requireAdminPermission("customers", "view");
   const sp = await searchParams;
   const search = sp.search?.trim() || "";
   const statusFilter = sp.status || "";

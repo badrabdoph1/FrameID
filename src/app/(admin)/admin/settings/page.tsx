@@ -1,7 +1,7 @@
 import { Headphones, MessageCircle, Save } from "lucide-react";
 
 import { AdminPageShell } from "@/components/layout/admin-page-shell";
-import { requireSuperAdminSession } from "@/modules/admin/admin-page-guards";
+import { requireAdminPermission } from "@/modules/admin/admin-permission-guards";
 import { getSupportSettings, toWhatsappHref } from "@/modules/support/support-settings";
 import { updateSupportWhatsappAction } from "@/app/(admin)/admin/settings/actions";
 
@@ -12,7 +12,7 @@ type Props = {
 };
 
 export default async function AdminSettingsPage({ searchParams }: Props) {
-  await requireSuperAdminSession();
+  await requireAdminPermission("settings", "view");
   const params = await searchParams;
   const supportSettings = await getSupportSettings();
 

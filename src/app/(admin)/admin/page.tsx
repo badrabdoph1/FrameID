@@ -89,7 +89,7 @@ export default async function AdminDashboardPage() {
             {recentCustomers.map((customer) => {
               const sub = customer.subscriptions[0];
               const end = sub?.currentPeriodEnd ?? sub?.expiresAt;
-              return <Link key={customer.id} href={`/admin/customers/${customer.id}/workspace`} className="grid gap-1 rounded-2xl border border-white/8 bg-black/14 p-3 no-underline transition hover:border-amber-300/20 hover:bg-amber-300/8"><strong className="text-sm font-black text-[#fff7e8]">{customer.displayName}</strong><span className="text-xs font-bold text-white/42">{customer.owner.email} · {customer.status}{end ? ` · ينتهي ${new Date(end).toLocaleDateString("ar-EG")}` : ""}</span></Link>;
+              return <Link key={customer.id} href={`/admin/customers/${customer.id}`} className="grid gap-1 rounded-2xl border border-white/8 bg-black/14 p-3 no-underline transition hover:border-amber-300/20 hover:bg-amber-300/8"><strong className="text-sm font-black text-[#fff7e8]">{customer.displayName}</strong><span className="text-xs font-bold text-white/42">{customer.owner.email} · {customer.status}{end ? ` · ينتهي ${new Date(end).toLocaleDateString("ar-EG")}` : ""}</span></Link>;
             })}
           </div>
         </div>

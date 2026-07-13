@@ -1,7 +1,7 @@
 import { SocialPreviewForm } from "@/app/(admin)/admin/settings/social-preview/social-preview-form";
 import { AdminPageShell } from "@/components/layout/admin-page-shell";
 import { getContent } from "@/lib/content";
-import { requireSuperAdminSession } from "@/modules/admin/admin-page-guards";
+import { requireAdminPermission } from "@/modules/admin/admin-permission-guards";
 import { getPlatformSocialPreviewSettings } from "@/modules/social-preview/platform-social-preview-settings";
 import { PLATFORM_DEFAULT_SOCIAL_IMAGE } from "@/modules/social-preview/social-preview";
 
@@ -12,7 +12,7 @@ type Props = {
 };
 
 export default async function SocialPreviewSettingsPage({ searchParams }: Props) {
-  await requireSuperAdminSession();
+  await requireAdminPermission("settings", "view");
   const params = await searchParams;
   const settings = await getPlatformSocialPreviewSettings();
   const homepage = getContent("marketing/homepage");

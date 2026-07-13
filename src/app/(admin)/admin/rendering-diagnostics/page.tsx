@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { requireSuperAdminSession } from "@/modules/admin/admin-page-guards";
+import { AdminPageShell } from "@/components/layout/admin-page-shell";
 
 export const dynamic = "force-dynamic";
 
@@ -56,15 +57,7 @@ export default async function RenderingDiagnosticsPage() {
   });
 
   return (
-    <main className="space-y-6">
-      <header>
-        <p className="text-xs font-black text-amber-300">ADMIN ONLY</p>
-        <h1 className="mt-1 text-2xl font-black text-white">تشخيصات Rendering والأجهزة</h1>
-        <p className="mt-2 max-w-3xl text-sm font-bold leading-7 text-white/45">
-          بيانات تقنية تُجمع فقط عند بلاغ Rendering أو خطأ فعلي، وتُستخدم لمقارنة الجهاز والمتصفح وWebView وGPU بدون تغيير التصميم لبقية العملاء.
-        </p>
-      </header>
-
+    <AdminPageShell badge="النظام" title="تشخيصات Rendering والأجهزة" description="بيانات تقنية تُجمع فقط عند بلاغ Rendering أو خطأ فعلي.">
       {logs.length === 0 ? (
         <section className="rounded-3xl border border-white/10 bg-white/[0.035] p-8 text-center text-sm font-bold text-white/45">
           لا توجد بلاغات Rendering أو Client Errors مسجلة حتى الآن.
@@ -103,6 +96,6 @@ export default async function RenderingDiagnosticsPage() {
           })}
         </div>
       )}
-    </main>
+    </AdminPageShell>
   );
 }

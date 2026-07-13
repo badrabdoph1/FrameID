@@ -1,12 +1,12 @@
 import { AdminPageShell } from "@/components/layout/admin-page-shell";
 import { prisma } from "@/lib/prisma";
-import { requireSuperAdminSession } from "@/modules/admin/admin-page-guards";
+import { requireAdminPermission } from "@/modules/admin/admin-permission-guards";
 import { SupportTable, type CaseRow } from "@/app/(admin)/admin/support/support-table";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminSupportPage() {
-  await requireSuperAdminSession();
+  await requireAdminPermission("support", "view");
 
   const cases = await prisma.supportCase.findMany({
     where: {},

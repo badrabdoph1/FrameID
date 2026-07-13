@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { requireSuperAdminSession } from "@/modules/admin/admin-page-guards";
+import { requireAdminPermission } from "@/modules/admin/admin-permission-guards";
 import { AdminPageShell } from "@/components/layout/admin-page-shell";
 import { createPaymentSettingsService } from "@/modules/billing/payment-settings-service";
 import { createPrismaPaymentSettingsRepository } from "@/modules/billing/prisma-payment-settings-repository";
@@ -615,7 +615,7 @@ function PaymentMethodCard({
 }
 
 export default async function AdminPaymentSettingsPage({ searchParams }: Props) {
-  await requireSuperAdminSession();
+  await requireAdminPermission("payment-settings", "view");
   const params = await searchParams;
 
   const service = createPaymentSettingsService(

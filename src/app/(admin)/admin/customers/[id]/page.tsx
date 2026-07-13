@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { Activity } from "lucide-react";
 
 import { prisma } from "@/lib/prisma";
-import { requireSuperAdminSession } from "@/modules/admin/admin-page-guards";
+import { requireAdminPermission } from "@/modules/admin/admin-permission-guards";
 import { createCustomerAdminRepository } from "@/modules/admin/customers/customer-admin-repository";
 import { createCustomerAdminService } from "@/modules/admin/customers/customer-admin-service";
 import { AdminPageShell } from "@/components/layout/admin-page-shell";
@@ -12,10 +12,11 @@ export const dynamic = "force-dynamic";
 
 type Props = {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ tab?: string }>;
 };
 
 export default async function AdminCustomerDetailPage({ params }: Props) {
-  await requireSuperAdminSession();
+  await requireAdminPermission("customers", "view");
   const { id } = await params;
 
   const repo = createCustomerAdminRepository(prisma);
@@ -33,12 +34,12 @@ export default async function AdminCustomerDetailPage({ params }: Props) {
 
   return (
     <AdminPageShell
-      badge="العملاء"
+      badge="إدارة العميل"
       title={customer.displayName}
       description={`${customer.owner.email}`}
       backHref="/admin/customers"
       backLabel="العملاء"
-      actions={[{ label: "Customer 360", href: `/admin/customers/${customer.id}/workspace`, icon: Activity }]}
+      actions={[{ label: "العملاء", href: "/admin/customers" }]}
     >
       <CustomerDetailClient
         customer={customer}

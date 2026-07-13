@@ -2,10 +2,9 @@
 
 import { useState, useCallback } from "react"
 import { useRouter } from "next/navigation"
-import { Search } from "lucide-react"
+import { Search, Globe, CreditCard, Bell, Activity, Shield, Image } from "lucide-react"
 import { AdminConfirmDialog } from "@/components/layout/admin-confirm-dialog"
 import { AdminActivityTimeline } from "@/components/layout/admin-activity-timeline"
-import { Activity, Shield } from "lucide-react"
 import type {
   CustomerDetail, CustomerMediaAsset, CustomerNotification,
   CustomerAdminNote, CustomerSubscriptionInfo,
@@ -39,6 +38,19 @@ type Props = {
   notifications: CustomerNotification[]
   adminNotes: CustomerAdminNote[]
   allSubscriptions: CustomerSubscriptionInfo[]
+}
+
+function daysLeft(value: string | null): string {
+  if (!value) return "—"
+  const diff = new Date(value).getTime() - Date.now()
+  const days = Math.ceil(diff / 86_400_000)
+  if (days < 0) return `منتهي منذ ${Math.abs(days)} يوم`
+  if (days === 0) return "ينتهي اليوم"
+  return `${days} يوم متبقي`
+}
+
+function formatMoney(amount: number) {
+  return `${amount.toLocaleString("ar-EG")} ج.م`
 }
 
 export function CustomerDetailClient({ customer, media, notifications, adminNotes, allSubscriptions }: Props) {
@@ -93,6 +105,16 @@ export function CustomerDetailClient({ customer, media, notifications, adminNote
 
   const siteSlug = customer.sites[0]?.slug ?? ""
   const siteUrl = siteSlug ? `https://${siteSlug}.frameid.app` : null
+  const trial = daysLeft(customer.trialEndsAt)
+  const openCases = customer.stats.supportCasesCount
+
+  const metrics = [
+    { label: "الحالة", value: customer.status === "ACTIVE" ? "نشط" : customer.status === "TRIAL" ? "تجريبي" : customer.status === "SUSPENDED" ? "موقوف" : customer.status === "EXPIRED" ? "منتهي" : customer.status, icon: Activity },
+    { label: "التجربة", value: trial, icon: Bell },
+    { label: "المواقع", value: customer.stats.sitesCount.toLocaleString("ar-EG"), icon: Globe },
+    { label: "الإيرادات", value: formatMoney(customer.stats.totalRevenue), icon: CreditCard },
+    { label: "الدعم", value: `${openCases.toLocaleString("ar-EG")}`, icon: Bell, danger: openCases > 0 },
+  ]
 
   return (
     <div className="space-y-5">
@@ -106,7 +128,15 @@ export function CustomerDetailClient({ customer, media, notifications, adminNote
         </div>
       )}
 
-      {/* Header + Quick Actions */}
+      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+        {metrics.map((m) => (
+          <div key={m.label} className={`rounded-2xl border bg-white/[0.035] p-4 ${m.danger ? "border-red-300/20" : "border-white/10"}`}>
+            <p className={`text-xl font-black ${m.danger ? "text-red-300" : "text-[#fff7e8]"}`}>{m.value}</p>
+            <p className="mt-1 text-xs font-black text-white/38">{m.label}</p>
+          </div>
+        ))}
+      </section>
+
       <CustomerQuickActions
         customer={customer}
         siteUrl={siteUrl}
@@ -116,10 +146,8 @@ export function CustomerDetailClient({ customer, media, notifications, adminNote
         onEmail={() => window.location.href = `mailto:${customer.owner.email}`}
       />
 
-      {/* Stats */}
       <CustomerStatsRow customer={customer} />
 
-      {/* Search */}
       <div className="relative">
         <Search size={16} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-white/30" />
         <input
@@ -131,10 +159,8 @@ export function CustomerDetailClient({ customer, media, notifications, adminNote
         />
       </div>
 
-      {/* Tabs */}
       <CustomerTabBar activeTab={activeTab} onChange={setActiveTab} />
 
-      {/* Tab Content */}
       <div className="space-y-5">
         {activeTab === "overview" && <CustomerInfoPanel customer={customer} />}
         {activeTab === "overview" && <CustomerOverviewTab customer={customer} onTabChange={(t) => setActiveTab(t as TabId)} />}

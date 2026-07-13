@@ -1,11 +1,11 @@
 import { AdminPageShell } from "@/components/layout/admin-page-shell";
 import { prisma } from "@/lib/prisma";
-import { requireSuperAdminSession } from "@/modules/admin/admin-page-guards";
+import { requireAdminPermission } from "@/modules/admin/admin-permission-guards";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminSubscriptionsPage() {
-  await requireSuperAdminSession();
+  await requireAdminPermission("subscriptions", "view");
 
   const [trial, active, expired, pastDue] = await Promise.all([
     prisma.subscription.count({ where: { status: "TRIAL" } }),

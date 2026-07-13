@@ -1,7 +1,7 @@
 import { AdminPageShell } from "@/components/layout/admin-page-shell";
 import { prisma } from "@/lib/prisma";
 import { isGitHubBackupConfigured } from "@/lib/env";
-import { requireSuperAdminSession } from "@/modules/admin/admin-page-guards";
+import { requireAdminPermission } from "@/modules/admin/admin-permission-guards";
 import {
   rebuildFromGitHubAction,
 } from "@/app/(admin)/admin/backups/actions";
@@ -68,7 +68,7 @@ type BackupSettingRow = {
 };
 
 export default async function AdminBackupsPage({ searchParams }: Props) {
-  await requireSuperAdminSession();
+  await requireAdminPermission("backups", "view");
   await reconcileProductionGitHubBackupCatalog();
   const params = await searchParams;
   const repository = createPrismaAdminBackupCenterRepository(prisma);
