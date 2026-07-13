@@ -81,14 +81,6 @@ Client components handle interaction and previews; they must not become authorit
 4. Sensitive actions create audit log records with actor and target metadata.
 5. Admin, public, and customer surfaces are revalidated as needed.
 
-## Backup and restore
-
-1. CLI/admin workflow creates a `BackupJob` for `DATABASE`, `UPLOADS`, or `FULL`.
-2. The job transitions through pending/running to completed or a failure status.
-3. Artifacts and verification metadata are recorded by the backup service/storage adapter.
-4. Restore creates a separate restore record, validates the selected backup, and executes the applicable recovery path.
-5. Restore operations must not bypass authorization, verification, or audit requirements.
-
 ## Change requirement
 
 Any modification to one of these flows must update this file and the corresponding domain document in the same commit.

@@ -1,3 +1,5 @@
+import { validateCustomerDataCounts } from "./customer-data-inventory";
+
 export type BackupDataCounts = {
   usersCount: number;
   tenantsCount: number;
@@ -14,8 +16,5 @@ export function selectDisasterRecoveryBackup(candidates: DisasterRecoveryCandida
 }
 
 export function validateRestoredCounts(expected: BackupDataCounts, actual: BackupDataCounts) {
-  const errors = (Object.keys(expected) as (keyof BackupDataCounts)[])
-    .filter((key) => expected[key] !== actual[key])
-    .map((key) => `${key}: المتوقع ${expected[key]} والفعلي ${actual[key]}`);
-  return { valid: errors.length === 0, errors };
+  return validateCustomerDataCounts(expected, actual);
 }

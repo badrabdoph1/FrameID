@@ -74,4 +74,13 @@ describe("عقد Backup Architecture", () => {
     expect(text).toContain("restoredManifest.backupJobId");
     expect(text).toContain("input.prisma.backupJob.updateMany");
   });
+  it("يجعل ذهاب الطوارئ FULL عبر نفس الخدمة الرسمية وينتظر اكتمالها", async () => {
+    const actions = await readFile("src/app/(admin)/admin/backups/actions.ts", "utf8");
+    const page = await readFile("src/app/(admin)/admin/backups/page.tsx", "utf8");
+    expect(actions).toContain("prepareMigrationBackupAction");
+    expect(actions).toContain('type: "FULL"');
+    expect(actions).toContain('trigger: "MIGRATION"');
+    expect(page).toContain("ذهاب طوارئ");
+    expect(page).toContain("prepareMigrationBackupAction");
+  });
 });

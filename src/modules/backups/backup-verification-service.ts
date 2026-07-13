@@ -8,6 +8,8 @@ import { pipeline } from "node:stream/promises";
 import { spawn } from "node:child_process";
 
 import { createFileSha256Checksum, createSha256Checksum, validateBackupManifest, type BackupManifest } from "./backup-manifest";
+import { restoreUploadsArchive } from "./backup-uploads-archive";
+import { validateUploadsInventory } from "./backup-uploads-inventory";
 
 export type VerificationResult = {
   valid: boolean;
@@ -130,8 +132,16 @@ export function createVerificationService({ verifyPayloadTools = true }: { verif
               const checksum = await createFileSha256Checksum(uploadsPath);
               if (checksum !== manifest.artifactChecksums?.uploads) errors.push("Uploads artifact checksum mismatch");
               if (verifyPayloadTools) {
-                try { await runCommand("tar", ["-tzf", uploadsPath]); }
-                catch (error) { errors.push(error instanceof Error ? error.message : "Invalid uploads archive"); }
+                const extracted = await mkdtemp(join(tmpdir(), "frameid-uploads-verify-"));
+                try {
+                  await restoreUploadsArchive(uploadsPath, extracted);
+                  const inventory = await validateUploadsInventory(extracted, manifest.uploadsInventory ?? []);
+                  if (!inventory.valid) errors.push(...inventory.errors);
+                } catch (error) {
+                  errors.push(error instanceof Error ? error.message : "Invalid uploads archive");
+                } finally {
+                  await rm(extracted, { recursive: true, force: true });
+                }
               }
             }
           } else if (requiresUploads) {

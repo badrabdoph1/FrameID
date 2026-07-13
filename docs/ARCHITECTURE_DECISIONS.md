@@ -6,7 +6,7 @@
 
 **المرفوض:** Pipeline ثانية، نجاح local-only، ومنطق Backup داخل Workflow أو Scheduler أو CLI.
 
-**الأثر:** لا تصبح النسخة `COMPLETED` قبل Remote Verify وRetention وAudit، والاستعادة تنزل من GitHub عند غياب المحلي.
+**الأثر:** لا تصبح النسخة `COMPLETED` قبل Remote Verify وRetention وAudit، والاستعادة تنزل من GitHub عند غياب المحلي. بيانات العملاء لا تدخل `main`، وإنما تحفظ فقط داخل فرعي النسخ المخصصين. يسجل Manifest v2 أعداد جداول العملاء المهمة، وفي FULL جرد الملفات بالمسار والحجم وSHA-256، ثم يفرض تطابقها بعد Restore.
 
 This file is the official Architecture Decision Record for FrameID. It documents why important architectural choices exist. It does not replace the domain documentation or executable code.
 
@@ -88,7 +88,7 @@ Every decision records:
 
 ## ADR-005 — Full Snapshot Backup exists for complete recoverability
 
-**Decision:** The backup architecture supports a FULL snapshot containing the database plus uploads and platform-managed content artifacts required for recovery.
+**Decision:** تدعم معمارية النسخ لقطة FULL تحتوي قاعدة بيانات العملاء وملفات العملاء فقط. يظل محتوى المنصة في فرع الكود ولا يتكرر داخل Artifact النسخة.
 
 **Reason:** A database-only restore can leave media or content artifacts missing, while an uploads-only restore cannot reconstruct business state. Full snapshots provide a consistent disaster-recovery unit.
 

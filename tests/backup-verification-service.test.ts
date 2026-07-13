@@ -18,6 +18,7 @@ async function createArtifact(type: "DATABASE" | "FULL") {
   const manifest = addChecksumToManifest(createBackupManifest({
     backupJobId: "job-1", backupType: type, appVersion: "0.1.0", gitCommitSha: "commit",
     databaseVersion: "migration", usersCount: 1, tenantsCount: 1, sitesCount: 1, mediaFilesCount: 1,
+    customerDataCounts: { usersCount: 1, tenantsCount: 1, sitesCount: 1, mediaFilesCount: 1 }, uploadsInventory: [],
     databaseSizeBytes: 16, uploadsSizeBytes: type === "FULL" ? 15 : 0, contentSizeBytes: 0,
     compressionAlgorithm: "gzip", encryptionEnabled: false, createdAt: new Date(0).toISOString(),
     artifactChecksums: {

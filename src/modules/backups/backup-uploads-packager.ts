@@ -2,11 +2,14 @@ import { spawn } from "node:child_process";
 import { existsSync } from "node:fs";
 import { mkdir, readdir, stat } from "node:fs/promises";
 import { join, dirname } from "node:path";
+import type { BackupFileInventoryItem } from "./backup-manifest";
+import { collectUploadsInventory } from "./backup-uploads-inventory";
 
 export type UploadsPackagerResult = {
   archivePath: string;
   sizeBytes: number;
   fileCount: number;
+  inventory: BackupFileInventoryItem[];
   durationMs: number;
 };
 
@@ -34,11 +37,8 @@ export function createUploadsPackager(uploadsDir: string): UploadsPackager {
 
       const startTime = Date.now();
 
-      let fileCount = 0;
-      if (existsSync(uploadsDir)) {
-        const files = await readdir(uploadsDir, { recursive: true });
-        fileCount = files.filter((f) => !f.startsWith(".")).length;
-      }
+      const inventory = await collectUploadsInventory(uploadsDir);
+      const fileCount = inventory.length;
 
       if (fileCount > 0) {
         const parentDir = join(uploadsDir, "..");
@@ -63,7 +63,7 @@ export function createUploadsPackager(uploadsDir: string): UploadsPackager {
         sizeBytes = stats.size;
       }
 
-      return { archivePath, sizeBytes, fileCount, durationMs };
+      return { archivePath, sizeBytes, fileCount, inventory, durationMs };
     },
 
     async getUploadsSize(): Promise<number> {

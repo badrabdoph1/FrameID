@@ -7,6 +7,7 @@ import { isGitHubBackupConfigured } from "@/lib/env";
 import { requireSuperAdminSession } from "@/modules/admin/admin-page-guards";
 import {
   runBackupAction,
+  prepareMigrationBackupAction,
   updateBackupSettingsAction,
   verifyAllBackupsAction,
 } from "@/app/(admin)/admin/backups/actions";
@@ -138,8 +139,11 @@ export default async function AdminBackupsPage({ searchParams }: Props) {
         </div>
       </WorkspaceSection>
 
-      <WorkspaceSection title="استعادة البيانات" description="استعادة نسخة احتياطية سابقة. يمكن تنزيل النسخة من GitHub إذا لم تكن موجودة محلياً.">
-        <PendingForm action={restoreLatestGitHubBackupAction} className="mb-3 rounded-2xl border border-amber-300/20 bg-amber-300/5 p-5"><div className="flex flex-wrap items-center justify-between gap-4"><div><p className="text-sm font-black text-[#f3cf73]">عودة طوارئ من GitHub</p><p className="mt-1 text-xs font-bold text-white/45">استعادة أحدث FULL تحتوي بيانات العملاء، مع مطابقة الأعداد بعد العودة.</p></div><PendingButton pendingText="جاري العودة..." className="rounded-xl bg-[#f3cf73] px-6 py-3 text-sm font-black text-[#17120a]">عودة</PendingButton></div></PendingForm>
+      <WorkspaceSection title="الذهاب والعودة" description="ذهاب ينشئ FULL عبر Pipeline الرسمية وينتظر رفعها والتحقق منها، وعودة تستعيد أحدث FULL من GitHub.">
+        <div className="mb-3 grid gap-3 md:grid-cols-2">
+          <PendingForm action={prepareMigrationBackupAction} className="rounded-2xl border border-sky-300/20 bg-sky-300/5 p-5"><div className="flex h-full flex-wrap items-center justify-between gap-4"><div><p className="text-sm font-black text-sky-300">ذهاب طوارئ</p><p className="mt-1 text-xs font-bold text-white/45">إنشاء FULL كاملة، ولا يسمح بالانتقال إلا بعد Remote Verify.</p></div><PendingButton pendingText="جاري تجهيز الذهاب..." className="rounded-xl bg-sky-300 px-6 py-3 text-sm font-black text-[#101820]">ذهاب</PendingButton></div></PendingForm>
+          <PendingForm action={restoreLatestGitHubBackupAction} className="rounded-2xl border border-amber-300/20 bg-amber-300/5 p-5"><div className="flex h-full flex-wrap items-center justify-between gap-4"><div><p className="text-sm font-black text-[#f3cf73]">عودة طوارئ من GitHub</p><p className="mt-1 text-xs font-bold text-white/45">استعادة أحدث FULL تحتوي بيانات العملاء، مع مطابقة الأعداد والملفات بعد العودة.</p></div><PendingButton pendingText="جاري العودة..." className="rounded-xl bg-[#f3cf73] px-6 py-3 text-sm font-black text-[#17120a]">عودة</PendingButton></div></PendingForm>
+        </div>
         {latestCompleted ? (
           <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-5">
             <div className="flex flex-wrap items-center justify-between gap-4">

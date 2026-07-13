@@ -5,6 +5,8 @@ import { isSupportedBackupType, type SupportedBackupType } from "@/modules/backu
 
 export type BackupType = SupportedBackupType;
 
+export type BackupFileInventoryItem = { path: string; sizeBytes: number; sha256: string };
+
 export type BackupManifest = {
   version: number;
   schemaVersion: number;
@@ -18,6 +20,8 @@ export type BackupManifest = {
   tenantsCount: number;
   sitesCount: number;
   mediaFilesCount: number;
+  customerDataCounts?: Record<string, number>;
+  uploadsInventory?: BackupFileInventoryItem[];
   databaseSizeBytes: number;
   uploadsSizeBytes: number;
   contentSizeBytes: number;
@@ -72,6 +76,8 @@ export function createBackupManifest(input: {
   tenantsCount: number;
   sitesCount: number;
   mediaFilesCount: number;
+  customerDataCounts: Record<string, number>;
+  uploadsInventory: BackupFileInventoryItem[];
   databaseSizeBytes: number;
   uploadsSizeBytes: number;
   contentSizeBytes: number;
@@ -81,8 +87,8 @@ export function createBackupManifest(input: {
   createdAt: string;
 }): Omit<BackupManifest, "checksum"> {
   return {
-    version: 1,
-    schemaVersion: 1,
+    version: 2,
+    schemaVersion: 2,
     ...input,
     totalSizeBytes:
       input.databaseSizeBytes + input.uploadsSizeBytes + input.contentSizeBytes,
@@ -125,13 +131,13 @@ export function validateBackupManifest(manifest: unknown): RestoreValidationResu
 
   const m = manifest as Record<string, unknown>;
 
-  if (m.version !== 1) {
+  if (m.version !== 1 && m.version !== 2) {
     errors.push(`Unsupported manifest version: ${m.version}`);
   } else {
     result.checks.manifestValid = true;
   }
 
-  if (typeof m.schemaVersion !== "number" || m.schemaVersion < 1) {
+  if (typeof m.schemaVersion !== "number" || m.schemaVersion < 1 || m.schemaVersion > 2) {
     errors.push(`Incompatible schema version: ${m.schemaVersion}`);
   } else {
     result.checks.schemaCompatibility = true;
@@ -160,6 +166,11 @@ export function validateBackupManifest(manifest: unknown): RestoreValidationResu
     result.checks.integrity = true;
   } else {
     errors.push("Invalid or missing checksum");
+  }
+
+  if (m.version === 2) {
+    if (!m.customerDataCounts || typeof m.customerDataCounts !== "object" || Array.isArray(m.customerDataCounts)) errors.push("Invalid or missing customerDataCounts");
+    if (!Array.isArray(m.uploadsInventory)) errors.push("Invalid or missing uploadsInventory");
   }
 
   result.checks.versionCompatibility = true;

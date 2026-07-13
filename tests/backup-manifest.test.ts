@@ -26,6 +26,8 @@ describe("backup manifest", () => {
       tenantsCount: 10,
       sitesCount: 10,
       mediaFilesCount: 20,
+      customerDataCounts: { usersCount: 12, tenantsCount: 10, subscriptionsCount: 4 },
+      uploadsInventory: [],
       databaseSizeBytes: 1024,
       uploadsSizeBytes: 0,
       contentSizeBytes: 0,
@@ -37,8 +39,8 @@ describe("backup manifest", () => {
 
     const completeManifest = addChecksumToManifest(manifest);
 
-    expect(completeManifest.version).toBe(1);
-    expect(completeManifest.schemaVersion).toBe(1);
+    expect(completeManifest.version).toBe(2);
+    expect(completeManifest.schemaVersion).toBe(2);
     expect(completeManifest.backupType).toBe("DATABASE");
     expect(completeManifest.totalSizeBytes).toBe(1024);
     expect(completeManifest.checksum).toHaveLength(64);
@@ -58,6 +60,8 @@ describe("backup manifest", () => {
         tenantsCount: 10,
         sitesCount: 10,
         mediaFilesCount: 20,
+        customerDataCounts: { usersCount: 12, tenantsCount: 10, subscriptionsCount: 4, paymentRequestsCount: 2 },
+        uploadsInventory: [{ path: "tenant/document.pdf", sizeBytes: 2048, sha256: "f".repeat(64) }],
         databaseSizeBytes: 1024,
         uploadsSizeBytes: 2048,
         contentSizeBytes: 512,

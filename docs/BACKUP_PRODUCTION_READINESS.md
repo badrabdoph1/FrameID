@@ -6,7 +6,7 @@ FrameID uses GitHub as the only external backup store in the current architectur
 
 - Git is the source of truth for platform code, templates, themes, public platform content, documentation, and platform configuration stored in the repository.
 - PostgreSQL and uploaded files are the source of truth for customer data.
-- Customer backups are stored externally in GitHub backup branches.
+- بيانات العملاء لا تدخل فرع كود المنصة `main`. تحفظ نسخ العملاء فقط في فرعي GitHub المخصصين داخل المستودع الخاص نفسه.
 - Object storage providers are intentionally outside the scope of this architecture.
 
 Default backup branches:
@@ -47,7 +47,7 @@ Local verification checks the manifest, checksum file, required files, non-empty
 
 Remote verification reads the uploaded artifact from GitHub and checks the manifest, checksum, required files, and sizes before the database record is completed.
 
-Restore validation additionally checks that the PostgreSQL custom dump can be read by `pg_restore --list`.
+يتحقق Restore أيضًا من إمكانية قراءة PostgreSQL custom dump عبر `pg_restore --list`. يسجل Manifest v2 أعداد جميع جداول العملاء المهمة ويقارنها بعد الاستعادة. وفي `FULL` يسجل مسار كل ملف عميل وحجمه وSHA-256 ويتحقق منها بعد الفك. تظل نسخ Manifest v1 القديمة قابلة للقراءة والاستعادة.
 
 ## Restore behavior
 

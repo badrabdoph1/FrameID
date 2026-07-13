@@ -1,5 +1,6 @@
 import type { BackupJobRepository } from "@/modules/backups/backup-job-service";
 import type { BackupManifest } from "@/modules/backups/backup-manifest";
+import { CUSTOMER_DATA_COUNT_QUERIES } from "@/modules/backups/customer-data-inventory";
 
 type PrismaBackupJobClient = {
   backupJob: {
@@ -7,10 +8,7 @@ type PrismaBackupJobClient = {
     update(input: unknown): Promise<unknown>;
     findUnique?(input: unknown): Promise<{ metadata: unknown } | null>;
   };
-  user: { count(input: unknown): Promise<number> };
-  tenant: { count(input: unknown): Promise<number> };
-  site: { count(input: unknown): Promise<number> };
-  mediaAsset: { count(input: unknown): Promise<number> };
+  $queryRawUnsafe<T>(query: string): Promise<T>;
   auditLog: { create(input: unknown): Promise<unknown> };
 };
 
@@ -38,13 +36,18 @@ export function createPrismaBackupJobRepository(prisma: PrismaBackupJobClient): 
       });
     },
     async collectStats() {
-      const [usersCount, tenantsCount, sitesCount, mediaFilesCount] = await Promise.all([
-        prisma.user.count({ where: { deletedAt: null } }),
-        prisma.tenant.count({ where: { deletedAt: null } }),
-        prisma.site.count({ where: { deletedAt: null } }),
-        prisma.mediaAsset.count({ where: { deletedAt: null } }),
-      ]);
-      return { usersCount, tenantsCount, sitesCount, mediaFilesCount };
+      const entries = await Promise.all(Object.entries(CUSTOMER_DATA_COUNT_QUERIES).map(async ([key, query]) => {
+        const rows = await prisma.$queryRawUnsafe<Array<{ count: bigint | number | string }>>(query);
+        return [key, Number(rows[0]?.count ?? 0)] as const;
+      }));
+      const customerDataCounts = Object.fromEntries(entries);
+      return {
+        usersCount: customerDataCounts.usersCount ?? 0,
+        tenantsCount: customerDataCounts.tenantsCount ?? 0,
+        sitesCount: customerDataCounts.sitesCount ?? 0,
+        mediaFilesCount: customerDataCounts.mediaFilesCount ?? 0,
+        customerDataCounts,
+      };
     },
     async saveManifest(_input: BackupManifest) {
       // The manifest is persisted inside the verified backup artifact.

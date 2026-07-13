@@ -22,7 +22,7 @@ PostgreSQL and uploaded files are the source of truth for:
 - customer media and uploaded files;
 - operational records and audit data.
 
-Customer data is not stored permanently in the platform Git branch.
+بيانات العملاء لا تدخل فرع كود المنصة `main`. وجودها في GitHub محصور في فرعي النسخ `frameid-backups-database` و`frameid-backups-full` داخل المستودع الخاص نفسه.
 
 ## Backup architecture
 
@@ -39,6 +39,8 @@ The official pipeline is:
 7. Mark the job completed.
 
 Restore uses the local artifact when present and verified. Otherwise it downloads the artifact from GitHub, verifies it, and restores it.
+
+بعد Restore يفرض Manifest v2 تطابق أعداد جداول العملاء المهمة. وتفرض استعادة `FULL` كذلك تطابق المسار والحجم وSHA-256 لكل ملف عميل.
 
 Retention policy:
 

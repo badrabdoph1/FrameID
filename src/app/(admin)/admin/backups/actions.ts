@@ -118,32 +118,29 @@ export async function verifyAllBackupsAction() {
   }
 }
 
-
-/**
- * Compatibility action for old migration links.
- * It now creates a verified FULL backup through the official GitHub pipeline.
- */
-export async function createSnapshotAction() {
+export async function prepareMigrationBackupAction() {
   const session = await requireSuperAdminSession();
-
+  let completedJobId = "";
   try {
-    await createOfficialBackupService().runBackup({
+    const result = await createOfficialBackupService().runBackup({
       type: "FULL",
       trigger: "MIGRATION",
       initiatedById: session.user.id,
-      note: "حزمة انتقال عبر النسخة الكاملة الرسمية",
+      note: "ذهاب طوارئ عبر النسخة الكاملة الرسمية",
     });
+    completedJobId = result.backupJobId;
   } catch (error) {
     const { userError } = await processError(error, {
       userId: session.user.id,
-      metadata: { action: "createMigrationFullBackup" },
+      metadata: { action: "prepareMigrationBackup" },
     });
     redirect(`/admin/backups?error=${encodeURIComponent(userError.message)}`);
   }
 
   revalidatePath("/admin/backups");
-  redirect("/admin/backups?started=1");
+  redirect(`/admin/backups?job=${encodeURIComponent(completedJobId)}&migration-ready=1`);
 }
+
 
 export async function updateBackupSettingsAction(formData: FormData) {
   const session = await requireSuperAdminSession();

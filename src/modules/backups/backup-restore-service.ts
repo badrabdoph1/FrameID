@@ -1,13 +1,19 @@
 import { existsSync, createReadStream, createWriteStream } from "node:fs";
-import { mkdir, mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { spawn } from "node:child_process";
 import { createGunzip } from "node:zlib";
 import { pipeline } from "node:stream/promises";
 import { tmpdir } from "node:os";
 
-import type { BackupType } from "@/modules/backups/backup-manifest";
+import type { BackupFileInventoryItem, BackupType } from "@/modules/backups/backup-manifest";
 import { createGitHubStorage } from "@/modules/backups/backup-storage-github";
+import { CUSTOMER_DATA_COUNT_QUERIES } from "@/modules/backups/customer-data-inventory";
+import { validateUploadsInventory } from "@/modules/backups/backup-uploads-inventory";
+import { restoreUploadsArchive } from "@/modules/backups/backup-uploads-archive";
+
+export { validateUploadsInventory } from "@/modules/backups/backup-uploads-inventory";
+export { restoreUploadsArchive } from "@/modules/backups/backup-uploads-archive";
 
 export type ApplyVerifiedRestoreOptions = {
   backupDir: string;
@@ -24,6 +30,7 @@ export type RestoreService = {
   ensureBackupAvailable(input: { backupId: string; backupRoot: string; type: BackupType; githubToken?: string; githubRepository?: string; githubBranch?: string }): Promise<{ backupDir: string; source: "LOCAL" | "GITHUB" }>;
   applyVerifiedRestore(options: ApplyVerifiedRestoreOptions): Promise<RestoreResult>;
   validatePostRestore(databaseUrl: string): Promise<PostRestoreValidationResult>;
+  validateRestoredUploads(uploadsDir: string, expected: BackupFileInventoryItem[]): Promise<{ valid: boolean; errors: string[] }>;
 };
 
 function backupBranch(type: BackupType): string { return type === "FULL" ? process.env.BACKUP_GITHUB_FULL_BRANCH || "frameid-backups-full" : process.env.BACKUP_GITHUB_DATABASE_BRANCH || "frameid-backups-database"; }
@@ -78,12 +85,6 @@ async function restoreCustomPostgresDump(databaseUrl: string, dumpPath: string):
   }
 }
 
-async function extractArchive(archivePath: string, targetDir: string): Promise<void> {
-  await mkdir(targetDir, { recursive: true });
-  const tar = spawn("tar", ["-xzf", archivePath, "-C", targetDir, "--strip-components=1"], { stdio: ["ignore", "inherit", "pipe"] });
-  await waitForProcess(tar, "tar restore");
-}
-
 async function runPsqlCommand(databaseUrl: string, sql: string): Promise<string> {
   const parsed = parseDatabaseUrl(databaseUrl);
   const child = spawn("psql", [`--host=${parsed.host}`, `--port=${parsed.port}`, `--username=${parsed.user}`, "--no-password", `--dbname=${parsed.database}`, "--tuples-only", "--no-align", `--command=${sql}`], { env: { ...process.env, PGPASSWORD: parsed.password }, stdio: ["ignore", "pipe", "pipe"] });
@@ -117,7 +118,7 @@ export function createRestoreService(): RestoreService {
       catch (error) { errors.push(error instanceof Error ? error.message : "Database restore failed"); }
 
       if (options.type === "FULL" && errors.length === 0) {
-        try { await extractArchive(join(options.backupDir, "uploads.tar.gz"), options.uploadsDir ?? join(process.cwd(), "public", "uploads")); steps.uploads = true; }
+        try { await restoreUploadsArchive(join(options.backupDir, "uploads.tar.gz"), options.uploadsDir ?? join(process.cwd(), "public", "uploads")); steps.uploads = true; }
         catch (error) { errors.push(error instanceof Error ? error.message : "Uploads restore failed"); }
       } else if (options.type !== "FULL") steps.uploads = true;
 
@@ -129,17 +130,13 @@ export function createRestoreService(): RestoreService {
       const errors: string[] = [];
       const counts: Record<string, number> = {};
       const checks: Record<string, boolean> = {};
-      const queries: [string, string][] = [
-        ["usersCount", `SELECT COUNT(*) FROM "User" WHERE "deletedAt" IS NULL`],
-        ["tenantsCount", `SELECT COUNT(*) FROM "Tenant" WHERE "deletedAt" IS NULL`],
-        ["sitesCount", `SELECT COUNT(*) FROM "Site" WHERE "deletedAt" IS NULL`],
-        ["mediaFilesCount", `SELECT COUNT(*) FROM "MediaAsset" WHERE "deletedAt" IS NULL`],
-      ];
+      const queries = Object.entries(CUSTOMER_DATA_COUNT_QUERIES);
       for (const [key, query] of queries) {
         try { const value = Number.parseInt(await runPsqlCommand(databaseUrl, query), 10); counts[key] = Number.isFinite(value) ? value : 0; checks[key] = Number.isFinite(value); }
         catch (error) { checks[key] = false; errors.push(error instanceof Error ? error.message : `Failed check: ${key}`); }
       }
       return { passed: errors.length === 0, checks, counts, durationMs: Date.now() - startTime, errors };
     },
+    validateRestoredUploads: validateUploadsInventory,
   };
 }

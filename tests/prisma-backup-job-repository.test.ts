@@ -19,10 +19,16 @@ describe("prisma backup job repository", () => {
           return {};
         },
       },
-      user: { async count() { return 12; } },
-      tenant: { async count() { return 10; } },
-      site: { async count() { return 10; } },
-      mediaAsset: { async count() { return 4; } },
+      async $queryRawUnsafe<T>(query: string): Promise<T> {
+        let count = 0n;
+        if (query.includes('"User"')) count = 12n;
+        else if (query.includes('"Tenant"')) count = 10n;
+        else if (query.includes('FROM "Site"')) count = 10n;
+        else if (query.includes('"MediaAsset"')) count = 4n;
+        else if (query.includes('FROM "Subscription"')) count = 3n;
+        else if (query.includes('FROM "PaymentRequest"')) count = 2n;
+        return [{ count }] as T;
+      },
       auditLog: {
         async create(args: { data: { action: string; entityId: string } }) {
           calls.push(`audit:${args.data.action}:${args.data.entityId}`);
@@ -33,15 +39,23 @@ describe("prisma backup job repository", () => {
     const repository = createPrismaBackupJobRepository(prisma);
 
     await repository.createJob({ type: "DATABASE", trigger: "MANUAL" });
-    await expect(repository.collectStats()).resolves.toEqual({
+    await expect(repository.collectStats()).resolves.toMatchObject({
       usersCount: 12,
       tenantsCount: 10,
       sitesCount: 10,
       mediaFilesCount: 4,
+      customerDataCounts: {
+        usersCount: 12,
+        tenantsCount: 10,
+        sitesCount: 10,
+        mediaFilesCount: 4,
+        subscriptionsCount: 3,
+        paymentRequestsCount: 2,
+      },
     });
     await repository.saveManifest({
-      version: 1,
-      schemaVersion: 1,
+      version: 2,
+      schemaVersion: 2,
       backupJobId: "backup_1",
       backupType: "DATABASE",
       appVersion: "0.1.0",
@@ -52,6 +66,8 @@ describe("prisma backup job repository", () => {
       tenantsCount: 10,
       sitesCount: 10,
       mediaFilesCount: 4,
+      customerDataCounts: { usersCount: 12, tenantsCount: 10, sitesCount: 10, mediaFilesCount: 4 },
+      uploadsInventory: [],
       databaseSizeBytes: 0,
       uploadsSizeBytes: 0,
       contentSizeBytes: 0,
