@@ -1,115 +1,111 @@
-# FrameID Production Notification & Error System
+# FrameID Unified Error Reporting & Customer Issue Center
 
 ## الهدف
 
-تم توحيد مسار الإشعارات والأخطاء داخل FrameID بحيث يحصل المستخدم على رسالة عربية واضحة، ويحصل فريق التطوير على تفاصيل تشخيصية قابلة للنسخ والتتبع.
+النظام الحالي يفصل بين ظهور الخطأ التقني وبين بلاغ العميل:
 
-## القرار المعماري
+- `ErrorLog` هو سجل كل ظهور تقني للخطأ أو التشخيص.
+- `CustomerIssue` هو البلاغ الإداري الذي يراه فريق الدعم داخل «مشاكل العملاء».
+- `CustomerIssueEvent` هو سجل الحركة: إنشاء، بدء مراجعة، حل، إغلاق، إعادة فتح، وإخطار العميل.
 
-بدلاً من إنشاء Toasts منفصلة داخل الصفحات، أصبح التعامل يتم عبر خدمات موحدة:
+بهذا الشكل لا يرى العميل أي Stack أو Digest أو Request ID، بينما تصل التفاصيل التقنية للإدارة تلقائيًا.
 
-- `notify.success()`
-- `notify.info()`
-- `notify.warning()`
-- `notify.error()`
-- `processError()`
-- `logger`
-- `createAction()`
+## تجربة العميل
 
-هذا يجعل أي جزء جديد في المنصة يستخدم نفس النظام بدل تنفيذ رسائل خاصة به.
+كل صفحات الأخطاء تستخدم تجربة موحدة:
 
-## مسار الخطأ
+- رسالة هادئة: «في تحديث دلوقتي في الموقع، بنضيف لكم مميزات جديدة وبنطوّر الخدمات. جرّب تاني بعد لحظات.»
+- زر «إعادة المحاولة» يعمل Refresh.
+- زر «الصفحة الرئيسية».
+- زر «إبلاغ الإدارة بالمشكلة».
+- الملاحظة اختيارية، ولا يطلب النظام من العميل شرح المشكلة.
 
-1. يحدث الخطأ في UI أو API أو Server Action.
-2. يتم تمريره إلى `processError()`.
-3. يتم تصنيفه إلى Error Code موحد مثل `FID-AUTH-001` أو `FID-DB-002`.
-4. يتم إنشاء `Request ID` و `Correlation ID`.
-5. يتم إخفاء التفاصيل التقنية عن المستخدم.
-6. يتم تسجيل التفاصيل في `ErrorLog`.
-7. يظهر للمستخدم إشعار عربي واضح مع زر نسخ تفاصيل الخطأ.
+الصفحات المغطاة تشمل:
 
-## تفاصيل النسخ
+- `error.tsx`
+- `global-error.tsx`
+- `not-found.tsx`
+- marketing/dashboard/admin error boundaries
+- `unauthorized`
+- `forbidden`
+- `session-expired`
+- `expired`
+- `ErrorBoundary`
 
-زر نسخ تفاصيل الخطأ ينسخ:
+## التقاط التفاصيل
 
-- Error Code
-- Message
-- Route
-- Method
-- Timestamp
-- Request ID
-- Correlation ID
-- Browser
-- Platform
-- User Agent
-- User ID
-- Tenant ID
-- Suggestion
-- Metadata
-- Stack/Cause في Development فقط
+العميل يرسل بلاغًا عبر:
 
-## Request ID و Correlation ID
+- `POST /api/customer-issues/capture`
+- `POST /api/customer-issues/report`
 
-تم تحديث `middleware.ts` ليولد ويمرر:
+النظام يجمع تلقائيًا:
 
-- `x-request-id`
-- `x-correlation-id`
-- `x-pathname`
-- `x-method`
-- `x-url`
+- الوقت، route، URL، نوع الخطأ، الرسالة، stack، digest
+- Request ID وCorrelation ID
+- browser/device/os/screen/language/timezone/userAgent/referrer/connection
+- release/build/environment
+- session/tenant/site/customer/user/admin context من السيرفر فقط
+- template والصفحة وآخر action مسجل
 
-وبالتالي يمكن ربط الخطأ بين Frontend و API و Server Actions.
+أي هوية مرسلة من العميل يتم تجاهلها. الربط بالعميل والموقع يتم من سياق موثوق على السيرفر.
 
-## Logging
+## الخصوصية والتنقية
 
-تم تحديث `logger` ليعمل بمستويات:
+كل payload يمر عبر sanitizer قبل التخزين:
 
-- DEBUG
-- INFO
-- WARN
-- ERROR
-- FATAL
+- حذف كلمات المرور، token، cookie، authorization
+- حذف بيانات الدفع والحسابات الحساسة
+- تنظيف query params الحساسة من الروابط
+- تحديد عمق وحجم metadata
 
-ويقوم بتسجيل الأحداث في `ErrorLog`، مع الاحتفاظ بـ console فقط كوسيلة عرض إضافية وليست مصدر الحقيقة.
+## دورة البلاغ
 
-## Notification Center
+الحالات المدعومة:
 
-تم تحسين مركز الإشعارات داخل الإدارة ليشمل:
+- `NEW`
+- `IN_REVIEW`
+- `RESOLVED`
+- `CLOSED`
 
-- Success
-- Warning
-- Info
-- Error
-- بحث
-- فلترة
-- إحصائيات
-- تفاصيل تشخيصية داخل جسم الإشعار عند توفرها
+الانتقالات المسموحة موجودة في `src/modules/customer-issues/state-machine.ts`.
 
-## Error Center
+## مركز مشاكل العملاء
 
-مركز الأخطاء يدعم:
+المركز داخل `/admin/errors` يعرض:
 
-- عدد الأخطاء
-- الأخطاء المفتوحة
-- البحث
-- الفلترة حسب التصنيف والمستوى
-- نسخ التفاصيل
-- عرض Request ID و Correlation ID
-- حل المشكلة وتسجيل من قام بالحل
+- عدد البلاغات الجديدة
+- عدد البلاغات قيد المراجعة
+- عدد البلاغات المحلولة
+- عدد البلاغات المغلقة
+- ظهورات تقنية بلا بلاغ
+- قائمة خفيفة لا تعرض stack أو metadata
 
-## UX
+صفحة البلاغ `/admin/errors/[id]` تعرض التفاصيل التقنية الكاملة للإدارة فقط، وتشمل:
 
-تم تصميم الإشعارات لتكون:
+- العميل، الموقع، الحالة، الأولوية، تاريخ الإنشاء، آخر تحديث
+- Route، نوع الخطأ، الكود المتأثر
+- Stack Trace وMetadata
+- Browser/Device/Environment
+- الأحداث والمسؤول عن المراجعة
 
-- Dark Mode friendly
-- Responsive
-- Accessible
-- Keyboard friendly
-- فيها زر إغلاق
-- فيها animation خفيفة
-- لا تغلق رسائل الخطأ تلقائياً حتى ينسخ المستخدم التفاصيل أو يغلقها بنفسه
+الأفعال الإدارية:
 
-## ملاحظات مستقبلية
+- بدء المراجعة
+- تعليم كمحلول
+- إعادة فتح
+- إغلاق
+- إخطار العميل بالحل
+- نسخ جميع التفاصيل
+- فتح العميل/الموقع/سجل الأخطاء/الملف البرمجي عند توفره
 
-- يمكن لاحقاً إضافة أعمدة `requestId`, `correlationId`, `route` إلى جدول `NotificationLog` بدلاً من حفظها داخل `body`، لكن تم تجنب تعديل schema كبير في هذه المرحلة لمنع كسر الإنتاج.
-- يفضل تحويل Server Actions القديمة تدريجياً لاستخدام `createAction()` للحصول على نفس شكل النتائج والتشخيص.
+## إضافة نقطة التقاط جديدة
+
+استخدم الخدمة الموحدة بدل إنشاء نظام جديد:
+
+- للعميل: `captureClientError()` ثم `reportCapturedError()`.
+- للسيرفر/API: `createCustomerIssueService(...).captureOccurrence()`.
+- للبلاغ: `reportIssue()`.
+- للإدارة: `transitionIssue()` و`notifyResolved()`.
+
+لا تعرض `error.message` الخام للمستخدم النهائي. التفاصيل التقنية تبقى داخل `ErrorLog` و«مشاكل العملاء».
