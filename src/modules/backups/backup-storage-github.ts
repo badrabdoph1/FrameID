@@ -21,7 +21,7 @@ export type GitHubStorage = {
   downloadBackup(backupId: string, destDir: string, branch: string): Promise<string>;
   verifyBackup(backupId: string, branch: string): Promise<GitHubBackupVerification>;
   listBackups(branch: string): Promise<string[]>;
-  listBackupManifests(branch: string): Promise<Array<{ backupId: string; manifest: BackupManifest }>>;
+  listBackupManifests(branch: string): Promise<Array<{ backupId: string; commitSha: string | null; manifest: BackupManifest }>>;
   cleanupOldBackups(branch: string, retentionCount: number): Promise<string[]>;
   deleteBackup(backupId: string, branch: string): Promise<void>;
 };
@@ -67,7 +67,9 @@ async function cloneBranch(token: string, repoSlug: string, branch: string, targ
   try {
     await runGit(process.cwd(), ["clone", "--depth", "1", "--branch", branch, authenticatedUrl(token, repoSlug), targetDir]);
     return true;
-  } catch {
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error);
+    console.warn(`[github-storage] فشل نسخ الفرع ${branch} من ${repoSlug}: ${msg}. إنشاء فرع فارغ محلي.`);
     await mkdir(targetDir, { recursive: true });
     await runGit(targetDir, ["init"]);
     await runGit(targetDir, ["checkout", "--orphan", branch]);
@@ -180,7 +182,11 @@ export function createGitHubStorage(token: string, repoPath?: string): GitHubSto
     },
 
     async listBackupManifests(branch) {
-      return withBranch(branch, async (repoDir) => {
+      return withBranch(branch, async (repoDir, existed) => {
+        if (!existed) {
+          console.warn(`[github-storage] الفرع ${branch} غير موجود أو غير قابل للوصول — تم تخطي فهرسة هذا الفرع.`);
+          return [];
+        }
         const backupsDir = join(repoDir, "backups");
         if (!existsSync(backupsDir)) return [];
         const backupIds = (await readdir(backupsDir, { withFileTypes: true }))
@@ -188,11 +194,15 @@ export function createGitHubStorage(token: string, repoPath?: string): GitHubSto
           .map((entry) => entry.name)
           .sort()
           .reverse();
-        const manifests: Array<{ backupId: string; manifest: BackupManifest }> = [];
+        const manifests: Array<{ backupId: string; commitSha: string | null; manifest: BackupManifest }> = [];
+        const verification = createVerificationService({ verifyPayloadTools: false });
         for (const backupId of backupIds) {
           try {
+            const verified = await verification.verifyBackup(backupId, backupsDir);
+            if (!verified.valid) continue;
             const manifest = JSON.parse(await readFile(join(backupsDir, backupId, "manifest.json"), "utf8")) as BackupManifest;
-            manifests.push({ backupId, manifest });
+            const commitSha = await runGit(repoDir, ["log", "-1", "--format=%H", "--", `backups/${backupId}`]).catch(() => null);
+            manifests.push({ backupId, commitSha, manifest });
           } catch {
             // النسخة التي لا تملك Manifest سليمة لا تصلح للعودة.
           }

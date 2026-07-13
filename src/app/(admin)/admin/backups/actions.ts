@@ -14,6 +14,7 @@ import { createRestoreService } from "@/modules/backups/backup-restore-service";
 import { createVerificationService } from "@/modules/backups/backup-verification-service";
 import type { BackupType } from "@/modules/backups/backup-manifest";
 import { getBackupPolicy, isSupportedBackupType } from "@/modules/backups/backup-policy";
+import { reconcileProductionGitHubBackupCatalog } from "@/modules/backups/production-github-backup-catalog";
 
 function readBackupType(value: FormDataEntryValue | null): BackupType | null {
   return isSupportedBackupType(value) ? value : null;
@@ -172,6 +173,30 @@ export async function updateBackupSettingsAction(formData: FormData) {
     const { userError } = await processError(error, {
       userId: session.user.id,
       metadata: { action: "updateBackupSettings", type },
+    });
+    redirect(`/admin/backups?error=${encodeURIComponent(userError.message)}`);
+  }
+}
+
+export async function rebuildFromGitHubAction() {
+  const session = await requireSuperAdminSession();
+  try {
+    const result = await reconcileProductionGitHubBackupCatalog();
+    await prisma.auditLog.create({
+      data: {
+        actorId: session.user.id,
+        action: "BACKUP_REINDEXED_FROM_GITHUB",
+        entityType: "BackupJob",
+        entityId: "manual-rebuild",
+        metadata: { indexed: result.indexed, database: result.database, full: result.full, source: "manual-rebuild" },
+      },
+    });
+    revalidatePath("/admin/backups");
+    redirect(`/admin/backups?rebuilt=1&indexed=${result.indexed}`);
+  } catch (error) {
+    const { userError } = await processError(error, {
+      userId: session.user.id,
+      metadata: { action: "rebuildFromGitHub" },
     });
     redirect(`/admin/backups?error=${encodeURIComponent(userError.message)}`);
   }

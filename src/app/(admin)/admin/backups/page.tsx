@@ -10,6 +10,7 @@ import {
   prepareMigrationBackupAction,
   updateBackupSettingsAction,
   verifyAllBackupsAction,
+  rebuildFromGitHubAction,
 } from "@/app/(admin)/admin/backups/actions";
 import {
   deleteWorkspaceBackupAction,
@@ -27,6 +28,7 @@ import {
   type SupportedBackupType,
 } from "@/modules/backups/backup-policy";
 import { PendingForm, PendingButton } from "@/components/admin/pending-button";
+import { reconcileProductionGitHubBackupCatalog } from "@/modules/backups/production-github-backup-catalog";
 
 export const dynamic = "force-dynamic";
 
@@ -73,6 +75,7 @@ const inputClass = "rounded-lg border border-white/[0.08] bg-black/30 px-3 py-2 
 
 export default async function AdminBackupsPage({ searchParams }: Props) {
   await requireSuperAdminSession();
+  await reconcileProductionGitHubBackupCatalog();
   const params = await searchParams;
   const repository = createPrismaAdminBackupCenterRepository(prisma);
   const center = (await repository.getBackupCenter()) as {
@@ -118,6 +121,7 @@ export default async function AdminBackupsPage({ searchParams }: Props) {
     <AdminPageShell badge="النظام" title="مركز النسخ الاحتياطي" description="إنشاء النسخ الاحتياطية واستعادتها وحمايتك عند النقل بين الاستضافات.">
       <Feedback params={params} job={justCompleted} />
       <GitHubStatusBanner />
+      <RebuildBanner />
 
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <Metric label="آخر نسخة" value={jobs[0] ? formatDate(jobs[0].createdAt) : "لم يتم"} />
@@ -254,7 +258,7 @@ export default async function AdminBackupsPage({ searchParams }: Props) {
             <p className="text-xs font-bold text-white/35">لا توجد سجلات بعد.</p>
           ) : auditLogs.map((log) => {
             const meta = log.metadata && typeof log.metadata === "object" && !Array.isArray(log.metadata) ? log.metadata as Record<string, unknown> : {};
-            const isSuccess = log.action.includes("COMPLETED") || log.action.includes("VERIFIED");
+            const isSuccess = log.action.includes("COMPLETED") || log.action.includes("VERIFIED") || log.action.includes("REINDEXED");
             const isError = log.action.includes("FAILED") || log.action.includes("REJECTED");
             const isRunning = log.action.includes("STARTED") || log.action.includes("SCHEDULER_RUN");
             return (
@@ -289,6 +293,7 @@ function Feedback({ params, job }: { params: Record<string, string | undefined>;
   }
   if (params.verified) return <Banner tone={params.verified === "1" ? "success" : "danger"}>{params.verified === "1" ? "النسخة سليمة." : "فشل التحقق من النسخة."}</Banner>;
   if (params["settings-updated"]) return <Banner tone="success">تم تحديث إعدادات النسخ.</Banner>;
+  if (params.rebuilt) return <Banner tone="success">تمت إعادة بناء الفهرس من GitHub. تم استعادة {params.indexed ?? "0"} نسخة.</Banner>;
   return null;
 }
 
@@ -307,6 +312,19 @@ function GitHubStatusBanner() {
     </div>
   );
 }
+
+function RebuildBanner() {
+  const configured = isGitHubBackupConfigured();
+  if (!configured) return null;
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-sky-300/15 bg-sky-300/5 px-4 py-3">
+      <p className="text-xs font-bold text-sky-300/80">إذا كانت السجلات فارغة بعد حذف قاعدة البيانات أو النقل لحساب جديد، أعد بناء الفهرس من فروع GitHub.</p>
+      <PendingForm action={rebuildFromGitHubAction}>
+        <PendingButton pendingText="جاري إعادة البناء..." className="rounded-xl bg-sky-300 px-4 py-2 text-xs font-black text-[#101820] transition hover:brightness-110">إعادة البناء من GitHub</PendingButton>
+      </PendingForm>
+    </div>
+  );
+}
 function WorkspaceSection({ title, description, children }: { title: string; description: string; children: React.ReactNode }) { return <section className="rounded-2xl border border-white/[0.07] bg-white/[0.02] p-5"><div className="mb-4"><h2 className="text-base font-black text-[#fff7e8]">{title}</h2><p className="mt-1 text-xs font-bold text-white/40">{description}</p></div>{children}</section>; }
 function Banner({ tone, children }: { tone: "success" | "danger"; children: React.ReactNode }) { return <div className={tone === "success" ? "rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm font-bold text-emerald-300" : "rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm font-bold text-red-300"}>{children}</div>; }
 function Metric({ label, value, tone = "default" }: { label: string; value: string | number; tone?: "success" | "warning" | "default" }) { const cls = tone === "success" ? "border-emerald-500/10 bg-emerald-500/5 text-emerald-300" : tone === "warning" ? "border-amber-500/10 bg-amber-500/5 text-amber-300" : "border-white/[0.06] bg-white/[0.02] text-white"; return <div className={`rounded-xl border p-4 ${cls}`}><p className="text-xs font-bold opacity-60">{label}</p><p className="mt-1 text-xl font-black">{value}</p></div>; }
@@ -316,7 +334,7 @@ function EmptyState() { return <div className="rounded-2xl border border-dashed 
 function formatDate(value: string) { const date = new Date(value); return Number.isNaN(date.getTime()) ? "—" : date.toLocaleString("ar-EG"); }
 function formatDuration(start: string, end: string | null) { if (!end) return "—"; const ms = Math.max(0, new Date(end).getTime() - new Date(start).getTime()); if (ms < 1000) return `${ms} ms`; if (ms < 60000) return `${Math.round(ms / 1000)} ثانية`; return `${Math.round(ms / 60000)} دقيقة`; }
 function translateStatus(status: string) { if (status === "COMPLETED") return "مكتملة"; if (status === "FAILED") return "فشلت"; if (status === "RUNNING") return "قيد التشغيل"; if (status === "PENDING") return "معلقة"; return status; }
-function translateTrigger(trigger: string) { if (trigger === "MANUAL") return "يدوي"; if (trigger === "AUTO") return "تلقائي"; if (trigger === "MIGRATION") return "عودة/هجرة"; if (trigger === "CLI") return "CLI"; if (trigger === "GITHUB_ACTIONS") return "GitHub Actions"; return "غير محدد"; }
+function translateTrigger(trigger: string) { if (trigger === "MANUAL") return "يدوي"; if (trigger === "AUTO") return "تلقائي"; if (trigger === "MIGRATION") return "عودة/هجرة"; if (trigger === "CLI") return "CLI"; if (trigger === "GITHUB_ACTIONS") return "GitHub Actions"; if (trigger === "GITHUB_REINDEX") return "مستعاد من فهرس GitHub"; return "غير محدد"; }
 function statusTone(status: string): "success" | "danger" | "warning" | "default" { if (status === "COMPLETED") return "success"; if (status === "FAILED") return "danger"; if (status === "RUNNING" || status === "PENDING") return "warning"; return "default"; }
 function formatBytes(value: number): string { if (value < 1024) return `${value} B`; if (value < 1024 ** 2) return `${(value / 1024).toFixed(1)} KB`; if (value < 1024 ** 3) return `${(value / 1024 ** 2).toFixed(1)} MB`; return `${(value / 1024 ** 3).toFixed(2)} GB`; }
 function formatPipelineStages(job: BackupJobRow): string {
@@ -334,6 +352,7 @@ function translateAuditAction(action: string): string {
     "BACKUP_VERIFIED": "النسخة سليمة",
     "BACKUP_VERIFICATION_FAILED": "فشل التحقق من النسخة",
     "BACKUP_SCHEDULER_RUN": "تشغيل الجدولة التلقائية",
+    "BACKUP_REINDEXED_FROM_GITHUB": "إعادة فهرسة نسخة من GitHub",
     "RESTORE_STARTED": "بدء الاستعادة",
     "RESTORE_COMPLETED": "اكتملت الاستعادة",
     "RESTORE_FAILED": "فشلت الاستعادة",
