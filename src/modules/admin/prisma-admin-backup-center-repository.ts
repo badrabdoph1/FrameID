@@ -37,6 +37,7 @@ type RawRestoreJob = {
   id: string;
   backupJobId: string;
   status: string;
+  targetDatabase: string | null;
   errorMessage: string | null;
   createdAt: Date;
   completedAt: Date | null;
@@ -86,6 +87,7 @@ export function createPrismaAdminBackupCenterRepository(
             id: true,
             type: true,
             status: true,
+            targetDatabase: true,
             sizeBytes: true,
             checksumSha256: true,
             filePath: true,
@@ -142,7 +144,8 @@ export function createPrismaAdminBackupCenterRepository(
         restores: restores.map((restore) => ({
           id: restore.id,
           backupJobId: restore.backupJobId,
-          type: jobTypeById.get(restore.backupJobId) ?? "UNKNOWN",
+          type: jobTypeById.get(restore.backupJobId) ?? restore.targetDatabase?.split(":")[1] ?? "UNKNOWN",
+          source: restore.targetDatabase?.split(":")[0] ?? null,
           status: restore.status,
           errorMessage: restore.errorMessage,
           createdAt: restore.createdAt.toISOString(),

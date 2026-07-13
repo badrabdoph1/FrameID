@@ -133,6 +133,7 @@ export function createRestoreService(): RestoreService {
         ["usersCount", `SELECT COUNT(*) FROM "User" WHERE "deletedAt" IS NULL`],
         ["tenantsCount", `SELECT COUNT(*) FROM "Tenant" WHERE "deletedAt" IS NULL`],
         ["sitesCount", `SELECT COUNT(*) FROM "Site" WHERE "deletedAt" IS NULL`],
+        ["mediaFilesCount", `SELECT COUNT(*) FROM "MediaAsset" WHERE "deletedAt" IS NULL`],
       ];
       for (const [key, query] of queries) {
         try { const value = Number.parseInt(await runPsqlCommand(databaseUrl, query), 10); counts[key] = Number.isFinite(value) ? value : 0; checks[key] = Number.isFinite(value); }

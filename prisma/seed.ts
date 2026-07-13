@@ -159,13 +159,15 @@ async function main() {
   }
 
   const backupSettingsData = [
-    { type: "DATABASE", enabled: true, schedule: "0 */12 * * *", retentionCount: 20 },
-    { type: "FULL", enabled: true, schedule: "0 3 */2 * *", retentionCount: 10 },
+    { type: "DATABASE", enabled: true, schedule: "كل 12 ساعة", retentionCount: 20, nextRunAt: new Date(Date.now() + 12 * 60 * 60 * 1000) },
+    { type: "FULL", enabled: true, schedule: "كل 48 ساعة", retentionCount: 10, nextRunAt: new Date(Date.now() + 48 * 60 * 60 * 1000) },
   ];
+  const hasCustomerData = await prisma.tenant.count({ where: { deletedAt: null } }) > 0
+    || await prisma.site.count({ where: { deletedAt: null } }) > 0;
   for (const setting of backupSettingsData) {
     await prisma.backupSettings.upsert({
       where: { type: setting.type },
-      update: { enabled: setting.enabled, schedule: setting.schedule, retentionCount: setting.retentionCount },
+      update: { enabled: setting.enabled, schedule: setting.schedule, retentionCount: setting.retentionCount, ...(!hasCustomerData ? { nextRunAt: setting.nextRunAt } : {}) },
       create: setting,
     });
   }

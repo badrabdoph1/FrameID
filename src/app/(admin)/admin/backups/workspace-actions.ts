@@ -17,6 +17,7 @@ import { createGitHubStorage } from "@/modules/backups/backup-storage-github";
 import { getGitHubBackupBranch } from "@/modules/backups/backup-job-service";
 import { isSupportedBackupType } from "@/modules/backups/backup-policy";
 import { createOfficialRestorePipeline } from "@/modules/backups/frameid-restore-pipeline";
+import { selectDisasterRecoveryBackup } from "@/modules/backups/disaster-recovery-policy";
 
 async function getArtifact(backupJobId: string) {
   const job = await prisma.backupJob.findUnique({
@@ -82,7 +83,14 @@ export async function restoreLatestGitHubBackupAction() {
   try {
     const github = createGitHubStorage(env.BACKUP_GITHUB_TOKEN, process.env.BACKUP_GITHUB_REPOSITORY);
     if (!github) throw new Error("GitHub غير مضبوط");
-    const backupId = (await github.listBackups(getGitHubBackupBranch("FULL")))[0];
+    const candidates = (await github.listBackupManifests(getGitHubBackupBranch("FULL"))).map(({ backupId, manifest }) => ({
+      backupId,
+      usersCount: manifest.usersCount,
+      tenantsCount: manifest.tenantsCount,
+      sitesCount: manifest.sitesCount,
+      mediaFilesCount: manifest.mediaFilesCount,
+    }));
+    const backupId = selectDisasterRecoveryBackup(candidates)?.backupId;
     if (!backupId) throw new Error("لا توجد نسخة FULL على GitHub");
     const pipeline = createOfficialRestorePipeline({ prisma: prisma as never, databaseUrl: env.DATABASE_URL, githubToken: env.BACKUP_GITHUB_TOKEN, githubRepository: process.env.BACKUP_GITHUB_REPOSITORY });
     await pipeline.restore({ backupId, type: "FULL", trigger: "MANUAL", actorId: session.user.id });

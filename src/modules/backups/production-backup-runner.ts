@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { createBackupJobService } from "@/modules/backups/backup-job-service";
 import { createPrismaBackupJobRepository } from "@/modules/backups/prisma-backup-job-repository";
 import { isSupportedBackupType } from "@/modules/backups/backup-policy";
+import { claimAutomaticBackupSlot, markAutomaticBackupCompleted, releaseAutomaticBackupSlot } from "@/modules/backups/automatic-backup-schedule";
 
 const DEFAULT_INTERVAL_MS = 60_000;
 
@@ -10,67 +11,6 @@ function log(level: "info" | "warn" | "error", msg: string, meta?: Record<string
   if (level === "error") console.error(`[backup-runner] ${msg}`, entry);
   else if (level === "warn") console.warn(`[backup-runner] ${msg}`, entry);
   else console.log(`[backup-runner] ${msg}`, entry);
-}
-
-function nextScheduledRun(schedule: string, now: Date): Date {
-  const parts = schedule.trim().split(/\s+/);
-  const minuteRaw = parts[0] ?? "0";
-  const hourRaw = parts[1] ?? "2";
-  const domRaw = parts[2] ?? "*";
-
-  const minute = minuteRaw === "*" ? now.getUTCMinutes() : Number.parseInt(minuteRaw, 10) || 0;
-
-  let hour: number;
-  if (hourRaw === "*") {
-    hour = now.getUTCHours();
-  } else if (hourRaw.startsWith("*/")) {
-    const step = Number.parseInt(hourRaw.slice(2), 10) || 1;
-    const currentHour = now.getUTCHours();
-    hour = Math.ceil((currentHour + 1) / step) * step;
-    if (hour >= 24) hour = 0;
-  } else {
-    hour = Number.parseInt(hourRaw, 10) || 2;
-  }
-
-  let dom: number | "*" = "*";
-  if (domRaw !== "*") {
-    if (domRaw.startsWith("*/")) {
-      const domStep = Number.parseInt(domRaw.slice(2), 10) || 1;
-      const currentDom = now.getUTCDate();
-      const nextDom = Math.ceil((currentDom + 1) / domStep) * domStep;
-      if (nextDom > daysInMonth(now.getUTCMonth(), now.getUTCFullYear())) {
-        dom = domStep;
-        const nextMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1));
-        return new Date(Date.UTC(nextMonth.getUTCFullYear(), nextMonth.getUTCMonth(), domStep, hour, minute));
-      }
-      dom = nextDom;
-    } else {
-      dom = Number.parseInt(domRaw, 10) || 1;
-    }
-  }
-
-  const next = new Date(now);
-  next.setUTCSeconds(0, 0);
-  next.setUTCMinutes(minute);
-  next.setUTCHours(hour);
-  if (dom !== "*") {
-    next.setUTCDate(dom);
-  }
-
-  if (next <= now) {
-    if (dom === "*") {
-      next.setUTCDate(next.getUTCDate() + 1);
-    } else {
-      const nextMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1));
-      return new Date(Date.UTC(nextMonth.getUTCFullYear(), nextMonth.getUTCMonth(), dom, hour, minute));
-    }
-  }
-
-  return next;
-}
-
-function daysInMonth(month: number, year: number): number {
-  return new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
 }
 
 export async function runDueBackups(now = new Date()): Promise<void> {
@@ -96,19 +36,14 @@ export async function runDueBackups(now = new Date()): Promise<void> {
       continue;
     }
 
-    const nextRun = nextScheduledRun(setting.schedule, now);
-
-    const claimed = await prisma.backupSettings.updateMany({
-      where: { type: backupType, enabled: true, OR: [{ nextRunAt: null }, { nextRunAt: { lte: now } }] },
-      data: { nextRunAt: nextRun },
-    });
-    if (claimed.count !== 1) {
+    const slot = await claimAutomaticBackupSlot(prisma, backupType, now);
+    if (!slot.claimed) {
       log("info", `Skipping ${backupType} — slot already claimed by another process`);
       continue;
     }
 
     const startedAt = Date.now();
-    log("info", `Starting scheduled ${backupType} backup`, { nextRunAt: nextRun.toISOString() });
+    log("info", `Starting scheduled ${backupType} backup`, { nextRunAt: slot.nextRunAt.toISOString() });
 
     const service = createBackupJobService({
       repository: createPrismaBackupJobRepository(prisma as never),
@@ -125,7 +60,7 @@ export async function runDueBackups(now = new Date()): Promise<void> {
       const durationMs = Date.now() - startedAt;
 
       if (result) {
-        await prisma.backupSettings.update({ where: { type: backupType }, data: { lastRunAt: now } });
+        await markAutomaticBackupCompleted(prisma, backupType, new Date());
         log("info", `✓ Scheduled ${backupType} backup completed`, {
           backupId: result.backupId,
           backupJobId: result.backupJobId,
@@ -133,6 +68,7 @@ export async function runDueBackups(now = new Date()): Promise<void> {
         });
       }
     } catch (error) {
+      await releaseAutomaticBackupSlot(prisma, backupType, new Date()).catch(() => undefined);
       const durationMs = Date.now() - startedAt;
       const msg = error instanceof Error ? error.message : "Unknown error";
       log("error", `✗ Scheduled ${backupType} backup crashed`, { error: msg, durationMs });

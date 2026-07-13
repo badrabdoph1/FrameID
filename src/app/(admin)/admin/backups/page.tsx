@@ -139,7 +139,7 @@ export default async function AdminBackupsPage({ searchParams }: Props) {
       </WorkspaceSection>
 
       <WorkspaceSection title="استعادة البيانات" description="استعادة نسخة احتياطية سابقة. يمكن تنزيل النسخة من GitHub إذا لم تكن موجودة محلياً.">
-        <PendingForm action={restoreLatestGitHubBackupAction} className="mb-3 rounded-2xl border border-amber-300/20 bg-amber-300/5 p-5"><div className="flex flex-wrap items-center justify-between gap-4"><div><p className="text-sm font-black text-[#f3cf73]">عودة طوارئ من GitHub</p><p className="mt-1 text-xs font-bold text-white/45">استعادة آخر FULL حتى بعد حذف ملفات Railway.</p></div><PendingButton pendingText="جاري العودة..." className="rounded-xl bg-[#f3cf73] px-6 py-3 text-sm font-black text-[#17120a]">عودة</PendingButton></div></PendingForm>
+        <PendingForm action={restoreLatestGitHubBackupAction} className="mb-3 rounded-2xl border border-amber-300/20 bg-amber-300/5 p-5"><div className="flex flex-wrap items-center justify-between gap-4"><div><p className="text-sm font-black text-[#f3cf73]">عودة طوارئ من GitHub</p><p className="mt-1 text-xs font-bold text-white/45">استعادة أحدث FULL تحتوي بيانات العملاء، مع مطابقة الأعداد بعد العودة.</p></div><PendingButton pendingText="جاري العودة..." className="rounded-xl bg-[#f3cf73] px-6 py-3 text-sm font-black text-[#17120a]">عودة</PendingButton></div></PendingForm>
         {latestCompleted ? (
           <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-5">
             <div className="flex flex-wrap items-center justify-between gap-4">

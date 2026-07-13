@@ -12,9 +12,9 @@ export const BACKUP_TYPE_DESCRIPTIONS: Record<SupportedBackupType, string> = {
   FULL: "قاعدة PostgreSQL بالكامل بالإضافة إلى جميع الملفات والصور والمستندات داخل uploads.",
 };
 
-export const BACKUP_POLICY: Record<SupportedBackupType, { schedule: string; retentionCount: number }> = {
-  DATABASE: { schedule: "0 */12 * * *", retentionCount: 20 },
-  FULL: { schedule: "0 3 */2 * *", retentionCount: 10 },
+export const BACKUP_POLICY: Record<SupportedBackupType, { schedule: string; intervalHours: number; retentionCount: number }> = {
+  DATABASE: { schedule: "كل 12 ساعة", intervalHours: 12, retentionCount: 20 },
+  FULL: { schedule: "كل 48 ساعة", intervalHours: 48, retentionCount: 10 },
 };
 
 export function isSupportedBackupType(value: unknown): value is SupportedBackupType {
@@ -27,4 +27,8 @@ export function getBackupTypeLabel(type: string): string {
 
 export function getBackupPolicy(type: SupportedBackupType) {
   return BACKUP_POLICY[type];
+}
+
+export function getNextAutomaticRun(type: SupportedBackupType, from: Date): Date {
+  return new Date(from.getTime() + getBackupPolicy(type).intervalHours * 60 * 60 * 1000);
 }
