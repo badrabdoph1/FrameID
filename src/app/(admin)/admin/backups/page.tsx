@@ -98,6 +98,7 @@ export default async function AdminBackupsPage({ searchParams }: Props) {
   const failed = jobs.filter((job) => job.status === "FAILED").length;
   const storageUsed = jobs.reduce((sum, job) => sum + (job.sizeBytes ?? 0), 0);
   const latestCompleted = jobs.find((j) => j.status === "COMPLETED");
+  const justCompleted = params.job ? jobs.find((job) => job.id === params.job) : undefined;
 
   const auditLogs = await prisma.auditLog.findMany({
     where: {
@@ -114,7 +115,7 @@ export default async function AdminBackupsPage({ searchParams }: Props) {
 
   return (
     <AdminPageShell badge="النظام" title="مركز النسخ الاحتياطي" description="إنشاء النسخ الاحتياطية واستعادتها وحمايتك عند النقل بين الاستضافات.">
-      <Feedback params={params} />
+      <Feedback params={params} job={justCompleted} />
       <GitHubStatusBanner />
 
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -271,8 +272,9 @@ export default async function AdminBackupsPage({ searchParams }: Props) {
   );
 }
 
-function Feedback({ params }: { params: Record<string, string | undefined> }) {
+function Feedback({ params, job }: { params: Record<string, string | undefined>; job?: BackupJobRow }) {
   if (params.error) return <Banner tone="danger">{params.details ?? params.error}</Banner>;
+  if (job?.status === "COMPLETED") return <div className="rounded-xl border border-emerald-500/25 bg-emerald-500/10 px-4 py-4 text-sm font-bold text-emerald-200"><p>اكتملت النسخة على Railway ووصلت إلى GitHub بعد Remote Verify.</p><div className="mt-2 flex flex-wrap gap-2 text-xs"><span className="rounded-lg border border-emerald-400/20 px-2 py-1">الفرع: {job.githubBranch}</span><span className="rounded-lg border border-emerald-400/20 px-2 py-1">Commit: {job.githubCommitSha?.slice(0, 12)}</span><span className="rounded-lg border border-emerald-400/20 px-2 py-1">المراحل: {formatPipelineStages(job)}</span>{job.githubPath ? <a href={job.githubPath} target="_blank" rel="noreferrer" className="rounded-lg border border-emerald-300/30 px-2 py-1 text-emerald-100 underline">فتح النسخة على GitHub</a> : null}</div><p className="mt-2 text-xs text-emerald-100/65">النسخ عملية تشغيل داخل Railway، لذلك لا تنشئ Deployment أو Commit على main؛ Commit النسخة موجود في الفرع الموضح أعلاه.</p></div>;
   if (params.started) return <Banner tone="success">تم إنشاء النسخة بنجاح.</Banner>;
   if (params.restored) return <Banner tone="success">تمت الاستعادة بنجاح. قد تحتاج لتحديث الصفحة لرؤية التغييرات.</Banner>;
   if (params.deleted) return <Banner tone="success">تم حذف النسخة.</Banner>;
