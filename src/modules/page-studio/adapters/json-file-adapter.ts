@@ -17,12 +17,10 @@ export class JsonFileAdapter implements SourceAdapter {
 
   async save(pageId: string, data: Record<string, unknown>, options: SaveOptions): Promise<AdapterSaveResult> {
     const result = await saveContent(this.schemaKey, data, { actor: options.actor });
-    return {
-      success: result.success,
-      version: result.version,
-      commitId: result.commitId,
-      errors: result.errors,
-    };
+    if (result.success) {
+      return { success: true as const, version: result.version, commitId: result.commitId };
+    }
+    return { success: false as const, version: 0, errors: result.errors };
   }
 
   getSchema(pageId: string) {

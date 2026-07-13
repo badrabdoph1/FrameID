@@ -3,18 +3,9 @@ import { prisma } from "@/lib/prisma";
 import { isGitHubBackupConfigured } from "@/lib/env";
 import { requireSuperAdminSession } from "@/modules/admin/admin-page-guards";
 import {
-  runBackupAction,
-  prepareMigrationBackupAction,
-  updateBackupSettingsAction,
-  verifyAllBackupsAction,
   rebuildFromGitHubAction,
 } from "@/app/(admin)/admin/backups/actions";
-import {
-  deleteWorkspaceBackupAction,
-  restoreWorkspaceBackupAction,
-  restoreLatestGitHubBackupAction,
-  verifyWorkspaceBackupAction,
-} from "@/app/(admin)/admin/backups/workspace-actions";
+import { PendingForm, PendingButton } from "@/components/admin/pending-button";
 import {
   handleCreateBackup,
   handlePrepareMigrationBackup,
@@ -24,10 +15,9 @@ import {
   handleDeleteWorkspaceBackup,
   handleUpdateBackupSettings,
   handleVerifyAllBackups,
-  handleRebuildFromGitHub,
 } from "@/app/(admin)/admin/backups/server-actions";
 import { createPrismaAdminBackupCenterRepository } from "@/modules/admin/prisma-admin-backup-center-repository";
-import { SUPPORTED_BACKUP_TYPES, type SupportedBackupType } from "@/modules/backups/backup-policy";
+import { SUPPORTED_BACKUP_TYPES, getBackupPolicy, type SupportedBackupType } from "@/modules/backups/backup-policy";
 import { reconcileProductionGitHubBackupCatalog } from "@/modules/backups/production-github-backup-catalog";
 import { BackupMetricsSection } from "./components/BackupMetricsSection";
 import { BackupCreationSection } from "./components/BackupCreationSection";
@@ -39,7 +29,7 @@ import { BackupLogsSection } from "./components/BackupLogsSection";
 export const dynamic = "force-dynamic";
 
 type Props = { searchParams: Promise<Record<string, string | undefined>> };
-type BackupJobRow = {
+export type BackupJobRow = {
   id: string;
   type: string;
   status: string;
@@ -210,16 +200,6 @@ function RebuildBanner() {
     </div>
   );
 }
-function WorkspaceSection({ title, description, children }: { title: string; description: string; children: React.ReactNode }) { return <section className="rounded-2xl border border-white/[0.07] bg-white/[0.02] p-5"><div className="mb-4"><h2 className="text-base font-black text-[#fff7e8]">{title}</h2><p className="mt-1 text-xs font-bold text-white/40">{description}</p></div>{children}</section>; }
 function Banner({ tone, children }: { tone: "success" | "danger"; children: React.ReactNode }) { return <div className={tone === "success" ? "rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm font-bold text-emerald-300" : "rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm font-bold text-red-300"}>{children}</div>; }
-function Metric({ label, value, tone = "default" }: { label: string; value: string | number; tone?: "success" | "warning" | "default" }) { const cls = tone === "success" ? "border-emerald-500/10 bg-emerald-500/5 text-emerald-300" : tone === "warning" ? "border-amber-500/10 bg-amber-500/5 text-amber-300" : "border-white/[0.06] bg-white/[0.02] text-white"; return <div className={`rounded-xl border p-4 ${cls}`}><p className="text-xs font-bold opacity-60">{label}</p><p className="mt-1 text-xl font-black">{value}</p></div>; }
-function Field({ label, children }: { label: string; children: React.ReactNode }) { return <label className="grid gap-1 text-xs font-bold text-white/45"><span>{label}</span>{children}</label>; }
-function Info({ label, value }: { label: string; value: string }) { return <div><p className="text-white/30">{label}</p><p className="mt-1 break-all font-bold text-white/65">{value}</p></div>; }
-function EmptyState() { return <div className="rounded-2xl border border-dashed border-white/12 p-8 text-center"><p className="text-sm font-black text-white/60">لا توجد نسخ احتياطية بعد</p><p className="mt-1 text-xs font-bold text-white/35">أنشئ أول نسخة من القسم الموجود بالأعلى.</p></div>; }
 function formatDate(value: string) { const date = new Date(value); return Number.isNaN(date.getTime()) ? "—" : date.toLocaleString("ar-EG", { timeZone: "Africa/Cairo" }); }
-function formatDuration(start: string, end: string | null) { if (!end) return "—"; const ms = Math.max(0, new Date(end).getTime() - new Date(start).getTime()); if (ms < 1000) return `${ms} ms`; if (ms < 60000) return `${Math.round(ms / 1000)} ثانية`; return `${Math.round(ms / 60000)} دقيقة`; }
-function translateStatus(status: string) { if (status === "COMPLETED") return "مكتملة"; if (status === "FAILED") return "فشلت"; if (status === "RUNNING") return "قيد التشغيل"; if (status === "PENDING") return "معلقة"; return status; }
-function translateTrigger(trigger: string) { if (trigger === "MANUAL") return "يدوي"; if (trigger === "AUTO") return "تلقائي"; if (trigger === "MIGRATION") return "عودة/هجرة"; if (trigger === "CLI") return "CLI"; if (trigger === "GITHUB_ACTIONS") return "GitHub Actions"; if (trigger === "GITHUB_REINDEX") return "مستعاد من فهرس GitHub"; return "غير محدد"; }
-function statusTone(status: string): "success" | "danger" | "warning" | "default" { if (status === "COMPLETED") return "success"; if (status === "FAILED") return "danger"; if (status === "RUNNING" || status === "PENDING") return "warning"; return "default"; }
-function formatBytes(value: number): string { if (value < 1024) return `${value} B`; if (value < 1024 ** 2) return `${(value / 1024).toFixed(1)} KB`; if (value < 1024 ** 3) return `${(value / 1024 ** 2).toFixed(1)} MB`; return `${(value / 1024 ** 3).toFixed(2)} GB`; }
 function formatPipelineStages(job: BackupJobRow): string { const flags = [job.localVerified, job.githubUploaded, job.remoteVerified, job.retentionApplied, job.auditLogged]; return flags.every(Boolean) ? "5/5 مكتملة" : `${flags.filter(Boolean).length}/5`; }

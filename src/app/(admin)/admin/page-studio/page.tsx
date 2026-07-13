@@ -29,7 +29,7 @@ export default async function PageStudioDashboard() {
       <div className="space-y-6">
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {pageCards.map(({ key, icon: Icon, stats }) => {
-            const def = pageDefinitions.find((d) => d.id === key);
+            const def = PAGE_DEFINITIONS.find((d) => d.id === key);
             if (!def) return null;
 
             return (
@@ -69,7 +69,7 @@ export default async function PageStudioDashboard() {
                   href={`/admin/page-studio/${def.id}`}
                   className="group flex items-center gap-3 rounded-xl border border-white/8 bg-white/[0.025] p-3 text-white no-underline transition hover:border-amber-300/25 hover:bg-amber-300/8"
                 >
-                  <def.icon className="size-5 shrink-0 text-amber-300" aria-hidden />
+                  <Search className="size-5 shrink-0 text-amber-300" aria-hidden />
                   <span className="text-sm font-black text-amber-50">{def.label}</span>
                 </Link>
               ))}

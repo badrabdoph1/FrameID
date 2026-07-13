@@ -18,7 +18,7 @@ import {
 
 interface EditorToolbarProps {
   pageDef: import("@/modules/page-studio/types").PageDefinition;
-  state: import("@/modules/page-studio/service").PageStudioState | null;
+  state: import("@/modules/page-studio/types").PageStudioState | null;
   previewMode: boolean;
   onPreviewToggle: () => void;
   onSave: () => void;

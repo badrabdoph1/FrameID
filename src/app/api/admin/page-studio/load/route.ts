@@ -1,5 +1,6 @@
+import { NextRequest } from "next/server";
 import { requireAdminPermission } from "@/modules/admin/admin-permission-guards";
-import { getContent, getManifest, ContentSchemas } from "@/lib/content";
+import { getContent, getManifest } from "@/lib/content";
 import type { ContentSchemaKey } from "@/lib/content";
 
 const schemaKeyMap: Record<string, string> = {
@@ -12,8 +13,8 @@ const schemaKeyMap: Record<string, string> = {
 };
 
 export async function GET(
-  request: Request,
-  { params }: { params: Promise<{ pageId: string }> }
+  request: NextRequest,
+  { params }: { params: Promise<Record<string, string>> }
 ) {
   try {
     await requireAdminPermission("page-studio", "view");

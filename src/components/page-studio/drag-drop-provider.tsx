@@ -5,7 +5,6 @@ import { cn } from "@/lib/utils/cn";
 
 interface SortableItem {
   id: string;
-  [key: string]: unknown;
 }
 
 interface SimpleDragDropProviderProps<T extends SortableItem> {

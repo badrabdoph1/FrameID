@@ -72,7 +72,7 @@ export function PagePreview({
     setIframeLoaded(true);
     // Inject editor script
     const iframe = iframeRef.current;
-    if (iframe?.contentDocument) {
+    if (iframe?.contentDocument && iframe.contentWindow) {
       injectEditorScript(iframe.contentWindow);
     }
   };
@@ -136,7 +136,7 @@ function injectEditorScript(window: Window) {
       if (el.hasAttribute("data-ps-bound")) return;
       el.setAttribute("data-ps-bound", "true");
       
-      el.style.cursor = "text";
+      (el as HTMLElement).style.cursor = "text";
       el.addEventListener("dblclick", (e) => {
         e.stopPropagation();
         e.preventDefault();
@@ -153,7 +153,7 @@ function injectEditorScript(window: Window) {
       if (el.hasAttribute("data-ps-bound")) return;
       el.setAttribute("data-ps-bound", "true");
       
-      el.style.cursor = "pointer";
+      (el as HTMLElement).style.cursor = "pointer";
       el.addEventListener("click", (e) => {
         e.stopPropagation();
         const path = el.getAttribute("data-page-image");

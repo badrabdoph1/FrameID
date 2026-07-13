@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { PAGE_DEFINITIONS } from "@/modules/page-studio/registry";
 import type { PageDefinition, PageStudioState, SectionInstance } from "@/modules/page-studio/types";
 
 export function usePageStudio(pageId: string) {
@@ -26,7 +27,7 @@ export function usePageStudio(pageId: string) {
 
     const init = async () => {
       try {
-        const pageDef = await getPageDefinition(pageId);
+        const pageDef = PAGE_DEFINITIONS.find((p) => p.id === pageId);
         if (!pageDef) throw new Error(`Page not found: ${pageId}`);
 
         const res = await fetch(`/api/admin/page-studio/load?pageId=${pageId}`);
@@ -42,7 +43,7 @@ export function usePageStudio(pageId: string) {
             definition: config,
             isVisible: true,
             sortOrder: index,
-            data: Array.isArray(sectionData) ? { items: sectionData } : sectionData,
+            data: (Array.isArray(sectionData) ? { items: sectionData } : sectionData) as Record<string, unknown>,
           };
         });
 
@@ -83,7 +84,7 @@ export function usePageStudio(pageId: string) {
 
   // Local state operations
   const getNestedValue = useCallback((obj: Record<string, unknown>, path: string): unknown => {
-    return path.split(".").reduce((acc, key) => (acc as Record<string, unknown>)?.[key], obj);
+    return path.split(".").reduce<unknown>((acc, key) => (acc as Record<string, unknown>)?.[key], obj);
   }, []);
 
   const setNestedValue = useCallback((obj: Record<string, unknown>, path: string, value: unknown): void => {
@@ -343,7 +344,7 @@ export function usePageStudio(pageId: string) {
       if (!res.ok) throw new Error("Failed to load");
       const loadResult = await res.json();
 
-      const pageDef = await getPageDefinition(pageId);
+      const pageDef = PAGE_DEFINITIONS.find((p) => p.id === pageId);
       if (!pageDef) throw new Error(`Page not found: ${pageId}`);
 
       const sections = pageDef.sections.map((config, index) => {
@@ -354,7 +355,7 @@ export function usePageStudio(pageId: string) {
           definition: config,
           isVisible: true,
           sortOrder: index,
-          data: Array.isArray(sectionData) ? { items: sectionData } : sectionData,
+          data: Array.isArray(sectionData) ? { items: sectionData } : sectionData as Record<string, unknown>,
         };
       });
 
@@ -423,9 +424,11 @@ export function usePageStudio(pageId: string) {
     }
   }, [toast]);
 
-  const pageDefinition = useMemo(() => getPageDefinition(pageId)!, [pageId]);
-  const visibleSections = state?.sections.filter((s) => s.isVisible && !s.isHidden) ?? [];
-  const hiddenSections = state?.sections.filter((s) => s.isHidden) ?? [];
+  const pageDefinition = useMemo(() => {
+    return PAGE_DEFINITIONS.find((p) => p.id === pageId) ?? undefined;
+  }, [pageId]);
+  const visibleSections = state?.sections.filter((s) => s.isVisible) ?? [];
+  const hiddenSections = state?.hiddenSections ?? [];
 
   return {
     state,
@@ -464,9 +467,4 @@ export function usePageStudio(pageId: string) {
     toast,
     setToast,
   };
-}
-
-async function getPageDefinition(pageId: string) {
-  const { PAGE_DEFINITIONS } = await import("@/modules/page-studio/registry");
-  return PAGE_DEFINITIONS.find((p) => p.id === pageId) ?? null;
 }

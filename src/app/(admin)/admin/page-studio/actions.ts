@@ -2,7 +2,7 @@
 
 import { requireAdminPermission } from "@/modules/admin/admin-permission-guards";
 import { getContent, saveContent, ContentSchemas } from "@/lib/content";
-import { getManifest } from "@/lib/content/manifest";
+import { getManifest } from "@/lib/content";
 import type { ContentSchemaKey } from "@/lib/content";
 
 interface PageStudioLoadResult {
@@ -71,18 +71,15 @@ export async function savePageStudioData(
   const { getCurrentAdmin } = await import("@/modules/admin/get-current-admin");
   const admin = await getCurrentAdmin();
 
-  const result = await saveContent(schemaKey, schema, data, {
+  const result = await saveContent(schemaKey, data, {
     actor: admin
       ? { id: admin.id, name: admin.name, email: admin.email }
       : undefined,
   });
 
-  return {
-    success: result.success,
-    version: result.version,
-    commitId: result.commitId,
-    errors: result.errors,
-  };
+  return result.success
+    ? { success: true, version: result.version, commitId: result.commitId }
+    : { success: false, errors: result.errors };
 }
 
 export async function getPageStudioManifest(pageId: string) {

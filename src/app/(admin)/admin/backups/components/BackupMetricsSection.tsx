@@ -18,10 +18,11 @@ export function BackupMetricsSection({
   latestRestoreDate,
 }: BackupMetricsSectionProps) {
   return (
-    <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+    <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
       <Metric label="آخر نسخة" value={latestBackupDate ?? "لم يتم"} />
       <Metric label="آخر استعادة" value={latestRestoreDate ?? "لم يتم"} />
       <Metric label="نسخ سليمة" value={completed} tone="success" />
+      <Metric label="نسخ فاشلة" value={failed} tone={failed > 0 ? "danger" : "default"} />
       <Metric label="المساحة المسجلة" value={formatBytes(storageUsed)} tone={failed ? "warning" : "default"} />
     </section>
   );
