@@ -2,7 +2,7 @@ name: FrameID Backup Trigger
 on:
   schedule:
     - cron: "0 */12 * * *"
-    - cron: "0 3 */2 * *"
+    - cron: "0 3 * * *"
   workflow_dispatch:
     inputs:
       type:
@@ -25,7 +25,8 @@ jobs:
       - name: تشغيل FrameID Backup Pipeline
         env:
           FRAMEID_BACKUP_URL: https://frameid.up.railway.app
-          REQUESTED_TYPE: ${{ github.event.inputs.type || (github.event.schedule == '0 3 */2 * *' && 'FULL') || 'DATABASE' }}
+          REQUESTED_TYPE: ${{ github.event.inputs.type || (github.event.schedule == '0 3 * * *' && 'FULL') || 'DATABASE' }}
+          BACKUP_MODE: ${{ github.event_name == 'schedule' && 'SCHEDULED' || 'FORCED' }}
         run: |
           OIDC_TOKEN="$(curl --fail-with-body --silent --show-error \
             --header "Authorization: Bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}" \
@@ -34,5 +35,6 @@ jobs:
             --header "Authorization: Bearer ${OIDC_TOKEN}" \
             --header "Content-Type: application/json" \
             --header "X-FrameID-Backup-Trigger: GITHUB_ACTIONS" \
+            --header "X-FrameID-Backup-Mode: ${BACKUP_MODE}" \
             --data "{\"type\":\"${REQUESTED_TYPE}\"}" \
             "${FRAMEID_BACKUP_URL%/}/api/backups/run"

@@ -159,8 +159,8 @@ async function main() {
   }
 
   const backupSettingsData = [
-    { type: "DATABASE", enabled: true, schedule: "0 */12 * * *", retentionCount: 20 },
-    { type: "FULL", enabled: true, schedule: "0 3 */2 * *", retentionCount: 10 },
+    { type: "DATABASE", enabled: true, schedule: "كل 12 ساعة", retentionCount: 20 },
+    { type: "FULL", enabled: true, schedule: "كل 48 ساعة", retentionCount: 10 },
   ];
   for (const setting of backupSettingsData) {
     await prisma.backupSettings.upsert({

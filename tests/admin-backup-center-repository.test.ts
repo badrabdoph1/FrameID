@@ -49,10 +49,18 @@ describe("admin backup center repository", () => {
       },
       restoreJob: {
         async findMany() {
-          return [];
+          return [{
+            id: "restore_1",
+            backupJobId: "2026-07-13_00-35",
+            status: "COMPLETED",
+            targetDatabase: "GITHUB:FULL",
+            errorMessage: null,
+            createdAt: new Date("2026-07-13T00:47:00.000Z"),
+            completedAt: new Date("2026-07-13T00:47:03.000Z"),
+          }];
         },
         async count() {
-          return 0;
+          return 1;
         },
       },
     };
@@ -74,7 +82,8 @@ describe("admin backup center repository", () => {
       retentionApplied: true,
       auditLogged: true,
     });
-    expect(result.restores).toHaveLength(0);
-    expect(result.restoreCount).toBe(0);
+    expect(result.restores).toHaveLength(1);
+    expect(result.restores[0]).toMatchObject({ type: "FULL", source: "GITHUB" });
+    expect(result.restoreCount).toBe(1);
   });
 });

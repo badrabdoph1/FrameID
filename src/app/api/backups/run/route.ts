@@ -5,6 +5,7 @@ import { createBackupJobService } from "@/modules/backups/backup-job-service";
 import { env } from "@/lib/env";
 import { isSupportedBackupType } from "@/modules/backups/backup-policy";
 import { verifyGitHubActionsOidcToken } from "@/modules/backups/github-actions-oidc";
+import { claimAutomaticBackupSlot, markAutomaticBackupCompleted, releaseAutomaticBackupSlot } from "@/modules/backups/automatic-backup-schedule";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
@@ -18,6 +19,7 @@ function log(level: "info" | "warn" | "error", msg: string, meta?: Record<string
 
 export async function POST(request: NextRequest) {
   const startedAt = Date.now();
+  let claimedAutomaticType: "DATABASE" | "FULL" | null = null;
   log("info", "=== Manual backup requested ===");
 
   try {
@@ -42,6 +44,15 @@ export async function POST(request: NextRequest) {
     if (!isSupportedBackupType(requestedType)) {
       log("warn", `Invalid backup type requested: ${requestedType}`);
       return NextResponse.json({ error: "Invalid backup type. Must be DATABASE or FULL" }, { status: 400 });
+    }
+
+    const scheduled = isGitHubActions && request.headers.get("x-frameid-backup-mode") === "SCHEDULED";
+    if (scheduled) {
+      const slot = await claimAutomaticBackupSlot(prisma, requestedType, new Date(startedAt));
+      if (!slot.claimed) {
+        return NextResponse.json({ success: true, skipped: true, reason: "NOT_DUE", nextRunAt: slot.nextRunAt.toISOString() });
+      }
+      claimedAutomaticType = requestedType;
     }
 
     const databaseUrl = env.DATABASE_URL;
@@ -71,11 +82,14 @@ export async function POST(request: NextRequest) {
       note: `Manual API backup ${new Date().toISOString()}`,
     });
 
+    if (claimedAutomaticType) await markAutomaticBackupCompleted(prisma, claimedAutomaticType, new Date());
+
     const durationMs = Date.now() - startedAt;
     log("info", `✓ Manual backup completed`, { ...result, durationMs });
 
     return NextResponse.json({ success: true, ...result, durationMs });
   } catch (error) {
+    if (claimedAutomaticType) await releaseAutomaticBackupSlot(prisma, claimedAutomaticType, new Date()).catch(() => undefined);
     const durationMs = Date.now() - startedAt;
     const message = error instanceof Error ? error.message : "Backup failed";
     log("error", `✗ Manual backup failed`, { error: message, durationMs, stack: error instanceof Error ? error.stack : undefined });

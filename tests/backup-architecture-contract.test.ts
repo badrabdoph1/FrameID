@@ -1,15 +1,25 @@
 import { readFile } from "node:fs/promises";
 import { describe, expect, it } from "vitest";
-import { BACKUP_POLICY, SUPPORTED_BACKUP_TYPES } from "@/modules/backups/backup-policy";
+import { BACKUP_POLICY, SUPPORTED_BACKUP_TYPES, getNextAutomaticRun } from "@/modules/backups/backup-policy";
 describe("عقد Backup Architecture", () => {
-  it("يثبت السياسة", () => { expect(SUPPORTED_BACKUP_TYPES).toEqual(["DATABASE", "FULL"]); expect(BACKUP_POLICY).toEqual({ DATABASE: { schedule: "0 */12 * * *", retentionCount: 20 }, FULL: { schedule: "0 3 */2 * *", retentionCount: 10 } }); });
+  it("يثبت السياسة", () => { expect(SUPPORTED_BACKUP_TYPES).toEqual(["DATABASE", "FULL"]); expect(BACKUP_POLICY).toEqual({ DATABASE: { schedule: "كل 12 ساعة", intervalHours: 12, retentionCount: 20 }, FULL: { schedule: "كل 48 ساعة", intervalHours: 48, retentionCount: 10 } }); });
+  it("يحسب 12 و48 ساعة كفترة ثابتة حتى عند نهاية الشهر", () => {
+    const start = new Date("2026-07-31T03:00:00.000Z");
+    expect(getNextAutomaticRun("DATABASE", start).toISOString()).toBe("2026-07-31T15:00:00.000Z");
+    expect(getNextAutomaticRun("FULL", start).toISOString()).toBe("2026-08-02T03:00:00.000Z");
+  });
   it("يثبت نفس السياسة داخل seed الإنتاج", async () => {
     const text = await readFile("prisma/seed.ts", "utf8");
-    expect(text).toContain('schedule: "0 */12 * * *", retentionCount: 20');
-    expect(text).toContain('schedule: "0 3 */2 * *", retentionCount: 10');
+    expect(text).toContain('schedule: "كل 12 ساعة", retentionCount: 20');
+    expect(text).toContain('schedule: "كل 48 ساعة", retentionCount: 10');
     expect(text).not.toContain('schedule: "0 3 */3 * *"');
   });
   it("يجعل Actions مشغلاً فقط", async () => { const text = await readFile(".github/workflows/backup.yml", "utf8"); expect(text).not.toMatch(/pg_dump|pg_restore|git\s+push|checksum|retention|npm run backup/i); expect(text).toContain("/api/backups/run"); });
+  it("يجعل تشغيل FULL اليومي مجرد نبض ويترك قرار 48 ساعة للمنسق المشترك", async () => {
+    const text = await readFile(".github/workflows/backup.yml", "utf8");
+    expect(text).toContain('cron: "0 3 * * *"');
+    expect(text).toContain('X-FrameID-Backup-Mode: ${BACKUP_MODE}');
+  });
   it("يوثق هوية GitHub Actions عبر OIDC دون أسرار يدوية", async () => {
     const text = await readFile(".github/workflows/backup.yml", "utf8");
     expect(text).toContain("id-token: write");
