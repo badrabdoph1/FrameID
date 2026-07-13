@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "schemaVersion": 1,
+  "backupJobId": "cmrii6jkx0003nu5ncvt5y5ta",
+  "backupType": "FULL",
+  "appVersion": "0.1.0",
+  "gitCommitSha": "a416745bc7c4dbe400bf02647d4c7c541273acce",
+  "databaseVersion": "unknown",
+  "usersCount": 3,
+  "tenantsCount": 2,
+  "sitesCount": 2,
+  "mediaFilesCount": 6,
+  "databaseSizeBytes": 40426,
+  "uploadsSizeBytes": 45,
+  "contentSizeBytes": 0,
+  "compressionAlgorithm": "gzip",
+  "encryptionEnabled": false,
+  "artifactChecksums": {
+    "database": "1610b9a1fc771a544c46e5a8a11ee982bb7f3566e6667ffc6c33c804cfe81d60",
+    "uploads": "85cea451eec057fa7e734548ca3ba6d779ed5836a3f9de14b8394575ef0d7d8e"
+  },
+  "createdAt": "2026-07-13T00:47:42.760Z",
+  "totalSizeBytes": 40471,
+  "files": {
+    "database": "database.sql.gz",
+    "uploads": "uploads.tar.gz",
+    "content": null,
+    "manifest": "manifest.json",
+    "checksum": "checksum.sha256"
+  },
+  "checksum": "2fbe54e4faa3214d382db874ae3b4b2d54d0745593215adc396008ca09bcb69e"
+}
