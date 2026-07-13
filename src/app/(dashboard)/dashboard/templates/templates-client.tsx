@@ -118,14 +118,14 @@ function TemplateCard({ template, isCurrent }: { template: TemplateSummary; isCu
             action={resetSiteFromTemplateAction}
             className="mt-3 grid gap-2"
             onSubmit={(event) => {
-              if (!window.confirm("سيتم حفظ Snapshot سريع ثم استبدال النصوص والصور والباقات والخدمات وSEO بالكامل. هل أنت متأكد؟")) {
+              if (!window.confirm("سيتم حفظ نسخة احتياطية سريعة ثم استبدال النصوص والصور والباقات والخدمات وإعدادات المشاركة بالكامل. هل أنت متأكد؟")) {
                 event.preventDefault();
               }
             }}
           >
             <input name="templateCode" type="hidden" value={template.code} />
             <p className="text-xs font-bold leading-6 text-white/52">
-              هذا الإجراء لا يشبه تشغيل القالب. سيستبدل محتوى موقعك الحالي بالكامل بعد إنشاء Snapshot للرجوع.
+              هذا الإجراء لا يشبه تشغيل القالب. سيستبدل محتوى موقعك الحالي بالكامل بعد إنشاء نسخة احتياطية للرجوع.
             </p>
             <label className="grid gap-1">
               <span className="text-[0.68rem] font-black text-red-100">

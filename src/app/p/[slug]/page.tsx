@@ -3,8 +3,10 @@ import { notFound } from "next/navigation";
 
 import { getThemeSiteComponent } from "@/components/themes/theme-components";
 import { MissingContactGuard } from "@/components/themes/missing-contact-guard";
+import { OwnerPreviewBar } from "@/components/owner-preview-bar";
 import { prisma } from "@/lib/prisma";
 import { getPlatformBaseUrl } from "@/lib/platform-url";
+import { getCurrentRequestSession } from "@/modules/auth/request-session";
 import { createPrismaPublicSiteRepository } from "@/modules/public-sites/prisma-public-site-repository";
 import { createPublicSiteViewModel } from "@/modules/public-sites/public-site-view-model";
 import {
@@ -57,10 +59,14 @@ export default async function PublicSitePage({ params }: Props) {
   const { result: access } = await checkSiteAccessBySlug(slug);
   if (!access.allowed) return <SiteExpiredPage />;
 
+  const session = await getCurrentRequestSession();
+  const isOwner = session?.site.slug === slug;
+
   const ThemeSiteComponent = getThemeSiteComponent(site.themeCode);
 
   return (
     <>
+      {isOwner ? <OwnerPreviewBar /> : null}
       <script
         type="application/ld+json"
         suppressHydrationWarning

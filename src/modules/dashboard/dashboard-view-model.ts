@@ -82,6 +82,7 @@ export type DashboardViewModel = {
   subscription: SubscriptionInfo | null;
   customerMessages: DashboardCustomerMessage[];
   activationMessages: DashboardActivationMessages;
+  heroImageUrl: string | null;
 };
 
 function calcPercent(done: number, total: number): number {
@@ -201,7 +202,7 @@ function buildOperatingAlerts({ isReadyToPublish, isPublished, subscription }: {
   return alerts;
 }
 
-export function createDashboardViewModel({ session, platformBaseUrl, now, packagesCount, imagesCount, albumsCount, hasContactInfo, hasCoverImage, currentThemeName, lastModifiedAt, pendingRequestStatus, latestPaymentRequestStatus, hasSeoSettings, hasAvatarImage, customerMessages, activationMessages, lifecycleTimerSettings = defaultLifecycleTimerSettings }: {
+export function createDashboardViewModel({ session, platformBaseUrl, now, packagesCount, imagesCount, albumsCount, hasContactInfo, hasCoverImage, currentThemeName, lastModifiedAt, pendingRequestStatus, latestPaymentRequestStatus, hasSeoSettings, hasAvatarImage, customerMessages, activationMessages, lifecycleTimerSettings = defaultLifecycleTimerSettings, heroImageUrl = null }: {
   session: CurrentSession;
   platformBaseUrl: string;
   now: Date;
@@ -219,6 +220,7 @@ export function createDashboardViewModel({ session, platformBaseUrl, now, packag
   customerMessages?: DashboardCustomerMessage[];
   activationMessages?: DashboardActivationMessages;
   lifecycleTimerSettings?: LifecycleTimerSettings;
+  heroImageUrl?: string | null;
 }): DashboardViewModel {
   const hasPackages = packagesCount > 0;
   const hasImages = imagesCount > 0;
@@ -271,5 +273,6 @@ export function createDashboardViewModel({ session, platformBaseUrl, now, packag
     subscription,
     customerMessages: customerMessages ?? [],
     activationMessages: activationMessages ?? {},
+    heroImageUrl,
   };
 }

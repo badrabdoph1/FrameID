@@ -100,10 +100,10 @@ export function PublishClient({
       <section className="rounded-[1.6rem] border border-white/10 bg-[radial-gradient(circle_at_top_right,rgba(243,207,115,0.14),transparent_36%),rgba(255,255,255,0.035)] p-4 sm:p-5">
         <div className="grid gap-4 lg:grid-cols-[1fr_auto] lg:items-end">
           <div>
-            <p className="text-[0.72rem] font-black text-[#f3cf73]">Launch Workspace</p>
+            <p className="text-[0.72rem] font-black text-[#f3cf73]">الخطوة الأخيرة</p>
             <h1 className="mt-1 text-2xl font-black text-[#fff7e8] sm:text-3xl">راجع، انشر، وشارك موقعك من مكان واحد</h1>
             <p className="mt-2 max-w-2xl text-sm font-bold leading-7 text-white/58">
-              دي آخر محطة في رحلة العميل: تأكد من الجاهزية، اضبط شكل المشاركة، انشر الموقع، ثم انسخ الرابط أو QR لعملائك.
+              دي آخر محطة في رحلة العميل: تأكد من الجاهزية، اضبط شكل المشاركة، انشر الموقع، ثم انسخ الرابط أو الكود لعملائك.
             </p>
           </div>
           <div className="grid gap-2 sm:flex">
@@ -197,9 +197,9 @@ export function PublishClient({
         <Panel icon={QrCode} title="QR Code" description="اطبعه على كارت أو بانر أو ارسله للعميل.">
           <div className="grid justify-items-center gap-3">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={qrUrl} alt="QR Code بتاع الموقع" width={180} height={180} className="rounded-2xl bg-white p-3" />
+            <img src={qrUrl} alt="كود الموقع" width={180} height={180} className="rounded-2xl bg-white p-3" />
             <a href={qrUrl} download="frameid-qr.png" className="inline-flex min-h-10 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] px-4 text-sm font-black text-white/75 no-underline">
-              تحميل QR
+              تحميل الكود
             </a>
           </div>
         </Panel>
@@ -242,7 +242,7 @@ export function PublishClient({
         <input type="hidden" name="ogImageUrl" value={ogUrl} />
         <div className="grid gap-3 lg:grid-cols-2">
           <Field label="عنوان الموقع"><Input name="title" defaultValue={seoTitle ?? siteTitle} required placeholder={siteTitle} /></Field>
-          <Field label="الرابط القانوني Canonical"><Input name="canonicalUrl" defaultValue={canonicalUrl ?? ""} placeholder={siteUrl} dir="ltr" /></Field>
+          <Field label="رابط بديل (اختياري)"><Input name="canonicalUrl" defaultValue={canonicalUrl ?? ""} placeholder={siteUrl} dir="ltr" /></Field>
         </div>
         <label className="grid gap-1.5">
           <span className="text-xs font-black text-white/55">وصف الموقع</span>

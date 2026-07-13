@@ -1,40 +1,41 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import {
   ArrowLeft,
   CalendarDays,
   CheckCircle2,
-  ChevronDown,
-  ChevronUp,
+  ChevronLeft,
   Circle,
   Copy,
   ExternalLink,
+  Eye,
   RotateCcw,
   X,
 } from "lucide-react";
 
 import type { DashboardViewModel } from "@/modules/dashboard/dashboard-view-model";
-import { CompletionRing } from "@/components/dashboard/builder-primitives";
 
 type BannerTone = "success" | "warning" | "danger" | "info";
 
+const ONBOARDING_STORAGE_KEY = "frameid:onboarding-completed";
 const CHECKLIST_STORAGE_KEY = "frameid:onboarding-checklist";
 
 const onboardingCopy: Record<string, { label: string; description: string }> = {
-  package: { label: "راجع الباقات والأسعار", description: "تأكد من أسماء الباقات والأسعار والمميزات." },
-  contact: { label: "غيّر اسم الاستوديو وراجع التواصل", description: "راجع الهاتف وواتساب والبريد وروابطك." },
-  avatar: { label: "أضف شعارك أو صورتك", description: "استخدم صورة واضحة تمثل هويتك." },
-  cover: { label: "غيّر صورة الغلاف", description: "اختر صورة رئيسية قوية لموقعك." },
-  album: { label: "غيّر صورك", description: "أضف أعمالك الحقيقية داخل الألبومات." },
+  package: { label: "الباقات والأسعار", description: "اكتب أسماء الباقات والأسعار والمميزات." },
+  contact: { label: "بيانات التواصل", description: "اسم الاستوديو، الهاتف، واتساب، وروابطك." },
+  avatar: { label: "صورة المصور", description: "صورة شخصية واضحة تمثل هويتك." },
+  cover: { label: "صورة الغلاف", description: "صورة رئيسية قوية لموقعك." },
+  album: { label: "معرض الصور", description: "أضف أعمالك الحقيقية داخل الألبومات." },
 };
 
-export function DashboardHomeClient({ siteUrl, statusLabel, percent, checklist, lastModified, nextStepHref, nextStepLabel, subscription, customerMessages }: DashboardViewModel) {
-  const doneCount = checklist.filter((item) => item.done).length;
+export function DashboardHomeClient({ siteUrl, statusLabel, checklist, lastModified, nextStepHref, nextStepLabel, nextStepTitle, nextStepDescription, subscription, customerMessages, heroImageUrl, photographerName, isPublished }: DashboardViewModel) {
   const [copied, setCopied] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [onboardingStep, setOnboardingStep] = useState(0);
   const [checklistHidden, setChecklistHidden] = useState(false);
-  const [checklistExpanded, setChecklistExpanded] = useState(true);
 
   const onboardingItems = useMemo(
     () => checklist
@@ -42,28 +43,31 @@ export function DashboardHomeClient({ siteUrl, statusLabel, percent, checklist, 
       .map((item) => ({ ...item, ...onboardingCopy[item.id] })),
     [checklist],
   );
-  const onboardingDoneCount = onboardingItems.filter((item) => item.done).length;
+  const doneCount = onboardingItems.filter((item) => item.done).length;
+  const incompleteItems = onboardingItems.filter((item) => !item.done);
+  const nextIncomplete = incompleteItems[0];
 
   useEffect(() => {
     try {
+      const completed = window.localStorage.getItem(ONBOARDING_STORAGE_KEY);
+      if (!completed) {
+        setShowOnboarding(true);
+      }
       const saved = window.localStorage.getItem(CHECKLIST_STORAGE_KEY);
-      if (!saved) return;
-      const preferences = JSON.parse(saved) as { hidden?: boolean; expanded?: boolean };
-      setChecklistHidden(Boolean(preferences.hidden));
-      setChecklistExpanded(preferences.expanded !== false);
+      if (saved) {
+        const preferences = JSON.parse(saved) as { hidden?: boolean };
+        setChecklistHidden(Boolean(preferences.hidden));
+      }
     } catch {
-      // Invalid browser storage must never block the dashboard.
     }
   }, []);
 
-  const saveChecklistPreferences = (hidden: boolean, expanded: boolean) => {
-    setChecklistHidden(hidden);
-    setChecklistExpanded(expanded);
+  const completeOnboarding = () => {
     try {
-      window.localStorage.setItem(CHECKLIST_STORAGE_KEY, JSON.stringify({ hidden, expanded }));
+      window.localStorage.setItem(ONBOARDING_STORAGE_KEY, "true");
     } catch {
-      // Browsers may disable localStorage; the current session still works.
     }
+    setShowOnboarding(false);
   };
 
   const copySiteUrl = async () => {
@@ -78,74 +82,316 @@ export function DashboardHomeClient({ siteUrl, statusLabel, percent, checklist, 
 
       {customerMessages.length > 0 ? <section className="grid gap-2 lg:grid-cols-2">{customerMessages.map((message) => <CustomerMessageBanner key={message.id} message={message} />)}</section> : null}
 
-      <section className="grid gap-4 lg:grid-cols-[1.15fr_0.85fr] lg:items-stretch">
-        <section className="customer-dashboard-url-card grid w-full gap-3 rounded-[1.2rem] border border-white/12 bg-[#121720] p-3 text-start shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] transition hover:border-amber-300/30 hover:bg-[#171c26] sm:grid-cols-[1fr_auto] sm:items-center lg:min-h-full">
-          <span className="min-w-0">
-            <span className="block text-xs font-black text-white/50 lg:text-sm">رابط موقعك</span>
-            <span dir="ltr" className="mt-1 block truncate text-sm font-black text-[#f3cf73] lg:text-lg">{siteUrl}</span>
-            <span className="mt-2 hidden text-xs font-bold leading-5 text-white/38 lg:block">انسخه وضعه في البايو أو افتحه للتأكد من شكل موقعك.</span>
-          </span>
-          <span className="grid gap-2 sm:flex sm:justify-end">
-            <button type="button" onClick={copySiteUrl} className="inline-flex min-h-10 items-center justify-center gap-2 rounded-2xl border border-amber-300/18 bg-amber-300/10 px-3 text-xs font-black text-[#ffe49a] transition hover:bg-amber-300/16 lg:min-h-12 lg:px-5">
-              {copied ? <CheckCircle2 className="size-4 text-emerald-300" aria-hidden /> : <Copy className="size-4" aria-hidden />}
-              {copied ? "اتنسخ" : "نسخ"}
-            </button>
-            <Link href={siteUrl} target="_blank" className="inline-flex min-h-10 items-center justify-center gap-2 rounded-2xl border border-white/12 bg-white/[0.045] px-3 text-xs font-black text-white/78 no-underline transition hover:border-amber-300/24 hover:bg-white/[0.075] hover:text-white lg:min-h-12 lg:px-5">
-              <ExternalLink className="size-4" aria-hidden /> فتح الموقع
-            </Link>
-          </span>
-        </section>
-
-        <section className="customer-dashboard-readiness-card rounded-[1.35rem] border border-white/12 bg-[linear-gradient(135deg,rgba(243,207,115,0.10),rgba(255,255,255,0.045)),#10151d] p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] sm:p-4">
-          <div className="flex items-center justify-between gap-3 lg:h-full">
-            <div className="min-w-0">
-              <p className="text-xs font-black text-[#f3cf73] lg:text-sm">جاهزية الموقع</p>
-              <h1 className="mt-0.5 truncate text-base font-black text-[#fff7e8] sm:text-lg lg:mt-2 lg:text-2xl">{doneCount} من {checklist.length} خطوات</h1>
-              <p className="mt-1 truncate text-[0.72rem] font-bold text-white/55 lg:text-sm">{statusLabel}</p>
-              <p className="mt-1 truncate text-[0.72rem] font-bold text-white/55 lg:mt-3 lg:text-xs">آخر تعديل {lastModified}</p>
-            </div>
-            <div className="scale-75 rounded-full bg-black/18 p-1 sm:scale-90 lg:scale-100 lg:bg-black/22"><CompletionRing percent={percent} /></div>
-          </div>
-        </section>
-      </section>
+      <SiteIdentityCard
+        siteUrl={siteUrl}
+        statusLabel={statusLabel}
+        isPublished={isPublished}
+        lastModified={lastModified}
+        photographerName={photographerName}
+        heroImageUrl={heroImageUrl}
+        copied={copied}
+        onCopy={copySiteUrl}
+      />
 
       {checklistHidden ? (
         <button
           type="button"
-          onClick={() => saveChecklistPreferences(false, true)}
+          onClick={() => {
+            setChecklistHidden(false);
+            try {
+              window.localStorage.setItem(CHECKLIST_STORAGE_KEY, JSON.stringify({ hidden: false }));
+            } catch {
+            }
+          }}
           className="inline-flex min-h-10 w-fit items-center gap-2 rounded-2xl border border-white/10 bg-[#111720] px-3 text-xs font-black text-white/70 transition hover:border-amber-300/25 hover:text-[#f3cf73]"
         >
-          <RotateCcw className="size-4" aria-hidden /> إظهار خطوات البداية
+          <RotateCcw className="size-4" aria-hidden /> إظهار خطوات تجهيز الموقع
         </button>
       ) : (
-        <section className="overflow-hidden rounded-[1.25rem] border border-white/12 bg-[#111720] shadow-[inset_0_1px_0_rgba(255,255,255,0.045),0_18px_48px_rgba(0,0,0,0.18)]">
-          <header className="flex items-center justify-between gap-2 border-b border-white/10 bg-[linear-gradient(135deg,rgba(243,207,115,0.10),rgba(255,255,255,0.035))] p-3">
-            <button type="button" onClick={() => saveChecklistPreferences(false, !checklistExpanded)} className="flex min-w-0 flex-1 items-center gap-3 text-start">
-              <span className="grid size-10 shrink-0 place-items-center rounded-2xl border border-amber-300/18 bg-amber-300/12 text-[#f3cf73] shadow-sm">
-                {checklistExpanded ? <ChevronUp className="size-4" aria-hidden /> : <ChevronDown className="size-4" aria-hidden />}
-              </span>
-              <span className="min-w-0">
-                <strong className="block truncate text-sm font-black text-[#fff7e8] sm:text-base">ابدأ تجهيز موقعك</strong>
-                <small className="mt-0.5 block truncate text-[0.68rem] font-bold text-white/55 sm:text-xs">{onboardingDoneCount} من {onboardingItems.length} مكتملة</small>
-              </span>
-            </button>
-            <button type="button" onClick={() => saveChecklistPreferences(true, checklistExpanded)} aria-label="إخفاء خطوات البداية" className="grid size-9 shrink-0 place-items-center rounded-xl text-white/45 transition hover:bg-white/[0.06] hover:text-white">
-              <X className="size-4" aria-hidden />
-            </button>
-          </header>
-          {checklistExpanded ? (
-            <div className="grid gap-2 p-3 sm:grid-cols-2 lg:gap-3">
-              {onboardingItems.map((item, index) => <SetupStepRow key={item.id} item={item} index={index + 1} />)}
-            </div>
-          ) : null}
-        </section>
+        <ChecklistSection
+          items={onboardingItems}
+          doneCount={doneCount}
+          onHide={() => {
+            setChecklistHidden(true);
+            try {
+              window.localStorage.setItem(CHECKLIST_STORAGE_KEY, JSON.stringify({ hidden: true }));
+            } catch {
+            }
+          }}
+        />
       )}
+
+      {nextIncomplete ? (
+        <NextStepCard
+          title={nextStepTitle}
+          description={nextStepDescription}
+          href={nextStepHref}
+          label={nextStepLabel}
+        />
+      ) : null}
 
       <div className="grid gap-2 sm:grid-cols-2 lg:gap-4">
         <Link href={nextStepHref} className="customer-dashboard-action-card inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-[#f3cf73] px-4 text-sm font-black text-[#17120a] no-underline shadow-lg shadow-amber-500/10 transition hover:-translate-y-0.5 hover:bg-[#ffe08a] hover:shadow-amber-500/20">{nextStepLabel}<ArrowLeft className="size-4" aria-hidden /></Link>
         <Link href={siteUrl} target="_blank" className="customer-dashboard-action-card inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-white/12 bg-[#151a24] px-4 text-sm font-black text-white/82 no-underline transition hover:-translate-y-0.5 hover:border-amber-300/25 hover:bg-[#1a202b] hover:text-white"><ExternalLink className="size-4" aria-hidden /> افتح الموقع كعميل</Link>
       </div>
+
+      {showOnboarding ? (
+        <OnboardingWizard
+          step={onboardingStep}
+          setStep={setOnboardingStep}
+          onComplete={completeOnboarding}
+          siteUrl={siteUrl}
+        />
+      ) : null}
     </main>
+  );
+}
+
+function SiteIdentityCard({
+  siteUrl,
+  statusLabel,
+  isPublished,
+  lastModified,
+  photographerName,
+  heroImageUrl,
+  copied,
+  onCopy,
+}: {
+  siteUrl: string;
+  statusLabel: string;
+  isPublished: boolean;
+  lastModified: string;
+  photographerName: string;
+  heroImageUrl: string | null;
+  copied: boolean;
+  onCopy: () => void;
+}) {
+  return (
+    <section className="overflow-hidden rounded-[1.5rem] border border-white/12 bg-[#121720] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+      <div className="border-b border-white/8 bg-[linear-gradient(135deg,rgba(243,207,115,0.08),transparent)] px-4 py-3 sm:px-5">
+        <p className="text-xs font-black text-white/50 sm:text-sm">أنت الآن في لوحة التحكم</p>
+        <p className="mt-0.5 text-[0.68rem] font-bold text-white/38 sm:text-xs">من هنا تعدّل موقعك. عملاؤك لن يروا هذه الصفحة.</p>
+      </div>
+
+      <div className="grid gap-4 p-4 sm:p-5 lg:grid-cols-[1fr_auto] lg:items-center">
+        <div className="flex items-center gap-4">
+          {heroImageUrl ? (
+            <div className="relative hidden h-20 w-32 shrink-0 overflow-hidden rounded-2xl border border-white/10 bg-black/20 sm:block">
+              <Image src={heroImageUrl} alt="" fill sizes="128px" className="object-cover" />
+            </div>
+          ) : null}
+          <div className="min-w-0">
+            <h1 className="truncate text-lg font-black text-[#fff7e8] sm:text-xl">{photographerName}</h1>
+            <div className="mt-1 flex flex-wrap items-center gap-2">
+              <span className={isPublished ? "rounded-full bg-emerald-300/12 px-2.5 py-0.5 text-[0.68rem] font-black text-emerald-300" : "rounded-full bg-amber-300/12 px-2.5 py-0.5 text-[0.68rem] font-black text-[#f3cf73]"}>
+                {statusLabel}
+              </span>
+              <span className="text-[0.68rem] font-bold text-white/38">آخر تعديل {lastModified}</span>
+            </div>
+            <p dir="ltr" className="mt-2 truncate text-sm font-black text-[#f3cf73]/80 sm:text-base">{siteUrl}</p>
+          </div>
+        </div>
+
+        <div className="grid gap-2 sm:flex sm:justify-end">
+          <Link
+            href={siteUrl}
+            target="_blank"
+            className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-[#f3cf73] px-5 text-sm font-black text-[#17120a] no-underline transition hover:-translate-y-0.5 hover:bg-[#ffe08a]"
+          >
+            <Eye className="size-4" aria-hidden />
+            شاهد موقعك كما يراه العميل
+          </Link>
+          <button
+            type="button"
+            onClick={onCopy}
+            className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-white/12 bg-white/[0.045] px-5 text-sm font-black text-white/78 transition hover:border-amber-300/24 hover:bg-white/[0.075] hover:text-white"
+          >
+            {copied ? <CheckCircle2 className="size-4 text-emerald-300" aria-hidden /> : <Copy className="size-4" aria-hidden />}
+            {copied ? "اتنسخ الرابط" : "انسخ الرابط للعميل"}
+          </button>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function ChecklistSection({
+  items,
+  doneCount,
+  onHide,
+}: {
+  items: Array<{ id: string; done: boolean; href: string; label: string; description: string }>;
+  doneCount: number;
+  onHide: () => void;
+}) {
+  return (
+    <section className="overflow-hidden rounded-[1.25rem] border border-white/12 bg-[#111720] shadow-[inset_0_1px_0_rgba(255,255,255,0.045),0_18px_48px_rgba(0,0,0,0.18)]">
+      <header className="flex items-center justify-between gap-2 border-b border-white/10 bg-[linear-gradient(135deg,rgba(243,207,115,0.10),rgba(255,255,255,0.035))] p-3 sm:p-4">
+        <div className="flex items-center gap-3">
+          <span className="grid size-10 shrink-0 place-items-center rounded-2xl border border-amber-300/18 bg-amber-300/12 text-[#f3cf73] shadow-sm">
+            <CheckCircle2 className="size-5" aria-hidden />
+          </span>
+          <div className="min-w-0">
+            <strong className="block truncate text-sm font-black text-[#fff7e8] sm:text-base">خطوات تجهيز موقعك</strong>
+            <small className="mt-0.5 block truncate text-[0.68rem] font-bold text-white/55 sm:text-xs">{doneCount} من {items.length} خطوات مكتملة</small>
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={onHide}
+          aria-label="إخفاء خطوات التجهيز"
+          className="grid size-9 shrink-0 place-items-center rounded-xl text-white/45 transition hover:bg-white/[0.06] hover:text-white"
+        >
+          <X className="size-4" aria-hidden />
+        </button>
+      </header>
+      <div className="grid gap-2 p-3 sm:grid-cols-2 lg:gap-3">
+        {items.map((item) => <ChecklistItem key={item.id} item={item} />)}
+      </div>
+    </section>
+  );
+}
+
+function ChecklistItem({ item }: { item: { id: string; done: boolean; href: string; label: string; description: string } }) {
+  return (
+    <Link
+      href={item.href}
+      className={item.done
+        ? "group flex min-h-14 items-center gap-3 rounded-2xl border border-emerald-300/16 bg-emerald-300/[0.055] px-3 py-2.5 no-underline transition hover:border-emerald-300/28 hover:bg-emerald-300/[0.09]"
+        : "group flex min-h-14 items-center gap-3 rounded-2xl border border-white/10 bg-[#151a24] px-3 py-2.5 no-underline transition hover:-translate-y-0.5 hover:border-amber-300/25 hover:bg-[#1a202b]"
+      }
+    >
+      <span className={item.done
+        ? "grid size-9 shrink-0 place-items-center rounded-2xl bg-emerald-300/12 text-emerald-300"
+        : "grid size-9 shrink-0 place-items-center rounded-2xl bg-white/[0.055] text-white/42 group-hover:text-[#f3cf73]"
+      }>
+        {item.done ? <CheckCircle2 className="size-5" aria-hidden /> : <Circle className="size-5" aria-hidden />}
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className={item.done ? "block truncate text-sm font-black text-[#dffbea]" : "block truncate text-sm font-black text-[#fff7e8]"}>{item.label}</span>
+        <span className={item.done ? "mt-0.5 block truncate text-[0.7rem] font-bold text-emerald-100/46" : "mt-0.5 block truncate text-[0.7rem] font-bold text-white/52"}>{item.description}</span>
+      </span>
+      <ChevronLeft className={item.done ? "size-4 text-emerald-200/35 transition group-hover:text-emerald-200" : "size-4 text-white/30 transition group-hover:text-[#f3cf73]"} aria-hidden />
+    </Link>
+  );
+}
+
+function NextStepCard({ title, description, href, label }: { title: string; description: string; href: string; label: string }) {
+  return (
+    <Link
+      href={href}
+      className="group flex items-center gap-4 rounded-[1.25rem] border border-amber-300/20 bg-[linear-gradient(135deg,rgba(243,207,115,0.12),rgba(255,255,255,0.04)),#131820] p-4 no-underline transition hover:-translate-y-0.5 hover:border-amber-300/35 hover:shadow-[0_18px_48px_rgba(243,207,115,0.08)] sm:p-5"
+    >
+      <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-[#f3cf73] text-[#17120a] shadow-lg shadow-amber-500/20 transition group-hover:scale-105">
+        <ArrowLeft className="size-5" aria-hidden />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block text-xs font-black text-[#f3cf73]">الخطوة الجاية</span>
+        <span className="mt-0.5 block text-base font-black text-[#fff7e8] sm:text-lg">{title}</span>
+        <span className="mt-1 block text-sm font-bold text-white/55">{description}</span>
+      </span>
+      <span className="hidden shrink-0 rounded-2xl bg-[#f3cf73] px-4 py-2 text-sm font-black text-[#17120a] sm:block">
+        {label}
+      </span>
+    </Link>
+  );
+}
+
+function OnboardingWizard({
+  step,
+  setStep,
+  onComplete,
+  siteUrl,
+}: {
+  step: number;
+  setStep: (step: number) => void;
+  onComplete: () => void;
+  siteUrl: string;
+}) {
+  const steps = [
+    {
+      title: "أهلاً بيك في FrameID",
+      body: "FrameID هو موقعك الخاص تعرض فيه شغلك للعملاء. صفحة واحدة فيها صورك، باقاتك، وطريقة التواصل معاك.",
+    },
+    {
+      title: "إيه اللي هتعمله هنا؟",
+      body: "من لوحة التحكم دي هتضيف باقاتك وأسعارك، ترفع صورك، وتحط بيانات التواصل. كل حاجة سهلة ومنظمة.",
+    },
+    {
+      title: "إيه اللي هيشوفه العميل؟",
+      body: "العميل هيشوف صفحة واحدة فيها كل حاجة عنك. مش هيشوف لوحة التحكم دي أبداً.",
+    },
+    {
+      title: "ابدأ منين؟",
+      body: "أول خطوة: اكتب باقاتك وأسعارك. بعدها كمّل باقي الخطوات بالترتيب.",
+    },
+  ];
+
+  const current = steps[step];
+  const isLast = step === steps.length - 1;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
+      <div className="w-full max-w-md overflow-hidden rounded-[1.5rem] border border-white/12 bg-[#131820] shadow-2xl">
+        <div className="border-b border-white/8 bg-[linear-gradient(135deg,rgba(243,207,115,0.10),transparent)] p-4">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-black text-[#f3cf73]">خطوة {step + 1} من {steps.length}</span>
+            <button
+              type="button"
+              onClick={onComplete}
+              className="grid size-8 place-items-center rounded-xl text-white/45 transition hover:bg-white/[0.06] hover:text-white"
+              aria-label="تخطي"
+            >
+              <X className="size-4" aria-hidden />
+            </button>
+          </div>
+          <div className="mt-2 flex gap-1">
+            {steps.map((_, i) => (
+              <span
+                key={i}
+                className={i <= step ? "h-1 flex-1 rounded-full bg-[#f3cf73]" : "h-1 flex-1 rounded-full bg-white/10"}
+              />
+            ))}
+          </div>
+        </div>
+
+        <div className="p-5">
+          <h2 className="text-xl font-black text-[#fff7e8]">{current.title}</h2>
+          <p className="mt-3 text-sm font-bold leading-7 text-white/60">{current.body}</p>
+
+          {step === 2 ? (
+            <Link
+              href={siteUrl}
+              target="_blank"
+              className="mt-4 inline-flex items-center gap-2 rounded-2xl border border-amber-300/20 bg-amber-300/10 px-4 py-2 text-sm font-black text-[#f3cf73] no-underline transition hover:bg-amber-300/16"
+            >
+              <Eye className="size-4" aria-hidden />
+              شاهد مثال لموقع العميل
+            </Link>
+          ) : null}
+        </div>
+
+        <div className="flex gap-2 border-t border-white/8 p-4">
+          {step > 0 ? (
+            <button
+              type="button"
+              onClick={() => setStep(step - 1)}
+              className="inline-flex min-h-11 flex-1 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] text-sm font-black text-white/70 transition hover:bg-white/[0.08]"
+            >
+              السابق
+            </button>
+          ) : null}
+          <button
+            type="button"
+            onClick={() => isLast ? onComplete() : setStep(step + 1)}
+            className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-2xl bg-[#f3cf73] text-sm font-black text-[#17120a] transition hover:bg-[#ffe08a]"
+          >
+            {isLast ? "يلا نبدأ" : "التالي"}
+            {isLast ? null : <ChevronLeft className="size-4" aria-hidden />}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -176,9 +422,29 @@ function LifecycleStatusCard({ subscription }: { subscription: NonNullable<Dashb
   );
 }
 
-function CustomerMessageBanner({ message }: { message: DashboardViewModel["customerMessages"][number] }) { return <section className={customerMessageClass(message.tone)}><span className={activationDotClass(message.tone)} aria-hidden /><span className="min-w-0"><strong className="block truncate text-xs font-black sm:text-sm">{message.title}</strong>{message.body ? <small className="mt-0.5 block truncate text-[0.68rem] font-bold opacity-70">{message.body}</small> : null}</span></section>; }
+function CustomerMessageBanner({ message }: { message: DashboardViewModel["customerMessages"][number] }) {
+  return (
+    <section className={customerMessageClass(message.tone)}>
+      <span className={activationDotClass(message.tone)} aria-hidden />
+      <span className="min-w-0">
+        <strong className="block truncate text-xs font-black sm:text-sm">{message.title}</strong>
+        {message.body ? <small className="mt-0.5 block truncate text-[0.68rem] font-bold opacity-70">{message.body}</small> : null}
+      </span>
+    </section>
+  );
+}
 
-function SetupStepRow({ item, index }: { item: DashboardViewModel["checklist"][number]; index: number }) { return <Link href={item.href} className={item.done ? "group grid min-h-14 grid-cols-[auto_auto_1fr_auto] items-center gap-2 rounded-2xl border border-emerald-300/16 bg-emerald-300/[0.055] px-3 py-2.5 no-underline transition hover:border-emerald-300/28 hover:bg-emerald-300/[0.09]" : "group grid min-h-14 grid-cols-[auto_auto_1fr_auto] items-center gap-2 rounded-2xl border border-white/10 bg-[#151a24] px-3 py-2.5 no-underline transition hover:-translate-y-0.5 hover:border-amber-300/25 hover:bg-[#1a202b]"}><span className={item.done ? "grid size-9 place-items-center rounded-2xl bg-emerald-300/12 text-emerald-300" : "grid size-9 place-items-center rounded-2xl bg-white/[0.055] text-white/42 group-hover:text-[#f3cf73]"}>{item.done ? <CheckCircle2 className="size-5" aria-hidden /> : <Circle className="size-5" aria-hidden />}</span><span className={item.done ? "text-[0.7rem] font-black text-emerald-200/70" : "text-[0.7rem] font-black text-[#f3cf73]/75"}>{index}</span><span className="min-w-0"><span className={item.done ? "block truncate text-sm font-black text-[#dffbea]" : "block truncate text-sm font-black text-[#fff7e8]"}>{item.label}</span><span className={item.done ? "mt-0.5 block truncate text-[0.7rem] font-bold text-emerald-100/46" : "mt-0.5 block truncate text-[0.7rem] font-bold text-white/52"}>{item.description}</span></span><ArrowLeft className={item.done ? "size-4 text-emerald-200/35 transition group-hover:text-emerald-200" : "size-4 text-white/30 transition group-hover:text-[#f3cf73]"} aria-hidden /></Link>; }
+function customerMessageClass(tone: BannerTone) {
+  const base = "flex min-h-11 items-start gap-2 rounded-2xl border px-3 py-2";
+  if (tone === "success") return `${base} border-emerald-300/18 bg-emerald-300/[0.07] text-emerald-100`;
+  if (tone === "danger") return `${base} border-red-300/18 bg-red-300/[0.07] text-red-100`;
+  if (tone === "info") return `${base} border-sky-300/18 bg-sky-300/[0.07] text-sky-100`;
+  return `${base} border-amber-300/18 bg-amber-300/[0.07] text-amber-100`;
+}
 
-function customerMessageClass(tone: BannerTone) { const base = "flex min-h-11 items-start gap-2 rounded-2xl border px-3 py-2"; if (tone === "success") return `${base} border-emerald-300/18 bg-emerald-300/[0.07] text-emerald-100`; if (tone === "danger") return `${base} border-red-300/18 bg-red-300/[0.07] text-red-100`; if (tone === "warning") return `${base} border-amber-300/18 bg-amber-300/[0.07] text-amber-100`; return `${base} border-sky-300/18 bg-sky-300/[0.07] text-sky-100`; }
-function activationDotClass(tone: BannerTone) { if (tone === "success") return "mt-1.5 size-1.5 shrink-0 rounded-full bg-emerald-300 shadow-[0_0_12px_rgba(110,231,183,0.8)]"; if (tone === "danger") return "mt-1.5 size-1.5 shrink-0 rounded-full bg-red-300 shadow-[0_0_12px_rgba(248,113,113,0.8)]"; if (tone === "info") return "mt-1.5 size-1.5 shrink-0 rounded-full bg-sky-300 shadow-[0_0_12px_rgba(125,211,252,0.75)]"; return "mt-1.5 size-1.5 shrink-0 animate-pulse rounded-full bg-[#f3cf73] shadow-[0_0_12px_rgba(243,207,115,0.85)]"; }
+function activationDotClass(tone: BannerTone) {
+  if (tone === "success") return "mt-1.5 size-1.5 shrink-0 rounded-full bg-emerald-300 shadow-[0_0_12px_rgba(110,231,183,0.8)]";
+  if (tone === "danger") return "mt-1.5 size-1.5 shrink-0 rounded-full bg-red-300 shadow-[0_0_12px_rgba(248,113,113,0.8)]";
+  if (tone === "info") return "mt-1.5 size-1.5 shrink-0 rounded-full bg-sky-300 shadow-[0_0_12px_rgba(125,211,252,0.75)]";
+  return "mt-1.5 size-1.5 shrink-0 animate-pulse rounded-full bg-[#f3cf73] shadow-[0_0_12px_rgba(243,207,115,0.85)]";
+}

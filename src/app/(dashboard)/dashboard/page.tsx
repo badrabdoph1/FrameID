@@ -96,6 +96,9 @@ export default async function DashboardPage() {
   const lastModified = siteTheme?.updatedAt ?? new Date();
   const hasSeoSettings = Boolean(seoSettings?.title && (seoSettings.description || seoSettings.ogAssetId));
   const hasHeroCover = !!(heroSection?.data && typeof heroSection.data === "object" && "imageUrl" in heroSection.data);
+  const heroImageUrl = hasHeroCover && heroSection?.data && typeof heroSection.data === "object" && "imageUrl" in heroSection.data
+    ? (heroSection.data as { imageUrl: string }).imageUrl
+    : null;
   const templateRowsByKey = new Map(activationTemplateRows.map((row) => [row.title, row]));
 
   const dashboard = createDashboardViewModel({
@@ -131,6 +134,7 @@ export default async function DashboardPage() {
         return [definition.key, { ...payload, tone: validateMessageTone(row?.type ?? definition.tone) }];
       }),
     ),
+    heroImageUrl,
   });
 
   return <DashboardHomeClient {...dashboard} />;
