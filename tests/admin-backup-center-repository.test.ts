@@ -20,7 +20,8 @@ describe("admin backup center repository", () => {
         },
       },
       backupJob: {
-        async findMany() {
+        async findMany(input: { select: Record<string, boolean> }) {
+          expect(input.select).not.toHaveProperty("targetDatabase");
           return [
             {
               id: "backup_1",
@@ -48,7 +49,8 @@ describe("admin backup center repository", () => {
         },
       },
       restoreJob: {
-        async findMany() {
+        async findMany(input: { select: Record<string, boolean> }) {
+          expect(input.select.targetDatabase).toBe(true);
           return [{
             id: "restore_1",
             backupJobId: "2026-07-13_00-35",
