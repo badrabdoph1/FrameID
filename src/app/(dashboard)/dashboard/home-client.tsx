@@ -167,48 +167,69 @@ function SiteIdentityCard({
   onCopy: () => void;
 }) {
   return (
-    <section className="overflow-hidden rounded-[1.5rem] border border-white/12 bg-[#121720] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
-      <div className="border-b border-white/8 bg-[linear-gradient(135deg,rgba(243,207,115,0.08),transparent)] px-4 py-3 sm:px-5">
-        <p className="text-xs font-black text-white/50 sm:text-sm">أنت الآن في لوحة التحكم</p>
-        <p className="mt-0.5 text-[0.68rem] font-bold text-white/38 sm:text-xs">من هنا تعدّل موقعك. عملاؤك لن يروا هذه الصفحة.</p>
-      </div>
-
-      <div className="grid gap-4 p-4 sm:p-5 lg:grid-cols-[1fr_auto] lg:items-center">
-        <div className="flex items-center gap-4">
-          {heroImageUrl ? (
-            <div className="relative hidden h-20 w-32 shrink-0 overflow-hidden rounded-2xl border border-white/10 bg-black/20 sm:block">
-              <Image src={heroImageUrl} alt="" fill sizes="128px" className="object-cover" />
+    <section className="relative overflow-hidden rounded-[1.5rem] border border-white/12 bg-[linear-gradient(135deg,#121720_0%,#0f1419_100%)] shadow-[0_8px_32px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.04)]">
+      {heroImageUrl ? (
+        <div className="absolute inset-0 opacity-[0.07]">
+          <Image src={heroImageUrl} alt="" fill sizes="100vw" className="object-cover" />
+        </div>
+      ) : null}
+      
+      <div className="relative">
+        <div className="border-b border-white/8 bg-[linear-gradient(135deg,rgba(243,207,115,0.12),rgba(243,207,115,0.04))] px-4 py-3.5 sm:px-5 sm:py-4">
+          <div className="flex items-center gap-2">
+            <span className="grid size-7 place-items-center rounded-lg bg-amber-300/15 text-[#f3cf73] shadow-[0_0_12px_rgba(243,207,115,0.2)]">
+              <LayoutDashboard className="size-3.5" aria-hidden />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-black text-[#fff7e8] sm:text-sm">أنت الآن في لوحة التحكم</p>
+              <p className="mt-0.5 text-[0.68rem] font-bold text-white/45 sm:text-xs">من هنا تعدّل موقعك. عملاؤك لن يروا هذه الصفحة.</p>
             </div>
-          ) : null}
-          <div className="min-w-0">
-            <h1 className="truncate text-lg font-black text-[#fff7e8] sm:text-xl">{photographerName}</h1>
-            <div className="mt-1 flex flex-wrap items-center gap-2">
-              <span className={isPublished ? "rounded-full bg-emerald-300/12 px-2.5 py-0.5 text-[0.68rem] font-black text-emerald-300" : "rounded-full bg-amber-300/12 px-2.5 py-0.5 text-[0.68rem] font-black text-[#f3cf73]"}>
-                {statusLabel}
-              </span>
-              <span className="text-[0.68rem] font-bold text-white/38">آخر تعديل {lastModified}</span>
-            </div>
-            <p dir="ltr" className="mt-2 truncate text-sm font-black text-[#f3cf73]/80 sm:text-base">{siteUrl}</p>
           </div>
         </div>
 
-        <div className="grid gap-2 sm:flex sm:justify-end">
-          <Link
-            href={siteUrl}
-            target="_blank"
-            className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-[#f3cf73] px-5 text-sm font-black text-[#17120a] no-underline transition hover:-translate-y-0.5 hover:bg-[#ffe08a]"
-          >
-            <Eye className="size-4" aria-hidden />
-            شاهد موقعك كما يراه العميل
-          </Link>
-          <button
-            type="button"
-            onClick={onCopy}
-            className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-white/12 bg-white/[0.045] px-5 text-sm font-black text-white/78 transition hover:border-amber-300/24 hover:bg-white/[0.075] hover:text-white"
-          >
-            {copied ? <CheckCircle2 className="size-4 text-emerald-300" aria-hidden /> : <Copy className="size-4" aria-hidden />}
-            {copied ? "اتنسخ الرابط" : "انسخ الرابط للعميل"}
-          </button>
+        <div className="grid gap-4 p-4 sm:gap-5 sm:p-5 lg:grid-cols-[1fr_auto] lg:items-center lg:gap-6">
+          <div className="flex items-start gap-3 sm:items-center sm:gap-4">
+            {heroImageUrl ? (
+              <div className="relative h-16 w-24 shrink-0 overflow-hidden rounded-xl border border-white/10 bg-black/20 shadow-lg sm:h-20 sm:w-32 sm:rounded-2xl">
+                <Image src={heroImageUrl} alt="" fill sizes="(max-width: 640px) 96px, 128px" className="object-cover" />
+              </div>
+            ) : (
+              <div className="grid size-14 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-amber-300/20 to-amber-300/5 text-[#f3cf73] shadow-lg sm:size-16 sm:rounded-2xl">
+                <Eye className="size-6 sm:size-7" aria-hidden />
+              </div>
+            )}
+            <div className="min-w-0 flex-1">
+              <h1 className="truncate text-base font-black text-[#fff7e8] sm:text-xl lg:text-2xl">{photographerName}</h1>
+              <div className="mt-1.5 flex flex-wrap items-center gap-1.5 sm:gap-2">
+                <span className={isPublished ? "inline-flex items-center gap-1 rounded-full bg-emerald-300/12 px-2 py-0.5 text-[0.68rem] font-black text-emerald-300 sm:px-2.5" : "inline-flex items-center gap-1 rounded-full bg-amber-300/12 px-2 py-0.5 text-[0.68rem] font-black text-[#f3cf73] sm:px-2.5"}>
+                  <span className={isPublished ? "size-1.5 rounded-full bg-emerald-300" : "size-1.5 rounded-full bg-[#f3cf73]"} />
+                  {statusLabel}
+                </span>
+                <span className="text-[0.68rem] font-bold text-white/45 sm:text-xs">آخر تعديل {lastModified}</span>
+              </div>
+              <p dir="ltr" className="mt-2 truncate text-xs font-black text-[#f3cf73]/70 sm:text-sm lg:text-base">{siteUrl}</p>
+            </div>
+          </div>
+
+          <div className="grid gap-2 sm:flex sm:justify-end sm:gap-3">
+            <Link
+              href={siteUrl}
+              target="_blank"
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-gradient-to-br from-[#f3cf73] to-[#e8c15e] px-4 text-sm font-black text-[#17120a] no-underline shadow-lg shadow-amber-500/20 transition hover:-translate-y-0.5 hover:shadow-amber-500/30 sm:min-h-12 sm:px-5"
+            >
+              <Eye className="size-4" aria-hidden />
+              <span className="hidden sm:inline">شاهد موقعك كما يراه العميل</span>
+              <span className="sm:hidden">شاهد موقعك</span>
+            </Link>
+            <button
+              type="button"
+              onClick={onCopy}
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-white/12 bg-white/[0.045] px-4 text-sm font-black text-white/78 transition hover:border-amber-300/24 hover:bg-white/[0.075] hover:text-white sm:min-h-12 sm:px-5"
+            >
+              {copied ? <CheckCircle2 className="size-4 text-emerald-300" aria-hidden /> : <Copy className="size-4" aria-hidden />}
+              <span>{copied ? "اتنسخ" : "انسخ الرابط"}</span>
+            </button>
+          </div>
         </div>
       </div>
     </section>
