@@ -1,8 +1,7 @@
 import "server-only"
-import { writeFileSync } from "node:fs"
+import { existsSync, readFileSync, unlinkSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
 import type { ZodTypeAny } from "zod"
-import { createBackup } from "./backup"
 import { updateManifestEntry } from "./manifest"
 import { getContent, contentFileExists } from "./loader"
 import { appendContentRevision, getRevisionLogAbsolutePath } from "./revisions"
@@ -57,8 +56,6 @@ export async function saveContent(
     }
   }
 
-  createBackup(type)
-
   const newVersion = currentVersion + 1
   const updatedAt = new Date().toISOString()
   const envelope = {
@@ -69,6 +66,8 @@ export async function saveContent(
   }
 
   const filePath = join(CONTENT_DIR, `${type}.json`)
+  const previousFile = existsSync(filePath) ? readFileSync(filePath, "utf-8") : null
+  const previousManifest = existsSync(MANIFEST_PATH) ? readFileSync(MANIFEST_PATH, "utf-8") : null
   writeFileSync(filePath, JSON.stringify(envelope, null, 2), "utf-8")
   updateManifestEntry(type, newVersion)
 
@@ -80,11 +79,21 @@ export async function saveContent(
     message: `Update platform content: ${type}`,
   })
 
-  const gitStatus: ContentRevisionEntry["gitStatus"] = commitResult.commitSha
-    ? "committed"
-    : commitResult.enabled
-      ? "failed"
-      : "not-configured"
+  if (!commitResult.commitSha) {
+    if (previousFile === null) unlinkSync(filePath)
+    else writeFileSync(filePath, previousFile, "utf-8")
+    if (previousManifest === null) unlinkSync(MANIFEST_PATH)
+    else writeFileSync(MANIFEST_PATH, previousManifest, "utf-8")
+    return {
+      success: false,
+      errors: [{
+        path: "git",
+        message: commitResult.error ?? "GitHub غير مضبوط؛ لم يُعتمد تعديل محتوى المنصة.",
+      }],
+    }
+  }
+
+  const gitStatus: ContentRevisionEntry["gitStatus"] = "committed"
 
   const revision: ContentRevisionEntry = {
     id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
@@ -97,7 +106,7 @@ export async function saveContent(
     createdAt: updatedAt,
     commitId: commitResult.commitSha,
     gitStatus,
-    gitError: commitResult.error,
+    gitError: undefined,
   }
   appendContentRevision(revision)
 
@@ -110,7 +119,7 @@ export async function saveContent(
     success: true,
     version: newVersion,
     commitId: revisionCommit.commitSha ?? commitResult.commitSha,
-    gitStatus: revisionCommit.commitSha || commitResult.commitSha ? "committed" : gitStatus,
-    gitError: revisionCommit.error ?? commitResult.error,
+    gitStatus: "committed",
+    gitError: revisionCommit.error,
   }
 }

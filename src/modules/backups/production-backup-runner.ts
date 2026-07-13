@@ -115,7 +115,6 @@ export async function runDueBackups(now = new Date()): Promise<void> {
       databaseUrl: process.env.DATABASE_URL ?? "",
       platformVersion: process.env.npm_package_version ?? "0.1.0",
       gitCommitSha: process.env.RAILWAY_GIT_COMMIT_SHA,
-      backupEncryptionKey: process.env.BACKUP_ENCRYPTION_KEY,
       backupGitHubToken: process.env.BACKUP_GITHUB_TOKEN,
       backupGitHubRepository: process.env.BACKUP_GITHUB_REPOSITORY,
       backupRoot: process.env.BACKUP_DIR || undefined,

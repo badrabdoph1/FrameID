@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { runBackupHealthCheck } from "@/modules/backups/backup-startup-health";
-import { join } from "node:path";
+import { isGitHubBackupConfigured } from "@/lib/env";
 
 export const dynamic = "force-dynamic";
 
@@ -21,30 +20,27 @@ export async function GET() {
     const dbLatency = Date.now() - start;
     responseBody.database = { connected: true, latencyMs: dbLatency };
 
-    const backupRoot = join(process.cwd(), "backups");
-    const backupHealth = await runBackupHealthCheck({
-      prisma: prisma as never,
-      backupRoot,
-    }).catch(() => null);
+    const [lastBackup, lastRestore, failedBackups] = await Promise.all([
+      prisma.backupJob.findFirst({ where: { status: "COMPLETED" }, orderBy: { completedAt: "desc" }, select: { completedAt: true, metadata: true } }),
+      prisma.restoreJob.findFirst({ where: { status: "COMPLETED" }, orderBy: { completedAt: "desc" }, select: { completedAt: true } }),
+      prisma.backupJob.count({ where: { status: "FAILED" } }),
+    ]);
+    const metadata = lastBackup?.metadata && typeof lastBackup.metadata === "object" && !Array.isArray(lastBackup.metadata)
+      ? lastBackup.metadata as Record<string, unknown>
+      : {};
+    const backupHealthy = isGitHubBackupConfigured()
+      && Boolean(lastBackup?.completedAt)
+      && metadata.remoteVerified === true;
+    responseBody.backup = {
+      healthy: backupHealthy,
+      storage: "github",
+      lastBackupAt: lastBackup?.completedAt?.toISOString() ?? null,
+      lastRestoreAt: lastRestore?.completedAt?.toISOString() ?? null,
+      failedBackups,
+      remoteVerified: metadata.remoteVerified === true,
+    };
 
-    if (backupHealth) {
-      responseBody.backup = {
-        healthy: backupHealth.healthy,
-        totalBackups: backupHealth.details.totalBackups,
-        lastBackupAt: backupHealth.details.lastBackupAt,
-        lastRestoreAt: backupHealth.details.lastRestoreAt,
-        corruptedCount: backupHealth.details.corruptedCount,
-        storageUsedBytes: backupHealth.details.storageUsedBytes,
-        issues: backupHealth.issues,
-      };
-      responseBody.tools = {
-        pgDump: backupHealth.checks.pgDumpAvailable,
-        psql: backupHealth.checks.psqlAvailable,
-        tar: backupHealth.checks.tarAvailable,
-      };
-    }
-
-    if (!backupHealth || !backupHealth.healthy || dbLatency >= 5000) {
+    if (!backupHealthy || dbLatency >= 5000) {
       responseBody.status = "degraded";
     }
   } catch (error) {

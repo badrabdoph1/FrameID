@@ -12,15 +12,19 @@ type GitHubContentResponse = {
   commit?: { sha?: string };
 };
 
-function getGitHubConfig() {
-  const token = process.env.GITHUB_CONTENT_TOKEN || process.env.BACKUP_GITHUB_TOKEN || "";
-  const repository = process.env.GITHUB_REPOSITORY || "badrabdoph-cell/FrameID";
-  const branch = process.env.GITHUB_CONTENT_BRANCH || process.env.RAILWAY_GIT_BRANCH || "main";
-  if (!token) return null;
+export function resolveGitHubContentConfig(source: Record<string, string | undefined> = process.env) {
+  const token = source.GITHUB_CONTENT_TOKEN || source.BACKUP_GITHUB_TOKEN || "";
+  const repository = source.GITHUB_CONTENT_REPOSITORY
+    || source.BACKUP_GITHUB_REPOSITORY
+    || (source.RAILWAY_GIT_REPO_OWNER && source.RAILWAY_GIT_REPO_NAME
+      ? `${source.RAILWAY_GIT_REPO_OWNER}/${source.RAILWAY_GIT_REPO_NAME}`
+      : "");
+  const branch = source.GITHUB_CONTENT_BRANCH || "main";
+  if (!token || !repository) return null;
   return { token, repository, branch };
 }
 
-async function getCurrentFileSha(config: NonNullable<ReturnType<typeof getGitHubConfig>>, path: string): Promise<string | null> {
+async function getCurrentFileSha(config: NonNullable<ReturnType<typeof resolveGitHubContentConfig>>, path: string): Promise<string | null> {
   const response = await fetch(`https://api.github.com/repos/${config.repository}/contents/${encodeURIComponent(path).replace(/%2F/g, "/")}?ref=${encodeURIComponent(config.branch)}`, {
     headers: {
       accept: "application/vnd.github+json",
@@ -36,7 +40,7 @@ async function getCurrentFileSha(config: NonNullable<ReturnType<typeof getGitHub
   return data.sha ?? null;
 }
 
-async function putFile(config: NonNullable<ReturnType<typeof getGitHubConfig>>, path: string, content: string, message: string, sha: string | null): Promise<string | undefined> {
+async function putFile(config: NonNullable<ReturnType<typeof resolveGitHubContentConfig>>, path: string, content: string, message: string, sha: string | null): Promise<string | undefined> {
   const response = await fetch(`https://api.github.com/repos/${config.repository}/contents/${encodeURIComponent(path).replace(/%2F/g, "/")}`, {
     method: "PUT",
     headers: {
@@ -63,7 +67,7 @@ async function putFile(config: NonNullable<ReturnType<typeof getGitHubConfig>>, 
 }
 
 export async function commitContentFilesToGitHub(input: { files: Array<{ path: string; absolutePath: string }>; message: string }): Promise<GitContentCommitResult> {
-  const config = getGitHubConfig();
+  const config = resolveGitHubContentConfig();
   if (!config) return { enabled: false };
 
   try {

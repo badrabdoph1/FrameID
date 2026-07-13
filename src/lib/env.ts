@@ -12,7 +12,6 @@ export interface Env {
   readonly NEXT_PUBLIC_APP_URL: string;
   readonly NEXT_PUBLIC_GA_ID: string;
   readonly BACKUP_GITHUB_TOKEN: string;
-  readonly BACKUP_ENCRYPTION_KEY: string;
   readonly BACKUP_DIR: string;
   readonly CRON_SECRET: string;
   readonly SMTP_HOST: string;
@@ -35,7 +34,6 @@ export const env: Env = {
   NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
   NEXT_PUBLIC_GA_ID: process.env.NEXT_PUBLIC_GA_ID || "",
   BACKUP_GITHUB_TOKEN: process.env.BACKUP_GITHUB_TOKEN || "",
-  BACKUP_ENCRYPTION_KEY: process.env.BACKUP_ENCRYPTION_KEY || "",
   BACKUP_DIR: process.env.BACKUP_DIR || "",
   CRON_SECRET: process.env.CRON_SECRET || "",
   SMTP_HOST: process.env.SMTP_HOST || "",

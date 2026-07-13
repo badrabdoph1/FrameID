@@ -28,9 +28,6 @@ describe("platform seed data", () => {
       currency: "EGP",
       isActive: true
     });
-    expect(seedData.backupSettings.map((setting) => setting.type)).toEqual([
-      "DATABASE",
-      "FULL"
-    ]);
+    expect("backupSettings" in seedData).toBe(false);
   });
 });

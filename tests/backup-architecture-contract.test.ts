@@ -17,4 +17,19 @@ describe("عقد Backup Architecture", () => {
     expect(text).toContain("audience=frameid-backup");
     expect(text).not.toContain("secrets.FRAMEID_BACKUP");
   });
+  it("يحذف مسارات النسخ والتخزين المحلي القديمة", async () => {
+    const removed = [
+      "src/modules/backups/backup-content-packager.ts",
+      "src/modules/backups/backup-encryption.ts",
+      "src/modules/backups/backup-locks.ts",
+      "src/modules/backups/storage/local-storage-provider.ts",
+      "src/modules/backups/storage/storage-factory.ts",
+      "src/modules/backups/storage/storage-provider.ts",
+      "src/modules/backups/backup-startup-health.ts",
+      "src/lib/content/backup.ts",
+    ];
+    await Promise.all(removed.map(async (path) => {
+      await expect(readFile(path, "utf8")).rejects.toThrow();
+    }));
+  });
 });

@@ -26,7 +26,6 @@ function createOfficialBackupService() {
     platformVersion: process.env.npm_package_version ?? "0.1.0",
     backupGitHubToken: env.BACKUP_GITHUB_TOKEN,
     backupGitHubRepository: process.env.BACKUP_GITHUB_REPOSITORY,
-    backupEncryptionKey: env.BACKUP_ENCRYPTION_KEY || undefined,
     gitCommitSha: process.env.RAILWAY_GIT_COMMIT_SHA,
   });
 }

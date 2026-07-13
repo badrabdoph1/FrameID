@@ -1,5 +1,4 @@
 import { templateDefinitions, themeDefinitions } from "@/modules/themes/definitions";
-import { BACKUP_POLICY } from "@/modules/backups/backup-policy";
 
 export function getPlatformSeedData() {
   return {
@@ -137,26 +136,6 @@ export function getPlatformSeedData() {
         sortOrder: 40,
         accounts: [],
       },
-    ],
-    backupSettings: [
-      {
-        type: "DATABASE" as const,
-        enabled: true,
-        schedule: BACKUP_POLICY.DATABASE.schedule,
-        retentionCount: BACKUP_POLICY.DATABASE.retentionCount,
-        compression: "zstd",
-        encryption: true,
-        githubBranch: "platform-backups"
-      },
-      {
-        type: "FULL" as const,
-        enabled: true,
-        schedule: BACKUP_POLICY.FULL.schedule,
-        retentionCount: BACKUP_POLICY.FULL.retentionCount,
-        compression: "zstd",
-        encryption: true,
-        githubBranch: "platform-backups"
-      }
     ]
   };
 }
