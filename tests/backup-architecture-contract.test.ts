@@ -50,4 +50,11 @@ describe("عقد Backup Architecture", () => {
       expect(await readFile(path, "utf8")).toContain("syncPlatformConfigurationToGitHub");
     }
   });
+  it("يعرض دليل GitHub مباشرة بعد النسخ اليدوي", async () => {
+    const actions = await readFile("src/app/(admin)/admin/backups/actions.ts", "utf8");
+    const page = await readFile("src/app/(admin)/admin/backups/page.tsx", "utf8");
+    expect(actions).toContain("?job=");
+    expect(page).toContain("اكتملت النسخة على Railway ووصلت إلى GitHub بعد Remote Verify");
+    expect(page).toContain("فتح النسخة على GitHub");
+  });
 });

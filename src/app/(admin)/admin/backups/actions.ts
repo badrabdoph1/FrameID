@@ -35,13 +35,15 @@ export async function runBackupAction(formData: FormData) {
   const type = readBackupType(formData.get("type"));
   if (!type) redirect("/admin/backups?error=invalid-type");
 
+  let completedJobId = "";
   try {
-    await createOfficialBackupService().runBackup({
+    const result = await createOfficialBackupService().runBackup({
       type,
       trigger: "MANUAL",
       initiatedById: session.user.id,
       note: type === "FULL" ? "نسخة كاملة عبر المسار الرسمي" : "نسخة قاعدة بيانات عبر المسار الرسمي",
     });
+    completedJobId = result.backupJobId;
   } catch (error) {
     const { userError } = await processError(error, {
       userId: session.user.id,
@@ -51,7 +53,7 @@ export async function runBackupAction(formData: FormData) {
   }
 
   revalidatePath("/admin/backups");
-  redirect("/admin/backups?started=1");
+  redirect(`/admin/backups?job=${encodeURIComponent(completedJobId)}`);
 }
 
 
