@@ -1,33 +1,15 @@
 "use client";
 
-import { useState, useCallback, useMemo } from "react";
+import { useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils/cn";
 import {
-  Save,
-  RotateCcw,
-  RotateCw,
-  Eye,
-  EyeOff,
-  Layers,
-  Grid,
-  List,
   ChevronLeft,
-  ChevronRight,
-  Trash2,
-  Copy,
   Settings,
-  GripVertical,
-  ArrowUpDown,
-  X,
+  Copy,
+  Trash2,
   Loader2,
   AlertTriangle,
-  CheckCircle,
-  MessageSquare,
-  RefreshCw,
-  Undo2,
-  Redo2,
-  PanelLeft,
 } from "lucide-react";
 import { PagePreview } from "./page-preview";
 import { EditorToolbar } from "./editor-toolbar";
@@ -36,7 +18,6 @@ import { HiddenSectionsPanel } from "./hidden-sections-panel";
 import { InlineTextEditor } from "./inline-text-editor";
 import { ImageReplaceDialog } from "./image-replace-dialog";
 import { usePageStudio } from "./use-page-studio";
-import type { PageDefinition } from "@/modules/page-studio/types";
 
 interface PageStudioEditorProps {
   pageId: string;
@@ -79,7 +60,6 @@ export function PageStudioEditor({ pageId }: PageStudioEditorProps) {
     saveStatus,
     saveMessage,
     toast,
-    setToast,
   } = usePageStudio(pageId);
 
   const handleSave = useCallback(async () => {
@@ -170,8 +150,8 @@ export function PageStudioEditor({ pageId }: PageStudioEditorProps) {
             selectedTextPath={selectedTextPath}
             selectedImagePath={selectedImagePath}
             onSectionClick={(sectionId) => setSelectedSection(sectionId)}
-            onTextClick={(path, _rect, value) => setSelectedText(path)}
-            onImageClick={(path, _rect, src) => setSelectedImage(path)}
+            onTextClick={(path, _rect, _value) => setSelectedText(path)}
+            onImageClick={(path, _rect, _src) => setSelectedImage(path)}
             previewMode={previewMode}
           />
 

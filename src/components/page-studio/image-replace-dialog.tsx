@@ -1,7 +1,9 @@
+"use client";
+
 import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 import { cn } from "@/lib/utils/cn";
-import { X, Image as ImageIcon, Upload, Search, Trash2 } from "lucide-react";
+import { X, Image as ImageIcon, Upload, Search } from "lucide-react";
 
 interface ImageReplaceDialogProps {
   path: string;

@@ -2,7 +2,7 @@
 
 import { useRef, useEffect, useState } from "react";
 import { cn } from "@/lib/utils/cn";
-import { X, Save, ChevronLeft } from "lucide-react";
+import { X, Save } from "lucide-react";
 
 interface InlineTextEditorProps {
   path: string;
@@ -14,7 +14,7 @@ interface InlineTextEditorProps {
 export function InlineTextEditor({ path, value, onSave, onClose }: InlineTextEditorProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [text, setText] = useState(value);
-  const [isMultiline, setIsMultiline] = useState(value.length > 80 || value.includes("\n"));
+  const [isMultiline] = useState(value.length > 80 || value.includes("\n"));
 
   useEffect(() => {
     textareaRef.current?.focus();
