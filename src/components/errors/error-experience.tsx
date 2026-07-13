@@ -6,17 +6,18 @@ import { useEffect, useRef, useState } from "react";
 
 import { captureClientError, reportCapturedError } from "@/lib/client/error-reporting";
 
-export type ErrorExperienceVariant = "generic" | "marketing" | "dashboard" | "admin" | "not-found" | "unauthorized" | "forbidden" | "session-expired";
+export type ErrorExperienceVariant = "generic" | "marketing" | "dashboard" | "admin" | "not-found" | "unauthorized" | "forbidden" | "session-expired" | "expired";
 
 const COPY: Record<ErrorExperienceVariant, { eyebrow: string; title: string; message: string }> = {
   generic: { eyebrow: "تحديث بسيط", title: "بنجهّز لك تجربة أحسن", message: "في تحديث دلوقتي في الموقع، بنضيف لكم مميزات جديدة وبنطوّر الخدمات. جرّب تاني بعد لحظات." },
   marketing: { eyebrow: "تحديث بسيط", title: "بنجهّز لك تجربة أحسن", message: "في تحديث دلوقتي في الموقع، بنضيف لكم مميزات جديدة وبنطوّر الخدمات. جرّب تاني بعد لحظات." },
   dashboard: { eyebrow: "حفظنا مكانك", title: "لوحة التحكم هترجع خلال لحظات", message: "في تحديث دلوقتي في الموقع، بنضيف لكم مميزات جديدة وبنطوّر الخدمات. جرّب تاني بعد لحظات." },
-  admin: { eyebrow: "متابعة داخلية", title: "مساحة الإدارة بتتحدّث", message: "التفاصيل التقنية اتسجلت تلقائيًا، وتقدر تحاول تاني أو ترجع للوحة الإدارة." },
-  "not-found": { eyebrow: "الرابط اتغيّر", title: "الصفحة دي مش متاحة دلوقتي", message: "باقي الموقع شغال بشكل طبيعي. ارجع للرئيسية أو جرّب تحديث الصفحة." },
-  unauthorized: { eyebrow: "حسابك آمن", title: "سجّل دخولك عشان تكمّل", message: "بعد تسجيل الدخول هتقدر ترجع وتكمّل من نفس المكان." },
-  forbidden: { eyebrow: "صلاحيات الوصول", title: "الصفحة دي متاحة لصلاحيات معينة", message: "تقدر ترجع للرئيسية وتكمّل استخدام الموقع بشكل طبيعي." },
-  "session-expired": { eyebrow: "حسابك آمن", title: "جلسة الدخول انتهت", message: "انتهت الجلسة للحفاظ على أمان حسابك. سجّل دخولك وكمل." },
+  admin: { eyebrow: "متابعة داخلية", title: "مساحة الإدارة بتتحدّث", message: "في تحديث دلوقتي في الموقع، بنضيف لكم مميزات جديدة وبنطوّر الخدمات. جرّب تاني بعد لحظات." },
+  "not-found": { eyebrow: "الرابط اتغيّر", title: "الصفحة دي مش متاحة دلوقتي", message: "في تحديث دلوقتي في الموقع، بنضيف لكم مميزات جديدة وبنطوّر الخدمات. جرّب تاني بعد لحظات." },
+  unauthorized: { eyebrow: "حسابك آمن", title: "سجّل دخولك عشان تكمّل", message: "في تحديث دلوقتي في الموقع، بنضيف لكم مميزات جديدة وبنطوّر الخدمات. سجّل دخولك وكمل بعد لحظات." },
+  forbidden: { eyebrow: "صلاحيات الوصول", title: "الصفحة دي متاحة لصلاحيات معينة", message: "في تحديث دلوقتي في الموقع، بنضيف لكم مميزات جديدة وبنطوّر الخدمات. تقدر ترجع للرئيسية وتكمّل بشكل طبيعي." },
+  "session-expired": { eyebrow: "حسابك آمن", title: "جلسة الدخول انتهت", message: "في تحديث دلوقتي في الموقع، بنضيف لكم مميزات جديدة وبنطوّر الخدمات. سجّل دخولك وكمل بعد لحظات." },
+  expired: { eyebrow: "تحديث التفعيل", title: "الخدمة هترجع خلال لحظات", message: "في تحديث دلوقتي في الموقع، بنضيف لكم مميزات جديدة وبنطوّر الخدمات. لو أنت صاحب الموقع، سجّل دخولك لتحديث التفعيل." },
 };
 
 type Props = {

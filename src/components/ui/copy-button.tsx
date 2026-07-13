@@ -17,7 +17,7 @@ export function CopyButton({ value }: { value: string }) {
       type="button"
       onClick={copy}
       className="mr-2 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
-      title="نسخ كود الخطأ"
+      title="نسخ المرجع"
     >
       {copied ? "تم النسخ" : "نسخ"}
     </button>

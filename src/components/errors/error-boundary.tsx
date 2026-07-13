@@ -1,9 +1,8 @@
 "use client";
 
-import { AlertTriangle, ClipboardCopy, RotateCcw } from "lucide-react";
 import { Component, type ErrorInfo, type ReactNode } from "react";
 
-import { cn } from "@/lib/utils/cn";
+import { ErrorExperience } from "@/components/errors/error-experience";
 
 type Props = {
   children: ReactNode;
@@ -30,71 +29,13 @@ export class ErrorBoundary extends Component<Props, State> {
     this.props.onError?.(error, info);
   }
 
-  handleReset = () => {
-    this.setState({ hasError: false, error: null });
-  };
-
-  handleCopy = async () => {
-    if (!this.state.error) return;
-    const text = `Error: ${this.state.error.message}\n\nStack:\n${this.state.error.stack}`;
-    await navigator.clipboard.writeText(text);
-  };
-
   render() {
     if (this.state.hasError) {
       if (this.props.fallback) {
         return this.props.fallback;
       }
 
-      const isDev = process.env.NODE_ENV === "development";
-
-      return (
-        <div className="flex min-h-[200px] items-center justify-center p-8">
-          <div className="w-full max-w-md text-center">
-            <div className="mx-auto mb-4 flex size-12 items-center justify-center rounded-full bg-danger/10">
-              <AlertTriangle className="size-6 text-danger" />
-            </div>
-            <h2 className="mb-2 text-lg font-semibold text-foreground">
-              حصل خطأ غير متوقع
-            </h2>
-            <p className="mb-6 text-sm text-muted-foreground">
-              مقدرناش نحمل الجزء ده. حاول تحديث الصفحة.
-            </p>
-            <div className="flex items-center justify-center gap-3">
-              <button
-                onClick={this.handleReset}
-                className={cn(
-                  "inline-flex items-center gap-2 rounded-[var(--radius-control)] bg-foreground px-4 py-2 text-sm font-medium text-background transition",
-                  "hover:bg-foreground/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-champagne/50",
-                )}
-              >
-                <RotateCcw className="size-4" aria-hidden />
-                جرب تاني
-              </button>
-              <button
-                onClick={this.handleCopy}
-                className={cn(
-                  "inline-flex items-center gap-2 rounded-[var(--radius-control)] border border-border px-4 py-2 text-sm font-medium text-muted-foreground transition",
-                  "hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-champagne/50",
-                )}
-              >
-                <ClipboardCopy className="size-4" aria-hidden />
-                انسخ التفاصيل
-              </button>
-            </div>
-            {isDev && this.state.error && (
-              <details className="mt-6 text-left">
-                <summary className="cursor-pointer text-xs text-muted-foreground">
-                  تفاصيل تقنية
-                </summary>
-                <pre className="mt-2 max-h-48 overflow-auto rounded-[var(--radius-control)] bg-ink/5 p-3 text-xs text-muted-foreground">
-                  {this.state.error.stack}
-                </pre>
-              </details>
-            )}
-          </div>
-        </div>
-      );
+      return <ErrorExperience variant="generic" error={this.state.error} />;
     }
 
     return this.props.children;

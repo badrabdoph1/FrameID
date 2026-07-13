@@ -548,7 +548,7 @@ export default async function AdminSearchPage({ searchParams }: Props) {
     >
       <form action="/admin/search" className="rounded-2xl border border-amber-500/15 bg-[radial-gradient(circle_at_top_right,rgba(243,207,115,0.12),transparent_35%),rgba(255,255,255,0.035)] p-4">
         <label htmlFor="admin-global-search" className="mb-2 block text-xs font-black text-white/45">
-          اكتب اسم عميل، بريد، slug، reference، error code، action، أو ID
+          اكتب اسم عميل، بريد، slug، reference، issue number، action، أو ID
         </label>
         <div className="relative">
           <Search className="pointer-events-none absolute right-4 top-1/2 size-5 -translate-y-1/2 text-amber-300/70" />
@@ -573,7 +573,7 @@ export default async function AdminSearchPage({ searchParams }: Props) {
       ) : query.length < 2 ? (
         <EmptySearch title="اكتب حرفين على الأقل" description="البحث الشامل يتجاهل الاستعلامات القصيرة جدًا لتقليل الضغط على قاعدة البيانات." />
       ) : groups.length === 0 ? (
-        <EmptySearch title="لا توجد نتائج" description="جرّب البريد، اسم العميل، slug الموقع، رقم المرجع، أو كود الخطأ." />
+        <EmptySearch title="لا توجد نتائج" description="جرّب البريد، اسم العميل، slug الموقع، رقم المرجع، أو رقم البلاغ." />
       ) : (
         <div className="grid gap-4">
           {groups.map((group) => (
