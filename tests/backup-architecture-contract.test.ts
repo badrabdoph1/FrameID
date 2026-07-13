@@ -72,5 +72,6 @@ describe("عقد Backup Architecture", () => {
     const text = await readFile("src/modules/backups/frameid-restore-pipeline.ts", "utf8");
     expect(text).toContain("input.prisma.backupJob.upsert");
     expect(text).toContain("restoredManifest.backupJobId");
+    expect(text).toContain("input.prisma.backupJob.updateMany");
   });
 });
