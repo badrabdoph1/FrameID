@@ -35,11 +35,14 @@ export function PagePreview({
   }, []);
 
   const sendToIframe = useCallback((message: unknown) => {
-    iframeRef.current?.contentWindow?.postMessage(message, "*");
+    if (iframeRef.current?.contentWindow) {
+      iframeRef.current.contentWindow.postMessage(message, window.location.origin);
+    }
   }, []);
 
   useEffect(() => {
     const handler = (event: MessageEvent) => {
+      if (event.origin !== window.location.origin) return;
       if (event.source !== iframeRef.current?.contentWindow) return;
       
       const data = event.data;
@@ -111,7 +114,7 @@ export function PagePreview({
 function injectEditorScript(window: Window) {
 
   const sendMessage = (data: object) => {
-    window.parent.postMessage(data, "*");
+    window.parent.postMessage(data, window.location.origin);
   };
 
   // Add data attributes to sections
@@ -173,7 +176,8 @@ function injectEditorScript(window: Window) {
 
   // Listen for selection changes from parent
   window.addEventListener("message", (event) => {
-    if (event.data.type === "set-selection") {
+    if (event.origin !== window.location.origin) return;
+    if (event.data?.type === "set-selection") {
       updateVisualSelection(event.data);
     }
   });

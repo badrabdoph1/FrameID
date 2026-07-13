@@ -8,9 +8,12 @@ const schemaKeyMap: Record<string, string> = {
   "marketing-homepage": "marketing/homepage",
   "marketing-templates": "marketing/templates",
   "marketing-pricing": "marketing/pricing",
-  "auth-login": "marketing/login",
-  "auth-signup": "marketing/signup",
-  "auth-forgot-password": "marketing/forgot-password",
+  "marketing-login": "marketing/login",
+  "marketing-signup": "marketing/signup",
+  "marketing-forgot-password": "marketing/forgot-password",
+  "marketing-checkout": "marketing/checkout",
+  "marketing-success": "marketing/success",
+  "marketing-error": "marketing/error",
 };
 
 export async function POST(

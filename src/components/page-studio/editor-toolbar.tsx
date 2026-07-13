@@ -1,11 +1,8 @@
 "use client";
 
-import { useState } from "react";
 import { cn } from "@/lib/utils/cn";
 import {
   Save,
-  RotateCcw,
-  RotateCw,
   Eye,
   EyeOff,
   Loader2,
@@ -51,8 +48,6 @@ export function EditorToolbar({
   saveStatus,
   saveMessage,
 }: EditorToolbarProps) {
-  const [showHistory, setShowHistory] = useState(false);
-
   return (
     <div className="sticky top-0 z-20 flex flex-wrap items-center justify-between gap-3 border-b border-white/10 bg-[#0b0d12]/95 backdrop-blur-sm px-4 py-3">
       {/* Left: Page Info & Navigation */}

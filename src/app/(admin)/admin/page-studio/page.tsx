@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Layout, Home, FileText, Palette, Search, Sparkles, type LucideIcon } from "lucide-react";
+import { Layout, Home, FileText, Palette, Search, Sparkles, CreditCard, CheckCircle, AlertTriangle, type LucideIcon } from "lucide-react";
 import { AdminPageShell } from "@/components/layout/admin-page-shell";
 import { prisma } from "@/lib/prisma";
 import { requireAdminPermission } from "@/modules/admin/admin-permission-guards";
@@ -9,9 +9,12 @@ const pageCards = [
   { key: "marketing-homepage", icon: Home, stats: { label: "مصدر البيانات", value: "JSON File" } },
   { key: "marketing-templates", icon: Layout, stats: { label: "مصدر البيانات", value: "JSON File" } },
   { key: "marketing-pricing", icon: FileText, stats: { label: "مصدر البيانات", value: "JSON File" } },
-  { key: "auth-login", icon: Search, stats: { label: "مصدر البيانات", value: "JSON File" } },
-  { key: "auth-signup", icon: Sparkles, stats: { label: "مصدر البيانات", value: "JSON File" } },
-  { key: "auth-forgot-password", icon: Palette, stats: { label: "مصدر البيانات", value: "JSON File" } },
+  { key: "marketing-login", icon: Search, stats: { label: "مصدر البيانات", value: "JSON File" } },
+  { key: "marketing-signup", icon: Sparkles, stats: { label: "مصدر البيانات", value: "JSON File" } },
+  { key: "marketing-forgot-password", icon: Palette, stats: { label: "مصدر البيانات", value: "JSON File" } },
+  { key: "marketing-checkout", icon: CreditCard, stats: { label: "مصدر البيانات", value: "JSON File" } },
+  { key: "marketing-success", icon: CheckCircle, stats: { label: "مصدر البيانات", value: "JSON File" } },
+  { key: "marketing-error", icon: AlertTriangle, stats: { label: "مصدر البيانات", value: "JSON File" } },
 ];
 
 export const dynamic = "force-dynamic";

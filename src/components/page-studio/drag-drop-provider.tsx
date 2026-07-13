@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback } from "react";
 import { cn } from "@/lib/utils/cn";
 
 interface SortableItem {
@@ -26,21 +26,25 @@ export function SimpleDragDropProvider<T extends SortableItem>({
   renderItem,
 }: SimpleDragDropProviderProps<T>) {
   const [draggedId, setDraggedId] = useState<string | null>(null);
+  const [overId, setOverId] = useState<string | null>(null);
 
   const handleDragStart = useCallback((e: React.DragEvent, id: string) => {
     setDraggedId(id);
     e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", id);
   }, []);
 
-  const handleDragOver = useCallback((e: React.DragEvent) => {
+  const handleDragOver = useCallback((e: React.DragEvent, targetId?: string) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = "move";
+    if (targetId) setOverId(targetId);
   }, []);
 
   const handleDrop = useCallback(
     (e: React.DragEvent, targetId: string) => {
       e.preventDefault();
-      if (!draggedId || draggedId === targetId) {
+      setOverId(null);
+      if (!draggedId || draggedId === targetId || !targetId) {
         setDraggedId(null);
         return;
       }
@@ -62,26 +66,42 @@ export function SimpleDragDropProvider<T extends SortableItem>({
 
   const handleDragEnd = useCallback(() => {
     setDraggedId(null);
+    setOverId(null);
   }, []);
 
+  const moveUp = useCallback((id: string) => {
+    const idx = items.findIndex((item) => item.id === id);
+    if (idx <= 0) return;
+    const newItems = [...items];
+    [newItems[idx - 1], newItems[idx]] = [newItems[idx], newItems[idx - 1]];
+    onReorder(newItems.map((item) => item.id));
+  }, [items, onReorder]);
+
+  const moveDown = useCallback((id: string) => {
+    const idx = items.findIndex((item) => item.id === id);
+    if (idx === -1 || idx >= items.length - 1) return;
+    const newItems = [...items];
+    [newItems[idx], newItems[idx + 1]] = [newItems[idx + 1], newItems[idx]];
+    onReorder(newItems.map((item) => item.id));
+  }, [items, onReorder]);
+
   return (
-    <div
-      onDragOver={handleDragOver}
-      onDrop={(e) => handleDrop(e, "")}
-      onDragEnd={handleDragEnd}
-    >
+    <div>
       {items.map((item, index) => (
         <DraggableItem
           key={item.id}
           item={item}
           index={index}
           isDragging={draggedId === item.id}
+          isOver={overId === item.id && draggedId !== item.id}
           isFirst={index === 0}
           isLast={index === items.length - 1}
           onDragStart={handleDragStart}
           onDragOver={handleDragOver}
           onDrop={handleDrop}
           onDragEnd={handleDragEnd}
+          onMoveUp={() => moveUp(item.id)}
+          onMoveDown={() => moveDown(item.id)}
           renderItem={renderItem}
         />
       ))}
@@ -93,12 +113,15 @@ interface DraggableItemProps<T extends SortableItem> {
   item: T;
   index: number;
   isDragging: boolean;
+  isOver: boolean;
   isFirst: boolean;
   isLast: boolean;
   onDragStart: (e: React.DragEvent, id: string) => void;
-  onDragOver: (e: React.DragEvent) => void;
+  onDragOver: (e: React.DragEvent, targetId: string) => void;
   onDrop: (e: React.DragEvent, targetId: string) => void;
   onDragEnd: () => void;
+  onMoveUp: () => void;
+  onMoveDown: () => void;
   renderItem: (props: {
     item: T;
     index: number;
@@ -113,20 +136,38 @@ function DraggableItem<T extends SortableItem>({
   item,
   index,
   isDragging,
+  isOver,
   isFirst,
   isLast,
   onDragStart,
   onDragOver,
   onDrop,
   onDragEnd,
+  onMoveUp,
+  onMoveDown,
   renderItem,
 }: DraggableItemProps<T>) {
-  const moveUp = () => {};
-  const moveDown = () => {};
-
   return (
-    <>
-      {renderItem({ item, index, moveUp, moveDown, isFirst, isLast })}
-    </>
+    <div
+      draggable
+      onDragStart={(e) => onDragStart(e, item.id)}
+      onDragOver={(e) => onDragOver(e, item.id)}
+      onDrop={(e) => onDrop(e, item.id)}
+      onDragEnd={onDragEnd}
+      className={cn(
+        "transition-all",
+        isDragging && "opacity-40 scale-95",
+        isOver && "border-t-2 border-amber-300"
+      )}
+    >
+      {renderItem({
+        item,
+        index,
+        moveUp: onMoveUp,
+        moveDown: onMoveDown,
+        isFirst,
+        isLast,
+      })}
+    </div>
   );
 }

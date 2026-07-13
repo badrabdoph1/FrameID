@@ -1,12 +1,10 @@
 "use client";
 
 import { useState, useCallback, useEffect, useMemo, useRef } from "react";
-import { useRouter } from "next/navigation";
 import { PAGE_DEFINITIONS } from "@/modules/page-studio/registry";
-import type { PageDefinition, PageStudioState, SectionInstance } from "@/modules/page-studio/types";
+import type { PageStudioState, SectionInstance } from "@/modules/page-studio/types";
 
 export function usePageStudio(pageId: string) {
-  const router = useRouter();
   const [state, setState] = useState<PageStudioState | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -103,53 +101,45 @@ export function usePageStudio(pageId: string) {
     return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
   }, []);
 
-  const syncDataToState = useCallback(() => {
-    if (!state) return;
-    for (const section of state.sections) {
-      setNestedValue(state.data, section.definition.contentPath, section.data);
-    }
-    for (const section of state.hiddenSections) {
-      setNestedValue(state.data, section.definition.contentPath, section.data);
-    }
-  }, [state, setNestedValue]);
-
-  const pushHistory = useCallback((description: string) => {
+  // Section operations
+  const updateField = useCallback((sectionId: string, path: string, value: unknown) => {
     setState((prev) => {
       if (!prev) return prev;
+      const sectionIndex = prev.sections.findIndex((s) => s.id === sectionId);
+      if (sectionIndex === -1) return prev;
+
+      const section = prev.sections[sectionIndex];
+      const newData = { ...section.data };
+      setNestedValue(newData, path, value);
+
+      const updatedSections = [...prev.sections];
+      updatedSections[sectionIndex] = { ...section, data: newData };
+
+      // Sync to root data
+      const newDataRoot = { ...prev.data };
+      setNestedValue(newDataRoot, section.definition.contentPath, newData);
+
       const newHistory = prev.history.slice(0, prev.historyIndex + 1);
       newHistory.push({
         id: generateId(),
         timestamp: Date.now(),
-        data: JSON.parse(JSON.stringify(prev.data)),
-        sections: JSON.parse(JSON.stringify(prev.sections)),
+        data: JSON.parse(JSON.stringify(newDataRoot)),
+        sections: JSON.parse(JSON.stringify(updatedSections)),
         hiddenSections: JSON.parse(JSON.stringify(prev.hiddenSections)),
-        description,
+        description: `تعديل ${path}`,
       });
       if (newHistory.length > 50) newHistory.shift();
+
       return {
         ...prev,
+        data: newDataRoot,
+        sections: updatedSections,
         history: newHistory,
         historyIndex: newHistory.length - 1,
         isDirty: true,
       };
     });
-  }, [generateId]);
-
-  // Section operations
-  const updateField = useCallback((sectionId: string, path: string, value: unknown) => {
-    setState((prev) => {
-      if (!prev) return prev;
-      const section = prev.sections.find((s) => s.id === sectionId);
-      if (!section) return prev;
-
-      const newData = { ...section.data };
-      setNestedValue(newData, path, value);
-      section.data = newData;
-      syncDataToState();
-      pushHistory(`تعديل ${path}`);
-      return prev;
-    });
-  }, [setNestedValue, syncDataToState, pushHistory]);
+  }, [setNestedValue, generateId]);
 
   const toggleSectionVisibility = useCallback((sectionId: string, isVisible: boolean) => {
     setState((prev) => {
@@ -157,20 +147,41 @@ export function usePageStudio(pageId: string) {
       const sectionIndex = prev.sections.findIndex((s) => s.id === sectionId);
       if (sectionIndex === -1) return prev;
 
-      const [section] = prev.sections.splice(sectionIndex, 1);
-      section.isVisible = isVisible;
+      const section = prev.sections[sectionIndex];
+      const updatedSection = { ...section, isVisible };
+
+      let newSections: SectionInstance[];
+      let newHiddenSections: SectionInstance[];
 
       if (isVisible) {
-        prev.sections.push(section);
-        prev.sections.sort((a, b) => a.sortOrder - b.sortOrder);
+        newSections = [...prev.sections, updatedSection].sort((a, b) => a.sortOrder - b.sortOrder);
+        newHiddenSections = prev.hiddenSections.filter((s) => s.id !== sectionId);
       } else {
-        prev.hiddenSections.push(section);
+        newSections = prev.sections.filter((s) => s.id !== sectionId);
+        newHiddenSections = [...prev.hiddenSections, updatedSection];
       }
 
-      pushHistory(isVisible ? "إظهار قسم" : "إخفاء قسم");
-      return prev;
+      const newHistory = prev.history.slice(0, prev.historyIndex + 1);
+      newHistory.push({
+        id: generateId(),
+        timestamp: Date.now(),
+        data: JSON.parse(JSON.stringify(prev.data)),
+        sections: JSON.parse(JSON.stringify(newSections)),
+        hiddenSections: JSON.parse(JSON.stringify(newHiddenSections)),
+        description: isVisible ? "إظهار قسم" : "إخفاء قسم",
+      });
+      if (newHistory.length > 50) newHistory.shift();
+
+      return {
+        ...prev,
+        sections: newSections,
+        hiddenSections: newHiddenSections,
+        history: newHistory,
+        historyIndex: newHistory.length - 1,
+        isDirty: true,
+      };
     });
-  }, [pushHistory]);
+  }, [generateId]);
 
   const moveSection = useCallback((sectionId: string, direction: "up" | "down") => {
     setState((prev) => {
@@ -182,18 +193,34 @@ export function usePageStudio(pageId: string) {
       const newIndex = direction === "up" ? sectionIndex - 1 : sectionIndex + 1;
       if (newIndex < 0 || newIndex >= visibleSections.length) return prev;
 
-      const [moved] = visibleSections.splice(sectionIndex, 1);
-      visibleSections.splice(newIndex, 0, moved);
-      visibleSections.forEach((s, i) => (s.sortOrder = i));
+      const newVisible = [...visibleSections];
+      const [moved] = newVisible.splice(sectionIndex, 1);
+      newVisible.splice(newIndex, 0, moved);
+      newVisible.forEach((s, i) => { s.sortOrder = i; });
 
       const hiddenSections = prev.sections.filter((s) => !s.isVisible);
+      const allSections = [...newVisible, ...hiddenSections];
+
+      const newHistory = prev.history.slice(0, prev.historyIndex + 1);
+      newHistory.push({
+        id: generateId(),
+        timestamp: Date.now(),
+        data: JSON.parse(JSON.stringify(prev.data)),
+        sections: JSON.parse(JSON.stringify(allSections)),
+        hiddenSections: JSON.parse(JSON.stringify(hiddenSections)),
+        description: "نقل قسم",
+      });
+      if (newHistory.length > 50) newHistory.shift();
+
       return {
         ...prev,
-        sections: [...visibleSections, ...hiddenSections],
+        sections: allSections,
+        history: newHistory,
+        historyIndex: newHistory.length - 1,
         isDirty: true,
       };
     });
-  }, []);
+  }, [generateId]);
 
   const duplicateSection = useCallback((sectionId: string) => {
     setState((prev) => {
@@ -210,10 +237,28 @@ export function usePageStudio(pageId: string) {
         data: JSON.parse(JSON.stringify(section.data)),
       };
 
-      pushHistory("نسخ قسم");
-      return { ...prev, sections: [...prev.sections, newSection], isDirty: true };
+      const newSections = [...prev.sections, newSection];
+
+      const newHistory = prev.history.slice(0, prev.historyIndex + 1);
+      newHistory.push({
+        id: generateId(),
+        timestamp: Date.now(),
+        data: JSON.parse(JSON.stringify(prev.data)),
+        sections: JSON.parse(JSON.stringify(newSections)),
+        hiddenSections: JSON.parse(JSON.stringify(prev.hiddenSections)),
+        description: "نسخ قسم",
+      });
+      if (newHistory.length > 50) newHistory.shift();
+
+      return {
+        ...prev,
+        sections: newSections,
+        history: newHistory,
+        historyIndex: newHistory.length - 1,
+        isDirty: true,
+      };
     });
-  }, [generateId, pushHistory]);
+  }, [generateId]);
 
   const deleteSection = useCallback((sectionId: string) => {
     setState((prev) => {
@@ -221,12 +266,32 @@ export function usePageStudio(pageId: string) {
       const sectionIndex = prev.sections.findIndex((s) => s.id === sectionId);
       if (sectionIndex === -1) return prev;
 
-      const [section] = prev.sections.splice(sectionIndex, 1);
-      section.isVisible = false;
-      pushHistory("حذف قسم");
-      return { ...prev, sections: prev.sections, hiddenSections: [...prev.hiddenSections, section], isDirty: true };
+      const section = prev.sections[sectionIndex];
+      const deletedSection = { ...section, isVisible: false };
+      const newSections = prev.sections.filter((s) => s.id !== sectionId);
+      const newHiddenSections = [...prev.hiddenSections, deletedSection];
+
+      const newHistory = prev.history.slice(0, prev.historyIndex + 1);
+      newHistory.push({
+        id: generateId(),
+        timestamp: Date.now(),
+        data: JSON.parse(JSON.stringify(prev.data)),
+        sections: JSON.parse(JSON.stringify(newSections)),
+        hiddenSections: JSON.parse(JSON.stringify(newHiddenSections)),
+        description: "حذف قسم",
+      });
+      if (newHistory.length > 50) newHistory.shift();
+
+      return {
+        ...prev,
+        sections: newSections,
+        hiddenSections: newHiddenSections,
+        history: newHistory,
+        historyIndex: newHistory.length - 1,
+        isDirty: true,
+      };
     });
-  }, [pushHistory]);
+  }, [generateId]);
 
   const restoreSection = useCallback((hiddenSectionId: string) => {
     setState((prev) => {
@@ -234,25 +299,58 @@ export function usePageStudio(pageId: string) {
       const hiddenIndex = prev.hiddenSections.findIndex((s) => s.id === hiddenSectionId);
       if (hiddenIndex === -1) return prev;
 
-      const [section] = prev.hiddenSections.splice(hiddenIndex, 1);
-      section.isVisible = true;
-      section.sortOrder = prev.sections.length;
-      pushHistory("استعادة قسم");
-      return { ...prev, sections: [...prev.sections, section], isDirty: true };
+      const section = prev.hiddenSections[hiddenIndex];
+      const restoredSection = { ...section, isVisible: true, sortOrder: prev.sections.length };
+      const newHiddenSections = prev.hiddenSections.filter((s) => s.id !== hiddenSectionId);
+      const newSections = [...prev.sections, restoredSection];
+
+      const newHistory = prev.history.slice(0, prev.historyIndex + 1);
+      newHistory.push({
+        id: generateId(),
+        timestamp: Date.now(),
+        data: JSON.parse(JSON.stringify(prev.data)),
+        sections: JSON.parse(JSON.stringify(newSections)),
+        hiddenSections: JSON.parse(JSON.stringify(newHiddenSections)),
+        description: "استعادة قسم",
+      });
+      if (newHistory.length > 50) newHistory.shift();
+
+      return {
+        ...prev,
+        sections: newSections,
+        hiddenSections: newHiddenSections,
+        history: newHistory,
+        historyIndex: newHistory.length - 1,
+        isDirty: true,
+      };
     });
-  }, [pushHistory]);
+  }, [generateId]);
 
   const permanentlyDeleteSection = useCallback((hiddenSectionId: string) => {
     setState((prev) => {
       if (!prev) return prev;
-      pushHistory("حذف نهائي لقسم");
+      const newHiddenSections = prev.hiddenSections.filter((s) => s.id !== hiddenSectionId);
+
+      const newHistory = prev.history.slice(0, prev.historyIndex + 1);
+      newHistory.push({
+        id: generateId(),
+        timestamp: Date.now(),
+        data: JSON.parse(JSON.stringify(prev.data)),
+        sections: JSON.parse(JSON.stringify(prev.sections)),
+        hiddenSections: JSON.parse(JSON.stringify(newHiddenSections)),
+        description: "حذف نهائي لقسم",
+      });
+      if (newHistory.length > 50) newHistory.shift();
+
       return {
         ...prev,
-        hiddenSections: prev.hiddenSections.filter((s) => s.id !== hiddenSectionId),
+        hiddenSections: newHiddenSections,
+        history: newHistory,
+        historyIndex: newHistory.length - 1,
         isDirty: true,
       };
     });
-  }, [pushHistory]);
+  }, [generateId]);
 
   const reorderSections = useCallback((sectionIds: string[]) => {
     setState((prev) => {
@@ -262,12 +360,30 @@ export function usePageStudio(pageId: string) {
         .map((id) => visibleSections.find((s) => s.id === id))
         .filter((s): s is SectionInstance => s !== undefined);
 
-      reordered.forEach((s, i) => (s.sortOrder = i));
+      reordered.forEach((s, i) => { s.sortOrder = i; });
       const hiddenSections = prev.sections.filter((s) => !s.isVisible);
-      pushHistory("إعادة ترتيب الأقسام");
-      return { ...prev, sections: [...reordered, ...hiddenSections], isDirty: true };
+      const allSections = [...reordered, ...hiddenSections];
+
+      const newHistory = prev.history.slice(0, prev.historyIndex + 1);
+      newHistory.push({
+        id: generateId(),
+        timestamp: Date.now(),
+        data: JSON.parse(JSON.stringify(prev.data)),
+        sections: JSON.parse(JSON.stringify(allSections)),
+        hiddenSections: JSON.parse(JSON.stringify(hiddenSections)),
+        description: "إعادة ترتيب الأقسام",
+      });
+      if (newHistory.length > 50) newHistory.shift();
+
+      return {
+        ...prev,
+        sections: allSections,
+        history: newHistory,
+        historyIndex: newHistory.length - 1,
+        isDirty: true,
+      };
     });
-  }, [pushHistory]);
+  }, [generateId]);
 
   const undo = useCallback(() => {
     setState((prev) => {
@@ -323,20 +439,24 @@ export function usePageStudio(pageId: string) {
         setSaveMessage(`تم الحفظ بنجاح (النسخة ${result.version})`);
         setToast({ type: "success", message: "تم حفظ التغييرات" });
         setState((prev) => prev ? { ...prev, version: result.version, lastSavedVersion: result.version, isDirty: false } : prev);
+        setTimeout(() => setSaveStatus("idle"), 5000);
+        return { success: true, errors: undefined };
       } else {
+        const errorMsg = result.errors?.[0]?.message || "فشل الحفظ";
         setSaveStatus("error");
-        setSaveMessage(result.errors?.[0]?.message || "فشل الحفظ");
-        setToast({ type: "error", message: result.errors?.[0]?.message || "فشل الحفظ" });
+        setSaveMessage(errorMsg);
+        setToast({ type: "error", message: errorMsg });
+        setTimeout(() => setSaveStatus("idle"), 5000);
+        return { success: false, errors: result.errors };
       }
-    } catch (err) {
+    } catch {
       setSaveStatus("error");
       setSaveMessage("حدث خطأ أثناء الحفظ");
       setToast({ type: "error", message: "حدث خطأ أثناء الحفظ" });
+      setTimeout(() => setSaveStatus("idle"), 5000);
+      return { success: false, errors: [{ path: "general", message: "حدث خطأ أثناء الحفظ" }] };
     }
-
-    setTimeout(() => setSaveStatus("idle"), 5000);
-    return { success: saveStatus === "success", errors: undefined };
-  }, [pageId, state?.data, saveStatus]);
+  }, [pageId, state?.data]);
 
   const refresh = useCallback(async () => {
     try {
@@ -384,7 +504,7 @@ export function usePageStudio(pageId: string) {
       });
 
       setToast({ type: "info", message: "تم تحديث البيانات من المصدر" });
-    } catch (err) {
+    } catch {
       setToast({ type: "error", message: "فشل تحديث البيانات" });
     }
   }, [pageId, getNestedValue]);
