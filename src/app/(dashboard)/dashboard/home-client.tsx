@@ -32,7 +32,7 @@ const onboardingCopy: Record<string, { label: string; description: string }> = {
   album: { label: "معرض الصور", description: "أضف أعمالك الحقيقية داخل الألبومات." },
 };
 
-export function DashboardHomeClient({ siteUrl, statusLabel, checklist, lastModified, nextStepHref, nextStepLabel, nextStepTitle, nextStepDescription, subscription, customerMessages, heroImageUrl, photographerName, isPublished }: DashboardViewModel) {
+export function DashboardHomeClient({ siteUrl, statusLabel, checklist, lastModified, nextStepHref, nextStepLabel, nextStepTitle, nextStepDescription, subscription, subscriptionExperience, customerMessages, heroImageUrl, photographerName, isPublished }: DashboardViewModel) {
   const [copied, setCopied] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [onboardingStep, setOnboardingStep] = useState(0);
@@ -79,7 +79,7 @@ export function DashboardHomeClient({ siteUrl, statusLabel, checklist, lastModif
 
   return (
     <main className="customer-dashboard-home mx-auto grid w-full max-w-5xl gap-5 pb-4 sm:gap-6 lg:max-w-[1180px] lg:gap-6">
-      {subscription?.showLifecycleCard ? <LifecycleStatusCard subscription={subscription} /> : null}
+      {subscription && subscriptionExperience ? <LifecycleStatusCard subscription={subscription} experience={subscriptionExperience} /> : null}
 
       {customerMessages.length > 0 ? <section className="grid gap-2 lg:grid-cols-2">{customerMessages.map((message) => <CustomerMessageBanner key={message.id} message={message} />)}</section> : null}
 
@@ -176,14 +176,14 @@ function SiteIdentityCard({
       ) : null}
       
       <div className="relative">
-        <div className="border-b border-white/8 bg-[linear-gradient(135deg,rgba(243,207,115,0.12),rgba(243,207,115,0.04))] px-4 py-3.5 sm:px-5 sm:py-4">
-          <div className="flex items-center gap-2">
-            <span className="grid size-7 place-items-center rounded-lg bg-amber-300/15 text-[#f3cf73] shadow-[0_0_12px_rgba(243,207,115,0.2)]">
-              <LayoutDashboard className="size-3.5" aria-hidden />
+        <div className="border-b border-white/8 bg-[linear-gradient(135deg,rgba(243,207,115,0.14),rgba(243,207,115,0.06))] px-4 py-4 sm:px-5 sm:py-5">
+          <div className="flex items-center gap-3">
+            <span className="grid size-9 place-items-center rounded-xl bg-gradient-to-br from-amber-300/20 to-amber-300/8 text-[#f3cf73] shadow-[0_0_16px_rgba(243,207,115,0.25)] sm:size-10">
+              <LayoutDashboard className="size-4 sm:size-5" aria-hidden />
             </span>
             <div className="min-w-0 flex-1">
-              <p className="text-xs font-black text-[#fff7e8] sm:text-sm">أنت الآن في لوحة التحكم</p>
-              <p className="mt-0.5 text-[0.68rem] font-bold text-white/45 sm:text-xs">من هنا تعدّل موقعك. عملاؤك لن يروا هذه الصفحة.</p>
+              <p className="text-sm font-black text-[#fff7e8] sm:text-base lg:text-lg">أنت الآن في لوحة التحكم</p>
+              <p className="mt-1 text-xs font-bold text-white/50 sm:text-sm">من هنا تعدّل موقعك. عملاؤك لن يروا هذه الصفحة.</p>
             </div>
           </div>
         </div>
@@ -417,28 +417,73 @@ function OnboardingWizard({
   );
 }
 
-function LifecycleStatusCard({ subscription }: { subscription: NonNullable<DashboardViewModel["subscription"]> }) {
+function LifecycleStatusCard({
+  subscription,
+  experience,
+}: {
+  subscription: NonNullable<DashboardViewModel["subscription"]>;
+  experience: NonNullable<DashboardViewModel["subscriptionExperience"]>;
+}) {
+  if (!experience.message.enabled && !experience.timer.enabled && !experience.action.visible) {
+    return null;
+  }
   const endDate = subscription.endsAt ? new Date(subscription.endsAt).toLocaleDateString("ar-EG") : "دائم";
-  const tone = subscription.urgency;
-  const toneClasses = tone === "danger" ? "border-red-300/24 bg-red-500/[0.08] text-red-100" : tone === "warning" ? "border-amber-300/24 bg-amber-300/[0.08] text-amber-100" : "border-emerald-300/18 bg-emerald-300/[0.07] text-emerald-100";
-  const barClass = tone === "danger" ? "bg-red-300" : tone === "warning" ? "bg-amber-300" : "bg-emerald-300";
+  const tone =
+    experience.message.tone === "danger"
+      ? "danger"
+      : experience.message.tone === "warning"
+        ? "warning"
+        : experience.message.tone === "success"
+          ? "success"
+          : subscription.urgency;
+  const toneClasses = tone === "danger" ? "border-red-300/20 bg-red-500/[0.06]" : tone === "warning" ? "border-amber-300/20 bg-amber-300/[0.06]" : "border-emerald-300/16 bg-emerald-300/[0.05]";
+  const toneText = tone === "danger" ? "text-red-100" : tone === "warning" ? "text-amber-100" : "text-emerald-100";
+  const barClass = tone === "danger" ? "bg-red-400" : tone === "warning" ? "bg-amber-400" : "bg-emerald-400";
+  const buttonClass = tone === "danger" ? "bg-red-400 hover:bg-red-300 text-white" : tone === "warning" ? "bg-amber-400 hover:bg-amber-300 text-[#17120a]" : "bg-emerald-400 hover:bg-emerald-300 text-[#17120a]";
   return (
-    <section className={`flex flex-col gap-2 rounded-[1rem] border px-3 py-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] sm:flex-row sm:items-center sm:justify-between sm:gap-3 ${toneClasses}`}>
-      <div className="flex min-w-0 items-center gap-2.5">
-        <span className="grid size-8 shrink-0 place-items-center rounded-xl bg-white/10"><CalendarDays className="size-4" /></span>
-        <span className="min-w-0">
-          <span className="text-[0.68rem] font-black opacity-70">حالة الحساب</span>
-          <span className="mx-1.5 text-[0.68rem] font-black opacity-70">·</span>
-          <span className="text-xs font-black text-[#fff7e8]">{subscription.accountType} · {subscription.status}</span>
-          <span className="mx-1.5 text-[0.68rem] font-black opacity-70">·</span>
-          <span className="text-[0.68rem] font-bold opacity-70">{subscription.planName ?? "بدون باقة محددة"} · ينتهي: {endDate}</span>
-        </span>
-      </div>
+    <section className={`grid gap-3 rounded-2xl border p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] sm:grid-cols-[1fr_auto] sm:items-center sm:gap-4 sm:p-4 ${toneClasses}`}>
       <div className="flex items-center gap-3">
-        <span className="text-[0.68rem] font-black opacity-75">{subscription.daysRemaining === null ? "اشتراك دائم" : `متبقي ${subscription.daysRemaining} يوم`}</span>
-        <div className="h-1.5 w-20 overflow-hidden rounded-full bg-black/25 sm:w-24"><span className={`block h-full rounded-full ${barClass}`} style={{ width: `${subscription.progressPercent ?? 100}%` }} /></div>
-        <span className="text-[0.68rem] font-black opacity-75">{subscription.progressPercent ?? 0}%</span>
-        <Link href="/dashboard/billing" className="inline-flex min-h-8 shrink-0 items-center justify-center rounded-xl bg-white/12 px-3 text-[0.68rem] font-black text-white no-underline transition hover:bg-white/18">{subscription.isExpired ? "تجديد الاشتراك" : subscription.isTrial ? "تفعيل الحساب" : "إدارة الاشتراك"}</Link>
+        <span className={`grid size-10 shrink-0 place-items-center rounded-xl bg-white/8 ${toneText}`}>
+          <CalendarDays className="size-5" aria-hidden />
+        </span>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+            <span className="text-xs font-black text-[#fff7e8] sm:text-sm">{experience.message.title}</span>
+            <span className="text-[0.68rem] font-bold text-white/40">·</span>
+            <span className="text-[0.68rem] font-bold text-white/55 sm:text-xs">{subscription.planName ?? subscription.accountType}</span>
+          </div>
+          <p className="mt-1 text-[0.72rem] font-bold leading-6 text-white/70 sm:text-xs">
+            {experience.message.description}
+          </p>
+          <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-0.5">
+            <span className="text-[0.68rem] font-bold text-white/45 sm:text-xs">
+              {experience.timer.enabled && experience.timer.daysRemaining !== null
+                ? `متبقي ${experience.timer.daysRemaining} يوم`
+                : subscription.daysRemaining === null
+                  ? "اشتراك دائم"
+                  : `متبقي ${subscription.daysRemaining} يوم`}
+            </span>
+            <span className="text-[0.68rem] font-bold text-white/30">·</span>
+            <span className="text-[0.68rem] font-bold text-white/40 sm:text-xs">ينتهي: {endDate}</span>
+          </div>
+        </div>
+      </div>
+      <div className="flex items-center gap-3 sm:gap-4">
+        <div className="flex flex-1 items-center gap-2 sm:flex-none">
+          <div className="h-2 flex-1 overflow-hidden rounded-full bg-black/30 sm:w-24">
+            <span className={`block h-full rounded-full transition-all ${barClass}`} style={{ width: `${subscription.progressPercent ?? 100}%` }} />
+          </div>
+          <span className={`text-xs font-black ${toneText}`}>{subscription.progressPercent ?? 0}%</span>
+        </div>
+        {experience.action.visible && experience.action.href ? (
+          <Link
+            href={experience.action.href}
+            target={experience.action.target}
+            className={`inline-flex min-h-10 shrink-0 items-center justify-center rounded-xl px-4 text-xs font-black no-underline transition sm:min-h-11 sm:px-5 sm:text-sm ${buttonClass}`}
+          >
+            {experience.action.label}
+          </Link>
+        ) : null}
       </div>
     </section>
   );

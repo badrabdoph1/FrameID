@@ -7,6 +7,12 @@ import { createBillingActivationService } from "@/modules/billing/billing-activa
 import { createPrismaBillingActivationRepository } from "@/modules/billing/prisma-billing-activation-repository";
 import { createPaymentSettingsService } from "@/modules/billing/payment-settings-service";
 import { createPrismaPaymentSettingsRepository } from "@/modules/billing/prisma-payment-settings-repository";
+import { getSupportSettings } from "@/modules/support/support-settings";
+import {
+  getSubscriptionExperienceDefaults,
+  getTenantSubscriptionExperienceOverride,
+  resolveSubscriptionExperience,
+} from "@/modules/subscription/subscription-experience";
 import { BillingClient } from "@/app/(dashboard)/dashboard/billing/billing-client";
 
 export const metadata: Metadata = {
@@ -35,7 +41,7 @@ export default async function BillingPage({
 
   // Allow null subscription — the billing page handles it by showing the activation flow
 
-  const [plans, paymentRequest, paymentMethods] = await Promise.all([
+  const [plans, paymentRequest, paymentMethods, defaults, override, supportSettings] = await Promise.all([
     prisma.plan.findMany({
       where: { isActive: true },
       orderBy: { priceAmount: "asc" },
@@ -47,6 +53,9 @@ export default async function BillingPage({
     createPaymentSettingsService(
       createPrismaPaymentSettingsRepository(prisma as never),
     ).getActivePaymentMethods(),
+    getSubscriptionExperienceDefaults(prisma),
+    getTenantSubscriptionExperienceOverride(prisma, session.tenant.id),
+    getSupportSettings(),
   ]);
 
   const tenant = await prisma.tenant.findUnique({
@@ -78,6 +87,23 @@ export default async function BillingPage({
       proofUrl = asset?.url ?? null;
     }
   }
+
+  const subscriptionExperience = resolveSubscriptionExperience({
+    defaults,
+    override,
+    context: {
+      tenantStatus: session.tenant.status,
+      subscriptionStatus: session.subscription?.status ?? null,
+      trialEndsAt: tenant?.trialEndsAt ?? null,
+      subscriptionEndsAt:
+        session.subscription?.currentPeriodEnd ??
+        session.subscription?.expiresAt ??
+        null,
+      latestPaymentRequestStatus: paymentRequest?.status ?? null,
+      supportWhatsappNumber: supportSettings.phone,
+    },
+    now: new Date(),
+  });
 
   return (
     <BillingClient
@@ -120,6 +146,7 @@ export default async function BillingPage({
       } : null}
       logs={logs}
       daysRemaining={tenant ? getDaysRemaining(tenant.trialEndsAt) : 0}
+      subscriptionExperience={subscriptionExperience}
       requested={sp.requested === "1"}
       draftId={sp.draft}
       error={sp.error}

@@ -1,12 +1,10 @@
 import type { CurrentSession } from "@/modules/auth/current-session-service";
-import type { ActivationTemplateKey, CustomerMessageTone } from "@/modules/messages/customer-message-config";
+import type { CustomerMessageTone } from "@/modules/messages/customer-message-config";
 import {
   calcLifecycleDaysRemaining,
   calcLifecycleProgressPercent,
-  defaultLifecycleTimerSettings,
-  shouldShowLifecycleTimerCard,
-  type LifecycleTimerSettings,
 } from "@/modules/lifecycle/customer-lifecycle";
+import type { ResolvedSubscriptionExperience } from "@/modules/subscription/subscription-experience";
 
 type ChecklistItem = {
   id: string;
@@ -36,7 +34,6 @@ export type SubscriptionInfo = {
   pendingRequestStatus: string | null;
   latestPaymentRequestStatus: string | null;
   urgency: "success" | "warning" | "danger" | "neutral";
-  showLifecycleCard: boolean;
 };
 
 export type DashboardWorkspacePhase = {
@@ -58,7 +55,6 @@ export type DashboardOperatingAlert = {
 };
 
 export type DashboardCustomerMessage = { id: string; tone: CustomerMessageTone; title: string; body: string; createdAt: string };
-export type DashboardActivationMessages = Partial<Record<ActivationTemplateKey, { title: string; body: string; tone: CustomerMessageTone }>>;
 
 export type DashboardViewModel = {
   photographerName: string;
@@ -80,8 +76,8 @@ export type DashboardViewModel = {
   nextStepTitle: string;
   nextStepDescription: string;
   subscription: SubscriptionInfo | null;
+  subscriptionExperience: ResolvedSubscriptionExperience | null;
   customerMessages: DashboardCustomerMessage[];
-  activationMessages: DashboardActivationMessages;
   heroImageUrl: string | null;
 };
 
@@ -115,7 +111,6 @@ function buildSubscriptionInfo(
   now: Date,
   pendingRequestStatus: string | null,
   latestPaymentRequestStatus: string | null,
-  lifecycleTimerSettings: LifecycleTimerSettings,
 ): SubscriptionInfo | null {
   if (!session.subscription) return null;
 
@@ -141,12 +136,6 @@ function buildSubscriptionInfo(
           ? "success"
           : "neutral";
 
-  const base = {
-    isTrial,
-    isActive,
-    isExpired,
-  };
-
   return {
     status: sub.status,
     accountType: isTrial ? "تجربة مجانية" : endDate ? "اشتراك" : "اشتراك دائم",
@@ -166,7 +155,6 @@ function buildSubscriptionInfo(
     pendingRequestStatus,
     latestPaymentRequestStatus,
     urgency,
-    showLifecycleCard: shouldShowLifecycleTimerCard(lifecycleTimerSettings, base),
   };
 }
 
@@ -189,20 +177,14 @@ function buildPhases(items: ChecklistItem[]): DashboardWorkspacePhase[] {
   });
 }
 
-function buildOperatingAlerts({ isReadyToPublish, isPublished, subscription }: { isReadyToPublish: boolean; isPublished: boolean; subscription: SubscriptionInfo | null }): DashboardOperatingAlert[] {
+function buildOperatingAlerts({ isReadyToPublish, isPublished }: { isReadyToPublish: boolean; isPublished: boolean }): DashboardOperatingAlert[] {
   const alerts: DashboardOperatingAlert[] = [];
-  if (subscription?.hasPendingRequest) alerts.push({ tone: "warning", title: "طلب التفعيل قيد المراجعة", description: "تم إرسال إثبات الدفع. تابع الحالة من صفحة الاشتراك.", href: "/dashboard/billing", actionLabel: "متابعة" });
-  else if (subscription?.isExpired || subscription?.isSuspended || subscription?.isPastDue) alerts.push({ tone: "danger", title: "الاشتراك يحتاج تجديد", description: "انتهت المدة أو يحتاج الحساب إجراءً حتى يظل الموقع شغالًا.", href: "/dashboard/billing", actionLabel: "تجديد" });
-  else if (subscription?.isTrial || subscription?.isActive) {
-    const tone = subscription.urgency === "danger" ? "danger" : subscription.urgency === "warning" ? "warning" : "success";
-    if (subscription.daysRemaining !== null && subscription.daysRemaining <= 7) alerts.push({ tone, title: subscription.daysRemaining <= 3 ? "تنبيه: المدة أوشكت على الانتهاء" : "تنبيه قبل انتهاء المدة", description: `متبقي ${subscription.daysRemaining} يوم.`, href: "/dashboard/billing", actionLabel: subscription.isTrial ? "تفعيل" : "تجديد" });
-  }
   if (!isReadyToPublish) alerts.push({ tone: "info", title: "كمّل الخطوات بالترتيب", description: "ابدأ بالباقات، بعدها بيانات التواصل، بعدها الصور، ثم النشر.", href: "/dashboard/services", actionLabel: "ابدأ" });
   else if (!isPublished) alerts.push({ tone: "success", title: "موقعك جاهز للنشر", description: "افتح صفحة النشر وراجع شكل الرابط قبل المشاركة.", href: "/dashboard/publish", actionLabel: "نشر" });
   return alerts;
 }
 
-export function createDashboardViewModel({ session, platformBaseUrl, now, packagesCount, imagesCount, albumsCount, hasContactInfo, hasCoverImage, currentThemeName, lastModifiedAt, pendingRequestStatus, latestPaymentRequestStatus, hasSeoSettings, hasAvatarImage, customerMessages, activationMessages, lifecycleTimerSettings = defaultLifecycleTimerSettings, heroImageUrl = null }: {
+export function createDashboardViewModel({ session, platformBaseUrl, now, packagesCount, imagesCount, albumsCount, hasContactInfo, hasCoverImage, currentThemeName, lastModifiedAt, pendingRequestStatus, latestPaymentRequestStatus, hasSeoSettings, hasAvatarImage, customerMessages, subscriptionExperience, heroImageUrl = null }: {
   session: CurrentSession;
   platformBaseUrl: string;
   now: Date;
@@ -218,8 +200,7 @@ export function createDashboardViewModel({ session, platformBaseUrl, now, packag
   hasSeoSettings?: boolean;
   hasAvatarImage?: boolean;
   customerMessages?: DashboardCustomerMessage[];
-  activationMessages?: DashboardActivationMessages;
-  lifecycleTimerSettings?: LifecycleTimerSettings;
+  subscriptionExperience?: ResolvedSubscriptionExperience | null;
   heroImageUrl?: string | null;
 }): DashboardViewModel {
   const hasPackages = packagesCount > 0;
@@ -237,7 +218,7 @@ export function createDashboardViewModel({ session, platformBaseUrl, now, packag
   ];
   const doneCount = items.filter((item) => item.done).length;
   const percent = calcPercent(doneCount, items.length);
-  const subscription = buildSubscriptionInfo(session, now, pendingRequestStatus ?? null, latestPaymentRequestStatus ?? null, lifecycleTimerSettings);
+  const subscription = buildSubscriptionInfo(session, now, pendingRequestStatus ?? null, latestPaymentRequestStatus ?? null);
   const requiredBeforePublish = items.filter((item) => item.id !== "publish");
   const isReadyToPublish = requiredBeforePublish.every((item) => item.done);
   const incomplete = items.find((item) => !item.done);
@@ -253,7 +234,7 @@ export function createDashboardViewModel({ session, platformBaseUrl, now, packag
     percent,
     checklist: items,
     phases: buildPhases(items),
-    operatingAlerts: buildOperatingAlerts({ isReadyToPublish, isPublished, subscription }),
+    operatingAlerts: buildOperatingAlerts({ isReadyToPublish, isPublished }),
     stats: [
       { label: "الباقات", value: String(packagesCount), tone: hasPackages ? "success" : "warning" },
       { label: "التواصل", value: hasContactInfo ? "جاهز" : "ناقص", tone: hasContactInfo ? "success" : "warning" },
@@ -271,8 +252,8 @@ export function createDashboardViewModel({ session, platformBaseUrl, now, packag
     nextStepTitle: activeCopy.title,
     nextStepDescription: activeCopy.description,
     subscription,
+    subscriptionExperience: subscriptionExperience ?? null,
     customerMessages: customerMessages ?? [],
-    activationMessages: activationMessages ?? {},
     heroImageUrl,
   };
 }

@@ -49,8 +49,26 @@ Admin actions supported by the architecture:
 - cancel request
 - reopen through draft/re-upload flow
 - extend trial from customer admin tools
+- grant a fresh trial from subscription messaging overrides
 - end/suspend/activate customer subscription through customer admin tools
 - send notifications
+
+## Subscription experience integration
+
+Billing and dashboard no longer invent separate subscription notices.
+Both surfaces consume a shared resolved "subscription experience" payload that contains:
+
+- message visibility, title, description, and tone;
+- timer visibility and remaining days when applicable;
+- action button type, label, target, and optional custom link.
+
+Resolution order is:
+
+1. tenant override
+2. global admin default
+3. system fallback
+
+This lets admin control activation and subscription communication from one place without duplicating rules between lifecycle cards, billing alerts, and manual exception handling.
 
 ## Service architecture
 
