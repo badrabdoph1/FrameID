@@ -26,11 +26,14 @@ function formatBackupId(date: Date): string {
   const d = String(date.getUTCDate()).padStart(2, "0");
   const h = String(date.getUTCHours()).padStart(2, "0");
   const min = String(date.getUTCMinutes()).padStart(2, "0");
-  return `${y}-${m}-${d}_${h}-${min}`;
+  const sec = String(date.getUTCSeconds()).padStart(2, "0");
+  const ms = String(date.getUTCMilliseconds()).padStart(3, "0");
+  return `${y}-${m}-${d}_${h}-${min}-${sec}-${ms}`;
 }
 
-export function generateBackupId(now?: Date): string {
-  return formatBackupId(now ?? new Date());
+export function generateBackupId(now?: Date, backupJobId?: string): string {
+  const timestamp = formatBackupId(now ?? new Date());
+  return backupJobId ? `${timestamp}_${backupJobId}` : timestamp;
 }
 
 export async function createBackupPackage(
@@ -46,7 +49,7 @@ export async function createBackupPackage(
   backupRoot: string,
   now?: Date
 ): Promise<BackupPackage> {
-  const backupId = generateBackupId(now);
+  const backupId = generateBackupId(now, input.manifest.backupJobId);
   const backupDir = join(backupRoot, backupId);
 
   await mkdir(backupDir, { recursive: true });

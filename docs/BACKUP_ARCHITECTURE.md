@@ -19,6 +19,7 @@
 `Create -> Local Verify -> GitHub Upload -> Remote Verify -> Retention -> Audit -> COMPLETED -> Local Cleanup`.
 
 أي فشل، بما فيه غياب GitHub أو فشل Retention أو Audit، ينتج `FAILED`. القرص المحلي مؤقت وليس Disaster Recovery.
+يتكون معرّف Artifact من الوقت حتى المللي ثانية و`BackupJob ID` الفريد، لذلك لا تستبدل نسختان إحداهما الأخرى حتى لو بدأتا في اللحظة نفسها.
 
 ## التحقق والاستعادة
 
