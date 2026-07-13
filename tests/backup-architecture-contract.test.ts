@@ -32,4 +32,22 @@ describe("عقد Backup Architecture", () => {
       await expect(readFile(path, "utf8")).rejects.toThrow();
     }));
   });
+  it("يربط مسارات إدارة المنصة بحفظ إعدادات GitHub", async () => {
+    const platformActions = [
+      "src/app/(admin)/admin/plans/actions.ts",
+      "src/app/(admin)/admin/settings/actions.ts",
+      "src/app/(admin)/admin/settings/payment/actions.ts",
+      "src/app/(admin)/admin/templates/actions.ts",
+      "src/app/(admin)/admin/templates/management-actions.ts",
+      "src/app/(admin)/admin/templates/starter-defaults-actions.ts",
+      "src/app/(admin)/admin/templates/template-image-actions.ts",
+      "src/app/(admin)/admin/templates/template-visual-actions.ts",
+      "src/app/(admin)/admin/feature-flags/actions.ts",
+      "src/app/(admin)/admin/social-preview/actions.ts",
+      "src/app/(admin)/admin/settings/social-preview/actions.ts",
+    ];
+    for (const path of platformActions) {
+      expect(await readFile(path, "utf8")).toContain("syncPlatformConfigurationToGitHub");
+    }
+  });
 });

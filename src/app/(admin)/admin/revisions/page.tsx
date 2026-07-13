@@ -2,11 +2,13 @@ import { AdminPageShell } from "@/components/layout/admin-page-shell";
 import { AdminStatusBadge } from "@/components/layout/admin-status-badge";
 import { requireAdminPermission } from "@/modules/admin/admin-permission-guards";
 import { getContentRevisionHistory } from "@/lib/content/revisions";
+import { restoreRevisionAction } from "@/app/(admin)/admin/revisions/actions";
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminRevisionHistoryPage() {
+export default async function AdminRevisionHistoryPage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
   await requireAdminPermission("content", "view");
+  const params = await searchParams;
   const revisions = getContentRevisionHistory(100);
 
   return (
@@ -16,6 +18,8 @@ export default async function AdminRevisionHistoryPage() {
       description="كل تعديل على محتوى المنصة يتم تسجيله هنا مع before/after وCommit ID عند توفر GitHub sync."
       breadcrumbs={[{ label: "القيادة", href: "/admin" }, { label: "سجل التعديلات" }]}
     >
+      {params.error ? <div className="rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm font-bold text-red-300">{params.error}</div> : null}
+      {params.restored ? <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm font-bold text-emerald-300">تم إنشاء Commit لاستعادة الإصدار السابق وسيُطبق مع النشر.</div> : null}
       <div className="space-y-3">
         {revisions.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-white/12 p-8 text-center text-sm font-bold text-white/40">لا توجد تعديلات مسجلة بعد.</div>
@@ -38,7 +42,7 @@ export default async function AdminRevisionHistoryPage() {
             <div className="mt-3 flex flex-wrap gap-2 text-xs font-bold text-white/45">
               <span className="rounded-lg border border-white/10 px-2 py-1">Commit ID: {revision.commitId ?? "—"}</span>
               {revision.gitError ? <span className="rounded-lg border border-red-500/20 px-2 py-1 text-red-300">{revision.gitError}</span> : null}
-              <span className="rounded-lg border border-amber-300/20 px-2 py-1 text-[#f3cf73]">استرجاع إصدار سابق يتم عبر Git revert للـ Commit أو إعادة حفظ قيمة before.</span>
+              {revision.before !== null && revision.before !== undefined ? <form action={restoreRevisionAction}><input type="hidden" name="revisionId" value={revision.id} /><button className="rounded-lg border border-amber-300/20 px-3 py-1.5 text-[#f3cf73] transition hover:bg-amber-300/10">استعادة قيمة «قبل»</button></form> : null}
             </div>
           </article>
         ))}

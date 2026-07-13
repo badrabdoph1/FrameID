@@ -11,6 +11,7 @@ import {
   serializeTemplateStarterDefaults,
   TEMPLATE_STARTER_DEFAULTS_CODE,
 } from "@/modules/themes/template-starter-defaults";
+import { syncPlatformConfigurationToGitHub } from "@/modules/setup/platform-configuration-git";
 
 function readString(formData: FormData, key: string): string {
   const value = formData.get(key);
@@ -64,6 +65,7 @@ export async function saveStarterDefaultsAction(formData: FormData) {
       } as Prisma.InputJsonObject,
     },
   });
+  await syncPlatformConfigurationToGitHub({ actor: admin, reason: "تعديل بيانات بداية القوالب" });
 
   revalidatePath("/admin/templates");
   revalidatePath("/templates");

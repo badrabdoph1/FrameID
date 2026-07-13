@@ -8,6 +8,7 @@ import { processError } from "@/lib/errors";
 import { requireSuperAdminSession } from "@/modules/admin/admin-page-guards";
 import { createPaymentSettingsService } from "@/modules/billing/payment-settings-service";
 import { createPrismaPaymentSettingsRepository } from "@/modules/billing/prisma-payment-settings-repository";
+import { syncPlatformConfigurationToGitHub } from "@/modules/setup/platform-configuration-git";
 
 const service = createPaymentSettingsService(
   createPrismaPaymentSettingsRepository(prisma as never),
@@ -30,6 +31,7 @@ export async function updatePaymentSettingsAction(formData: FormData) {
     if (typeof description === "string") data.description = description;
     if (typeof sortOrder === "string") data.sortOrder = parseInt(sortOrder, 10) || 0;
     await service.updatePaymentSettings(id, data);
+    await syncPlatformConfigurationToGitHub({ actor: session.user, reason: "تعديل إعدادات الدفع" });
   } catch (error) {
     await processError(error, {
       userId: session.user.id,
@@ -55,6 +57,7 @@ export async function togglePaymentMethodAction(formData: FormData) {
 
   try {
     await service.togglePaymentMethod(id, isActive === "1");
+    await syncPlatformConfigurationToGitHub({ actor: session.user, reason: "تغيير حالة وسيلة دفع" });
   } catch (error) {
     await processError(error, {
       userId: session.user.id,
@@ -99,6 +102,7 @@ export async function addPaymentAccountAction(formData: FormData) {
       notes: typeof notes === "string" ? notes : "",
       sortOrder: 0,
     });
+    await syncPlatformConfigurationToGitHub({ actor: session.user, reason: "إضافة حساب دفع" });
   } catch (error) {
     await processError(error, {
       userId: session.user.id,
@@ -142,6 +146,7 @@ export async function updatePaymentAccountAction(formData: FormData) {
     if (typeof instructions === "string") data.instructions = instructions;
     if (typeof notes === "string") data.notes = notes;
     await service.updatePaymentAccount(id, data);
+    await syncPlatformConfigurationToGitHub({ actor: session.user, reason: "تعديل حساب دفع" });
   } catch (error) {
     await processError(error, {
       userId: session.user.id,
@@ -166,6 +171,7 @@ export async function deletePaymentAccountAction(formData: FormData) {
 
   try {
     await service.deletePaymentAccount(id);
+    await syncPlatformConfigurationToGitHub({ actor: session.user, reason: "حذف حساب دفع" });
   } catch (error) {
     await processError(error, {
       userId: session.user.id,
@@ -224,6 +230,7 @@ export async function movePaymentAccountAction(formData: FormData) {
         data: { sortOrder: current.sortOrder },
       });
     }
+    await syncPlatformConfigurationToGitHub({ actor: session.user, reason: "ترتيب حسابات الدفع" });
   } catch (error) {
     await processError(error, {
       userId: session.user.id,
@@ -252,6 +259,7 @@ export async function uploadPaymentQRCodeAction(formData: FormData) {
       settingsId,
       typeof assetId === "string" && assetId ? assetId : null,
     );
+    await syncPlatformConfigurationToGitHub({ actor: session.user, reason: "تعديل رمز دفع" });
   } catch (error) {
     await processError(error, {
       userId: session.user.id,

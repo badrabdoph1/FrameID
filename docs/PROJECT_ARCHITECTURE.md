@@ -48,3 +48,5 @@ Retention policy:
 A full migration combines the Git repository for platform code/content with a verified `FULL` backup for PostgreSQL customer data and uploads.
 
 Legacy local-only snapshots and automatic restore paths are disabled and are not part of the production disaster-recovery architecture.
+
+Platform-managed configuration is versioned under `content/` and platform assets under `public/platform/`. Admin mutations create Git commits and revision entries; PostgreSQL rows for plans, themes, templates, payment configuration, and platform flags are runtime mirrors rebuilt by the production seed. Customer records and `public/uploads` never become source files.

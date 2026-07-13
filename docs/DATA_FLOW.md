@@ -6,6 +6,8 @@ Manual وAuto وMigration وCLI وGitHub Actions تمر إلى `FrameID Backup P
 
 تعديلات محتوى المنصة من الأدمن لا تُعتمد إلا بعد Commit إلى `main`. النصوص تحفظ داخل `content/`، وصور المنصة داخل `public/platform/`. لا تُسجل صور المنصة كملفات عميل ولا تدخل `public/uploads`؛ مجلد uploads مخصص لملفات العملاء ويدخل فقط في نسخة FULL.
 
+الباقات والقوالب والثيمات وإعدادات الدفع وFeature Flags العامة ورسائل المنصة تُصدر بعد كل تعديل إلى `content/platform/admin-config.json` مع Revision وCommit. قاعدة PostgreSQL تحمل مرآة تشغيلية للعلاقات الحالية، بينما يعيد Seed بناء هذه المرآة من ملف Git بعد Clone/Deploy.
+
 ## Request lifecycle
 
 1. A browser request enters a Next.js route.

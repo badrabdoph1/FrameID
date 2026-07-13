@@ -12,6 +12,7 @@ import {
   buildTemplateDefaults,
   nextAvailableTemplateCode,
 } from "@/modules/templates/template-admin-policy";
+import { syncPlatformConfigurationToGitHub } from "@/modules/setup/platform-configuration-git";
 
 function readString(formData: FormData, key: string): string {
   const value = formData.get(key);
@@ -102,6 +103,7 @@ export async function createTemplateAction(formData: FormData) {
       code: created.code,
       metadata: { themeId: theme.id },
     });
+    await syncPlatformConfigurationToGitHub({ actor: admin, reason: "إنشاء قالب" });
   } catch (error) {
     const { userError } = await processError(error, {
       metadata: { action: "createTemplate" },
@@ -147,6 +149,7 @@ export async function duplicateTemplateAction(formData: FormData) {
       code: created.code,
       metadata: { sourceTemplateId: current.id },
     });
+    await syncPlatformConfigurationToGitHub({ actor: admin, reason: "نسخ قالب" });
   } catch (error) {
     const { userError } = await processError(error, {
       metadata: { action: "duplicateTemplate", id },
@@ -193,6 +196,7 @@ export async function restoreTemplateDefaultsAction(formData: FormData) {
       templateId: current.id,
       code: current.code,
     });
+    await syncPlatformConfigurationToGitHub({ actor: admin, reason: "استعادة إعدادات قالب" });
   } catch (error) {
     const { userError } = await processError(error, {
       metadata: { action: "restoreTemplateDefaults", id },
@@ -226,6 +230,7 @@ export async function archiveTemplateAction(formData: FormData) {
       templateId: current.id,
       code: current.code,
     });
+    await syncPlatformConfigurationToGitHub({ actor: admin, reason: "أرشفة قالب" });
   } catch (error) {
     const { userError } = await processError(error, {
       metadata: { action: "archiveTemplate", id },

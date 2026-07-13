@@ -27,6 +27,7 @@ import {
   syncCustomerLifecycle,
   type LifecycleDurationPreset,
 } from "@/modules/lifecycle/customer-lifecycle";
+import { syncPlatformConfigurationToGitHub } from "@/modules/setup/platform-configuration-git";
 
 function redirectWithMessage(params: Record<string, string | number>): never {
   const query = new URLSearchParams(Object.entries(params).map(([key, value]) => [key, String(value)]));
@@ -90,6 +91,7 @@ export async function saveLifecycleTimersAction(formData: FormData) {
         metadata: { settings, defaultTrialApplied, ...adminActorMetadata(admin) } as Prisma.InputJsonObject,
       },
     });
+    await syncPlatformConfigurationToGitHub({ actor: admin, reason: "تعديل مؤقتات المنصة" });
     revalidatePath("/admin/messages");
     revalidatePath("/dashboard");
     revalidatePath("/admin/customers");
@@ -223,6 +225,7 @@ export async function saveActivationTemplateAction(formData: FormData) {
     await prisma.notificationLog.updateMany({ where: { category: ACTIVATION_TEMPLATE_CATEGORY, title: key, deletedAt: null }, data: { deletedAt: new Date() } });
     await prisma.notificationLog.create({ data: { type: tone, title: key, body: encodeActivationTemplatePayload({ title, body }), category: ACTIVATION_TEMPLATE_CATEGORY } });
     await prisma.auditLog.create({ data: { actorId: null, action: "ACTIVATION_MESSAGE_TEMPLATE_UPDATED", entityType: "NotificationLog", entityId: key, metadata: { key, title, body, tone, ...adminActorMetadata(admin) } as Prisma.InputJsonObject } });
+    await syncPlatformConfigurationToGitHub({ actor: admin, reason: "تعديل رسالة منصة" });
     revalidatePath("/admin/messages");
     revalidatePath("/dashboard");
   } catch (error) {

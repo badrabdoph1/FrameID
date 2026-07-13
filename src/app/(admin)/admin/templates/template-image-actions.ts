@@ -8,6 +8,7 @@ import { prisma } from "@/lib/prisma";
 import { processError } from "@/lib/errors";
 import { requireAdminPermission } from "@/modules/admin/admin-permission-guards";
 import { uploadPlatformTemplateImage } from "@/modules/media/platform-image-upload";
+import { syncPlatformConfigurationToGitHub } from "@/modules/setup/platform-configuration-git";
 
 type JsonRecord = Record<string, unknown>;
 
@@ -75,6 +76,7 @@ export async function saveTemplateCoverAction(formData: FormData) {
         } as Prisma.InputJsonObject,
       },
     });
+    await syncPlatformConfigurationToGitHub({ actor: admin, reason: "تعديل غلاف قالب" });
 
     revalidateTemplateSurfaces(current.code);
   } catch (error) {

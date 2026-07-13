@@ -8,6 +8,7 @@ import { prisma } from "@/lib/prisma";
 import { processError } from "@/lib/errors";
 import { requireAdminPermission } from "@/modules/admin/admin-permission-guards";
 import { readFormString } from "@/modules/auth/auth-action-utils";
+import { syncPlatformConfigurationToGitHub } from "@/modules/setup/platform-configuration-git";
 
 type FlagScope = "PLATFORM" | "TENANT" | "SITE";
 
@@ -101,6 +102,7 @@ export async function saveFeatureFlagAction(formData: FormData) {
       key: saved.key,
       metadata: { scope, enabled, tenantId, siteId },
     });
+    if (scope === "PLATFORM") await syncPlatformConfigurationToGitHub({ actor: admin, reason: existing ? "تعديل إعداد منصة" : "إنشاء إعداد منصة" });
   } catch (error) {
     const { userError } = await processError(error, {
       metadata: { action: "saveFeatureFlag", key, scope },
@@ -134,6 +136,7 @@ export async function toggleFeatureFlagAction(formData: FormData) {
       key: updated.key,
       metadata: { scope: updated.scope, enabled: updated.enabled },
     });
+    if (updated.scope === "PLATFORM") await syncPlatformConfigurationToGitHub({ actor: admin, reason: updated.enabled ? "تفعيل إعداد منصة" : "تعطيل إعداد منصة" });
   } catch (error) {
     const { userError } = await processError(error, {
       metadata: { action: "toggleFeatureFlag", id },
@@ -163,6 +166,7 @@ export async function deleteFeatureFlagAction(formData: FormData) {
       key: current.key,
       metadata: { scope: current.scope, tenantId: current.tenantId, siteId: current.siteId },
     });
+    if (current.scope === "PLATFORM") await syncPlatformConfigurationToGitHub({ actor: admin, reason: "حذف إعداد منصة" });
   } catch (error) {
     const { userError } = await processError(error, {
       metadata: { action: "deleteFeatureFlag", id },

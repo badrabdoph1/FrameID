@@ -8,6 +8,7 @@ import { prisma } from "@/lib/prisma";
 import { processError } from "@/lib/errors";
 import { requireAdminPermission } from "@/modules/admin/admin-permission-guards";
 import { TEMPLATE_STARTER_DEFAULTS_CODE } from "@/modules/themes/template-starter-defaults";
+import { syncPlatformConfigurationToGitHub } from "@/modules/setup/platform-configuration-git";
 
 type JsonRecord = Record<string, unknown>;
 
@@ -243,6 +244,7 @@ export async function saveTemplateAction(formData: FormData) {
         activePackagesCount: Array.isArray(basePreview.packages) ? basePreview.packages.filter((item) => isRecord(item) && item.enabled !== false).length : 0,
       },
     });
+    await syncPlatformConfigurationToGitHub({ actor: admin, reason: "تعديل قالب" });
   } catch (error) {
     const { userError } = await processError(error, { metadata: { action: "saveTemplate", id } });
     redirect(`/admin/templates?error=${encodeURIComponent(userError.message)}`);
@@ -262,6 +264,7 @@ export async function toggleTemplateAction(formData: FormData) {
   const nextStatus = current.status === "PUBLISHED" ? "DRAFT" : "PUBLISHED";
   const updated = await prisma.template.update({ where: { id }, data: { status: nextStatus } });
   await auditTemplate({ adminId: admin.id, adminEmail: admin.email, action: nextStatus === "PUBLISHED" ? "TEMPLATE_PUBLISHED" : "TEMPLATE_UNPUBLISHED", templateId: updated.id, code: updated.code, metadata: { status: nextStatus } });
+  await syncPlatformConfigurationToGitHub({ actor: admin, reason: nextStatus === "PUBLISHED" ? "نشر قالب" : "إلغاء نشر قالب" });
   revalidatePath("/admin/templates");
   revalidatePath("/templates");
   redirect("/admin/templates?toggled=1");

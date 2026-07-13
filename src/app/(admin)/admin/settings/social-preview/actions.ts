@@ -12,6 +12,7 @@ import {
   PLATFORM_SOCIAL_PREVIEW_CACHE_TAG,
   savePlatformSocialPreviewSettings,
 } from "@/modules/social-preview/platform-social-preview-settings";
+import { syncPlatformConfigurationToGitHub } from "@/modules/setup/platform-configuration-git";
 
 const PAGE_PATH = "/admin/settings/social-preview";
 
@@ -63,6 +64,7 @@ export async function savePlatformSocialPreviewAction(formData: FormData) {
         } as never,
       },
     });
+    await syncPlatformConfigurationToGitHub({ actor: session.user, reason: "تعديل معاينة المنصة" });
   } catch (error) {
     const { userError } = await processError(error, {
       metadata: { action: "savePlatformSocialPreview", mode },
@@ -98,6 +100,7 @@ export async function uploadSocialPreviewImageAction(
       imageUrl: uploaded.url,
       storageKey: uploaded.storageKey,
     });
+    await syncPlatformConfigurationToGitHub({ actor: session.user, reason: "رفع صورة معاينة المنصة" });
 
     revalidateTag(PLATFORM_SOCIAL_PREVIEW_CACHE_TAG);
     revalidatePath("/", "layout");
