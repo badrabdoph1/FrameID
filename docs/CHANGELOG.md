@@ -1,5 +1,12 @@
 # FrameID Changelog
 
+## 2026-07-13 — Refactor/Architecture — فصل مصدر المنصة عن بيانات العملاء
+
+- **المتأثر:** Content Git sync، صور المنصة، Backup/Restore، Health، Prisma BackupSettings.
+- **السبب:** إزالة المسارات المحلية القديمة ومنع كتابة أصول المنصة ضمن uploads الخاصة بالعملاء.
+- **الأثر:** نجاح حفظ المنصة مشروط بـGit Commit، وأصول المنصة تُنشر من `public/platform`، وGitHub هو التخزين الوحيد للنسخ المكتملة.
+- **الترحيل:** حذف أعمدة BackupSettings القديمة غير المستخدمة.
+
 ## 2026-07-13 — Fix/Security — GitHub Actions OIDC ووضوح أدلة النسخ
 
 - **الملفات المتأثرة:** Workflow النسخ، API التشغيل، صفحة الأدمن، Repository العرض، Seed، ووثائق النسخ.

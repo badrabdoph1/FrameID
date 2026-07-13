@@ -4,6 +4,8 @@
 
 Manual وAuto وMigration وCLI وGitHub Actions تمر إلى `FrameID Backup Pipeline`. GitHub Actions Trigger فقط. الإكمال يتطلب Local Verify ثم GitHub Upload ثم Remote Verify ثم Retention ثم Audit. الاستعادة تستخدم المحلي أو تنزل من GitHub ثم تتحقق وتستعيد وتتحقق بعد الاستعادة.
 
+تعديلات محتوى المنصة من الأدمن لا تُعتمد إلا بعد Commit إلى `main`. النصوص تحفظ داخل `content/`، وصور المنصة داخل `public/platform/`. لا تُسجل صور المنصة كملفات عميل ولا تدخل `public/uploads`؛ مجلد uploads مخصص لملفات العملاء ويدخل فقط في نسخة FULL.
+
 ## Request lifecycle
 
 1. A browser request enters a Next.js route.

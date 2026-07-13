@@ -41,6 +41,10 @@ async function getCurrentFileSha(config: NonNullable<ReturnType<typeof resolveGi
 }
 
 async function putFile(config: NonNullable<ReturnType<typeof resolveGitHubContentConfig>>, path: string, content: string, message: string, sha: string | null): Promise<string | undefined> {
+  return putEncodedFile(config, path, Buffer.from(content, "utf-8").toString("base64"), message, sha);
+}
+
+async function putEncodedFile(config: NonNullable<ReturnType<typeof resolveGitHubContentConfig>>, path: string, encodedContent: string, message: string, sha: string | null): Promise<string | undefined> {
   const response = await fetch(`https://api.github.com/repos/${config.repository}/contents/${encodeURIComponent(path).replace(/%2F/g, "/")}`, {
     method: "PUT",
     headers: {
@@ -51,7 +55,7 @@ async function putFile(config: NonNullable<ReturnType<typeof resolveGitHubConten
     },
     body: JSON.stringify({
       message,
-      content: Buffer.from(content, "utf-8").toString("base64"),
+      content: encodedContent,
       branch: config.branch,
       ...(sha ? { sha } : {}),
     }),
@@ -64,6 +68,18 @@ async function putFile(config: NonNullable<ReturnType<typeof resolveGitHubConten
 
   const data = await response.json() as GitHubContentResponse;
   return data.commit?.sha;
+}
+
+export async function commitPlatformAssetToGitHub(input: { path: string; bytes: Uint8Array; message: string }): Promise<GitContentCommitResult> {
+  const config = resolveGitHubContentConfig();
+  if (!config) return { enabled: false, error: "GitHub غير مضبوط لحفظ ملفات المنصة." };
+  try {
+    const sha = await getCurrentFileSha(config, input.path);
+    const commitSha = await putEncodedFile(config, input.path, Buffer.from(input.bytes).toString("base64"), input.message, sha);
+    return { enabled: true, commitSha };
+  } catch (error) {
+    return { enabled: true, error: error instanceof Error ? error.message : "فشل رفع ملف المنصة إلى GitHub" };
+  }
 }
 
 export async function commitContentFilesToGitHub(input: { files: Array<{ path: string; absolutePath: string }>; message: string }): Promise<GitContentCommitResult> {
