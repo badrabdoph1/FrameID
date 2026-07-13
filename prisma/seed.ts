@@ -76,8 +76,31 @@ async function main() {
   }
 
   for (const paymentSettings of seedData.paymentSettings) {
+    const settings = await prisma.paymentSettings.upsert({
+      where: { paymentMethod: paymentSettings.paymentMethod },
+      update: {
+        isActive: paymentSettings.isActive,
+        label: paymentSettings.label,
+        description: paymentSettings.description,
+        config: paymentSettings.config as Prisma.InputJsonValue,
+        sortOrder: paymentSettings.sortOrder,
+      },
+      create: {
+        paymentMethod: paymentSettings.paymentMethod,
+        isActive: paymentSettings.isActive,
+        label: paymentSettings.label,
+        description: paymentSettings.description,
+        config: paymentSettings.config as Prisma.InputJsonValue,
+        sortOrder: paymentSettings.sortOrder,
+      },
+      select: { id: true },
+    });
     for (const account of paymentSettings.accounts) {
-      const accountIdentifier = account.accountNumber;
+      const storedAccount = account as unknown as Record<string, unknown>;
+      const optionalText = (key: string) => typeof storedAccount[key] === "string" ? storedAccount[key] as string : null;
+      const accountIdentifier = optionalText("accountIdentifier")
+        ? optionalText("accountIdentifier") as string
+        : account.accountNumber;
       const existingAccount = await prisma.paymentAccount.findFirst({
         where: {
           method: paymentSettings.paymentMethod,
@@ -88,13 +111,20 @@ async function main() {
       });
 
       const data = {
+        paymentSettingsId: settings.id,
         method: paymentSettings.paymentMethod,
-        displayName: account.label || paymentSettings.label,
+        displayName: optionalText("displayName") || account.label || paymentSettings.label,
         accountIdentifier,
         accountName: account.accountName,
         accountNumber: account.accountNumber,
         phoneNumber: account.phoneNumber,
-        isActive: paymentSettings.isActive,
+        label: account.label,
+        iban: optionalText("iban"),
+        swift: optionalText("swift"),
+        bankName: optionalText("bankName"),
+        instructions: optionalText("instructions"),
+        notes: optionalText("notes"),
+        isActive: typeof storedAccount.isActive === "boolean" ? storedAccount.isActive : paymentSettings.isActive,
         sortOrder: paymentSettings.sortOrder + account.sortOrder,
       };
 
@@ -109,6 +139,23 @@ async function main() {
         });
       }
     }
+  }
+
+  for (const flag of seedData.featureFlags) {
+    const existing = await prisma.featureFlag.findFirst({
+      where: { key: flag.key, scope: "PLATFORM", tenantId: null, siteId: null },
+      select: { id: true },
+    });
+    if (existing) {
+      await prisma.featureFlag.update({ where: { id: existing.id }, data: { enabled: flag.enabled, value: flag.value as Prisma.InputJsonValue } });
+    } else {
+      await prisma.featureFlag.create({ data: { key: flag.key, scope: "PLATFORM", tenantId: null, siteId: null, enabled: flag.enabled, value: flag.value as Prisma.InputJsonValue } });
+    }
+  }
+
+  for (const message of seedData.platformMessages) {
+    await prisma.notificationLog.updateMany({ where: { tenantId: null, category: message.category, title: message.title, deletedAt: null }, data: { deletedAt: new Date() } });
+    await prisma.notificationLog.create({ data: { tenantId: null, category: message.category, type: message.type, title: message.title, body: message.body } });
   }
 
   const backupSettingsData = [

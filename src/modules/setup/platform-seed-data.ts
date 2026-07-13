@@ -1,8 +1,9 @@
 import { templateDefinitions, themeDefinitions } from "@/modules/themes/definitions";
-import { BACKUP_POLICY } from "@/modules/backups/backup-policy";
+import { existsSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 
 export function getPlatformSeedData() {
-  return {
+  const baseline = {
     themes: themeDefinitions.map((theme) => ({
       code: theme.code,
       name: theme.name,
@@ -138,25 +139,22 @@ export function getPlatformSeedData() {
         accounts: [],
       },
     ],
-    backupSettings: [
-      {
-        type: "DATABASE" as const,
-        enabled: true,
-        schedule: BACKUP_POLICY.DATABASE.schedule,
-        retentionCount: BACKUP_POLICY.DATABASE.retentionCount,
-        compression: "zstd",
-        encryption: true,
-        githubBranch: "platform-backups"
-      },
-      {
-        type: "FULL" as const,
-        enabled: true,
-        schedule: BACKUP_POLICY.FULL.schedule,
-        retentionCount: BACKUP_POLICY.FULL.retentionCount,
-        compression: "zstd",
-        encryption: true,
-        githubBranch: "platform-backups"
-      }
-    ]
+    featureFlags: [] as Array<{ key: string; enabled: boolean; value: unknown }>,
+    platformMessages: [] as Array<{ category: string | null; type: string; title: string; body: string | null }>,
   };
+  const configPath = join(process.cwd(), "content", "platform", "admin-config.json");
+  if (!existsSync(configPath)) return baseline;
+  try {
+    const saved = JSON.parse(readFileSync(configPath, "utf8")) as Partial<typeof baseline>;
+    return {
+      themes: Array.isArray(saved.themes) && saved.themes.length ? saved.themes : baseline.themes,
+      templates: Array.isArray(saved.templates) && saved.templates.length ? saved.templates : baseline.templates,
+      plans: Array.isArray(saved.plans) && saved.plans.length ? saved.plans : baseline.plans,
+      paymentSettings: Array.isArray(saved.paymentSettings) && saved.paymentSettings.length ? saved.paymentSettings : baseline.paymentSettings,
+      featureFlags: Array.isArray(saved.featureFlags) ? saved.featureFlags : baseline.featureFlags,
+      platformMessages: Array.isArray(saved.platformMessages) ? saved.platformMessages : baseline.platformMessages,
+    } as typeof baseline;
+  } catch {
+    return baseline;
+  }
 }

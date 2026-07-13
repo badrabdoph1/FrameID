@@ -52,7 +52,6 @@ export async function POST(request: NextRequest) {
 
     log("info", `Starting ${requestedType} backup`, {
       hasGitHubToken: Boolean(env.BACKUP_GITHUB_TOKEN),
-      hasEncryptionKey: Boolean(env.BACKUP_ENCRYPTION_KEY),
       hasGitHubRepo: Boolean(process.env.BACKUP_GITHUB_REPOSITORY),
     });
 
@@ -61,7 +60,6 @@ export async function POST(request: NextRequest) {
       databaseUrl,
       platformVersion: process.env.npm_package_version ?? "0.1.0",
       backupGitHubToken: env.BACKUP_GITHUB_TOKEN,
-      backupEncryptionKey: env.BACKUP_ENCRYPTION_KEY,
       backupGitHubRepository: process.env.BACKUP_GITHUB_REPOSITORY,
     });
 

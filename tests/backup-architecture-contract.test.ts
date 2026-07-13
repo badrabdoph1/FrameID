@@ -17,4 +17,37 @@ describe("عقد Backup Architecture", () => {
     expect(text).toContain("audience=frameid-backup");
     expect(text).not.toContain("secrets.FRAMEID_BACKUP");
   });
+  it("يحذف مسارات النسخ والتخزين المحلي القديمة", async () => {
+    const removed = [
+      "src/modules/backups/backup-content-packager.ts",
+      "src/modules/backups/backup-encryption.ts",
+      "src/modules/backups/backup-locks.ts",
+      "src/modules/backups/storage/local-storage-provider.ts",
+      "src/modules/backups/storage/storage-factory.ts",
+      "src/modules/backups/storage/storage-provider.ts",
+      "src/modules/backups/backup-startup-health.ts",
+      "src/lib/content/backup.ts",
+    ];
+    await Promise.all(removed.map(async (path) => {
+      await expect(readFile(path, "utf8")).rejects.toThrow();
+    }));
+  });
+  it("يربط مسارات إدارة المنصة بحفظ إعدادات GitHub", async () => {
+    const platformActions = [
+      "src/app/(admin)/admin/plans/actions.ts",
+      "src/app/(admin)/admin/settings/actions.ts",
+      "src/app/(admin)/admin/settings/payment/actions.ts",
+      "src/app/(admin)/admin/templates/actions.ts",
+      "src/app/(admin)/admin/templates/management-actions.ts",
+      "src/app/(admin)/admin/templates/starter-defaults-actions.ts",
+      "src/app/(admin)/admin/templates/template-image-actions.ts",
+      "src/app/(admin)/admin/templates/template-visual-actions.ts",
+      "src/app/(admin)/admin/feature-flags/actions.ts",
+      "src/app/(admin)/admin/social-preview/actions.ts",
+      "src/app/(admin)/admin/settings/social-preview/actions.ts",
+    ];
+    for (const path of platformActions) {
+      expect(await readFile(path, "utf8")).toContain("syncPlatformConfigurationToGitHub");
+    }
+  });
 });

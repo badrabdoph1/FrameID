@@ -8,6 +8,7 @@ import { prisma } from "@/lib/prisma";
 import { processError } from "@/lib/errors";
 import { requireAdminPermission } from "@/modules/admin/admin-permission-guards";
 import { readFormString } from "@/modules/auth/auth-action-utils";
+import { syncPlatformConfigurationToGitHub } from "@/modules/setup/platform-configuration-git";
 
 function redirectPlanError(code: string): never {
   redirect(`/admin/plans?error=${encodeURIComponent(code)}`);
@@ -121,6 +122,7 @@ export async function savePlanAction(formData: FormData) {
         isPopular: Boolean(features.isPopular),
       },
     });
+    await syncPlatformConfigurationToGitHub({ actor: admin, reason: existing ? "تعديل باقة" : "إنشاء باقة" });
   } catch (error) {
     const { userError } = await processError(error, { metadata: { action: "savePlan", name } });
     redirect(`/admin/plans?error=${encodeURIComponent(userError.message)}`);
@@ -148,6 +150,7 @@ export async function togglePlanAction(formData: FormData) {
       code: updated.code,
       metadata: { isActive: updated.isActive },
     });
+    await syncPlatformConfigurationToGitHub({ actor: admin, reason: updated.isActive ? "تفعيل باقة" : "تعطيل باقة" });
   } catch (error) {
     const { userError } = await processError(error, { metadata: { action: "togglePlan", id } });
     redirect(`/admin/plans?error=${encodeURIComponent(userError.message)}`);
@@ -174,6 +177,7 @@ export async function archivePlanAction(formData: FormData) {
       planId: archived.id,
       code: archived.code,
     });
+    await syncPlatformConfigurationToGitHub({ actor: admin, reason: "أرشفة باقة" });
   } catch (error) {
     const { userError } = await processError(error, { metadata: { action: "archivePlan", id } });
     redirect(`/admin/plans?error=${encodeURIComponent(userError.message)}`);

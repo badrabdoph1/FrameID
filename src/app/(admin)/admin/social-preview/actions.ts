@@ -12,6 +12,7 @@ import {
   normalizePlatformSocialPreview,
   PLATFORM_SOCIAL_PREVIEW_FLAG_KEY,
 } from "@/modules/seo/platform-social-preview";
+import { syncPlatformConfigurationToGitHub } from "@/modules/setup/platform-configuration-git";
 
 function readText(formData: FormData, key: string, fallback: string): string {
   const value = formData.get(key);
@@ -92,6 +93,7 @@ export async function saveSocialPreviewAction(formData: FormData) {
       } as Prisma.InputJsonObject,
     },
   });
+  await syncPlatformConfigurationToGitHub({ actor: admin, reason: "تعديل معاينة المنصة" });
 
   revalidatePath("/", "layout");
   revalidatePath("/templates");

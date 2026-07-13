@@ -8,6 +8,7 @@ import { processError } from "@/lib/errors";
 import { requireSuperAdminSession } from "@/modules/admin/admin-page-guards";
 import { readFormString } from "@/modules/auth/auth-action-utils";
 import { normalizeEgyptianWhatsappNumber, saveSupportWhatsappNumber } from "@/modules/support/support-settings";
+import { syncPlatformConfigurationToGitHub } from "@/modules/setup/platform-configuration-git";
 
 function redirectWithError(message: string): never {
   redirect(`/admin/settings?supportError=${encodeURIComponent(message)}`);
@@ -36,6 +37,7 @@ export async function updateSupportWhatsappAction(formData: FormData) {
         },
       },
     });
+    await syncPlatformConfigurationToGitHub({ actor: session.user, reason: "تعديل رقم دعم المنصة" });
   } catch (error) {
     const { userError } = await processError(error, {
       metadata: { action: "updateSupportWhatsapp", phone },

@@ -831,9 +831,6 @@ model BackupSettings {
   enabled         Boolean  @default(true)
   schedule        String   @default("0 2 * * *")
   retentionCount  Int      @default(7)
-  compression     String?  @default("zstd")
-  encryption      Boolean? @default(true)
-  githubBranch    String?  @default("platform-backups")
   lastRunAt       DateTime?
   nextRunAt       DateTime?
   createdAt       DateTime @default(now())

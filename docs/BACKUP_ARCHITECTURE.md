@@ -23,6 +23,8 @@
 
 `backup-verification-service.ts` هو تطبيق التحقق الوحيد. والاستعادة تستخدم المحلي إن وجد، وإلا تنزل من GitHub، ثم تتحقق وتستعيد PostgreSQL وuploads للنوع FULL وتتحقق بعد الاستعادة وتسجل Audit. الأمر `npm run restore -- latest FULL` لا يحتاج سجلات BackupJob القديمة.
 
+صورة التشغيل تثبت `postgresql-client-18` المطابق لخادم PostgreSQL 18 على Railway. لا يُدعم تشغيل Restore بأداة `pg_restore` أقدم، ولا يتم تجاوز فحص توافق dump.
+
 ## GitHub Actions والأسرار
 
 Workflow يرسل طلبًا مصادقًا إلى `/api/backups/run` فقط. المصادقة تتم بتوكن OIDC قصير العمر وموقّع من GitHub، ويتحقق السيرفر من المستودع والفرع وملف Workflow والحدث؛ لذلك لا يحتاج Trigger إلى Secret يدوي مشترك. يجب جعل المستودع Private قبل الإطلاق، ولا تُتبع ملفات البيئة، ويلزم تدوير أي رمز سبق كشفه.
