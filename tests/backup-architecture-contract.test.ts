@@ -13,6 +13,7 @@ describe("عقد Backup Architecture", () => {
     expect(text).toContain('schedule: "كل 12 ساعة", retentionCount: 20');
     expect(text).toContain('schedule: "كل 48 ساعة", retentionCount: 10');
     expect(text).not.toContain('schedule: "0 3 */3 * *"');
+    expect(text).toContain("!hasCustomerData ? { nextRunAt: setting.nextRunAt } : {}");
   });
   it("يجعل Actions مشغلاً فقط", async () => { const text = await readFile(".github/workflows/backup.yml", "utf8"); expect(text).not.toMatch(/pg_dump|pg_restore|git\s+push|checksum|retention|npm run backup/i); expect(text).toContain("/api/backups/run"); });
   it("يجعل تشغيل FULL اليومي مجرد نبض ويترك قرار 48 ساعة للمنسق المشترك", async () => {

@@ -1,10 +1,11 @@
 import { existsSync } from "node:fs";
-import { cp, mkdir, mkdtemp, readdir, rm, stat } from "node:fs/promises";
+import { cp, mkdir, mkdtemp, readFile, readdir, rm, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
 import { spawn } from "node:child_process";
 
 import { createVerificationService } from "@/modules/backups/backup-verification-service";
+import type { BackupManifest } from "@/modules/backups/backup-manifest";
 
 export type GitHubBackupVerification = {
   valid: boolean;
@@ -20,6 +21,7 @@ export type GitHubStorage = {
   downloadBackup(backupId: string, destDir: string, branch: string): Promise<string>;
   verifyBackup(backupId: string, branch: string): Promise<GitHubBackupVerification>;
   listBackups(branch: string): Promise<string[]>;
+  listBackupManifests(branch: string): Promise<Array<{ backupId: string; manifest: BackupManifest }>>;
   cleanupOldBackups(branch: string, retentionCount: number): Promise<string[]>;
   deleteBackup(backupId: string, branch: string): Promise<void>;
 };
@@ -174,6 +176,28 @@ export function createGitHubStorage(token: string, repoPath?: string): GitHubSto
           .map((entry) => basename(entry.name))
           .sort()
           .reverse();
+      });
+    },
+
+    async listBackupManifests(branch) {
+      return withBranch(branch, async (repoDir) => {
+        const backupsDir = join(repoDir, "backups");
+        if (!existsSync(backupsDir)) return [];
+        const backupIds = (await readdir(backupsDir, { withFileTypes: true }))
+          .filter((entry) => entry.isDirectory())
+          .map((entry) => entry.name)
+          .sort()
+          .reverse();
+        const manifests: Array<{ backupId: string; manifest: BackupManifest }> = [];
+        for (const backupId of backupIds) {
+          try {
+            const manifest = JSON.parse(await readFile(join(backupsDir, backupId, "manifest.json"), "utf8")) as BackupManifest;
+            manifests.push({ backupId, manifest });
+          } catch {
+            // النسخة التي لا تملك Manifest سليمة لا تصلح للعودة.
+          }
+        }
+        return manifests;
       });
     },
 

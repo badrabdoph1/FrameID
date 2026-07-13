@@ -23,6 +23,8 @@
 
 `backup-verification-service.ts` هو تطبيق التحقق الوحيد. والاستعادة تستخدم المحلي إن وجد، وإلا تنزل من GitHub، ثم تتحقق وتستعيد PostgreSQL وuploads للنوع FULL وتتحقق بعد الاستعادة وتسجل Audit. الأمر `npm run restore -- latest FULL` لا يحتاج سجلات BackupJob القديمة.
 
+في عودة الطوارئ لا تُختار نسخة FULL فارغة أنشأها تشغيل تلقائي بعد إنشاء قاعدة بديلة؛ تُختار أحدث نسخة تحتوي Tenants أو Sites أو Media وفق Manifest. بعد `pg_restore` تُقارن أعداد Users وTenants وSites وMediaAssets الفعلية بالأعداد المسجلة في Manifest، ولا تظهر رسالة النجاح عند أي اختلاف. وعلى قاعدة جديدة فارغة يؤجل Seed أول نسخة تلقائية 12/48 ساعة حتى تتاح نافذة الاستعادة.
+
 صورة التشغيل تثبت `postgresql-client-18` المطابق لخادم PostgreSQL 18 على Railway. لا يُدعم تشغيل Restore بأداة `pg_restore` أقدم، ولا يتم تجاوز فحص توافق dump.
 
 ## GitHub Actions والأسرار
