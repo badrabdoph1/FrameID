@@ -12,6 +12,7 @@ import {
   Copy,
   ExternalLink,
   Eye,
+  LayoutDashboard,
   RotateCcw,
   X,
 } from "lucide-react";
