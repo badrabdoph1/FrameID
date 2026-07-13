@@ -1,4 +1,4 @@
-import type { PageDefinition, PageSectionDefinition, SectionInstance } from "./types";
+import type { PageDefinition, PageSectionDefinition, SectionInstance, PageStudioState } from "./types";
 import type { SourceAdapter } from "./adapters";
 import { getPageDefinition } from "./registry";
 import { createJsonFileAdapter } from "./adapters";
@@ -79,7 +79,7 @@ class PageStudioService {
   }
 
   private getNestedValue(obj: Record<string, unknown>, path: string): unknown {
-    return path.split(".").reduce((acc, key) => (acc as Record<string, unknown>)?.[key], obj);
+    return path.split(".").reduce<unknown>((acc, key) => (acc as Record<string, unknown>)?.[key], obj);
   }
 
   private setNestedValue(obj: Record<string, unknown>, path: string, value: unknown): void {
@@ -223,7 +223,7 @@ class PageStudioService {
 
     const reordered = sectionIds
       .map((id) => this.state!.sections.find((s) => s.id === id))
-      .filter(Boolean);
+      .filter((s): s is SectionInstance => s !== undefined);
 
     this.state.sections = reordered;
     this.pushHistory("إعادة ترتيب الأقسام");
@@ -297,7 +297,7 @@ class PageStudioService {
 
   async save(actor: { id: string; name: string; email: string }): Promise<import("./adapters").AdapterSaveResult> {
     if (!this.state || !this.adapter) {
-      return { success: false, errors: [{ path: "general", message: "Service not initialized" }] };
+      return { success: false, version: 0, errors: [{ path: "general", message: "Service not initialized" }] };
     }
 
     this.state.isSaving = true;
@@ -320,6 +320,7 @@ class PageStudioService {
       this.notify();
       return {
         success: false,
+        version: 0,
         errors: [{ path: "general", message: error instanceof Error ? error.message : "Unknown error" }],
       };
     }
