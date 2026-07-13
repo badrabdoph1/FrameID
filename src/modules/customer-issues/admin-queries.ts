@@ -48,10 +48,68 @@ export type CustomerIssueListResult = {
   pageSize: number;
 };
 
+export type CustomerIssueDetailOccurrence = {
+  id: string;
+  code: string | null;
+  errorType: string | null;
+  message: string;
+  route: string | null;
+  url: string | null;
+  method: string | null;
+  stack: string | null;
+  digest: string | null;
+  requestId: string | null;
+  correlationId: string | null;
+  sourceArea: string | null;
+  sourceFile: string | null;
+  sourceLine: number | null;
+  sourceColumn: number | null;
+  browser: string | null;
+  device: string | null;
+  os: string | null;
+  environment: string | null;
+  buildVersion: string | null;
+  releaseVersion: string | null;
+  templateCode: string | null;
+  lastAction: string | null;
+  metadata: Record<string, unknown> | null;
+  createdAt: string;
+};
+
+export type CustomerIssueDetail = {
+  id: string;
+  number: string;
+  status: CustomerIssueStatus;
+  priority: CustomerIssuePriority;
+  source: CustomerIssueSource;
+  title: string;
+  fingerprint: string;
+  customerNote: string | null;
+  resolutionNote: string | null;
+  occurrenceCount: number;
+  sessionId: string | null;
+  customer: { id: string; name: string; email: string; phone: string | null } | null;
+  tenant: { id: string; name: string } | null;
+  site: { id: string; title: string; slug: string; templateCode: string | null } | null;
+  assigneeName: string | null;
+  resolvedByName: string | null;
+  latestOccurrence: CustomerIssueDetailOccurrence | null;
+  occurrences: CustomerIssueDetailOccurrence[];
+  events: Array<{ id: string; type: string; fromStatus: string | null; toStatus: string | null; note: string | null; actorName: string | null; createdAt: string }>;
+  reviewStartedAt: string | null;
+  resolvedAt: string | null;
+  closedAt: string | null;
+  customerNotifiedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  lastSeenAt: string;
+};
+
 type PrismaLike = {
   customerIssue: {
     count(args?: unknown): Promise<number>;
     findMany(args: unknown): Promise<Array<Record<string, unknown>>>;
+    findUnique?(args: unknown): Promise<Record<string, unknown> | null>;
   };
   errorLog: {
     count(args?: unknown): Promise<number>;
@@ -129,6 +187,34 @@ const listSelect = {
   },
 } as const;
 
+const detailSelect = {
+  id: true,
+  number: true,
+  status: true,
+  priority: true,
+  source: true,
+  title: true,
+  fingerprint: true,
+  customerNote: true,
+  resolutionNote: true,
+  occurrenceCount: true,
+  sessionId: true,
+  reviewStartedAt: true,
+  resolvedAt: true,
+  closedAt: true,
+  customerNotifiedAt: true,
+  createdAt: true,
+  updatedAt: true,
+  lastSeenAt: true,
+  reporter: { select: { id: true, name: true, email: true, phone: true } },
+  tenant: { select: { id: true, displayName: true } },
+  site: { select: { id: true, title: true, slug: true, templateCode: true } },
+  assignee: { select: { id: true, name: true } },
+  resolvedBy: { select: { id: true, name: true } },
+  occurrences: { orderBy: { createdAt: "desc" } },
+  events: { orderBy: { createdAt: "asc" }, include: { actor: { select: { name: true } } } },
+} as const;
+
 function serializeIssue(row: Record<string, unknown>): CustomerIssueListRow {
   const reporter = row.reporter as { id: string; name: string; email: string } | null | undefined;
   const tenant = row.tenant as { id: string; displayName: string } | null | undefined;
@@ -159,7 +245,88 @@ function serializeIssue(row: Record<string, unknown>): CustomerIssueListRow {
   };
 }
 
-export function createCustomerIssueAdminQueries(client: PrismaLike, requireAdmin: RequireAdmin = () => requireAdminCenter("system")) {
+function nullableDate(value: unknown): string | null {
+  return value ? dateString(value) : null;
+}
+
+function serializeOccurrence(row: Record<string, unknown>): CustomerIssueDetailOccurrence {
+  return {
+    id: String(row.id),
+    code: row.code ? String(row.code) : null,
+    errorType: row.errorType ? String(row.errorType) : null,
+    message: String(row.message ?? ""),
+    route: row.route ? String(row.route) : null,
+    url: row.url ? String(row.url) : null,
+    method: row.method ? String(row.method) : null,
+    stack: row.stack ? String(row.stack) : null,
+    digest: row.digest ? String(row.digest) : null,
+    requestId: row.requestId ? String(row.requestId) : null,
+    correlationId: row.correlationId ? String(row.correlationId) : null,
+    sourceArea: row.sourceArea ? String(row.sourceArea) : null,
+    sourceFile: row.sourceFile ? String(row.sourceFile) : null,
+    sourceLine: typeof row.sourceLine === "number" ? row.sourceLine : null,
+    sourceColumn: typeof row.sourceColumn === "number" ? row.sourceColumn : null,
+    browser: row.browser ? String(row.browser) : null,
+    device: row.device ? String(row.device) : null,
+    os: row.os ? String(row.os) : null,
+    environment: row.environment ? String(row.environment) : null,
+    buildVersion: row.buildVersion ? String(row.buildVersion) : null,
+    releaseVersion: row.releaseVersion ? String(row.releaseVersion) : null,
+    templateCode: row.templateCode ? String(row.templateCode) : null,
+    lastAction: row.lastAction ? String(row.lastAction) : null,
+    metadata: (row.metadata as Record<string, unknown> | null | undefined) ?? null,
+    createdAt: dateString(row.createdAt),
+  };
+}
+
+function serializeDetail(row: Record<string, unknown>): CustomerIssueDetail {
+  const reporter = row.reporter as { id: string; name: string; email: string; phone?: string | null } | null | undefined;
+  const tenant = row.tenant as { id: string; displayName: string } | null | undefined;
+  const site = row.site as { id: string; title: string; slug: string; templateCode?: string | null } | null | undefined;
+  const assignee = row.assignee as { name: string } | null | undefined;
+  const resolvedBy = row.resolvedBy as { name: string } | null | undefined;
+  const occurrences = ((row.occurrences as Array<Record<string, unknown>> | undefined) ?? []).map(serializeOccurrence);
+  const events = ((row.events as Array<Record<string, unknown>> | undefined) ?? []).map((event) => ({
+    id: String(event.id),
+    type: String(event.type),
+    fromStatus: event.fromStatus ? String(event.fromStatus) : null,
+    toStatus: event.toStatus ? String(event.toStatus) : null,
+    note: event.note ? String(event.note) : null,
+    actorName: ((event.actor as { name?: string } | null | undefined)?.name) ?? null,
+    createdAt: dateString(event.createdAt),
+  }));
+
+  return {
+    id: String(row.id),
+    number: issueNumber(Number(row.number)),
+    status: row.status as CustomerIssueStatus,
+    priority: row.priority as CustomerIssuePriority,
+    source: row.source as CustomerIssueSource,
+    title: String(row.title),
+    fingerprint: String(row.fingerprint),
+    customerNote: row.customerNote ? String(row.customerNote) : null,
+    resolutionNote: row.resolutionNote ? String(row.resolutionNote) : null,
+    occurrenceCount: Number(row.occurrenceCount ?? occurrences.length),
+    sessionId: row.sessionId ? String(row.sessionId) : null,
+    customer: reporter ? { id: reporter.id, name: reporter.name, email: reporter.email, phone: reporter.phone ?? null } : null,
+    tenant: tenant ? { id: tenant.id, name: tenant.displayName } : null,
+    site: site ? { id: site.id, title: site.title, slug: site.slug, templateCode: site.templateCode ?? null } : null,
+    assigneeName: assignee?.name ?? null,
+    resolvedByName: resolvedBy?.name ?? null,
+    latestOccurrence: occurrences[0] ?? null,
+    occurrences,
+    events,
+    reviewStartedAt: nullableDate(row.reviewStartedAt),
+    resolvedAt: nullableDate(row.resolvedAt),
+    closedAt: nullableDate(row.closedAt),
+    customerNotifiedAt: nullableDate(row.customerNotifiedAt),
+    createdAt: dateString(row.createdAt),
+    updatedAt: dateString(row.updatedAt),
+    lastSeenAt: dateString(row.lastSeenAt),
+  };
+}
+
+export function createCustomerIssueAdminQueries(client: PrismaLike, requireAdmin: RequireAdmin = () => requireAdminCenter("support")) {
   return {
     async getCustomerIssueStats(): Promise<CustomerIssueStats> {
       await requireAdmin();
@@ -193,6 +360,16 @@ export function createCustomerIssueAdminQueries(client: PrismaLike, requireAdmin
 
       return { rows: rows.map(serializeIssue), total, page, pageSize };
     },
+
+    async getCustomerIssueDetail(id: string): Promise<CustomerIssueDetail | null> {
+      await requireAdmin();
+      if (!client.customerIssue.findUnique) throw new Error("Customer issue detail query is unavailable");
+      const row = await client.customerIssue.findUnique({
+        where: { id },
+        select: detailSelect,
+      });
+      return row ? serializeDetail(row) : null;
+    },
   };
 }
 
@@ -200,3 +377,4 @@ const liveQueries = createCustomerIssueAdminQueries(prisma);
 
 export const getCustomerIssueStats = liveQueries.getCustomerIssueStats;
 export const listCustomerIssues = liveQueries.listCustomerIssues;
+export const getCustomerIssueDetail = liveQueries.getCustomerIssueDetail;
