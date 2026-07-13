@@ -1,0 +1,74 @@
+{
+  "$schema": "marketing/signup",
+  "version": 1,
+  "updatedAt": "2026-07-13T00:00:00.000Z",
+  "data": {
+    "hero": {
+      "badge": "إنشاء حساب",
+      "headline": "ابدأ موقعك في دقائق",
+      "subheadline": "انضم لآلاف المصورين الذين يديرون أعمالهم مع FrameID. تجربة مجانية 14 يوم، لا بطاقة مطلوبة.",
+      "heroImage": "https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1800&q=85",
+      "illustration": "https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=600&q=85"
+    },
+    "form": {
+      "title": "أنشئ حسابك المجاني",
+      "subtitle": "يستغرق أقل من دقيقة",
+      "fields": [
+        {
+          "id": "name",
+          "label": "الاسم الكامل",
+          "type": "text",
+          "placeholder": "أحمد محمد",
+          "required": true,
+          "validation": "min:2"
+        },
+        {
+          "id": "email",
+          "label": "البريد الإلكتروني",
+          "type": "email",
+          "placeholder": "you@example.com",
+          "required": true,
+          "validation": "email"
+        },
+        {
+          "id": "password",
+          "label": "كلمة المرور",
+          "type": "password",
+          "placeholder": "••••••••",
+          "required": true,
+          "validation": "min:8"
+        },
+        {
+          "id": "confirmPassword",
+          "label": "تأكيد كلمة المرور",
+          "type": "password",
+          "placeholder": "••••••••",
+          "required": true,
+          "validation": "match:password"
+        }
+      ],
+      "submitButton": {
+        "label": "إنشاء الحساب",
+        "loadingLabel": "جاري الإنشاء..."
+      },
+      "footerLinks": [
+        { "label": "لديك حساب بالفعل؟ سجل دخول", "href": "/login" },
+        { "label": "الشروط والخصوصية", "href": "/terms" }
+      ]
+    },
+    "benefits": [
+      { "icon": "CheckCircle", "title": "تجربة مجانية 14 يوم", "description": "جميع المميزات بدون قيود، لا بطاقة مطلوبة" },
+      { "icon": "Zap", "title": "إعداد فوري", "description": "موقعك جاهز في دقائق مع قوالب احترافية" },
+      { "icon": "Shield", "title": "آمن وموثوق", "description": "استضافة سريعة، SSL مجاني، نسخ احتياطي يومي" },
+      { "icon": "Users", "title": "مجتمع المصورين", "description": "انضم لآلاف المصورين الناجحين" }
+    ],
+    "footer": {
+      "copyright": "© 2024 FrameID. جميع الحقوق محفوظة.",
+      "links": [
+        { "label": "الخصوصية", "href": "/privacy" },
+        { "label": "الشروط", "href": "/terms" },
+        { "label": "ملفات تعريف الارتباط", "href": "/cookies" }
+      ]
+    }
+  }
+}

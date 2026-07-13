@@ -1,0 +1,84 @@
+{
+  "$schema": "marketing/templates",
+  "version": 1,
+  "updatedAt": "2026-07-13T00:00:00.000Z",
+  "data": {
+    "hero": {
+      "badge": "استكشف القوالب",
+      "headline": "اختر التصميم الذي يناسب أسلوبك",
+      "subheadline": "مجموعة متنوعة من القوالب المصممة خصيصاً للمصورين. كل قالب قابل للتخصيص بالكامل.",
+      "heroImage": "https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1800&q=85",
+      "cta": { "label": "شاهد جميع القوالب", "href": "#templates" },
+      "secondaryCta": { "label": "ابدأ مجاناً", "href": "/signup" }
+    },
+    "filters": {
+      "title": "تصفية حسب النوع",
+      "categories": [
+        { "id": "all", "label": "الكل", "count": 12 },
+        { "id": "wedding", "label": "زفاف", "count": 5 },
+        { "id": "portrait", "label": "بورتريه", "count": 3 },
+        { "id": "event", "label": "مناسبات", "count": 2 },
+        { "id": "studio", "label": "استوديو", "count": 2 }
+      ]
+    },
+    "templatesGrid": {
+      "title": "قوالب متاحة",
+      "subtitle": "اضغط على أي قالب لمعاينة مباشرة",
+      "templates": [
+        {
+          "id": "noir-gold",
+          "name": "كلاسك",
+          "category": "wedding",
+          "description": "قالب كلاسيكي داكن بلمسة ذهبية، مناسب للمصورين الذين يريدون موقعًا فاخرًا.",
+          "previewImage": "https://i.ibb.co/JwBLNkjP/Whats-App-Image-2026-06-04-at-2-30-53-AM-1.jpg",
+          "tags": ["فاخر", "داكن", "ذهبي"]
+        },
+        {
+          "id": "rose-blush",
+          "name": "رومانسي",
+          "category": "wedding",
+          "description": "تصميم ناعم بألوان وردية دافئة، مثالي لصور الزفاف والخطوبة.",
+          "previewImage": "https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1200&q=85",
+          "tags": ["رومانسي", "وردي", "ناعم"]
+        },
+        {
+          "id": "minimal-white",
+          "name": "بسيط",
+          "category": "portrait",
+          "description": "تصميم بسيط ونظيف يركز على صورك بدون تشتيت.",
+          "previewImage": "https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?auto=format&fit=crop&w=1200&q=85",
+          "tags": ["بسيط", "أبيض", "نظيف"]
+        },
+        {
+          "id": "dark-moody",
+          "name": "سينمائي",
+          "category": "portrait",
+          "description": "ألوان داكنة وجو سينمائي يبرز جمال البورتريه.",
+          "previewImage": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=1200&q=85",
+          "tags": ["سينمائي", "داكن", "فني"]
+        },
+        {
+          "id": "bright-airy",
+          "name": "مشرق",
+          "category": "event",
+          "description": "تصميم مشرق ومتجدد الهواء للمناسبات والاحتفالات.",
+          "previewImage": "https://images.unsplash.com/photo-1511285560929-80b456fea0bc?auto=format&fit=crop&w=1200&q=85",
+          "tags": ["مشرق", "مناسبات", "فرح"]
+        },
+        {
+          "id": "studio-pro",
+          "name": "احترافي",
+          "category": "studio",
+          "description": "قالب احترافي للاستوديوهات مع عرض خدمات وباقات مفصل.",
+          "previewImage": "https://images.unsplash.com/photo-1529636798458-92182e662485?auto=format&fit=crop&w=1200&q=85",
+          "tags": ["استوديو", "احترافي", "خدمات"]
+        }
+      ]
+    },
+    "finalCta": {
+      "title": "لم تجد ما تبحث عنه؟",
+      "subtext": "يمكنك تخصيص أي قالب ليناسب احتياجاتك تماماً، أو تواصل معنا لطلب قالب مخصص.",
+      "cta": { "label": "تواصل معنا", "href": "/contact" }
+    }
+  }
+}

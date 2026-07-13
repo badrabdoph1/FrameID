@@ -1,0 +1,65 @@
+{
+  "$schema": "marketing/login",
+  "version": 1,
+  "updatedAt": "2026-07-13T00:00:00.000Z",
+  "data": {
+    "hero": {
+      "badge": "تسجيل الدخول",
+      "headline": "مرحباً بعودتك",
+      "subheadline": "سجل دخولك للوصول إلى لوحة التحكم وإدارة موقعك",
+      "heroImage": "https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1800&q=85",
+      "illustration": "https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=600&q=85"
+    },
+    "form": {
+      "title": "تسجيل الدخول",
+      "subtitle": "أدخل بياناتك للوصول إلى حسابك",
+      "fields": [
+        {
+          "id": "email",
+          "label": "البريد الإلكتروني",
+          "type": "email",
+          "placeholder": "you@example.com",
+          "required": true,
+          "validation": "email"
+        },
+        {
+          "id": "password",
+          "label": "كلمة المرور",
+          "type": "password",
+          "placeholder": "••••••••",
+          "required": true,
+          "validation": "min:8"
+        }
+      ],
+      "submitButton": {
+        "label": "دخول",
+        "loadingLabel": "جاري الدخول..."
+      },
+      "footerLinks": [
+        { "label": "نسيت كلمة المرور؟", "href": "/forgot-password" },
+        { "label": "إنشاء حساب جديد", "href": "/signup" }
+      ]
+    },
+    "benefits": [
+      { "icon": "Shield", "title": "آمن ومحمي", "description": "بياناتك مشفرة ومحمية بأحدث معايير الأمان" },
+      { "icon": "Zap", "title": "وصول فوري", "description": "لوحة التحكم تفتح في ثوانٍ" },
+      { "icon": "Settings", "title": "إدارة كاملة", "description": "تحكم في كل جانب من جوانب موقعك" }
+    ],
+    "helpSection": {
+      "title": "تحتاج مساعدة؟",
+      "items": [
+        { "label": "تواصل مع الدعم", "href": "/support" },
+        { "label": "الأسئلة الشائعة", "href": "/faq" },
+        { "label": "دليل الاستخدام", "href": "/docs" }
+      ]
+    },
+    "footer": {
+      "copyright": "© 2024 FrameID. جميع الحقوق محفوظة.",
+      "links": [
+        { "label": "الخصوصية", "href": "/privacy" },
+        { "label": "الشروط", "href": "/terms" },
+        { "label": "ملفات تعريف الارتباط", "href": "/cookies" }
+      ]
+    }
+  }
+}

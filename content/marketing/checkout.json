@@ -1,0 +1,71 @@
+{
+  "$schema": "marketing/checkout",
+  "version": 1,
+  "updatedAt": "2026-07-13T00:00:00.000Z",
+  "data": {
+    "hero": {
+      "badge": "إتمام الدفع",
+      "headline": "أكمل اشتراكك",
+      "subheadline": "مراجعة طلبك واختر طريقة الدفع المفضلة",
+      "heroImage": "https://images.unsplash.com/photo-1551434678-e076c223a692?auto=format&fit=crop&w=1800&q=85"
+    },
+    "orderSummary": {
+      "title": "ملخص الطلب",
+      "plan": {
+        "name": "الخطة الاحترافية",
+        "period": "شهرياً",
+        "price": 79,
+        "currency": "EGP"
+      },
+      "items": [
+        { "label": "الخطة الاحترافية", "amount": 79, "currency": "EGP" },
+        { "label": "الضريبة (14%)", "amount": 11.06, "currency": "EGP" }
+      ],
+      "total": { "label": "الإجمالي", "amount": 90.06, "currency": "EGP" }
+    },
+    "paymentMethods": [
+      {
+        "id": "instapay",
+        "name": "إنستاباي",
+        "description": "تحويل فوري عبر تطبيق البنك",
+        "icon": "Smartphone",
+        "instructions": "1. افتح تطبيق البنك\n2. اختر إنستاباي\n3. ادخل المبلغ ورقم الحساب\n4. أكد الدفع"
+      },
+      {
+        "id": "vodafone_cash",
+        "name": "فودافون كاش",
+        "description": "دفع عبر محفظة فودافون",
+        "icon": "Phone",
+        "instructions": "1. اطلب *9#\n2. اختر دفع الفواتير\n3. ادخل الرقم المرجعي\n4. أكد بالمبلغ"
+      },
+      {
+        "id": "stripe",
+        "name": "بطاقة ائتمان",
+        "description": "Visa, Mastercard, Meeza",
+        "icon": "CreditCard",
+        "instructions": "أدخل بيانات البطاقة بأمان"
+      }
+    ],
+    "form": {
+      "fields": [
+        { "id": "email", "label": "البريد الإلكتروني للإيصال", "type": "email", "placeholder": "you@example.com", "required": true },
+        { "id": "phone", "label": "رقم الهاتف", "type": "tel", "placeholder": "+20100000000", "required": true },
+        { "id": "paymentMethod", "label": "طريقة الدفع", "type": "radio", "options": ["instapay", "vodafone_cash", "stripe"], "required": true }
+      ],
+      "submitButton": { "label": "الدفع وإكمال الاشتراك", "loadingLabel": "جاري المعالجة..." }
+    },
+    "trustBadges": [
+      { "label": "تشفير SSL 256-bit", "icon": "Lock" },
+      { "label": "متوافق مع PCI DSS", "icon": "Shield" },
+      { "label": "لا نحفظ بيانات البطاقة", "icon": "EyeOff" }
+    ],
+    "footer": {
+      "copyright": "© 2024 FrameID. جميع الحقوق محفوظة.",
+      "links": [
+        { "label": "الخصوصية", "href": "/privacy" },
+        { "label": "الشروط", "href": "/terms" },
+        { "label": "سياسة الاسترداد", "href": "/refund-policy" }
+      ]
+    }
+  }
+}

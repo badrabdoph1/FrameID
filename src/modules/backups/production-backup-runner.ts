@@ -3,6 +3,7 @@ import { createBackupJobService } from "@/modules/backups/backup-job-service";
 import { createPrismaBackupJobRepository } from "@/modules/backups/prisma-backup-job-repository";
 import { isSupportedBackupType } from "@/modules/backups/backup-policy";
 import { claimAutomaticBackupSlot, markAutomaticBackupCompleted, releaseAutomaticBackupSlot } from "@/modules/backups/automatic-backup-schedule";
+import { reconcileProductionGitHubBackupCatalog } from "@/modules/backups/production-github-backup-catalog";
 
 const DEFAULT_INTERVAL_MS = 60_000;
 
@@ -110,7 +111,9 @@ export function startProductionBackupRunner(): void {
     });
   };
 
-  tick();
+  reconcileProductionGitHubBackupCatalog()
+    .catch((error) => log("error", "فشلت إعادة بناء فهرس النسخ من GitHub", { error: error instanceof Error ? error.message : String(error) }))
+    .finally(tick);
   const intervalMs = Number.parseInt(process.env.BACKUP_SCHEDULER_INTERVAL_MS ?? String(DEFAULT_INTERVAL_MS), 10);
   log("info", `Scheduler interval: ${intervalMs}ms`);
   const timer = setInterval(tick, Number.isFinite(intervalMs) ? intervalMs : DEFAULT_INTERVAL_MS);

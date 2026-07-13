@@ -23,6 +23,7 @@ import {
   BriefcaseBusiness,
   MessageSquareText,
   Share2,
+  Edit,
   type LucideIcon,
 } from "lucide-react";
 
@@ -149,6 +150,19 @@ export const adminSections: AdminSection[] = [
       { href: "/admin/media", label: "الوسائط", icon: Image },
       { href: "/admin/social-preview", label: "معاينة المشاركة", icon: Share2 },
       { href: "/admin/content/marketing/homepage", label: "محتوى الموقع", icon: FileText },
+    ],
+  },
+  {
+    id: "page-studio",
+    title: "محرر الصفحات",
+    shortDescription: "تحرير بصري للصفحات",
+    description: "Page Studio - محرر بصري لجميع صفحات المنصة",
+    accent: "violet",
+    badge: "Studio",
+    icon: Edit,
+    links: [
+      { href: "/admin/page-studio", label: "صفحات المنصة", icon: Layout },
+      { href: "/admin/page-studio/marketing-homepage", label: "الصفحة الرئيسية", icon: Home },
     ],
   },
   {

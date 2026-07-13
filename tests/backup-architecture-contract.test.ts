@@ -83,4 +83,10 @@ describe("عقد Backup Architecture", () => {
     expect(page).toContain("ذهاب طوارئ");
     expect(page).toContain("prepareMigrationBackupAction");
   });
+  it("يعيد بناء فهرس PostgreSQL تلقائيًا من GitHub عند الإقلاع وفتح لوحة النسخ", async () => {
+    const page = await readFile("src/app/(admin)/admin/backups/page.tsx", "utf8");
+    const runner = await readFile("src/modules/backups/production-backup-runner.ts", "utf8");
+    expect(page).toContain("reconcileProductionGitHubBackupCatalog");
+    expect(runner).toContain("reconcileProductionGitHubBackupCatalog");
+  });
 });

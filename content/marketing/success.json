@@ -1,0 +1,44 @@
+{
+  "$schema": "marketing/success",
+  "version": 1,
+  "updatedAt": "2026-07-13T00:00:00.000Z",
+  "data": {
+    "hero": {
+      "badge": "تم بنجاح",
+      "headline": "مرحباً بك في FrameID!",
+      "subheadline": "تم تفعيل اشتراكك بنجاح. موقعك جاهز الآن.",
+      "heroImage": "https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1800&q=85",
+      "illustration": "https://images.unsplash.com/photo-1532629345422-7515f3d16bb6?auto=format&fit=crop&w=600&q=85"
+    },
+    "successCard": {
+      "icon": "CheckCircle",
+      "title": "اشتراكك نشط الآن",
+      "details": [
+        { "label": "الخطة", "value": "احترافي" },
+        { "label": "الدورة الفوترية", "value": "شهرياً" },
+        { "label": "التجديد القادم", "value": "2024-08-13" },
+        { "label": "طريقة الدفع", "value": "إنستاباي" }
+      ]
+    },
+    "nextSteps": {
+      "title": "ما التالي؟",
+      "steps": [
+        { "number": 1, "title": "ادخل لوحة التحكم", "description": "خصص موقعك، ارفع صورك، وأضف باقاتك", "cta": { "label": "ذهاب للوحة التحكم", "href": "/dashboard" } },
+        { "number": 2, "title": "اختر قالباً", "description": "استعرض القوالب وفعّل المفضل لديك", "cta": { "label": "استعرض القوالب", "href": "/templates" } },
+        { "number": 3, "title": "شارك موقعك", "description": "رابطك: frameid.app/p/اسمك", "cta": { "label": "موقعي", "href": "/p/demo" } }
+      ]
+    },
+    "support": {
+      "title": "تحتاج مساعدة؟",
+      "description": "فريق الدعم متاح لمساعدتك في أي وقت",
+      "cta": { "label": "تواصل مع الدعم", "href": "/support" }
+    },
+    "footer": {
+      "copyright": "© 2024 FrameID. جميع الحقوق محفوظة.",
+      "links": [
+        { "label": "الخصوصية", "href": "/privacy" },
+        { "label": "الشروط", "href": "/terms" }
+      ]
+    }
+  }
+}

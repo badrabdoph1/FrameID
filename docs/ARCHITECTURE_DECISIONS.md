@@ -6,7 +6,7 @@
 
 **المرفوض:** Pipeline ثانية، نجاح local-only، ومنطق Backup داخل Workflow أو Scheduler أو CLI.
 
-**الأثر:** لا تصبح النسخة `COMPLETED` قبل Remote Verify وRetention وAudit، والاستعادة تنزل من GitHub عند غياب المحلي. بيانات العملاء لا تدخل `main`، وإنما تحفظ فقط داخل فرعي النسخ المخصصين. يسجل Manifest v2 أعداد جداول العملاء المهمة، وفي FULL جرد الملفات بالمسار والحجم وSHA-256، ثم يفرض تطابقها بعد Restore.
+**الأثر:** لا تصبح النسخة `COMPLETED` قبل Remote Verify وRetention وAudit، والاستعادة تنزل من GitHub عند غياب المحلي. بيانات العملاء لا تدخل `main`، وإنما تحفظ فقط داخل فرعي النسخ المخصصين. يسجل Manifest v2 أعداد جداول العملاء المهمة، وفي FULL جرد الملفات بالمسار والحجم وSHA-256، ثم يفرض تطابقها بعد Restore. كتالوج `BackupJob` في PostgreSQL Index قابل لإعادة البناء تلقائيًا من Manifests GitHub، وليس مصدرًا مستقلًا للنسخ.
 
 This file is the official Architecture Decision Record for FrameID. It documents why important architectural choices exist. It does not replace the domain documentation or executable code.
 
