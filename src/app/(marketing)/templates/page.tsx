@@ -101,7 +101,7 @@ export default function TemplatesPage() {
               لا توجد قوالب منشورة حاليًا.
             </div>
           ) : (
-            <div className="grid gap-4 md:grid-cols-2 md:gap-6">
+            <div className="grid gap-4 md:grid-cols-2 md:gap-6" data-smart-hint="templates-grid">
               {templates.map((template) => {
                 const meta = templateHighlights[template.code] ?? {};
                 const description = meta.highlight ?? template.description;

@@ -48,8 +48,10 @@ export default async function TemplatePreviewPage({ params, searchParams }: Prop
 
   return (
     <>
-      <TemplatePreviewGuard />
-      <ThemeComponent site={siteData} />
+      <div data-smart-hint="preview-screen">
+        <TemplatePreviewGuard />
+        <ThemeComponent site={siteData} />
+      </div>
       {isEmbed ? null : (
         <div data-preview-toolbar className="fixed inset-x-4 bottom-4 z-[90] mx-auto flex max-w-md items-center gap-2 rounded-[var(--radius-panel)] border border-white/10 bg-ink/90 p-2 shadow-[0_18px_70px_rgba(0,0,0,.35)] backdrop-blur-xl">
           <Link href="/templates" className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-[var(--radius-control)] text-sm font-semibold text-white hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/45">

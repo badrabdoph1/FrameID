@@ -1,17 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Check, Sparkles, type LucideIcon } from "lucide-react";
+import { Sparkles, type LucideIcon } from "lucide-react";
+import type { PageTip } from "@/lib/smart-tips";
+import { accentToGlow } from "@/lib/smart-tips";
 
-type SmartTipConfig = {
-  id: string;
-  title: string;
-  description: string;
-  icon?: LucideIcon;
-  accentColor: string;
-  glowColor: string;
-  targetSelector?: string;
-};
+type SmartTipConfig = PageTip;
 
 const SMART_TIPS_STORAGE_KEY = "frameid:smart-tips-seen";
 
@@ -22,7 +16,10 @@ export function useSmartTip(config: SmartTipConfig | null) {
   const seenTips = useMemo(() => {
     try {
       const raw = window.localStorage.getItem(SMART_TIPS_STORAGE_KEY);
-      return raw ? new Set(JSON.parse(raw) as string[]) : new Set<string>();
+      if (!raw) return new Set<string>();
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return new Set<string>(parsed);
+      return new Set<string>();
     } catch {
       return new Set<string>();
     }
@@ -30,7 +27,7 @@ export function useSmartTip(config: SmartTipConfig | null) {
 
   useEffect(() => {
     if (!config) return;
-    if (seenTips.has(config.id)) return;
+    if (config.showOnce && seenTips.has(config.id)) return;
     const timer = window.setTimeout(() => setShowing(true), 400);
     return () => window.clearTimeout(timer);
   }, [config, seenTips]);
@@ -58,6 +55,25 @@ export function resetSmartTips() {
   }
 }
 
+const placementClasses: Record<string, string> = {
+  center: "fixed inset-0 flex items-center justify-center p-4",
+  top: "fixed inset-x-0 top-0 flex justify-center px-4 pt-4 sm:pt-6",
+  bottom: "fixed inset-x-0 bottom-0 flex justify-center px-4 pb-4 sm:pb-6",
+  left: "fixed inset-y-0 left-0 flex items-center pl-4 pr-8",
+  right: "fixed inset-y-0 right-0 flex items-center pr-4 pl-8",
+};
+
+const animationClasses: Record<string, string> = {
+  "float-up": "smart-tip-float-up",
+  fade: "smart-tip-fade",
+  zoom: "smart-tip-zoom",
+  "slide-right": "smart-tip-slide-right",
+  "slide-left": "smart-tip-slide-left",
+  bounce: "smart-tip-bounce",
+  sparkle: "smart-tip-sparkle",
+  check: "smart-tip-check",
+};
+
 export function SmartTip({ config }: { config: SmartTipConfig | null }) {
   const { showing, dismissed, dismiss } = useSmartTip(config);
   const cardRef = useRef<HTMLDivElement>(null);
@@ -80,41 +96,54 @@ export function SmartTip({ config }: { config: SmartTipConfig | null }) {
 
   if (!config || !showing) return null;
 
+  const glow = config.glowColor ?? accentToGlow(config.accent);
   const Icon = config.icon ?? Sparkles;
+  const BtnIcon = config.buttonIcon ?? Sparkles;
   const closing = dismissed;
+  const placementClass = placementClasses[config.placement] ?? placementClasses.center;
+  const animationClass = animationClasses[config.animation] ?? animationClasses["float-up"];
 
   return (
     <>
-      {config.targetSelector ? <SmartTipSpotlight selector={config.targetSelector} glowColor={config.glowColor} /> : null}
+      {config.hintTarget ? <SmartHint selector={config.hintTarget} glow={glow} /> : null}
       <div className={`fixed inset-0 z-40 pointer-events-none ${closing ? "smart-tip-overlay-out" : "smart-tip-overlay-in"}`} />
-      <div className={`fixed inset-x-0 top-0 z-50 flex justify-center px-4 pt-4 sm:pt-6 ${closing ? "smart-tip-card-out" : "smart-tip-card-in"}`}>
+      <div className={`${placementClass} z-50 ${closing ? "smart-tip-card-out" : animationClass}`}>
         <div
           ref={cardRef}
           className="pointer-events-auto relative w-full max-w-md overflow-hidden rounded-2xl border border-white/[0.14] p-4 shadow-2xl backdrop-blur-xl sm:rounded-3xl sm:p-5"
           style={{
             background: `linear-gradient(145deg, rgba(14,18,26,0.94) 0%, rgba(10,13,20,0.97) 100%)`,
-            boxShadow: `0 24px 64px rgba(0,0,0,0.5), 0 0 80px ${config.glowColor}, inset 0 1px 0 rgba(255,255,255,0.08)`,
+            boxShadow: `0 24px 64px rgba(0,0,0,0.5), 0 0 80px ${glow}, inset 0 1px 0 rgba(255,255,255,0.08)`,
           }}
         >
           <span className="pointer-events-none absolute inset-x-6 top-0 h-px bg-gradient-to-l from-transparent via-white/20 to-transparent" />
           <div
-            className="pointer-events-none absolute inset-0 opacity-40 transition-opacity duration-500"
+            className="pointer-events-none absolute inset-0 opacity-30 transition-opacity duration-500"
             style={{
-              background: `radial-gradient(ellipse 80% 60% at ${mousePos.x * 100}% ${mousePos.y * 100}%, ${config.glowColor} 0%, transparent 70%)`,
+              background: `radial-gradient(ellipse 80% 60% at ${mousePos.x * 100}% ${mousePos.y * 100}%, ${glow} 0%, transparent 70%)`,
             }}
           />
-          <div className="pointer-events-none absolute -inset-px rounded-2xl sm:rounded-3xl" style={{ background: `conic-gradient(from 0deg, transparent 0%, ${config.accentColor}40 25%, transparent 50%, ${config.accentColor}20 75%, transparent 100%)`, animation: "smart-tip-border-spin 4s linear infinite", mask: "linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)", maskComposite: "exclude", WebkitMaskComposite: "xor", padding: "1px" }} />
 
           <div className="relative flex items-start gap-3">
             <div className="smart-tip-icon-entrance relative shrink-0">
-              <div className="absolute inset-0 animate-pulse rounded-xl blur-lg" style={{ background: config.glowColor, opacity: 0.6 }} />
-              <div className="relative grid size-10 place-items-center rounded-xl sm:size-11" style={{ background: `${config.accentColor}18` }}>
-                <Icon className="size-5 sm:size-5.5" style={{ color: config.accentColor }} aria-hidden />
+              <div
+                className="absolute inset-0 rounded-xl blur-lg"
+                style={{ background: glow, opacity: 0.5 }}
+              />
+              <div
+                className="relative grid size-10 place-items-center rounded-xl sm:size-11"
+                style={{ background: `${config.accent}18` }}
+              >
+                <Icon className="size-5 sm:size-5.5" style={{ color: config.accent }} aria-hidden />
               </div>
             </div>
             <div className="min-w-0 flex-1 pt-0.5">
-              <h3 className="smart-tip-stagger text-sm font-black text-[#fff7e8] drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)] sm:text-base">{config.title}</h3>
-              <p className="smart-tip-stagger mt-1 text-xs font-bold leading-5 text-white/75 drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)] sm:text-sm">{config.description}</p>
+              <h3 className="smart-tip-stagger text-sm font-black text-[#fff7e8] drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)] sm:text-base">
+                {config.title}
+              </h3>
+              <p className="smart-tip-stagger mt-1 text-xs font-bold leading-5 text-white/75 drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)] sm:text-sm">
+                {config.description}
+              </p>
             </div>
           </div>
 
@@ -123,25 +152,21 @@ export function SmartTip({ config }: { config: SmartTipConfig | null }) {
             onClick={dismiss}
             className="smart-tip-stagger mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-gradient-to-br py-2.5 text-xs font-black text-[#17120a] shadow-lg transition hover:-translate-y-0.5 sm:rounded-2xl sm:py-3 sm:text-sm"
             style={{
-              background: `linear-gradient(135deg, ${config.accentColor}, ${config.accentColor}dd)`,
-              boxShadow: `0 8px 24px ${config.glowColor}`,
+              background: `linear-gradient(135deg, ${config.accent}, ${config.accent}dd)`,
+              boxShadow: `0 8px 24px ${glow}`,
               animationDelay: "0.5s",
             }}
           >
-            <Check className="size-3.5 sm:size-4" aria-hidden />
-            فهمت
+            <BtnIcon className="size-3.5 sm:size-4" aria-hidden />
+            {config.button}
           </button>
-
-          <div className="pointer-events-none absolute inset-0 overflow-hidden">
-            <div className="smart-tip-shimmer absolute inset-x-0 top-0 h-px" style={{ background: `linear-gradient(90deg, transparent, ${config.accentColor}60, transparent)` }} />
-          </div>
         </div>
       </div>
     </>
   );
 }
 
-function SmartTipSpotlight({ selector, glowColor }: { selector: string; glowColor: string }) {
+function SmartHint({ selector, glow }: { selector: string; glow: string }) {
   const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
 
   useEffect(() => {
@@ -165,21 +190,17 @@ function SmartTipSpotlight({ selector, glowColor }: { selector: string; glowColo
 
   if (!targetRect) return null;
 
-  const pad = 12;
   return (
-    <div className="pointer-events-none fixed inset-0 z-30 smart-tip-spotlight-in">
+    <div className="pointer-events-none fixed inset-0 z-30">
       <div
-        className="absolute rounded-2xl border-2 transition-all duration-700 ease-out"
+        className="absolute flex flex-col items-center"
         style={{
-          left: targetRect.left - pad,
-          top: targetRect.top - pad,
-          width: targetRect.width + pad * 2,
-          height: targetRect.height + pad * 2,
-          borderColor: glowColor,
-          boxShadow: `0 0 24px ${glowColor}, 0 0 48px ${glowColor}40, inset 0 0 24px ${glowColor}20`,
-          animation: "smart-tip-spotlight-pulse 2.5s ease-in-out infinite",
+          left: targetRect.left + targetRect.width / 2,
+          top: targetRect.top - 16,
         }}
-      />
+      >
+        <div className="smart-hint-dot" style={{ background: glow, boxShadow: `0 0 8px 2px ${glow}` }} />
+      </div>
     </div>
   );
 }

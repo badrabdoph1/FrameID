@@ -50,7 +50,7 @@ export function SignupForm({ template, error }: SignupFormProps) {
         </button>
       </div>
 
-      <form action={signupAction} className="space-y-4">
+      <form action={signupAction} className="space-y-4" data-smart-hint="signup-form">
         <input
           name="selectedTemplateCode"
           type="hidden"

@@ -173,6 +173,7 @@ export default function HomePage() {
               <div className="mt-6 flex flex-col items-start gap-2 md:mt-8 lg:flex-row lg:items-center lg:gap-5">
                 <Link
                   href={hero.cta.href}
+                  data-smart-hint="home-cta"
                   className="inline-flex min-h-12 items-center justify-center gap-2 rounded-[var(--radius-control)] bg-champagne px-8 text-sm font-semibold text-ink transition-[background-color,box-shadow,transform] hover:-translate-y-0.5 hover:bg-champagne/90 hover:shadow-[0_12px_35px_rgba(230,196,120,0.22)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-champagne lg:min-h-14 lg:px-10 lg:text-base"
                 >
                   ابدأ مجانًا

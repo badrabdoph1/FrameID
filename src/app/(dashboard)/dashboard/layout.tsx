@@ -5,7 +5,6 @@ import { redirect } from "next/navigation";
 import { DashboardScrollReset } from "@/components/layout/dashboard-scroll-reset";
 import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { RenderingSafetyMode } from "@/components/layout/rendering-safety-mode";
-import { SmartTipRouter } from "@/components/layout/smart-tip-router";
 import { PwaInstallButton } from "@/components/pwa/pwa-install-button";
 import { prisma } from "@/lib/prisma";
 import type { RenderingSafetyConfig } from "@/lib/client/rendering-diagnostics";
@@ -84,7 +83,6 @@ export default async function DashboardLayout({
       <DashboardScrollReset />
       <DashboardShell siteSlug={session.site.slug}>{children}</DashboardShell>
       <PwaInstallButton context="dashboard" />
-      <SmartTipRouter />
     </>
   );
 }

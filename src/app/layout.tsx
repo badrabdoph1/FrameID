@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 
 import { Analytics } from "@/components/analytics";
 import { ToastRootProvider } from "@/components/errors/toast-root-provider";
+import { SmartTipRouter } from "@/components/layout/smart-tip-router";
 import { getPlatformBaseUrl } from "@/lib/platform-url";
 import {
   loadPlatformSocialPreview,
@@ -131,6 +132,7 @@ export default function RootLayout({
       <body>
         <Analytics />
         <ToastRootProvider>{children}</ToastRootProvider>
+        <SmartTipRouter />
       </body>
     </html>
   );

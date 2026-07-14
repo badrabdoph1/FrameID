@@ -452,35 +452,30 @@
 }
 
 @keyframes smartTipOverlayIn {
-  from { background: rgba(0,0,0,0); }
-  to { background: rgba(0,0,0,0.3); }
+  from {
+    background: rgba(0,0,0,0);
+    backdrop-filter: blur(0);
+  }
+  to {
+    background: rgba(0,0,0,0.08);
+    backdrop-filter: blur(2px);
+  }
 }
 
 @keyframes smartTipOverlayOut {
-  from { background: rgba(0,0,0,0.3); }
-  to { background: rgba(0,0,0,0); }
-}
-
-.smart-tip-card-in {
-  animation: smartTipCardIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+  from {
+    background: rgba(0,0,0,0.08);
+    backdrop-filter: blur(2px);
+  }
+  to {
+    background: rgba(0,0,0,0);
+    backdrop-filter: blur(0);
+  }
 }
 
 .smart-tip-card-out {
-  animation: smartTipCardOut 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: smartTipCardOut 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
   pointer-events: none;
-}
-
-@keyframes smartTipCardIn {
-  from {
-    opacity: 0;
-    transform: translateY(-20px) scale(0.92);
-    filter: blur(6px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-    filter: blur(0);
-  }
 }
 
 @keyframes smartTipCardOut {
@@ -533,28 +528,164 @@
   }
 }
 
-.smart-tip-shimmer {
-  animation: smartTipShimmer 3s ease-in-out infinite;
+/* ── Smart Tip Entry Animations ── */
+
+.smart-tip-float-up {
+  animation: smartTipFloatUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-@keyframes smartTipShimmer {
-  0% { opacity: 0; transform: translateX(-100%); }
-  50% { opacity: 1; }
-  100% { transform: translateX(100%); opacity: 0; }
+@keyframes smartTipFloatUp {
+  from {
+    opacity: 0;
+    transform: translateY(-24px) scale(0.94);
+    filter: blur(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
 }
 
-@keyframes smart-tip-border-spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+.smart-tip-fade {
+  animation: smartTipFade 0.5s ease-out both;
 }
 
-.smart-tip-spotlight-in {
-  animation: smartTipSpotlightIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
-}
-
-@keyframes smartTipSpotlightIn {
+@keyframes smartTipFade {
   from { opacity: 0; }
   to { opacity: 1; }
+}
+
+.smart-tip-zoom {
+  animation: smartTipZoom 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes smartTipZoom {
+  from {
+    opacity: 0;
+    transform: scale(0.88);
+    filter: blur(4px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+    filter: blur(0);
+  }
+}
+
+.smart-tip-slide-right {
+  animation: smartTipSlideRight 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes smartTipSlideRight {
+  from {
+    opacity: 0;
+    transform: translateX(32px);
+    filter: blur(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+    filter: blur(0);
+  }
+}
+
+.smart-tip-slide-left {
+  animation: smartTipSlideLeft 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes smartTipSlideLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-32px);
+    filter: blur(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+    filter: blur(0);
+  }
+}
+
+.smart-tip-bounce {
+  animation: smartTipBounce 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes smartTipBounce {
+  0% {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.9);
+  }
+  60% {
+    transform: translateY(4px) scale(1.02);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.smart-tip-sparkle {
+  animation: smartTipSparkle 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes smartTipSparkle {
+  0% {
+    opacity: 0;
+    transform: scale(0.8);
+    filter: blur(8px);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.05);
+    filter: blur(0);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+    filter: blur(0);
+  }
+}
+
+.smart-tip-check {
+  animation: smartTipCheck 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes smartTipCheck {
+  0% {
+    opacity: 0;
+    transform: scale(0.7);
+    filter: blur(6px);
+  }
+  50% {
+    transform: scale(1.06);
+    filter: blur(0);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+    filter: blur(0);
+  }
+}
+
+/* ── Smart Hint Dot ── */
+
+.smart-hint-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  animation: smartHintPulse 2.4s ease-in-out infinite;
+}
+
+@keyframes smartHintPulse {
+  0%, 100% {
+    opacity: 0.5;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.25);
+  }
 }
 
 /* ── Home Nav Tooltip Glow ─ */
