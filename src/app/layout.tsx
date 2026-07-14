@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 
 import { Analytics } from "@/components/analytics";
 import { ToastRootProvider } from "@/components/errors/toast-root-provider";
+import { getPlatformBaseUrl } from "@/lib/platform-url";
 import {
   loadPlatformSocialPreview,
   resolvePlatformSocialImage,
@@ -26,7 +27,7 @@ const playfair = Playfair_Display({
   display: "swap"
 });
 
-const seoBaseUrl = "https://frameid.app";
+const seoBaseUrl = getPlatformBaseUrl();
 
 export async function generateMetadata(): Promise<Metadata> {
   const socialPreview = await loadPlatformSocialPreview();

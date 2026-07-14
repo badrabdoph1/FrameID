@@ -1,8 +1,20 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 import { getPlatformBaseUrl } from "@/lib/platform-url";
 
 describe("platform url", () => {
+  it("uses the deployed platform URL as the metadata base for share images", () => {
+    const rootLayout = readFileSync(
+      `${process.cwd()}/src/app/layout.tsx`,
+      "utf8",
+    );
+
+    expect(rootLayout).toContain('import { getPlatformBaseUrl } from "@/lib/platform-url"');
+    expect(rootLayout).toContain("const seoBaseUrl = getPlatformBaseUrl()");
+    expect(rootLayout).not.toContain('const seoBaseUrl = "https://frameid.app"');
+  });
+
   it("normalizes and prefers the configured public app url", () => {
     expect(
       getPlatformBaseUrl({
