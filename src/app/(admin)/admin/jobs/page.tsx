@@ -65,9 +65,9 @@ export default async function AdminJobsPage() {
   const jobs: JobRow[] = [
     ...backupJobs.map((job) => ({
       id: `backup-${job.id}`,
-      type: "Backup",
-      title: `${job.type} backup`,
-      subtitle: `Backup job`,
+      type: "نسخ احتياطي",
+      title: `نسخة ${job.type}`,
+      subtitle: "عملية نسخ احتياطي",
       status: job.status,
       href: "/admin/backups",
       createdAt: job.createdAt,
@@ -75,9 +75,9 @@ export default async function AdminJobsPage() {
     })),
     ...restoreJobs.map((job) => ({
       id: `restore-${job.id}`,
-      type: "Restore",
-      title: "Database restore",
-      subtitle: job.errorMessage ?? "Restore operation",
+      type: "استعادة",
+      title: "استعادة قاعدة البيانات",
+      subtitle: job.errorMessage ?? "عملية استعادة",
       status: job.status,
       href: "/admin/backups",
       createdAt: job.createdAt,
@@ -85,7 +85,7 @@ export default async function AdminJobsPage() {
     })),
     ...paymentJobs.map((job) => ({
       id: `payment-${job.id}`,
-      type: "Payment Review",
+      type: "مراجعة دفع",
       title: `${job.amount.toLocaleString("ar-EG")} ${job.currency}`,
       subtitle: `${job.tenant.displayName} · ${job.method}`,
       status: job.status,
@@ -95,8 +95,8 @@ export default async function AdminJobsPage() {
     })),
     ...errorJobs.map((job) => ({
       id: `error-${job.id}`,
-      type: "Error Resolution",
-      title: job.code ?? "Unknown error",
+      type: "حل خطأ",
+      title: job.code ?? "خطأ غير معروف",
       subtitle: job.message,
       status: job.level,
       href: `/admin/errors?search=${encodeURIComponent(job.code ?? "")}`,
@@ -113,16 +113,16 @@ export default async function AdminJobsPage() {
 
   return (
     <AdminPageShell
-      badge="Operations"
-      title="Jobs Queue"
+      badge="التشغيل"
+      title="طابور المهام"
       description="طابور موحد للمهام التشغيلية التي تحتاج متابعة: نسخ احتياطي، استعادة، مدفوعات، وأخطاء."
-      breadcrumbs={[{ label: "التشغيل", href: "/admin/operations" }, { label: "Jobs Queue" }]}
-      actions={[{ label: "Operations", href: "/admin/operations", icon: RefreshCcw }, { label: "Search", href: "/admin/search", icon: Search }]}
+      breadcrumbs={[{ label: "التشغيل", href: "/admin/operations" }, { label: "طابور المهام" }]}
+      actions={[{ label: "مركز العمليات", href: "/admin/operations", icon: RefreshCcw }, { label: "البحث", href: "/admin/search", icon: Search }]}
     >
       <section className="grid gap-3 sm:grid-cols-3">
         <Metric label="كل المهام" value={jobs.length} />
-        <Metric label="Critical" value={critical} danger />
-        <Metric label="High" value={high} accent />
+        <Metric label="حرجة" value={critical} danger />
+        <Metric label="عالية الأولوية" value={high} accent />
       </section>
 
       <section className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.035]">
@@ -133,7 +133,7 @@ export default async function AdminJobsPage() {
           {jobs.length === 0 ? <p className="px-4 py-12 text-center text-sm font-bold text-white/35">لا توجد مهام تشغيلية الآن.</p> : jobs.map((job) => (
             <Link key={job.id} href={job.href} className="grid gap-2 px-4 py-3 no-underline transition hover:bg-amber-500/[0.06] lg:grid-cols-[0.8fr_1.2fr_1fr_0.8fr_0.8fr] lg:items-center">
               <span className="inline-flex items-center gap-2 text-xs font-black text-white/45">
-                {job.type === "Backup" ? <DatabaseBackup className="size-4 text-amber-300" /> : job.type === "Payment Review" ? <CreditCard className="size-4 text-amber-300" /> : job.type === "Error Resolution" ? <AlertTriangle className="size-4 text-red-300" /> : <Clock3 className="size-4 text-amber-300" />}
+                {job.type === "نسخ احتياطي" ? <DatabaseBackup className="size-4 text-amber-300" /> : job.type === "مراجعة دفع" ? <CreditCard className="size-4 text-amber-300" /> : job.type === "حل خطأ" ? <AlertTriangle className="size-4 text-red-300" /> : <Clock3 className="size-4 text-amber-300" />}
                 {job.type}
               </span>
               <strong className="truncate text-sm font-black text-white/82">{job.title}</strong>

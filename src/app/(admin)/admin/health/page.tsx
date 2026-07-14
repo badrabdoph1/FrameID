@@ -30,13 +30,13 @@ export default async function AdminHealthPage() {
     <AdminPageShell
       badge="النظام"
       title="صحة النظام"
-      description="مؤشرات أداء المنصة"
+      description="فحص سريع لاتصال قاعدة البيانات وأعداد الكيانات التشغيلية الأساسية."
     >
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {cards.map((card) => (
           <div key={card.label} className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-5">
             <p className="text-sm text-white/40">{card.label}</p>
-            <p className="mt-2 text-2xl font-semibold text-white">{card.value}</p>
+            <p className="mt-2 text-2xl font-semibold text-white">{card.value.toLocaleString("ar-EG")}</p>
           </div>
         ))}
       </div>

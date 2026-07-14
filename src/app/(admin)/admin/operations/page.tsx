@@ -127,20 +127,20 @@ export default async function AdminOperationsPage() {
 
   const queueCards = [
     { title: "مدفوعات تحتاج مراجعة", value: pendingPayments.length, href: "/admin/payments", icon: CreditCard },
-    { title: "Trials قريبة من الانتهاء", value: expiringTrials.length, href: "/admin/customers?status=TRIAL", icon: Clock3 },
-    { title: "Backup / Restore failed", value: failedBackups.length + failedRestores.length, href: "/admin/backups", icon: DatabaseBackup },
+    { title: "فترات تجريبية تنتهي قريبًا", value: expiringTrials.length, href: "/admin/customers?status=TRIAL", icon: Clock3 },
+    { title: "نسخ أو استعادة فاشلة", value: failedBackups.length + failedRestores.length, href: "/admin/backups", icon: DatabaseBackup },
     { title: "أخطاء مفتوحة حرجة", value: unresolvedErrors.length, href: "/admin/errors", icon: AlertTriangle },
     { title: "تذاكر دعم مفتوحة", value: openSupport.length, href: "/admin/support", icon: Headphones },
-    { title: "Feature Flags مفعلة", value: enabledFlags.length, href: "/admin/feature-flags", icon: Flag },
+    { title: "مفاتيح خصائص مفعلة", value: enabledFlags.length, href: "/admin/feature-flags", icon: Flag },
   ];
 
   return (
     <AdminPageShell
-      badge="Command Center"
-      title="Operations Command Center"
-      description="مركز متابعة يومي يجمع أهم الطوابير التشغيلية: مدفوعات، Trials، أخطاء، Backups، دعم، وFeature Flags."
-      breadcrumbs={[{ label: "القيادة", href: "/admin" }, { label: "Operations" }]}
-      actions={[{ label: "Audit Explorer", href: "/admin/audit", icon: ShieldCheck }, { label: "صحة النظام", href: "/admin/health", icon: HeartPulse }]}
+      badge="التشغيل"
+      title="مركز العمليات"
+      description="متابعة يومية لأهم الطوابير: المدفوعات، التجارب، الأخطاء، النسخ، الدعم، ومفاتيح الخصائص."
+      breadcrumbs={[{ label: "القيادة", href: "/admin" }, { label: "العمليات" }]}
+      actions={[{ label: "سجل التدقيق", href: "/admin/audit", icon: ShieldCheck }, { label: "صحة النظام", href: "/admin/health", icon: HeartPulse }]}
     >
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {queueCards.map((card) => (
@@ -162,7 +162,7 @@ export default async function AdminOperationsPage() {
           ))}
         </QueuePanel>
 
-        <QueuePanel title="Trials تنتهي قريبًا" icon={Clock3} href="/admin/customers">
+        <QueuePanel title="فترات تجريبية تنتهي قريبًا" icon={Clock3} href="/admin/customers?status=TRIAL">
           {expiringTrials.map((tenant) => (
             <QueueItem key={tenant.id} href={`/admin/customers/${tenant.id}`} title={tenant.displayName} subtitle={tenant.owner.email} meta={daysUntil(tenant.trialEndsAt)} />
           ))}

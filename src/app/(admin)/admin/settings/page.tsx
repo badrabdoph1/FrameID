@@ -1,4 +1,4 @@
-import { Headphones, MessageCircle, Save } from "lucide-react";
+import { CreditCard, Headphones, MessageCircle, Save, Share2, UsersRound } from "lucide-react";
 
 import { AdminPageShell } from "@/components/layout/admin-page-shell";
 import { requireAdminPermission } from "@/modules/admin/admin-permission-guards";
@@ -20,57 +20,13 @@ export default async function AdminSettingsPage({ searchParams }: Props) {
     <AdminPageShell
       badge="الإعدادات"
       title="إعدادات المنصة"
-      description="تكوين وإعدادات المنصة العامة"
+      description="وجهة واحدة للإعدادات التي يمكن تعديلها فعليًا في النظام."
     >
-      <div className="grid gap-6 lg:grid-cols-3">
-        <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-5">
-          <h3 className="mb-4 text-sm font-medium text-white/60">عام</h3>
-          <div className="space-y-4">
-            <div>
-              <label className="text-xs text-white/35">اسم المنصة</label>
-              <p className="text-sm text-white/80">FrameID</p>
-            </div>
-            <div>
-              <label className="text-xs text-white/35">البريد الرسمي</label>
-              <p className="text-sm text-white/80">admin@frameid.app</p>
-            </div>
-            <div>
-              <label className="text-xs text-white/35">العملة الافتراضية</label>
-              <p className="text-sm text-white/80">جنيه مصري (EGP)</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-5">
-          <h3 className="mb-4 text-sm font-medium text-white/60">العلامة التجارية</h3>
-          <div className="space-y-4">
-            <div>
-              <label className="text-xs text-white/35">الشعار</label>
-              <p className="text-sm text-white/50">—</p>
-            </div>
-            <div>
-              <label className="text-xs text-white/35">اللون الأساسي</label>
-              <div className="flex items-center gap-2">
-                <div className="size-5 rounded-full bg-champagne" />
-                <span className="text-sm text-white/80">Champagne #d8b46a</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-5">
-          <h3 className="mb-4 text-sm font-medium text-white/60">الفريق</h3>
-          <p className="text-sm text-white/50">
-            إدارة فريق الإدارة العليا والصلاحيات
-          </p>
-          <a
-            href="/admin/admin-users"
-            className="mt-3 inline-flex text-sm text-champagne underline-offset-4 hover:underline"
-          >
-            إدارة الفريق
-          </a>
-        </div>
-      </div>
+      <nav aria-label="أقسام الإعدادات" className="grid gap-3 md:grid-cols-3">
+        <SettingsLink href="/admin/settings/payment" title="وسائل الدفع" description="الحسابات وQR وطرق التحويل." icon={CreditCard} />
+        <SettingsLink href="/admin/social-preview" title="معاينة المشاركة" description="عنوان ووصف وصورة الروابط." icon={Share2} />
+        <SettingsLink href="/admin/admin-users" title="فريق الإدارة" description="الحسابات والجلسات والصلاحيات." icon={UsersRound} />
+      </nav>
 
       <section className="mt-6 overflow-hidden rounded-3xl border border-emerald-400/16 bg-[linear-gradient(135deg,rgba(16,185,129,0.10),rgba(255,255,255,0.035))]">
         <header className="flex items-start gap-3 border-b border-white/10 p-5">
@@ -125,4 +81,8 @@ export default async function AdminSettingsPage({ searchParams }: Props) {
       </section>
     </AdminPageShell>
   );
+}
+
+function SettingsLink({ href, title, description, icon: Icon }: { href: string; title: string; description: string; icon: typeof CreditCard }) {
+  return <a href={href} className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 no-underline transition hover:border-amber-300/25 hover:bg-amber-300/8"><Icon className="size-5 text-[#f3cf73]" /><h2 className="mt-3 font-black text-[#fff7e8]">{title}</h2><p className="mt-1 text-sm font-bold text-white/45">{description}</p></a>;
 }

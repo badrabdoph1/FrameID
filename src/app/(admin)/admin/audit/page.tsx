@@ -158,7 +158,7 @@ export default async function AdminAuditPage({ searchParams }: Props) {
         </label>
         <input name="action" defaultValue={action} placeholder="Action" className="h-11 rounded-xl border border-white/10 bg-black/20 px-3 text-sm font-bold text-white outline-none placeholder:text-white/25 focus:border-amber-400/40" />
         <input name="entityType" defaultValue={entityType} placeholder="Entity" className="h-11 rounded-xl border border-white/10 bg-black/20 px-3 text-sm font-bold text-white outline-none placeholder:text-white/25 focus:border-amber-400/40" />
-        <input name="tenantId" defaultValue={tenantId} placeholder="Tenant ID" className="h-11 rounded-xl border border-white/10 bg-black/20 px-3 text-sm font-bold text-white outline-none placeholder:text-white/25 focus:border-amber-400/40" />
+        <input name="tenantId" defaultValue={tenantId} placeholder="معرّف العميل" aria-label="معرّف العميل" className="h-11 rounded-xl border border-white/10 bg-black/20 px-3 text-sm font-bold text-white outline-none placeholder:text-white/25 focus:border-amber-400/40" />
         <input name="from" defaultValue={params.from ?? ""} type="date" className="h-11 rounded-xl border border-white/10 bg-black/20 px-3 text-sm font-bold text-white outline-none focus:border-amber-400/40" />
         <input name="to" defaultValue={params.to ?? ""} type="date" className="h-11 rounded-xl border border-white/10 bg-black/20 px-3 text-sm font-bold text-white outline-none focus:border-amber-400/40" />
         <button className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-amber-500/35 bg-amber-500/12 px-4 text-sm font-black text-amber-200 transition hover:bg-amber-500/20">
