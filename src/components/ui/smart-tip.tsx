@@ -105,7 +105,7 @@ export function SmartTip({ config }: { config: SmartTipConfig | null }) {
 
   return (
     <>
-      {config.hintTarget ? <SmartHint selector={config.hintTarget} glow={glow} /> : null}
+      {config.hintTarget ? <SmartHint selector={config.hintTarget} glow={glow} cardRef={cardRef} /> : null}
       <div className={`fixed inset-0 z-40 pointer-events-none ${closing ? "smart-tip-overlay-out" : "smart-tip-overlay-in"}`} />
       <div className={`${placementClass} z-50 ${closing ? "smart-tip-card-out" : animationClass}`}>
         <div
@@ -166,8 +166,9 @@ export function SmartTip({ config }: { config: SmartTipConfig | null }) {
   );
 }
 
-function SmartHint({ selector, glow }: { selector: string; glow: string }) {
+function SmartHint({ selector, glow, cardRef }: { selector: string; glow: string; cardRef: React.RefObject<HTMLDivElement> }) {
   const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
+  const [cardRect, setCardRect] = useState<DOMRect | null>(null);
 
   useEffect(() => {
     const el = document.querySelector(selector) as HTMLElement | null;
@@ -188,19 +189,82 @@ function SmartHint({ selector, glow }: { selector: string; glow: string }) {
     };
   }, [selector]);
 
+  useEffect(() => {
+    if (!cardRef.current) return;
+    const update = () => {
+      setCardRect(cardRef.current!.getBoundingClientRect());
+    };
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(cardRef.current);
+    window.addEventListener("scroll", update, { passive: true });
+    window.addEventListener("resize", update);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("scroll", update);
+      window.removeEventListener("resize", update);
+    };
+  }, [cardRef]);
+
   if (!targetRect) return null;
 
+  const cardCenterX = cardRect ? cardRect.left + cardRect.width / 2 : window.innerWidth / 2;
+  const cardCenterY = cardRect ? cardRect.top + cardRect.height / 2 : window.innerHeight / 2;
+  const targetCenterX = targetRect.left + targetRect.width / 2;
+  const targetCenterY = targetRect.top + targetRect.height / 2;
+
+  const dx = targetCenterX - cardCenterX;
+  const dy = targetCenterY - cardCenterY;
+  const angle = Math.atan2(dy, dx);
+
+  const arrowOffset = 14;
+  const arrowTipX = targetCenterX - Math.cos(angle) * arrowOffset;
+  const arrowTipY = targetCenterY - Math.sin(angle) * arrowOffset;
+
+  const lineOffset = 28;
+  const originX = cardCenterX + Math.cos(angle) * lineOffset;
+  const originY = cardCenterY + Math.sin(angle) * lineOffset;
+
+  const markerId = `arrowhead-${glow.replace(/[^a-zA-Z0-9]/g, "")}`;
+
   return (
-    <div className="pointer-events-none fixed inset-0 z-30">
-      <div
-        className="absolute flex flex-col items-center"
-        style={{
-          left: targetRect.left + targetRect.width / 2,
-          top: targetRect.top - 16,
-        }}
-      >
-        <div className="smart-hint-dot" style={{ background: glow, boxShadow: `0 0 8px 2px ${glow}` }} />
-      </div>
-    </div>
+    <svg
+      className="pointer-events-none fixed inset-0 z-30"
+      style={{ width: "100vw", height: "100vh" }}
+      aria-hidden="true"
+    >
+      <defs>
+        <marker
+          id={markerId}
+          markerWidth="10"
+          markerHeight="10"
+          refX="8"
+          refY="3"
+          orient="auto"
+          markerUnits="strokeWidth"
+        >
+          <path d="M0,0 L0,6 L9,3 Z" fill={glow} />
+        </marker>
+      </defs>
+      <line
+        className="smart-hint-line"
+        x1={originX}
+        y1={originY}
+        x2={arrowTipX}
+        y2={arrowTipY}
+        stroke={glow}
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        markerEnd={`url(#${markerId})`}
+      />
+      <circle
+        className="smart-hint-origin"
+        cx={originX}
+        cy={originY}
+        r="3"
+        fill={glow}
+        filter="blur(1px)"
+      />
+    </svg>
   );
 }
