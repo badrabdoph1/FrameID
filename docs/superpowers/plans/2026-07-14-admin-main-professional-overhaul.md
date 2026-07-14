@@ -174,7 +174,7 @@ Commit: `refactor: simplify admin shell and navigation`.
 **Interfaces:**
 - Produces: `AdminCommandCenterViewModel` بأجزاء `priority`, `metrics`, `workQueue`, `recentActivity`, `platformStatus`.
 
-- [ ] **Step 1: اختبر ترتيب القرار وحالة الهدوء**
+- [x] **Step 1: اختبر ترتيب القرار وحالة الهدوء**
 
 ```tsx
 expect(screen.getByRole("heading", { name: "ما يحتاج تدخلك الآن" })).toBeInTheDocument();
@@ -182,20 +182,20 @@ expect(screen.getByText("لا توجد مهام عاجلة الآن")).toBeInThe
 expect(screen.queryByText("3")).not.toBeInTheDocument();
 ```
 
-- [ ] **Step 2: شغّل الاختبارات وتحقق من الفشل**
+- [x] **Step 2: شغّل الاختبارات وتحقق من الفشل**
 
 Run: `npm test -- tests/admin-command-center.test.tsx tests/admin-overview-view-model.test.ts tests/prisma-admin-overview-repository.test.ts`
 Expected: FAIL في بنية ViewModel الجديدة.
 
-- [ ] **Step 3: نفذ ViewModel بلا بيانات وهمية**
+- [x] **Step 3: نفذ ViewModel بلا بيانات وهمية**
 
 أعد استخدام الاستعلامات الحالية، وحوّلها إلى أجزاء مستقلة ذات قيم وروابط عميقة. لا تجعل فشل مؤشر غير حرج يمنع بقية الصفحة.
 
-- [ ] **Step 4: أعد ترتيب الصفحة من الأولوية إلى الحالة**
+- [x] **Step 4: أعد ترتيب الصفحة من الأولوية إلى الحالة**
 
 استخدم `AdminPageShell` وprimitives المشتركة فقط. احذف أي بطاقة تكرر قائمة موجودة في صفحة متخصصة.
 
-- [ ] **Step 5: شغّل الاختبارات واعمل commit**
+- [x] **Step 5: شغّل الاختبارات واعمل commit**
 
 Commit: `feat: rebuild admin command center`.
 
