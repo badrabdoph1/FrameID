@@ -8,6 +8,7 @@ const prismaMock = vi.hoisted(() => ({
     findMany: vi.fn().mockResolvedValue([]),
   },
   subscription: { count: vi.fn().mockResolvedValue(1) },
+  site: { count: vi.fn().mockResolvedValue(8) },
   paymentRequest: {
     count: vi.fn().mockResolvedValue(2),
     aggregate: vi.fn().mockResolvedValue({ _sum: { amount: 4500 } }),
@@ -50,9 +51,9 @@ describe("admin customer issue navigation", () => {
     render(await AdminDashboardPage());
 
     expect(await screen.findByRole("link", { name: /مشاكل العملاء/ })).toHaveAttribute("href", "/admin/errors");
-    expect(screen.getByText("2 بلاغ جديد")).toBeInTheDocument();
-    expect(screen.getByText("3 قيد المراجعة")).toBeInTheDocument();
-    expect(screen.getByText("4 محلولة")).toBeInTheDocument();
+    expect(screen.getByText("٢ بلاغ جديد")).toBeInTheDocument();
+    expect(screen.getByText("٣ قيد المراجعة")).toBeInTheDocument();
+    expect(screen.getByText("٤ محلولة")).toBeInTheDocument();
     expect(issueStatsMock).toHaveBeenCalled();
   });
 });

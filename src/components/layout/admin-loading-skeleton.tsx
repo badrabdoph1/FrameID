@@ -7,6 +7,7 @@ type SkeletonProps = {
 function Skeleton({ className }: SkeletonProps) {
   return (
     <div
+      aria-hidden="true"
       className={cn("animate-pulse rounded-lg bg-white/[0.04]", className)}
     />
   );
@@ -51,7 +52,7 @@ export function AdminCardSkeleton({ count = 3 }: { count?: number }) {
 
 export function AdminPageSkeleton() {
   return (
-    <div className="space-y-6">
+    <div role="status" aria-label="جار تحميل الصفحة" aria-busy="true" className="space-y-6">
       <div>
         <Skeleton className="mb-2 h-8 w-48" />
         <Skeleton className="h-4 w-72" />

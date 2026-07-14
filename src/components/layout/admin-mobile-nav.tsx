@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useRef } from "react"
+import { useEffect, useRef } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Bell, ExternalLink, Home, LogOut, Menu, Search, X } from "lucide-react"
@@ -48,8 +48,8 @@ export function AdminMobileNav() {
   const { mobileMenuOpen, toggleMobileMenu } = useAdmin()
   const searchRef = useRef<HTMLInputElement>(null)
 
-  const primarySections = useMemo(() => adminSections.slice(0, 4), [])
-  const overflowSections = useMemo(() => adminSections.slice(4), [])
+  const primarySections = adminSections.slice(0, 4)
+  const overflowSections = adminSections.slice(4)
   const overflowActive = overflowSections.some((section) => isSectionActive(pathname, section.id))
   const activeSection = currentSection(pathname)
   const title = activeSection?.title ?? "القيادة"
@@ -92,23 +92,22 @@ export function AdminMobileNav() {
             >
               <Menu className="size-5" aria-hidden />
             </button>
-            <Link href="/admin" className="grid size-11 place-items-center rounded-2xl bg-gradient-to-br from-[#f3cf73] to-[#d4af37] text-[#17120a] no-underline shadow-lg">
+            <Link href="/admin" aria-label="لوحة الإدارة" className="grid size-11 place-items-center rounded-2xl bg-gradient-to-br from-[#f3cf73] to-[#d4af37] text-[#17120a] no-underline shadow-lg">
               <Home className="size-5" aria-hidden />
             </Link>
           </div>
 
           <div className="min-w-0 text-center">
-            <p className="truncate text-xs font-black text-white/36">FrameID Admin</p>
+            <p className="truncate text-xs font-black text-white/36">إدارة FrameID</p>
             <h1 className="truncate text-base font-black text-[#fff7e8]">{title}</h1>
           </div>
 
           <div className="flex items-center justify-end gap-2">
-            <Link href="/admin/search" className="grid size-11 place-items-center rounded-2xl border border-white/10 bg-white/[0.05] text-white/72 no-underline">
+            <Link href="/admin/search" aria-label="البحث الشامل" className="grid size-11 place-items-center rounded-2xl border border-white/10 bg-white/[0.05] text-white/72 no-underline">
               <Search className="size-5" aria-hidden />
             </Link>
-            <Link href="/admin/notifications" className="relative grid size-11 place-items-center rounded-2xl border border-white/10 bg-white/[0.05] text-white/72 no-underline">
+            <Link href="/admin/notifications" aria-label="الإشعارات" className="relative grid size-11 place-items-center rounded-2xl border border-white/10 bg-white/[0.05] text-white/72 no-underline">
               <Bell className="size-5" aria-hidden />
-              <span className="absolute -left-1 -top-1 grid size-5 place-items-center rounded-full bg-[#f3cf73] text-[0.65rem] font-black text-[#17120a]">3</span>
             </Link>
           </div>
         </div>
@@ -117,7 +116,7 @@ export function AdminMobileNav() {
       <div className="admin-mobile-nav-shell lg:hidden">
         <div className="admin-mobile-bottom-stack">
           <MobileSectionLinks pathname={pathname} title={title} links={activeLinks} />
-          <nav aria-label="تنقل الأدمن للموبايل" className="admin-mobile-bottom-bar">
+          <nav aria-label="التنقل الرئيسي للأدمن على الهاتف" className="admin-mobile-bottom-bar">
             {primarySections.map((section) => {
               const Icon = section.icon
               const href = section.links[0]?.href ?? "/admin"
@@ -132,7 +131,7 @@ export function AdminMobileNav() {
             <button
               onClick={toggleMobileMenu}
               className={cn("admin-mobile-bottom-link", (mobileMenuOpen || overflowActive) && "is-active")}
-              aria-label="فتح كل الأقسام"
+              aria-label="فتح كل أقسام الأدمن"
               aria-controls="admin-mobile-menu"
               aria-expanded={mobileMenuOpen}
             >
@@ -147,12 +146,13 @@ export function AdminMobileNav() {
         id="admin-mobile-menu"
         role="dialog"
         aria-modal="true"
+        aria-hidden={!mobileMenuOpen}
         aria-label="قائمة إدارة FrameID"
         className={cn("admin-mobile-menu-panel lg:hidden", mobileMenuOpen ? "is-open" : "")}
       >
         <div className="flex items-center justify-between gap-3 border-b border-white/10 px-4 py-4">
           <div className="min-w-0">
-            <p className="text-xs font-black text-[#f3cf73]">FrameID Admin</p>
+            <p className="text-xs font-black text-[#f3cf73]">إدارة FrameID</p>
             <h2 className="mt-1 truncate text-lg font-black text-[#fff7e8]">كل مراكز الإدارة</h2>
           </div>
           <button onClick={toggleMobileMenu} className="grid size-11 shrink-0 place-items-center rounded-2xl border border-white/10 bg-white/[0.05] text-white/70" aria-label="إغلاق قائمة الإدارة">

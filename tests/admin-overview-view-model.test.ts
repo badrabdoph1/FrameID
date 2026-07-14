@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { createAdminOverviewViewModel } from "@/modules/admin/admin-overview-view-model";
 
 describe("admin overview view model", () => {
-  it("creates command-center widgets from platform metrics", () => {
+  it("creates linked command-center metrics from platform data", () => {
     const overview = createAdminOverviewViewModel({
       newUsersToday: 12,
       activeTrials: 80,
@@ -11,31 +11,28 @@ describe("admin overview view model", () => {
       pendingPayments: 5,
       activeSites: 120,
       monthlyRevenue: 450000,
-      currency: "EGP"
+      currency: "EGP",
+      totalCustomers: 240,
+      activeSubscribers: 90,
+      newIssues: 3,
     });
 
-    expect(overview.widgets).toEqual([
-      { label: "مستخدمون جدد اليوم", value: "12", tone: "neutral" },
-      { label: "تجارب نشطة", value: "80", tone: "warning" },
-      { label: "تجارب تنتهي قريبًا", value: "9", tone: "warning" },
-      { label: "طلبات دفع معلقة", value: "5", tone: "danger" },
-      { label: "مواقع فعالة", value: "120", tone: "success" },
-      { label: "إيراد الشهر", value: "450,000 جنيه", tone: "success" }
+    expect(overview.metrics).toEqual([
+      { id: "customers", label: "كل العملاء", value: "٢٤٠", tone: "neutral", href: "/admin/customers" },
+      { id: "subscribers", label: "الاشتراكات النشطة", value: "٩٠", tone: "success", href: "/admin/customers?filter=subscribed" },
+      { id: "payments", label: "طلبات دفع معلقة", value: "٥", tone: "danger", href: "/admin/payments?status=pending" },
+      { id: "revenue", label: "إيراد الشهر", value: "٤٥٠٬٠٠٠ جنيه", tone: "success", href: "/admin/payments?status=approved" },
     ]);
-    expect(overview.primaryAction).toEqual({
-      label: "راجع 5 مدفوعات معلقة",
-      href: "/admin/payments",
+    expect(overview.priority).toEqual({
+      label: "راجع ٥ طلبات دفع معلقة",
+      href: "/admin/payments?status=pending",
       tone: "danger",
-      description: "طلبات الدفع هي أسرع نقطة تؤثر على الإيراد وتفعيل العملاء."
+      description: "ابدأ بها لتسريع تفعيل العملاء وتحصيل الإيراد.",
     });
-    expect(overview.healthItems).toEqual([
-      { label: "المدفوعات", status: "needs-attention", value: "5 معلقة" },
-      { label: "التجارب", status: "watch", value: "9 تنتهي قريباً" },
-      { label: "المواقع المنشورة", status: "healthy", value: "120 موقع" }
-    ]);
+    expect(overview.workQueue.map((item) => item.id)).toEqual(["payments", "issues", "expiring-trials"]);
   });
 
-  it("prioritizes trials when there are no pending payments", () => {
+  it("prioritizes customer issues before expiring accounts", () => {
     const overview = createAdminOverviewViewModel({
       newUsersToday: 3,
       activeTrials: 11,
@@ -43,18 +40,39 @@ describe("admin overview view model", () => {
       pendingPayments: 0,
       activeSites: 18,
       monthlyRevenue: 0,
-      currency: "EGP"
+      currency: "EGP",
+      newIssues: 2,
     });
 
-    expect(overview.primaryAction).toEqual({
-      label: "تابع 4 تجارب تنتهي قريباً",
-      href: "/admin/customers",
-      tone: "warning",
-      description: "التجارب القريبة من الانتهاء تحتاج متابعة قبل أن تتحول إلى فقدان عميل."
+    expect(overview.priority).toEqual({
+      label: "راجع ٢ بلاغات عملاء جديدة",
+      href: "/admin/errors?status=new",
+      tone: "danger",
+      description: "راجع البلاغات الجديدة وحدد المسؤول والخطوة التالية.",
     });
   });
 
-  it("falls back to platform growth when no urgent work exists", () => {
+  it("links expiring accounts to their filtered customer list", () => {
+    const overview = createAdminOverviewViewModel({
+      newUsersToday: 3,
+      activeTrials: 11,
+      expiringTrials: 4,
+      expiringSubscriptions: 2,
+      pendingPayments: 0,
+      activeSites: 18,
+      monthlyRevenue: 0,
+      currency: "EGP",
+    });
+
+    expect(overview.priority).toEqual({
+      label: "تابع ٦ حسابات تنتهي قريبًا",
+      href: "/admin/customers?filter=expiring7",
+      tone: "warning",
+      description: "تابع هذه الحسابات قبل انتهاء التجربة أو الاشتراك.",
+    });
+  });
+
+  it("returns a non-clickable calm state when no urgent work exists", () => {
     const overview = createAdminOverviewViewModel({
       newUsersToday: 1,
       activeTrials: 2,
@@ -62,14 +80,14 @@ describe("admin overview view model", () => {
       pendingPayments: 0,
       activeSites: 8,
       monthlyRevenue: 12000,
-      currency: "EGP"
+      currency: "EGP",
     });
 
-    expect(overview.primaryAction).toEqual({
-      label: "راجع نمو المنصة",
-      href: "/admin/analytics",
+    expect(overview.priority).toEqual({
+      label: "لا توجد مهام عاجلة الآن",
       tone: "success",
-      description: "لا توجد عمليات عاجلة الآن. راجع النمو والاستخدام وحدد فرصة التحسين التالية."
+      description: "كل المؤشرات العاجلة هادئة. يمكنك متابعة بقية قوائم العمل بالأسفل.",
     });
+    expect(overview.workQueue).toEqual([]);
   });
 });

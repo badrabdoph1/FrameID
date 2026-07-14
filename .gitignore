@@ -13,3 +13,4 @@ public/uploads/
 tsconfig.tsbuildinfo
 prisma/migrations/*/migration_lock.toml
 .vercel
+.worktrees/
