@@ -1,12 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { CheckCircle2, Clock, Copy, ExternalLink, Globe2, Link2, ShieldCheck, Trash2, User, XCircle } from "lucide-react";
+import { CheckCircle2, Clock, Copy, ExternalLink, Globe2, Link2, RotateCcw, ShieldCheck, Trash2, User, XCircle } from "lucide-react";
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 import { SlugEditor } from "@/components/dashboard/slug-editor";
 import { getPublicAccountIdentifier, isPhoneStorageEmail } from "@/modules/auth/auth-identifier";
+
+const ONBOARDING_STORAGE_KEY = "frameid:onboarding-completed";
 
 type SettingsClientProps = {
   userName: string;
@@ -118,6 +120,27 @@ export function SettingsClient({ userName, userEmail, userPhone, userRole, siteT
           <button disabled className="mt-3 inline-flex min-h-10 items-center gap-2 rounded-2xl border border-red-300/20 bg-red-500/10 px-4 text-sm font-black text-red-200/50">
             <Trash2 className="size-4" />
             قريبًا
+          </button>
+        </div>
+      </Panel>
+
+      <Panel icon={RotateCcw} title="جولة التعريف" description=" لو فاتتك أو عايز تفتكر حاجة.">
+        <div className="rounded-2xl border border-white/8 bg-black/15 p-4">
+          <p className="text-sm font-black text-[#fff7e8]">إعادة مشاهدة الجولة الافتتاحية</p>
+          <p className="mt-1 text-xs font-bold leading-6 text-white/45">الجولة بتظهر مرة واحدة بس لأول دخول. تقدر تعيد مشاهدتها من هنا.</p>
+          <button
+            type="button"
+            onClick={() => {
+              try {
+                window.localStorage.removeItem(ONBOARDING_STORAGE_KEY);
+              } catch {
+              }
+              window.location.href = "/dashboard";
+            }}
+            className="mt-3 inline-flex min-h-10 items-center gap-2 rounded-2xl border border-amber-300/20 bg-amber-300/10 px-4 text-sm font-black text-[#f3cf73] transition hover:bg-amber-300/16 hover:text-[#ffe9a8]"
+          >
+            <RotateCcw className="size-4" />
+            إعادة الجولة
           </button>
         </div>
       </Panel>

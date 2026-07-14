@@ -1,6 +1,4 @@
 {
-  "rules": [
-    "Always create and work on a feature branch from the main branch. Never work directly on main.",
-    "When the task is complete, commit and push only the changes made during this session."
-  ]
+  "$schema": "https://opencode.ai/config.json",
+  "instructions": ["AGENTS.md"]
 }

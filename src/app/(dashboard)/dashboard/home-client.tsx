@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 
 import type { DashboardViewModel } from "@/modules/dashboard/dashboard-view-model";
+import { ImmersiveOnboarding } from "@/components/ui/immersive-onboarding";
 
 type BannerTone = "success" | "warning" | "danger" | "info";
 
@@ -35,7 +36,6 @@ const onboardingCopy: Record<string, { label: string; description: string }> = {
 export function DashboardHomeClient({ siteUrl, statusLabel, checklist, lastModified, nextStepHref, nextStepLabel, nextStepTitle, nextStepDescription, subscription, subscriptionExperience, customerMessages, heroImageUrl, photographerName, isPublished }: DashboardViewModel) {
   const [copied, setCopied] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
-  const [onboardingStep, setOnboardingStep] = useState(0);
   const [checklistHidden, setChecklistHidden] = useState(false);
 
   const onboardingItems = useMemo(
@@ -137,12 +137,7 @@ export function DashboardHomeClient({ siteUrl, statusLabel, checklist, lastModif
       </div>
 
       {showOnboarding ? (
-        <OnboardingWizard
-          step={onboardingStep}
-          setStep={setOnboardingStep}
-          onComplete={completeOnboarding}
-          siteUrl={siteUrl}
-        />
+        <ImmersiveOnboarding onComplete={completeOnboarding} />
       ) : null}
     </main>
   );
@@ -316,104 +311,6 @@ function NextStepCard({ title, description, href, label }: { title: string; desc
         {label}
       </span>
     </Link>
-  );
-}
-
-function OnboardingWizard({
-  step,
-  setStep,
-  onComplete,
-  siteUrl,
-}: {
-  step: number;
-  setStep: (step: number) => void;
-  onComplete: () => void;
-  siteUrl: string;
-}) {
-  const steps = [
-    {
-      title: "أهلاً بيك في FrameID",
-      body: "FrameID هو موقعك الخاص تعرض فيه شغلك للعملاء. صفحة واحدة فيها صورك، باقاتك، وطريقة التواصل معاك.",
-    },
-    {
-      title: "إيه اللي هتعمله هنا؟",
-      body: "من لوحة التحكم دي هتضيف باقاتك وأسعارك، ترفع صورك، وتحط بيانات التواصل. كل حاجة سهلة ومنظمة.",
-    },
-    {
-      title: "إيه اللي هيشوفه العميل؟",
-      body: "العميل هيشوف صفحة واحدة فيها كل حاجة عنك. مش هيشوف لوحة التحكم دي أبداً.",
-    },
-    {
-      title: "ابدأ منين؟",
-      body: "أول خطوة: اكتب باقاتك وأسعارك. بعدها كمّل باقي الخطوات بالترتيب.",
-    },
-  ];
-
-  const current = steps[step];
-  const isLast = step === steps.length - 1;
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
-      <div className="w-full max-w-md overflow-hidden rounded-[1.5rem] border border-white/12 bg-[#131820] shadow-2xl">
-        <div className="border-b border-white/8 bg-[linear-gradient(135deg,rgba(243,207,115,0.10),transparent)] p-4">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-black text-[#f3cf73]">خطوة {step + 1} من {steps.length}</span>
-            <button
-              type="button"
-              onClick={onComplete}
-              className="grid size-8 place-items-center rounded-xl text-white/45 transition hover:bg-white/[0.06] hover:text-white"
-              aria-label="تخطي"
-            >
-              <X className="size-4" aria-hidden />
-            </button>
-          </div>
-          <div className="mt-2 flex gap-1">
-            {steps.map((_, i) => (
-              <span
-                key={i}
-                className={i <= step ? "h-1 flex-1 rounded-full bg-[#f3cf73]" : "h-1 flex-1 rounded-full bg-white/10"}
-              />
-            ))}
-          </div>
-        </div>
-
-        <div className="p-5">
-          <h2 className="text-xl font-black text-[#fff7e8]">{current.title}</h2>
-          <p className="mt-3 text-sm font-bold leading-7 text-white/60">{current.body}</p>
-
-          {step === 2 ? (
-            <Link
-              href={siteUrl}
-              target="_blank"
-              className="mt-4 inline-flex items-center gap-2 rounded-2xl border border-amber-300/20 bg-amber-300/10 px-4 py-2 text-sm font-black text-[#f3cf73] no-underline transition hover:bg-amber-300/16"
-            >
-              <Eye className="size-4" aria-hidden />
-              شاهد مثال لموقع العميل
-            </Link>
-          ) : null}
-        </div>
-
-        <div className="flex gap-2 border-t border-white/8 p-4">
-          {step > 0 ? (
-            <button
-              type="button"
-              onClick={() => setStep(step - 1)}
-              className="inline-flex min-h-11 flex-1 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] text-sm font-black text-white/70 transition hover:bg-white/[0.08]"
-            >
-              السابق
-            </button>
-          ) : null}
-          <button
-            type="button"
-            onClick={() => isLast ? onComplete() : setStep(step + 1)}
-            className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-2xl bg-[#f3cf73] text-sm font-black text-[#17120a] transition hover:bg-[#ffe08a]"
-          >
-            {isLast ? "يلا نبدأ" : "التالي"}
-            {isLast ? null : <ChevronLeft className="size-4" aria-hidden />}
-          </button>
-        </div>
-      </div>
-    </div>
   );
 }
 
