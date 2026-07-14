@@ -136,7 +136,7 @@ export default async function AdminMessagesPage({ searchParams }: Props) {
       badge="الرسائل"
       title="رسائل الاشتراك والتفعيل"
       description="هذا القسم مسؤول فقط عن كل ما يظهر للعميل داخل لوحة التحكم بخصوص الاشتراك والتفعيل والفترة التجريبية."
-      breadcrumbs={[{ label: "القيادة", href: "/admin" }, { label: "رسائل الاشتراك والتفعيل" }]}
+      breadcrumbs={[{ label: "التواصل", href: "/admin/communications" }, { label: "رسائل الاشتراك والتفعيل" }]}
       actions={[{ label: "سجل الإشعارات", href: "/admin/notifications", icon: Bell }]}
     >
       <div className="grid gap-4">

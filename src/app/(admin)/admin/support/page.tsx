@@ -35,7 +35,7 @@ export default async function AdminSupportPage() {
       badge="التواصل"
       title="حالات الدعم"
       description="تابع طلبات العملاء وافتح ملف العميل للحصول على السياق الكامل."
-      breadcrumbs={[{ label: "التواصل", href: "/admin/messages" }, { label: "الدعم" }]}
+      breadcrumbs={[{ label: "التواصل", href: "/admin/communications" }, { label: "الدعم" }]}
     >
       <SupportTable data={data} />
     </AdminPageShell>

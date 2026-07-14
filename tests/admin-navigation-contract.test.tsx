@@ -32,6 +32,7 @@ describe("admin navigation contract", () => {
   });
 
   it("resolves nested customer, site, issue and editor routes", () => {
+    expect(getAdminRoute("/admin/communications")?.id).toBe("communications");
     expect(getAdminRoute("/admin/customers/customer-1")?.id).toBe(
       "customer-details",
     );

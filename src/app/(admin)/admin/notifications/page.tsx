@@ -89,7 +89,7 @@ export default function AdminNotificationsPage() {
       badge="الإشعارات"
       title="سجل الإشعارات"
       description="سجل موحد للنجاحات والتحذيرات والمعلومات والأخطاء التي تظهر للمستخدمين."
-      breadcrumbs={[{ label: "القيادة", href: "/admin" }, { label: "الإشعارات" }]}
+      breadcrumbs={[{ label: "التواصل", href: "/admin/communications" }, { label: "الإشعارات" }]}
     >
       <div className="grid gap-4">
         {stats ? (

@@ -19,7 +19,7 @@ export default async function AdminEmailPage() {
       badge="التواصل"
       title="حالة إرسال البريد"
       description="تحقق من جاهزية خدمة البريد. لا يسجل النظام حاليًا كل محاولة تسليم، لذلك لا نعرض إشعارات المنصة كسجل بريد مضلل."
-      breadcrumbs={[{ label: "التواصل", href: "/admin/messages" }, { label: "البريد" }]}
+      breadcrumbs={[{ label: "التواصل", href: "/admin/communications" }, { label: "البريد" }]}
       actions={[{ label: "سجل الإشعارات", href: "/admin/notifications", icon: Bell }, { label: "سجل التدقيق", href: "/admin/audit?q=EMAIL", icon: ShieldCheck }]}
     >
       <section className={configured ? "rounded-3xl border border-emerald-400/20 bg-emerald-400/8 p-5" : "rounded-3xl border border-amber-400/20 bg-amber-400/8 p-5"}>

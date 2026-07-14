@@ -2,7 +2,7 @@
 
 import { PendingForm, PendingButton } from "@/components/admin/pending-button";
 import { AdminStatusBadge } from "@/components/layout/admin-status-badge";
-import { getBackupPolicy, BACKUP_TYPE_LABELS, SUPPORTED_BACKUP_TYPES, type SupportedBackupType } from "@/modules/backups/backup-policy";
+import { getBackupPolicy, BACKUP_TYPE_LABELS, type SupportedBackupType } from "@/modules/backups/backup-policy";
 
 interface BackupSettingRow {
   type: SupportedBackupType;
