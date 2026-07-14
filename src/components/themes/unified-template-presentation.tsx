@@ -11,6 +11,7 @@ import {
 
 import {
   BookingAction,
+  BookingFAB,
   ExtraToggleButton,
   PackageSelectButton,
   TemplateBookingProvider,
@@ -54,6 +55,7 @@ export function UnifiedTemplatePresentation({ site, variant }: { site: PublicSit
             <BookingAction label={site.contact.callToAction} variant={variant} sticky />
           </div>
         ) : null}
+        <BookingFAB variant={variant} />
       </div>
     </TemplateBookingProvider>
   );
