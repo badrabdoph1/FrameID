@@ -135,7 +135,13 @@ const LOCKED_REQUEST_STATUSES = ["SUBMITTED", "PENDING", "UNDER_REVIEW", "APPROV
 const SUPPORT_EMAIL = "support@frameid.app";
 const BASIC_PRICE_AMOUNT = 40;
 const BASIC_CURRENCY = "EGP";
-const BASIC_INTERVAL = "monthly";
+
+function billingIntervalLabel(value: string) {
+  if (value === "yearly") return "سنوي";
+  if (value === "lifetime") return "مدى الحياة";
+  if (value === "unknown") return "";
+  return "شهري";
+}
 
 const BASIC_VISIBLE_FEATURES = [
   "معرض خاص لكل عميل (رابط + كلمة مرور)",
@@ -229,7 +235,6 @@ function buildBasicPlan(plan: PlanData | undefined): PlanData | null {
     name: "الباقة الأساسية",
     priceAmount: BASIC_PRICE_AMOUNT,
     currency: BASIC_CURRENCY,
-    billingInterval: BASIC_INTERVAL,
   };
 }
 
@@ -400,6 +405,7 @@ export function BillingClient({ session, plans, paymentMethods, paymentRequest, 
                   {basicPlan ? (
                     <div className="grid gap-3 lg:grid-cols-[1.06fr_0.94fr]">
                       <BasicPlanCard
+                        plan={basicPlan}
                         selected={selectedPlanId === basicPlan.id}
                         disabled={Boolean(draftState || requestLocked)}
                         onSelect={() => handlePlanSelect(basicPlan.id)}
@@ -587,7 +593,8 @@ function CheckoutStage({ title, icon, children }: { title: string; icon: ReactNo
   );
 }
 
-function BasicPlanCard({ selected, disabled, onSelect, onShowDetails }: { selected: boolean; disabled: boolean; onSelect: () => void; onShowDetails: () => void }) {
+function BasicPlanCard({ plan, selected, disabled, onSelect, onShowDetails }: { plan: PlanData; selected: boolean; disabled: boolean; onSelect: () => void; onShowDetails: () => void }) {
+  const intervalText = billingIntervalLabel(plan.billingInterval);
   return (
     <article className={`relative overflow-hidden rounded-[1.65rem] border p-4 text-right shadow-2xl shadow-amber-950/20 ${selected ? "border-amber-300/75 bg-amber-500/12" : "border-amber-300/30 bg-[linear-gradient(145deg,rgba(243,207,115,0.13),rgba(255,255,255,0.035))]"}`}>
       <div className="pointer-events-none absolute inset-x-6 top-0 h-px bg-gradient-to-l from-transparent via-amber-200/70 to-transparent" />
@@ -602,7 +609,7 @@ function BasicPlanCard({ selected, disabled, onSelect, onShowDetails }: { select
 
       <div className="mt-4 flex items-end gap-2">
         <strong className="text-4xl font-black text-[#f3cf73]">40</strong>
-        <span className="pb-1 text-sm font-black text-white/50">جنيه / شهريًا</span>
+        <span className="pb-1 text-sm font-black text-white/50">{intervalText ? `جنيه / ${intervalText}` : "جنيه"}</span>
       </div>
 
       <ul className="mt-4 grid gap-2 text-sm font-bold text-white/70">
