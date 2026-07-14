@@ -87,7 +87,7 @@ async function resolveImage(request: Request, context: RouteContext): Promise<Re
   }
 
   const origin = new URL(request.url).origin;
-  const fallback = await fetchImage(`${origin}/opengraph-image`, "FrameID-SocialPreview-Fallback/1.0");
+  const fallback = await fetchImage(`${origin}/frameid-social-preview.png`, "FrameID-SocialPreview-Fallback/1.0");
   if (fallback) {
     return {
       bytes: fallback.bytes,

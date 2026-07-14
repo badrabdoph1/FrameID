@@ -13,14 +13,14 @@
       "description": "اعرض صورك وباقاتك وأسعارك وبيانات التواصل في رابط واحد يليق بشغلك كمصور.",
       "siteName": "FrameID",
       "images": [
-        { "url": "https://frameid.app/opengraph-image", "width": 1200, "height": 630, "alt": "FrameID - موقع احترافي للمصورين" }
+        { "url": "https://frameid.app/frameid-social-preview.png", "width": 1200, "height": 630, "alt": "FrameID - موقع احترافي للمصورين" }
       ]
     },
     "twitter": {
       "card": "summary_large_image",
       "title": "FrameID | موقع احترافي لكل مصور في رابط واحد",
       "description": "موقع احترافي للمصور يجمع الصور والباقات والتواصل في رابط واحد.",
-      "images": ["https://frameid.app/opengraph-image"]
+      "images": ["https://frameid.app/frameid-social-preview.png"]
     }
   }
 }

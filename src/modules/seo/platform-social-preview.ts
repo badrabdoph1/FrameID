@@ -3,6 +3,7 @@ import "server-only";
 import { prisma } from "@/lib/prisma";
 
 export const PLATFORM_SOCIAL_PREVIEW_FLAG_KEY = "platform-social-preview";
+export const DEFAULT_PLATFORM_SOCIAL_IMAGE_URL = "/frameid-social-preview.png";
 
 export type PlatformSocialPreviewSettings = {
   enabled: boolean;
@@ -55,7 +56,9 @@ export async function loadPlatformSocialPreview(): Promise<PlatformSocialPreview
 }
 
 export function resolvePlatformSocialImage(settings: PlatformSocialPreviewSettings): string {
-  return settings.enabled && settings.imageUrl ? settings.imageUrl : "/opengraph-image";
+  return settings.enabled && settings.imageUrl
+    ? settings.imageUrl
+    : DEFAULT_PLATFORM_SOCIAL_IMAGE_URL;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

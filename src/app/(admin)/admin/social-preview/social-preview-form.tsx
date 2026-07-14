@@ -17,7 +17,7 @@ export function SocialPreviewForm({ settings }: { settings: PlatformSocialPrevie
   const [removeImage, setRemoveImage] = useState(false);
 
   const effectiveImage = useMemo(
-    () => imagePreview || "/opengraph-image",
+    () => imagePreview || "/frameid-social-preview.png",
     [imagePreview],
   );
 
