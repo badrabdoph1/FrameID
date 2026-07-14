@@ -134,7 +134,7 @@ export function DashboardHomeClient({ siteUrl, statusLabel, checklist, lastModif
       </div>
 
       {showOnboarding ? (
-        <ImmersiveOnboarding onComplete={completeOnboarding} />
+        <ImmersiveOnboarding onComplete={completeOnboarding} photographerName={photographerName} />
       ) : null}
     </main>
   );

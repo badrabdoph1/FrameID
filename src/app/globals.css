@@ -440,14 +440,14 @@
   flex-shrink: 0;
 }
 
-/* ── Immersive Onboarding ── */
+/* ── Immersive Onboarding V2 ── */
 
 .io-overlay-enter {
-  animation: ioOverlayIn 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: ioOverlayIn 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .io-overlay-exit {
-  animation: ioOverlayOut 0.65s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: ioOverlayOut 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
   pointer-events: none;
 }
 
@@ -458,27 +458,25 @@
 
 @keyframes ioOverlayOut {
   from { opacity: 1; }
-  to { opacity: 0; transform: scale(1.03); }
+  to { opacity: 0; transform: scale(1.02); filter: blur(4px); }
 }
 
 .io-card-enter {
-  animation: ioCardIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: ioCardIn 0.55s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .io-card-exit {
-  animation: ioCardOut 0.28s cubic-bezier(0.55, 0, 1, 0.45) both;
+  animation: ioCardOut 0.32s cubic-bezier(0.4, 0, 1, 0.4) both;
 }
 
 @keyframes ioCardIn {
   from {
     opacity: 0;
-    transform: translateY(20px) scale(0.96);
-    filter: blur(4px);
+    transform: translateY(24px) scale(0.95);
   }
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
-    filter: blur(0);
   }
 }
 
@@ -486,29 +484,28 @@
   from {
     opacity: 1;
     transform: translateY(0) scale(1);
-    filter: blur(0);
   }
   to {
     opacity: 0;
-    transform: translateY(-16px) scale(0.97);
-    filter: blur(4px);
+    transform: translateY(-20px) scale(0.96);
   }
 }
 
 .io-stagger {
   opacity: 0;
-  animation: ioStagger 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation: ioStagger 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-.io-stagger:nth-child(1) { animation-delay: 0.1s; }
-.io-stagger:nth-child(2) { animation-delay: 0.22s; }
-.io-stagger:nth-child(3) { animation-delay: 0.34s; }
-.io-stagger:nth-child(4) { animation-delay: 0.46s; }
+.io-stagger:nth-child(1) { animation-delay: 0.08s; }
+.io-stagger:nth-child(2) { animation-delay: 0.18s; }
+.io-stagger:nth-child(3) { animation-delay: 0.28s; }
+.io-stagger:nth-child(4) { animation-delay: 0.38s; }
+.io-stagger:nth-child(5) { animation-delay: 0.48s; }
 
 @keyframes ioStagger {
   from {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(12px);
   }
   to {
     opacity: 1;
@@ -516,26 +513,21 @@
   }
 }
 
-.io-dot {
-  animation: ioDotPulse 2s ease-in-out infinite;
-}
-
-@keyframes ioDotPulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.6; }
+.io-capsule {
+  transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .io-icon-entrance {
-  animation: ioIconPop 0.8s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: ioIconPop 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 @keyframes ioIconPop {
   0% {
     opacity: 0;
-    transform: scale(0.5) rotate(-10deg);
+    transform: scale(0.5) rotate(-8deg);
   }
   60% {
-    transform: scale(1.08) rotate(2deg);
+    transform: scale(1.05) rotate(1deg);
   }
   100% {
     opacity: 1;
@@ -545,27 +537,27 @@
 
 .io-scene-left {
   opacity: 0;
-  animation: ioSceneLeft 0.6s cubic-bezier(0.22, 1, 0.36, 1) 0.4s forwards;
+  animation: ioSceneLeft 0.65s cubic-bezier(0.16, 1, 0.3, 1) 0.35s forwards;
 }
 
 .io-scene-right {
   opacity: 0;
-  animation: ioSceneRight 0.6s cubic-bezier(0.22, 1, 0.36, 1) 0.55s forwards;
+  animation: ioSceneRight 0.65s cubic-bezier(0.16, 1, 0.3, 1) 0.5s forwards;
 }
 
 .io-arrow {
   opacity: 0;
-  animation: ioArrowIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.7s forwards;
+  animation: ioArrowIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.65s forwards;
 }
 
 @keyframes ioSceneLeft {
-  from { opacity: 0; transform: translateX(16px) rotate(2deg) scale(0.92); }
-  to { opacity: 1; transform: translateX(0) rotate(0) scale(1); }
+  from { opacity: 0; transform: translateX(20px) scale(0.9); }
+  to { opacity: 1; transform: translateX(0) scale(1); }
 }
 
 @keyframes ioSceneRight {
-  from { opacity: 0; transform: translateX(-16px) rotate(-2deg) scale(0.92); }
-  to { opacity: 1; transform: translateX(0) rotate(0) scale(1); }
+  from { opacity: 0; transform: translateX(-20px) scale(0.9); }
+  to { opacity: 1; transform: translateX(0) scale(1); }
 }
 
 @keyframes ioArrowIn {
@@ -574,37 +566,37 @@
 }
 
 .io-tag {
-  animation: ioTagIn 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: ioTagIn 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-.io-scene-left .io-tag { animation-delay: 0.8s; }
-.io-scene-right .io-tag { animation-delay: 0.9s; }
+.io-scene-left .io-tag { animation-delay: 0.75s; }
+.io-scene-right .io-tag { animation-delay: 0.85s; }
 
 @keyframes ioTagIn {
-  from { opacity: 0; transform: translateY(6px) scale(0.9); }
+  from { opacity: 0; transform: translateY(8px) scale(0.85); }
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 .io-check-draw {
   opacity: 0;
-  animation: ioCheckPop 0.6s cubic-bezier(0.22, 1, 0.36, 1) 0.4s forwards;
+  animation: ioCheckPop 0.65s cubic-bezier(0.16, 1, 0.3, 1) 0.35s forwards;
 }
 
 @keyframes ioCheckPop {
   0% { opacity: 0; transform: scale(0); }
-  60% { transform: scale(1.15); }
+  50% { transform: scale(1.12); }
   100% { opacity: 1; transform: scale(1); }
 }
 
 .io-guided-step {
   opacity: 0;
-  animation: ioGuidedIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation: ioGuidedIn 0.55s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 @keyframes ioGuidedIn {
   from {
     opacity: 0;
-    transform: translateX(14px);
+    transform: translateX(16px);
   }
   to {
     opacity: 1;
@@ -614,13 +606,13 @@
 
 .io-start-item {
   opacity: 0;
-  animation: ioStartItemIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation: ioStartItemIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 @keyframes ioStartItemIn {
   from {
     opacity: 0;
-    transform: translateX(12px) scale(0.97);
+    transform: translateX(14px) scale(0.95);
   }
   to {
     opacity: 1;
@@ -630,14 +622,14 @@
 
 .io-start-btn {
   opacity: 0;
-  animation: ioStartBtnIn 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards,
+  animation: ioStartBtnIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards,
     ioStartBtnPulse 2.5s ease-in-out 2s infinite;
 }
 
 @keyframes ioStartBtnIn {
   from {
     opacity: 0;
-    transform: translateY(12px) scale(0.95);
+    transform: translateY(16px) scale(0.92);
   }
   to {
     opacity: 1;
@@ -647,57 +639,9 @@
 
 @keyframes ioStartBtnPulse {
   0%, 100% {
-    box-shadow: 0 8px 30px rgba(243, 207, 115, 0.2);
+    box-shadow: 0 8px 30px rgba(243, 207, 115, 0.25);
   }
   50% {
-    box-shadow: 0 8px 40px rgba(243, 207, 115, 0.35);
+    box-shadow: 0 8px 40px rgba(243, 207, 115, 0.4);
   }
-}
-
-.io-float-a {
-  animation: ioFloatA 8s ease-in-out infinite;
-}
-
-.io-float-b {
-  animation: ioFloatB 10s ease-in-out infinite;
-}
-
-.io-float-c {
-  animation: ioFloatC 12s ease-in-out infinite;
-}
-
-.io-float-d {
-  animation: ioFloatD 9s ease-in-out infinite;
-}
-
-@keyframes ioFloatA {
-  0%, 100% { transform: translate(0, 0); }
-  25% { transform: translate(12px, -18px); }
-  50% { transform: translate(-8px, -30px); }
-  75% { transform: translate(15px, -12px); }
-}
-
-@keyframes ioFloatB {
-  0%, 100% { transform: translate(0, 0); }
-  33% { transform: translate(-15px, -20px); }
-  66% { transform: translate(10px, -10px); }
-}
-
-@keyframes ioFloatC {
-  0%, 100% { transform: translate(0, 0); }
-  50% { transform: translate(20px, -25px); }
-}
-
-@keyframes ioFloatD {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  50% { transform: translate(-18px, -15px) scale(1.3); }
-}
-
-.io-scan-line {
-  animation: ioScan 4s linear infinite;
-}
-
-@keyframes ioScan {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(calc(100vw + 100%)); }
 }
