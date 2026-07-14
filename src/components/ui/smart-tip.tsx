@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Sparkles, type LucideIcon } from "lucide-react";
+import { Sparkles } from "lucide-react";
 import type { PageTip } from "@/lib/smart-tips";
 import { accentToGlow } from "@/lib/smart-tips";
 
