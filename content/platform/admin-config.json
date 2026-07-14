@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-07-14T22:56:13.710Z",
+  "updatedAt": "2026-07-14T22:56:31.893Z",
   "themes": [
     {
       "code": "noir-gold",
@@ -81,7 +81,7 @@
       "name": "الباقة الأساسية",
       "priceAmount": 59900,
       "currency": "EGP",
-      "billingInterval": "yearly",
+      "billingInterval": "unknown",
       "features": {
         "ctaLabel": "اختيار الباقة",
         "isPopular": false,
