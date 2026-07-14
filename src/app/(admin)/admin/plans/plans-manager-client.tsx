@@ -103,6 +103,7 @@ function normalizeFeatures(value: unknown): VisualFeatures {
 function intervalLabel(value: string) {
   if (value === "yearly") return "سنوي";
   if (value === "lifetime") return "مدى الحياة";
+  if (value === "unknown") return "";
   return "شهري";
 }
 
@@ -209,7 +210,7 @@ function PlanCard({ plan, order, selected, onEdit }: { plan: PlanRow; order: num
           </div>
           <p className="mt-1 line-clamp-2 text-sm font-bold leading-6 text-white/50">{visual.description}</p>
           <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs font-bold text-white/40">
-            <strong className="text-base font-black text-[#f3cf73]">{formatMoney(plan.priceAmount, plan.currency)} / {intervalLabel(plan.billingInterval)}</strong>
+            <strong className="text-base font-black text-[#f3cf73]">{formatMoney(plan.priceAmount, plan.currency)}{intervalLabel(plan.billingInterval) ? ` / ${intervalLabel(plan.billingInterval)}` : ""}</strong>
             <span>الترتيب: {order.toLocaleString("ar-EG")}</span>
             <span>{plan._count.subscriptions.toLocaleString("ar-EG")} مشترك</span>
             <span>{plan._count.paymentRequests.toLocaleString("ar-EG")} طلب دفع</span>
@@ -264,7 +265,7 @@ function PlanEditor({ plan, submitLabel }: { plan?: PlanRow; submitLabel: string
       </div>
       <div className="grid gap-3 sm:grid-cols-3">
         <Field label="العملة"><select name="currency" defaultValue={plan?.currency ?? "EGP"} className={inputClass}><option value="EGP">EGP</option><option value="USD">USD</option><option value="EUR">EUR</option></select></Field>
-        <Field label="مدة الدفع"><select name="billingInterval" defaultValue={plan?.billingInterval ?? "monthly"} className={inputClass}><option value="monthly">شهري</option><option value="yearly">سنوي</option><option value="lifetime">مدى الحياة</option></select></Field>
+        <Field label="مدة الدفع"><select name="billingInterval" defaultValue={plan?.billingInterval ?? "monthly"} className={inputClass}><option value="monthly">شهري</option><option value="yearly">سنوي</option><option value="lifetime">مدى الحياة</option><option value="unknown">غير معروف</option></select></Field>
         <Field label="نص الزر"><input name="ctaLabel" defaultValue={visual.ctaLabel} className={inputClass} /></Field>
       </div>
       <Field label="وصف مختصر"><textarea name="description" rows={3} defaultValue={visual.description} className={`${inputClass} py-3`} /></Field>
