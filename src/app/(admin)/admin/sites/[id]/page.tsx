@@ -18,6 +18,7 @@ import {
 import { AdminPageShell } from "@/components/layout/admin-page-shell";
 import { prisma } from "@/lib/prisma";
 import { requireAdminPermission } from "@/modules/admin/admin-permission-guards";
+import { domainStatusLabel, enabledLabel, sectionTypeLabel, siteStatusLabel, visibilityLabel } from "@/modules/admin/sites/site-presentation";
 
 export const dynamic = "force-dynamic";
 
@@ -54,8 +55,8 @@ export default async function AdminSiteWorkspacePage({ params }: Props) {
       domains: { orderBy: { createdAt: "desc" } },
       themeConfigs: true,
       sections: { orderBy: { sortOrder: "asc" } },
-      packages: { orderBy: { sortOrder: "asc" }, where: { isActive: true } },
-      extraServices: { orderBy: { sortOrder: "asc" }, where: { isActive: true } },
+      packages: { orderBy: { sortOrder: "asc" } },
+      extraServices: { orderBy: { sortOrder: "asc" } },
       galleryAlbums: { orderBy: { sortOrder: "asc" }, where: { deletedAt: null }, include: { images: true } },
       contactProfile: true,
       seoSettings: true,
@@ -75,20 +76,21 @@ export default async function AdminSiteWorkspacePage({ params }: Props) {
 
   return (
     <AdminPageShell
-      badge="Site Workspace"
+      badge="ملف الموقع"
       title={site.title}
       description={`${site.tenant.displayName} · /p/${site.slug}`}
       backHref="/admin/sites"
       backLabel="المواقع"
       breadcrumbs={[{ label: "الإدارة", href: "/admin/sites" }, { label: site.title }]}
       actions={[
-        { label: "العميل", href: `/admin/customers/${site.tenant.id}`, icon: BadgeCheck },
-        { label: "بحث الموقع", href: `/admin/search?q=${encodeURIComponent(site.slug)}`, icon: Search },
-        { label: "Audit", href: `/admin/audit?q=${encodeURIComponent(site.id)}`, icon: ShieldCheck },
+        { label: "ملف العميل", href: `/admin/customers/${site.tenant.id}`, icon: BadgeCheck },
+        { label: "فتح الموقع العام", href: publicUrl, icon: ExternalLink },
+        { label: "بحث شامل", href: `/admin/search?q=${encodeURIComponent(site.slug)}`, icon: Search },
+        { label: "سجل التدقيق", href: `/admin/audit?q=${encodeURIComponent(site.id)}`, icon: ShieldCheck },
       ]}
     >
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-        <Metric label="الحالة" value={site.status} />
+        <Metric label="الحالة" value={siteStatusLabel(site.status)} />
         <Metric label="النشر" value={site.isPublished ? "منشور" : "غير منشور"} accent={site.isPublished} />
         <Metric label="الإصدار" value={`v${site.theme.version}`} />
         <Metric label="الدومينات" value={site.domains.length.toLocaleString("ar-EG")} />
@@ -98,22 +100,22 @@ export default async function AdminSiteWorkspacePage({ params }: Props) {
       <section className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
         <Panel title="ملخص الموقع" icon={Globe}>
           <div className="grid gap-3 sm:grid-cols-2">
-            <Info label="Slug" value={`/p/${site.slug}`} dir="ltr" />
-            <Info label="Public URL" value={publicUrl} dir="ltr" />
-            <Info label="Created" value={dateLabel(site.createdAt)} />
-            <Info label="Updated" value={dateLabel(site.updatedAt)} />
+            <Info label="المعرّف" value={site.slug} dir="ltr" />
+            <Info label="الرابط العام" value={publicUrl} dir="ltr" />
+            <Info label="تاريخ الإنشاء" value={dateLabel(site.createdAt)} />
+            <Info label="آخر تحديث" value={dateLabel(site.updatedAt)} />
           </div>
           {site.description ? <p className="mt-4 rounded-xl border border-white/8 bg-black/18 p-3 text-sm font-bold leading-7 text-white/55">{site.description}</p> : null}
         </Panel>
 
         <Panel title="العميل والمالك" icon={BadgeCheck}>
           <div className="grid gap-3">
-            <Info label="Tenant" value={site.tenant.displayName} />
-            <Info label="Tenant status" value={site.tenant.status} />
-            <Info label="Owner" value={site.tenant.owner.name} />
-            <Info label="Email" value={site.tenant.owner.email} dir="ltr" />
+            <Info label="العميل" value={site.tenant.displayName} />
+            <Info label="حالة العميل" value={siteStatusLabel(site.tenant.status)} />
+            <Info label="المالك" value={site.tenant.owner.name} />
+            <Info label="البريد الإلكتروني" value={site.tenant.owner.email} dir="ltr" />
             <Link href={`/admin/customers/${site.tenant.id}`} className="mt-1 inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-amber-500/25 bg-amber-500/10 px-3 text-sm font-black text-amber-200 no-underline transition hover:bg-amber-500/20">
-              فتح Customer 360
+              فتح ملف العميل
               <ExternalLink className="size-4" />
             </Link>
           </div>
@@ -122,16 +124,16 @@ export default async function AdminSiteWorkspacePage({ params }: Props) {
 
       <section className="grid gap-4 xl:grid-cols-2">
         <Panel title="الدومينات" icon={Globe}>
-          {site.domains.length === 0 ? <Empty text="لا توجد دومينات مخصصة." /> : (
+          {site.domains.length === 0 ? <Empty text="لا يوجد دومين مخصص، ويظل رابط FrameID العام متاحًا للموقع." /> : (
             <div className="grid gap-2">
               {site.domains.map((domain) => (
                 <div key={domain.id} className="rounded-xl border border-white/8 bg-black/16 p-3">
                   <div className="flex flex-wrap items-center gap-2">
                     <strong className="font-mono text-sm text-white/80">{domain.hostname}</strong>
-                    <span className={`rounded-full border px-2 py-0.5 text-[0.68rem] font-black ${domainTone(domain.status)}`}>{domain.status}</span>
+                    <span className={`rounded-full border px-2 py-0.5 text-[0.68rem] font-black ${domainTone(domain.status)}`}>{domainStatusLabel(domain.status)}</span>
                   </div>
 
-                  <p className="mt-1 text-xs font-bold text-white/35">Verified: {dateLabel(domain.verifiedAt)}</p>
+                  <p className="mt-1 text-xs font-bold text-white/35">تاريخ التحقق: {dateLabel(domain.verifiedAt)}</p>
                 </div>
               ))}
             </div>
@@ -140,59 +142,59 @@ export default async function AdminSiteWorkspacePage({ params }: Props) {
 
         <Panel title="الثيم والتصميم" icon={Brush}>
           <div className="grid gap-3 sm:grid-cols-2">
-            <Info label="Theme" value={site.theme.name} />
-            <Info label="Code" value={site.theme.code} dir="ltr" />
-            <Info label="Category" value={site.theme.category ?? "—"} />
-            <Info label="Version" value={`v${site.theme.version}`} />
-            <Info label="Status" value={site.theme.status} />
-            <Info label="Theme config" value={site.themeConfigs[0] ? "موجود" : "غير مخصص"} />
+            <Info label="الثيم" value={site.theme.name} />
+            <Info label="الكود" value={site.theme.code} dir="ltr" />
+            <Info label="التصنيف" value={site.theme.category ?? "غير مصنف"} />
+            <Info label="الإصدار" value={`v${site.theme.version}`} />
+            <Info label="الحالة" value={siteStatusLabel(site.theme.status)} />
+            <Info label="إعدادات مخصصة" value={site.themeConfigs[0] ? "موجودة" : "لا توجد"} />
           </div>
         </Panel>
       </section>
 
       <section className="grid gap-4 xl:grid-cols-3">
-        <CollectionPanel title="Sections" icon={Layers3} count={site.sections.length}>
-          {site.sections.map((section) => <CompactItem key={section.id} title={section.type} subtitle={`Order ${section.sortOrder} · ${section.isVisible ? "visible" : "hidden"}`} />)}
+        <CollectionPanel title="الأقسام" icon={Layers3} count={site.sections.length} emptyText="لا توجد أقسام مضافة للموقع.">
+          {site.sections.map((section) => <CompactItem key={section.id} title={sectionTypeLabel(section.type)} subtitle={`الترتيب ${section.sortOrder.toLocaleString("ar-EG")} · ${visibilityLabel(section.isVisible)}`} />)}
         </CollectionPanel>
-        <CollectionPanel title="Packages" icon={PackageCheck} count={site.packages.length}>
-          {site.packages.map((pkg) => <CompactItem key={pkg.id} title={pkg.name} subtitle={`${pkg.priceAmount.toLocaleString("ar-EG")} ${pkg.currency} · ${pkg.isHighlighted ? "Highlighted" : "Standard"}`} />)}
+        <CollectionPanel title="الباقات" icon={PackageCheck} count={site.packages.length} emptyText="لا توجد باقات مضافة للموقع.">
+          {site.packages.map((pkg) => <CompactItem key={pkg.id} title={pkg.name} subtitle={`${pkg.priceAmount.toLocaleString("ar-EG")} ${pkg.currency} · ${pkg.isHighlighted ? "مميزة" : "عادية"} · ${pkg.isActive ? "نشطة" : "مخفية"}`} />)}
         </CollectionPanel>
-        <CollectionPanel title="Extras" icon={Boxes} count={site.extraServices.length}>
-          {site.extraServices.map((extra) => <CompactItem key={extra.id} title={extra.name} subtitle={`${extra.priceAmount.toLocaleString("ar-EG")} ${extra.currency} · ${extra.isActive ? "Active" : "Inactive"}`} />)}
+        <CollectionPanel title="الخدمات الإضافية" icon={Boxes} count={site.extraServices.length} emptyText="لا توجد خدمات إضافية مضافة للموقع.">
+          {site.extraServices.map((extra) => <CompactItem key={extra.id} title={extra.name} subtitle={`${extra.priceAmount.toLocaleString("ar-EG")} ${extra.currency} · ${extra.isActive ? "نشطة" : "مخفية"}`} />)}
         </CollectionPanel>
       </section>
 
       <section className="grid gap-4 xl:grid-cols-2">
-        <Panel title="SEO & Contact" icon={Search}>
+        <Panel title="الظهور في البحث والتواصل" icon={Search}>
           <div className="grid gap-3 sm:grid-cols-2">
-            <Info label="SEO title" value={site.seoSettings?.title ?? "غير مضبوط"} />
-            <Info label="Robots index" value={site.seoSettings?.robotsIndex ? "Index" : "No index"} />
-            <Info label="Canonical" value={site.seoSettings?.canonicalUrl ?? "—"} dir="ltr" />
-            <Info label="Contact email" value={site.contactProfile?.email ?? "—"} dir="ltr" />
-            <Info label="Phone" value={site.contactProfile?.phone ?? "—"} dir="ltr" />
-            <Info label="Website" value={site.contactProfile?.website ?? "—"} dir="ltr" />
+            <Info label="عنوان البحث" value={site.seoSettings?.title ?? "غير مضبوط"} />
+            <Info label="الفهرسة" value={site.seoSettings?.robotsIndex ? "مسموح بها" : "غير مسموح بها"} />
+            <Info label="الرابط الأساسي" value={site.seoSettings?.canonicalUrl ?? "غير مضبوط"} dir="ltr" />
+            <Info label="بريد التواصل" value={site.contactProfile?.email ?? "غير مضاف"} dir="ltr" />
+            <Info label="الهاتف" value={site.contactProfile?.phone ?? "غير مضاف"} dir="ltr" />
+            <Info label="الموقع الخارجي" value={site.contactProfile?.website ?? "غير مضاف"} dir="ltr" />
           </div>
         </Panel>
 
-        <Panel title="Feature Flags & Signals" icon={Flag}>
+        <Panel title="الخصائص وإشارات التشغيل" icon={Flag}>
           <div className="grid gap-3 sm:grid-cols-3">
-            <Info label="Site flags" value={site.featureFlags.length.toLocaleString("ar-EG")} />
-            <Info label="Audit events" value={auditCount.toLocaleString("ar-EG")} />
-            <Info label="Notifications" value={notificationCount.toLocaleString("ar-EG")} />
+            <Info label="خصائص الموقع" value={site.featureFlags.length.toLocaleString("ar-EG")} />
+            <Info label="أحداث التدقيق" value={auditCount.toLocaleString("ar-EG")} />
+            <Info label="الإشعارات" value={notificationCount.toLocaleString("ar-EG")} />
           </div>
           <div className="mt-4 grid gap-2">
-            {site.featureFlags.length === 0 ? <Empty text="لا توجد Feature Flags مرتبطة بهذا الموقع." /> : site.featureFlags.map((flag) => <CompactItem key={flag.id} title={flag.key} subtitle={`${flag.scope} · ${flag.enabled ? "enabled" : "disabled"} · ${dateLabel(flag.updatedAt)}`} />)}
+            {site.featureFlags.length === 0 ? <Empty text="لا توجد خصائص تجريبية مرتبطة بهذا الموقع." /> : site.featureFlags.map((flag) => <CompactItem key={flag.id} title={flag.key} subtitle={`${flag.scope} · ${enabledLabel(flag.enabled)} · ${dateLabel(flag.updatedAt)}`} />)}
           </div>
         </Panel>
       </section>
 
-      <Panel title="Gallery Albums" icon={Image}>
+      <Panel title="ألبومات المعرض" icon={Image}>
         {site.galleryAlbums.length === 0 ? <Empty text="لا توجد ألبومات." /> : (
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             {site.galleryAlbums.map((album) => (
               <div key={album.id} className="rounded-xl border border-white/8 bg-black/16 p-3">
                 <strong className="block truncate text-sm font-black text-white/82">{album.title}</strong>
-                <p className="mt-1 text-xs font-bold text-white/38">{album.images.length} عينات معروضة · {album.isVisible ? "visible" : "hidden"}</p>
+                <p className="mt-1 text-xs font-bold text-white/38">{album.images.length.toLocaleString("ar-EG")} صورة · {visibilityLabel(album.isVisible)}</p>
               </div>
             ))}
           </div>
@@ -220,11 +222,11 @@ function Panel({ title, icon: Icon, children }: { title: string; icon: typeof Gl
   );
 }
 
-function CollectionPanel({ title, icon: Icon, count, children }: { title: string; icon: typeof Layers3; count: number; children: ReactNode }) {
+function CollectionPanel({ title, icon: Icon, count, emptyText, children }: { title: string; icon: typeof Layers3; count: number; emptyText: string; children: ReactNode }) {
   return (
     <Panel title={`${title} · ${count.toLocaleString("ar-EG")}`} icon={Icon}>
       <div className="grid gap-2">
-        {count === 0 ? <Empty text="لا توجد عناصر." /> : children}
+        {count === 0 ? <Empty text={emptyText} /> : children}
       </div>
     </Panel>
   );

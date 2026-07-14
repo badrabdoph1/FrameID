@@ -227,10 +227,10 @@ Commit: `feat: rebuild admin command center`.
 - Modify: `src/app/(admin)/admin/sites/[id]/page.tsx`
 - Create: `tests/admin-site-workspace.test.tsx`
 
-- [ ] اختبر الروابط العميقة وحالات عدم وجود دومين أو باقات أو إضافات.
-- [ ] عرّب Sections وPackages وExtras وFeature Flags وGallery Albums وحالات Active/Hidden.
-- [ ] اجمع بيانات الاتصال وSEO في لوحات مفهومة مع روابط للعميل والموقع العام.
-- [ ] شغّل `npm test -- tests/admin-site-workspace.test.tsx` واعمل commit بعنوان `feat: clarify admin site workspace`.
+- [x] اختبر الروابط العميقة وحالات عدم وجود دومين أو باقات أو إضافات.
+- [x] عرّب Sections وPackages وExtras وFeature Flags وGallery Albums وحالات Active/Hidden.
+- [x] اجمع بيانات الاتصال وSEO في لوحات مفهومة مع روابط للعميل والموقع العام.
+- [x] شغّل `npm test -- tests/admin-site-workspace.test.tsx` واعمل commit بعنوان `feat: clarify admin site workspace`.
 
 ### Task 6: مركز المال والصفحات المالية
 

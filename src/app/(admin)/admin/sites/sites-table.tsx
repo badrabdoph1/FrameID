@@ -4,6 +4,7 @@ import Link from "next/link";
 
 import { DataTable, type Column } from "@/components/admin/shared/data-table";
 import { Badge } from "@/components/ui/badge";
+import { siteStatusLabel } from "@/modules/admin/sites/site-presentation";
 
 export type SiteRow = {
   id: string;
@@ -57,7 +58,7 @@ const columns: Column<SiteRow>[] = [
     key: "status",
     header: "الحالة",
     render: (r) => (
-      <Badge tone={toneMap[r.status] || "neutral"}>{r.status}</Badge>
+      <Badge tone={toneMap[r.status] || "neutral"}>{siteStatusLabel(r.status)}</Badge>
     ),
   },
 
@@ -75,9 +76,10 @@ export function SitesTable({ data }: { data: SiteRow[] }) {
       data={data}
       keyField="id"
       pageSize={20}
+      emptyMessage="لا توجد مواقع مطابقة"
       actions={(site) => (
         <Link href={`/admin/sites/${site.id}`} className="rounded-lg border border-amber-500/20 bg-amber-500/10 px-3 py-1.5 text-xs font-black text-amber-200 no-underline transition hover:bg-amber-500/20">
-          Workspace
+          فتح الموقع
         </Link>
       )}
     />
