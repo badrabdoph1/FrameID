@@ -125,7 +125,7 @@ export function PublishClient({
       {error === "readiness" ? <BuilderNotice tone="warning" title="لا يمكن النشر قبل اكتمال الأساسيات" description="أكمل بيانات التواصل، المعرض، الباقات، وشكل المشاركة أولاً." /> : null}
       {error && error !== "readiness" ? <BuilderNotice tone="error" title="مقدرناش نحفظ إعدادات النشر" description="راجع البيانات وجرب تاني." errorId={error} /> : null}
 
-      <section className="grid gap-3 lg:grid-cols-[1fr_0.82fr]">
+      <section className="grid gap-3 lg:grid-cols-[1fr_0.82fr]" data-smart-tip="publish-actions">
         <Panel icon={Rocket} title={isPublished ? "الموقع منشور" : "جاهزية النشر"} description="المنصة تمنع النشر قبل وجود أساسيات تجعل الرابط مفيداً للعميل.">
           <div className="grid gap-3">
             <div className="rounded-2xl border border-white/10 bg-black/18 p-3">

@@ -108,6 +108,7 @@ export function SiteInfoClient(props: SiteInfoClientProps) {
 
       <form
         className="grid gap-3 rounded-[1.2rem] border border-white/10 bg-white/[0.035] p-3"
+        data-smart-tip="contact-form"
         onSubmit={(event) => handleSubmit(event, "identity")}
         onBlurCapture={(event) => {
           if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) saveForm(event.currentTarget, "identity");

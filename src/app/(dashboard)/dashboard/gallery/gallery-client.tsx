@@ -259,7 +259,7 @@ export function GalleryClient({ albums, selectedAlbumId: initialAlbumId, avatarU
             />
           </section>
 
-          <section className="grid gap-3 rounded-[1.2rem] border border-white/10 bg-white/[0.035] p-3">
+          <section className="grid gap-3 rounded-[1.2rem] border border-white/10 bg-white/[0.035] p-3" data-smart-tip="gallery-grid">
             <div className="flex items-start justify-between gap-3">
               <div>
                 <h2 className="text-base font-black text-[#fff7e8]">ألبومات الأعمال</h2>

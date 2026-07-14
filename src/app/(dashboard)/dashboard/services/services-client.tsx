@@ -133,7 +133,7 @@ export function ServicesClient({ packages, extras, created, error }: ServicesCli
         {packages.length === 0 ? (
           <EmptyState title="ابدأ بأول باقة" description="مثلاً: باقة زفاف، باقة خطوبة، باقة منتجات. اكتب السعر والمميزات بنفسك." action="إنشاء باقة" onClick={() => setShowPackageForm(true)} />
         ) : (
-          <div className="grid gap-3 lg:grid-cols-2">
+          <div className="grid gap-3 lg:grid-cols-2" data-smart-tip="packages-list">
             {packages.map((pkg, index) => (
               <PackageCard
                 key={pkg.id}
