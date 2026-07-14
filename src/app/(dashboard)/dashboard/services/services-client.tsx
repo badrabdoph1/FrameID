@@ -401,34 +401,7 @@ function SectionTitle({ icon: Icon, title, description }: { icon: LucideIcon; ti
 }
 
 function EmptyState({ title, description, action, onClick }: { title: string; description: string; action: string; onClick: () => void }) {
-  return (
-    <div className="mx-auto grid w-full max-w-lg justify-items-center gap-4 rounded-[1.5rem] border border-white/12 bg-[#111720] p-6 text-center shadow-[0_8px_32px_rgba(0,0,0,0.2)] sm:p-8">
-      <span className="grid size-16 place-items-center rounded-3xl bg-gradient-to-br from-amber-300/20 to-amber-300/8 text-[#f3cf73] shadow-[0_0_24px_rgba(243,207,115,0.2)] sm:size-20">
-        <Package className="size-7 sm:size-8" aria-hidden />
-      </span>
-      <div>
-        <h3 className="text-lg font-black text-[#fff7e8] sm:text-xl">{title}</h3>
-        <p className="mt-2 max-w-sm text-sm font-bold leading-7 text-white/60 sm:text-base sm:leading-8">{description}</p>
-        <p className="mt-2 text-xs font-bold text-white/45 sm:text-sm">
-          الباقات هي أول حاجة العميل بيدور عليها قبل ما يتواصل معاك.
-        </p>
-      </div>
-      <div className="mt-2 rounded-2xl border border-white/8 bg-white/[0.02] p-4 text-right">
-        <p className="text-xs font-black text-white/50">مثال:</p>
-        <p className="mt-1 text-sm font-black text-[#fff7e8]">باقة الزفاف الذهبي</p>
-        <p className="mt-0.5 text-xs font-bold text-[#f3cf73]">5,000 جنيه</p>
-        <ul className="mt-2 space-y-1">
-          <li className="text-xs font-bold text-white/50">• 8 ساعات تصوير</li>
-          <li className="text-xs font-bold text-white/50">• 200 صورة معدلة</li>
-          <li className="text-xs font-bold text-white/50">• ألبوم فاخر</li>
-        </ul>
-      </div>
-      <Button variant="luxury" className="min-h-12 rounded-2xl px-6 font-black" onClick={onClick}>
-        <Plus className="size-4" />
-        {action}
-      </Button>
-    </div>
-  );
+  return <div className="grid justify-items-center gap-3 rounded-2xl border border-dashed border-white/14 bg-black/15 p-6 text-center"><Package className="size-10 text-white/28" /><div><h3 className="text-base font-black text-[#fff7e8]">{title}</h3><p className="mt-1 max-w-sm text-sm font-bold leading-7 text-white/45">{description}</p></div><Button variant="luxury" className="rounded-2xl font-black" onClick={onClick}><Plus className="size-4" />{action}</Button></div>;
 }
 
 function ConfirmDelete({ title, onConfirm, onCancel }: { title: string; onConfirm: () => void; onCancel: () => void }) {
