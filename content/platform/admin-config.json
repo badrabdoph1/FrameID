@@ -1,0 +1,256 @@
+{
+  "version": 1,
+  "updatedAt": "2026-07-14T03:02:33.702Z",
+  "themes": [
+    {
+      "code": "noir-gold",
+      "name": "كلاسك",
+      "status": "PUBLISHED",
+      "version": "1.0.0",
+      "category": "photography",
+      "defaultConfig": {
+        "motion": "quiet",
+        "colorPreset": "champagne",
+        "layoutDensity": "editorial"
+      },
+      "contentSchema": {
+        "supportedSections": [
+          "hero",
+          "gallery",
+          "packages",
+          "extras",
+          "contact"
+        ]
+      }
+    },
+    {
+      "code": "rose-blush",
+      "name": "أنيق وهادئ",
+      "status": "PUBLISHED",
+      "version": "1.0.0",
+      "category": "photography",
+      "defaultConfig": {
+        "motion": "gentle",
+        "colorPreset": "rose",
+        "layoutDensity": "spacious"
+      },
+      "contentSchema": {
+        "supportedSections": [
+          "hero",
+          "gallery",
+          "packages",
+          "extras",
+          "contact"
+        ]
+      }
+    }
+  ],
+  "templates": [
+    {
+      "code": "noir-gold",
+      "name": "كلاسك",
+      "status": "PUBLISHED",
+      "version": "1.0.0",
+      "showroomOrder": 1,
+      "previewData": null,
+      "settings": {
+        "motion": "quiet",
+        "colorPreset": "champagne",
+        "layoutDensity": "editorial"
+      },
+      "themeCode": "noir-gold"
+    },
+    {
+      "code": "rose-blush",
+      "name": "أنيق وهادئ",
+      "status": "PUBLISHED",
+      "version": "1.0.0",
+      "showroomOrder": 2,
+      "previewData": null,
+      "settings": {
+        "motion": "gentle",
+        "colorPreset": "rose",
+        "layoutDensity": "spacious"
+      },
+      "themeCode": "rose-blush"
+    }
+  ],
+  "plans": [
+    {
+      "code": "basic",
+      "name": "الباقة الأساسية",
+      "priceAmount": 59900,
+      "currency": "EGP",
+      "billingInterval": "monthly",
+      "features": {
+        "themes": 1,
+        "storage": "1 GB",
+        "priority": "standard",
+        "dashboard": true,
+        "publicSite": true,
+        "customDomain": false,
+        "galleryImages": 100,
+        "manualActivation": true
+      },
+      "isActive": true
+    },
+    {
+      "code": "premium",
+      "name": "الباقة الماسية",
+      "priceAmount": 169900,
+      "currency": "EGP",
+      "billingInterval": "monthly",
+      "features": {
+        "themes": 10,
+        "storage": "20 GB",
+        "priority": "vip",
+        "dashboard": true,
+        "publicSite": true,
+        "customDomain": true,
+        "galleryImages": 9999,
+        "manualActivation": true
+      },
+      "isActive": false
+    },
+    {
+      "code": "professional",
+      "name": "الباقة الاحترافية",
+      "priceAmount": 99900,
+      "currency": "EGP",
+      "billingInterval": "monthly",
+      "features": {
+        "themes": 3,
+        "storage": "5 GB",
+        "priority": "high",
+        "dashboard": true,
+        "publicSite": true,
+        "customDomain": true,
+        "galleryImages": 500,
+        "manualActivation": true
+      },
+      "isActive": true
+    }
+  ],
+  "paymentSettings": [
+    {
+      "paymentMethod": "INSTAPAY",
+      "isActive": true,
+      "label": "إنستا باي",
+      "description": "تحويل فوري عبر تطبيق InstaPay ثم رفع صورة إثبات الدفع.",
+      "config": {
+        "providerType": "MANUAL_TRANSFER",
+        "proofRequired": true,
+        "supportsQrCode": true
+      },
+      "sortOrder": 10,
+      "accounts": [
+        {
+          "label": "حساب إنستا باي الرئيسي",
+          "displayName": "حساب إنستا باي الرئيسي",
+          "accountName": "Badr A** B** H****",
+          "accountNumber": "01011511561",
+          "accountIdentifier": "01011511561",
+          "iban": null,
+          "swift": null,
+          "phoneNumber": "01011511561",
+          "bankName": null,
+          "instructions": "حوّل على رقم إنستا باي، ثم ارفع صورة إثبات الدفع من نفس الصفحة.",
+          "notes": null,
+          "isActive": true,
+          "sortOrder": 20
+        }
+      ]
+    },
+    {
+      "paymentMethod": "VODAFONE_CASH",
+      "isActive": true,
+      "label": "فودافون كاش",
+      "description": "تحويل يدوي عبر Vodafone Cash ثم رفع صورة إثبات الدفع.",
+      "config": {
+        "providerType": "MANUAL_WALLET",
+        "proofRequired": true,
+        "supportsQrCode": true
+      },
+      "sortOrder": 20,
+      "accounts": [
+        {
+          "label": "محفظة فودافون كاش الرئيسية",
+          "displayName": "محفظة فودافون كاش الرئيسية",
+          "accountName": "Badr A** B** H****",
+          "accountNumber": "01038434472",
+          "accountIdentifier": "01038434472",
+          "iban": null,
+          "swift": null,
+          "phoneNumber": "01038434472",
+          "bankName": null,
+          "instructions": "حوّل على رقم فودافون كاش، ثم ارفع صورة إثبات الدفع من نفس الصفحة.",
+          "notes": null,
+          "isActive": true,
+          "sortOrder": 30
+        }
+      ]
+    },
+    {
+      "paymentMethod": "STRIPE",
+      "isActive": false,
+      "label": "Stripe",
+      "description": "جاهز للتفعيل مستقبلاً للبطاقات والمدفوعات الدولية.",
+      "config": {
+        "providerType": "HOSTED_CHECKOUT",
+        "proofRequired": false
+      },
+      "sortOrder": 30,
+      "accounts": []
+    },
+    {
+      "paymentMethod": "PAYPAL",
+      "isActive": false,
+      "label": "PayPal",
+      "description": "جاهز للتفعيل مستقبلاً للمحافظ العالمية.",
+      "config": {
+        "providerType": "HOSTED_CHECKOUT",
+        "proofRequired": false
+      },
+      "sortOrder": 40,
+      "accounts": []
+    }
+  ],
+  "featureFlags": [
+    {
+      "key": "platform.lifecycle.timers",
+      "enabled": true,
+      "value": {
+        "trial": {
+          "enabled": true,
+          "useDefault": true,
+          "defaultDays": 14
+        },
+        "subscription": {
+          "enabled": false,
+          "customDays": 30,
+          "defaultPreset": "keep"
+        }
+      }
+    },
+    {
+      "key": "platform-social-preview",
+      "enabled": true,
+      "value": {
+        "title": "FrameID | موقع احترافي لكل مصور",
+        "imageUrl": "/platform/templates/4a53af73-229b-4890-a772-3dd7ca609b30-525b5371-3e29-4202-888d-e70370595a6d.webp",
+        "description": "FrameID منصة عربية للمصورين تساعدك تنشئ موقعًا احترافيًا ورابطًا واحدًا يجمع صورك وباقاتك وأسعارك وبيانات التواصل."
+      }
+    },
+    {
+      "key": "platform.social-preview",
+      "enabled": false,
+      "value": {
+        "title": null,
+        "imageUrl": "/social-preview-image.jpg",
+        "storageKey": null,
+        "description": null
+      }
+    }
+  ],
+  "platformMessages": []
+}
