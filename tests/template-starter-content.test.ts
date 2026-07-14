@@ -28,6 +28,7 @@ describe("template starter content", () => {
         settings: { eyebrow: expect.any(String) },
       });
       expect(content.packages.length).toBeGreaterThanOrEqual(3);
+      expect(content.packages.every((item) => item.priceAmount > 0)).toBe(true);
       expect(content.extras.length).toBeGreaterThan(0);
       expect(content.gallery.images.length).toBeGreaterThan(0);
     }
