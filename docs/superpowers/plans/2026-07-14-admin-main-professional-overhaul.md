@@ -213,11 +213,11 @@ Commit: `feat: rebuild admin command center`.
 **Interfaces:**
 - Produces: قائمة قابلة للترشيح وCustomer 360 بتبويبات ثابتة وروابط عميقة.
 
-- [ ] اختبر البحث والفراغ وعرض الهاتف وحفظ التبويب في URL.
-- [ ] شغّل `npm test -- tests/admin-customers-table.test.tsx tests/admin-customer-workspace.test.tsx` وتحقق من الفشل.
-- [ ] وحّد ملخص العميل والإجراءات السريعة، وأزل البيانات المتكررة بين الرأس والتبويبات.
-- [ ] اجعل أسماء التبويبات عربية واضحة: نظرة عامة، الموقع، الاشتراك، المدفوعات، الوسائط، الجلسات، الإشعارات، الملاحظات.
-- [ ] شغّل الاختبارات واعمل commit بعنوان `feat: simplify customer admin workspace`.
+- [x] اختبر البحث والفراغ وعرض الهاتف وحفظ التبويب في URL.
+- [x] شغّل `npm test -- tests/admin-customers-table.test.tsx tests/admin-customer-workspace.test.tsx` وتحقق من الفشل.
+- [x] وحّد ملخص العميل والإجراءات السريعة، وأزل البيانات المتكررة بين الرأس والتبويبات.
+- [x] اجعل أسماء التبويبات عربية واضحة: نظرة عامة، الموقع، الاشتراك، المدفوعات، الوسائط، الجلسات، الإشعارات، الملاحظات.
+- [x] شغّل الاختبارات واعمل commit بعنوان `feat: simplify customer admin workspace`.
 
 ### Task 5: المواقع وتفاصيل الموقع
 

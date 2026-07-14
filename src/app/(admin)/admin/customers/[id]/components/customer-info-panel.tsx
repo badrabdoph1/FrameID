@@ -6,8 +6,9 @@ import type { CustomerDetail } from "./customer-types"
 
 export function CustomerInfoPanel({ customer }: { customer: CustomerDetail }) {
   const statusTone: Record<string, "success" | "warning" | "danger" | "default"> = {
-    TRIAL: "warning", ACTIVE: "success", EXPIRED: "danger", SUSPENDED: "danger",
+    TRIAL: "warning", ACTIVE: "success", EXPIRED: "danger", TRIAL_EXPIRED: "danger", SUSPENDED: "danger", ARCHIVED: "default",
   }
+  const statusLabel: Record<string, string> = { TRIAL: "تجريبي", ACTIVE: "نشط", EXPIRED: "منتهي", TRIAL_EXPIRED: "انتهت التجربة", SUSPENDED: "موقوف", ARCHIVED: "مؤرشف" }
 
   const formatDate = (d: string | null) => {
     if (!d) return "—"
@@ -29,7 +30,7 @@ export function CustomerInfoPanel({ customer }: { customer: CustomerDetail }) {
             <div className="flex flex-wrap items-center gap-2">
               <h2 className="text-lg font-semibold text-white sm:text-xl">{customer.displayName}</h2>
               <AdminStatusBadge tone={statusTone[customer.status] || "default"}>
-                {customer.status === "ACTIVE" ? "نشط" : customer.status === "TRIAL" ? "تجربة" : customer.status === "SUSPENDED" ? "موقوف" : customer.status === "EXPIRED" ? "منتهي" : customer.status}
+                {statusLabel[customer.status] ?? customer.status}
               </AdminStatusBadge>
             </div>
             <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-white/50">

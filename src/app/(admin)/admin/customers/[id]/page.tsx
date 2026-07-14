@@ -1,12 +1,11 @@
 import { notFound } from "next/navigation";
-import { Activity } from "lucide-react";
-
 import { prisma } from "@/lib/prisma";
 import { requireAdminPermission } from "@/modules/admin/admin-permission-guards";
 import { createCustomerAdminRepository } from "@/modules/admin/customers/customer-admin-repository";
 import { createCustomerAdminService } from "@/modules/admin/customers/customer-admin-service";
 import { AdminPageShell } from "@/components/layout/admin-page-shell";
 import { CustomerDetailClient } from "./customer-detail-client";
+import { normalizeCustomerTab } from "./components/customer-tabs";
 
 export const dynamic = "force-dynamic";
 
@@ -15,9 +14,10 @@ type Props = {
   searchParams: Promise<{ tab?: string }>;
 };
 
-export default async function AdminCustomerDetailPage({ params }: Props) {
+export default async function AdminCustomerDetailPage({ params, searchParams }: Props) {
   await requireAdminPermission("customers", "view");
   const { id } = await params;
+  const { tab } = await searchParams;
 
   const repo = createCustomerAdminRepository(prisma);
   const service = createCustomerAdminService(repo);
@@ -42,6 +42,7 @@ export default async function AdminCustomerDetailPage({ params }: Props) {
       actions={[{ label: "العملاء", href: "/admin/customers" }]}
     >
       <CustomerDetailClient
+        initialTab={normalizeCustomerTab(tab)}
         customer={customer}
         media={mediaResult.assets}
         notifications={notifications}

@@ -4,6 +4,7 @@ import { CustomersTable } from "@/app/(admin)/admin/customers/customers-table";
 import { AdminPageShell } from "@/components/layout/admin-page-shell";
 import { AdminToolbar } from "@/components/layout/admin-toolbar";
 import Link from "next/link";
+import { Search, X } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -68,17 +69,18 @@ export default async function AdminCustomersPage({ searchParams }: Props) {
   const page = Math.max(1, Number(sp.page) || 1);
   const now = new Date();
 
-  const where: Record<string, unknown> = { deletedAt: null, ...buildLifecycleWhere(lifecycleFilter, now) };
+  const conditions: Record<string, unknown>[] = [buildLifecycleWhere(lifecycleFilter, now)];
 
   if (search) {
-    where.OR = [
+    conditions.push({ OR: [
       { displayName: { contains: search, mode: "insensitive" } },
       { owner: { name: { contains: search, mode: "insensitive" } } },
       { owner: { email: { contains: search, mode: "insensitive" } } },
-    ];
+    ] });
   }
 
-  if (statusFilter && ["TRIAL", "ACTIVE", "EXPIRED", "TRIAL_EXPIRED", "SUSPENDED"].includes(statusFilter)) where.status = statusFilter;
+  if (statusFilter && ["TRIAL", "ACTIVE", "EXPIRED", "TRIAL_EXPIRED", "SUSPENDED"].includes(statusFilter)) conditions.push({ status: statusFilter });
+  const where: Record<string, unknown> = { deletedAt: null, AND: conditions };
 
   const [customers, total, counts] = await Promise.all([
     prisma.tenant.findMany({
@@ -147,12 +149,13 @@ export default async function AdminCustomersPage({ searchParams }: Props) {
       : null;
 
   return (
-    <AdminPageShell badge="الإدارة" title="مركز إدارة العملاء" description={`${total} عميل مطابق للفلتر الحالي`}>
+    <AdminPageShell badge="العملاء" title="إدارة العملاء" description={`${total.toLocaleString("ar-EG")} عميل مطابق للعرض الحالي`}>
       {banner ? <div className={banner.tone === "danger" ? "rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm font-black text-red-300" : "rounded-2xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm font-black text-emerald-300"}>{banner.text}</div> : null}
+      <form action="/admin/customers" method="get" role="search" className="flex flex-col gap-2 sm:flex-row">{lifecycleFilter !== "all" ? <input type="hidden" name="filter" value={lifecycleFilter} /> : null}{statusFilter ? <input type="hidden" name="status" value={statusFilter} /> : null}<label className="relative min-w-0 flex-1"><span className="sr-only">البحث عن عميل</span><Search className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-white/30" /><input name="search" defaultValue={search} placeholder="ابحث بالاسم أو البريد الإلكتروني" className="min-h-11 w-full rounded-xl border border-white/10 bg-white/[0.04] pr-10 pl-3 text-sm font-bold text-white" /></label><button className="min-h-11 rounded-xl bg-[#f3cf73] px-5 text-sm font-black text-[#17120a]">بحث</button>{search ? <Link href={buildLink({ search: "", page: "1" })} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-white/10 px-4 text-sm font-black text-white/60"><X className="size-4" /> مسح البحث</Link> : null}</form>
       <AdminToolbar searchValue={search} searchPlaceholder="بحث بالاسم أو البريد..." filters={
         <div className="flex max-w-full gap-2 overflow-x-auto pb-1 admin-scrollbar">
           {filters.map((filter) => (
-            <Link key={filter.id} href={buildLink({ filter: lifecycleFilter === filter.id ? "all" : filter.id, page: "1" })} className={`shrink-0 rounded-2xl border px-3 py-1.5 text-xs font-black transition ${lifecycleFilter === filter.id ? "border-amber-300/35 bg-amber-300/12 text-[#f3cf73]" : "border-white/10 bg-white/[0.035] text-white/45 hover:text-white/70"}`}>{filter.label} <span className="opacity-60">{countMap.get(filter.id) ?? 0}</span></Link>
+            <Link key={filter.id} href={buildLink({ filter: lifecycleFilter === filter.id ? "all" : filter.id, page: "1" })} className={`inline-flex min-h-10 shrink-0 items-center rounded-xl border px-3 text-xs font-black ${lifecycleFilter === filter.id ? "border-amber-300/35 bg-amber-300/12 text-[#f3cf73]" : "border-white/10 bg-white/[0.035] text-white/45"}`}>{filter.label} <span className="mr-1 opacity-60">{(countMap.get(filter.id) ?? 0).toLocaleString("ar-EG")}</span></Link>
           ))}
         </div>
       } />

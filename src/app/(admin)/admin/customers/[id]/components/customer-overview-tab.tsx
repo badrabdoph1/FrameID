@@ -3,8 +3,9 @@
 import { AdminActivityTimeline } from "@/components/layout/admin-activity-timeline"
 import { AdminStatusBadge } from "@/components/layout/admin-status-badge"
 import type { CustomerDetail } from "./customer-types"
+import type { TabId } from "./customer-tabs"
 
-export function CustomerOverviewTab({ customer, onTabChange }: { customer: CustomerDetail; onTabChange: (tab: string) => void }) {
+export function CustomerOverviewTab({ customer, onTabChange }: { customer: CustomerDetail; onTabChange: (tab: TabId) => void }) {
   return (
     <div className="space-y-4">
       <div className="rounded-xl border border-white/8 bg-white/3 p-4">
@@ -32,10 +33,7 @@ export function CustomerOverviewTab({ customer, onTabChange }: { customer: Custo
       </div>
 
       <div className="rounded-xl border border-white/8 bg-white/3 p-4">
-        <div className="mb-3 flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-white/60">آخر النشاطات</h3>
-          <button onClick={() => onTabChange("activity")} className="text-xs font-extrabold text-amber-500/70 transition hover:text-amber-400">عرض الكل</button>
-        </div>
+        <h3 className="mb-3 text-sm font-semibold text-white/60">آخر النشاطات</h3>
         {customer.recentActivity.length > 0 ? (
           <AdminActivityTimeline events={customer.recentActivity.slice(0, 5).map((a) => ({
             id: a.id,

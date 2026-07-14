@@ -1,45 +1,16 @@
-"use client"
+import Link from "next/link";
+import { Bell, BookOpen, CreditCard, DollarSign, Globe, Image, Smartphone, User, type LucideIcon } from "lucide-react";
+import { cn } from "@/lib/utils/cn";
 
-import { User, Globe, CreditCard, DollarSign, Image, Activity, Smartphone, Bell, Shield, BookOpen, type LucideIcon } from "lucide-react"
-import { cn } from "@/lib/utils/cn"
-
-export type TabId = "overview" | "website" | "subscription" | "payments" | "media" | "activity" | "sessions" | "notifications" | "audit" | "notes"
-
-type Tab = { id: TabId; label: string; icon: LucideIcon }
-
-const tabs: Tab[] = [
-  { id: "overview", label: "نظرة عامة", icon: User },
-  { id: "website", label: "الموقع", icon: Globe },
-  { id: "subscription", label: "الاشتراك", icon: CreditCard },
-  { id: "payments", label: "المدفوعات", icon: DollarSign },
-  { id: "media", label: "الوسائط", icon: Image },
-  { id: "activity", label: "النشاط", icon: Activity },
-  { id: "sessions", label: "الجلسات", icon: Smartphone },
-  { id: "notifications", label: "الإشعارات", icon: Bell },
-  { id: "audit", label: "التدقيق", icon: Shield },
-  { id: "notes", label: "ملاحظات", icon: BookOpen },
-]
-
-export function CustomerTabBar({ activeTab, onChange }: { activeTab: TabId; onChange: (t: TabId) => void }) {
-  return (
-    <div className="flex gap-1 overflow-x-auto rounded-xl border border-white/8 bg-white/3 p-1">
-      {tabs.map((tab) => {
-        const Icon = tab.icon
-        const isActive = activeTab === tab.id
-        return (
-          <button
-            key={tab.id}
-            onClick={() => onChange(tab.id)}
-            className={cn(
-              "flex shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-2 text-[0.7rem] font-extrabold transition whitespace-nowrap",
-              isActive ? "bg-amber-500/15 text-[#f3cf73]" : "text-white/40 hover:bg-white/5 hover:text-white/60",
-            )}
-          >
-            <Icon size={14} />
-            {tab.label}
-          </button>
-        )
-      })}
-    </div>
-  )
+export type TabId = "overview" | "website" | "subscription" | "payments" | "media" | "sessions" | "notifications" | "notes";
+type Tab = { id: TabId; label: string; icon: LucideIcon };
+export const customerTabs: readonly Tab[] = [
+  { id: "overview", label: "نظرة عامة", icon: User }, { id: "website", label: "الموقع", icon: Globe },
+  { id: "subscription", label: "الاشتراك", icon: CreditCard }, { id: "payments", label: "المدفوعات", icon: DollarSign },
+  { id: "media", label: "الوسائط", icon: Image }, { id: "sessions", label: "الجلسات", icon: Smartphone },
+  { id: "notifications", label: "الإشعارات", icon: Bell }, { id: "notes", label: "الملاحظات", icon: BookOpen },
+];
+export function normalizeCustomerTab(value: string | null | undefined): TabId { return customerTabs.some((tab) => tab.id === value) ? value as TabId : "overview"; }
+export function CustomerTabBar({ activeTab, basePath, onChange }: { activeTab: TabId; basePath: string; onChange: (tab: TabId) => void }) {
+  return <nav aria-label="أقسام ملف العميل" className="overflow-x-auto rounded-xl border border-white/8 bg-white/3 p-1 admin-scrollbar"><div role="tablist" className="flex min-w-max gap-1">{customerTabs.map((tab) => { const Icon = tab.icon; const active = activeTab === tab.id; return <Link key={tab.id} role="tab" aria-selected={active} href={`${basePath}?tab=${tab.id}`} onClick={() => onChange(tab.id)} className={cn("flex min-h-11 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg px-3 text-xs font-extrabold no-underline transition", active ? "bg-amber-500/15 text-[#f3cf73]" : "text-white/45 hover:bg-white/5 hover:text-white/70")}><Icon aria-hidden="true" size={15} />{tab.label}</Link>; })}</div></nav>;
 }
