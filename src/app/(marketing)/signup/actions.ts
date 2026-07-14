@@ -78,5 +78,5 @@ export async function signupAction(formData: FormData) {
     cookieStore.set(cookieToSet.name, cookieToSet.value, cookieToSet.options);
   }
 
-  redirect(redirectTo);
+  redirect(`${redirectTo}?welcome=1`);
 }

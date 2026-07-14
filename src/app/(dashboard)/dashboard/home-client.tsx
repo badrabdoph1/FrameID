@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
   CalendarDays,
@@ -22,7 +23,6 @@ import { ImmersiveOnboarding } from "@/components/ui/immersive-onboarding";
 
 type BannerTone = "success" | "warning" | "danger" | "info";
 
-const ONBOARDING_STORAGE_KEY = "frameid:onboarding-completed";
 const CHECKLIST_STORAGE_KEY = "frameid:onboarding-checklist";
 
 const onboardingCopy: Record<string, { label: string; description: string }> = {
@@ -33,10 +33,11 @@ const onboardingCopy: Record<string, { label: string; description: string }> = {
   album: { label: "معرض الصور", description: "أضف أعمالك الحقيقية داخل الألبومات." },
 };
 
-export function DashboardHomeClient({ siteUrl, statusLabel, checklist, lastModified, nextStepHref, nextStepLabel, nextStepTitle, nextStepDescription, subscription, subscriptionExperience, customerMessages, heroImageUrl, photographerName, isPublished }: DashboardViewModel) {
+export function DashboardHomeClient({ siteUrl, statusLabel, checklist, lastModified, nextStepHref, nextStepLabel, nextStepTitle, nextStepDescription, subscription, subscriptionExperience, customerMessages, heroImageUrl, photographerName, isPublished, showWelcome }: DashboardViewModel & { showWelcome: boolean }) {
   const [copied, setCopied] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [checklistHidden, setChecklistHidden] = useState(false);
+  const router = useRouter();
 
   const onboardingItems = useMemo(
     () => checklist
@@ -49,11 +50,11 @@ export function DashboardHomeClient({ siteUrl, statusLabel, checklist, lastModif
   const nextIncomplete = incompleteItems[0];
 
   useEffect(() => {
+    if (showWelcome) {
+      setShowOnboarding(true);
+      router.replace("/dashboard", { scroll: false });
+    }
     try {
-      const completed = window.localStorage.getItem(ONBOARDING_STORAGE_KEY);
-      if (!completed) {
-        setShowOnboarding(true);
-      }
       const saved = window.localStorage.getItem(CHECKLIST_STORAGE_KEY);
       if (saved) {
         const preferences = JSON.parse(saved) as { hidden?: boolean };
@@ -61,13 +62,9 @@ export function DashboardHomeClient({ siteUrl, statusLabel, checklist, lastModif
       }
     } catch {
     }
-  }, []);
+  }, [showWelcome, router]);
 
   const completeOnboarding = () => {
-    try {
-      window.localStorage.setItem(ONBOARDING_STORAGE_KEY, "true");
-    } catch {
-    }
     setShowOnboarding(false);
   };
 

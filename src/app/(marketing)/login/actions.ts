@@ -66,5 +66,5 @@ export async function loginAction(formData: FormData) {
     cookieStore.set(cookieToSet.name, cookieToSet.value, cookieToSet.options);
   }
 
-  redirect(redirectPath);
+  redirect(`${redirectPath}?welcome=1`);
 }

@@ -24,12 +24,19 @@ export const metadata: Metadata = {
 
 export const dynamic = "force-dynamic";
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
   const session = await getCurrentRequestSession();
 
   if (!session) {
     redirect("/login");
   }
+
+  const params = await searchParams;
+  const showWelcome = params.welcome === "1";
 
   const [
     packagesCount,
@@ -140,5 +147,5 @@ export default async function DashboardPage() {
     heroImageUrl,
   });
 
-  return <DashboardHomeClient {...dashboard} />;
+  return <DashboardHomeClient {...dashboard} showWelcome={showWelcome} />;
 }
