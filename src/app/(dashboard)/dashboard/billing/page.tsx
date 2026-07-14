@@ -43,9 +43,8 @@ export default async function BillingPage({
 
   const [plans, paymentRequest, paymentMethods, defaults, override, supportSettings] = await Promise.all([
     prisma.plan.findMany({
-      where: { isActive: true },
+      where: { isActive: true, billingInterval: { not: "unknown" } },
       orderBy: { priceAmount: "asc" },
-      take: 2,
     }),
     createBillingActivationService({
       repository: createPrismaBillingActivationRepository(prisma),
@@ -126,7 +125,7 @@ export default async function BillingPage({
         priceAmount: p.priceAmount,
         currency: p.currency,
         billingInterval: p.billingInterval,
-        features: p.features as string[],
+        features: p.features,
         isActive: p.isActive,
       }))}
       paymentMethods={paymentMethods}

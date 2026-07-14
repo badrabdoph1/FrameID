@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useMemo, useState, type ChangeEvent, type ReactNode } from "react";
-import { AlertTriangle, Check, CheckCircle2, Copy, CreditCard, Loader2, Package, Sparkles, Upload, X } from "lucide-react";
+import { AlertTriangle, Check, CheckCircle2, Copy, CreditCard, Loader2, Package, Upload, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { BuilderPageHeader } from "@/components/dashboard/builder-primitives";
@@ -110,7 +110,7 @@ type BillingClientProps = {
 
 type ActionResult = { success: true; draftId?: string } | { success: false; error: string };
 type CheckoutStep = 1 | 2 | 3;
-type FeatureSheetKind = "basic" | "pro";
+
 
 type StepConfig = {
   step: CheckoutStep;
@@ -133,8 +133,6 @@ const REQUEST_STATUS_LABELS: Record<string, string> = {
 
 const LOCKED_REQUEST_STATUSES = ["SUBMITTED", "PENDING", "UNDER_REVIEW", "APPROVED"];
 const SUPPORT_EMAIL = "support@frameid.app";
-const BASIC_PRICE_AMOUNT = 40;
-const BASIC_CURRENCY = "EGP";
 
 function billingIntervalLabel(value: string) {
   if (value === "yearly") return "سنوي";
@@ -143,60 +141,23 @@ function billingIntervalLabel(value: string) {
   return "شهري";
 }
 
-const BASIC_VISIBLE_FEATURES = [
-  "معرض خاص لكل عميل (رابط + كلمة مرور)",
-  "موقع احترافي كامل",
-  "صفحة أسعار وباقات",
-  "معرض أعمال",
-  "مساحة تخزين 1 GB",
-  "لينك واحد لكل شغلك",
-  "لوحة تحكم كاملة",
-  "تعديل الموقع في أي وقت",
-];
-
-const BASIC_EXTRA_FEATURES = [
-  "تصميم متجاوب ومحسن للموبايل",
-  "استضافة مجانية داخل منصة FrameID",
-  "شهادة SSL للرابط المنشور",
-  "تحديثات مجانية للمنصة",
-  "دعم فني من داخل لوحة التحكم",
-  "صفحات وبيانات التواصل",
-  "تحسين أساسي للظهور في محركات البحث",
-  "إدارة الباقات والأسعار من لوحة التحكم",
-  "رفع الصور والألبومات من لوحة التحكم",
-  "رابط عام جاهز للمشاركة مع العملاء",
-];
-
-const PRO_VISIBLE_FEATURES = [
-  "دومين مخصص",
-  "إزالة شعار FrameID",
-  "مساحة تخزين 10 GB",
-  "معرض خاص للعملاء بجودة أصلية",
-  "حجز المواعيد أونلاين",
-  "قوالب حصرية إضافية",
-  "إحصائيات متقدمة",
-  "دعم فني بأولوية",
-];
-
-const PRO_FUTURE_FEATURES = [
-  "Google Analytics",
-  "Meta Pixel",
-  "Google Search Console",
-  "Instagram Feed",
-  "WhatsApp API",
-  "Messenger Integration",
-  "فيديو داخل المعرض",
-  "معرض غير محدود",
-  "صفحات إضافية",
-  "Blog",
-  "Reviews",
-  "CRM",
-  "AI Features",
-  "Team Members",
-  "API",
-  "Automation للتسويق والمتابعة",
-  "تقارير تحميل ومشاهدة المعارض",
-];
+function normalizeFeatures(value: unknown): { description: string; badgeLabel: string; isPopular: boolean; featureLines: string[] } {
+  if (typeof value !== "object" || value === null) {
+    return { description: "", badgeLabel: "", isPopular: false, featureLines: [] };
+  }
+  const record = value as Record<string, unknown>;
+  const lines = Array.isArray(record.featureLines)
+    ? record.featureLines.map((item) => String(item).trim()).filter(Boolean)
+    : Array.isArray(record.features)
+      ? (record.features as unknown[]).map((item) => String(item).trim()).filter(Boolean)
+      : [];
+  return {
+    description: typeof record.description === "string" ? record.description : "",
+    badgeLabel: typeof record.badgeLabel === "string" ? record.badgeLabel : typeof record.badge === "string" ? record.badge : "",
+    isPopular: record.isPopular === true || record.popular === true,
+    featureLines: lines,
+  };
+}
 
 function getPaymentMethodLabel(method: string): string {
   return ({ INSTAPAY: "إنستا باي", VODAFONE_CASH: "فودافون كاش", STRIPE: "Stripe", PAYPAL: "PayPal" } as Record<string, string>)[method] ?? method;
@@ -228,22 +189,10 @@ function getSupportHref(receiptNumber: string): string {
   return `mailto:${SUPPORT_EMAIL}?subject=${subject}&body=${body}`;
 }
 
-function buildBasicPlan(plan: PlanData | undefined): PlanData | null {
-  if (!plan) return null;
-  return {
-    ...plan,
-    name: "الباقة الأساسية",
-    priceAmount: BASIC_PRICE_AMOUNT,
-    currency: BASIC_CURRENCY,
-  };
-}
-
 export function BillingClient({ session, plans, paymentMethods, paymentRequest, daysRemaining, subscriptionExperience, requested, draftId, error: urlError }: BillingClientProps) {
   const subscriptionStatus = session.subscription?.status ?? session.tenant.status;
   const requestLocked = Boolean(paymentRequest && LOCKED_REQUEST_STATUSES.includes(paymentRequest.status));
   const siteHref = session.site.slug ? `/p/${session.site.slug}` : "/dashboard";
-
-  const basicPlan = useMemo(() => buildBasicPlan(plans.find((plan) => plan.isActive)), [plans]);
   const initialMethod = useMemo(() => paymentMethods.find((method) => method.paymentMethod === paymentRequest?.method) ?? null, [paymentMethods, paymentRequest?.method]);
   const initialAccount = useMemo(() => initialMethod?.accounts.find((account) => account.id === paymentRequest?.paymentAccountId) ?? initialMethod?.accounts[0] ?? null, [initialMethod, paymentRequest?.paymentAccountId]);
 
@@ -255,7 +204,7 @@ export function BillingClient({ session, plans, paymentMethods, paymentRequest, 
   const [proofUploaded, setProofUploaded] = useState(Boolean(paymentRequest?.proofAssetId));
   const [fileError, setFileError] = useState<string | null>(null);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
-  const [featureSheet, setFeatureSheet] = useState<FeatureSheetKind | null>(null);
+  const [featurePlan, setFeaturePlan] = useState<PlanData | null>(null);
   const [step, setStep] = useState<CheckoutStep>(() => getInitialStep(paymentRequest, Boolean(paymentRequest?.id ?? draftId), Boolean(paymentRequest?.proofAssetId)));
 
   const [createState, createAction, createPending] = useActionState<ActionResult | null, FormData>(async (_prev, fd) => createPaymentDraftAction(fd), null);
@@ -278,7 +227,7 @@ export function BillingClient({ session, plans, paymentMethods, paymentRequest, 
   const [submitState, submitAction, submitPending] = useActionState<ActionResult | null, FormData>(async (_prev, fd) => submitPaymentRequestAction(fd), null);
   const [cancelState, cancelAction, cancelPending] = useActionState<ActionResult | null, FormData>(async (_prev, fd) => cancelPaymentRequestAction(fd), null);
 
-  const selectedPlan = selectedPlanId && basicPlan?.id === selectedPlanId ? basicPlan : undefined;
+  const selectedPlan = useMemo(() => plans.find((p) => p.id === selectedPlanId), [plans, selectedPlanId]);
   const selectedMethod = useMemo(() => paymentMethods.find((method) => method.id === selectedMethodId) ?? initialMethod, [paymentMethods, selectedMethodId, initialMethod]);
   const selectedAccount = useMemo(() => selectedMethod?.accounts.find((account) => account.id === selectedAccountId) ?? selectedMethod?.accounts[0] ?? initialAccount, [selectedMethod, selectedAccountId, initialAccount]);
 
@@ -377,7 +326,7 @@ export function BillingClient({ session, plans, paymentMethods, paymentRequest, 
       <BuilderPageHeader
         eyebrow="التفعيل"
         title={subscriptionStatus === "ACTIVE" ? "اشتراكك نشط" : "تفعيل الاشتراك"}
-        description={subscriptionStatus === "ACTIVE" ? "اشتراكك مفعل ويمكنك استخدام كل الميزات." : "ابدأ بالباقة الأساسية الآن، واطلب التفعيل بعد تحويل الاشتراك الشهري."}
+        description={subscriptionStatus === "ACTIVE" ? "اشتراكك مفعل ويمكنك استخدام كل الميزات." : "اختار الباقة المناسبة لك واطلب التفعيل بعد تحويل المبلغ."}
       />
 
       {urlError ? <Alert tone="danger" title="حدث خطأ" text={urlError === "no-subscription" ? "لا يوجد اشتراك نشط. يرجى إنشاء الموقع أولاً." : urlError} /> : null}
@@ -402,20 +351,22 @@ export function BillingClient({ session, plans, paymentMethods, paymentRequest, 
             <AnimatedStepPanel stageKey={stageKey}>
               {step === 1 ? (
                 <CheckoutStage title="اختار الباقة" icon={<Package className="size-4" />}>
-                  {basicPlan ? (
-                    <div className="grid gap-3 lg:grid-cols-[1.06fr_0.94fr]">
-                      <BasicPlanCard
-                        plan={basicPlan}
-                        selected={selectedPlanId === basicPlan.id}
-                        disabled={Boolean(draftState || requestLocked)}
-                        onSelect={() => handlePlanSelect(basicPlan.id)}
-                        onShowDetails={() => setFeatureSheet("basic")}
-                      />
-                      <FutureProPlanCard onShowDetails={() => setFeatureSheet("pro")} />
+                  {plans.length > 0 ? (
+                    <div className="grid gap-3 lg:grid-cols-2">
+                      {plans.map((plan) => (
+                        <PlanCard
+                          key={plan.id}
+                          plan={plan}
+                          selected={selectedPlanId === plan.id}
+                          disabled={Boolean(draftState || requestLocked)}
+                          onSelect={() => handlePlanSelect(plan.id)}
+                          onShowDetails={() => setFeaturePlan(plan)}
+                        />
+                      ))}
                     </div>
                   ) : <Alert tone="warning" title="لا توجد باقات" text="لا توجد باقات مفعلة حاليًا. تواصل مع الدعم الفني." />}
                   <Actions>
-                    <Button type="button" variant="luxury" disabled={!selectedPlan} onClick={() => setStep(2)}>متابعة بالباقة الأساسية</Button>
+                    <Button type="button" variant="luxury" disabled={!selectedPlan} onClick={() => setStep(2)}>متابعة</Button>
                   </Actions>
                 </CheckoutStage>
               ) : null}
@@ -505,7 +456,7 @@ export function BillingClient({ session, plans, paymentMethods, paymentRequest, 
         </section>
       ) : null}
 
-      {featureSheet ? <FeatureBottomSheet kind={featureSheet} onClose={() => setFeatureSheet(null)} /> : null}
+      {featurePlan ? <FeatureBottomSheet plan={featurePlan} onClose={() => setFeaturePlan(null)} /> : null}
     </main>
   );
 }
@@ -593,63 +544,36 @@ function CheckoutStage({ title, icon, children }: { title: string; icon: ReactNo
   );
 }
 
-function BasicPlanCard({ plan, selected, disabled, onSelect, onShowDetails }: { plan: PlanData; selected: boolean; disabled: boolean; onSelect: () => void; onShowDetails: () => void }) {
+function PlanCard({ plan, selected, disabled, onSelect, onShowDetails }: { plan: PlanData; selected: boolean; disabled: boolean; onSelect: () => void; onShowDetails: () => void }) {
+  const visual = normalizeFeatures(plan.features);
   const intervalText = billingIntervalLabel(plan.billingInterval);
+  const badge = visual.isPopular ? visual.badgeLabel || "الأكثر طلبًا" : visual.badgeLabel;
   return (
     <article className={`relative overflow-hidden rounded-[1.65rem] border p-4 text-right shadow-2xl shadow-amber-950/20 ${selected ? "border-amber-300/75 bg-amber-500/12" : "border-amber-300/30 bg-[linear-gradient(145deg,rgba(243,207,115,0.13),rgba(255,255,255,0.035))]"}`}>
       <div className="pointer-events-none absolute inset-x-6 top-0 h-px bg-gradient-to-l from-transparent via-amber-200/70 to-transparent" />
       <div className="flex items-start justify-between gap-3">
         <div>
-          <span className="inline-flex rounded-full border border-amber-200/24 bg-amber-200/10 px-3 py-1 text-[0.68rem] font-black text-[#f3cf73]">الأكثر مناسبة للبداية</span>
-          <h3 className="mt-3 text-xl font-black text-[#fff7e8]">الباقة الأساسية</h3>
-          <p className="mt-1 text-xs font-bold leading-5 text-white/45">كل ما تحتاجه لنشر موقعك واستقبال عملائك.</p>
+          {badge ? <span className="inline-flex rounded-full border border-amber-200/24 bg-amber-200/10 px-3 py-1 text-[0.68rem] font-black text-[#f3cf73]">{badge}</span> : null}
+          <h3 className="mt-3 text-xl font-black text-[#fff7e8]">{plan.name}</h3>
+          {visual.description ? <p className="mt-1 text-xs font-bold leading-5 text-white/45">{visual.description}</p> : null}
         </div>
         {selected ? <span className="inline-flex items-center gap-1 rounded-full bg-emerald-300 px-2.5 py-1 text-[0.68rem] font-black text-black"><Check size={12} />مختارة</span> : null}
       </div>
 
       <div className="mt-4 flex items-end gap-2">
-        <strong className="text-4xl font-black text-[#f3cf73]">40</strong>
-        <span className="pb-1 text-sm font-black text-white/50">{intervalText ? `جنيه / ${intervalText}` : "جنيه"}</span>
+        <strong className="text-4xl font-black text-[#f3cf73]">{plan.priceAmount.toLocaleString("ar-EG")}</strong>
+        <span className="pb-1 text-sm font-black text-white/50">{intervalText ? `${plan.currency} / ${intervalText}` : plan.currency}</span>
       </div>
 
-      <ul className="mt-4 grid gap-2 text-sm font-bold text-white/70">
-        {BASIC_VISIBLE_FEATURES.map((feature) => <FeatureItem key={feature}>{feature}</FeatureItem>)}
-      </ul>
+      {visual.featureLines.length > 0 ? (
+        <ul className="mt-4 grid gap-2 text-sm font-bold text-white/70">
+          {visual.featureLines.slice(0, 5).map((feature, i) => <FeatureItem key={`${feature}-${i}`}>{feature}</FeatureItem>)}
+        </ul>
+      ) : null}
 
       <div className="mt-4 grid gap-2 sm:grid-cols-2">
-        <button type="button" disabled={disabled} onClick={onSelect} className={`min-h-11 rounded-2xl px-4 text-sm font-black transition ${selected ? "bg-emerald-300 text-black" : "bg-[#f3cf73] text-[#17120a] hover:bg-[#ffe08a]"} ${disabled ? "cursor-not-allowed opacity-60" : ""}`}>{selected ? "تم اختيار الباقة" : "اختيار الباقة"}</button>
-        <button type="button" onClick={onShowDetails} className="min-h-11 rounded-2xl border border-white/12 bg-white/[0.045] px-4 text-sm font-black text-white/75 transition hover:border-amber-300/30 hover:text-white">عرض كل المميزات</button>
-      </div>
-    </article>
-  );
-}
-
-function FutureProPlanCard({ onShowDetails }: { onShowDetails: () => void }) {
-  return (
-    <article className="relative overflow-hidden rounded-[1.65rem] border border-white/10 bg-white/[0.025] p-4 text-right opacity-95">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.08),transparent_34%)]" aria-hidden />
-      <div className="relative">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <span className="inline-flex rounded-full border border-sky-300/22 bg-sky-300/10 px-3 py-1 text-[0.68rem] font-black text-sky-200">قريبًا</span>
-            <h3 className="mt-3 text-xl font-black text-[#fff7e8]">Pro</h3>
-            <p className="mt-1 text-xs font-bold leading-5 text-white/42">إصدار مستقبلي للمصورين الذين يحتاجون توسعًا أكبر.</p>
-          </div>
-          <Sparkles className="size-6 text-sky-200/70" />
-        </div>
-
-        <div className="mt-4 flex items-end gap-2">
-          <strong className="text-3xl font-black text-white/70">قريبًا</strong>
-        </div>
-
-        <ul className="mt-4 grid gap-2 text-sm font-bold text-white/58">
-          {PRO_VISIBLE_FEATURES.map((feature) => <FeatureItem key={feature} muted>{feature}</FeatureItem>)}
-        </ul>
-
-        <div className="mt-4 grid gap-2">
-          <button type="button" disabled className="min-h-11 cursor-not-allowed rounded-2xl border border-white/10 bg-white/[0.035] px-4 text-sm font-black text-white/32">الشراء غير متاح حاليًا</button>
-          <button type="button" onClick={onShowDetails} className="min-h-11 rounded-2xl border border-sky-300/18 bg-sky-300/8 px-4 text-sm font-black text-sky-100 transition hover:bg-sky-300/12">عرض كل المميزات القادمة</button>
-        </div>
+        <button type="button" disabled={disabled} onClick={onSelect} className={`min-h-11 rounded-2xl px-4 text-sm font-black transition ${selected ? "bg-emerald-300 text-black" : "bg-[#f3cf73] text-[#17120a] hover:bg-[#ffe08a]"} ${disabled ? "cursor-not-allowed opacity-60" : ""}`}>{selected ? "تم الاختيار" : "اختيار الباقة"}</button>
+        <button type="button" onClick={onShowDetails} className="min-h-11 rounded-2xl border border-white/12 bg-white/[0.045] px-4 text-sm font-black text-white/75 transition hover:border-amber-300/30 hover:text-white">عرض المميزات</button>
       </div>
     </article>
   );
@@ -659,11 +583,10 @@ function FeatureItem({ children, muted = false }: { children: ReactNode; muted?:
   return <li className="flex gap-2"><CheckCircle2 className={`mt-0.5 size-4 shrink-0 ${muted ? "text-sky-200/60" : "text-emerald-300"}`} /> <span>{children}</span></li>;
 }
 
-function FeatureBottomSheet({ kind, onClose }: { kind: FeatureSheetKind; onClose: () => void }) {
-  const isPro = kind === "pro";
-  const title = isPro ? "كل المميزات القادمة في Pro" : "كل مميزات الباقة الأساسية";
-  const description = isPro ? "هذه أفكار ومميزات مستقبلية مقترحة، وليست متاحة حاليًا داخل الاشتراك." : "هذه مميزات متاحة فعليًا في المنصة أو ضمن تجربة استخدام FrameID الحالية.";
-  const features = isPro ? PRO_FUTURE_FEATURES : [...BASIC_VISIBLE_FEATURES, ...BASIC_EXTRA_FEATURES];
+function FeatureBottomSheet({ plan, onClose }: { plan: PlanData; onClose: () => void }) {
+  const visual = normalizeFeatures(plan.features);
+  const title = `مميزات ${plan.name}`;
+  const features = visual.featureLines.length > 0 ? visual.featureLines : ["لا توجد مميزات مضافة"];
 
   return (
     <div className="fixed inset-0 z-50 grid items-end bg-black/65 p-2 backdrop-blur-sm sm:items-center sm:p-4" role="dialog" aria-modal="true" aria-label={title}>
@@ -671,14 +594,13 @@ function FeatureBottomSheet({ kind, onClose }: { kind: FeatureSheetKind; onClose
       <section className="relative mx-auto grid max-h-[86dvh] w-full max-w-2xl gap-4 overflow-hidden rounded-t-[1.8rem] border border-white/12 bg-[#10131a] p-4 shadow-2xl sm:rounded-[1.8rem] sm:p-5">
         <header className="flex items-start justify-between gap-3">
           <div>
-            <p className={`text-[0.68rem] font-black uppercase tracking-[0.2em] ${isPro ? "text-sky-200" : "text-[#f3cf73]"}`}>{isPro ? "Future Roadmap" : "Available Now"}</p>
+            <p className="text-[0.68rem] font-black uppercase tracking-[0.2em] text-[#f3cf73]">Available Now</p>
             <h3 className="mt-1 text-xl font-black text-[#fff7e8]">{title}</h3>
-            <p className="mt-1 text-xs font-bold leading-6 text-white/48">{description}</p>
           </div>
           <button type="button" onClick={onClose} className="grid size-10 shrink-0 place-items-center rounded-2xl border border-white/10 bg-white/[0.04] text-white/70 hover:bg-white/[0.08]"><X className="size-5" /></button>
         </header>
         <div className="grid max-h-[58dvh] gap-2 overflow-y-auto pr-1 sm:grid-cols-2">
-          {features.map((feature) => <div key={feature} className="flex gap-2 rounded-2xl border border-white/8 bg-white/[0.035] p-3 text-sm font-bold leading-6 text-white/72"><CheckCircle2 className={`mt-1 size-4 shrink-0 ${isPro ? "text-sky-200" : "text-emerald-300"}`} />{feature}</div>)}
+          {features.map((feature) => <div key={feature} className="flex gap-2 rounded-2xl border border-white/8 bg-white/[0.035] p-3 text-sm font-bold leading-6 text-white/72"><CheckCircle2 className="mt-1 size-4 shrink-0 text-emerald-300" />{feature}</div>)}
         </div>
       </section>
     </div>
@@ -766,8 +688,8 @@ function PaymentInstructionCard({ account, method, fallbackMethod, copied, onCop
 }
 
 function PaymentAmountCard({ plan, request }: { plan: PlanData | undefined; request: PaymentRequestData | null }) {
-  const amount = (request?.amount ?? plan?.priceAmount ?? BASIC_PRICE_AMOUNT).toLocaleString();
-  const currency = request?.currency ?? plan?.currency ?? BASIC_CURRENCY;
+  const amount = (request?.amount ?? plan?.priceAmount ?? 0).toLocaleString("ar-EG");
+  const currency = request?.currency ?? plan?.currency ?? "EGP";
   return (
     <div className="overflow-hidden rounded-3xl border border-white/[0.08] bg-gradient-to-b from-white/[0.04] to-white/[0.01]">
       <div className="flex items-center justify-between px-4 py-3 sm:px-5">
@@ -819,7 +741,7 @@ function ProofSubmitCard({ proofFile, proofUploaded, pending, canSubmit, action,
 }
 
 function FinalSummary({ plan, method, account, uploadSucceeded, request }: { plan: PlanData | undefined; method: PaymentMethodData | null | undefined; account: PaymentAccountData | null | undefined; uploadSucceeded: boolean; request: PaymentRequestData | null }) {
-  return <div className="grid gap-2 rounded-2xl border border-white/[0.07] bg-white/[0.025] p-4 text-sm text-white/55"><p>الباقة: <b className="text-white">{plan?.name ?? "الباقة الأساسية"}</b></p><p>وسيلة الدفع: <b className="text-white">{method?.label ?? getPaymentMethodLabel(request?.method ?? "—")}</b></p><p>الحساب: <b className="text-white">{account?.phoneNumber ?? account?.accountNumber ?? "—"}</b></p><p>إثبات الدفع: <b className={uploadSucceeded ? "text-emerald-300" : "text-amber-300"}>{uploadSucceeded ? "مرفوع" : "غير مرفوع"}</b></p></div>;
+  return <div className="grid gap-2 rounded-2xl border border-white/[0.07] bg-white/[0.025] p-4 text-sm text-white/55"><p>الباقة: <b className="text-white">{plan?.name ?? "—"}</b></p><p>وسيلة الدفع: <b className="text-white">{method?.label ?? getPaymentMethodLabel(request?.method ?? "—")}</b></p><p>الحساب: <b className="text-white">{account?.phoneNumber ?? account?.accountNumber ?? "—"}</b></p><p>إثبات الدفع: <b className={uploadSucceeded ? "text-emerald-300" : "text-amber-300"}>{uploadSucceeded ? "مرفوع" : "غير مرفوع"}</b></p></div>;
 }
 
 function SuccessReceiptCard({ receiptNumber, status, rejectionReason, copied, dashboardHref, siteHref, onCopy }: { receiptNumber: string; status: string; rejectionReason: string | null; copied: boolean; dashboardHref: string; siteHref: string; onCopy: () => void }) {

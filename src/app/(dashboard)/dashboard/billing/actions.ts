@@ -20,8 +20,7 @@ const EDITABLE_PAYMENT_STATUSES: PaymentStatus[] = ["DRAFT"];
 const ACTIVE_PAYMENT_STATUSES: PaymentStatus[] = ["DRAFT", "SUBMITTED", "PENDING", "UNDER_REVIEW"];
 const MAX_PROOF_SIZE_BYTES = 5 * 1024 * 1024;
 const ALLOWED_PROOF_TYPES = ["image/jpeg", "image/png", "image/webp"];
-const BASIC_PLAN_PRICE_AMOUNT = 40;
-const BASIC_PLAN_CURRENCY = "EGP";
+const FALLBACK_CURRENCY = "EGP";
 
 function getService() {
   return createBillingActivationService({ repository: createPrismaBillingActivationRepository(prisma) });
@@ -58,17 +57,16 @@ async function assertEditableOwnedDraft(draftId: string, tenantId: string) {
 }
 
 async function validatePlan(planId: string) {
-  const basicPlan = await prisma.plan.findFirst({
-    where: { isActive: true },
-    orderBy: { priceAmount: "asc" },
-    select: { id: true },
+  const plan = await prisma.plan.findUnique({
+    where: { id: planId },
+    select: { id: true, priceAmount: true, currency: true, isActive: true },
   });
 
-  if (!basicPlan || basicPlan.id !== planId) {
-    throw new Error("الباقة الأساسية فقط متاحة للشراء حاليًا");
+  if (!plan || !plan.isActive) {
+    throw new Error("الباقة غير متاحة للشراء");
   }
 
-  return { id: basicPlan.id, priceAmount: BASIC_PLAN_PRICE_AMOUNT, currency: BASIC_PLAN_CURRENCY };
+  return { id: plan.id, priceAmount: plan.priceAmount, currency: plan.currency || FALLBACK_CURRENCY };
 }
 
 async function validatePaymentAccount(method: PaymentMethod, accountId: string) {
