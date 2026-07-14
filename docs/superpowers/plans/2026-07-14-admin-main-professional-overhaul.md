@@ -45,7 +45,7 @@
 **Interfaces:**
 - Produces: `AdminRouteDefinition`, `adminRoutes`, `getAdminRoute(pathname)`, `getAdminBreadcrumbs(pathname)`, `adminSections`, `allAdminLinks`.
 
-- [ ] **Step 1: اكتب اختبار العقد**
+- [x] **Step 1: اكتب اختبار العقد**
 
 ```tsx
 import { describe, expect, it } from "vitest";
@@ -69,12 +69,12 @@ describe("admin navigation contract", () => {
 });
 ```
 
-- [ ] **Step 2: شغّل الاختبار وتحقق من فشله**
+- [x] **Step 2: شغّل الاختبار وتحقق من فشله**
 
 Run: `npm test -- tests/admin-navigation-contract.test.tsx`
 Expected: FAIL لأن السجل والدوال الجديدة غير موجودة.
 
-- [ ] **Step 3: وسّع عقد التنقل**
+- [x] **Step 3: وسّع عقد التنقل**
 
 ```ts
 export type AdminRouteDefinition = {
@@ -93,12 +93,12 @@ export function getAdminRoute(pathname: string): AdminRouteDefinition | undefine
 export function getAdminBreadcrumbs(pathname: string): Array<{ label: string; href: string }>;
 ```
 
-- [ ] **Step 4: شغّل عقد التنقل واختبارات الروابط**
+- [x] **Step 4: شغّل عقد التنقل واختبارات الروابط**
 
 Run: `npm test -- tests/admin-navigation-contract.test.tsx tests/admin-center-links.test.tsx tests/admin-issue-navigation.test.tsx`
 Expected: PASS.
 
-- [ ] **Step 5: حدّث التقدم واعمل commit**
+- [x] **Step 5: حدّث التقدم واعمل commit**
 
 ```bash
 git add src/modules/admin/navigation.ts tests/admin-navigation-contract.test.tsx docs/progress/2026-07-14-admin-main-overhaul.md
@@ -342,4 +342,3 @@ Commit: `feat: rebuild admin command center`.
 - [ ] تحقق من keyboard focus وEscape وRTL وعدم وجود overflow أو روابط ميتة.
 - [ ] اكتب التقرير النهائي بما نُفذ، الأخطاء التي أصلحت، والاقتراحات المؤجلة فقط عندما تتطلب قدرة منتج أو قاعدة بيانات جديدة.
 - [ ] اعمل commit بعنوان `docs: finalize admin overhaul verification`.
-
