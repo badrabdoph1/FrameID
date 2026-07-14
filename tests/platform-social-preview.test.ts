@@ -36,6 +36,6 @@ describe("platform social preview", () => {
       ...DEFAULT_PLATFORM_SOCIAL_PREVIEW,
       enabled: false,
       imageUrl: "https://example.com/social.jpg",
-    })).toBe("/frameid-social-preview.png");
+    })).toBe("/opengraph-image");
   });
 });

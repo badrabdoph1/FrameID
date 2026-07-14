@@ -63,6 +63,7 @@ export async function PATCH(request: Request) {
     revalidateTag(PLATFORM_SOCIAL_PREVIEW_CACHE_TAG);
     revalidatePath("/", "layout");
     revalidatePath("/templates");
+    revalidatePath("/admin/social-preview");
     revalidatePath("/admin/settings/social-preview");
 
     return NextResponse.json({

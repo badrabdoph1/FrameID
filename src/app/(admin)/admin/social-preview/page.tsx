@@ -1,22 +1,25 @@
-import { Share2 } from "lucide-react";
-
-import { AdminPageShell } from "@/components/layout/admin-page-shell";
-import { requireAdminPermission } from "@/modules/admin/admin-permission-guards";
-import { loadPlatformSocialPreview } from "@/modules/seo/platform-social-preview";
 import { SocialPreviewForm } from "@/app/(admin)/admin/social-preview/social-preview-form";
+import { AdminPageShell } from "@/components/layout/admin-page-shell";
+import { getContent } from "@/lib/content";
+import { requireAdminPermission } from "@/modules/admin/admin-permission-guards";
+import { getPlatformSocialPreviewSettings } from "@/modules/social-preview/platform-social-preview-settings";
+import { PLATFORM_DEFAULT_SOCIAL_IMAGE } from "@/modules/social-preview/social-preview";
 
 export const dynamic = "force-dynamic";
 
 type Props = {
-  searchParams: Promise<{ saved?: string }>;
+  searchParams: Promise<{ saved?: string; error?: string }>;
 };
 
 export default async function AdminSocialPreviewPage({ searchParams }: Props) {
   await requireAdminPermission("templates", "view");
-  const [settings, params] = await Promise.all([
-    loadPlatformSocialPreview(),
-    searchParams,
-  ]);
+  const params = await searchParams;
+  const settings = await getPlatformSocialPreviewSettings();
+  const homepage = getContent("marketing/homepage");
+  const defaultTitle = `${homepage.hero.headline} ${homepage.hero.headlineHighlight}`.trim();
+  const defaultDescription = homepage.hero.subheadline;
+  const heroVersion = encodeURIComponent(homepage._updatedAt || String(homepage._version));
+  const defaultImageUrl = `${PLATFORM_DEFAULT_SOCIAL_IMAGE}&content=${heroVersion}`;
 
   return (
     <AdminPageShell
@@ -29,26 +32,22 @@ export default async function AdminSocialPreviewPage({ searchParams }: Props) {
       ]}
     >
       {params.saved ? (
-        <div role="status" className="rounded-2xl border border-emerald-400/20 bg-emerald-400/10 px-4 py-3 text-sm font-black text-emerald-300">
+        <div role="status" className="mb-5 rounded-2xl border border-emerald-400/20 bg-emerald-400/10 px-4 py-3 text-sm font-black text-emerald-300">
           تم حفظ إعدادات معاينة المشاركة وتحديث Metadata الخاصة بالمنصة.
         </div>
       ) : null}
-
-      <section className="rounded-3xl border border-amber-300/18 bg-amber-300/[0.045] p-4">
-        <div className="flex items-start gap-3">
-          <span className="grid size-10 shrink-0 place-items-center rounded-2xl bg-amber-300/12 text-[#f3cf73]">
-            <Share2 className="size-5" />
-          </span>
-          <div>
-            <h2 className="text-base font-black text-[#fff7e8]">مصدر واحد لمعاينة المنصة</h2>
-            <p className="mt-1 text-xs font-bold leading-6 text-white/48">
-              عند التفعيل تستخدم صفحات المنصة الصورة والعنوان والوصف المحفوظة هنا. عند التعطيل يعود النظام إلى صورة Open Graph الحالية تلقائيًا دون كسر SEO أو Twitter Cards.
-            </p>
-          </div>
+      {params.error ? (
+        <div className="mb-5 rounded-2xl border border-red-300/20 bg-red-300/10 px-4 py-3 text-sm font-black text-red-200">
+          {params.error}
         </div>
-      </section>
+      ) : null}
 
-      <SocialPreviewForm settings={settings} />
+      <SocialPreviewForm
+        settings={settings}
+        defaultTitle={defaultTitle}
+        defaultDescription={defaultDescription}
+        defaultImageUrl={defaultImageUrl}
+      />
     </AdminPageShell>
   );
 }
