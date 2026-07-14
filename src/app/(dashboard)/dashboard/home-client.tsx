@@ -334,46 +334,45 @@ function LifecycleStatusCard({
   const toneText = tone === "danger" ? "text-red-100" : tone === "warning" ? "text-amber-100" : "text-emerald-100";
   const barClass = tone === "danger" ? "bg-red-400" : tone === "warning" ? "bg-amber-400" : "bg-emerald-400";
   const buttonClass = tone === "danger" ? "bg-red-400 hover:bg-red-300 text-white" : tone === "warning" ? "bg-amber-400 hover:bg-amber-300 text-[#17120a]" : "bg-emerald-400 hover:bg-emerald-300 text-[#17120a]";
+  const daysText =
+    experience.timer.enabled && experience.timer.daysRemaining !== null
+      ? `متبقي ${experience.timer.daysRemaining} يوم`
+      : subscription.daysRemaining === null
+        ? "اشتراك دائم"
+        : `متبقي ${subscription.daysRemaining} يوم`;
   return (
-    <section className={`grid gap-2.5 rounded-2xl border p-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] sm:grid-cols-[1fr_auto] sm:items-center sm:gap-3 sm:p-3 ${toneClasses}`}>
-      <div className="flex items-center gap-2.5">
-        <span className={`grid size-8 shrink-0 place-items-center rounded-lg bg-white/8 ${toneText}`}>
-          <CalendarDays className="size-4" aria-hidden />
-        </span>
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
-            <span className="text-[0.72rem] font-black text-[#fff7e8] sm:text-xs">{experience.message.title}</span>
-            <span className="text-[0.6rem] font-bold text-white/35">·</span>
-            <span className="text-[0.6rem] font-bold text-white/50">{subscription.planName ?? subscription.accountType}</span>
-          </div>
-          <p className="mt-0.5 text-[0.65rem] font-bold leading-5 text-white/60 sm:text-[0.7rem]">
+    <section className={`flex flex-wrap items-center gap-2 rounded-xl border p-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] sm:rounded-2xl sm:gap-3 sm:p-2.5 ${toneClasses}`}>
+      <span className={`grid size-7 shrink-0 place-items-center rounded-md bg-white/8 ${toneText} sm:size-8 sm:rounded-lg`}>
+        <CalendarDays className="size-3.5 sm:size-4" aria-hidden />
+      </span>
+      <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap items-center gap-x-1 gap-y-0">
+          <span className="text-[0.65rem] font-black text-[#fff7e8] sm:text-xs">{experience.message.title}</span>
+          <span className="mx-1 text-[0.55rem] font-bold text-white/30">·</span>
+          <span className="text-[0.6rem] font-bold text-white/45">{subscription.planName ?? subscription.accountType}</span>
+          <span className="mx-1 text-[0.55rem] font-bold text-white/25">·</span>
+          <span className="text-[0.6rem] font-bold text-white/50">{daysText}</span>
+          <span className="mx-1 text-[0.55rem] font-bold text-white/25">·</span>
+          <span className="text-[0.6rem] font-bold text-white/40">ينتهي: {endDate}</span>
+        </div>
+        {experience.message.description ? (
+          <p className="mt-0.5 text-[0.6rem] font-bold leading-4 text-white/55 sm:text-[0.65rem]">
             {experience.message.description}
           </p>
-          <div className="mt-1.5 flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
-            <span className="text-[0.6rem] font-bold text-white/40 sm:text-[0.65rem]">
-              {experience.timer.enabled && experience.timer.daysRemaining !== null
-                ? `متبقي ${experience.timer.daysRemaining} يوم`
-                : subscription.daysRemaining === null
-                  ? "اشتراك دائم"
-                  : `متبقي ${subscription.daysRemaining} يوم`}
-            </span>
-            <span className="text-[0.6rem] font-bold text-white/25">·</span>
-            <span className="text-[0.6rem] font-bold text-white/35 sm:text-[0.65rem]">ينتهي: {endDate}</span>
-          </div>
-        </div>
+        ) : null}
       </div>
-      <div className="flex items-center gap-2.5 sm:gap-3">
-        <div className="flex flex-1 items-center gap-1.5 sm:flex-none">
-          <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-black/30 sm:w-20">
+      <div className="flex items-center gap-2 sm:gap-2.5">
+        <div className="flex items-center gap-1.5">
+          <div className="h-1 w-16 overflow-hidden rounded-full bg-black/30 sm:w-20 sm:h-1.5">
             <span className={`block h-full rounded-full transition-all ${barClass}`} style={{ width: `${subscription.progressPercent ?? 100}%` }} />
           </div>
-          <span className={`text-[0.65rem] font-black ${toneText}`}>{subscription.progressPercent ?? 0}%</span>
+          <span className={`text-[0.6rem] font-black ${toneText}`}>{subscription.progressPercent ?? 0}%</span>
         </div>
         {experience.action.visible && experience.action.href ? (
           <Link
             href={experience.action.href}
             target={experience.action.target}
-            className={`inline-flex min-h-8 shrink-0 items-center justify-center rounded-lg px-3 text-[0.65rem] font-black no-underline transition sm:min-h-9 sm:px-3.5 sm:text-xs ${buttonClass}`}
+            className={`inline-flex min-h-7 shrink-0 items-center justify-center rounded-md px-2.5 text-[0.6rem] font-black no-underline transition sm:min-h-8 sm:rounded-lg sm:px-3 sm:text-xs ${buttonClass}`}
           >
             {experience.action.label}
           </Link>
