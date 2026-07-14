@@ -108,6 +108,15 @@
     body {
       padding-bottom: calc(4rem + env(safe-area-inset-bottom));
     }
+
+    .admin-auth-page {
+      margin-bottom: calc(-4rem - env(safe-area-inset-bottom));
+      padding-bottom: calc(5rem + env(safe-area-inset-bottom));
+    }
+
+    .admin-dark-shell {
+      margin-bottom: calc(-4rem - env(safe-area-inset-bottom));
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {

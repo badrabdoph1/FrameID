@@ -349,7 +349,7 @@ async function getSearchGroups(query: string): Promise<ResultGroup[]> {
     {
       id: "customers",
       title: "العملاء",
-      description: "Tenants، أسماء الاستوديوهات، وأصحاب الحسابات.",
+      description: "العملاء وأسماء الاستوديوهات وأصحاب الحسابات.",
       icon: Users,
       results: customers.map((customer) => ({
         id: customer.id,
@@ -466,7 +466,7 @@ async function getSearchGroups(query: string): Promise<ResultGroup[]> {
     {
       id: "errors",
       title: "الأخطاء",
-      description: "Error Center، الأكواد، الرسائل، والمسارات.",
+      description: "مركز الأخطاء والأكواد والرسائل والمسارات.",
       icon: Activity,
       results: errors.map((error) => ({
         id: error.id,
@@ -541,7 +541,7 @@ export default async function AdminSearchPage({ searchParams }: Props) {
 
   return (
     <AdminPageShell
-      badge="Command Center"
+      badge="القيادة"
       title="البحث الشامل"
       description="ابحث في العملاء، المواقع، المدفوعات، الاشتراكات، القوالب، الأخطاء، التدقيق، والنسخ الاحتياطي من مكان واحد."
       breadcrumbs={[{ label: "القيادة", href: "/admin" }, { label: "البحث الشامل" }]}
@@ -599,7 +599,7 @@ function SearchStart() {
     <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-5">
       <h2 className="text-base font-black text-[#fff7e8]">نقطة دخول موحدة للوحة الإدارة</h2>
       <p className="mt-2 max-w-3xl text-sm font-bold leading-7 text-white/52">
-        الهدف من الصفحة دي إن الأدمن يوصل لأي كيان مهم في أقل من ثواني بدل التنقل بين صفحات كثيرة. هذه أول طبقة فعلية من Command Center، ويمكن لاحقًا ربطها بـ Command Palette مباشر.
+        الهدف من الصفحة أن يصل الأدمن لأي كيان مهم خلال ثوانٍ بدل التنقل بين صفحات كثيرة. النتائج روابط مباشرة إلى مكان العمل الصحيح.
       </p>
       <div className="mt-4 flex flex-wrap gap-2">
         {examples.map((example) => (

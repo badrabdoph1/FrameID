@@ -157,21 +157,11 @@ export function TemplateManager({ templates, themes, message }: TemplateManagerP
           <div>
             <p className="text-xs font-black text-[#f3cf73]">إدارة القوالب والاستثناءات</p>
             <h2 className="mt-1 text-lg font-black text-[#fff7e8]">القوالب الجاهزة</h2>
-            <p className="mt-1 text-xs font-bold leading-6 text-white/42">كل قالب يرث Starter Content Defaults تلقائيًا. استخدم Override فقط عندما يحتاج القالب قيمة مختلفة فعلًا.</p>
+            <p className="mt-1 text-xs font-bold leading-6 text-white/42">كل قالب يرث محتوى البداية المشترك تلقائيًا. استخدم الاستثناء فقط عندما يحتاج القالب قيمة مختلفة فعلًا.</p>
           </div>
           <button type="button" onClick={() => setShowCreate((value) => !value)} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-[#f3cf73] px-4 text-sm font-black text-[#17120a]"><Plus className="size-4" /> قالب جديد</button>
         </div>
       </section>
-
-      {showCreate ? (
-        <form action={createTemplateAction} className="grid gap-3 rounded-3xl border border-amber-300/20 bg-amber-300/[0.055] p-4 sm:grid-cols-2">
-          <div className="sm:col-span-2"><p className="text-xs font-black text-[#f3cf73]">قالب جديد</p><h2 className="mt-1 text-lg font-black text-[#fff7e8]">بيانات القالب فقط</h2><p className="mt-1 text-xs font-bold text-white/42">المحتوى والمعرض والباقات وSEO ستُورث تلقائيًا من Template Content Source.</p></div>
-          <Field label="اسم القالب"><input name="name" required className={inputClass} /></Field>
-          <Field label="Template Code"><input name="code" className={inputClass} dir="ltr" /></Field>
-          <Field label="Theme"><select name="themeId" required className={inputClass} defaultValue=""><option value="" disabled>اختر الثيم</option>{themes.map((theme) => <option key={theme.id} value={theme.id}>{theme.name} — {theme.code}</option>)}</select></Field>
-          <div className="flex items-end"><button className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl bg-[#f3cf73] px-4 text-sm font-black text-[#17120a]"><Plus className="size-4" /> إنشاء كمسودة</button></div>
-        </form>
-      ) : null}
 
       {templates.length === 0 ? (
         <section className="grid place-items-center rounded-3xl border border-dashed border-white/12 bg-white/[0.025] px-6 py-16 text-center"><LayoutTemplate className="size-12 text-white/20" /><h2 className="mt-3 text-lg font-black text-white/75">لا توجد قوالب بعد</h2></section>
@@ -182,7 +172,7 @@ export function TemplateManager({ templates, themes, message }: TemplateManagerP
               const active = selected?.id === template.id;
               const image = pickImage(template.previewData);
               const hasOverride = Object.keys(starterOverrideFrom(template.previewData)).length > 0;
-              return <button key={template.id} type="button" onClick={() => { setSelectedId(template.id); setShowCreate(false); }} className={cn("grid grid-cols-[64px_1fr] items-center gap-3 rounded-2xl border p-2.5 text-start transition", active ? "border-amber-300/35 bg-amber-300/10" : "border-white/8 bg-black/15 hover:border-white/16 hover:bg-white/[0.04]")}><span className="relative grid aspect-square overflow-hidden rounded-xl bg-black/30">{image ? <img src={image} alt="" className="size-full object-cover" /> : <ImageIcon className="m-auto size-5 text-white/25" />}</span><span className="min-w-0"><strong className="block truncate text-sm font-black text-[#fff7e8]">{template.name}</strong><small className="mt-1 block truncate font-mono text-[0.68rem] font-bold text-white/35">{template.code}</small><span className="mt-1 flex flex-wrap gap-1"><small className={template.status === "PUBLISHED" ? "text-[0.68rem] font-black text-emerald-300" : "text-[0.68rem] font-black text-white/42"}>{statusLabel(template.status)}</small>{hasOverride ? <small className="rounded-full bg-violet-400/10 px-1.5 text-[0.62rem] font-black text-violet-300">Override</small> : null}</span></span></button>;
+              return <button key={template.id} type="button" aria-label={`تعديل ${template.name}`} onClick={() => { setSelectedId(template.id); setShowCreate(false); }} className={cn("grid grid-cols-[64px_1fr] items-center gap-3 rounded-2xl border p-2.5 text-start transition", active ? "border-amber-300/35 bg-amber-300/10" : "border-white/8 bg-black/15 hover:border-white/16 hover:bg-white/[0.04]")}><span className="relative grid aspect-square overflow-hidden rounded-xl bg-black/30">{image ? <img src={image} alt="" className="size-full object-cover" /> : <ImageIcon className="m-auto size-5 text-white/25" />}</span><span className="min-w-0"><strong className="block truncate text-sm font-black text-[#fff7e8]">{template.name}</strong><small className="mt-1 block truncate font-mono text-[0.68rem] font-bold text-white/35">{template.code}</small><span className="mt-1 flex flex-wrap gap-1"><small className={template.status === "PUBLISHED" ? "text-[0.68rem] font-black text-emerald-300" : "text-[0.68rem] font-black text-white/42"}>{statusLabel(template.status)}</small>{hasOverride ? <small className="rounded-full bg-violet-400/10 px-1.5 text-[0.62rem] font-black text-violet-300">استثناء</small> : null}</span></span></button>;
             })}
           </aside>
 
@@ -224,7 +214,7 @@ function TemplateEditor({ template, themes }: { template: AdminTemplateItem; the
 
       <form action={saveTemplateAction} className="mt-4 grid gap-4">
         <input type="hidden" name="id" value={template.id} />
-        <EditorSection icon={Settings2} title="إعدادات القالب" description="هوية القالب التقنية وحالته وترتيبه فقط."><div className="grid gap-3 sm:grid-cols-2"><Field label="اسم القالب"><input name="name" defaultValue={template.name} className={inputClass} /></Field><Field label="Template Code"><input name="code" defaultValue={template.code} className={inputClass} dir="ltr" /></Field><Field label="Version"><input name="version" defaultValue={stringFrom(settings.version, "1.0.0")} className={inputClass} dir="ltr" /></Field><Field label="Theme"><select name="themeId" defaultValue={template.theme.id} className={inputClass}>{themes.map((theme) => <option key={theme.id} value={theme.id}>{theme.name} — {theme.code}</option>)}</select></Field><Field label="حالة النشر"><select name="status" defaultValue={template.status} className={inputClass}><option value="PUBLISHED">منشور</option><option value="DRAFT">مسودة</option><option value="ARCHIVED">مؤرشف</option></select></Field><Field label="ترتيب الظهور"><input name="showroomOrder" type="number" defaultValue={template.showroomOrder} className={inputClass} /></Field></div></EditorSection>
+        <EditorSection icon={Settings2} title="إعدادات القالب" description="هوية القالب التقنية وحالته وترتيبه فقط."><div className="grid gap-3 sm:grid-cols-2"><Field label="اسم القالب"><input name="name" defaultValue={template.name} className={inputClass} /></Field><Field label="رمز القالب"><input name="code" defaultValue={template.code} className={inputClass} dir="ltr" /></Field><Field label="الإصدار"><input name="version" defaultValue={stringFrom(settings.version, "1.0.0")} className={inputClass} dir="ltr" /></Field><Field label="الثيم"><select name="themeId" defaultValue={template.theme.id} className={inputClass}>{themes.map((theme) => <option key={theme.id} value={theme.id}>{theme.name} — {theme.code}</option>)}</select></Field><Field label="حالة النشر"><select name="status" defaultValue={template.status} className={inputClass}><option value="PUBLISHED">منشور</option><option value="DRAFT">مسودة</option><option value="ARCHIVED">مؤرشف</option></select></Field><Field label="ترتيب الظهور"><input name="showroomOrder" type="number" defaultValue={template.showroomOrder} className={inputClass} /></Field></div></EditorSection>
 
         <EditorSection icon={ImageIcon} title="بطاقة ومعاينة القالب" description="هذه بيانات عرض القالب في الكتالوج وليست محتوى الموقع الموروث."><div className="grid gap-3 sm:grid-cols-2"><Field label="عنوان البطاقة"><input name="previewTitle" defaultValue={previewTitle} className={inputClass} /></Field><Field label="وصف البطاقة"><input name="previewDescription" defaultValue={previewDescription} className={inputClass} /></Field><Field label="صورة المعاينة"><input name="previewImage" defaultValue={previewImage} className={inputClass} /></Field><Field label="نص زر المعاينة"><input name="callToAction" defaultValue={pickText(template.previewData, ["callToAction"], "معاينة القالب")} className={inputClass} /></Field></div></EditorSection>
 
@@ -237,7 +227,7 @@ function TemplateEditor({ template, themes }: { template: AdminTemplateItem; the
           </div>
         </EditorSection>
 
-        <EditorSection icon={Sparkles} title="Starter Content Override — اختياري" description="اترك الحقول فارغة ليرث القالب القيم المشتركة. اكتب قيمة فقط لو هذا القالب يحتاج استثناءً.">
+        <EditorSection icon={Sparkles} title="استثناء محتوى البداية — اختياري" description="اترك الحقول فارغة ليرث القالب القيم المشتركة. اكتب قيمة فقط لو هذا القالب يحتاج استثناءً.">
           <div className="grid gap-3 sm:grid-cols-2">
             <Field label="اسم المصور المختلف"><input name="starterOverridePhotographerName" defaultValue={stringFrom(starterOverride.photographerName)} className={inputClass} placeholder="يرث Kareem Magdy" /></Field>
             <Field label="اسم الاستوديو المختلف"><input name="starterOverrideStudioName" defaultValue={stringFrom(starterOverride.studioName)} className={inputClass} placeholder="يرث Photography" /></Field>
@@ -267,9 +257,9 @@ function TemplateEditor({ template, themes }: { template: AdminTemplateItem; the
 
       <section className="mt-4 grid gap-2 border-t border-white/8 pt-4 sm:grid-cols-2 xl:grid-cols-4">
         <form action={toggleTemplateAction}><input type="hidden" name="id" value={template.id} /><ActionButton>{template.status === "PUBLISHED" ? "إيقاف النشر" : "نشر القالب"}</ActionButton></form>
-        <form action={duplicateTemplateAction}><input type="hidden" name="id" value={template.id} /><ActionButton><Copy className="size-3.5" /> Duplicate</ActionButton></form>
-        <form action={restoreTemplateDefaultsAction} onSubmit={(event) => { if (!window.confirm("سيتم حذف Overrides وإعادة إعدادات القالب، مع استمرار وراثة المحتوى المشترك. هل أنت متأكد؟")) event.preventDefault(); }}><input type="hidden" name="id" value={template.id} /><ActionButton><RotateCcw className="size-3.5" /> مسح Overrides</ActionButton></form>
-        <form action={archiveTemplateAction} onSubmit={(event) => { if (!window.confirm("أرشفة القالب؟")) event.preventDefault(); }}><input type="hidden" name="id" value={template.id} /><button className="inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-2xl border border-red-300/15 bg-red-500/8 px-3 text-xs font-black text-red-200"><Archive className="size-3.5" /> Archive</button></form>
+        <form action={duplicateTemplateAction}><input type="hidden" name="id" value={template.id} /><ActionButton><Copy className="size-3.5" /> إنشاء نسخة</ActionButton></form>
+        <form action={restoreTemplateDefaultsAction} onSubmit={(event) => { if (!window.confirm("سيتم حذف الاستثناءات وإعادة إعدادات القالب، مع استمرار وراثة المحتوى المشترك. هل أنت متأكد؟")) event.preventDefault(); }}><input type="hidden" name="id" value={template.id} /><ActionButton><RotateCcw className="size-3.5" /> مسح الاستثناءات</ActionButton></form>
+        <form action={archiveTemplateAction} onSubmit={(event) => { if (!window.confirm("أرشفة القالب؟")) event.preventDefault(); }}><input type="hidden" name="id" value={template.id} /><button className="inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-2xl border border-red-300/15 bg-red-500/8 px-3 text-xs font-black text-red-200"><Archive className="size-3.5" /> أرشفة</button></form>
       </section>
     </article>
   );

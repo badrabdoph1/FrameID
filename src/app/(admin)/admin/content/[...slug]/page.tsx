@@ -44,12 +44,12 @@ export default async function ContentEditorPage({ params }: Props) {
       description={meta.description}
       breadcrumbs={[
         { label: "القيادة", href: "/admin" },
-        { label: "Content Studio", href: "/admin/content" },
+        { label: "مركز المحتوى", href: "/admin/content" },
         { label: meta.label },
       ]}
     >
       {entry && (
-        <p className="text-[11px] text-white/30 mb-4">
+        <p className="mb-4 text-xs font-bold text-white/35">
           النسخة {entry.version} · آخر تحديث: {new Date(entry.updatedAt).toLocaleString("ar-SA")}
         </p>
       )}

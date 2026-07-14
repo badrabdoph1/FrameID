@@ -2,16 +2,14 @@
 
 import { useState, useCallback } from "react"
 import { useRouter } from "next/navigation"
-import { Search, Globe, CreditCard, Bell, Activity, Shield, Image } from "lucide-react"
+import { Globe, CreditCard, Bell, Activity } from "lucide-react"
 import { AdminConfirmDialog } from "@/components/layout/admin-confirm-dialog"
-import { AdminActivityTimeline } from "@/components/layout/admin-activity-timeline"
 import type {
   CustomerDetail, CustomerMediaAsset, CustomerNotification,
   CustomerAdminNote, CustomerSubscriptionInfo,
 } from "@/modules/admin/customers/customer-types"
 
 import { CustomerInfoPanel } from "./components/customer-info-panel"
-import { CustomerStatsRow } from "./components/customer-stats-row"
 import { CustomerQuickActions } from "./components/customer-quick-actions"
 import { CustomerTabBar, type TabId } from "./components/customer-tabs"
 import { CustomerOverviewTab } from "./components/customer-overview-tab"
@@ -29,10 +27,11 @@ import {
   extendCustomerTrialAction, activateCustomerSubscriptionAction,
   cancelCustomerSubscriptionAction, publishSiteAction, suspendSiteAction,
   revokeSessionAction, createAdminNoteAction, deleteAdminNoteAction,
-  sendNotificationAction, impersonateCustomerAction,
+  sendNotificationAction,
 } from "@/app/(admin)/admin/customers/actions"
 
 type Props = {
+  initialTab: TabId
   customer: CustomerDetail
   media: CustomerMediaAsset[]
   notifications: CustomerNotification[]
@@ -53,9 +52,9 @@ function formatMoney(amount: number) {
   return `${amount.toLocaleString("ar-EG")} ج.م`
 }
 
-export function CustomerDetailClient({ customer, media, notifications, adminNotes, allSubscriptions }: Props) {
+export function CustomerDetailClient({ initialTab, customer, media, notifications, adminNotes, allSubscriptions }: Props) {
   const router = useRouter()
-  const [activeTab, setActiveTab] = useState<TabId>("overview")
+  const [activeTab, setActiveTab] = useState<TabId>(initialTab)
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null)
   const [confirmAction, setConfirmAction] = useState<{ type: string; title: string; description: string; danger?: boolean; formData?: FormData } | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
@@ -64,6 +63,7 @@ export function CustomerDetailClient({ customer, media, notifications, adminNote
     setMessage({ type, text })
     setTimeout(() => setMessage(null), 5000)
   }, [])
+  const changeTab = useCallback((tab: TabId) => { setActiveTab(tab); router.replace(`/admin/customers/${customer.id}?tab=${tab}`) }, [customer.id, router])
 
   const handleAction = useCallback(async (actionType: string, formData: FormData) => {
     try {
@@ -78,7 +78,6 @@ export function CustomerDetailClient({ customer, media, notifications, adminNote
         "revoke-session": revokeSessionAction,
         "create-note": createAdminNoteAction, "delete-note": deleteAdminNoteAction,
         "send-notification": sendNotificationAction,
-        impersonate: impersonateCustomerAction,
       }
       await actions[actionType]?.(formData)
       showMsg("success", "تمت العملية بنجاح")
@@ -142,49 +141,20 @@ export function CustomerDetailClient({ customer, media, notifications, adminNote
         siteUrl={siteUrl}
         onAction={showConfirm}
         onCopy={copyToClipboard}
-        onNotify={() => setActiveTab("notifications")}
+        onNotify={() => changeTab("notifications")}
         onEmail={() => window.location.href = `mailto:${customer.owner.email}`}
       />
 
-      <CustomerStatsRow customer={customer} />
-
-      <div className="relative">
-        <Search size={16} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-white/30" />
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="ابحث في صفحة العميل..."
-          className="w-full rounded-xl border border-white/8 bg-white/3 py-2.5 pr-10 pl-4 text-sm text-white outline-none transition placeholder:text-white/30 focus:border-amber-500/50"
-        />
-      </div>
-
-      <CustomerTabBar activeTab={activeTab} onChange={setActiveTab} />
+      <CustomerTabBar activeTab={activeTab} basePath={`/admin/customers/${customer.id}`} onChange={changeTab} />
 
       <div className="space-y-5">
         {activeTab === "overview" && <CustomerInfoPanel customer={customer} />}
-        {activeTab === "overview" && <CustomerOverviewTab customer={customer} onTabChange={(t) => setActiveTab(t as TabId)} />}
+        {activeTab === "overview" && <CustomerOverviewTab customer={customer} onTabChange={changeTab} />}
 
         {activeTab === "website" && <CustomerWebsiteTab customer={customer} onAction={showConfirm} />}
         {activeTab === "subscription" && <CustomerSubscriptionTab customer={customer} allSubscriptions={allSubscriptions} onAction={showConfirm} />}
         {activeTab === "payments" && <CustomerPaymentsTab customer={customer} />}
         {activeTab === "media" && <CustomerMediaTab media={media} searchQuery={searchQuery} onSearchChange={setSearchQuery} />}
-        {activeTab === "activity" && (
-          <div className="rounded-xl border border-white/8 bg-white/3 p-4">
-            {customer.recentActivity.length > 0 ? (
-              <AdminActivityTimeline events={customer.recentActivity.map((a) => ({
-                id: a.id, action: a.action,
-                description: `${a.entityType}${a.entityId ? ` #${a.entityId.slice(0, 8)}` : ""} · ${a.actorName ?? "النظام"}`,
-                timestamp: a.createdAt,
-              }))} />
-            ) : (
-              <div className="flex flex-col items-center justify-center py-8 text-center">
-                <Activity size={32} className="mb-3 text-white/20" />
-                <p className="text-sm text-white/40">لا يوجد نشاط مسجل</p>
-              </div>
-            )}
-          </div>
-        )}
         {activeTab === "sessions" && <CustomerSessionsTab customer={customer} onAction={showConfirm} />}
         {activeTab === "notifications" && <CustomerNotificationsTab notifications={notifications} onSend={(type, title, body) => {
           const fd = new FormData()
@@ -204,12 +174,6 @@ export function CustomerDetailClient({ customer, media, notifications, adminNote
           fd.set("noteId", noteId)
           handleAction("delete-note", fd)
         }} />}
-        {activeTab === "audit" && (
-          <div className="flex flex-col items-center justify-center rounded-xl border border-white/8 bg-white/3 px-6 py-12 text-center">
-            <Shield size={32} className="mb-3 text-white/20" />
-            <p className="text-sm text-white/40">سجل التدقيق قيد التطوير</p>
-          </div>
-        )}
       </div>
 
       <AdminConfirmDialog

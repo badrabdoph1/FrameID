@@ -15,7 +15,7 @@ export default async function AdminRevisionHistoryPage({ searchParams }: { searc
     <AdminPageShell
       badge="سجل التعديلات"
       title="سجل التعديلات"
-      description="كل تعديل على محتوى المنصة يتم تسجيله هنا مع before/after وCommit ID عند توفر GitHub sync."
+      description="كل تعديل على محتوى المنصة يظهر هنا بقيمته قبل وبعد، مع رقم الحفظ البرمجي عند توفره."
       breadcrumbs={[{ label: "القيادة", href: "/admin" }, { label: "سجل التعديلات" }]}
     >
       {params.error ? <div className="rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm font-bold text-red-300">{params.error}</div> : null}
@@ -32,7 +32,7 @@ export default async function AdminRevisionHistoryPage({ searchParams }: { searc
                 <p className="mt-1 text-xs font-mono text-white/30">{new Date(revision.createdAt).toLocaleString("ar-EG")}</p>
               </div>
               <AdminStatusBadge tone={revision.gitStatus === "committed" ? "success" : revision.gitStatus === "failed" ? "danger" : "warning"}>
-                {revision.gitStatus === "committed" ? "Committed" : revision.gitStatus === "failed" ? "Git failed" : "Git not configured"}
+                {revision.gitStatus === "committed" ? "محفوظ برمجيًا" : revision.gitStatus === "failed" ? "فشل الحفظ البرمجي" : "الحفظ البرمجي غير مهيأ"}
               </AdminStatusBadge>
             </div>
             <div className="mt-3 grid gap-3 lg:grid-cols-2">
@@ -40,7 +40,7 @@ export default async function AdminRevisionHistoryPage({ searchParams }: { searc
               <DiffBox title="بعد" value={revision.after} />
             </div>
             <div className="mt-3 flex flex-wrap gap-2 text-xs font-bold text-white/45">
-              <span className="rounded-lg border border-white/10 px-2 py-1">Commit ID: {revision.commitId ?? "—"}</span>
+              <span className="rounded-lg border border-white/10 px-2 py-1">رقم الحفظ: {revision.commitId ?? "—"}</span>
               {revision.gitError ? <span className="rounded-lg border border-red-500/20 px-2 py-1 text-red-300">{revision.gitError}</span> : null}
               {revision.before !== null && revision.before !== undefined ? <form action={restoreRevisionAction}><input type="hidden" name="revisionId" value={revision.id} /><button className="rounded-lg border border-amber-300/20 px-3 py-1.5 text-[#f3cf73] transition hover:bg-amber-300/10">استعادة قيمة «قبل»</button></form> : null}
             </div>

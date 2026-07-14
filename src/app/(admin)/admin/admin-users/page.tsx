@@ -66,26 +66,26 @@ export default async function AdminUsersPage() {
 
   return (
     <AdminPageShell
-      badge="Security & Governance"
-      title="Admin Users & RBAC Overview"
-      description="نظرة تشغيلية على AdminUser sessions والأدوار والصلاحيات الحالية قبل الانتقال إلى RBAC database-managed."
-      breadcrumbs={[{ label: "النظام", href: "/admin" }, { label: "Admin Users" }]}
-      actions={[{ label: "Security", href: "/admin/security", icon: ShieldCheck }]}
+      badge="الأمان والصلاحيات"
+      title="فريق الإدارة والصلاحيات"
+      description="نظرة تشغيلية على حسابات الإدارة والجلسات والأدوار المعرفة حاليًا في النظام."
+      breadcrumbs={[{ label: "النظام", href: "/admin/system" }, { label: "فريق الإدارة" }]}
+      actions={[{ label: "الأمان", href: "/admin/security", icon: ShieldCheck }]}
     >
       <section className="grid gap-3 sm:grid-cols-3">
-        <Metric label="Admin Users" value={adminUsers.length} />
-        <Metric label="Active Sessions" value={activeSessions} accent />
-        <Metric label="Defined Roles" value={roles.length} />
+        <Metric label="حسابات الإدارة" value={adminUsers.length} />
+        <Metric label="جلسات نشطة" value={activeSessions} accent />
+        <Metric label="أدوار معرفة" value={roles.length} />
       </section>
 
       <section className="grid gap-4 xl:grid-cols-[1fr_0.9fr]">
         <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.035]">
           <header className="flex items-center gap-2 border-b border-white/8 bg-black/18 px-4 py-3">
             <UserCog className="size-4 text-amber-300" />
-            <h2 className="text-sm font-black text-[#fff7e8]">Admin Users</h2>
+            <h2 className="text-sm font-black text-[#fff7e8]">حسابات الإدارة</h2>
           </header>
           <div className="grid divide-y divide-white/6">
-            {adminUsers.length === 0 ? <p className="px-4 py-12 text-center text-sm font-bold text-white/35">لا يوجد AdminUser محفوظ في قاعدة البيانات.</p> : adminUsers.map((admin) => {
+            {adminUsers.length === 0 ? <p className="px-4 py-12 text-center text-sm font-bold text-white/35">لا توجد حسابات إدارة محفوظة في قاعدة البيانات.</p> : adminUsers.map((admin) => {
               const sessions = sessionsByEmail.get(admin.email) ?? [];
 
               return (
@@ -100,16 +100,16 @@ export default async function AdminUsersPage() {
                     <span className="rounded-full border border-amber-500/20 bg-amber-500/10 px-2 py-0.5 text-[0.68rem] font-black text-amber-200">{admin.role}</span>
                   </div>
                   <div className="mt-3 grid gap-2 sm:grid-cols-3">
-                    <Info label="Created" value={dateLabel(admin.createdAt)} />
-                    <Info label="Updated" value={dateLabel(admin.updatedAt)} />
-                    <Info label="Recent Sessions" value={sessions.length.toLocaleString("ar-EG")} />
+                    <Info label="تاريخ الإنشاء" value={dateLabel(admin.createdAt)} />
+                    <Info label="آخر تحديث" value={dateLabel(admin.updatedAt)} />
+                    <Info label="الجلسات الأخيرة" value={sessions.length.toLocaleString("ar-EG")} />
                   </div>
                   {sessions.length > 0 ? (
                     <div className="mt-3 grid gap-2">
                       {sessions.map((session) => (
                         <div key={session.id} className="rounded-xl border border-white/8 bg-black/16 p-3">
                           <p className="font-mono text-[0.68rem] font-bold text-white/35">{session.id}</p>
-                          <p className="mt-1 text-xs font-bold text-white/45">expires: {dateLabel(session.expiresAt)} · {session.revokedAt ? `revoked: ${dateLabel(session.revokedAt)}` : "active"}</p>
+                          <p className="mt-1 text-xs font-bold text-white/45">تنتهي: {dateLabel(session.expiresAt)} · {session.revokedAt ? `أُلغيت: ${dateLabel(session.revokedAt)}` : "نشطة"}</p>
                         </div>
                       ))}
                     </div>
@@ -123,7 +123,7 @@ export default async function AdminUsersPage() {
         <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.035]">
           <header className="flex items-center gap-2 border-b border-white/8 bg-black/18 px-4 py-3">
             <ShieldCheck className="size-4 text-amber-300" />
-            <h2 className="text-sm font-black text-[#fff7e8]">Roles & Permissions</h2>
+            <h2 className="text-sm font-black text-[#fff7e8]">الأدوار والصلاحيات</h2>
           </header>
           <div className="grid divide-y divide-white/6">
             {roles.map((role) => (
@@ -133,7 +133,7 @@ export default async function AdminUsersPage() {
                     <h3 className="text-sm font-black text-white/84">{role.name}</h3>
                     <p className="mt-1 font-mono text-xs font-bold text-white/35">{role.id}</p>
                   </div>
-                  <span className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[0.68rem] font-black text-white/42">Level {role.level}</span>
+                  <span className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[0.68rem] font-black text-white/42">المستوى {role.level.toLocaleString("ar-EG")}</span>
                 </div>
                 <div className="mt-3 flex flex-wrap gap-1.5">
                   {role.permissions.map((permission) => (

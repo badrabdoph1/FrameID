@@ -40,9 +40,9 @@ export default async function AdminSitesPage() {
 
   return (
     <AdminPageShell
-      badge="الإدارة"
-      title="المواقع"
-      description="جميع مواقع المصورين على المنصة"
+      badge="المواقع"
+      title="إدارة المواقع"
+      description={`${sites.length.toLocaleString("ar-EG")} موقع على المنصة`}
     >
       <SitesTable data={data} />
     </AdminPageShell>

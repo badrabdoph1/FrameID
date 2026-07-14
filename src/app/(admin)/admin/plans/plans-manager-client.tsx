@@ -141,7 +141,7 @@ export function PlansManagerClient({ plans, metrics, banner }: Props) {
             className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[#f3cf73] px-4 text-sm font-black text-[#17120a] transition hover:bg-[#f8da8a]"
           >
             {editor === "create" ? <X className="size-4" /> : <Plus className="size-4" />}
-            {editor === "create" ? "إغلاق" : "إضافة باقة"}
+            {editor === "create" ? "إغلاق" : "إضافة باقة جديدة"}
           </button>
         </div>
       </section>
@@ -168,7 +168,11 @@ export function PlansManagerClient({ plans, metrics, banner }: Props) {
         </section>
 
         {editor ? (
-          <section className="overflow-hidden rounded-2xl border border-amber-300/20 bg-white/[0.035] xl:sticky xl:top-5">
+          <section
+            role="region"
+            aria-label={editor === "create" ? "إنشاء باقة جديدة" : `تعديل ${selectedPlan?.name ?? "الباقة"}`}
+            className="overflow-hidden rounded-2xl border border-amber-300/20 bg-white/[0.035] xl:sticky xl:top-5"
+          >
             <header className="flex items-start justify-between gap-3 border-b border-white/8 px-4 py-3">
               <div>
                 <p className="text-[0.68rem] font-black text-[#f3cf73]">{editor === "create" ? "باقة جديدة" : "تعديل الباقة"}</p>
@@ -220,7 +224,7 @@ function PlanCard({ plan, order, selected, onEdit }: { plan: PlanRow; order: num
         </div>
 
         <div className="flex items-center gap-2">
-          <button type="button" onClick={onEdit} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[#f3cf73] px-4 text-sm font-black text-[#17120a] hover:bg-[#f8da8a]">
+          <button type="button" aria-label={`تعديل ${plan.name}`} onClick={onEdit} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[#f3cf73] px-4 text-sm font-black text-[#17120a] hover:bg-[#f8da8a]">
             <Pencil className="size-4" /> تعديل
           </button>
           <AdminActionMenu>
@@ -233,7 +237,7 @@ function PlanCard({ plan, order, selected, onEdit }: { plan: PlanRow; order: num
             </form>
             <form action={archivePlanAction} onSubmit={(event) => { if (!window.confirm("سيتم إخفاء الباقة وأرشفتها. هل تريد المتابعة؟")) event.preventDefault(); }}>
               <input type="hidden" name="id" value={plan.id} />
-              <button className={`${adminActionItemClass} text-red-300`}>
+              <button aria-label={`أرشفة ${plan.name}`} className={`${adminActionItemClass} text-red-300`}>
                 <Archive className="size-4" /> أرشفة الباقة
               </button>
             </form>

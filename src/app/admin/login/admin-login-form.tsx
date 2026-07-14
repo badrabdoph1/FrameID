@@ -76,7 +76,7 @@ export function AdminLoginForm({ initialError }: AdminLoginFormProps) {
   return (
     <form action="/api/admin/login" method="POST" className="space-y-4" onSubmit={handleSubmit}>
       {error ? (
-        <p className="rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm font-extrabold text-red-400">
+        <p role="alert" aria-live="polite" className="rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm font-extrabold text-red-400">
           {error}
         </p>
       ) : null}
@@ -116,9 +116,10 @@ export function AdminLoginForm({ initialError }: AdminLoginFormProps) {
       <button
         type="submit"
         disabled={pending}
+        aria-busy={pending}
         className="flex h-12 w-full items-center justify-center rounded-xl bg-gradient-to-br from-[#f3cf73] to-[#d4af37] text-sm font-bold text-[#17120a] shadow-lg transition hover:-translate-y-0.5 hover:shadow-amber-500/30 disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:translate-y-0"
       >
-        {pending ? "جاري الدخول..." : "دخول"}
+        {pending ? "جاري تسجيل الدخول..." : "تسجيل الدخول"}
       </button>
     </form>
   );

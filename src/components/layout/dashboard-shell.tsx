@@ -48,7 +48,7 @@ const navItems: NavItem[] = [
   { href: "/dashboard/gallery", label: "الصور", shortLabel: "الصور", description: "الصورة الشخصية، الغلاف، والألبومات.", icon: Images, priority: "primary" },
   { href: "/dashboard/publish", label: "النشر", shortLabel: "النشر", description: "انسخ الرابط وانشر الموقع.", icon: Globe2, priority: "primary" },
   { href: "/dashboard/templates", label: "شكل الموقع", shortLabel: "الشكل", description: "اختيار القالب والهوية البصرية.", icon: Palette, priority: "secondary" },
-  { href: "/dashboard/billing", label: "التفعيل والدفع", shortLabel: "التفعيل", description: "التجربة المجانية، الاشتراك، وإثبات الدفع.", icon: CreditCard, priority: "secondary" },
+  { href: "/dashboard/billing", label: "الفواتير والاشتراك", shortLabel: "التفعيل", description: "التجربة المجانية، الاشتراك، وإثبات الدفع.", icon: CreditCard, priority: "secondary" },
   { href: "/dashboard/settings", label: "الإعدادات", shortLabel: "إعدادات", description: "إعدادات الحساب والموقع.", icon: Settings, priority: "secondary" },
 ];
 
@@ -169,7 +169,7 @@ export function DashboardShell({ children, siteSlug }: { children: ReactNode; si
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [supportSettings, setSupportSettings] = useState(() => normalizeSupportResponse(null));
-  const primaryNav = navItems.filter((item) => item.priority === "primary").slice(0, 5);
+  const primaryNav = navItems.filter((item) => item.priority === "primary").slice(0, 4);
   const secondaryNav = navItems.filter((item) => item.priority === "secondary");
 
   useEffect(() => {
@@ -202,7 +202,7 @@ export function DashboardShell({ children, siteSlug }: { children: ReactNode; si
   }, [mobileMenuOpen]);
 
   return (
-    <div className="customer-desktop-shell min-h-dvh bg-[#090b10] text-[#f5ead6] color-scheme-dark">
+    <div className="customer-desktop-shell min-h-dvh bg-[#0b0d12] text-[#f5ead6] color-scheme-dark" style={{ background: "#0b0d12", color: "#f5ead6" }}>
       <header className="sticky top-0 z-40 border-b border-white/8 bg-[#090b10]/92 px-2 py-2 backdrop-blur-xl lg:hidden">
         <div className="relative mx-auto grid max-w-6xl grid-cols-[minmax(4.45rem,1fr)_auto_minmax(6.2rem,1fr)] items-center gap-1.5 sm:grid-cols-[minmax(5.5rem,1fr)_auto_minmax(7.5rem,1fr)] sm:gap-2">
           <IdentityBrand />
@@ -267,7 +267,7 @@ export function DashboardShell({ children, siteSlug }: { children: ReactNode; si
           <div className="mx-auto hidden w-full max-w-6xl lg:block">
             <CustomerIdentityBar supportHref={supportSettings.whatsappHref} />
           </div>
-          <div className="mx-auto w-full max-w-6xl lg:mt-5">{children}</div>
+          <div className="mx-auto w-full max-w-[1120px] lg:mt-5" style={{ width: "min(100%, 1120px)", marginInline: "auto" }}>{children}</div>
         </main>
       </div>
 
@@ -290,6 +290,7 @@ export function DashboardShell({ children, siteSlug }: { children: ReactNode; si
               </Link>
             );
           })}
+          <button type="button" onClick={() => setMobileMenuOpen(true)} aria-label="فتح باقي أقسام لوحة العميل" aria-expanded={mobileMenuOpen} aria-controls="dashboard-mobile-menu" className="grid min-h-[3.25rem] place-items-center gap-0.5 rounded-2xl px-1 text-center text-white/45 transition hover:bg-white/[0.05] hover:text-white/70"><Menu className="size-5" aria-hidden /><span className="text-[0.62rem] font-black leading-tight">المزيد</span></button>
         </div>
       </nav>
 

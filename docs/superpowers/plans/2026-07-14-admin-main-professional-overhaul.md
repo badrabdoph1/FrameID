@@ -213,11 +213,11 @@ Commit: `feat: rebuild admin command center`.
 **Interfaces:**
 - Produces: قائمة قابلة للترشيح وCustomer 360 بتبويبات ثابتة وروابط عميقة.
 
-- [ ] اختبر البحث والفراغ وعرض الهاتف وحفظ التبويب في URL.
-- [ ] شغّل `npm test -- tests/admin-customers-table.test.tsx tests/admin-customer-workspace.test.tsx` وتحقق من الفشل.
-- [ ] وحّد ملخص العميل والإجراءات السريعة، وأزل البيانات المتكررة بين الرأس والتبويبات.
-- [ ] اجعل أسماء التبويبات عربية واضحة: نظرة عامة، الموقع، الاشتراك، المدفوعات، الوسائط، الجلسات، الإشعارات، الملاحظات.
-- [ ] شغّل الاختبارات واعمل commit بعنوان `feat: simplify customer admin workspace`.
+- [x] اختبر البحث والفراغ وعرض الهاتف وحفظ التبويب في URL.
+- [x] شغّل `npm test -- tests/admin-customers-table.test.tsx tests/admin-customer-workspace.test.tsx` وتحقق من الفشل.
+- [x] وحّد ملخص العميل والإجراءات السريعة، وأزل البيانات المتكررة بين الرأس والتبويبات.
+- [x] اجعل أسماء التبويبات عربية واضحة: نظرة عامة، الموقع، الاشتراك، المدفوعات، الوسائط، الجلسات، الإشعارات، الملاحظات.
+- [x] شغّل الاختبارات واعمل commit بعنوان `feat: simplify customer admin workspace`.
 
 ### Task 5: المواقع وتفاصيل الموقع
 
@@ -227,10 +227,10 @@ Commit: `feat: rebuild admin command center`.
 - Modify: `src/app/(admin)/admin/sites/[id]/page.tsx`
 - Create: `tests/admin-site-workspace.test.tsx`
 
-- [ ] اختبر الروابط العميقة وحالات عدم وجود دومين أو باقات أو إضافات.
-- [ ] عرّب Sections وPackages وExtras وFeature Flags وGallery Albums وحالات Active/Hidden.
-- [ ] اجمع بيانات الاتصال وSEO في لوحات مفهومة مع روابط للعميل والموقع العام.
-- [ ] شغّل `npm test -- tests/admin-site-workspace.test.tsx` واعمل commit بعنوان `feat: clarify admin site workspace`.
+- [x] اختبر الروابط العميقة وحالات عدم وجود دومين أو باقات أو إضافات.
+- [x] عرّب Sections وPackages وExtras وFeature Flags وGallery Albums وحالات Active/Hidden.
+- [x] اجمع بيانات الاتصال وSEO في لوحات مفهومة مع روابط للعميل والموقع العام.
+- [x] شغّل `npm test -- tests/admin-site-workspace.test.tsx` واعمل commit بعنوان `feat: clarify admin site workspace`.
 
 ### Task 6: مركز المال والصفحات المالية
 
@@ -246,11 +246,11 @@ Commit: `feat: rebuild admin command center`.
 - Modify: `tests/admin-plans-manager.test.tsx`
 - Create: `tests/admin-billing-surfaces.test.tsx`
 
-- [ ] اختبر أن المركز يعرض الأولويات ولا يكرر النماذج.
-- [ ] اختبر قائمة ومحررًا واحدًا للباقات ووسائل الدفع.
-- [ ] نفذ روابط مرشحة من المؤشرات إلى الطلبات والتجارب والحالات المتأخرة.
-- [ ] قسم ملف إعدادات الدفع مع الإبقاء على إجراءات الخادم والتأكيد والحذف.
-- [ ] شغّل اختبارات المالية واعمل commit بعنوان `feat: streamline admin billing workflows`.
+- [x] اختبر أن المركز يعرض الأولويات ولا يكرر النماذج.
+- [x] اختبر قائمة ومحررًا واحدًا للباقات ووسائل الدفع.
+- [x] نفذ روابط مرشحة من المؤشرات إلى الطلبات والتجارب والحالات المتأخرة.
+- [x] قسم ملف إعدادات الدفع مع الإبقاء على إجراءات الخادم والتأكيد والحذف.
+- [x] شغّل اختبارات المالية واعمل commit بعنوان `feat: streamline admin billing workflows`.
 
 ### Task 7: مركز المحتوى وأدواته
 
@@ -268,11 +268,11 @@ Commit: `feat: rebuild admin command center`.
 - Modify: `tests/admin-template-manager.test.tsx`
 - Create: `tests/admin-content-surfaces.test.tsx`
 
-- [ ] اختبر أن كل نوع محتوى يملك محررًا واحدًا ووجهة واحدة.
-- [ ] استبدل صفحات “قريبًا” بفهرس حقيقي للقدرات المتاحة أو حالة مفيدة مرتبطة بالبديل العامل.
-- [ ] اربط القالب المحدد بصوره وإعداداته داخل سياق واحد، ولا تكرر مركز الصور خارجه.
-- [ ] أظهر حالة الوسائط والثيمات والمراجعات بلغة عربية وروابط قابلة للتنفيذ.
-- [ ] شغّل اختبارات المحتوى واعمل commit بعنوان `feat: organize admin content platform`.
+- [x] اختبر أن كل نوع محتوى يملك محررًا واحدًا ووجهة واحدة.
+- [x] استبدل صفحات “قريبًا” بفهرس حقيقي للقدرات المتاحة أو حالة مفيدة مرتبطة بالبديل العامل.
+- [x] اربط القالب المحدد بصوره وإعداداته داخل سياق واحد، ولا تكرر مركز الصور خارجه.
+- [x] أظهر حالة الوسائط والثيمات والمراجعات بلغة عربية وروابط قابلة للتنفيذ.
+- [x] شغّل اختبارات المحتوى واعمل commit بعنوان `feat: organize admin content platform`.
 
 ### Task 8: التواصل
 
@@ -283,10 +283,10 @@ Commit: `feat: rebuild admin command center`.
 - Modify: `src/app/(admin)/admin/email/page.tsx`
 - Create: `tests/admin-communications.test.tsx`
 
-- [ ] اختبر الحدود: الرسائل للتحكم في تجربة العميل، الإشعارات للسجل، الدعم للحالات، والبريد للتسليم.
-- [ ] عرّب التسميات المرئية وأزل السجلات أو المؤشرات المكررة بين الصفحات.
-- [ ] أضف حالات فراغ وإجراءات انتقال مرتبطة بالمهمة الحالية.
-- [ ] شغّل `npm test -- tests/admin-communications.test.tsx` واعمل commit بعنوان `feat: clarify admin communication centers`.
+- [x] اختبر الحدود: الرسائل للتحكم في تجربة العميل، الإشعارات للسجل، الدعم للحالات، والبريد للتسليم.
+- [x] عرّب التسميات المرئية وأزل السجلات أو المؤشرات المكررة بين الصفحات.
+- [x] أضف حالات فراغ وإجراءات انتقال مرتبطة بالمهمة الحالية.
+- [x] شغّل `npm test -- tests/admin-communications.test.tsx` واعمل commit بعنوان `feat: clarify admin communication centers`.
 
 ### Task 9: النظام والتشغيل والأدوات المتقدمة
 
@@ -308,11 +308,11 @@ Commit: `feat: rebuild admin command center`.
 - Create: `tests/admin-system-surfaces.test.tsx`
 - Modify: `tests/backup-architecture-contract.test.ts`
 
-- [ ] اختبر أن العمليات تعرض الطوابير التي تحتاج تدخلًا، والنظام يعرض الصحة والوجهات فقط.
-- [ ] أصلح عقد “ذهاب طوارئ” وتسميات التنقل الحالية الفاشلة.
-- [ ] حوّل صفحات “قريبًا” إلى حالة تشغيلية صادقة مبنية على البيانات المتاحة أو روابط بديلة محددة.
-- [ ] عرّب العناوين والقيم المتكررة مع إبقاء المفاتيح التقنية القابلة للنسخ.
-- [ ] شغّل اختبارات النظام والنسخ والأخطاء واعمل commit بعنوان `feat: complete admin system surfaces`.
+- [x] اختبر أن العمليات تعرض الطوابير التي تحتاج تدخلًا، والنظام يعرض الصحة والوجهات فقط.
+- [x] أصلح عقد “ذهاب طوارئ” وتسميات التنقل الحالية الفاشلة.
+- [x] حوّل صفحات “قريبًا” إلى حالة تشغيلية صادقة مبنية على البيانات المتاحة أو روابط بديلة محددة.
+- [x] عرّب العناوين والقيم المتكررة مع إبقاء المفاتيح التقنية القابلة للنسخ.
+- [x] شغّل اختبارات النظام والنسخ والأخطاء واعمل commit بعنوان `feat: complete admin system surfaces`.
 
 ### Task 10: الجداول والنماذج والاستجابة
 
@@ -324,10 +324,10 @@ Commit: `feat: rebuild admin command center`.
 - Modify: `tests/admin-data-table.test.tsx`
 - Create: `tests/admin-interaction-states.test.tsx`
 
-- [ ] اختبر عرض البطاقات على الهاتف، تعطيل الإرسال المكرر، ورسالة التأكيد ذات الأثر.
-- [ ] اجعل DataTable يدعم `mobileLabel` وempty state وURL filters دون تمرير أفقي غير مقصود.
-- [ ] أضف حالات pressed/focus/disabled/loading واحترم reduced motion.
-- [ ] شغّل الاختبارات واعمل commit بعنوان `refactor: standardize admin interaction states`.
+- [x] اختبر عرض البطاقات على الهاتف، تعطيل الإرسال المكرر، ورسالة التأكيد ذات الأثر.
+- [x] اجعل DataTable يدعم `mobileLabel` وempty state دون تمرير أفقي غير مقصود؛ مرشحات الصفحات التشغيلية المهمة تحفظ في URL عند مستوى الصفحة.
+- [x] أضف حالات pressed/focus/disabled/loading واحترم reduced motion.
+- [x] شغّل الاختبارات واعمل commit بعنوان `refactor: standardize admin interaction states`.
 
 ### Task 11: التحقق البصري والنهائي
 
@@ -335,10 +335,10 @@ Commit: `feat: rebuild admin command center`.
 - Modify: `docs/progress/2026-07-14-admin-main-overhaul.md`
 - Create: `docs/admin-main-professional-overhaul-report.md`
 
-- [ ] شغّل اختبارات الأدمن فقط: `npm test -- tests/admin-*.test.tsx tests/layout-shells.test.tsx tests/backup-architecture-contract.test.ts`.
-- [ ] شغّل `npm run typecheck` ثم `npm run lint` ثم `npm run build`.
-- [ ] شغّل `npm test` وقارن النتيجة بخط الأساس 242/272؛ أصلح كل فشل جديد.
-- [ ] افحص `/admin` وكل مركز أساسي على 390x844 و768x1024 و1440x900، ثم افحص صفحة متخصصة واحدة على الأقل من كل مركز.
-- [ ] تحقق من keyboard focus وEscape وRTL وعدم وجود overflow أو روابط ميتة.
-- [ ] اكتب التقرير النهائي بما نُفذ، الأخطاء التي أصلحت، والاقتراحات المؤجلة فقط عندما تتطلب قدرة منتج أو قاعدة بيانات جديدة.
-- [ ] اعمل commit بعنوان `docs: finalize admin overhaul verification`.
+- [x] شغّل اختبارات الأدمن فقط: `npm test -- tests/admin-*.test.tsx tests/layout-shells.test.tsx tests/backup-architecture-contract.test.ts`.
+- [x] شغّل `npm run typecheck` ثم `npm run lint` ثم `npm run build`.
+- [x] شغّل `npm test` وقارن النتيجة بخط الأساس 242/272؛ أصلح كل فشل جديد.
+- [x] افحص `/admin` وكل مركز أساسي على 390x844 و768x1024 و1440x900، ثم افحص صفحة متخصصة واحدة على الأقل من كل مركز.
+- [x] تحقق من keyboard focus وEscape وRTL وعدم وجود overflow أو روابط ميتة.
+- [x] اكتب التقرير النهائي بما نُفذ، الأخطاء التي أصلحت، والاقتراحات المؤجلة فقط عندما تتطلب قدرة منتج أو قاعدة بيانات جديدة.
+- [x] اعمل commit بعنوان `docs: finalize admin overhaul verification`.
