@@ -335,10 +335,10 @@ Commit: `feat: rebuild admin command center`.
 - Modify: `docs/progress/2026-07-14-admin-main-overhaul.md`
 - Create: `docs/admin-main-professional-overhaul-report.md`
 
-- [ ] شغّل اختبارات الأدمن فقط: `npm test -- tests/admin-*.test.tsx tests/layout-shells.test.tsx tests/backup-architecture-contract.test.ts`.
-- [ ] شغّل `npm run typecheck` ثم `npm run lint` ثم `npm run build`.
-- [ ] شغّل `npm test` وقارن النتيجة بخط الأساس 242/272؛ أصلح كل فشل جديد.
-- [ ] افحص `/admin` وكل مركز أساسي على 390x844 و768x1024 و1440x900، ثم افحص صفحة متخصصة واحدة على الأقل من كل مركز.
-- [ ] تحقق من keyboard focus وEscape وRTL وعدم وجود overflow أو روابط ميتة.
-- [ ] اكتب التقرير النهائي بما نُفذ، الأخطاء التي أصلحت، والاقتراحات المؤجلة فقط عندما تتطلب قدرة منتج أو قاعدة بيانات جديدة.
-- [ ] اعمل commit بعنوان `docs: finalize admin overhaul verification`.
+- [x] شغّل اختبارات الأدمن فقط: `npm test -- tests/admin-*.test.tsx tests/layout-shells.test.tsx tests/backup-architecture-contract.test.ts`.
+- [x] شغّل `npm run typecheck` ثم `npm run lint` ثم `npm run build`.
+- [x] شغّل `npm test` وقارن النتيجة بخط الأساس 242/272؛ أصلح كل فشل جديد.
+- [x] افحص `/admin` وكل مركز أساسي على 390x844 و768x1024 و1440x900، ثم افحص صفحة متخصصة واحدة على الأقل من كل مركز.
+- [x] تحقق من keyboard focus وEscape وRTL وعدم وجود overflow أو روابط ميتة.
+- [x] اكتب التقرير النهائي بما نُفذ، الأخطاء التي أصلحت، والاقتراحات المؤجلة فقط عندما تتطلب قدرة منتج أو قاعدة بيانات جديدة.
+- [x] اعمل commit بعنوان `docs: finalize admin overhaul verification`.
