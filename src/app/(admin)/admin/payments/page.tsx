@@ -11,6 +11,7 @@ type Props = {
     error?: string;
     reupload?: string;
     "note-added"?: string;
+    status?: string;
   }>;
 };
 
@@ -53,6 +54,13 @@ export type PaymentRequestFull = {
 export default async function AdminPaymentsPage({ searchParams }: Props) {
   await requireAdminPermission("payments", "view");
   const params = await searchParams;
+  const initialTab = params.status === "all"
+    ? "all"
+    : params.status === "approved" || params.status === "completed"
+      ? "completed"
+      : params.status === "rejected"
+        ? "rejected"
+        : "pending";
 
   const [allPayments, pendingCount, approvedThisMonth, monthlyRevenue] = await Promise.all([
     prisma.paymentRequest.findMany({
@@ -134,6 +142,7 @@ export default async function AdminPaymentsPage({ searchParams }: Props) {
         totalRevenue,
         avgReviewHours,
       }}
+      initialTab={initialTab}
       banner={
         params.approved
           ? "approved"
