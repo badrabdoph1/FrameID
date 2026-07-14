@@ -2,7 +2,7 @@ import { readFile } from "node:fs/promises";
 import { describe, expect, it } from "vitest";
 import { BACKUP_POLICY, SUPPORTED_BACKUP_TYPES, getNextAutomaticRun } from "@/modules/backups/backup-policy";
 describe("عقد Backup Architecture", () => {
-  it("يثبت السياسة", () => { expect(SUPPORTED_BACKUP_TYPES).toEqual(["DATABASE", "FULL"]); expect(BACKUP_POLICY).toEqual({ DATABASE: { schedule: "كل 12 ساعة", intervalHours: 12, retentionCount: 20 }, FULL: { schedule: "كل 48 ساعة", intervalHours: 48, retentionCount: 10 } }); });
+  it("يثبت السياسة", () => { expect(SUPPORTED_BACKUP_TYPES).toEqual(["DATABASE", "UPLOADS", "FULL"]); expect(BACKUP_POLICY).toEqual({ DATABASE: { schedule: "كل 12 ساعة", intervalHours: 12, retentionCount: 20 }, UPLOADS: { schedule: "كل 48 ساعة", intervalHours: 48, retentionCount: 10 }, FULL: { schedule: "كل 48 ساعة", intervalHours: 48, retentionCount: 10 } }); });
   it("يحسب 12 و48 ساعة كفترة ثابتة حتى عند نهاية الشهر", () => {
     const start = new Date("2026-07-31T03:00:00.000Z");
     expect(getNextAutomaticRun("DATABASE", start).toISOString()).toBe("2026-07-31T15:00:00.000Z");

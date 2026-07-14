@@ -4,6 +4,7 @@ import {
   normalizeTemplateSections,
   type TemplateSectionType,
 } from "@/modules/themes/template-contract";
+import { logCustomerDataChange } from "@/modules/backups/customer-data-change-service";
 
 export type EditorSection = {
   type: TemplateSectionType;
@@ -136,6 +137,19 @@ export function createSiteContentService({
       isVisible: input.isVisible,
       data,
     });
+
+    logCustomerDataChange({
+      entityType: "SiteSection",
+      entityId: section.id,
+      tenantId: input.session.tenant.id,
+      siteId: input.session.site.id,
+      userId: input.session.user.id,
+      action: `update_section_${input.type}`,
+      before: existing ? { type: existing.type, data: existing.data } : null,
+      after: { type: input.type, data },
+      changedBy: input.session.user.id,
+      changedByName: input.session.user.name ?? null,
+    }).catch(() => undefined);
 
     return { sectionId: section.id };
   }

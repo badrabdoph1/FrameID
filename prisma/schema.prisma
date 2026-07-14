@@ -968,3 +968,42 @@ model CustomerIssueEvent {
   @@index([issueId, createdAt])
   @@index([actorAdminId, createdAt])
 }
+
+model ContentRevision {
+  id        String   @id @default(cuid())
+  type      String
+  actorId   String?
+  actorName String?
+  actorEmail String?
+  before    Json?
+  after     Json?
+  commitId  String?
+  gitStatus String   @default("not-configured")
+  gitError  String?
+  createdAt DateTime @default(now())
+
+  @@index([type, createdAt])
+  @@index([createdAt])
+  @@index([actorId, createdAt])
+}
+
+model CustomerDataChange {
+  id           String   @id @default(cuid())
+  entityType   String
+  entityId     String
+  tenantId     String?
+  siteId       String?
+  userId       String?
+  action       String
+  before       Json?
+  after        Json?
+  changedBy    String?
+  changedByName String?
+  source       String   @default("customer")
+  createdAt    DateTime @default(now())
+
+  @@index([entityType, entityId, createdAt])
+  @@index([tenantId, createdAt])
+  @@index([siteId, createdAt])
+  @@index([createdAt])
+}

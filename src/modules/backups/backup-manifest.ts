@@ -148,9 +148,14 @@ export function validateBackupManifest(manifest: unknown): RestoreValidationResu
     errors.push(`Unsupported backup type: ${String(backupType)}`);
   }
 
+  const encryptionEnabled = m.encryptionEnabled === true;
+  const dbFile = encryptionEnabled ? "database.sql.gz.enc" : "database.sql.gz";
+  const uploadsFile = encryptionEnabled ? "uploads.tar.gz.enc" : "uploads.tar.gz";
+  const hasDb = backupType === "DATABASE" || backupType === "FULL";
+  const hasUp = backupType === "FULL" || backupType === "UPLOADS";
   const requiredFiles = [
-    "database.sql.gz",
-    ...(backupType === "FULL" ? ["uploads.tar.gz"] : []),
+    ...(hasDb ? [dbFile] : []),
+    ...(hasUp ? [uploadsFile] : []),
     "manifest.json",
     "checksum.sha256",
   ];

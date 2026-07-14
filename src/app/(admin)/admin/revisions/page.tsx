@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 export default async function AdminRevisionHistoryPage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
   await requireAdminPermission("content", "view");
   const params = await searchParams;
-  const revisions = getContentRevisionHistory(100);
+  const revisions = await getContentRevisionHistory(100);
 
   return (
     <AdminPageShell

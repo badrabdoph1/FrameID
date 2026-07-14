@@ -4,14 +4,14 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { saveContent, ContentSchemas, type ContentSchemaKey } from "@/lib/content";
-import { getContentRevisionHistory } from "@/lib/content/revisions";
+import { getContentRevisionById } from "@/lib/content/revisions";
 import { requireAdminPermission } from "@/modules/admin/admin-permission-guards";
 import { restorePlatformConfigurationToGitHub } from "@/modules/setup/platform-configuration-git";
 
 export async function restoreRevisionAction(formData: FormData) {
   const admin = await requireAdminPermission("content", "edit");
   const revisionId = String(formData.get("revisionId") ?? "");
-  const revision = getContentRevisionHistory(500).find((item) => item.id === revisionId);
+  const revision = await getContentRevisionById(revisionId);
   if (!revision || revision.before === null || revision.before === undefined) redirect("/admin/revisions?error=الإصدار السابق غير متاح");
 
   try {

@@ -6,6 +6,7 @@ import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 import { SlugEditor } from "@/components/dashboard/slug-editor";
+import { resetSmartTips } from "@/components/ui/smart-tip";
 import { getPublicAccountIdentifier, isPhoneStorageEmail } from "@/modules/auth/auth-identifier";
 
 type SettingsClientProps = {
@@ -135,6 +136,24 @@ export function SettingsClient({ userName, userEmail, userPhone, userRole, siteT
           >
             <RotateCcw className="size-4" />
             إعادة الجولة
+          </button>
+        </div>
+      </Panel>
+
+      <Panel icon={RotateCcw} title="التلميحات الذكية" description="إعادة إظهار تلميحات الصفحات.">
+        <div className="rounded-2xl border border-white/8 bg-black/15 p-4">
+          <p className="text-sm font-black text-[#fff7e8]">إعادة تلميحات الصفحات</p>
+          <p className="mt-1 text-xs font-bold leading-6 text-white/45">كل صفحة ليها تلميح واحد بيظهر أول مرة. تقدر تعيد إظهارها كلها من هنا.</p>
+          <button
+            type="button"
+            onClick={() => {
+              resetSmartTips();
+              window.location.reload();
+            }}
+            className="mt-3 inline-flex min-h-10 items-center gap-2 rounded-2xl border border-amber-300/20 bg-amber-300/10 px-4 text-sm font-black text-[#f3cf73] transition hover:bg-amber-300/16 hover:text-[#ffe9a8]"
+          >
+            <RotateCcw className="size-4" />
+            إعادة التلميحات
           </button>
         </div>
       </Panel>

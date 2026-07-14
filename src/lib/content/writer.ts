@@ -4,7 +4,7 @@ import { join } from "node:path"
 import type { ZodTypeAny } from "zod"
 import { updateManifestEntry } from "./manifest"
 import { getContent, contentFileExists } from "./loader"
-import { appendContentRevision, getRevisionLogAbsolutePath } from "./revisions"
+import { appendContentRevision } from "./revisions"
 import type { ContentRevisionEntry } from "./revisions"
 import { commitContentFilesToGitHub } from "./git-sync"
 import type { SaveResult } from "./types"
@@ -108,18 +108,12 @@ export async function saveContent(
     gitStatus,
     gitError: undefined,
   }
-  appendContentRevision(revision)
-
-  const revisionCommit = await commitContentFilesToGitHub({
-    files: [{ path: "content/revisions/log.json", absolutePath: getRevisionLogAbsolutePath() }],
-    message: `Record platform content revision: ${type}`,
-  })
+  await appendContentRevision(revision)
 
   return {
     success: true,
     version: newVersion,
-    commitId: revisionCommit.commitSha ?? commitResult.commitSha,
+    commitId: commitResult.commitSha,
     gitStatus: "committed",
-    gitError: revisionCommit.error,
   }
 }

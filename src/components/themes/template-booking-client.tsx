@@ -147,7 +147,7 @@ export function BookingFAB({ variant }: { variant: "noir" | "rose" }) {
   );
 }
 
-function useBooking() {
+export function useBooking() {
   const value = useContext(BookingContext);
   if (!value) throw new Error("Booking controls must be rendered inside TemplateBookingProvider");
   return value;

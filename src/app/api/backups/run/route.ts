@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { createPrismaBackupJobRepository } from "@/modules/backups/prisma-backup-job-repository";
 import { createBackupJobService } from "@/modules/backups/backup-job-service";
 import { env } from "@/lib/env";
-import { isSupportedBackupType } from "@/modules/backups/backup-policy";
+import { isSupportedBackupType, type SupportedBackupType } from "@/modules/backups/backup-policy";
 import { verifyGitHubActionsOidcToken } from "@/modules/backups/github-actions-oidc";
 import { claimAutomaticBackupSlot, markAutomaticBackupCompleted, releaseAutomaticBackupSlot } from "@/modules/backups/automatic-backup-schedule";
 
@@ -19,7 +19,7 @@ function log(level: "info" | "warn" | "error", msg: string, meta?: Record<string
 
 export async function POST(request: NextRequest) {
   const startedAt = Date.now();
-  let claimedAutomaticType: "DATABASE" | "FULL" | null = null;
+  let claimedAutomaticType: SupportedBackupType | null = null;
   log("info", "=== Manual backup requested ===");
 
   try {

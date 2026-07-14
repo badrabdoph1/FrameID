@@ -106,17 +106,19 @@ export function DashboardHomeClient({ siteUrl, statusLabel, checklist, lastModif
           <RotateCcw className="size-4" aria-hidden /> إظهار خطوات تجهيز الموقع
         </button>
       ) : (
-        <ChecklistSection
-          items={onboardingItems}
-          doneCount={doneCount}
-          onHide={() => {
-            setChecklistHidden(true);
-            try {
-              window.localStorage.setItem(CHECKLIST_STORAGE_KEY, JSON.stringify({ hidden: true }));
-            } catch {
-            }
-          }}
-        />
+        <div data-smart-tip="checklist">
+          <ChecklistSection
+            items={onboardingItems}
+            doneCount={doneCount}
+            onHide={() => {
+              setChecklistHidden(true);
+              try {
+                window.localStorage.setItem(CHECKLIST_STORAGE_KEY, JSON.stringify({ hidden: true }));
+              } catch {
+              }
+            }}
+          />
+        </div>
       )}
 
       {nextIncomplete ? (

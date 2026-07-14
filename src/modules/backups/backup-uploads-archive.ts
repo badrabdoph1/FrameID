@@ -13,6 +13,11 @@ async function waitForTar(child: ReturnType<typeof spawn>): Promise<void> {
 export async function restoreUploadsArchive(archivePath: string, targetDir: string): Promise<void> {
   await rm(targetDir, { recursive: true, force: true });
   await mkdir(targetDir, { recursive: true });
-  const tar = spawn("tar", ["-xzf", archivePath, "-C", targetDir, "--strip-components=1"], { stdio: ["ignore", "inherit", "pipe"] });
-  await waitForTar(tar);
+  if (archivePath.endsWith(".zst")) {
+    const tar = spawn("tar", ["-I", "zstd", "-xf", archivePath, "-C", targetDir, "--strip-components=1"], { stdio: ["ignore", "inherit", "pipe"] });
+    await waitForTar(tar);
+  } else {
+    const tar = spawn("tar", ["-xzf", archivePath, "-C", targetDir, "--strip-components=1"], { stdio: ["ignore", "inherit", "pipe"] });
+    await waitForTar(tar);
+  }
 }

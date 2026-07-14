@@ -225,6 +225,12 @@ export function createGitHubStorage(token: string, repoPath?: string): GitHubSto
         if (removed.length === 0) return [];
         for (const backupId of removed) await rm(join(backupsDir, backupId), { recursive: true, force: true });
         await push(repoDir, branch, `retention(${branch}): remove ${removed.length} old backup(s)`);
+        try {
+          await runGit(repoDir, ["reflog", "expire", "--expire=30.days", "--all"]);
+          await runGit(repoDir, ["gc", "--auto", "--prune=30.days.ago"]);
+        } catch {
+          // تنظيف الحجم ليس ضروريًا لنجاح العملية
+        }
         return removed;
       });
     },

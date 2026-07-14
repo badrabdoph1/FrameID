@@ -1,10 +1,10 @@
 import { existsSync, createReadStream, createWriteStream } from "node:fs";
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, readdir, rm } from "node:fs/promises";
 import { join } from "node:path";
+import { tmpdir } from "node:os";
 import { spawn } from "node:child_process";
 import { createGunzip } from "node:zlib";
 import { pipeline } from "node:stream/promises";
-import { tmpdir } from "node:os";
 
 import type { BackupFileInventoryItem, BackupType } from "@/modules/backups/backup-manifest";
 import { createGitHubStorage } from "@/modules/backups/backup-storage-github";
@@ -33,7 +33,11 @@ export type RestoreService = {
   validateRestoredUploads(uploadsDir: string, expected: BackupFileInventoryItem[]): Promise<{ valid: boolean; errors: string[] }>;
 };
 
-function backupBranch(type: BackupType): string { return type === "FULL" ? process.env.BACKUP_GITHUB_FULL_BRANCH || "frameid-backups-full" : process.env.BACKUP_GITHUB_DATABASE_BRANCH || "frameid-backups-database"; }
+function backupBranch(type: BackupType): string {
+  if (type === "FULL") return process.env.BACKUP_GITHUB_FULL_BRANCH || "frameid-backups-full";
+  if (type === "UPLOADS") return process.env.BACKUP_GITHUB_UPLOADS_BRANCH || "frameid-backups-uploads";
+  return process.env.BACKUP_GITHUB_DATABASE_BRANCH || "frameid-backups-database";
+}
 
 function parseDatabaseUrl(url: string): { host: string; port: string; user: string; password: string; database: string } {
   const u = new URL(url);
@@ -53,23 +57,23 @@ async function restoreCustomPostgresDump(databaseUrl: string, dumpPath: string):
   const parsed = parseDatabaseUrl(databaseUrl);
   const tempDir = await mkdtemp(join(tmpdir(), "pg-restore-"));
   const tempFile = join(tempDir, "dump.sql");
-  
+
   try {
     await pipeline(
       createReadStream(dumpPath),
       createGunzip(),
       createWriteStream(tempFile)
     );
-    
+
     await new Promise<void>((resolve, reject) => {
       const pgRestore = spawn("pg_restore", [
         `--host=${parsed.host}`, `--port=${parsed.port}`, `--username=${parsed.user}`, "--no-password",
         `--dbname=${parsed.database}`, "--clean", "--if-exists", "--no-owner", "--no-acl", "--exit-on-error", tempFile,
       ], { env: { ...process.env, PGPASSWORD: parsed.password }, stdio: ["ignore", "inherit", "pipe"] });
-      
+
       let stderr = "";
       pgRestore.stderr?.on("data", (chunk) => { stderr += String(chunk); });
-      
+
       pgRestore.on("close", (code) => {
         if (code === 0) {
           resolve();
@@ -77,7 +81,7 @@ async function restoreCustomPostgresDump(databaseUrl: string, dumpPath: string):
           reject(new Error(stderr.trim() || `pg_restore exited with code ${code}`));
         }
       });
-      
+
       pgRestore.on("error", reject);
     });
   } finally {
@@ -114,13 +118,24 @@ export function createRestoreService(): RestoreService {
       const errors: string[] = [];
       const steps: RestoreStepResult = { database: false, uploads: false, content: true };
 
-      try { await restoreCustomPostgresDump(options.databaseUrl, join(options.backupDir, "database.sql.gz")); steps.database = true; }
-      catch (error) { errors.push(error instanceof Error ? error.message : "Database restore failed"); }
+      const files = await readdir(options.backupDir);
+      let dbSrc: string | null = null;
+      let upSrc: string | null = null;
+      for (const f of files) {
+        if (f === "manifest.json" || f === "checksum.sha256") continue;
+        if (f.startsWith("database.")) dbSrc = join(options.backupDir, f);
+        if (f.startsWith("uploads.")) upSrc = join(options.backupDir, f);
+      }
 
-      if (options.type === "FULL" && errors.length === 0) {
-        try { await restoreUploadsArchive(join(options.backupDir, "uploads.tar.gz"), options.uploadsDir ?? join(process.cwd(), "public", "uploads")); steps.uploads = true; }
+      if (options.type !== "UPLOADS" && dbSrc && existsSync(dbSrc)) {
+        try { await restoreCustomPostgresDump(options.databaseUrl, dbSrc); steps.database = true; }
+        catch (error) { errors.push(error instanceof Error ? error.message : "Database restore failed"); }
+      } else { steps.database = true; }
+
+      if ((options.type === "FULL" || options.type === "UPLOADS") && errors.length === 0 && upSrc && existsSync(upSrc)) {
+        try { await restoreUploadsArchive(upSrc, options.uploadsDir ?? join(process.cwd(), "public", "uploads")); steps.uploads = true; }
         catch (error) { errors.push(error instanceof Error ? error.message : "Uploads restore failed"); }
-      } else if (options.type !== "FULL") steps.uploads = true;
+      } else if (options.type !== "FULL" && options.type !== "UPLOADS") steps.uploads = true;
 
       return { success: errors.length === 0, type: options.type, steps, durationMs: Date.now() - startTime, errors };
     },

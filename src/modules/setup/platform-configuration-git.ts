@@ -5,7 +5,7 @@ import { dirname, join } from "node:path";
 
 import { prisma } from "@/lib/prisma";
 import { commitContentFilesToGitHub } from "@/lib/content/git-sync";
-import { appendContentRevision, getRevisionLogAbsolutePath } from "@/lib/content/revisions";
+import { appendContentRevision } from "@/lib/content/revisions";
 
 const RELATIVE_PATH = "content/platform/admin-config.json";
 const ABSOLUTE_PATH = join(process.cwd(), RELATIVE_PATH);
@@ -41,21 +41,17 @@ export async function syncPlatformConfigurationToGitHub(input: {
   });
   if (!committed.commitSha) throw new Error(committed.error ?? "فشل حفظ إعدادات المنصة في GitHub");
 
-  appendContentRevision({
+  await appendContentRevision({
     id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     type: `platform/${input.reason}`,
     actorId: input.actor.id,
-    actorName: input.actor.name ?? undefined,
-    actorEmail: input.actor.email ?? undefined,
+    actorName: input.actor.name ?? null,
+    actorEmail: input.actor.email ?? null,
     before,
     after,
     createdAt: after.updatedAt,
     commitId: committed.commitSha,
     gitStatus: "committed",
-  });
-  await commitContentFilesToGitHub({
-    files: [{ path: "content/revisions/log.json", absolutePath: getRevisionLogAbsolutePath() }],
-    message: `تسجيل مراجعة إعدادات المنصة: ${input.reason}`,
   });
   return { commitId: committed.commitSha };
 }
@@ -73,12 +69,12 @@ export async function restorePlatformConfigurationToGitHub(input: {
     message: `استعادة إصدار إعدادات المنصة: ${input.sourceRevisionId}`,
   });
   if (!committed.commitSha) throw new Error(committed.error ?? "فشل استعادة إعدادات المنصة في GitHub");
-  appendContentRevision({
+  await appendContentRevision({
     id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     type: "platform/restore",
     actorId: input.actor.id,
-    actorName: input.actor.name ?? undefined,
-    actorEmail: input.actor.email ?? undefined,
+    actorName: input.actor.name ?? null,
+    actorEmail: input.actor.email ?? null,
     before: null,
     after: input.value,
     createdAt: new Date().toISOString(),

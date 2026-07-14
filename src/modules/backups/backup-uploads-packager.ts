@@ -4,6 +4,7 @@ import { mkdir, readdir, stat } from "node:fs/promises";
 import { join, dirname } from "node:path";
 import type { BackupFileInventoryItem } from "./backup-manifest";
 import { collectUploadsInventory } from "./backup-uploads-inventory";
+import { getCompressionInfo } from "./backup-compression";
 
 export type UploadsPackagerResult = {
   archivePath: string;
@@ -11,12 +12,17 @@ export type UploadsPackagerResult = {
   fileCount: number;
   inventory: BackupFileInventoryItem[];
   durationMs: number;
+  compressionCodec: "gzip" | "zstd";
 };
 
 export type UploadsPackager = {
   packageUploads(outputDir: string, backupId: string): Promise<UploadsPackagerResult>;
   getUploadsSize(): Promise<number>;
 };
+
+export function getUploadsArchiveFileName(codec: "gzip" | "zstd"): string {
+  return codec === "zstd" ? "uploads.tar.zst" : "uploads.tar.gz";
+}
 
 function tarArchive(args: string[]): Promise<void> {
   return new Promise((resolve, reject) => {
@@ -32,7 +38,8 @@ function tarArchive(args: string[]): Promise<void> {
 export function createUploadsPackager(uploadsDir: string): UploadsPackager {
   return {
     async packageUploads(outputDir: string): Promise<UploadsPackagerResult> {
-      const archivePath = join(outputDir, "uploads.tar.gz");
+      const codec = await getCompressionInfo();
+      const archivePath = join(outputDir, `uploads.${codec.codec === "zstd" ? "tar.zst" : "tar.gz"}`);
       await mkdir(dirname(archivePath), { recursive: true });
 
       const startTime = Date.now();
@@ -40,19 +47,14 @@ export function createUploadsPackager(uploadsDir: string): UploadsPackager {
       const inventory = await collectUploadsInventory(uploadsDir);
       const fileCount = inventory.length;
 
+      const tarArgsBase = codec.codec === "zstd" ? ["-I", "zstd", "-cf"] : ["-czf"];
+
       if (fileCount > 0) {
         const parentDir = join(uploadsDir, "..");
         const dirName = uploadsDir.split("/").filter(Boolean).pop() ?? "uploads";
-        await tarArchive([
-          "--exclude=.*",
-          "-czf",
-          archivePath,
-          "-C",
-          parentDir,
-          dirName,
-        ]);
+        await tarArchive(["--exclude=.*", ...tarArgsBase, archivePath, "-C", parentDir, dirName]);
       } else {
-        await tarArchive(["-czf", archivePath, "--files-from=/dev/null"]);
+        await tarArchive([...tarArgsBase, archivePath, "--files-from=/dev/null"]);
       }
 
       const durationMs = Date.now() - startTime;
@@ -63,7 +65,7 @@ export function createUploadsPackager(uploadsDir: string): UploadsPackager {
         sizeBytes = stats.size;
       }
 
-      return { archivePath, sizeBytes, fileCount, inventory, durationMs };
+      return { archivePath, sizeBytes, fileCount, inventory, durationMs, compressionCodec: codec.codec };
     },
 
     async getUploadsSize(): Promise<number> {

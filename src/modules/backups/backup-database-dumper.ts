@@ -15,7 +15,7 @@ export type DatabaseDumpResult = {
 };
 
 export type DatabaseDumper = {
-  dumpDatabase(outputDir: string, backupId: string): Promise<DatabaseDumpResult>;
+  dumpDatabase(outputDir: string, backupId?: string): Promise<DatabaseDumpResult>;
   getDatabaseSize(): Promise<number>;
   getMigrationVersion(): Promise<string>;
 };
@@ -68,7 +68,7 @@ export function createDatabaseDumper(databaseUrl: string): DatabaseDumper {
         `--username=${parsed.user}`,
         "--no-password",
         "--format=custom",
-        "--compress=9",
+        "--compress=3",
         "--no-owner",
         "--no-acl",
         parsed.database,

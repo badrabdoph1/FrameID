@@ -1,7 +1,6 @@
-import { stat } from "node:fs/promises";
+import { readFile, stat, readdir, mkdtemp, rm } from "node:fs/promises";
 import { createReadStream, createWriteStream, existsSync } from "node:fs";
 import { join } from "node:path";
-import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { createGunzip } from "node:zlib";
 import { pipeline } from "node:stream/promises";
@@ -84,15 +83,12 @@ export function createVerificationService({ verifyPayloadTools = true }: { verif
 
       const manifestPath = join(backupDir, "manifest.json");
       const checksumPath = join(backupDir, "checksum.sha256");
-      const dbDumpPath = join(backupDir, "database.sql.gz");
-      const uploadsPath = join(backupDir, "uploads.tar.gz");
 
       checks.manifestExists = existsSync(manifestPath);
       checks.checksumFileExists = existsSync(checksumPath);
 
       if (checks.manifestExists && checks.checksumFileExists) {
         try {
-          const { readFile } = await import("node:fs/promises");
           const manifestContent = await readFile(manifestPath, "utf-8");
           const expectedChecksum = (await readFile(checksumPath, "utf-8")).trim();
           const actualChecksum = createSha256Checksum(manifestContent);
@@ -102,51 +98,71 @@ export function createVerificationService({ verifyPayloadTools = true }: { verif
           const manifest = JSON.parse(manifestContent) as BackupManifest;
           const manifestValidation = validateBackupManifest(manifest);
           if (!manifestValidation.valid) errors.push(...manifestValidation.errors);
-          const requiresUploads = manifest.backupType === "FULL";
+          const requiresUp = manifest.backupType === "FULL" || manifest.backupType === "UPLOADS";
+          const requiresDb = manifest.backupType === "DATABASE" || manifest.backupType === "FULL";
 
-          checks.databaseDumpExists = existsSync(dbDumpPath);
-          if (checks.databaseDumpExists) {
-            const s = await stat(dbDumpPath);
-            sizes.databaseBytes = s.size;
-            checks.databaseDumpNonEmpty = s.size > 0;
-            if (!checks.databaseDumpNonEmpty) errors.push("Database dump is empty");
-            if (checks.databaseDumpNonEmpty) {
-              const checksum = await createFileSha256Checksum(dbDumpPath);
-              if (checksum !== manifest.artifactChecksums?.database) errors.push("Database artifact checksum mismatch");
-              if (verifyPayloadTools) {
-                try { await verifyPostgresDump(dbDumpPath); }
-                catch (error) { errors.push(error instanceof Error ? error.message : "Invalid PostgreSQL dump"); }
-              }
-            }
-          } else {
-            errors.push("database.sql.gz not found");
+          const files = await readdir(backupDir);
+          let dbPath: string | null = null;
+          let upPath: string | null = null;
+          for (const f of files) {
+            if (f === "manifest.json" || f === "checksum.sha256") continue;
+            if (f.startsWith("database.")) dbPath = join(backupDir, f);
+            if (f.startsWith("uploads.")) upPath = join(backupDir, f);
           }
 
-          checks.uploadsArchiveExists = existsSync(uploadsPath);
-          if (checks.uploadsArchiveExists) {
-            const s = await stat(uploadsPath);
-            sizes.uploadsBytes = s.size;
-            checks.uploadsArchiveNonEmpty = s.size > 0;
-            if (requiresUploads && !checks.uploadsArchiveNonEmpty) errors.push("Uploads archive is empty");
-            if (requiresUploads && checks.uploadsArchiveNonEmpty) {
-              const checksum = await createFileSha256Checksum(uploadsPath);
-              if (checksum !== manifest.artifactChecksums?.uploads) errors.push("Uploads artifact checksum mismatch");
-              if (verifyPayloadTools) {
-                const extracted = await mkdtemp(join(tmpdir(), "frameid-uploads-verify-"));
-                try {
-                  await restoreUploadsArchive(uploadsPath, extracted);
-                  const inventory = await validateUploadsInventory(extracted, manifest.uploadsInventory ?? []);
-                  if (!inventory.valid) errors.push(...inventory.errors);
-                } catch (error) {
-                  errors.push(error instanceof Error ? error.message : "Invalid uploads archive");
-                } finally {
-                  await rm(extracted, { recursive: true, force: true });
+          if (requiresDb) {
+            checks.databaseDumpExists = dbPath !== null;
+            if (checks.databaseDumpExists) {
+              const s = await stat(dbPath!);
+              sizes.databaseBytes = s.size;
+              checks.databaseDumpNonEmpty = s.size > 0;
+              if (!checks.databaseDumpNonEmpty) errors.push("Database dump is empty");
+              if (checks.databaseDumpNonEmpty) {
+                const checksum = await createFileSha256Checksum(dbPath!);
+                if (checksum !== manifest.artifactChecksums?.database) errors.push("Database artifact checksum mismatch");
+                if (verifyPayloadTools) {
+                  try { await verifyPostgresDump(dbPath!); }
+                  catch (error) { errors.push(error instanceof Error ? error.message : "Invalid PostgreSQL dump"); }
                 }
               }
+            } else {
+              errors.push("Database file not found (expected name starting with database.)");
             }
-          } else if (requiresUploads) {
-            checks.uploadsArchiveNonEmpty = false;
-            errors.push("uploads.tar.gz not found");
+          } else {
+            checks.databaseDumpExists = true;
+            checks.databaseDumpNonEmpty = true;
+          }
+
+          if (requiresUp) {
+            checks.uploadsArchiveExists = upPath !== null;
+            if (checks.uploadsArchiveExists) {
+              const s = await stat(upPath!);
+              sizes.uploadsBytes = s.size;
+              checks.uploadsArchiveNonEmpty = s.size > 0;
+              if (!checks.uploadsArchiveNonEmpty) errors.push("Uploads archive is empty");
+              if (checks.uploadsArchiveNonEmpty) {
+                const checksum = await createFileSha256Checksum(upPath!);
+                if (checksum !== manifest.artifactChecksums?.uploads) errors.push("Uploads artifact checksum mismatch");
+                if (verifyPayloadTools) {
+                  const extracted = await mkdtemp(join(tmpdir(), "frameid-uploads-verify-"));
+                  try {
+                    await restoreUploadsArchive(upPath!, extracted);
+                    const inventory = await validateUploadsInventory(extracted, manifest.uploadsInventory ?? []);
+                    if (!inventory.valid) errors.push(...inventory.errors);
+                  } catch (error) {
+                    errors.push(error instanceof Error ? error.message : "Invalid uploads archive");
+                  } finally {
+                    await rm(extracted, { recursive: true, force: true });
+                  }
+                }
+              }
+            } else {
+              checks.uploadsArchiveNonEmpty = false;
+              errors.push("Uploads file not found (expected name starting with uploads.)");
+            }
+          } else {
+            checks.uploadsArchiveExists = true;
+            checks.uploadsArchiveNonEmpty = true;
           }
         } catch (error) {
           errors.push(`Verification error: ${error instanceof Error ? error.message : "Unknown"}`);
@@ -161,7 +177,6 @@ export function createVerificationService({ verifyPayloadTools = true }: { verif
     },
 
     async verifyAllBackups(backupRoot: string) {
-      const { readdir } = await import("node:fs/promises");
       let dirs: string[] = [];
       try {
         if (existsSync(backupRoot)) dirs = await readdir(backupRoot);

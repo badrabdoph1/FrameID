@@ -1,6 +1,6 @@
 import { cp, mkdir, writeFile, readFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
-import { join } from "node:path";
+import { basename, join } from "node:path";
 
 import { createSha256Checksum } from "@/modules/backups/backup-manifest";
 import type { BackupManifest } from "@/modules/backups/backup-manifest";
@@ -55,15 +55,15 @@ export async function createBackupPackage(
   await mkdir(backupDir, { recursive: true });
 
   if (input.databaseDumpPath && existsSync(input.databaseDumpPath)) {
-    const dest = join(backupDir, "database.sql.gz");
+    const dest = join(backupDir, basename(input.databaseDumpPath));
     await cp(input.databaseDumpPath, dest);
   }
   if (input.uploadsArchivePath && existsSync(input.uploadsArchivePath)) {
-    const dest = join(backupDir, "uploads.tar.gz");
+    const dest = join(backupDir, basename(input.uploadsArchivePath));
     await cp(input.uploadsArchivePath, dest);
   }
   if (input.contentArchivePath && existsSync(input.contentArchivePath)) {
-    const dest = join(backupDir, "content.tar.gz");
+    const dest = join(backupDir, basename(input.contentArchivePath));
     await cp(input.contentArchivePath, dest);
   }
 

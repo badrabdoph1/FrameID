@@ -20,18 +20,18 @@ import {
 
 import type { PublicSiteViewModel } from "@/modules/public-sites/public-site-view-model";
 import { cn } from "@/lib/utils/cn";
-import { ThemeBookingFAB } from "@/components/themes/theme-booking-fab";
 import {
-  createThemeBookingHref,
-  formatThemeTotal,
-  getThemeDisplayName,
-  getThemeFeaturedImage,
-  getThemeHeroImage,
-  getThemeMobileCaption,
-  getThemeSectionCopy,
-  isThemeSectionVisible,
-  normalizeThemeSocialUrl
-} from "@/components/themes/theme-contract";
+  BookingAction,
+  BookingFAB,
+  PackageSelectButton,
+  TemplateBookingProvider,
+  useBooking,
+} from "@/components/themes/template-booking-client";
+import {
+  formatTemplatePrice,
+  normalizeContactHref,
+  type NormalizedTemplateSection,
+} from "@/modules/themes/template-contract";
 
 type RoseBlushSiteProps = {
   site: PublicSiteViewModel;
@@ -40,55 +40,75 @@ type RoseBlushSiteProps = {
 const EMPTY_BOOKING_MESSAGE = "قم بتحديد باقة من الأعلى ليظهر ملخص الحجز هنا أولًا";
 
 export function RoseBlushSite({ site }: RoseBlushSiteProps) {
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [selectedPackageId, setSelectedPackageId] = useState<string | null>(null);
-  const [selectedExtraIds, setSelectedExtraIds] = useState<string[]>([]);
-
-  const selectedPackage = site.packages.find((item) => item.id === selectedPackageId);
-  const selectedExtras = site.extras.filter((item) => selectedExtraIds.includes(item.id));
+  const displayName = site.contact.studioName?.trim() || site.hero.headline;
+  const visibleSections = site.orderedSections.filter((section) => section.isVisible);
   const galleryImages = site.gallery.slice(0, 7);
-  const heroImage = getThemeHeroImage(site);
-  const featuredImage = getThemeFeaturedImage(site);
-  const displayName = getThemeDisplayName(site);
-  const mobileHeaderCaption = getThemeMobileCaption(site, displayName);
-  const gallerySection = getThemeSectionCopy(site, "gallery", {
-    title: "لحظات لا تُنسى",
-    description: "مجموعة مختارة من أعمال التصوير كما تظهر من معرض العميل نفسه."
-  });
-  const packagesSection = getThemeSectionCopy(site, "packages", {
-    title: "اختر باقتك",
-    description: "اختار التغطية الأنسب ليومك، ويمكنك إضافة أي خدمة تحتاجها قبل تأكيد الحجز."
-  });
-  const extrasSection = getThemeSectionCopy(site, "extras", {
-    title: "لمسة إضافية",
-    description: "أضف خدمة تصوير أو ألبوم أو فيديو حسب احتياج اليوم."
-  });
-  const showGallery = isThemeSectionVisible(site, "gallery") && site.gallery.length > 0;
-  const showPackages = isThemeSectionVisible(site, "packages") && site.packages.length > 0;
-  const showExtras = isThemeSectionVisible(site, "extras") && site.extras.length > 0;
+  const heroImage = site.hero.imageUrl ? { url: site.hero.imageUrl, alt: site.hero.headline } : site.gallery[0] ?? null;
+  const featuredImage = site.gallery[1]?.url ?? site.gallery[0]?.url ?? null;
+
+  return (
+    <TemplateBookingProvider
+      packages={site.packages}
+      extras={site.extras}
+      siteName={displayName}
+      whatsapp={site.contact.whatsapp}
+      email={site.contact.email}
+    >
+      <RoseBlushSiteInner
+        site={site}
+        displayName={displayName}
+        visibleSections={visibleSections}
+        galleryImages={galleryImages}
+        heroImage={heroImage}
+        featuredImage={featuredImage}
+      />
+    </TemplateBookingProvider>
+  );
+}
+
+function RoseBlushSiteInner({
+  site,
+  displayName,
+  visibleSections,
+  galleryImages,
+  heroImage,
+  featuredImage,
+}: {
+  site: PublicSiteViewModel;
+  displayName: string;
+  visibleSections: NormalizedTemplateSection[];
+  galleryImages: PublicSiteViewModel["gallery"];
+  heroImage: { url: string; alt: string } | null;
+  featuredImage: string | null;
+}) {
+  const booking = useBooking();
+  const selectedPackage = site.packages.find((item) => item.id === booking.selectedPackageId);
+  const selectedExtras = site.extras.filter((item) => booking.selectedExtraIds.includes(item.id));
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const total = useMemo(() => {
     return (selectedPackage?.priceAmount ?? 0) + selectedExtras.reduce((sum, item) => sum + item.priceAmount, 0);
   }, [selectedExtras, selectedPackage]);
 
-  const bookingHref = createThemeBookingHref({ site, selectedPackage, selectedExtras, total });
+  const gallerySection = site.sections.gallery;
+  const packagesSection = site.sections.packages;
+  const extrasSection = site.sections.extras;
+
+  const showGallery = site.sections.gallery?.isVisible && site.gallery.length > 0;
+  const showPackages = site.sections.packages?.isVisible && site.packages.length > 0;
+  const showExtras = site.sections.extras?.isVisible && site.extras.length > 0;
+
+  const mobileHeaderCaption = site.hero.headline !== displayName
+    ? site.hero.headline
+    : (site.hero.subheadline || site.contact.bio || "معرض تصوير");
 
   function scrollToSection(id: string) {
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
     setMenuOpen(false);
   }
 
-  function toggleExtra(extraId: string) {
-    setSelectedExtraIds((current) =>
-      current.includes(extraId) ? current.filter((id) => id !== extraId) : [...current, extraId]
-    );
-  }
-
-  function handleBookingClick(event: MouseEvent<HTMLAnchorElement>) {
-    if (selectedPackage) return;
-    event.preventDefault();
-    scrollToSection("packages");
-  }
+  const instagramHref = site.contact.instagram ? normalizeContactHref("instagram", site.contact.instagram) : booking.bookingHref;
+  const facebookHref = site.contact.facebook ? normalizeContactHref("facebook", site.contact.facebook) : booking.bookingHref;
 
   return (
     <main className="min-h-screen overflow-hidden bg-[#fff8f4] text-[#2c1810] selection:bg-[#d48a9e] selection:text-white">
@@ -105,15 +125,14 @@ export function RoseBlushSite({ site }: RoseBlushSiteProps) {
 
           <div className="hidden items-center gap-7 rounded-full border border-[#eaddd4]/80 bg-white/55 px-4 py-2 text-sm font-bold text-[#8c7a74] shadow-[0_18px_50px_rgba(44,24,16,0.06)] md:flex">
             <ScrollButton onClick={() => scrollToSection("home")} label="الرئيسية" />
-            <ScrollButton onClick={() => scrollToSection("gallery")} label="الأعمال" />
-            <ScrollButton onClick={() => scrollToSection("packages")} label="الباقات" />
-            <ScrollButton onClick={() => scrollToSection("extras")} label="الإضافات" />
-            <ScrollButton onClick={() => scrollToSection("contact")} label="الحجز" />
+            {visibleSections.filter((s) => s.type !== "hero").map((section) => (
+              <ScrollButton key={section.type} onClick={() => scrollToSection(section.type)} label={section.title} />
+            ))}
           </div>
 
           <div className="flex shrink-0 items-center gap-2">
             <div className="hidden md:block">
-              <SocialLinks site={site} bookingHref={bookingHref} compact onBookingClick={handleBookingClick} />
+              <SocialLinks site={site} instagramHref={instagramHref} facebookHref={facebookHref} bookingHref={booking.bookingHref} compact />
             </div>
             <button type="button" className="inline-flex size-10 items-center justify-center rounded-full border border-[#eaddd4] bg-white/70 text-[#8c7a74] shadow-[0_10px_30px_rgba(44,24,16,0.08)] md:hidden" aria-label="القائمة" aria-expanded={menuOpen} onClick={() => setMenuOpen((open) => !open)}>
               {menuOpen ? <X className="size-4" /> : <Menu className="size-4" />}
@@ -123,20 +142,19 @@ export function RoseBlushSite({ site }: RoseBlushSiteProps) {
 
         <div className="container-page flex gap-2 overflow-x-auto pb-2 [scrollbar-width:none] md:hidden [&::-webkit-scrollbar]:hidden">
           <MobileTopButton onClick={() => scrollToSection("home")} label="الرئيسية" />
-          <MobileTopButton onClick={() => scrollToSection("gallery")} label="الأعمال" />
-          <MobileTopButton onClick={() => scrollToSection("packages")} label="الباقات" />
-          <MobileTopButton onClick={() => scrollToSection("contact")} label="الحجز" />
+          {visibleSections.filter((s) => s.type !== "hero").slice(0, 3).map((section) => (
+            <MobileTopButton key={section.type} onClick={() => scrollToSection(section.type)} label={section.title} />
+          ))}
         </div>
 
         {menuOpen ? (
           <div className="border-t border-[#eaddd4] bg-[#fff8f4]/96 px-6 py-3 md:hidden">
             <MobileScrollButton onClick={() => scrollToSection("home")} label="الرئيسية" />
-            <MobileScrollButton onClick={() => scrollToSection("gallery")} label="الأعمال" />
-            <MobileScrollButton onClick={() => scrollToSection("packages")} label="الباقات" />
-            <MobileScrollButton onClick={() => scrollToSection("extras")} label="الإضافات" />
-            <MobileScrollButton onClick={() => scrollToSection("contact")} label="الحجز" />
+            {visibleSections.filter((s) => s.type !== "hero").map((section) => (
+              <MobileScrollButton key={section.type} onClick={() => scrollToSection(section.type)} label={section.title} />
+            ))}
             <div className="mt-3 flex justify-center">
-              <SocialLinks site={site} bookingHref={bookingHref} onBookingClick={handleBookingClick} />
+              <SocialLinks site={site} instagramHref={instagramHref} facebookHref={facebookHref} bookingHref={booking.bookingHref} />
             </div>
           </div>
         ) : null}
@@ -151,7 +169,7 @@ export function RoseBlushSite({ site }: RoseBlushSiteProps) {
           <div className="mx-auto max-w-3xl text-center md:mx-0 md:text-start">
             <span className="inline-flex items-center gap-2 rounded-full border border-[#8fb89a]/30 bg-white/58 px-4 py-2 text-xs font-black tracking-[0.18em] text-[#6d9a78] shadow-[0_16px_45px_rgba(143,184,154,0.10)] backdrop-blur">
               <Heart className="size-3 fill-[#6d9a78]" />
-              تصوير فني راقي
+              {site.hero.eyebrow || String(gallerySection?.settings.eyebrow ?? "تصوير فني راقي")}
             </span>
             <h1 className="mx-auto mt-6 max-w-4xl text-balance font-display text-4xl font-bold leading-tight text-[#2c1810] sm:text-5xl md:mx-0 md:text-7xl lg:text-8xl">
               {site.hero.headline}
@@ -165,10 +183,10 @@ export function RoseBlushSite({ site }: RoseBlushSiteProps) {
               {site.hero.subheadline}
             </p>
             <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row md:justify-start">
-              <button type="button" onClick={() => scrollToSection("packages")} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-[var(--radius-control)] bg-[#d48a9e] px-8 text-sm font-black text-white shadow-[0_18px_45px_rgba(212,138,158,0.26)] transition hover:-translate-y-0.5 hover:bg-[#b87084]">
-                اختر باقتك
+              <a href={site.hero.cta.target === "whatsapp" && site.contact.whatsapp ? normalizeContactHref("whatsapp", site.contact.whatsapp) : `#${site.hero.cta.target === "whatsapp" ? "contact" : site.hero.cta.target}`} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-[var(--radius-control)] bg-[#d48a9e] px-8 text-sm font-black text-white no-underline shadow-[0_18px_45px_rgba(212,138,158,0.26)] transition hover:-translate-y-0.5 hover:bg-[#b87084]">
+                {site.hero.cta.label}
                 <ChevronDown className="size-4" />
-              </button>
+              </a>
               <button type="button" onClick={() => scrollToSection("gallery")} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-[var(--radius-control)] border border-[#e0c9bf] bg-white/72 px-8 text-sm font-black text-[#2c1810] shadow-[0_14px_40px_rgba(44,24,16,0.06)] transition hover:-translate-y-0.5 hover:bg-white">
                 <Images className="size-4" />
                 شاهد الأعمال
@@ -195,7 +213,7 @@ export function RoseBlushSite({ site }: RoseBlushSiteProps) {
       {showGallery ? (
         <section id="gallery" className="bg-white py-16 md:py-28">
           <div className="container-page">
-            <SectionHeading eyebrow="معرض الأعمال" title={gallerySection.title} description={gallerySection.description ?? undefined} />
+            <SectionHeading eyebrow={String(gallerySection?.settings.eyebrow ?? "معرض الأعمال")} title={gallerySection?.title ?? "الأعمال"} description={gallerySection?.description ?? undefined} />
             <div className="mt-10 grid gap-3 sm:grid-cols-2 md:grid-cols-12 md:grid-rows-[230px_230px] md:gap-4 lg:grid-rows-[280px_280px]">
               {galleryImages.map((image, index) => (
                 <figure key={image.id} className={cn("group relative overflow-hidden rounded-[1.6rem] border border-[#eaddd4]/70 bg-white shadow-[0_24px_70px_rgba(44,24,16,0.08)] transition duration-500 hover:-translate-y-1 hover:shadow-[0_32px_90px_rgba(212,138,158,0.14)]", index === 0 ? "sm:col-span-2 md:col-span-6 md:row-span-2" : index === 1 ? "md:col-span-6" : "md:col-span-3")}> 
@@ -214,10 +232,10 @@ export function RoseBlushSite({ site }: RoseBlushSiteProps) {
       {showPackages ? (
       <section id="packages" className="bg-[#fff8f4] py-16 md:py-28">
         <div className="container-page">
-          <SectionHeading eyebrow="باقات التصوير" title={packagesSection.title} description={packagesSection.description ?? undefined} />
+          <SectionHeading eyebrow={String(packagesSection?.settings.eyebrow ?? "باقات التصوير")} title={packagesSection?.title ?? "الباقات"} description={packagesSection?.description ?? undefined} />
           <div className="mt-10 grid gap-5 md:grid-cols-3 md:gap-6">
             {site.packages.map((item, index) => {
-              const selected = selectedPackageId === item.id;
+              const selected = booking.selectedPackageId === item.id;
               const galleryFallback = site.gallery.length ? site.gallery[index % site.gallery.length]?.url : null;
               const imageUrl = item.imageUrl ?? galleryFallback;
               return (
@@ -240,9 +258,7 @@ export function RoseBlushSite({ site }: RoseBlushSiteProps) {
                     <ul className="mt-5 flex-1 space-y-3">
                       {item.features.map((feature) => <li key={feature} className="flex gap-3 text-sm leading-6 text-[#6f5c55]"><span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-[#e8f0e6]"><Check className="size-3 text-[#6d9a78]" /></span><span>{feature}</span></li>)}
                     </ul>
-                    <button type="button" onClick={() => setSelectedPackageId(item.id)} className={cn("mt-6 min-h-12 rounded-[var(--radius-control)] text-sm font-black transition hover:-translate-y-0.5", selected ? "bg-[#d48a9e] text-white shadow-[0_16px_35px_rgba(212,138,158,0.24)]" : "border border-[#eaddd4] bg-white text-[#2c1810] hover:border-[#d48a9e] hover:text-[#d48a9e]")}>
-                      {selected ? "تم الاختيار" : "اختر الباقة"}
-                    </button>
+                    <PackageSelectButton id={item.id} variant="rose" />
                   </div>
                 </article>
               );
@@ -255,17 +271,12 @@ export function RoseBlushSite({ site }: RoseBlushSiteProps) {
       {showExtras ? (
         <section id="extras" className="bg-white py-16 md:py-28">
           <div className="container-page">
-            <SectionHeading eyebrow="خدمات إضافية" title={extrasSection.title} description={extrasSection.description ?? undefined} />
+            <SectionHeading eyebrow={String(extrasSection?.settings.eyebrow ?? "خدمات إضافية")} title={extrasSection?.title ?? "الإضافات"} description={extrasSection?.description ?? undefined} />
             <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {site.extras.map((extra) => {
-                const selected = selectedExtraIds.includes(extra.id);
                 const Icon = getExtraIcon(extra.iconKey);
                 return (
-                  <button key={extra.id} type="button" onClick={() => toggleExtra(extra.id)} className={cn("group min-h-32 rounded-[1.5rem] border p-5 text-start shadow-[0_18px_60px_rgba(44,24,16,0.06)] transition duration-300 hover:-translate-y-0.5", selected ? "border-[#8fb89a] bg-[#f4f8f3] shadow-[0_20px_70px_rgba(143,184,154,0.16)]" : "border-[#eaddd4]/70 bg-white hover:border-[#d48a9e]/45")}> 
-                    <span className={cn("inline-flex size-12 items-center justify-center rounded-2xl transition", selected ? "bg-[#8fb89a] text-white" : "bg-[#f5e4ea] text-[#d48a9e] group-hover:bg-[#d48a9e] group-hover:text-white")}>{selected ? <Check className="size-5" /> : <Icon className="size-5" />}</span>
-                    <span className="mt-5 block font-black text-[#2c1810]">{extra.name}</span>
-                    <span className="mt-2 block font-display text-xl font-bold text-[#d48a9e]">{extra.price}</span>
-                  </button>
+                  <ExtraItem key={extra.id} extra={extra} Icon={Icon} />
                 );
               })}
             </div>
@@ -294,15 +305,12 @@ export function RoseBlushSite({ site }: RoseBlushSiteProps) {
                 <div className="mt-6 space-y-4 rounded-[1.5rem] bg-[#fff8f4] p-5 text-start">
                   <div className="flex items-start justify-between gap-4 border-b border-[#eaddd4] pb-3"><span className="text-sm text-[#8c7a74]">الباقة</span><div className="text-left"><strong className="block text-[#2c1810]">{selectedPackage.name}</strong>{selectedPackage.subtitle ? <span className="text-xs text-[#6d9a78]">{selectedPackage.subtitle}</span> : null}</div></div>
                   {selectedExtras.length ? <div className="space-y-2 border-b border-[#eaddd4] pb-3">{selectedExtras.map((extra) => <div key={extra.id} className="flex justify-between gap-4 text-sm"><span className="text-[#8c7a74]">{extra.name}</span><span className="font-bold text-[#d48a9e]">{extra.price}</span></div>)}</div> : null}
-                  <div className="flex items-center justify-between gap-4 pt-1"><span className="font-black text-[#2c1810]">الإجمالي التقريبي</span><span className="font-display text-2xl font-bold text-[#d48a9e]">{formatThemeTotal(total, selectedPackage.currency)}</span></div>
+                  <div className="flex items-center justify-between gap-4 pt-1"><span className="font-black text-[#2c1810]">الإجمالي التقريبي</span><span className="font-display text-2xl font-bold text-[#d48a9e]">{formatTemplatePrice(total, selectedPackage.currency)}</span></div>
                 </div>
               ) : (
                 <div className="mt-6 flex flex-col items-center gap-3 rounded-[1.5rem] border border-dashed border-[#eaddd4] bg-[#fff8f4] p-8"><Heart className="size-8 text-[#d48a9e]/45" /><p className="text-center text-sm font-bold leading-7 text-[#8c7a74]">{EMPTY_BOOKING_MESSAGE}</p></div>
               )}
-              <a href={bookingHref} onClick={handleBookingClick} className={cn("mt-6 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-[var(--radius-control)] text-sm font-black transition hover:-translate-y-0.5", selectedPackage ? "bg-[#25d366] text-white shadow-[0_18px_45px_rgba(37,211,102,0.24)] hover:bg-[#20b858]" : "bg-[#eaddd4] text-white/75")}> 
-                <Phone className="size-4" />
-                {selectedPackage ? site.contact.callToAction : "اختار باقة أولًا"}
-              </a>
+              <BookingAction label={site.contact.callToAction} variant="rose" />
             </div>
           </div>
         </div>
@@ -313,18 +321,26 @@ export function RoseBlushSite({ site }: RoseBlushSiteProps) {
           <div className="mx-auto mb-6 flex items-center justify-center gap-3"><span className="h-px w-8 bg-[#d48a9e]/40" /><span className="font-display text-xs tracking-[0.3em] text-[#8fb89a]">FRAMEID</span><span className="h-px w-8 bg-[#d48a9e]/40" /></div>
           <h2 className="font-display text-3xl font-bold tracking-[0.08em] text-[#d48a9e]">{displayName}</h2>
           <div className="mt-6 flex items-center justify-center">
-            <SocialLinks site={site} bookingHref={bookingHref} onBookingClick={handleBookingClick} />
+            <SocialLinks site={site} instagramHref={instagramHref} facebookHref={facebookHref} bookingHref={booking.bookingHref} />
           </div>
-          <p className="mt-8 font-display text-xs tracking-[0.2em] text-[#8c7a74]/50">© {new Date().getFullYear()} FrameID</p>
+          <p className="mt-8 font-display text-xs tracking-[0.2em] text-[#8c7a74]/50">&copy; {new Date().getFullYear()} FrameID</p>
         </div>
       </footer>
 
-      <ThemeBookingFAB
-        visible={Boolean(selectedPackage) || selectedExtras.length > 0}
-        onConfirm={() => scrollToSection("contact")}
-        variant="rose"
-      />
+      <BookingFAB variant="rose" />
     </main>
+  );
+}
+
+function ExtraItem({ extra, Icon }: { extra: PublicSiteViewModel["extras"][number]; Icon: typeof Camera }) {
+  const booking = useBooking();
+  const selected = booking.selectedExtraIds.includes(extra.id);
+  return (
+    <button key={extra.id} type="button" onClick={() => booking.toggleExtra(extra.id)} className={cn("group min-h-32 rounded-[1.5rem] border p-5 text-start shadow-[0_18px_60px_rgba(44,24,16,0.06)] transition duration-300 hover:-translate-y-0.5", selected ? "border-[#8fb89a] bg-[#f4f8f3] shadow-[0_20px_70px_rgba(143,184,154,0.16)]" : "border-[#eaddd4]/70 bg-white hover:border-[#d48a9e]/45")}> 
+      <span className={cn("inline-flex size-12 items-center justify-center rounded-2xl transition", selected ? "bg-[#8fb89a] text-white" : "bg-[#f5e4ea] text-[#d48a9e] group-hover:bg-[#d48a9e] group-hover:text-white")}>{selected ? <Check className="size-5" /> : <Icon className="size-5" />}</span>
+      <span className="mt-5 block font-black text-[#2c1810]">{extra.name}</span>
+      <span className="mt-2 block font-display text-xl font-bold text-[#d48a9e]">{extra.price}</span>
+    </button>
   );
 }
 
@@ -342,32 +358,36 @@ function MobileScrollButton({ label, onClick }: { label: string; onClick: () => 
 
 function SocialLinks({
   site,
+  instagramHref,
+  facebookHref,
   bookingHref,
   compact = false,
-  onBookingClick
 }: {
   site: PublicSiteViewModel;
+  instagramHref: string;
+  facebookHref: string;
   bookingHref: string;
   compact?: boolean;
-  onBookingClick?: (event: MouseEvent<HTMLAnchorElement>) => void;
 }) {
   const itemClass = compact
     ? "inline-flex size-9 items-center justify-center rounded-full border border-[#eaddd4] bg-white/70 text-[#8c7a74] shadow-[0_10px_30px_rgba(44,24,16,0.08)] transition hover:border-[#d48a9e] hover:text-[#d48a9e]"
     : "inline-flex size-11 items-center justify-center rounded-full border border-[#eaddd4] bg-white text-[#8c7a74] shadow-[0_10px_30px_rgba(44,24,16,0.08)] transition hover:border-[#d48a9e] hover:text-[#d48a9e]";
-  const instagramHref = site.contact.instagram ? normalizeThemeSocialUrl(site.contact.instagram, "instagram") : bookingHref;
-  const facebookHref = site.contact.facebook ? normalizeThemeSocialUrl(site.contact.facebook, "facebook") : bookingHref;
 
   return (
     <div className="flex items-center gap-2">
-      <a href={bookingHref} onClick={onBookingClick} className={itemClass} aria-label="حجز">
+      <a href={bookingHref} className={itemClass} aria-label="حجز">
         <Phone className={compact ? "size-4" : "size-5"} />
       </a>
-      <a href={instagramHref} onClick={instagramHref === bookingHref ? onBookingClick : undefined} target={instagramHref === bookingHref ? undefined : "_blank"} rel={instagramHref === bookingHref ? undefined : "noreferrer"} className={itemClass} aria-label="إنستجرام">
-        <Instagram className={compact ? "size-4" : "size-5"} />
-      </a>
-      <a href={facebookHref} onClick={facebookHref === bookingHref ? onBookingClick : undefined} target={facebookHref === bookingHref ? undefined : "_blank"} rel={facebookHref === bookingHref ? undefined : "noreferrer"} className={itemClass} aria-label="فيسبوك">
-        <span className={compact ? "font-display text-base font-bold" : "font-display text-lg font-bold"}>f</span>
-      </a>
+      {site.contact.instagram ? (
+        <a href={instagramHref} target="_blank" rel="noreferrer" className={itemClass} aria-label="إنستجرام">
+          <Instagram className={compact ? "size-4" : "size-5"} />
+        </a>
+      ) : null}
+      {site.contact.facebook ? (
+        <a href={facebookHref} target="_blank" rel="noreferrer" className={itemClass} aria-label="فيسبوك">
+          <span className={compact ? "font-display text-base font-bold" : "font-display text-lg font-bold"}>f</span>
+        </a>
+      ) : null}
     </div>
   );
 }
