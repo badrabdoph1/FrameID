@@ -166,7 +166,7 @@ export function SmartTip({ config }: { config: SmartTipConfig | null }) {
   );
 }
 
-function SmartHint({ selector, glow, cardRef }: { selector: string; glow: string; cardRef: React.RefObject<HTMLDivElement> }) {
+function SmartHint({ selector, glow, cardRef }: { selector: string; glow: string; cardRef: React.RefObject<HTMLDivElement | null> }) {
   const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
   const [cardRect, setCardRect] = useState<DOMRect | null>(null);
 
