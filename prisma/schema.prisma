@@ -120,6 +120,13 @@ enum FeatureFlagScope {
   SITE
 }
 
+enum PlatformPageKind {
+  EDITORIAL
+  LEGAL
+  AUTH
+  FUNCTIONAL
+}
+
 model User {
   id              String    @id @default(cuid())
   email           String    @unique
@@ -985,6 +992,67 @@ model ContentRevision {
   @@index([type, createdAt])
   @@index([createdAt])
   @@index([actorId, createdAt])
+}
+
+model PlatformPage {
+  id             String           @id @default(cuid())
+  key            String           @unique
+  route          String           @unique
+  kind           PlatformPageKind
+  document       Json
+  version        Int              @default(1)
+  schemaVersion  Int              @default(1)
+  updatedById    String?
+  updatedByName  String?
+  updatedByEmail String?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  revisions PlatformPageRevision[]
+
+  @@index([kind, updatedAt])
+  @@index([updatedById, updatedAt])
+}
+
+model PlatformPageRevision {
+  id                     String   @id @default(cuid())
+  pageId                 String
+  version                Int
+  document               Json
+  schemaVersion          Int      @default(1)
+  actorId                 String?
+  actorName               String?
+  actorEmail              String?
+  changeSummary           String?
+  restoredFromRevisionId  String?
+  createdAt               DateTime @default(now())
+
+  page PlatformPage @relation(fields: [pageId], references: [id], onDelete: Cascade)
+
+  @@unique([pageId, version])
+  @@index([pageId, createdAt])
+  @@index([actorId, createdAt])
+}
+
+model PlatformMediaAsset {
+  id           String    @id
+  storageKey   String    @unique
+  url          String
+  mimeType     String
+  sizeBytes    Int
+  width        Int
+  height       Int
+  focusX       Float     @default(0.5)
+  focusY       Float     @default(0.5)
+  zoom         Float     @default(1)
+  originalName String
+  alt          String?
+  createdById  String?
+  createdAt    DateTime  @default(now())
+  deletedAt    DateTime?
+
+  @@index([deletedAt, createdAt])
+  @@index([createdById, createdAt])
 }
 
 model CustomerDataChange {

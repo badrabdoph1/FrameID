@@ -5,7 +5,7 @@ import { requireAdminPermission } from "@/modules/admin/admin-permission-guards"
 
 export const dynamic = "force-dynamic";
 const tools = [
-  { href: "/admin/page-studio", title: "صفحات المنصة", description: "تحرير أقسام صفحات التسويق والتسجيل والدفع.", icon: FileEdit },
+  { href: "/admin/content", title: "صفحات المنصة", description: "افتح الصفحة الحقيقية وعدّل محتواها مباشرة.", icon: FileEdit },
   { href: "/admin/content/seo/metadata", title: "بيانات البحث", description: "العناوين والأوصاف الأساسية لمحركات البحث.", icon: Search },
   { href: "/admin/social-preview", title: "معاينة المشاركة", description: "صورة وعنوان الروابط عند مشاركتها على الشبكات الاجتماعية.", icon: Share2 },
 ];

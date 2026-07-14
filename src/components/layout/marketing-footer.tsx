@@ -2,16 +2,20 @@ import Link from "next/link";
 import React from "react";
 import { CheckCircle2, Link2, Settings2 } from "lucide-react";
 
-import { getContent } from "@/lib/content";
-
 const footerDetails = [
   { title: "رابط جاهز", body: "شارك موقعك فورًا", icon: Link2 },
   { title: "تعديل سهل", body: "غيّر الصور والباقات", icon: Settings2 },
   { title: "شكل احترافي", body: "قوالب مناسبة للمصورين", icon: CheckCircle2 },
 ];
 
-export function MarketingFooter() {
-  const footer = getContent("marketing/footer");
+export type MarketingFooterContent = {
+  description: string;
+  quickLinks: Array<{ label: string; href: string }>;
+  cta: { title: string; subtitle: string; label: string; href: string };
+  copyright: string;
+};
+
+export function MarketingFooter({ content: footer }: { content: MarketingFooterContent }) {
 
   return (
     <footer className="border-t border-border bg-ink text-white" role="contentinfo">

@@ -10,6 +10,12 @@ export async function saveContentAction(
   data: unknown
 ): Promise<SaveResult> {
   const admin = await requireAdminPermission("content", "edit");
+  if (type === "marketing/homepage" || type === "marketing/faq") {
+    return {
+      success: false,
+      errors: [{ path: "general", message: "هذه الصفحة تُحرر الآن مباشرة من مساحة الصفحة الرئيسية." }],
+    };
+  }
   const result = await saveContent(type, data, {
     actor: {
       id: admin.id,

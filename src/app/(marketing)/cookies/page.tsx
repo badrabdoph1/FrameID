@@ -22,6 +22,7 @@ export const metadata: Metadata = {
 
 export default function CookiesPage() {
   const content = getContent("legal/cookies");
+  const footer = getContent("marketing/footer");
 
   return (
     <>
@@ -71,7 +72,7 @@ export default function CookiesPage() {
           </div>
         </section>
       </main>
-      <MarketingFooter />
+      <MarketingFooter content={footer} />
     </>
   );
 }

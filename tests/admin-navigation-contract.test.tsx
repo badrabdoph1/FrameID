@@ -38,9 +38,10 @@ describe("admin navigation contract", () => {
     );
     expect(getAdminRoute("/admin/sites/site-1")?.id).toBe("site-details");
     expect(getAdminRoute("/admin/errors/issue-1")?.id).toBe("issue-details");
-    expect(getAdminRoute("/admin/page-studio/home")?.id).toBe(
-      "page-studio-editor",
+    expect(getAdminRoute("/admin/content/pages/home")?.id).toBe(
+      "content-page-workspace",
     );
+    expect(getAdminRoute("/admin/page-studio/home")?.id).not.toBe("page-studio-editor");
     expect(getAdminRoute("/admin/content/marketing/homepage")?.id).toBe(
       "content-editor",
     );

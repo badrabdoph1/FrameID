@@ -48,7 +48,10 @@ export default async function TemplatePreviewPage({ params, searchParams }: Prop
 
   return (
     <>
-      <div data-smart-hint="preview-screen">
+      <div
+        data-smart-hint="preview-screen"
+        data-journey-source={isEmbed ? undefined : "preview-screen"}
+      >
         <TemplatePreviewGuard />
         <ThemeComponent site={siteData} />
       </div>
@@ -58,7 +61,11 @@ export default async function TemplatePreviewPage({ params, searchParams }: Prop
             <ArrowRight className="size-4" aria-hidden />
             رجوع
           </Link>
-          <Link href={`/signup?template=${template.code}`} className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-[var(--radius-control)] bg-white px-4 text-sm font-semibold text-ink hover:bg-white/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/55">
+          <Link
+            href={`/signup?template=${template.code}`}
+            data-journey-source="preview-use"
+            className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-[var(--radius-control)] bg-white px-4 text-sm font-semibold text-ink hover:bg-white/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/55"
+          >
             <WandSparkles className="size-4" aria-hidden />
             استخدام هذا القالب
           </Link>

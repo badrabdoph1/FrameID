@@ -110,9 +110,16 @@ export function SignupForm({ template, error }: SignupFormProps) {
           </p>
         </div>
 
-        <Button type="submit" variant="luxury" className="w-full">
-          إنشاء موقعي
-        </Button>
+        <div data-journey-source="signup-create">
+          <Button
+            type="submit"
+            variant="luxury"
+            className="w-full"
+            data-journey-cta
+          >
+            إنشاء موقعي
+          </Button>
+        </div>
       </form>
     </>
   );

@@ -6,6 +6,7 @@ import { Eye, Star, WandSparkles } from "lucide-react";
 
 import { MarketingFooter } from "@/components/layout/marketing-footer";
 import { MarketingNav } from "@/components/layout/marketing-nav";
+import { getContent } from "@/lib/content";
 import { getTemplatePreviewImage } from "@/modules/marketing/platform-content";
 import { getPublishedTemplates } from "@/modules/themes/theme-registry";
 
@@ -30,6 +31,7 @@ export const metadata: Metadata = {
 
 export default function TemplatesPage() {
   const templates = getPublishedTemplates();
+  const footer = getContent("marketing/footer");
 
   const templateHighlights: Record<string, { badge?: string; highlight?: string }> = {
     "noir-gold": {
@@ -101,7 +103,11 @@ export default function TemplatesPage() {
               لا توجد قوالب منشورة حاليًا.
             </div>
           ) : (
-            <div className="grid gap-4 md:grid-cols-2 md:gap-6" data-smart-hint="templates-grid">
+            <div
+              className="grid gap-4 md:grid-cols-2 md:gap-6"
+              data-smart-hint="templates-grid"
+              data-journey-source="templates-grid"
+            >
               {templates.map((template) => {
                 const meta = templateHighlights[template.code] ?? {};
                 const description = meta.highlight ?? template.description;
@@ -109,6 +115,7 @@ export default function TemplatesPage() {
                 return (
                   <article
                     key={template.code}
+                    data-journey-card
                     className="group flex overflow-hidden rounded-[1.35rem] border border-border bg-white shadow-soft transition-[border-color,box-shadow,transform] hover:-translate-y-0.5 hover:border-champagne/45 hover:shadow-champagne md:rounded-[1.75rem]"
                   >
                     <div className="flex w-full flex-col">
@@ -161,7 +168,7 @@ export default function TemplatesPage() {
           )}
         </section>
 
-        <MarketingFooter />
+        <MarketingFooter content={footer} />
       </main>
       <script
         id="frameid-templates-breadcrumb"

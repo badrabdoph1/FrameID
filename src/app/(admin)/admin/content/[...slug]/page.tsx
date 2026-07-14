@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { getContent, getManifest, ContentSchemas } from "@/lib/content";
 import type { ContentSchemaKey } from "@/lib/content";
 import { AdminPageShell } from "@/components/layout/admin-page-shell";
@@ -25,6 +25,10 @@ export const dynamic = "force-dynamic";
 export default async function ContentEditorPage({ params }: Props) {
   const slug = (await params).slug;
   const rawType = slug.join("/") as ContentSchemaKey;
+
+  if (rawType === "marketing/homepage" || rawType === "marketing/faq") {
+    redirect("/admin/content/pages/home");
+  }
 
   if (!(rawType in contentLabels) || !(rawType in ContentSchemas)) {
     notFound();

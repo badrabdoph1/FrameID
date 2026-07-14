@@ -98,6 +98,8 @@ describe("platform page document", () => {
       cta: { label: "أنشئ موقعك", href: "/signup" },
     });
     expect(document.sections[0].content).toMatchObject({ cta: { label: "ابدأ الآن" } });
+    expect(next.sections[1]).toBe(document.sections[1]);
+    expect(next.sections[2]).toBe(document.sections[2]);
   });
 
   it("removes a section only when delete forever is explicit", () => {

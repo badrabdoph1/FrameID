@@ -4,13 +4,14 @@ import Link from "next/link";
 import React, { useEffect, useState } from "react";
 import { Menu, X } from "lucide-react";
 
-interface NavLink {
+export interface NavLink {
   label: string;
   href: string;
 }
 
 interface MarketingNavProps {
   links?: NavLink[];
+  previewMode?: boolean;
 }
 
 const defaultLinks: NavLink[] = [
@@ -20,7 +21,7 @@ const defaultLinks: NavLink[] = [
   { href: "/signup", label: "جرب مجاناً" }
 ];
 
-export function MarketingNav({ links = defaultLinks }: MarketingNavProps) {
+export function MarketingNav({ links = defaultLinks, previewMode = false }: MarketingNavProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const primaryLink = links.find((l) => l.href === "/signup");
 
@@ -52,7 +53,7 @@ export function MarketingNav({ links = defaultLinks }: MarketingNavProps) {
       >
        انتقال للمحتوى
       </Link>
-      <header className="fixed inset-x-0 top-0 z-30 border-b border-white/10 bg-ink/70 backdrop-blur-xl">
+      <header className={`${previewMode ? "sticky -mb-16" : "fixed"} inset-x-0 top-0 z-30 border-b border-white/10 bg-ink/70 backdrop-blur-xl`}>
         <nav className="container-page flex h-16 items-center justify-between gap-3 text-white">
           <Link
             href="/"

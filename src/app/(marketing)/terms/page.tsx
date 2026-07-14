@@ -22,6 +22,7 @@ export const metadata: Metadata = {
 
 export default function TermsPage() {
   const content = getContent("legal/terms");
+  const footer = getContent("marketing/footer");
 
   return (
     <>
@@ -71,7 +72,7 @@ export default function TermsPage() {
           </div>
         </section>
       </main>
-      <MarketingFooter />
+      <MarketingFooter content={footer} />
     </>
   );
 }

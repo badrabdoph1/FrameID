@@ -1,9 +1,9 @@
 import { SocialPreviewForm } from "@/app/(admin)/admin/social-preview/social-preview-form";
 import { AdminPageShell } from "@/components/layout/admin-page-shell";
-import { getContent } from "@/lib/content";
 import { requireAdminPermission } from "@/modules/admin/admin-permission-guards";
 import { getPlatformSocialPreviewSettings } from "@/modules/social-preview/platform-social-preview-settings";
 import { PLATFORM_DEFAULT_SOCIAL_IMAGE } from "@/modules/social-preview/social-preview";
+import { getHomeHeroContent, loadPublishedHomePageState } from "@/modules/platform-pages/home-page-runtime";
 
 export const dynamic = "force-dynamic";
 
@@ -15,10 +15,11 @@ export default async function AdminSocialPreviewPage({ searchParams }: Props) {
   await requireAdminPermission("templates", "view");
   const params = await searchParams;
   const settings = await getPlatformSocialPreviewSettings();
-  const homepage = getContent("marketing/homepage");
-  const defaultTitle = `${homepage.hero.headline} ${homepage.hero.headlineHighlight}`.trim();
-  const defaultDescription = homepage.hero.subheadline;
-  const heroVersion = encodeURIComponent(homepage._updatedAt || String(homepage._version));
+  const home = await loadPublishedHomePageState();
+  const hero = getHomeHeroContent(home.document);
+  const defaultTitle = `${hero.headline} ${hero.headlineHighlight}`.trim();
+  const defaultDescription = hero.subheadline;
+  const heroVersion = encodeURIComponent(home.versionTag);
   const defaultImageUrl = `${PLATFORM_DEFAULT_SOCIAL_IMAGE}&content=${heroVersion}`;
 
   return (

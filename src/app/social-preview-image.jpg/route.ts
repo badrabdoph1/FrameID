@@ -1,4 +1,4 @@
-import { getContent } from "@/lib/content";
+import { getHomeHeroContent, getHomeHeroImageUrl, loadPublishedHomePageState } from "@/modules/platform-pages/home-page-runtime";
 import { getPlatformSocialPreviewSettings } from "@/modules/social-preview/platform-social-preview-settings";
 
 export const runtime = "nodejs";
@@ -74,8 +74,9 @@ async function resolveImage(request: Request): Promise<ResolvedImage> {
     }
   }
 
-  const homepage = getContent("marketing/homepage");
-  const upstream = await fetch(buildOpenGraphHeroUrl(homepage.hero.heroImage), {
+  const home = await loadPublishedHomePageState();
+  const hero = getHomeHeroContent(home.document);
+  const upstream = await fetch(buildOpenGraphHeroUrl(getHomeHeroImageUrl(hero)), {
     cache: "no-store",
     headers: {
       Accept: "image/jpeg,image/*;q=0.8",
@@ -93,7 +94,7 @@ async function resolveImage(request: Request): Promise<ResolvedImage> {
   return {
     bytes,
     contentType,
-    etag: `\"hero-${homepage._version}-${bytes.byteLength}\"`,
+    etag: `\"hero-${home.versionTag}-${bytes.byteLength}\"`,
   };
 }
 

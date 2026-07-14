@@ -7,6 +7,7 @@ import { AdminTopbar } from "@/components/layout/admin-topbar"
 import { AdminMobileNav } from "@/components/layout/admin-mobile-nav"
 import { useEffect, useState } from "react"
 import { cn } from "@/lib/utils/cn"
+import { isImmersiveAdminRoute } from "@/modules/admin/admin-route-mode"
 import "@/app/admin.css"
 
 function RouteChangeProgress() {
@@ -28,8 +29,21 @@ function RouteChangeProgress() {
 function ShellContent({ children }: { children: React.ReactNode }) {
   const { sidebarCollapsed } = useAdmin()
   const [mounted, setMounted] = useState(false)
+  const pathname = usePathname()
 
   useEffect(() => { setMounted(true) }, [])
+
+  if (isImmersiveAdminRoute(pathname)) {
+    return (
+      <div className="admin-dark-shell min-h-[100dvh] bg-[#090b0f] text-[#f5ead6] color-scheme-dark">
+        <a className="admin-skip-link" href="#page-workspace-canvas">
+          انتقل إلى الصفحة
+        </a>
+        <RouteChangeProgress />
+        {children}
+      </div>
+    )
+  }
 
   return (
     <div className="admin-dark-shell min-h-screen overflow-x-hidden bg-[#0b0d12] text-[#f5ead6] color-scheme-dark">
