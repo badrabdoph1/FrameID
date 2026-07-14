@@ -21,7 +21,7 @@
     "db:seed": "tsx prisma/seed.ts",
     "db:push": "node scripts/ensure-prisma-schema-compat.mjs && prisma db push",
     "db:deploy": "npm run db:deploy:safe",
-    "db:deploy:safe": "node scripts/ensure-prisma-schema-compat.mjs && prisma db push --accept-data-loss && (prisma db execute --schema prisma/schema.prisma --file prisma/migrations/20260711000000_add_missing_columns_for_push/migration.sql 2>&1 || true) && (prisma db execute --schema prisma/schema.prisma --file prisma/migrations/20260711000100_restore_dropped_columns/migration.sql 2>&1 || true) && (prisma db execute --schema prisma/schema.prisma --file prisma/migrations/20260712000000_fix_backup_audit_fks_and_errorlog_columns/migration.sql 2>&1 || true) && tsx prisma/seed.ts",
+    "db:deploy:safe": "node scripts/ensure-prisma-schema-compat.mjs && prisma db execute --schema prisma/schema.prisma --file prisma/migrations/20260714120000_prepare_payment_request_logs_for_push/migration.sql && prisma db push --accept-data-loss && (prisma db execute --schema prisma/schema.prisma --file prisma/migrations/20260711000000_add_missing_columns_for_push/migration.sql 2>&1 || true) && (prisma db execute --schema prisma/schema.prisma --file prisma/migrations/20260711000100_restore_dropped_columns/migration.sql 2>&1 || true) && (prisma db execute --schema prisma/schema.prisma --file prisma/migrations/20260712000000_fix_backup_audit_fks_and_errorlog_columns/migration.sql 2>&1 || true) && tsx prisma/seed.ts",
     "db:deploy:dangerous": "node scripts/ensure-prisma-schema-compat.mjs && prisma db push --accept-data-loss && tsx prisma/seed.ts",
     "validate:env": "tsx scripts/validate-env.ts",
     "setup": "npm run validate:env && npm run db:deploy:safe",
