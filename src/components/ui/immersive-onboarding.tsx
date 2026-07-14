@@ -188,7 +188,7 @@ function IoCardWelcome({ photographerName }: { photographerName?: string }) {
       <h2 className="io-stagger text-xl font-black text-[#fff7e8] sm:text-2xl">
         {greeting} 👋
       </h2>
-      <p className="io-stagger mt-2 max-w-sm text-sm leading-6 text-white/70 sm:text-base">
+      <p className="io-stagger mt-2 max-w-sm text-sm leading-6 font-bold text-white/85 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] sm:text-base">
         موقعك جاهز بالفعل… فاضل بس تضبطه على ذوقك.
       </p>
     </div>
@@ -201,7 +201,7 @@ function IoCardContrast() {
       <h2 className="io-stagger text-center text-xl font-black text-[#fff7e8] sm:text-2xl">
         دي لوحة التحكم بتاعتك
       </h2>
-      <p className="io-stagger mt-1.5 text-center text-sm leading-6 text-white/65 sm:text-base">
+      <p className="io-stagger mt-1.5 text-center text-sm leading-6 font-bold text-white/85 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] sm:text-base">
         هنا بتعدل كل حاجة… والعميل بيشوف النتيجة على موقعه.
       </p>
       <div className="io-stagger mt-5 grid grid-cols-[1fr_auto_1fr] items-center gap-2 sm:gap-3">
@@ -252,7 +252,7 @@ function IoCardReady() {
       <h2 className="io-stagger text-xl font-black text-[#fff7e8] sm:text-2xl">
         موقعك شغال بالفعل ✅
       </h2>
-      <p className="io-stagger mt-1.5 max-w-sm text-sm leading-6 text-white/70 sm:text-base">
+      <p className="io-stagger mt-1.5 max-w-sm text-sm leading-6 font-bold text-white/85 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] sm:text-base">
         إنت مش بتبدأ من الصفر… الموقع جاهز، وإنت بس هتضيف لمستك.
       </p>
     </div>
@@ -270,7 +270,7 @@ function IoCardGuided() {
       <h2 className="io-stagger text-xl font-black text-[#fff7e8] sm:text-2xl">
         مش لازم تعمل كل حاجة مرة واحدة
       </h2>
-      <p className="io-stagger mt-1.5 text-sm leading-6 text-white/65 sm:text-base">
+      <p className="io-stagger mt-1.5 text-sm leading-6 font-bold text-white/85 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] sm:text-base">
         امشي خطوة خطوة… وإحنا هنوصلك لموقع جاهز في دقائق.
       </p>
       <div className="mt-4 grid gap-2">
@@ -313,7 +313,7 @@ function IoCardStart({ onNext }: { onNext: () => void }) {
       <h2 className="io-stagger text-xl font-black text-[#fff7e8] sm:text-2xl">
         يلا نجهز موقعك
       </h2>
-      <p className="io-stagger mt-1.5 text-sm leading-6 text-white/70">
+      <p className="io-stagger mt-1.5 text-sm leading-6 font-bold text-white/85 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
         ابدأ بالباقات لأنها أول حاجة العميل هيشوفها.
       </p>
       <div className="mt-4 grid gap-1.5">
@@ -336,7 +336,7 @@ function IoCardStart({ onNext }: { onNext: () => void }) {
           );
         })}
       </div>
-      <p className="io-stagger mt-3 text-xs font-black text-white/60 sm:text-sm" style={{ animationDelay: "0.9s" }}>
+      <p className="io-stagger mt-3 text-xs font-bold text-white/75 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] sm:text-sm" style={{ animationDelay: "0.9s" }}>
         ٣ خطوات بس… وبعدها ابعت موقعك لأي عميل.
       </p>
       <button
