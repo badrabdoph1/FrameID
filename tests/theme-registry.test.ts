@@ -89,4 +89,11 @@ describe("theme registry", () => {
       })
     ).toThrow("Template template-without-starter-content is missing starter content");
   });
+
+  it("rejects themes that implement only part of the platform contract", () => {
+    expect(() => createThemeRegistry({
+      themes: [{ code: "partial", name: "Partial", version: "1.0.0", status: "published", supportedSections: ["hero"], defaultConfig: {} }],
+      templates: []
+    })).toThrow("Theme partial must implement the complete platform template contract");
+  });
 });

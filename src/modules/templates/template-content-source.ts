@@ -16,6 +16,12 @@ import {
   type TemplateStarterSharedDefaults,
   type TemplateStarterSharedOverrides,
 } from "@/modules/themes/template-starter-defaults";
+import {
+  formatTemplatePrice,
+  normalizeTemplateSections,
+  resolveHeroSettings,
+  type TemplateSectionType,
+} from "@/modules/themes/template-contract";
 
 export type TemplateContentSource = {
   code: string;
@@ -32,7 +38,7 @@ export type TemplateContentSourceOptions = {
 };
 
 export type ProvisionedTemplateSection = {
-  type: "hero" | "gallery" | "packages" | "extras" | "contact";
+  type: TemplateSectionType;
   title: string;
   sortOrder: number;
   isVisible: boolean;
@@ -117,11 +123,11 @@ export function createTemplateProvisioningPayload(
     themeConfig: clone(content.themeSettings),
     site: { title: content.site.title, description: content.site.description },
     sections: [
-      { type: "hero", title: sections.hero.title, sortOrder: sections.hero.sortOrder, isVisible: sections.hero.isVisible, data: { headline: sections.hero.headline, subheadline: sections.hero.subheadline, imageUrl: sections.hero.imageUrl } },
-      { type: "gallery", title: sections.gallery.title, sortOrder: sections.gallery.sortOrder, isVisible: sections.gallery.isVisible, data: { title: sections.gallery.title, description: sections.gallery.description } },
-      { type: "packages", title: sections.packages.title, sortOrder: sections.packages.sortOrder, isVisible: sections.packages.isVisible, data: { title: sections.packages.title, description: sections.packages.description } },
-      { type: "extras", title: sections.extras.title, sortOrder: sections.extras.sortOrder, isVisible: sections.extras.isVisible, data: { title: sections.extras.title, description: sections.extras.description } },
-      { type: "contact", title: sections.contact.title, sortOrder: sections.contact.sortOrder, isVisible: sections.contact.isVisible, data: { callToAction: sections.contact.callToAction } },
+      { type: "hero", title: sections.hero.title, sortOrder: sections.hero.sortOrder, isVisible: sections.hero.isVisible, data: { headline: sections.hero.headline, subheadline: sections.hero.subheadline, imageUrl: sections.hero.imageUrl, overlay: sections.hero.overlay, position: sections.hero.position, height: sections.hero.height, cta: clone(sections.hero.cta), settings: clone(sections.hero.settings) } },
+      { type: "gallery", title: sections.gallery.title, sortOrder: sections.gallery.sortOrder, isVisible: sections.gallery.isVisible, data: { title: sections.gallery.title, description: sections.gallery.description, settings: clone(sections.gallery.settings) } },
+      { type: "packages", title: sections.packages.title, sortOrder: sections.packages.sortOrder, isVisible: sections.packages.isVisible, data: { title: sections.packages.title, description: sections.packages.description, settings: clone(sections.packages.settings) } },
+      { type: "extras", title: sections.extras.title, sortOrder: sections.extras.sortOrder, isVisible: sections.extras.isVisible, data: { title: sections.extras.title, description: sections.extras.description, settings: clone(sections.extras.settings) } },
+      { type: "contact", title: sections.contact.title, sortOrder: sections.contact.sortOrder, isVisible: sections.contact.isVisible, data: { callToAction: sections.contact.callToAction, settings: clone(sections.contact.settings) } },
     ],
     contact: { ...clone(content.contact), callToAction: sections.contact.callToAction },
     packages: content.packages.map((item) => ({ ...item, price: formatMoney(item.priceAmount, item.currency) })),
@@ -139,6 +145,9 @@ export function createTemplateProvisioningPayload(
 
 export function buildTemplatePreviewViewModel(source: TemplateContentSource): PublicSiteViewModel {
   const payload = createTemplateProvisioningPayload(source, { ownerName: source.content.site.title });
+  const heroSection = payload.sections.find((section) => section.type === "hero");
+  const normalizedSections = normalizeTemplateSections(payload.sections);
+  const heroSettings = resolveHeroSettings(heroSection?.data ?? {});
 
   return {
     siteId: "preview",
@@ -152,26 +161,23 @@ export function buildTemplatePreviewViewModel(source: TemplateContentSource): Pu
         type: "website",
         title: payload.seo.title,
         description: payload.seo.description,
-        images: payload.sections[0]?.data.imageUrl ? [{ url: String(payload.sections[0].data.imageUrl), alt: payload.site.title }] : undefined,
+        images: heroSection?.data.imageUrl ? [{ url: String(heroSection.data.imageUrl), alt: payload.site.title }] : undefined,
       },
       twitter: {
         card: "summary_large_image",
         title: payload.seo.title,
         description: payload.seo.description,
-        images: payload.sections[0]?.data.imageUrl ? [String(payload.sections[0].data.imageUrl)] : undefined,
+        images: heroSection?.data.imageUrl ? [String(heroSection.data.imageUrl)] : undefined,
       },
     },
     structuredData: payload.seo.structuredDataOverrides,
-    sections: Object.fromEntries(payload.sections.map((section) => [section.type, {
-      title: section.title,
-      description: typeof section.data.description === "string" ? section.data.description : null,
-      sortOrder: section.sortOrder,
-      isVisible: section.isVisible,
-    }])),
+    sections: normalizedSections.sections,
+    orderedSections: normalizedSections.orderedSections,
     hero: {
-      headline: String(payload.sections[0]?.data.headline ?? payload.site.title),
-      subheadline: String(payload.sections[0]?.data.subheadline ?? payload.site.description),
-      imageUrl: String(payload.sections[0]?.data.imageUrl ?? payload.gallery.images[0]?.url ?? ""),
+      headline: String(heroSection?.data.headline ?? payload.site.title),
+      subheadline: String(heroSection?.data.subheadline ?? payload.site.description),
+      imageUrl: String(heroSection?.data.imageUrl ?? payload.gallery.images[0]?.url ?? ""),
+      ...heroSettings,
     },
     contact: {
       studioName: payload.contact.studioName,
@@ -183,6 +189,8 @@ export function buildTemplatePreviewViewModel(source: TemplateContentSource): Pu
       email: payload.contact.email,
       instagram: payload.contact.instagram,
       facebook: payload.contact.facebook,
+      tiktok: payload.contact.tiktok,
+      workLocation: payload.contact.workLocation,
     },
     packages: payload.packages.map((item) => ({ ...item })),
     extras: payload.extras.map((item) => ({ ...item })),
@@ -201,9 +209,7 @@ export function validateTemplateContentSource(source: TemplateContentSource): vo
   if (!content.gallery.images.length) throw new Error(`Template ${source.code} is missing gallery images`);
 }
 
-function formatMoney(amount: number, currency: string) {
-  return `${new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(amount)} ${currency === "EGP" ? "جنيه" : currency}`;
-}
+const formatMoney = formatTemplatePrice;
 
 function clone<T>(value: T): T {
   return structuredClone(value);

@@ -21,6 +21,7 @@ The registry validates:
 - every template references an existing theme;
 - every template includes starter content;
 - published templates are returned in showroom order.
+- every theme implements the exact platform capability contract (`hero`, `gallery`, `packages`, `extras`, `contact`).
 
 No admin form, database JSON field, preview object, or client component may create a second independent template contract.
 
@@ -79,8 +80,16 @@ Before replacement, the system must create a `SiteContentSnapshot` containing th
 2. Check publication and lifecycle access.
 3. Load theme configuration and normalized customer content.
 4. Resolve the renderer compatible with the site's theme/template contract.
-5. Render sections in supported order using persisted visibility and content.
+5. Normalize all platform sections, then render `orderedSections` using persisted order, visibility, content, and section settings.
 6. Use safe media asset URLs referenced by tenant-owned records.
+
+Renderers are presentation adapters. They must not choose capabilities, reorder sections in JSX, normalize contact links independently, or own booking business logic. Shared server-rendered section components consume the unified view model; focused client controls own only package/extra selection state.
+
+## Customer content editor
+
+`/dashboard/content` edits the same section contract used by provisioning, preview, and public rendering. Every section exposes visibility, order, title, description, and its supported settings. Structured updates merge compatible unknown fields instead of replacing the full JSON payload. Hero media uses the approved upload pipeline.
+
+Contact location is a free-text `workLocation` value with `فريلانسر` as the default. It deliberately does not imply a fixed address or map because the primary customer segment can travel between locations.
 
 ## Versioning
 

@@ -31,6 +31,7 @@ type RawPublicSiteRecord = Omit<
     currency: string;
     features: unknown;
     isHighlighted: boolean;
+    imageUrl: string | null;
   }>;
   extraServices: Array<{
     id: string;
@@ -91,12 +92,14 @@ export function createPrismaPublicSiteRepository(
               email: true,
               instagram: true,
               facebook: true,
+              tiktok: true,
+              workLocation: true,
               avatarAsset: { select: { url: true } },
               coverAsset: { select: { url: true } },
             },
           },
           sections: {
-            where: { deletedAt: null, isVisible: true },
+            where: { deletedAt: null },
             orderBy: { sortOrder: "asc" },
             select: {
               type: true,
@@ -117,6 +120,7 @@ export function createPrismaPublicSiteRepository(
               currency: true,
               features: true,
               isHighlighted: true,
+              imageUrl: true,
             },
           },
           extraServices: {
@@ -171,7 +175,7 @@ export function createPrismaPublicSiteRepository(
               ? (section.data as Record<string, unknown>)
               : {},
         })),
-        packages: site.packages.map((item) => ({ ...item, imageUrl: null })),
+        packages: site.packages,
         extras: site.extraServices,
         contactProfile: site.contactProfile
           ? {
@@ -183,6 +187,8 @@ export function createPrismaPublicSiteRepository(
               email: site.contactProfile.email,
               instagram: site.contactProfile.instagram,
               facebook: site.contactProfile.facebook,
+              tiktok: site.contactProfile.tiktok,
+              workLocation: site.contactProfile.workLocation,
               avatarUrl: site.contactProfile.avatarAsset?.url ?? null,
               coverUrl: site.contactProfile.coverAsset?.url ?? null,
             }

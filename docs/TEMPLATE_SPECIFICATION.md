@@ -17,11 +17,15 @@ Every FrameID template must satisfy this contract.
 A theme definition must provide:
 
 - stable code and version;
-- supported section types;
+- the exact platform section set: `hero`, `gallery`, `packages`, `extras`, `contact`;
 - default configuration;
 - a content schema compatible with the renderer.
 
-A template must not reference unsupported sections or fields that its renderer ignores.
+A template must not reference fields that its renderer ignores. Themes cannot opt out of a platform capability; the renderer difference is presentation only.
+
+Every normalized section supports title, description, visibility, persisted order, and section settings. Renderers iterate the ordered contract and must not encode a fixed JSX order.
+
+Hero supports dashboard-owned image, overlay, object position, height, eyebrow, and CTA label/target. Contact supports phone, WhatsApp, Instagram, Facebook, TikTok, optional email, and free-text work location without requiring a map.
 
 ## Starter content
 
@@ -59,12 +63,13 @@ A template is showroom-visible only when its effective status is published. Publ
 
 ## Quality requirements
 
-- Responsive desktop/mobile rendering.
+- Mobile-first responsive rendering, with touch targets of at least 44px for primary interactive controls.
 - No client-visible raw JSON or storage paths.
 - Accessible semantic structure and meaningful image alt text where data exists.
 - No hard-coded customer identity in the renderer.
 - Public rendering must use persisted site content, not admin preview state.
 - Tests must cover registry validity and any new transformation or compatibility rule.
+- Static content remains server-rendered; client boundaries are limited to focused interaction state.
 
 ## Documentation requirement
 

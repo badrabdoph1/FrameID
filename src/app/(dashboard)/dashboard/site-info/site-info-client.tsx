@@ -28,6 +28,7 @@ type SiteInfoClientProps = {
   instagram: string | null;
   facebook: string | null;
   tiktok: string | null;
+  workLocation: string;
   snapchat: string | null;
   youtube: string | null;
   behance: string | null;
@@ -137,6 +138,7 @@ export function SiteInfoClient(props: SiteInfoClientProps) {
           <Field label="رابط إنستجرام"><Input name="instagram" defaultValue={props.instagram ?? ""} placeholder="https://instagram.com/..." dir="ltr" /></Field>
           <Field label="رابط تيك توك"><Input name="tiktok" defaultValue={props.tiktok ?? ""} placeholder="https://tiktok.com/@..." dir="ltr" /></Field>
           <Field label="البريد الإلكتروني اختياري"><Input name="email" type="email" defaultValue={props.email ?? accountEmailForContact} placeholder="name@example.com" /></Field>
+          <Field label="مكان العمل"><Input name="workLocation" defaultValue={props.workLocation || "فريلانسر"} placeholder="فريلانسر" /></Field>
         </div>
         <SaveLine state={states.contact} />
       </form>

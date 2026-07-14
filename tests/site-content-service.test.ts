@@ -38,11 +38,16 @@ function createSession(): CurrentSession {
   };
 }
 
-function createRepository(): SiteContentRepository & { writes: string[] } {
+function createRepository(): SiteContentRepository & {
+  writes: string[];
+  upserts: Parameters<SiteContentRepository["upsertSection"]>[0][];
+} {
   const writes: string[] = [];
+  const upserts: Parameters<SiteContentRepository["upsertSection"]>[0][] = [];
 
   return {
     writes,
+    upserts,
     async findEditorContent() {
       return {
         title: "Ali Studio",
@@ -51,6 +56,7 @@ function createRepository(): SiteContentRepository & { writes: string[] } {
       };
     },
     async upsertSection(input) {
+      upserts.push(input);
       writes.push(`${input.siteId}:${input.type}:${input.title}`);
       return { id: `${input.type}_1` };
     },
@@ -116,6 +122,9 @@ describe("site content service", () => {
       sections: [
         {
           type: "hero",
+          title: "الرئيسية",
+          sortOrder: 0,
+          isVisible: true,
           data: {
             headline: "Ali Ahmed",
             subheadline: "Luxury weddings",
@@ -124,6 +133,9 @@ describe("site content service", () => {
         },
         {
           type: "contact",
+          title: "التواصل",
+          sortOrder: 4,
+          isVisible: true,
           data: {
             callToAction: "Book now"
           }
@@ -142,7 +154,91 @@ describe("site content service", () => {
       },
       contact: {
         callToAction: "Book now"
+      },
+      sections: expect.arrayContaining([
+        expect.objectContaining({ type: "hero", sortOrder: 0, isVisible: true }),
+        expect.objectContaining({ type: "contact", sortOrder: 4, isVisible: true })
+      ])
+    });
+  });
+
+  it("updates any platform section while preserving unknown data and settings", async () => {
+    const repository = createRepository();
+    repository.findEditorContent = async () => ({
+      title: "Ali Studio",
+      description: "Fine art",
+      sections: [
+        {
+          type: "hero",
+          title: "واجهة خاصة",
+          sortOrder: 0,
+          isVisible: true,
+          data: {
+            headline: "Old headline",
+            legacyKey: "preserve-me",
+            settings: { eyebrow: "قديم", legacySetting: "keep-me" }
+          }
+        }
+      ]
+    });
+    const service = createSiteContentService({ repository });
+
+    await expect(
+      service.updateSection({
+        session: createSession(),
+        type: "hero",
+        title: "البداية",
+        sortOrder: 3,
+        isVisible: false,
+        data: {
+          headline: "New headline",
+          subheadline: "New subheadline",
+          overlay: "strong",
+          position: "top",
+          height: "tall",
+          cta: { label: "تواصل الآن", target: "contact" },
+          settings: { eyebrow: "قصص حقيقية" }
+        }
+      })
+    ).resolves.toEqual({ sectionId: "hero_1" });
+
+    expect(repository.upserts.at(-1)).toEqual({
+      siteId: "site_1",
+      type: "hero",
+      title: "البداية",
+      sortOrder: 3,
+      isVisible: false,
+      data: {
+        headline: "New headline",
+        subheadline: "New subheadline",
+        overlay: "strong",
+        position: "top",
+        height: "tall",
+        cta: { label: "تواصل الآن", target: "contact" },
+        legacyKey: "preserve-me",
+        settings: {
+          eyebrow: "قصص حقيقية",
+          legacySetting: "keep-me"
+        }
       }
     });
+  });
+
+  it("rejects section types outside the platform contract", async () => {
+    const repository = createRepository();
+    const service = createSiteContentService({ repository });
+
+    await expect(
+      service.updateSection({
+        session: createSession(),
+        type: "map" as "hero",
+        title: "خريطة",
+        sortOrder: 9,
+        isVisible: true,
+        data: {}
+      })
+    ).rejects.toThrow("Unsupported template section type");
+
+    expect(repository.upserts).toEqual([]);
   });
 });

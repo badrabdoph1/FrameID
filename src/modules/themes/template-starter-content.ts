@@ -6,6 +6,10 @@ const sectionSchema = z.object({
   isVisible: z.boolean()
 });
 
+const eyebrowSettingsSchema = z.object({
+  eyebrow: z.string().trim().min(1).max(120),
+});
+
 const urlSchema = z.string().url();
 const optionalContactText = z.string().trim().max(120).nullable();
 
@@ -18,19 +22,34 @@ export const templateStarterContentSchema = z.object({
     hero: sectionSchema.extend({
       headline: z.string().trim().min(1).max(160),
       subheadline: z.string().trim().min(1).max(500),
-      imageUrl: urlSchema
+      imageUrl: urlSchema,
+      overlay: z.enum(["none", "soft", "medium", "strong"]),
+      position: z.enum(["center", "top", "bottom", "left", "right"]),
+      height: z.enum(["compact", "screen", "tall"]),
+      cta: z.object({
+        label: z.string().trim().min(1).max(80),
+        target: z.enum(["packages", "gallery", "contact", "whatsapp"]),
+      }),
+      settings: eyebrowSettingsSchema,
     }),
     gallery: sectionSchema.extend({
-      description: z.string().trim().min(1).max(500)
+      description: z.string().trim().min(1).max(500),
+      settings: eyebrowSettingsSchema.extend({
+        layout: z.enum(["snap", "grid"]),
+        limit: z.number().int().min(3).max(9),
+      }),
     }),
     packages: sectionSchema.extend({
-      description: z.string().trim().min(1).max(500)
+      description: z.string().trim().min(1).max(500),
+      settings: eyebrowSettingsSchema.extend({ layout: z.enum(["snap", "stack"]) }),
     }),
     extras: sectionSchema.extend({
-      description: z.string().trim().min(1).max(500)
+      description: z.string().trim().min(1).max(500),
+      settings: eyebrowSettingsSchema.extend({ layout: z.enum(["compact", "cards"]) }),
     }),
     contact: sectionSchema.extend({
-      callToAction: z.string().trim().min(1).max(120)
+      callToAction: z.string().trim().min(1).max(120),
+      settings: eyebrowSettingsSchema.extend({ layout: z.enum(["grid", "stack"]) }),
     })
   }),
   contact: z.object({
@@ -41,7 +60,9 @@ export const templateStarterContentSchema = z.object({
     whatsapp: optionalContactText,
     email: z.string().trim().email().nullable(),
     instagram: z.string().trim().min(1).max(80),
-    facebook: z.string().trim().min(1).max(120)
+    facebook: z.string().trim().min(1).max(120),
+    tiktok: z.string().trim().min(1).max(120),
+    workLocation: z.string().trim().min(1).max(160).default("فريلانسر"),
   }),
   packages: z
     .array(

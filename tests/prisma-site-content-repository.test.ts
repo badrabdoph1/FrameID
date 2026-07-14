@@ -38,6 +38,7 @@ describe("prisma site content repository", () => {
         type: "hero",
         title: "الرئيسية",
         sortOrder: 0,
+        isVisible: false,
         data: { headline: "New title" }
       })
     ).resolves.toEqual({ id: "section_1" });
@@ -71,6 +72,9 @@ describe("prisma site content repository", () => {
             sections: [
               {
                 type: "hero",
+                title: "الرئيسية",
+                sortOrder: 0,
+                isVisible: false,
                 data: { headline: "Ali Ahmed" }
               }
             ]
@@ -97,6 +101,9 @@ describe("prisma site content repository", () => {
       sections: [
         {
           type: "hero",
+          title: "الرئيسية",
+          sortOrder: 0,
+          isVisible: false,
           data: { headline: "Ali Ahmed" }
         }
       ]

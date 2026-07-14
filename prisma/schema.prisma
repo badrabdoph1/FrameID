@@ -427,6 +427,7 @@ model ContactProfile {
   avatarAssetId          String?
   coverAssetId           String?
   tiktok                 String?
+  workLocation           String?   @default("فريلانسر")
   snapchat               String?
   youtube                String?
   behance                String?

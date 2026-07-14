@@ -1,13 +1,14 @@
 import type { TemplateSummary, ThemeDefinition } from "@/modules/themes/theme-registry";
 import { parseTemplateStarterContent } from "@/modules/themes/template-starter-content";
 import { OFFICIAL_TEMPLATE_STARTER_DEFAULTS as defaults } from "@/modules/themes/template-starter-defaults";
+import { PLATFORM_TEMPLATE_SECTION_TYPES } from "@/modules/themes/template-contract";
 
 export const roseBlushTheme: ThemeDefinition = {
   code: "rose-blush",
   name: "أنيق وهادئ",
   version: "1.0.0",
   status: "published",
-  supportedSections: ["hero", "gallery", "packages", "extras", "contact"],
+  supportedSections: [...PLATFORM_TEMPLATE_SECTION_TYPES],
   defaultConfig: { colorPreset: "rose", layoutDensity: "spacious", motion: "gentle" }
 };
 
@@ -21,13 +22,13 @@ export const roseBlushTemplate: TemplateSummary = {
   starterContent: parseTemplateStarterContent({
     site: { title: defaults.photographerName, description: defaults.description },
     sections: {
-      hero: { title: "الرئيسية", sortOrder: 0, isVisible: true, headline: defaults.photographerName, subheadline: defaults.description, imageUrl: "https://images.unsplash.com/photo-1519225421980-715cb0215aed?auto=format&fit=crop&w=1800&q=85" },
-      gallery: { title: "لحظات لا تُنسى", sortOrder: 1, isVisible: true, description: "كل صورة تحكي قصة، وكل قصة تستحق أن تُروى بجمال." },
-      packages: { title: "اختاري باقتك المثالية", sortOrder: 2, isVisible: true, description: "باقات مرنة تناسب كل مناسبة، مع لمسات احترافية لا تُنسى." },
-      extras: { title: "لمسة إضافية", sortOrder: 3, isVisible: true, description: "اجعل تجربتك أكثر تميزًا مع هذه الإضافات." },
-      contact: { title: "التواصل", sortOrder: 4, isVisible: true, callToAction: "لنخطط لجلسة جميلة" }
+      hero: { title: "الرئيسية", sortOrder: 0, isVisible: true, headline: defaults.photographerName, subheadline: defaults.description, imageUrl: "https://images.unsplash.com/photo-1519225421980-715cb0215aed?auto=format&fit=crop&w=1800&q=85", overlay: "soft", position: "center", height: "screen", cta: { label: "شاهدي الباقات", target: "packages" }, settings: { eyebrow: "Stories in bloom" } },
+      gallery: { title: "لحظات لا تُنسى", sortOrder: 1, isVisible: true, description: "كل صورة تحكي قصة، وكل قصة تستحق أن تُروى بجمال.", settings: { eyebrow: "معرض الأعمال", layout: "grid", limit: 6 } },
+      packages: { title: "اختاري باقتك المثالية", sortOrder: 2, isVisible: true, description: "باقات مرنة تناسب كل مناسبة، مع لمسات احترافية لا تُنسى.", settings: { eyebrow: "باقات التصوير", layout: "snap" } },
+      extras: { title: "لمسة إضافية", sortOrder: 3, isVisible: true, description: "اجعل تجربتك أكثر تميزًا مع هذه الإضافات.", settings: { eyebrow: "خدمات إضافية", layout: "compact" } },
+      contact: { title: "التواصل", sortOrder: 4, isVisible: true, callToAction: "لنخطط لجلسة جميلة", settings: { eyebrow: "تواصل مباشر", layout: "grid" } }
     },
-    contact: { studioName: defaults.studioName, bio: defaults.description, longDescription: defaults.description, phone: "+201000000002", whatsapp: "+201000000002", email: "hello@noorali.example", instagram: "noorali.photo", facebook: "noorali.photo" },
+    contact: { studioName: defaults.studioName, bio: defaults.description, longDescription: defaults.description, phone: "+201000000002", whatsapp: "+201000000002", email: "hello@noorali.example", instagram: "noorali.photo", facebook: "noorali.photo", tiktok: "@noorali.photo", workLocation: "فريلانسر" },
     packages: [
       { id: "rose-basic", name: "Session Basic", subtitle: "كل اللي تحتاجه لبداية مميزة", priceAmount: 0, currency: "EGP", features: ["فوتوسيشن خارجي (Outdoor)", "شامل رسوم اللوكيشن", "تعديل احترافي للصور", "تصوير Reels قصير للسوشيال ميديا"], imageUrl: "https://images.unsplash.com/photo-1516589178581-6cd7833ae3b2?auto=format&fit=crop&w=900&q=85", isHighlighted: false, sortOrder: 0 },
       { id: "rose-full", name: "Full Day", subtitle: "الباقة الأكثر طلبًا بين العرسان", priceAmount: 0, currency: "EGP", features: ["فوتوسيشن خارجي (Outdoor)", "شامل رسوم اللوكيشن", "ألبوم قطيفة فاخر مقاس 30 × 40", "تصوير Reels احترافي"], imageUrl: "https://images.unsplash.com/photo-1507504031003-b417219a0fde?auto=format&fit=crop&w=900&q=85", isHighlighted: true, sortOrder: 1 },

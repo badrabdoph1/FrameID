@@ -127,6 +127,8 @@ export function createPrismaSignupProvisioningRepository(prisma: PrismaSignupCli
             email: input.defaultContent.contact.email,
             instagram: input.defaultContent.contact.instagram,
             facebook: input.defaultContent.contact.facebook,
+            tiktok: input.defaultContent.contact.tiktok,
+            workLocation: input.defaultContent.contact.workLocation,
             bookingMessageTemplate: input.defaultContent.contact.callToAction
           }
         });

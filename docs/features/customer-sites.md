@@ -15,7 +15,9 @@ Provision, edit, publish, and render tenant-owned photographer websites while pr
 
 ## Data Flow
 
-Signup provisions a tenant and site, applies approved starter content, stores the selected template code/version, and publishes according to the onboarding workflow. Dashboard mutations update tenant-scoped normalized records. Public requests resolve a slug or verified domain, enforce site/lifecycle status, load the public read model, and render through the compatible template/theme renderer.
+Signup provisions a tenant and site, applies approved starter content, stores the selected template code/version, and publishes according to the onboarding workflow. Dashboard mutations update tenant-scoped normalized records. The content editor owns section visibility, order, and supported settings for every platform section. Public requests resolve a slug or verified domain, enforce site/lifecycle status, load the normalized public read model, and render its ordered visible sections through a presentation-only theme renderer.
+
+Contact location is stored as optional free text in `ContactProfile.workLocation`, defaults to `فريلانسر`, and does not require a fixed address or map. Public themes expose available contact channels as touch-sized actions.
 
 ## Important Files
 
@@ -28,4 +30,4 @@ Signup provisions a tenant and site, applies approved starter content, stores th
 
 ## Development Notes
 
-Preserve tenant scope and customer-owned content. Template switching must not silently replace content. Destructive replacement requires explicit intent and a content snapshot. Publishing, slug, domain, and lifecycle changes must remain coordinated and documented.
+Preserve tenant scope and customer-owned content. Template switching must not silently replace content. Destructive replacement requires explicit intent and a content snapshot. Structured section edits must preserve unknown compatible JSON fields. Publishing, slug, domain, and lifecycle changes must remain coordinated and documented.

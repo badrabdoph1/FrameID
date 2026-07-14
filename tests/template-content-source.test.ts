@@ -29,7 +29,15 @@ describe("template content source", () => {
         source!.content.packages.map((item) => item.name),
       );
       expect(payload.site.title).toBe("محمود سامي");
-      expect(payload.contact.studioName).toBe("محمود سامي");
+      expect(payload.contact.studioName).toBe("Photography");
+      expect(preview.contact.workLocation).toBe("فريلانسر");
+      expect(preview.contact.tiktok).toBe(source!.content.contact.tiktok);
+      expect(preview.hero).toMatchObject({
+        overlay: source!.content.sections.hero.overlay,
+        position: source!.content.sections.hero.position,
+        height: source!.content.sections.hero.height,
+        cta: source!.content.sections.hero.cta,
+      });
       expect(payload.sections.map((section) => section.type)).toEqual([
         "hero",
         "gallery",

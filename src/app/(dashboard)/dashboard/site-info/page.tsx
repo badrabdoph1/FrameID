@@ -52,6 +52,7 @@ export default async function SiteInfoPage() {
       instagram={profile?.instagram ?? null}
       facebook={profile?.facebook ?? null}
       tiktok={profile?.tiktok ?? null}
+      workLocation={profile?.workLocation ?? "فريلانسر"}
       snapchat={profile?.snapchat ?? null}
       youtube={profile?.youtube ?? null}
       behance={profile?.behance ?? null}

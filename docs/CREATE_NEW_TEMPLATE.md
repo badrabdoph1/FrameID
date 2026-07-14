@@ -23,7 +23,7 @@ Add the template to the existing code-defined definitions with:
 - code, name, theme code, status and showroom order;
 - description;
 - complete starter content matching the established type;
-- only sections supported by the theme.
+- all platform sections (`hero`, `gallery`, `packages`, `extras`, `contact`) and their settings. Partial capability lists are rejected by the registry.
 
 The registry must still pass uniqueness, theme-reference, and starter-content validation.
 
@@ -33,6 +33,8 @@ The registry must still pass uniqueness, theme-reference, and starter-content va
 - When a new renderer is necessary, keep it data-driven and free from customer-specific hard coding.
 - Support mobile and desktop.
 - Read normalized public-site content and theme config.
+- Iterate `site.orderedSections`; never hard-code section order or silently ignore a supported capability.
+- Keep business rules in `template-contract.ts`; the renderer may vary presentation only.
 - Provide safe fallbacks for missing historic fields.
 
 ## 5. Seed/admin integration
@@ -57,6 +59,7 @@ At minimum test:
 - renderer handles defaults and missing optional data;
 - admin preview works;
 - public route renders on mobile/desktop;
+- visibility/order and Hero/contact settings work identically through the unified contract;
 - old templates/sites remain unaffected.
 
 Run typecheck, lint, relevant tests, and production build.

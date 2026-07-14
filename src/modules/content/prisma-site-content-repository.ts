@@ -27,12 +27,15 @@ export function createPrismaSiteContentRepository(
           sections: {
             where: {
               type: {
-                in: ["hero", "contact"]
+                in: ["hero", "gallery", "packages", "extras", "contact"]
               },
               deletedAt: null
             },
             select: {
               type: true,
+              title: true,
+              sortOrder: true,
+              isVisible: true,
               data: true
             }
           }
@@ -78,7 +81,7 @@ export function createPrismaSiteContentRepository(
             title: input.title,
             sortOrder: input.sortOrder,
             data: input.data,
-            isVisible: true
+            isVisible: input.isVisible
           },
           select: {
             id: true
@@ -93,7 +96,7 @@ export function createPrismaSiteContentRepository(
           title: input.title,
           sortOrder: input.sortOrder,
           data: input.data,
-          isVisible: true
+          isVisible: input.isVisible
         },
         select: {
           id: true
@@ -108,6 +111,9 @@ function isEditorContentRecord(value: unknown): value is {
   description: string | null;
   sections: Array<{
     type: string;
+    title: string | null;
+    sortOrder: number;
+    isVisible: boolean;
     data: Record<string, unknown>;
   }>;
 } {
@@ -130,6 +136,10 @@ function isEditorContentRecord(value: unknown): value is {
         section &&
         typeof section === "object" &&
         typeof (section as { type?: unknown }).type === "string" &&
+        ((section as { title?: unknown }).title === null ||
+          typeof (section as { title?: unknown }).title === "string") &&
+        typeof (section as { sortOrder?: unknown }).sortOrder === "number" &&
+        typeof (section as { isVisible?: unknown }).isVisible === "boolean" &&
         isRecord((section as { data?: unknown }).data)
     )
   );

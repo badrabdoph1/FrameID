@@ -24,6 +24,8 @@ function createRecord(): PublicSiteRecord {
       email: "ali@example.com",
       instagram: "ali",
       facebook: "ali",
+      tiktok: "@ali",
+      workLocation: "متاح للتصوير في جميع المحافظات",
       avatarUrl: "https://example.com/profile.jpg",
       coverUrl: "https://example.com/cover.jpg",
     },
@@ -36,7 +38,19 @@ function createRecord(): PublicSiteRecord {
           headline: "Ali Ahmed Studio",
           subheadline: "Elegant wedding photography.",
           imageUrl: "https://example.com/hero.jpg",
+          overlay: "strong",
+          position: "top",
+          height: "tall",
+          cta: { label: "تواصل الآن", target: "contact" },
+          settings: { eyebrow: "قصص حقيقية" },
         },
+      },
+      {
+        type: "gallery",
+        title: "Gallery",
+        sortOrder: 20,
+        isVisible: false,
+        data: { settings: { layout: "grid", limit: 3 } },
       },
       {
         type: "contact",
@@ -101,7 +115,14 @@ describe("public site view model", () => {
     });
 
     expect(viewModel.publicUrl).toBe("https://frameid.app/p/ali-ahmed");
-    expect(viewModel.hero.imageUrl).toBe("https://example.com/hero.jpg");
+    expect(viewModel.hero).toMatchObject({
+      imageUrl: "https://example.com/cover.jpg",
+      overlay: "strong",
+      position: "top",
+      height: "tall",
+      cta: { label: "تواصل الآن", target: "contact" },
+      eyebrow: "قصص حقيقية",
+    });
     expect(viewModel.metadata).toMatchObject({
       title: "Ali Ahmed Studio",
       description: "Natural wedding stories in Cairo.",
@@ -115,6 +136,12 @@ describe("public site view model", () => {
     expect(socialImage(viewModel)).toBe("https://example.com/profile.jpg");
     expect(viewModel.structuredData["@type"]).toBe("LocalBusiness");
     expect(viewModel.contact.whatsapp).toBe("201000000000");
+    expect(viewModel.contact.tiktok).toBe("@ali");
+    expect(viewModel.contact.workLocation).toBe("متاح للتصوير في جميع المحافظات");
+    expect(viewModel.sections.gallery.isVisible).toBe(false);
+    expect(viewModel.orderedSections.map((section) => section.type)).toEqual([
+      "hero", "packages", "extras", "contact", "gallery"
+    ]);
   });
 
   it("falls back from profile photo to hero image", () => {
@@ -127,12 +154,15 @@ describe("public site view model", () => {
       platformSocialImageUrl: "https://frameid.app/platform-preview.jpg",
     });
 
-    expect(socialImage(viewModel)).toBe("https://example.com/hero.jpg");
+    expect(socialImage(viewModel)).toBe("https://example.com/cover.jpg");
   });
 
   it("falls back from missing profile and hero images to the platform preview", () => {
     const site = createRecord();
-    if (site.contactProfile) site.contactProfile.avatarUrl = null;
+    if (site.contactProfile) {
+      site.contactProfile.avatarUrl = null;
+      site.contactProfile.coverUrl = null;
+    }
     const hero = site.sections.find((section) => section.type === "hero");
     if (hero) delete hero.data.imageUrl;
 

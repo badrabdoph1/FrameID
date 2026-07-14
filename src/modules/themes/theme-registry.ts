@@ -3,6 +3,10 @@ import {
   themeDefinitions
 } from "@/modules/themes/definitions";
 import type { TemplateStarterContent } from "@/modules/themes/template-starter-content";
+import {
+  PLATFORM_TEMPLATE_SECTION_TYPES,
+  type TemplateSectionType,
+} from "@/modules/themes/template-contract";
 
 export type TemplateStatus = "draft" | "published" | "archived";
 
@@ -13,7 +17,7 @@ export type ThemeDefinition = {
   name: string;
   version: string;
   status: ThemeStatus;
-  supportedSections: string[];
+  supportedSections: TemplateSectionType[];
   defaultConfig: Record<string, unknown>;
 };
 
@@ -76,11 +80,21 @@ function assertTemplatesHaveStarterContent(templateItems: TemplateSummary[]) {
   }
 }
 
+function assertThemesImplementPlatformContract(themeItems: ThemeDefinition[]) {
+  const required = PLATFORM_TEMPLATE_SECTION_TYPES.join(",");
+  for (const theme of themeItems) {
+    if (theme.supportedSections.join(",") !== required) {
+      throw new Error(`Theme ${theme.code} must implement the complete platform template contract`);
+    }
+  }
+}
+
 export function createThemeRegistry(input: ThemeRegistryInput): ThemeRegistry {
   assertUniqueCodes(input.themes, "theme");
   assertUniqueCodes(input.templates, "template");
   assertTemplateThemesExist(input.themes, input.templates);
   assertTemplatesHaveStarterContent(input.templates);
+  assertThemesImplementPlatformContract(input.themes);
 
   const themeMap = new Map(input.themes.map((theme) => [theme.code, theme]));
   const templateMap = new Map(

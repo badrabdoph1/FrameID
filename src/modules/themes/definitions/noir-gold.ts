@@ -1,13 +1,14 @@
 import type { TemplateSummary, ThemeDefinition } from "@/modules/themes/theme-registry";
 import { parseTemplateStarterContent } from "@/modules/themes/template-starter-content";
 import { OFFICIAL_TEMPLATE_STARTER_DEFAULTS as defaults } from "@/modules/themes/template-starter-defaults";
+import { PLATFORM_TEMPLATE_SECTION_TYPES } from "@/modules/themes/template-contract";
 
 export const noirGoldTheme: ThemeDefinition = {
   code: "noir-gold",
   name: "كلاسك",
   version: "1.0.0",
   status: "published",
-  supportedSections: ["hero", "gallery", "packages", "extras", "contact"],
+  supportedSections: [...PLATFORM_TEMPLATE_SECTION_TYPES],
   defaultConfig: { colorPreset: "champagne", layoutDensity: "editorial", motion: "quiet" }
 };
 
@@ -21,13 +22,13 @@ export const noirGoldTemplate: TemplateSummary = {
   starterContent: parseTemplateStarterContent({
     site: { title: defaults.photographerName, description: defaults.description },
     sections: {
-      hero: { title: "الرئيسية", sortOrder: 0, isVisible: true, headline: defaults.photographerName, subheadline: defaults.description, imageUrl: "https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1800&q=85" },
-      gallery: { title: "لمحات من الأعمال", sortOrder: 1, isVisible: true, description: "مختارات من جلسات الزفاف والخطوبة بتفاصيل قريبة وإضاءة طبيعية." },
-      packages: { title: "اختر باقتك", sortOrder: 2, isVisible: true, description: "اختار التغطية الأنسب ليومك، ويمكنك إضافة أي خدمة تحتاجها قبل تأكيد الحجز." },
-      extras: { title: "إضافات مميزة", sortOrder: 3, isVisible: true, description: "أضف خدمة تصوير أو ألبوم أو فيديو حسب احتياج اليوم." },
-      contact: { title: "التواصل", sortOrder: 4, isVisible: true, callToAction: "احجز موعدك الآن" }
+      hero: { title: "الرئيسية", sortOrder: 0, isVisible: true, headline: defaults.photographerName, subheadline: defaults.description, imageUrl: "https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1800&q=85", overlay: "medium", position: "center", height: "screen", cta: { label: "شاهد الباقات", target: "packages" }, settings: { eyebrow: "Portraits · Stories · Light" } },
+      gallery: { title: "لمحات من الأعمال", sortOrder: 1, isVisible: true, description: "مختارات من جلسات الزفاف والخطوبة بتفاصيل قريبة وإضاءة طبيعية.", settings: { eyebrow: "أعمال مختارة", layout: "snap", limit: 6 } },
+      packages: { title: "اختر باقتك", sortOrder: 2, isVisible: true, description: "اختار التغطية الأنسب ليومك، ويمكنك إضافة أي خدمة تحتاجها قبل تأكيد الحجز.", settings: { eyebrow: "باقات التصوير", layout: "snap" } },
+      extras: { title: "إضافات مميزة", sortOrder: 3, isVisible: true, description: "أضف خدمة تصوير أو ألبوم أو فيديو حسب احتياج اليوم.", settings: { eyebrow: "خدمات إضافية", layout: "compact" } },
+      contact: { title: "التواصل", sortOrder: 4, isVisible: true, callToAction: "احجز موعدك الآن", settings: { eyebrow: "تواصل مباشر", layout: "grid" } }
     },
-    contact: { studioName: defaults.studioName, bio: defaults.description, longDescription: defaults.description, phone: "+201000000001", whatsapp: "+201000000001", email: "hello@kareemmagdy.example", instagram: "kareemmagdy.photo", facebook: "kareemmagdy.photo" },
+    contact: { studioName: defaults.studioName, bio: defaults.description, longDescription: defaults.description, phone: "+201000000001", whatsapp: "+201000000001", email: "hello@kareemmagdy.example", instagram: "kareemmagdy.photo", facebook: "kareemmagdy.photo", tiktok: "@kareemmagdy.photo", workLocation: "فريلانسر" },
     packages: [
       { id: "noir-basic", name: "Session Basic", subtitle: "كل اللي تحتاجه لبداية مميزة", priceAmount: 0, currency: "EGP", features: ["فوتوسيشن خارجي (Outdoor)", "شامل رسوم اللوكيشن", "تعديل احترافي للصور", "تصوير Reels قصير للسوشيال ميديا"], imageUrl: "https://images.unsplash.com/photo-1511285560929-80b456fea0bc?auto=format&fit=crop&w=900&q=85", isHighlighted: false, sortOrder: 0 },
       { id: "noir-full", name: "Full Day", subtitle: "الباقة الأكثر طلبًا بين العرسان", priceAmount: 0, currency: "EGP", features: ["فوتوسيشن خارجي (Outdoor)", "شامل رسوم اللوكيشن", "ألبوم قطيفة فاخر مقاس 30 × 40", "تصوير Reels احترافي"], imageUrl: "https://images.unsplash.com/photo-1465495976277-4387d4b0b4c6?auto=format&fit=crop&w=900&q=85", isHighlighted: true, sortOrder: 1 },

@@ -1,4 +1,17 @@
 import type { CurrentSession } from "@/modules/auth/current-session-service";
+import {
+  isTemplateSectionType,
+  normalizeTemplateSections,
+  type TemplateSectionType,
+} from "@/modules/themes/template-contract";
+
+export type EditorSection = {
+  type: TemplateSectionType;
+  title: string;
+  sortOrder: number;
+  isVisible: boolean;
+  data: Record<string, unknown>;
+};
 
 export type SiteContentRepository = {
   findEditorContent(siteId: string): Promise<{
@@ -6,14 +19,18 @@ export type SiteContentRepository = {
     description: string | null;
     sections: Array<{
       type: string;
+      title: string | null;
+      sortOrder: number;
+      isVisible: boolean;
       data: Record<string, unknown>;
     }>;
   } | null>;
   upsertSection(input: {
     siteId: string;
-    type: "hero" | "contact";
+    type: TemplateSectionType;
     title: string;
     sortOrder: number;
+    isVisible: boolean;
     data: Record<string, unknown>;
   }): Promise<{ id: string }>;
   updateSiteBasics(input: {
@@ -28,102 +45,158 @@ export function createSiteContentService({
 }: {
   repository: SiteContentRepository;
 }) {
-  return {
-    async getEditorContent(input: { session: CurrentSession }): Promise<{
-      hero: {
-        headline: string;
-        subheadline: string;
-        imageUrl: string;
-      };
-      contact: {
-        callToAction: string;
-      };
-    }> {
-      const content = await repository.findEditorContent(input.session.site.id);
-      const heroSection = content?.sections.find((section) => section.type === "hero");
-      const contactSection = content?.sections.find(
-        (section) => section.type === "contact"
-      );
-
+  async function getEditorContent(input: { session: CurrentSession }) {
+    const content = await repository.findEditorContent(input.session.site.id);
+    const rawSections = content?.sections ?? [];
+    const normalized = normalizeTemplateSections(rawSections);
+    const rawByType = new Map(
+      rawSections
+        .filter((section) => isTemplateSectionType(section.type))
+        .map((section) => [section.type as TemplateSectionType, section]),
+    );
+    const sections: EditorSection[] = normalized.orderedSections.map((section) => {
+      const raw = rawByType.get(section.type);
       return {
-        hero: {
-          headline: readString(
-            heroSection?.data.headline,
-            content?.title ?? input.session.site.title
-          ),
-          subheadline: readString(heroSection?.data.subheadline, content?.description ?? ""),
-          imageUrl: readString(heroSection?.data.imageUrl, "")
+        type: section.type,
+        title: section.title,
+        sortOrder: section.sortOrder,
+        isVisible: section.isVisible,
+        data: {
+          ...(raw?.data ?? {}),
+          ...(section.description ? { description: section.description } : {}),
+          settings: section.settings,
         },
-        contact: {
-          callToAction: readString(
-            contactSection?.data.callToAction,
-            "احجز جلستك الآن"
-          )
-        }
       };
-    },
+    });
+    const heroSection = sections.find((section) => section.type === "hero");
+    const contactSection = sections.find((section) => section.type === "contact");
+
+    return {
+      title: content?.title ?? input.session.site.title,
+      description: content?.description ?? "",
+      sections,
+      hero: {
+        headline: readString(
+          heroSection?.data.headline,
+          content?.title ?? input.session.site.title
+        ),
+        subheadline: readString(heroSection?.data.subheadline, content?.description ?? ""),
+        imageUrl: readString(heroSection?.data.imageUrl, "")
+      },
+      contact: {
+        callToAction: readString(
+          contactSection?.data.callToAction,
+          "احجز جلستك الآن"
+        )
+      }
+    };
+  }
+
+  async function updateSection(input: {
+    session: CurrentSession;
+    type: TemplateSectionType;
+    title: string;
+    sortOrder: number;
+    isVisible: boolean;
+    data: Record<string, unknown>;
+  }): Promise<{ sectionId: string }> {
+    if (!isTemplateSectionType(input.type)) {
+      throw new Error("Unsupported template section type");
+    }
+    const title = input.title.trim();
+    if (!title) throw new Error("Section title is required");
+    if (!Number.isInteger(input.sortOrder) || input.sortOrder < 0) {
+      throw new Error("Section sort order must be a non-negative integer");
+    }
+
+    const content = await repository.findEditorContent(input.session.site.id);
+    const existing = content?.sections.find((section) => section.type === input.type);
+    const data = mergeRecords(existing?.data ?? {}, input.data);
+
+    if (input.type === "hero") {
+      const headline = readString(data.headline, "").trim();
+      if (!headline) throw new Error("Hero headline is required");
+      const subheadline = readString(data.subheadline, "").trim();
+      await repository.updateSiteBasics({
+        siteId: input.session.site.id,
+        title: headline,
+        description: subheadline || undefined,
+      });
+    }
+
+    if (input.type === "contact" && !readString(data.callToAction, "").trim()) {
+      throw new Error("Contact call to action is required");
+    }
+
+    const section = await repository.upsertSection({
+      siteId: input.session.site.id,
+      type: input.type,
+      title,
+      sortOrder: input.sortOrder,
+      isVisible: input.isVisible,
+      data,
+    });
+
+    return { sectionId: section.id };
+  }
+
+  return {
+    getEditorContent,
+    updateSection,
     async updateHero(input: {
       session: CurrentSession;
       headline: string;
       subheadline: string;
       imageUrl?: string;
     }): Promise<{ sectionId: string }> {
-      const headline = input.headline.trim();
-      const subheadline = input.subheadline.trim();
-
-      if (!headline) {
-        throw new Error("Hero headline is required");
-      }
-
-      await repository.updateSiteBasics({
-        siteId: input.session.site.id,
-        title: headline,
-        description: subheadline || undefined
-      });
-
-      const section = await repository.upsertSection({
-        siteId: input.session.site.id,
+      return updateSection({
+        session: input.session,
         type: "hero",
         title: "الرئيسية",
         sortOrder: 0,
+        isVisible: true,
         data: {
-          headline,
-          subheadline,
-          imageUrl: input.imageUrl?.trim() || undefined
-        }
+          headline: input.headline.trim(),
+          subheadline: input.subheadline.trim(),
+          imageUrl: input.imageUrl?.trim() || undefined,
+        },
       });
-
-      return {
-        sectionId: section.id
-      };
     },
     async updateContact(input: {
       session: CurrentSession;
       callToAction: string;
     }): Promise<{ sectionId: string }> {
-      const callToAction = input.callToAction.trim();
-
-      if (!callToAction) {
-        throw new Error("Contact call to action is required");
-      }
-
-      const section = await repository.upsertSection({
-        siteId: input.session.site.id,
+      return updateSection({
+        session: input.session,
         type: "contact",
         title: "التواصل",
-        sortOrder: 10,
-        data: {
-          callToAction
-        }
+        sortOrder: 4,
+        isVisible: true,
+        data: { callToAction: input.callToAction.trim() },
       });
-
-      return {
-        sectionId: section.id
-      };
     }
   };
 }
 
 function readString(value: unknown, fallback: string): string {
   return typeof value === "string" && value.trim() ? value : fallback;
+}
+
+function mergeRecords(
+  current: Record<string, unknown>,
+  update: Record<string, unknown>,
+): Record<string, unknown> {
+  const merged: Record<string, unknown> = { ...current };
+  for (const [key, value] of Object.entries(update)) {
+    if (isRecord(value) && isRecord(current[key])) {
+      merged[key] = mergeRecords(current[key], value);
+    } else {
+      merged[key] = value;
+    }
+  }
+  return merged;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }

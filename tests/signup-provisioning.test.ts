@@ -97,6 +97,8 @@ describe("signup provisioning", () => {
     expect(repository.createdInput?.defaultContent.contact.phone).toBe("+201000000001");
     expect(repository.createdInput?.defaultContent.contact.whatsapp).toBe("+201000000001");
     expect(repository.createdInput?.defaultContent.contact.studioName).toBe("Photography");
+    expect(repository.createdInput?.defaultContent.contact.workLocation).toBe("فريلانسر");
+    expect(repository.createdInput?.defaultContent.contact.tiktok).toBe("@kareemmagdy.photo");
   });
 
   it("uses signup phone for phone and WhatsApp while keeping template email", async () => {

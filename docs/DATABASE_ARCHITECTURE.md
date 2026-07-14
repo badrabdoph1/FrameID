@@ -37,7 +37,7 @@ Code-defined registry and database records serve different roles: code defines t
 
 ### Customer content
 
-- `ContactProfile` — studio identity, biography, contact/social links, location and avatar/cover references.
+- `ContactProfile` — studio identity, biography, contact/social links, free-text `workLocation` (default `فريلانسر`), optional legacy address fields, and avatar/cover references. Public templates do not infer a map requirement from legacy address fields.
 - `Package` and `ExtraService` — customer commercial offerings.
 - `GalleryAlbum` and `GalleryImage` — ordered portfolio content and cover/featured state.
 - `MediaAsset` — tenant-owned stored media metadata and safe storage reference.

@@ -44,6 +44,7 @@ export async function updateSiteInfoAction(
     "facebook",
     "instagram",
     "tiktok",
+    "workLocation",
   ] as const;
 
   for (const field of textFields) {

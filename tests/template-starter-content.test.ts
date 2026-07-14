@@ -18,6 +18,15 @@ describe("template starter content", () => {
       expect(content.sections.hero).toBeDefined();
       expect(content.sections.contact).toBeDefined();
       expect(content.contact).toBeDefined();
+      expect(content.contact.workLocation).toBe("فريلانسر");
+      expect(content.contact.tiktok).toBeTruthy();
+      expect(content.sections.hero).toMatchObject({
+        overlay: expect.any(String),
+        position: expect.any(String),
+        height: expect.any(String),
+        cta: { label: expect.any(String), target: expect.any(String) },
+        settings: { eyebrow: expect.any(String) },
+      });
       expect(content.packages.length).toBeGreaterThanOrEqual(3);
       expect(content.extras.length).toBeGreaterThan(0);
       expect(content.gallery.images.length).toBeGreaterThan(0);
