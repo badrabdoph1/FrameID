@@ -11,9 +11,9 @@ export function StarterDefaultsCard({ defaults }: { defaults: TemplateStarterSha
       <div className="flex items-start gap-3">
         <span className="grid size-10 shrink-0 place-items-center rounded-2xl bg-amber-300/12 text-[#f3cf73]"><Sparkles className="size-5" /></span>
         <div>
-          <p className="text-xs font-black text-[#f3cf73]">Template Content Source</p>
-          <h2 className="mt-1 text-lg font-black text-[#fff7e8]">Starter Content Defaults</h2>
-          <p className="mt-1 max-w-3xl text-xs font-bold leading-6 text-white/45">نقطة إدارة واحدة للبيانات المشتركة. كل قالب حالي أو جديد يرث هذه القيم تلقائيًا، ولا يستخدم Override إلا عند الحاجة.</p>
+          <p className="text-xs font-black text-[#f3cf73]">مصدر محتوى القوالب</p>
+          <h2 className="mt-1 text-lg font-black text-[#fff7e8]">محتوى البداية المشترك</h2>
+          <p className="mt-1 max-w-3xl text-xs font-bold leading-6 text-white/45">نقطة إدارة واحدة للبيانات المشتركة. كل قالب حالي أو جديد يرث هذه القيم تلقائيًا، ولا يستخدم استثناء إلا عند الحاجة.</p>
         </div>
       </div>
 
