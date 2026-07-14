@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-07-14T22:56:31.893Z",
+  "updatedAt": "2026-07-14T23:23:54.310Z",
   "themes": [
     {
       "code": "noir-gold",
@@ -164,7 +164,7 @@
           "instructions": "حوّل على رقم إنستا باي، ثم ارفع صورة إثبات الدفع من نفس الصفحة.",
           "notes": null,
           "isActive": true,
-          "sortOrder": 40
+          "sortOrder": 50
         }
       ]
     },
@@ -193,7 +193,7 @@
           "instructions": "حوّل على رقم فودافون كاش، ثم ارفع صورة إثبات الدفع من نفس الصفحة.",
           "notes": null,
           "isActive": true,
-          "sortOrder": 70
+          "sortOrder": 90
         }
       ]
     },
@@ -256,6 +256,86 @@
         "imageUrl": "/social-preview-image.jpg",
         "storageKey": null,
         "description": null
+      }
+    },
+    {
+      "key": "platform.subscription.experience.defaults",
+      "enabled": true,
+      "value": {
+        "trial": {
+          "timer": {
+            "enabled": true
+          },
+          "action": {
+            "href": null,
+            "kind": "billing-page",
+            "label": "فعّل الآن"
+          },
+          "message": {
+            "tone": "info",
+            "title": "حسابك تجريبي برجاء التأكد من التفعيل",
+            "enabled": true,
+            "description": "فعّل الاشتراك قبل نهاية الفترة التجريبية حتى يظل موقعك متاحًا للعملاء."
+          }
+        },
+        "active": {
+          "action": {
+            "href": null,
+            "kind": "hidden",
+            "label": ""
+          },
+          "message": {
+            "tone": "success",
+            "title": "اشتراكك مفعل",
+            "enabled": true,
+            "description": "اشتراكك مفعل والموقع جاهز للتشغيل والمشاركة مع عملائك."
+          }
+        },
+        "expired": {
+          "timer": {
+            "enabled": false
+          },
+          "action": {
+            "href": null,
+            "kind": "billing-page",
+            "label": "جدّد الآن"
+          },
+          "message": {
+            "tone": "danger",
+            "title": "الاشتراك يحتاج إجراء",
+            "enabled": true,
+            "description": "راجع الاشتراك حتى يظل الموقع شغال للعملاء."
+          }
+        },
+        "rejected": {
+          "action": {
+            "href": null,
+            "kind": "billing-page",
+            "label": "إعادة المحاولة"
+          },
+          "message": {
+            "tone": "danger",
+            "title": "تم رفض طلب التفعيل",
+            "enabled": true,
+            "description": "برجاء مراجعة بيانات الدفع أو إرسال إثبات صحيح من صفحة الاشتراك."
+          }
+        },
+        "trialPolicy": {
+          "defaultDays": 14
+        },
+        "pendingReview": {
+          "action": {
+            "href": null,
+            "kind": "support",
+            "label": "تواصل مع الدعم"
+          },
+          "message": {
+            "tone": "warning",
+            "title": "طلب التفعيل قيد المراجعة",
+            "enabled": true,
+            "description": "تم إرسال إثبات الدفع. سنراجع الطلب ونفعّل الاشتراك فور التأكد."
+          }
+        }
       }
     }
   ],
