@@ -142,6 +142,9 @@ function billingIntervalLabel(value: string) {
 }
 
 function normalizeFeatures(value: unknown): { description: string; badgeLabel: string; isPopular: boolean; featureLines: string[] } {
+  if (Array.isArray(value)) {
+    return { description: "", badgeLabel: "", isPopular: false, featureLines: value.map((item) => String(item).trim()).filter(Boolean) };
+  }
   if (typeof value !== "object" || value === null) {
     return { description: "", badgeLabel: "", isPopular: false, featureLines: [] };
   }
