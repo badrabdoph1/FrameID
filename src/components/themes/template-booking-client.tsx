@@ -4,6 +4,7 @@ import { createContext, useContext, useState, type ReactNode } from "react";
 import { Check, MessageCircle } from "lucide-react";
 
 import { cn } from "@/lib/utils/cn";
+import { ThemeBookingFAB } from "@/components/themes/theme-booking-fab";
 import { createTemplateBookingHref } from "@/modules/themes/template-contract";
 
 type BookingPackage = {
@@ -126,6 +127,23 @@ export function BookingAction({
       <MessageCircle className="size-4" aria-hidden />
       {selected ? label : "اختر باقة للحجز"}
     </a>
+  );
+}
+
+export function BookingFAB({ variant }: { variant: "noir" | "rose" }) {
+  const booking = useBooking();
+  const hasSelection = Boolean(booking.selectedPackageId) || booking.selectedExtraIds.length > 0;
+
+  function scrollToContact() {
+    document.getElementById("contact")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  return (
+    <ThemeBookingFAB
+      visible={hasSelection}
+      onConfirm={scrollToContact}
+      variant={variant}
+    />
   );
 }
 

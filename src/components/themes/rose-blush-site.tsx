@@ -20,6 +20,7 @@ import {
 
 import type { PublicSiteViewModel } from "@/modules/public-sites/public-site-view-model";
 import { cn } from "@/lib/utils/cn";
+import { ThemeBookingFAB } from "@/components/themes/theme-booking-fab";
 import {
   createThemeBookingHref,
   formatThemeTotal,
@@ -317,6 +318,12 @@ export function RoseBlushSite({ site }: RoseBlushSiteProps) {
           <p className="mt-8 font-display text-xs tracking-[0.2em] text-[#8c7a74]/50">© {new Date().getFullYear()} FrameID</p>
         </div>
       </footer>
+
+      <ThemeBookingFAB
+        visible={Boolean(selectedPackage) || selectedExtras.length > 0}
+        onConfirm={() => scrollToSection("contact")}
+        variant="rose"
+      />
     </main>
   );
 }
