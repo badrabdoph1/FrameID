@@ -51,7 +51,7 @@ function SecondaryPanel({ sections, collapsed }: { sections: AdminSection[]; col
               <p className="mt-0.5 line-clamp-2 text-[0.7rem] font-extrabold leading-5 text-white/48">{section.description}</p>
             )}
           </div>
-          <nav className="mt-2 grid gap-1.5">
+          <nav aria-label={`صفحات ${section.title}`} className="mt-2 grid gap-1.5">
             {section.links.map((link) => {
               const isActive = isAdminLinkActive(pathname, link.href)
               return (
@@ -147,7 +147,7 @@ export function AdminSidebar() {
             {!sidebarCollapsed && (
               <span className="grid gap-0.5">
                 <strong className="text-base font-black text-[#fff7e8]">FrameID</strong>
-                <small className="text-[0.7rem] font-extrabold text-white/54">Admin Command Center</small>
+                <small className="text-[0.7rem] font-extrabold text-white/54">إدارة FrameID</small>
               </span>
             )}
           </Link>
@@ -233,7 +233,7 @@ export function AdminSidebar() {
               {!sidebarCollapsed && "الرجوع للموقع"}
             </Link>
             <form action={adminLogoutAction}>
-              <button className="flex size-[46px] items-center justify-center rounded-2xl border border-white/10 bg-white/[0.045] text-white/70 transition hover:border-red-300/20 hover:bg-red-500/10 hover:text-red-200">
+              <button aria-label="تسجيل الخروج" className="flex size-[46px] items-center justify-center rounded-2xl border border-white/10 bg-white/[0.045] text-white/70 transition hover:border-red-300/20 hover:bg-red-500/10 hover:text-red-200">
                 <LogOut size={17} />
               </button>
             </form>

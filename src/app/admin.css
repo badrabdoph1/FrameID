@@ -28,6 +28,39 @@
   }
 }
 
+.admin-skip-link {
+  position: fixed;
+  top: 0.75rem;
+  right: 0.75rem;
+  z-index: 2147483000;
+  transform: translateY(-160%);
+  border-radius: 0.75rem;
+  background: #f3cf73;
+  padding: 0.7rem 1rem;
+  color: #17120a;
+  font-size: 0.875rem;
+  font-weight: 900;
+  text-decoration: none;
+  transition: transform 160ms ease;
+}
+
+.admin-skip-link:focus-visible {
+  transform: translateY(0);
+  outline: 3px solid #fff7e8;
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-dark-shell *,
+  .admin-dark-shell *::before,
+  .admin-dark-shell *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
 @utility admin-fade-in {
   animation: admin-fade-in 0.2s ease-out;
 }

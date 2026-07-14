@@ -124,7 +124,7 @@ git commit -m "refactor: unify admin route contract"
 - Consumes: `getAdminRoute`, `getAdminBreadcrumbs`, `adminSections`.
 - Produces: غلاف واحد متجاوب وتنقل مشتق من السجل وحالات تحمل عناوين وإجراءات موحدة.
 
-- [ ] **Step 1: اختبر الهاتف وBreadcrumbs وإتاحة الوصول**
+- [x] **Step 1: اختبر الهاتف وBreadcrumbs وإتاحة الوصول**
 
 ```tsx
 expect(screen.getByRole("button", { name: "فتح كل أقسام الأدمن" })).toBeInTheDocument();
@@ -132,16 +132,16 @@ expect(screen.getByRole("navigation", { name: "مسار الصفحة" })).toBeIn
 expect(screen.getByRole("link", { name: "انتقل إلى المحتوى" })).toHaveAttribute("href", "#admin-main-content");
 ```
 
-- [ ] **Step 2: شغّل الاختبارات وتحقق من الفشل المتوقع**
+- [x] **Step 2: شغّل الاختبارات وتحقق من الفشل المتوقع**
 
 Run: `npm test -- tests/layout-shells.test.tsx tests/admin-shell-accessibility.test.tsx`
 Expected: FAIL في التسميات والعقد القديم.
 
-- [ ] **Step 3: اشتق كل التسميات من السجل وأزل الأرقام الثابتة**
+- [x] **Step 3: اشتق كل التسميات من السجل وأزل الأرقام الثابتة**
 
 اجعل شارة الإشعارات تظهر فقط عند تمرير قيمة حقيقية، واجعل Breadcrumbs تستخدم `getAdminBreadcrumbs`. أضف `id="admin-main-content"` وSkip link، ووحّد aria labels العربية.
 
-- [ ] **Step 4: أضف reduced motion وأحجام اللمس**
+- [x] **Step 4: أضف reduced motion وأحجام اللمس**
 
 ```css
 @media (prefers-reduced-motion: reduce) {
@@ -154,7 +154,7 @@ Expected: FAIL في التسميات والعقد القديم.
 }
 ```
 
-- [ ] **Step 5: شغّل اختبارات الغلاف واعمل commit**
+- [x] **Step 5: شغّل اختبارات الغلاف واعمل commit**
 
 Run: `npm test -- tests/layout-shells.test.tsx tests/admin-shell-accessibility.test.tsx tests/admin-navigation-contract.test.tsx`
 Expected: PASS.

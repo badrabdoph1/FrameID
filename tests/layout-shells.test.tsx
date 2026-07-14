@@ -48,7 +48,7 @@ describe("application shells", () => {
     expect(screen.getByText("Admin content")).toBeInTheDocument();
     const frameIdElements = screen.getAllByText("FrameID");
     expect(frameIdElements.length).toBeGreaterThanOrEqual(1);
-    const adminElements = screen.getAllByText("Admin");
+    const adminElements = screen.getAllByText("إدارة FrameID");
     expect(adminElements.length).toBeGreaterThanOrEqual(1);
   });
 
@@ -59,7 +59,7 @@ describe("application shells", () => {
       </AdminShell>
     );
 
-    const mobileNav = screen.getByRole("navigation", { name: "تنقل الأدمن للموبايل" });
+    const mobileNav = screen.getByRole("navigation", { name: "التنقل الرئيسي للأدمن على الهاتف" });
     expect(within(mobileNav).getAllByRole("link")).toHaveLength(4);
     expect(within(mobileNav).getByRole("button", { name: "فتح كل أقسام الأدمن" })).toBeInTheDocument();
   });

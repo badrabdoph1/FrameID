@@ -33,6 +33,9 @@ function ShellContent({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="admin-dark-shell min-h-screen overflow-x-hidden bg-[#0b0d12] text-[#f5ead6] color-scheme-dark">
+      <a className="admin-skip-link" href="#admin-main-content">
+        انتقل إلى المحتوى
+      </a>
       <RouteChangeProgress />
 
       <div className="hidden lg:block">
@@ -45,7 +48,7 @@ function ShellContent({ children }: { children: React.ReactNode }) {
           mounted && !sidebarCollapsed ? "lg:mr-[326px]" : "lg:mr-[86px]",
         )}
       >
-        <main className="admin-desktop-main min-h-screen overflow-x-hidden px-3 pb-[calc(166px+env(safe-area-inset-bottom))] pt-[calc(82px+env(safe-area-inset-top))] sm:px-4 lg:px-7 lg:py-6 lg:pb-8 xl:px-8">
+        <main id="admin-main-content" tabIndex={-1} className="admin-desktop-main min-h-screen overflow-x-hidden px-3 pb-[calc(166px+env(safe-area-inset-bottom))] pt-[calc(82px+env(safe-area-inset-top))] sm:px-4 lg:px-7 lg:py-6 lg:pb-8 xl:px-8">
           <div className="hidden lg:block">
             <AdminTopbar />
           </div>
