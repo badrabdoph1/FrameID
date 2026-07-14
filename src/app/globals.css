@@ -440,7 +440,22 @@
   flex-shrink: 0;
 }
 
-/* ── Immersive Onboarding V2 ── */
+/* ── Home Nav Tooltip Glow ── */
+
+@keyframes home-tooltip-glow {
+  0%, 100% {
+    box-shadow: 0 0 0 rgba(243, 207, 115, 0);
+  }
+  50% {
+    box-shadow: 0 0 16px rgba(243, 207, 115, 0.4), 0 0 8px rgba(243, 207, 115, 0.2);
+  }
+}
+
+.animate-home-tooltip-glow {
+  animation: home-tooltip-glow 2s ease-in-out infinite;
+}
+
+/* ── Immersive Onboarding V2 ─ */
 
 .io-overlay-enter {
   animation: ioOverlayIn 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
