@@ -1,5 +1,5 @@
 import React from "react";
-import { render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("next/link", () => ({
@@ -62,5 +62,15 @@ describe("customers admin table", () => {
       "href",
       "/admin/customers/customer-1",
     );
+    expect(within(card).getByText("تجريبي")).toBeInTheDocument();
+  });
+
+  it("reveals only the fields needed for the selected bulk action", () => {
+    render(<CustomersTable data={customers} page={1} totalPages={1} basePath="/admin/customers" search="" statusFilter="" lifecycleFilter="" />);
+    expect(screen.queryByRole("combobox", { name: "الإجراء الجماعي" })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("checkbox", { name: "اختيار Ali Studio" }));
+    expect(screen.getByRole("combobox", { name: "الإجراء الجماعي" })).toBeInTheDocument();
+    expect(screen.getByRole("spinbutton", { name: "عدد الأيام" })).toBeInTheDocument();
+    expect(screen.queryByPlaceholderText("نص إشعار/بريد اختياري")).not.toBeInTheDocument();
   });
 });

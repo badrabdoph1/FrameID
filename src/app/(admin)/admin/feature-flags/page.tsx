@@ -152,7 +152,7 @@ export default async function AdminFeatureFlagsPage({ searchParams }: Props) {
               <select name="scope" defaultValue={scope} className="h-10 rounded-xl border border-white/10 bg-black/20 px-3 text-sm font-bold text-white outline-none focus:border-amber-400/40">
                 <option value="">كل النطاقات</option>
                 <option value="PLATFORM">Platform</option>
-                <option value="TENANT">Tenant</option>
+                <option value="TENANT">عميل</option>
                 <option value="SITE">Site</option>
               </select>
               <select name="state" defaultValue={state} className="h-10 rounded-xl border border-white/10 bg-black/20 px-3 text-sm font-bold text-white outline-none focus:border-amber-400/40">
@@ -204,7 +204,7 @@ function FeatureFlagForm({ tenants, sites, flag }: { tenants: TenantOption[]; si
       <div className="grid gap-3 sm:grid-cols-2">
         <select name="scope" defaultValue={flag?.scope ?? "PLATFORM"} className="h-10 rounded-xl border border-white/10 bg-black/20 px-3 text-sm font-bold text-white outline-none focus:border-amber-400/40">
           <option value="PLATFORM">Platform</option>
-          <option value="TENANT">Tenant</option>
+          <option value="TENANT">عميل</option>
           <option value="SITE">Site</option>
         </select>
         <label className="flex h-10 items-center gap-2 rounded-xl border border-white/10 bg-black/20 px-3 text-sm font-bold text-white/60">
@@ -213,7 +213,7 @@ function FeatureFlagForm({ tenants, sites, flag }: { tenants: TenantOption[]; si
         </label>
       </div>
       <select name="tenantId" defaultValue={flag?.tenantId ?? ""} className="h-10 rounded-xl border border-white/10 bg-black/20 px-3 text-sm font-bold text-white outline-none focus:border-amber-400/40">
-        <option value="">Tenant target عند اختيار TENANT</option>
+        <option value="">اختر العميل عند استخدام نطاق العميل</option>
         {tenants.map((tenant) => <option key={tenant.id} value={tenant.id}>{tenant.displayName} · {tenant.status}</option>)}
       </select>
       <select name="siteId" defaultValue={flag?.siteId ?? ""} className="h-10 rounded-xl border border-white/10 bg-black/20 px-3 text-sm font-bold text-white outline-none focus:border-amber-400/40">
@@ -237,7 +237,7 @@ function FeatureFlagForm({ tenants, sites, flag }: { tenants: TenantOption[]; si
 
 function FeatureFlagCard({ flag, tenants, sites }: { flag: { id: string; key: string; scope: string; enabled: boolean; value: unknown; tenantId: string | null; siteId: string | null; updatedAt: Date; tenant: { displayName: string; status: string } | null; site: { title: string; slug: string; status: string; tenant: { displayName: string } } | null }; tenants: TenantOption[]; sites: SiteOption[] }) {
   const target = flag.scope === "TENANT"
-    ? flag.tenant?.displayName ?? "Tenant غير معروف"
+    ? flag.tenant?.displayName ?? "عميل غير معروف"
     : flag.scope === "SITE"
       ? `${flag.site?.title ?? "Site غير معروف"} · /p/${flag.site?.slug ?? "—"}`
       : "Platform-wide";

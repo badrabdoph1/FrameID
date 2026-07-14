@@ -28,23 +28,23 @@ const fields: Array<[keyof RenderingMetadata, string]> = [
   ["browserName", "المتصفح"],
   ["browserVersion", "إصدار المتصفح"],
   ["webViewVersion", "إصدار WebView"],
-  ["pwaInstalled", "PWA مثبت"],
-  ["safeRenderingEnabled", "Safe Rendering"],
+  ["pwaInstalled", "تطبيق الويب مثبت"],
+  ["safeRenderingEnabled", "العرض الآمن"],
   ["safeRenderingReason", "سبب التفعيل"],
-  ["backdropFilterSupported", "Backdrop Filter مدعوم"],
-  ["backdropFilterInUse", "Backdrop Filter مستخدم"],
-  ["backdropFilterLayerCount", "عدد طبقات Backdrop"],
-  ["devicePixelRatio", "Device Pixel Ratio"],
+  ["backdropFilterSupported", "تمويه الخلفية مدعوم"],
+  ["backdropFilterInUse", "تمويه الخلفية مستخدم"],
+  ["backdropFilterLayerCount", "عدد طبقات التمويه"],
+  ["devicePixelRatio", "كثافة بكسلات الجهاز"],
   ["screenWidth", "عرض الشاشة"],
   ["screenHeight", "ارتفاع الشاشة"],
-  ["viewportWidth", "عرض Viewport"],
-  ["viewportHeight", "ارتفاع Viewport"],
+  ["viewportWidth", "عرض نافذة العرض"],
+  ["viewportHeight", "ارتفاع نافذة العرض"],
   ["hardwareConcurrency", "أنوية المعالج المتاحة"],
   ["deviceMemory", "ذاكرة الجهاز التقريبية"],
-  ["gpuVendor", "GPU Vendor"],
-  ["gpuRenderer", "GPU Renderer"],
+  ["gpuVendor", "مصنّع معالج الرسوم"],
+  ["gpuRenderer", "معالج الرسوم"],
   ["route", "المسار"],
-  ["userAgent", "User Agent"],
+  ["userAgent", "هوية المتصفح التقنية"],
 ];
 
 export default async function RenderingDiagnosticsPage() {
@@ -57,10 +57,10 @@ export default async function RenderingDiagnosticsPage() {
   });
 
   return (
-    <AdminPageShell badge="النظام" title="تشخيصات Rendering والأجهزة" description="بيانات تقنية تُجمع فقط عند بلاغ Rendering أو خطأ فعلي.">
+    <AdminPageShell badge="النظام" title="تشخيصات العرض والأجهزة" description="بيانات تقنية تُجمع فقط عند بلاغ عرض أو خطأ فعلي.">
       {logs.length === 0 ? (
         <section className="rounded-3xl border border-white/10 bg-white/[0.035] p-8 text-center text-sm font-bold text-white/45">
-          لا توجد بلاغات Rendering أو Client Errors مسجلة حتى الآن.
+          لا توجد بلاغات عرض أو أخطاء متصفح مسجلة حتى الآن.
         </section>
       ) : (
         <div className="grid gap-4">

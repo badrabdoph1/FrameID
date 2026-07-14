@@ -1,16 +1,19 @@
 import Link from "next/link";
 import {
   HelpCircle,
+  History,
   Home,
   Image as ImageIcon,
   Layout,
   Navigation,
   Palette,
+  Megaphone,
   ScrollText,
   Search,
   Settings,
   Shield,
   Sparkles,
+  Share2,
   type LucideIcon,
 } from "lucide-react";
 
@@ -60,10 +63,14 @@ export default async function AdminContentPage() {
           <Metric label="ملفات الوسائط" value={mediaCount} icon={ImageIcon} />
         </section>
 
-        <nav aria-label="أقسام المحتوى" className="grid gap-2 border-y border-white/8 py-3 sm:grid-cols-3">
+        <nav aria-label="أقسام المحتوى" className="grid gap-2 border-y border-white/8 py-3 sm:grid-cols-2 xl:grid-cols-3">
           <ManagementLink href="/admin/templates" icon={Layout} label="إدارة القوالب" />
           <ManagementLink href="/admin/themes" icon={Palette} label="إعدادات الثيمات" />
           <ManagementLink href="/admin/media" icon={ImageIcon} label="مكتبة الوسائط" />
+          <ManagementLink href="/admin/page-studio" icon={Home} label="محرر صفحات المنصة" />
+          <ManagementLink href="/admin/marketing" icon={Megaphone} label="أدوات التسويق" />
+          <ManagementLink href="/admin/social-preview" icon={Share2} label="معاينة المشاركة" />
+          <ManagementLink href="/admin/revisions" icon={History} label="سجل تعديلات المحتوى" />
         </nav>
 
         <section className="border-t border-white/8 pt-4">

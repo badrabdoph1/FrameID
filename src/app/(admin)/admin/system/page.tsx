@@ -34,8 +34,8 @@ export default async function AdminSystemWorkspacePage() {
     featureFlags,
   ] = await Promise.all([
     prisma.errorLog.count({ where: { resolved: false } }),
-    prisma.errorLog.count({ where: { resolved: false, level: { in: ["ERROR", "FATAL"] } } }),
-    prisma.notificationLog.count({ where: { deletedAt: null } }),
+    prisma.errorLog.count({ where: { resolved: false, level: { in: ["ERROR", "FATAL", "error", "fatal", "critical"] } } }),
+    prisma.notification.count({ where: { deletedAt: null, readAt: null } }),
     prisma.errorLog.findMany({
       where: { resolved: false },
       orderBy: { createdAt: "desc" },
@@ -63,7 +63,7 @@ export default async function AdminSystemWorkspacePage() {
   return (
     <AdminPageShell
       badge="النظام"
-      title="System Workspace"
+      title="مركز النظام"
       description="مكان واحد لصحة المنصة: الأخطاء، الإشعارات، النسخ الاحتياطي، السجلات، والإعدادات. الأدوات المتقدمة محفوظة هنا بدون تشويش الواجهة اليومية."
       breadcrumbs={[{ label: "القيادة", href: "/admin" }, { label: "النظام" }]}
       actions={[
@@ -80,7 +80,7 @@ export default async function AdminSystemWorkspacePage() {
         </section>
 
         <section className="grid gap-4 xl:grid-cols-[1fr_0.9fr]">
-          <WorkspacePanel title="أخطاء تحتاج انتباه" description="الأخطاء غير المحلولة مرتبة من الأحدث." href="/admin/errors" cta="فتح Error Center">
+          <WorkspacePanel title="أخطاء تحتاج انتباه" description="الأخطاء غير المحلولة مرتبة من الأحدث." href="/admin/errors" cta="فتح مركز الأخطاء">
             <div className="grid gap-2">
               {recentErrors.length === 0 ? <EmptyState text="لا توجد أخطاء غير محلولة." /> : recentErrors.map((error) => (
                 <Link key={error.id} href="/admin/errors" className="rounded-2xl border border-white/8 bg-white/[0.035] p-3 no-underline transition hover:border-red-300/24 hover:bg-red-300/8">
@@ -122,7 +122,7 @@ export default async function AdminSystemWorkspacePage() {
         </section>
 
         <section className="grid gap-4 xl:grid-cols-[1fr_1fr]">
-          <WorkspacePanel title="آخر الإشعارات" description="سجل موحد لما يظهر للمستخدمين داخل المنصة." href="/admin/notifications" cta="Notification Center">
+          <WorkspacePanel title="آخر الإشعارات" description="سجل موحد لما يظهر للمستخدمين داخل المنصة." href="/admin/notifications" cta="سجل الإشعارات">
             <div className="grid gap-2">
               {recentNotifications.length === 0 ? <EmptyState text="لا توجد إشعارات مسجلة." /> : recentNotifications.map((item) => (
                 <Link key={item.id} href="/admin/notifications" className="rounded-2xl border border-white/8 bg-white/[0.035] p-3 no-underline transition hover:border-amber-300/24 hover:bg-amber-300/8">
@@ -141,14 +141,14 @@ export default async function AdminSystemWorkspacePage() {
 
           <WorkspacePanel title="أدوات متقدمة" description="أنظمة داخلية موجودة لكنها ليست للاستخدام اليومي." href="/admin/settings" cta="الإعدادات">
             <div className="grid gap-2 sm:grid-cols-2">
-              <AdvancedLink href="/admin/audit" icon={ClipboardList} label="Audit Logs" value={`${auditCount.toLocaleString("ar-EG")} سجل`} />
-              <AdvancedLink href="/admin/feature-flags" icon={Flag} label="Feature Flags" value={`${featureFlags.toLocaleString("ar-EG")} Flag`} />
-              <AdvancedLink href="/admin/email" icon={Mail} label="Email Center" value="متقدم" />
-              <AdvancedLink href="/admin/security" icon={ShieldCheck} label="Security" value="متقدم" />
-              <AdvancedLink href="/admin/admin-users" icon={UsersRound} label="Admin Users" value="صلاحيات" />
-              <AdvancedLink href="/admin/jobs" icon={ServerCog} label="Jobs Queue" value="تشغيل" />
-              <AdvancedLink href="/admin/support" icon={ShieldCheck} label="Support" value="دعم" />
-              <AdvancedLink href="/admin/settings" icon={Settings} label="Platform Settings" value="إعدادات" />
+              <AdvancedLink href="/admin/audit" icon={ClipboardList} label="سجل التدقيق" value={`${auditCount.toLocaleString("ar-EG")} سجل`} />
+              <AdvancedLink href="/admin/feature-flags" icon={Flag} label="مفاتيح الخصائص" value={`${featureFlags.toLocaleString("ar-EG")} مفتاح`} />
+              <AdvancedLink href="/admin/email" icon={Mail} label="حالة البريد" value="متقدم" />
+              <AdvancedLink href="/admin/security" icon={ShieldCheck} label="الأمان" value="متقدم" />
+              <AdvancedLink href="/admin/admin-users" icon={UsersRound} label="فريق الإدارة" value="صلاحيات" />
+              <AdvancedLink href="/admin/jobs" icon={ServerCog} label="طابور التشغيل" value="تشغيل" />
+              <AdvancedLink href="/admin/support" icon={ShieldCheck} label="الدعم" value="حالات" />
+              <AdvancedLink href="/admin/settings" icon={Settings} label="إعدادات المنصة" value="إعدادات" />
             </div>
           </WorkspacePanel>
         </section>
@@ -188,7 +188,8 @@ function WorkspacePanel({ title, description, href, cta, children }: { title: st
 
 function StatusBadge({ status }: { status: string }) {
   const cls = ["COMPLETED", "READ"].includes(status) ? "bg-emerald-300/10 text-emerald-300" : ["FAILED", "VERIFICATION_FAILED", "UPLOAD_FAILED"].includes(status) ? "bg-red-300/10 text-red-300" : status === "NEW" ? "bg-amber-300/10 text-amber-300" : "bg-white/8 text-white/45";
-  return <span className={`rounded-full px-2.5 py-1 text-[0.68rem] font-black ${cls}`}>{status}</span>;
+  const label: Record<string, string> = { COMPLETED: "مكتملة", READ: "مقروء", FAILED: "فشلت", VERIFICATION_FAILED: "فشل التحقق", UPLOAD_FAILED: "فشل الرفع", NEW: "جديد", RUNNING: "قيد التشغيل", PENDING: "معلقة" };
+  return <span className={`rounded-full px-2.5 py-1 text-[0.68rem] font-black ${cls}`}>{label[status] ?? status}</span>;
 }
 
 function AdvancedLink({ href, icon: Icon, label, value }: { href: string; icon: LucideIcon; label: string; value: string }) {

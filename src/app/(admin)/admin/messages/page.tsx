@@ -36,19 +36,19 @@ function bannerText(params: Awaited<Props["searchParams"]>) {
   if (params.overrideSaved) {
     return {
       tone: "success" as const,
-      text: `تم حفظ Override خاص لـ ${Number(params.overrideSaved).toLocaleString("ar-EG")} عميل.`,
+      text: `تم حفظ إعداد خاص لـ ${Number(params.overrideSaved).toLocaleString("ar-EG")} عميل.`,
     };
   }
   if (params.overrideCleared) {
     return {
       tone: "success" as const,
-      text: `تمت إزالة الـ Override عن ${Number(params.overrideCleared).toLocaleString("ar-EG")} عميل.`,
+      text: `تمت إزالة الإعداد الخاص عن ${Number(params.overrideCleared).toLocaleString("ar-EG")} عميل.`,
     };
   }
   if (params.freshTrialGranted) {
     return {
       tone: "success" as const,
-      text: `تم منح Trial جديدة لـ ${Number(params.freshTrialGranted).toLocaleString("ar-EG")} عميل.`,
+      text: `تم منح فترة تجريبية جديدة لـ ${Number(params.freshTrialGranted).toLocaleString("ar-EG")} عميل.`,
     };
   }
 
@@ -136,7 +136,7 @@ export default async function AdminMessagesPage({ searchParams }: Props) {
       badge="الرسائل"
       title="رسائل الاشتراك والتفعيل"
       description="هذا القسم مسؤول فقط عن كل ما يظهر للعميل داخل لوحة التحكم بخصوص الاشتراك والتفعيل والفترة التجريبية."
-      breadcrumbs={[{ label: "القيادة", href: "/admin" }, { label: "رسائل الاشتراك والتفعيل" }]}
+      breadcrumbs={[{ label: "التواصل", href: "/admin/communications" }, { label: "رسائل الاشتراك والتفعيل" }]}
       actions={[{ label: "سجل الإشعارات", href: "/admin/notifications", icon: Bell }]}
     >
       <div className="grid gap-4">
@@ -153,9 +153,9 @@ export default async function AdminMessagesPage({ searchParams }: Props) {
         ) : null}
 
         <section className="grid gap-3 sm:grid-cols-4">
-          <MetricCard label="عملاء Trial" value={trialTenants.length} icon={Users} />
+          <MetricCard label="عملاء في الفترة التجريبية" value={trialTenants.length} icon={Users} />
           <MetricCard label="مشتركون نشطون" value={activeTenants.length} icon={Users} />
-          <MetricCard label="Overrides خاصة" value={overrideIds.size} icon={Layers3} />
+          <MetricCard label="إعدادات خاصة" value={overrideIds.size} icon={Layers3} />
           <MetricCard label="حالات أخرى" value={otherTenants.length} icon={MessageSquareText} />
         </section>
 

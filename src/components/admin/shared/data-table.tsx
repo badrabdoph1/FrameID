@@ -8,6 +8,7 @@ import { Pagination } from "@/components/ui/pagination"
 export type Column<T> = {
   key: string
   header: string
+  mobileLabel?: string
   sortable?: boolean
   searchable?: boolean
   render?: (item: T) => ReactNode
@@ -20,6 +21,7 @@ export type DataTableProps<T> = {
   keyField: keyof T
   isLoading?: boolean
   emptyMessage?: string
+  emptyState?: ReactNode
   pageSize?: number
   searchable?: boolean
   sortable?: boolean
@@ -30,7 +32,7 @@ export type DataTableProps<T> = {
 
 export function DataTable<T extends Record<string, unknown>>({
   columns, data, keyField, isLoading,
-  emptyMessage = "لا توجد بيانات",
+  emptyMessage = "لا توجد بيانات", emptyState,
   pageSize = 10, searchable = true, sortable = true,
   onRowClick, actions, className,
 }: DataTableProps<T>) {
@@ -74,7 +76,7 @@ export function DataTable<T extends Record<string, unknown>>({
 
   if (isLoading) {
     return (
-      <div className="space-y-3">
+      <div className="space-y-3" role="status" aria-live="polite" aria-label="جارٍ تحميل البيانات">
         <div className="flex gap-4 border-b border-white/6 pb-3">
           {[32, 24, 20, 28, 16].map((w, i) => <div key={i} className={`h-4 w-${w} animate-pulse rounded-lg bg-white/5`} />)}
         </div>
@@ -110,7 +112,7 @@ export function DataTable<T extends Record<string, unknown>>({
       >
         {paginated.length === 0 ? (
           <div className="rounded-xl border border-dashed border-white/10 bg-white/4 px-4 py-10 text-center text-sm font-bold text-white/42">
-            {emptyMessage}
+            {emptyState ?? emptyMessage}
           </div>
         ) : (
           paginated.map((item) => {
@@ -147,7 +149,7 @@ export function DataTable<T extends Record<string, unknown>>({
                         index === 0 && "rounded-xl border border-amber-500/12 bg-amber-500/8 p-3",
                       )}
                     >
-                      <dt className="text-[0.68rem] font-black text-white/38">{col.header}</dt>
+                      <dt className="text-[0.68rem] font-black text-white/38">{col.mobileLabel ?? col.header}</dt>
                       <dd className={cn("min-w-0 text-sm font-bold leading-6 text-white/82", index === 0 && "text-base font-black text-[#fff7e8]")}>
                         {col.render ? col.render(item) : (item[col.key] as ReactNode) ?? "—"}
                       </dd>
@@ -158,6 +160,7 @@ export function DataTable<T extends Record<string, unknown>>({
                   <div
                     className="mt-4 flex flex-wrap gap-2 border-t border-white/8 pt-3"
                     onClick={(e) => e.stopPropagation()}
+                    onKeyDown={(e) => e.stopPropagation()}
                   >
                     {actions(item)}
                   </div>
@@ -180,14 +183,10 @@ export function DataTable<T extends Record<string, unknown>>({
                     col.sortable !== false && sortable && "cursor-pointer select-none hover:text-white/80",
                     col.className,
                   )}
-                  onClick={() => col.sortable !== false && handleSort(col.key)}
                 >
-                  <span className="inline-flex items-center gap-1">
-                    {col.header}
-                    {sortable && col.sortable !== false && sortKey === col.key && (
-                      sortDir === "asc" ? <ArrowUp className="size-3" /> : <ArrowDown className="size-3" />
-                    )}
-                  </span>
+                  {sortable && col.sortable !== false ? <button type="button" onClick={() => handleSort(col.key)} aria-label={`ترتيب حسب ${col.header}`} className="inline-flex min-h-11 items-center gap-1 text-inherit focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/55">
+                    {col.header}{sortKey === col.key ? sortDir === "asc" ? <ArrowUp className="size-3" /> : <ArrowDown className="size-3" /> : null}
+                  </button> : <span className="inline-flex min-h-11 items-center">{col.header}</span>}
                 </th>
               ))}
               {actions && <th className="px-4 py-3 text-xs font-extrabold text-white/50">إجراءات</th>}
@@ -197,7 +196,7 @@ export function DataTable<T extends Record<string, unknown>>({
             {paginated.length === 0 ? (
               <tr>
                 <td colSpan={columns.length + (actions ? 1 : 0)} className="px-4 py-12 text-center text-sm text-white/40">
-                  {emptyMessage}
+                  {emptyState ?? emptyMessage}
                 </td>
               </tr>
             ) : (

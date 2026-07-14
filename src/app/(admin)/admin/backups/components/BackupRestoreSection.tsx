@@ -6,6 +6,7 @@ import type { BackupJobRow } from "@/app/(admin)/admin/backups/page";
 
 interface BackupRestoreSectionProps {
   latestCompleted: BackupJobRow | undefined;
+  migrationActionLabel?: string;
   onPrepareMigrationBackup: () => Promise<void>;
   onRestoreLatestGitHubBackup: () => Promise<void>;
   onRestoreWorkspaceBackup: (backupJobId: string) => Promise<void>;
@@ -13,6 +14,7 @@ interface BackupRestoreSectionProps {
 
 export function BackupRestoreSection({
   latestCompleted,
+  migrationActionLabel = "ذهاب طوارئ",
   onPrepareMigrationBackup,
   onRestoreLatestGitHubBackup,
   onRestoreWorkspaceBackup,
@@ -29,7 +31,7 @@ export function BackupRestoreSection({
         <PendingForm action={onPrepareMigrationBackup} className="rounded-2xl border border-sky-300/20 bg-sky-300/5 p-5">
           <div className="flex h-full flex-wrap items-center justify-between gap-4">
             <div>
-              <p className="text-sm font-black text-sky-300">ذهاب طوارئ</p>
+              <p className="text-sm font-black text-sky-300">{migrationActionLabel}</p>
               <p className="mt-1 text-xs font-bold text-white/45">
                 إنشاء FULL كاملة، ولا يسمح بالانتقال إلا بعد Remote Verify.
               </p>

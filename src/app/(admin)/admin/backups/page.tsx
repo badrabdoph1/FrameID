@@ -4,11 +4,11 @@ import { isGitHubBackupConfigured } from "@/lib/env";
 import { requireAdminPermission } from "@/modules/admin/admin-permission-guards";
 import {
   rebuildFromGitHubAction,
+  prepareMigrationBackupAction,
 } from "@/app/(admin)/admin/backups/actions";
 import { PendingForm, PendingButton } from "@/components/admin/pending-button";
 import {
   handleCreateBackup,
-  handlePrepareMigrationBackup,
   handleRestoreLatestGitHubBackup,
   handleRestoreWorkspaceBackup,
   handleVerifyWorkspaceBackup,
@@ -131,7 +131,8 @@ export default async function AdminBackupsPage({ searchParams }: Props) {
 
       <BackupRestoreSection
         latestCompleted={latestCompleted}
-        onPrepareMigrationBackup={handlePrepareMigrationBackup}
+        migrationActionLabel="ذهاب طوارئ"
+        onPrepareMigrationBackup={prepareMigrationBackupAction}
         onRestoreLatestGitHubBackup={handleRestoreLatestGitHubBackup}
         onRestoreWorkspaceBackup={handleRestoreWorkspaceBackup}
       />

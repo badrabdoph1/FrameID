@@ -45,19 +45,21 @@ export default function AdminNotificationsPage() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const pageSize = 30;
 
   const loadLogs = useCallback(async () => {
     setLoading(true);
-    const result = await getNotificationLogs({
-      type: typeFilter || undefined,
-      search: search || undefined,
-      page,
-      pageSize,
-    });
-    setLogs(result.entries as unknown as NotificationItem[]);
-    setTotal(result.total);
-    setLoading(false);
+    setLoadError(false);
+    try {
+      const result = await getNotificationLogs({ type: typeFilter || undefined, search: search || undefined, page, pageSize });
+      setLogs(result.entries as unknown as NotificationItem[]);
+      setTotal(result.total);
+    } catch {
+      setLoadError(true);
+    } finally {
+      setLoading(false);
+    }
   }, [typeFilter, search, page]);
 
   const loadStats = useCallback(async () => {
@@ -85,9 +87,9 @@ export default function AdminNotificationsPage() {
   return (
     <AdminPageShell
       badge="الإشعارات"
-      title="Notification Center"
+      title="سجل الإشعارات"
       description="سجل موحد للنجاحات والتحذيرات والمعلومات والأخطاء التي تظهر للمستخدمين."
-      breadcrumbs={[{ label: "القيادة", href: "/admin" }, { label: "الإشعارات" }]}
+      breadcrumbs={[{ label: "التواصل", href: "/admin/communications" }, { label: "الإشعارات" }]}
     >
       <div className="grid gap-4">
         {stats ? (
@@ -106,7 +108,8 @@ export default function AdminNotificationsPage() {
             <input
               value={search}
               onChange={(event) => { setSearch(event.target.value); setPage(1); }}
-              placeholder="ابحث بالعنوان، النص، الكود، Request ID..."
+              placeholder="ابحث بالعنوان أو النص أو التصنيف"
+              aria-label="البحث في الإشعارات"
               className="h-11 w-full rounded-xl border border-white/10 bg-black/20 pr-10 pl-3 text-sm font-bold text-white outline-none transition placeholder:text-white/30 focus:border-amber-400/40"
             />
           </label>
@@ -138,6 +141,8 @@ export default function AdminNotificationsPage() {
             <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-8 text-center text-sm font-bold text-white/45">
               جارٍ التحميل...
             </div>
+          ) : loadError ? (
+            <div role="alert" className="rounded-2xl border border-red-400/20 bg-red-400/10 p-8 text-center text-sm font-bold text-red-300">تعذر تحميل سجل الإشعارات. استخدم زر التحديث للمحاولة مرة أخرى.</div>
           ) : logs.length === 0 ? (
             <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-8 text-center text-sm font-bold text-white/45">
               لا توجد إشعارات مسجلة
@@ -175,8 +180,8 @@ export default function AdminNotificationsPage() {
                     ) : null}
                     <p className="mt-2 text-xs font-bold text-white/35">
                       {new Date(log.createdAt).toLocaleString("ar-EG")}
-                      {log.userId ? ` · User: ${log.userId}` : ""}
-                      {log.tenantId ? ` · Tenant: ${log.tenantId}` : ""}
+                      {log.userId ? ` · المستخدم: ${log.userId}` : ""}
+                      {log.tenantId ? ` · العميل: ${log.tenantId}` : ""}
                     </p>
                   </div>
 
@@ -199,7 +204,7 @@ export default function AdminNotificationsPage() {
             >
               السابق
             </button>
-            <span className="text-sm font-bold text-white/40">{page} / {totalPages}</span>
+            <span className="text-sm font-bold text-white/40">{page.toLocaleString("ar-EG")} / {totalPages.toLocaleString("ar-EG")}</span>
             <button
               type="button"
               onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
@@ -218,7 +223,7 @@ export default function AdminNotificationsPage() {
 function StatCard({ label, value, accent }: { label: string; value: number; accent?: "warning" }) {
   return (
     <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-      <p className={accent === "warning" ? "text-2xl font-black text-[#f3cf73]" : "text-2xl font-black text-white"}>{value}</p>
+      <p className={accent === "warning" ? "text-2xl font-black text-[#f3cf73]" : "text-2xl font-black text-white"}>{value.toLocaleString("ar-EG")}</p>
       <p className="mt-1 text-xs font-bold text-white/40">{label}</p>
     </div>
   );

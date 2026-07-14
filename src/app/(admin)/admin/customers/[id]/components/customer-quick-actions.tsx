@@ -1,6 +1,6 @@
 "use client"
 
-import { RefreshCw, PlayCircle, PauseCircle, XCircle, CheckCircle2, KeyRound, Eye, Send, Mail, MessageSquare, Archive, Trash2, Zap, Copy } from "lucide-react"
+import { RefreshCw, PlayCircle, PauseCircle, XCircle, CheckCircle2, KeyRound, Send, Mail, MessageSquare, Archive, Trash2, Zap, Copy } from "lucide-react"
 import type { CustomerDetail } from "./customer-types"
 
 type QuickActionsProps = {
@@ -13,7 +13,12 @@ type QuickActionsProps = {
 }
 
 export function CustomerQuickActions({ customer, siteUrl, onAction, onCopy, onNotify, onEmail }: QuickActionsProps) {
-  const randomPassword = () => Array.from({ length: 16 }, () => "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*".charAt(Math.floor(Math.random() * 70))).join("")
+  const randomPassword = () => {
+    const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%"
+    const bytes = new Uint8Array(18)
+    crypto.getRandomValues(bytes)
+    return Array.from(bytes, (byte) => alphabet[byte % alphabet.length]).join("")
+  }
 
   return (
     <div className="flex flex-wrap gap-1.5 rounded-xl border border-white/8 bg-white/3 p-2.5">
@@ -49,10 +54,6 @@ export function CustomerQuickActions({ customer, siteUrl, onAction, onCopy, onNo
 
       <form action={async (fd) => { fd.set("userId", customer.owner.id); fd.set("newPassword", randomPassword()); onAction("reset-password", "إعادة تعيين كلمة المرور", `سيتم إعادة تعيين كلمة مرور حساب ${customer.owner.email}.`, fd, true) }}>
         <ActionBtn type="submit"><KeyRound size={13} /> إعادة كلمة المرور</ActionBtn>
-      </form>
-
-      <form action={async (fd) => { fd.set("tenantId", customer.id); onAction("impersonate", "انتحال صفة العميل", `سيتم تسجيل الدخول باسم ${customer.displayName}.`, fd, true) }}>
-        <ActionBtn type="submit" className="text-amber-400/70 hover:border-amber-400/30 hover:text-amber-400"><Eye size={13} /> impersonation</ActionBtn>
       </form>
 
       <button type="button" onClick={onNotify} className="inline-flex items-center gap-1.5 rounded-lg border border-white/8 px-2 py-1.5 text-[0.7rem] font-extrabold text-white/50 transition hover:border-amber-500/30 hover:text-[#f3cf73] whitespace-nowrap">
