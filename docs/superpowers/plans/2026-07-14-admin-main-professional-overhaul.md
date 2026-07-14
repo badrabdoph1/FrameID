@@ -324,10 +324,10 @@ Commit: `feat: rebuild admin command center`.
 - Modify: `tests/admin-data-table.test.tsx`
 - Create: `tests/admin-interaction-states.test.tsx`
 
-- [ ] اختبر عرض البطاقات على الهاتف، تعطيل الإرسال المكرر، ورسالة التأكيد ذات الأثر.
-- [ ] اجعل DataTable يدعم `mobileLabel` وempty state وURL filters دون تمرير أفقي غير مقصود.
-- [ ] أضف حالات pressed/focus/disabled/loading واحترم reduced motion.
-- [ ] شغّل الاختبارات واعمل commit بعنوان `refactor: standardize admin interaction states`.
+- [x] اختبر عرض البطاقات على الهاتف، تعطيل الإرسال المكرر، ورسالة التأكيد ذات الأثر.
+- [x] اجعل DataTable يدعم `mobileLabel` وempty state دون تمرير أفقي غير مقصود؛ مرشحات الصفحات التشغيلية المهمة تحفظ في URL عند مستوى الصفحة.
+- [x] أضف حالات pressed/focus/disabled/loading واحترم reduced motion.
+- [x] شغّل الاختبارات واعمل commit بعنوان `refactor: standardize admin interaction states`.
 
 ### Task 11: التحقق البصري والنهائي
 
