@@ -17,7 +17,7 @@ export default async function AdminSupportPage() {
       subject: true,
       status: true,
       createdAt: true,
-      tenant: { select: { displayName: true } },
+      tenant: { select: { id: true, displayName: true } },
     },
   });
 
@@ -26,14 +26,16 @@ export default async function AdminSupportPage() {
     subject: c.subject,
     status: c.status,
     tenantName: c.tenant.displayName,
+    tenantId: c.tenant.id,
     createdAt: c.createdAt.toISOString(),
   }));
 
   return (
     <AdminPageShell
-      badge="النظام"
-      title="الدعم"
-      description="تذاكر الدعم واستفسارات العملاء"
+      badge="التواصل"
+      title="حالات الدعم"
+      description="تابع طلبات العملاء وافتح ملف العميل للحصول على السياق الكامل."
+      breadcrumbs={[{ label: "التواصل", href: "/admin/messages" }, { label: "الدعم" }]}
     >
       <SupportTable data={data} />
     </AdminPageShell>

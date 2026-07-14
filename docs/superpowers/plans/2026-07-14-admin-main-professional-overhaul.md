@@ -283,10 +283,10 @@ Commit: `feat: rebuild admin command center`.
 - Modify: `src/app/(admin)/admin/email/page.tsx`
 - Create: `tests/admin-communications.test.tsx`
 
-- [ ] اختبر الحدود: الرسائل للتحكم في تجربة العميل، الإشعارات للسجل، الدعم للحالات، والبريد للتسليم.
-- [ ] عرّب التسميات المرئية وأزل السجلات أو المؤشرات المكررة بين الصفحات.
-- [ ] أضف حالات فراغ وإجراءات انتقال مرتبطة بالمهمة الحالية.
-- [ ] شغّل `npm test -- tests/admin-communications.test.tsx` واعمل commit بعنوان `feat: clarify admin communication centers`.
+- [x] اختبر الحدود: الرسائل للتحكم في تجربة العميل، الإشعارات للسجل، الدعم للحالات، والبريد للتسليم.
+- [x] عرّب التسميات المرئية وأزل السجلات أو المؤشرات المكررة بين الصفحات.
+- [x] أضف حالات فراغ وإجراءات انتقال مرتبطة بالمهمة الحالية.
+- [x] شغّل `npm test -- tests/admin-communications.test.tsx` واعمل commit بعنوان `feat: clarify admin communication centers`.
 
 ### Task 9: النظام والتشغيل والأدوات المتقدمة
 
