@@ -47,8 +47,21 @@ export function createPrismaSignupProvisioningRepository(prisma: PrismaSignupCli
 
       return count > 0;
     },
+    async identifierExistsInTrash({ email, phone }) {
+      const count = await prisma.user.count({
+        where: {
+          deletedAt: { not: null },
+          OR: [
+            { email },
+            ...(phone ? [{ phone }] : [])
+          ]
+        }
+      });
+
+      return count > 0;
+    },
     async getUnavailableSlugs() {
-      const sites = await prisma.site.findMany({ select: { slug: true }, where: { deletedAt: null } });
+      const sites = await prisma.site.findMany({ select: { slug: true } });
       return new Set(sites.map((site) => site.slug));
     },
     async isTemplateAvailable(templateCode) {

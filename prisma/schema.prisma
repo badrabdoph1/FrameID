@@ -236,7 +236,7 @@ model Site {
   id                   String     @id @default(cuid())
   tenantId             String
   themeId              String
-  slug                 String     @unique
+  slug                 String
   slugChangeUsed       Boolean    @default(false)
   templateChangeUsed   Boolean    @default(false)
   title           String
@@ -270,6 +270,7 @@ model Site {
   @@index([tenantId, status])
   @@index([themeId])
   @@index([templateCode, templateVersion])
+  @@unique([slug, deletedAt])
 }
 
 model Theme {
