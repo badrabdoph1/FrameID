@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-07-15T22:46:36.159Z",
+  "updatedAt": "2026-07-15T22:50:29.093Z",
   "themes": [
     {
       "code": "noir-gold",
@@ -206,7 +206,7 @@
           "instructions": "حوّل على رقم إنستا باي، ثم ارفع صورة إثبات الدفع من نفس الصفحة.",
           "notes": null,
           "isActive": true,
-          "sortOrder": 130
+          "sortOrder": 140
         }
       ]
     },
@@ -235,7 +235,7 @@
           "instructions": "حوّل على رقم فودافون كاش، ثم ارفع صورة إثبات الدفع من نفس الصفحة.",
           "notes": null,
           "isActive": true,
-          "sortOrder": 250
+          "sortOrder": 270
         }
       ]
     },
@@ -316,7 +316,7 @@
           "message": {
             "tone": "info",
             "title": "حسابك تجريبي برجاء التأكد من التفعيل",
-            "enabled": true,
+            "enabled": false,
             "description": "فعّل الاشتراك قبل نهاية الفترة التجريبية حتى يظل موقعك متاحًا للعملاء."
           }
         },
