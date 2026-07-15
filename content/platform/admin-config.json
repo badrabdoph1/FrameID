@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-07-15T14:38:53.472Z",
+  "updatedAt": "2026-07-15T19:57:01.569Z",
   "themes": [
     {
       "code": "noir-gold",
@@ -83,13 +83,10 @@
       "currency": "EGP",
       "billingInterval": "monthly",
       "features": {
-        "description": "باقة مثالية لبدء موقع تصوير احترافي",
-        "badgeLabel": "",
-        "isPopular": false,
-        "storageLabel": "1 GB مساحة تخزين",
-        "photoLimitLabel": "100 صورة",
         "ctaLabel": "اختيار الباقة",
-        "highlightText": "",
+        "isPopular": false,
+        "badgeLabel": "",
+        "description": "باقة مثالية لبدء موقع تصوير احترافي",
         "featureLines": [
           "موقع تصوير احترافي جاهز",
           "لوحة تحكم سهلة للعميل",
@@ -97,36 +94,10 @@
           "باقة خدمات واحدة",
           "نموذج تواصل أساسي",
           "تفعيل يدوي بعد مراجعة الدفع"
-        ]
-      },
-      "isActive": true
-    },
-    {
-      "code": "professional",
-      "name": "الباقة الاحترافية",
-      "priceAmount": 99900,
-      "currency": "EGP",
-      "billingInterval": "monthly",
-      "features": {
-        "description": "كل ما تحتاجه لإدارة موقع تصوير متكامل",
-        "badgeLabel": "الأكثر طلبًا",
-        "isPopular": true,
-        "storageLabel": "5 GB مساحة تخزين",
-        "photoLimitLabel": "500 صورة",
-        "ctaLabel": "اختيار الباقة",
+        ],
+        "storageLabel": "1 GB مساحة تخزين",
         "highlightText": "",
-        "featureLines": [
-          "موقع تصوير احترافي كامل",
-          "جميع القوالب المتاحة",
-          "معرض صور يتسع لـ 500 صورة",
-          "3 باقات خدمات",
-          "خدمات إضافية غير محدودة",
-          "ربط دومين خاص",
-          "إحصائيات متقدمة",
-          "SEO محسن لمحركات البحث",
-          "دعم أولوية عبر الواتساب",
-          "تفعيل يدوي بعد مراجعة الدفع"
-        ]
+        "photoLimitLabel": "100 صورة"
       },
       "isActive": true
     },
@@ -137,13 +108,10 @@
       "currency": "EGP",
       "billingInterval": "monthly",
       "features": {
-        "description": "الحل المتكامل للاستوديوهات والوكالات",
-        "badgeLabel": "الأفضل",
-        "isPopular": false,
-        "storageLabel": "20 GB مساحة تخزين",
-        "photoLimitLabel": "صور غير محدودة",
         "ctaLabel": "اختيار الباقة",
-        "highlightText": "",
+        "isPopular": false,
+        "badgeLabel": "الأفضل",
+        "description": "الحل المتكامل للاستوديوهات والوكالات",
         "featureLines": [
           "موقع تصوير احترافي كامل",
           "جميع القوالب المتاحة",
@@ -155,9 +123,41 @@
           "دعم VIP مخصص",
           "نسخ احتياطي يومي",
           "تفعيل يدوي بعد مراجعة الدفع"
-        ]
+        ],
+        "storageLabel": "20 GB مساحة تخزين",
+        "highlightText": "",
+        "photoLimitLabel": "صور غير محدودة"
       },
       "isActive": false
+    },
+    {
+      "code": "professional",
+      "name": "الباقة الاحترافية",
+      "priceAmount": 100,
+      "currency": "EGP",
+      "billingInterval": "monthly",
+      "features": {
+        "ctaLabel": "اختيار الباقة",
+        "isPopular": true,
+        "badgeLabel": "الأكثر طلبًا",
+        "description": "كل ما تحتاجه لإدارة موقع تصوير متكامل",
+        "featureLines": [
+          "موقع تصوير احترافي كامل",
+          "جميع القوالب المتاحة",
+          "معرض صور يتسع لـ 500 صورة",
+          "3 باقات خدمات",
+          "خدمات إضافية غير محدودة",
+          "ربط دومين خاص",
+          "إحصائيات متقدمة",
+          "SEO محسن لمحركات البحث",
+          "دعم أولوية عبر الواتساب",
+          "تفعيل يدوي بعد مراجعة الدفع"
+        ],
+        "storageLabel": "5 GB مساحة تخزين",
+        "highlightText": "",
+        "photoLimitLabel": "500 صورة"
+      },
+      "isActive": true
     }
   ],
   "paymentSettings": [
@@ -186,7 +186,7 @@
           "instructions": "حوّل على رقم إنستا باي، ثم ارفع صورة إثبات الدفع من نفس الصفحة.",
           "notes": null,
           "isActive": true,
-          "sortOrder": 60
+          "sortOrder": 70
         }
       ]
     },
@@ -215,7 +215,7 @@
           "instructions": "حوّل على رقم فودافون كاش، ثم ارفع صورة إثبات الدفع من نفس الصفحة.",
           "notes": null,
           "isActive": true,
-          "sortOrder": 110
+          "sortOrder": 130
         }
       ]
     },
