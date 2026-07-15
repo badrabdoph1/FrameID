@@ -83,6 +83,11 @@ describe("prisma billing activation repository", () => {
         async findUnique(_args: { where: { id: string } }) {
           return null;
         }
+      },
+      featureFlag: {
+        async deleteMany(_args: unknown) {
+          return { count: 0 };
+        }
       }
     };
     const repository = createPrismaBillingActivationRepository(prisma);
