@@ -118,20 +118,20 @@ export default function TemplatesPage() {
               </p>
 
               {/* Stats */}
-              <div className="mt-12 flex items-center justify-center gap-8 md:mt-16 md:gap-12">
+              <div className="mt-10 flex items-center justify-center gap-6 md:mt-14 md:gap-10">
                 <div className="text-center">
-                  <div className="text-3xl font-bold text-champagne md:text-4xl">✨ جاهز خلال دقائق</div>
-                  <div className="mt-1 text-xs text-white/50 md:text-sm">بضغطة واحدة</div>
+                  <div className="text-sm font-semibold text-champagne md:text-base">✨ جاهز خلال دقائق</div>
+                  <div className="mt-1 text-[0.7rem] text-white/45 md:text-xs">بضغطة واحدة</div>
                 </div>
-                <div className="h-10 w-px bg-white/10" />
+                <div className="h-6 w-px bg-white/10" />
                 <div className="text-center">
-                  <div className="text-3xl font-bold text-champagne md:text-4xl">🎨 عدّل كل حاجة</div>
-                  <div className="mt-1 text-xs text-white/50 md:text-sm">براحتك في أي وقت</div>
+                  <div className="text-sm font-semibold text-champagne md:text-base">🎨 عدّل كل حاجة</div>
+                  <div className="mt-1 text-[0.7rem] text-white/45 md:text-xs">براحتك في أي وقت</div>
                 </div>
-                <div className="h-10 w-px bg-white/10" />
+                <div className="h-6 w-px bg-white/10" />
                 <div className="text-center">
-                  <div className="text-3xl font-bold text-champagne md:text-4xl">🚀 ابدأ مجانًا</div>
-                  <div className="mt-1 text-xs text-white/50 md:text-sm">بدون أي رسوم</div>
+                  <div className="text-sm font-semibold text-champagne md:text-base">🚀 ابدأ مجانًا</div>
+                  <div className="mt-1 text-[0.7rem] text-white/45 md:text-xs">بدون أي رسوم</div>
                 </div>
               </div>
             </div>
