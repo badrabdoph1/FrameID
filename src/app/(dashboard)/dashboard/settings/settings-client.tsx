@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useTransition, type ReactNode } from "react";
-import { CheckCircle2, Clock, Copy, ExternalLink, Globe2, Link2, ShieldCheck, Trash2, User, XCircle } from "lucide-react";
+import { useState, type ReactNode } from "react";
+import { CheckCircle2, Clock, Copy, ExternalLink, Link2, ShieldCheck, Trash2, User, XCircle } from "lucide-react";
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
@@ -40,7 +40,6 @@ const roleLabel: Record<string, string> = {
 
 export function SettingsClient({ userName, userEmail, userPhone, userRole, siteTitle, siteSlug, siteStatus, siteUrl, slugChangeUsed, templateChangeUsed: _templateChangeUsed, hasDeletionRequest, requestMessage, errorMessage }: SettingsClientProps) {
   const [copied, setCopied] = useState(false);
-  const [isPending, startTransition] = useTransition();
   const badge = statusBadge[siteStatus] ?? { label: siteStatus, color: "rgba(245, 234, 214, 0.5)", bg: "rgba(245, 234, 214, 0.05)", icon: ShieldCheck };
   const StatusIcon = badge.icon;
   const loginIdentifier = getPublicAccountIdentifier({ email: userEmail, phone: userPhone });
@@ -136,7 +135,7 @@ export function SettingsClient({ userName, userEmail, userPhone, userRole, siteT
           <form action={requestAccountDeletionAction} onSubmit={() => { if (!window.confirm("هل أنت متأكد من طلب حذف الحساب؟ سيتم مراجعة الطلب من فريق الدعم.")) { return; } }}>
             <button
               type="submit"
-              disabled={hasDeletionRequest || isPending}
+              disabled={hasDeletionRequest}
               className="inline-flex min-h-9 items-center gap-2 rounded-xl border border-red-300/20 bg-red-500/10 px-3 text-xs font-black text-red-200 transition hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-45"
             >
               <Trash2 className="size-3.5" />

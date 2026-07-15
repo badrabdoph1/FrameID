@@ -29,7 +29,7 @@ export default async function DashboardPublishPage({
     redirect("/login");
   }
 
-  const [packagesCount, imagesCount, contactProfile, seo] = await Promise.all([
+  const [packagesCount, imagesCount, contactProfile] = await Promise.all([
     prisma.package.count({ where: { siteId: session.site.id, deletedAt: null } }),
     prisma.galleryImage.count({
       where: {
@@ -41,10 +41,6 @@ export default async function DashboardPublishPage({
     prisma.contactProfile.findUnique({
       where: { siteId: session.site.id },
       select: { phone: true, whatsapp: true, email: true },
-    }),
-    prisma.sEOSettings.findUnique({
-      where: { siteId: session.site.id },
-      select: { title: true, description: true, ogAssetId: true },
     }),
   ]);
 
