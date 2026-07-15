@@ -243,10 +243,10 @@ export function GalleryClient({ albums, selectedAlbumId: initialAlbumId, avatarU
         />
       ) : (
         <div data-smart-tip="gallery-grid">
-          <section className="grid gap-4 lg:grid-cols-2">
+          <section className="grid gap-4 lg:grid-cols-[1fr_1fr]">
             <ImageCard
-              title="صورة المصور الشخصية"
-              description="تظهر مربعة في أعلى الموقع. اختار صورة واضحة."
+              title="صورة المصور"
+              description="تظهر مربعة أعلى الموقع بجانب اسمك."
               preview={avatarPreview}
               square
               icon={UserSquare2}
@@ -254,7 +254,7 @@ export function GalleryClient({ albums, selectedAlbumId: initialAlbumId, avatarU
             />
             <ImageCard
               title="صورة الغلاف"
-              description="صورة عريضة تظهر في أول صفحة من موقعك."
+              description="تظهر عريضة في أعلى الصفحة الرئيسية."
               preview={coverPreview}
               icon={Images}
               onUpload={(files) => uploadProfileImage("coverAssetId", files)}
@@ -320,18 +320,18 @@ export function GalleryClient({ albums, selectedAlbumId: initialAlbumId, avatarU
 function ImageCard({ title, description, preview, onUpload, square, icon: Icon }: { title: string; description: string; preview: string | null; onUpload: (files: File[]) => void; square?: boolean; icon: typeof UserSquare2 }) {
   return (
     <section className="overflow-hidden rounded-[1.35rem] border border-white/10 bg-white/[0.035]">
-      <div className="flex items-start gap-3 border-b border-white/8 p-4">
-        <span className="grid size-9 shrink-0 place-items-center rounded-2xl bg-amber-300/10 text-[#f3cf73]"><Icon className="size-4" /></span>
-        <div><h2 className="text-sm font-black text-[#fff7e8]">{title}</h2><p className="mt-0.5 text-xs font-bold leading-5 text-white/45">{description}</p></div>
+      <div className="flex items-start gap-3 border-b border-white/8 px-4 py-3">
+        <span className="grid size-8 shrink-0 place-items-center rounded-xl bg-amber-300/10 text-[#f3cf73]"><Icon className="size-4" /></span>
+        <div className="min-w-0"><h2 className="text-sm font-black text-[#fff7e8]">{title}</h2><p className="mt-0.5 text-[0.68rem] font-bold leading-5 text-white/45">{description}</p></div>
       </div>
-      <div className="p-4">
-        <div className={square ? "relative mx-auto aspect-square w-full max-w-[200px] overflow-hidden rounded-3xl border border-white/10 bg-black/20" : "relative aspect-[16/7] w-full overflow-hidden rounded-3xl border border-white/10 bg-black/20"}>
+      <div className="p-3">
+        <div className={square ? "relative mx-auto aspect-square w-full max-w-[160px] overflow-hidden rounded-2xl border border-white/10 bg-black/20" : "relative aspect-[16/7] w-full overflow-hidden rounded-2xl border border-white/10 bg-black/20"}>
           {preview ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={preview} alt={title} className="size-full object-cover" />
-          ) : <div className="grid size-full place-items-center text-white/28"><ImagePlus className="size-8" /></div>}
+          ) : <div className="grid size-full place-items-center text-white/28"><ImagePlus className="size-7" /></div>}
         </div>
-        <div className="mt-3"><ImageUploader onUpload={onUpload} multiple={false} maxFiles={1} maxSizeMB={20} /></div>
+        <div className="mt-2.5"><ImageUploader onUpload={onUpload} multiple={false} maxFiles={1} maxSizeMB={20} /></div>
       </div>
     </section>
   );

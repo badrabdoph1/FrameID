@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { CheckCircle2, Eye, MessageCircle, Palette, WandSparkles } from "lucide-react";
+import { useState } from "react";
+import { AlertTriangle, CheckCircle2, Eye, MessageCircle, Palette, WandSparkles } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -21,6 +22,9 @@ type TemplatesClientProps = {
 };
 
 export function TemplatesClient({ templates, currentThemeName, currentThemeCode, templateChangeUsed, message }: TemplatesClientProps) {
+  const [showLimitNotice, setShowLimitNotice] = useState(false);
+  const supportHref = toWhatsappHref(DEFAULT_SUPPORT_WHATSAPP_NUMBER, "مرحبًا، أحتاج تغيير قالب الموقع بعد استخدام الفرصة المتاحة.");
+
   return (
     <main className="mx-auto grid w-full max-w-6xl gap-4 pb-4">
       <section className="rounded-[1.6rem] border border-white/10 bg-[radial-gradient(circle_at_top_right,rgba(243,207,115,0.14),transparent_36%),rgba(255,255,255,0.035)] p-4 sm:p-5">
@@ -30,7 +34,6 @@ export function TemplatesClient({ templates, currentThemeName, currentThemeCode,
             <h1 className="mt-1 text-2xl font-black text-[#fff7e8] sm:text-3xl">اختار شكل يليق بشغلك</h1>
             <p className="mt-2 max-w-2xl text-sm font-bold leading-7 text-white/58">
               القالب بيغيّر شكل العرض بس. صورك، بياناتك، وأسعارك هتفضل محفوظة.
-              {templateChangeUsed ? "" : " تقدر تبدّل القالب مرة واحدة فقط."}
             </p>
           </div>
           <div className="rounded-[1.25rem] border border-amber-300/18 bg-amber-300/10 p-4">
@@ -43,9 +46,37 @@ export function TemplatesClient({ templates, currentThemeName, currentThemeCode,
         </div>
       </section>
 
+      {templateChangeUsed ? (
+        <section className="overflow-hidden rounded-2xl border border-amber-300/20 bg-amber-300/[0.06]">
+          <div className="flex items-start gap-3 p-4">
+            <span className="grid size-9 shrink-0 place-items-center rounded-2xl bg-amber-300/10 text-[#f3cf73]"><AlertTriangle className="size-4" /></span>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-black text-[#fff7e8]">استخدمت فرصة تغيير القالب</p>
+              <p className="mt-1 text-xs font-bold leading-6 text-white/50">تغيير القالب متاح مرة واحدة فقط. لو محتاج تغيير تاني، تواصل مع الدعم الفني.</p>
+            </div>
+            <Link href={supportHref} target="_blank" rel="noreferrer" className="inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-xl border border-emerald-300/20 bg-emerald-400/10 px-3 text-xs font-black text-emerald-200 no-underline transition hover:bg-emerald-400/16">
+              <MessageCircle className="size-3.5" aria-hidden />
+              الدعم
+            </Link>
+          </div>
+        </section>
+      ) : null}
+
       {message ? (
         <section className={message.tone === "success" ? "rounded-2xl border border-emerald-300/20 bg-emerald-300/10 px-4 py-3 text-sm font-black text-emerald-200" : "rounded-2xl border border-red-300/20 bg-red-500/10 px-4 py-3 text-sm font-black text-red-200"}>
           {message.text}
+        </section>
+      ) : null}
+
+      {showLimitNotice ? (
+        <section className="rounded-2xl border border-amber-300/20 bg-amber-300/10 px-4 py-3">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="size-4 text-[#f3cf73]" />
+              <p className="text-sm font-black text-[#fff7e8]">مسموح بتغيير القالب مرة واحدة فقط</p>
+            </div>
+            <button type="button" onClick={() => setShowLimitNotice(false)} className="text-xs font-black text-white/50 hover:text-white">إخفاء</button>
+          </div>
         </section>
       ) : null}
 
@@ -60,7 +91,13 @@ export function TemplatesClient({ templates, currentThemeName, currentThemeCode,
 
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3" data-smart-tip="templates-grid">
           {templates.map((template) => (
-            <TemplateCard key={template.code} template={template} isCurrent={template.themeCode === currentThemeCode} templateChangeUsed={templateChangeUsed} />
+            <TemplateCard
+              key={template.code}
+              template={template}
+              isCurrent={template.themeCode === currentThemeCode}
+              templateChangeUsed={templateChangeUsed}
+              onBlocked={() => setShowLimitNotice(true)}
+            />
           ))}
         </div>
       </section>
@@ -68,9 +105,8 @@ export function TemplatesClient({ templates, currentThemeName, currentThemeCode,
   );
 }
 
-function TemplateCard({ template, isCurrent, templateChangeUsed }: { template: TemplateSummary; isCurrent: boolean; templateChangeUsed: boolean }) {
+function TemplateCard({ template, isCurrent, templateChangeUsed, onBlocked }: { template: TemplateSummary; isCurrent: boolean; templateChangeUsed: boolean; onBlocked: () => void }) {
   const palette = template.themeCode === "noir-gold" ? ["#0b0d12", "#f3cf73", "#fff7e8"] : ["#fff4f5", "#d88a9a", "#34252a"];
-  const supportHref = toWhatsappHref(DEFAULT_SUPPORT_WHATSAPP_NUMBER, "مرحبًا، أحتاج تغيير قالب الموقع بعد استخدام الفرصة المتاحة.");
 
   return (
     <article className={isCurrent ? "overflow-hidden rounded-[1.35rem] border border-amber-300/35 bg-amber-300/8" : "overflow-hidden rounded-[1.35rem] border border-white/10 bg-black/16"}>
@@ -111,10 +147,14 @@ function TemplateCard({ template, isCurrent, templateChangeUsed }: { template: T
               مفعل
             </Button>
           ) : templateChangeUsed ? (
-            <Link href={supportHref} target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-amber-300/20 bg-amber-300/10 px-4 text-sm font-black text-[#f3cf73] no-underline transition hover:bg-amber-300/16">
-              <MessageCircle className="size-4" aria-hidden />
-              التواصل مع الدعم
-            </Link>
+            <button
+              type="button"
+              onClick={onBlocked}
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-amber-300/20 bg-amber-300/10 px-4 text-sm font-black text-[#f3cf73] transition hover:bg-amber-300/16"
+            >
+              <WandSparkles className="size-4" aria-hidden />
+              شغّل القالب
+            </button>
           ) : (
             <form action={selectTemplateAction}>
               <input name="templateCode" type="hidden" value={template.code} />

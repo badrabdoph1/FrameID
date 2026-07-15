@@ -111,11 +111,9 @@ export function SettingsClient({ userName, userEmail, userPhone, userRole, siteT
 
       <Panel icon={Link2} title="رابط الموقع" description="الرابط المختصر مهم جدًا. اختاره واضح وسهل في النطق والكتابة.">
         <div className="grid gap-3">
-          <div className={slugChangeUsed ? "rounded-2xl border border-amber-300/18 bg-amber-300/8 p-3" : "rounded-2xl border border-white/8 bg-black/15 p-3"}>
-            <p className="text-sm font-black text-[#fff7e8]">{slugChangeUsed ? "تم استخدام فرصة تغيير الرابط" : "مسموح بتغيير الرابط مرة واحدة"}</p>
-            <p className="mt-1 text-xs font-bold leading-6 text-white/48">
-              {slugChangeUsed ? "لو محتاج تغييره مرة أخرى تواصل مع الدعم حتى لا تتأثر روابطك القديمة." : "اختار اسم قصير يعبر عنك، مثل اسم البراند أو الاستوديو."}
-            </p>
+          <div className="rounded-2xl border border-white/8 bg-black/15 p-3">
+            <p className="text-[0.68rem] font-black text-white/40">الرابط الحالي</p>
+            <p dir="ltr" className="mt-1 break-all text-sm font-black leading-6 text-[#f3cf73]">{siteUrl}</p>
           </div>
           <SlugEditor currentSlug={siteSlug} disabled={slugChangeUsed} />
         </div>

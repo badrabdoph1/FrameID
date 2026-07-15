@@ -232,7 +232,7 @@ export function DashboardShell({ children, siteSlug, hasSubscription }: { childr
       </header>
 
       <div className="customer-desktop-layout mx-auto flex min-h-dvh max-w-[1440px] lg:min-h-screen">
-        <aside className="customer-desktop-sidebar sticky top-0 hidden h-screen w-[296px] shrink-0 flex-col border-l border-white/8 bg-[#0c0e13] p-4 lg:flex">
+        <aside className="customer-desktop-sidebar sticky top-0 hidden h-screen w-[296px] shrink-0 flex-col min-h-0 border-l border-white/8 bg-[#0c0e13] p-4 lg:flex">
           <Link href="/dashboard" className="customer-desktop-brand-card flex items-center gap-3 rounded-3xl border border-white/8 bg-white/[0.035] p-3 no-underline transition hover:border-amber-300/20 hover:bg-amber-300/8">
             <BrandMark large />
             <span>
@@ -241,7 +241,7 @@ export function DashboardShell({ children, siteSlug, hasSubscription }: { childr
             </span>
           </Link>
 
-          <div className="customer-desktop-sidebar-nav mt-4 grid gap-2 overflow-y-auto pb-4 pr-0.5 admin-scrollbar">
+          <div className="customer-desktop-sidebar-nav mt-4 grid flex-1 min-h-0 gap-2 overflow-y-auto pb-4 pr-0.5 admin-scrollbar">
             <p className="px-2 text-[0.68rem] font-black uppercase tracking-wider text-white/28">خطوات العمل</p>
             {primaryNav.map((item) => (
               <NavLink key={item.href} item={item} active={isActivePath(pathname, item.href)} />

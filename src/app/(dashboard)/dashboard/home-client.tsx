@@ -11,6 +11,7 @@ import {
   ChevronLeft,
   Circle,
   Copy,
+  CreditCard,
   ExternalLink,
   Eye,
   LayoutDashboard,
@@ -153,6 +154,19 @@ export function DashboardHomeClient({ siteUrl, statusLabel, checklist, lastModif
         <Link href={nextStepHref} className="customer-dashboard-action-card inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-[#f3cf73] px-3 text-xs font-black text-[#17120a] no-underline shadow-lg shadow-amber-500/10 transition hover:-translate-y-0.5 hover:bg-[#ffe08a] hover:shadow-amber-500/20 sm:rounded-2xl sm:px-4 sm:text-sm">{nextStepLabel}<ArrowLeft className="size-3.5 sm:size-4" aria-hidden /></Link>
         <Link href={siteUrl} target="_blank" className="customer-dashboard-action-card inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-white/12 bg-[#151a24] px-3 text-xs font-black text-white/82 no-underline transition hover:-translate-y-0.5 hover:border-amber-300/25 hover:bg-[#1a202b] hover:text-white sm:rounded-2xl sm:px-4 sm:text-sm"><ExternalLink className="size-3.5 sm:size-4" aria-hidden /> افتح الموقع كعميل</Link>
       </div>
+
+      {!subscription || subscription.isTrial ? (
+        <Link href="/dashboard/billing" className="flex items-center gap-3 rounded-2xl border border-amber-300/20 bg-[linear-gradient(135deg,rgba(243,207,115,0.10),rgba(255,255,255,0.03)),#131820] p-4 no-underline transition hover:-translate-y-0.5 hover:border-amber-300/35 hover:shadow-[0_18px_48px_rgba(243,207,115,0.08)] sm:rounded-[1.25rem] sm:p-5">
+          <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-[#f3cf73] text-[#17120a] shadow-lg shadow-amber-500/20 sm:size-12 sm:rounded-2xl">
+            <CreditCard className="size-5" aria-hidden />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-sm font-black text-[#f3cf73]">تفعيل الموقع</span>
+            <span className="mt-0.5 block text-xs font-bold text-white/55">فعّل اشتراكك عشان موقعك يفضل شغال ومفتوح للعملاء.</span>
+          </span>
+          <ArrowLeft className="size-5 shrink-0 text-[#f3cf73]" aria-hidden />
+        </Link>
+      ) : null}
 
       {showOnboarding ? (
         <ImmersiveOnboarding onComplete={completeOnboarding} photographerName={photographerName} />
