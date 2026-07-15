@@ -1,11 +1,12 @@
 "use client";
 
 import { useActionState, useCallback, useEffect, useMemo, useState, type ChangeEvent, type ReactNode } from "react";
-import { AlertTriangle, Check, CheckCircle2, Copy, CreditCard, Loader2, Package, Upload, X } from "lucide-react";
+import { AlertTriangle, ArrowLeft, BadgeCheck, CalendarDays, Check, CheckCircle2, Clock, Copy, CreditCard, ExternalLink, Loader2, MessageCircle, Package, RefreshCw, Upload, X, Zap } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { BuilderPageHeader } from "@/components/dashboard/builder-primitives";
 import type { ResolvedSubscriptionExperience } from "@/modules/subscription/subscription-experience";
+import { DEFAULT_SUPPORT_WHATSAPP_NUMBER, toWhatsappHref } from "@/modules/support/support-utils";
 import {
   cancelPaymentRequestAction,
   createPaymentDraftAction,
@@ -478,7 +479,69 @@ export function BillingClient({ session, plans, paymentMethods, paymentRequest, 
             </AnimatedStepPanel>
           </div>
         </section>
-      ) : null}
+      ) : (
+        <section className="grid gap-4">
+          <div className="overflow-hidden rounded-[1.35rem] border border-emerald-300/20 bg-emerald-500/[0.04]">
+            <div className="flex items-start gap-3 border-b border-emerald-300/10 p-4 sm:p-5">
+              <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-emerald-400/15 text-emerald-300">
+                <BadgeCheck className="size-5" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <h2 className="text-lg font-black text-[#fff7e8]">الاشتراك مفعّل</h2>
+                <p className="mt-1 text-xs font-bold leading-6 text-white/50">
+                  اشتراكك نشط وجميع الميزات متاحة لموقعك.
+                </p>
+              </div>
+              <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-emerald-400/15 px-3 py-1.5 text-xs font-black text-emerald-300">
+                <CheckCircle2 className="size-3.5" />
+                نشط
+              </span>
+            </div>
+
+            <div className="grid gap-3 p-4 sm:p-5">
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                <SubscriptionInfoCard
+                  icon={Zap}
+                  label="الباقة"
+                  value={session.subscription?.plan?.name ?? "—"}
+                />
+                <SubscriptionInfoCard
+                  icon={CalendarDays}
+                  label="تاريخ التفعيل"
+                  value={session.tenant.trialStartedAt ? new Date(session.tenant.trialStartedAt).toLocaleDateString("ar-EG") : "—"}
+                />
+                <SubscriptionInfoCard
+                  icon={Clock}
+                  label="تاريخ الانتهاء"
+                  value={session.subscription?.currentPeriodEnd ? new Date(session.subscription.currentPeriodEnd).toLocaleDateString("ar-EG") : "—"}
+                  highlight={session.subscription?.currentPeriodEnd ? new Date(session.subscription.currentPeriodEnd) > new Date() : false}
+                />
+              </div>
+
+              <div className="grid gap-2 sm:grid-cols-2">
+                <a
+                  href={toWhatsappHref(DEFAULT_SUPPORT_WHATSAPP_NUMBER, "مرحبًا، أرغب في تمديد اشتراكي.")}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-amber-300/20 bg-amber-300/10 px-4 text-sm font-black text-[#f3cf73] no-underline transition hover:bg-amber-300/16"
+                >
+                  <RefreshCw className="size-4" />
+                  تمديد الاشتراك
+                </a>
+                <a
+                  href={toWhatsappHref(DEFAULT_SUPPORT_WHATSAPP_NUMBER, "مرحبًا، أرغب في تغيير باقتي.")}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-emerald-300/20 bg-emerald-400/10 px-4 text-sm font-black text-emerald-200 no-underline transition hover:bg-emerald-400/16"
+                >
+                  <MessageCircle className="size-4" />
+                  تغيير الباقة
+                </a>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
 
       {featurePlan ? <FeatureBottomSheet plan={featurePlan} onClose={() => setFeaturePlan(null)} /> : null}
     </main>
@@ -810,4 +873,18 @@ function Alert({ tone, title, text }: { tone: "success" | "warning" | "danger"; 
   const style = tone === "success" ? "border-emerald-400/20 bg-emerald-500/10 text-emerald-100" : tone === "warning" ? "border-amber-400/20 bg-amber-500/10 text-amber-100" : "border-red-400/20 bg-red-500/10 text-red-100";
   const Icon = tone === "success" ? CheckCircle2 : AlertTriangle;
   return <div className={`flex gap-3 rounded-2xl border p-3 ${style}`}><Icon className="mt-0.5 size-5 shrink-0" /><div><p className="text-sm font-black">{title}</p><p className="mt-1 text-sm opacity-75">{text}</p></div></div>;
+}
+
+function SubscriptionInfoCard({ icon: Icon, label, value, highlight }: { icon: typeof BadgeCheck; label: string; value: string; highlight?: boolean }) {
+  return (
+    <div className={`rounded-2xl border p-3 sm:p-4 ${highlight ? "border-amber-300/20 bg-amber-300/[0.06]" : "border-white/8 bg-black/15"}`}>
+      <div className="flex items-center gap-2">
+        <span className={`grid size-8 shrink-0 place-items-center rounded-xl ${highlight ? "bg-amber-300/15 text-[#f3cf73]" : "bg-white/[0.06] text-white/50"}`}>
+          <Icon className="size-4" />
+        </span>
+        <span className="text-[0.68rem] font-black text-white/40">{label}</span>
+      </div>
+      <p className={`mt-2 text-base font-black ${highlight ? "text-[#fff7e8]" : "text-white/70"}`}>{value}</p>
+    </div>
+  );
 }

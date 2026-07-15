@@ -47,34 +47,38 @@ export default async function AdminTemplatesPage({ searchParams }: Props) {
   await requireAdminPermission("templates", "view");
   const params = await searchParams;
 
-  const [templates, themes, publishedTemplates, sharedDefaultsRow] = await Promise.all([
-    prisma.template.findMany({
-      where: { deletedAt: null, code: { not: TEMPLATE_STARTER_DEFAULTS_CODE } },
-      orderBy: [{ status: "desc" }, { showroomOrder: "asc" }, { updatedAt: "desc" }],
-      select: {
-        id: true,
-        name: true,
-        code: true,
-        status: true,
-        showroomOrder: true,
-        previewData: true,
-        settings: true,
-        theme: { select: { id: true, name: true, code: true, category: true, status: true } },
-      },
-    }),
-    prisma.theme.findMany({
-      where: { deletedAt: null },
-      orderBy: [{ status: "desc" }, { name: "asc" }],
-      select: { id: true, name: true, code: true, status: true },
-    }),
-    prisma.template.count({
-      where: { deletedAt: null, status: "PUBLISHED", code: { not: TEMPLATE_STARTER_DEFAULTS_CODE } },
-    }),
-    prisma.template.findUnique({
-      where: { code: TEMPLATE_STARTER_DEFAULTS_CODE },
-      select: { previewData: true },
-    }),
-  ]);
+  const queryDb = process.env.DATABASE_URL
+    ? Promise.all([
+        prisma.template.findMany({
+          where: { deletedAt: null, code: { not: TEMPLATE_STARTER_DEFAULTS_CODE } },
+          orderBy: [{ status: "desc" }, { showroomOrder: "asc" }, { updatedAt: "desc" }],
+          select: {
+            id: true,
+            name: true,
+            code: true,
+            status: true,
+            showroomOrder: true,
+            previewData: true,
+            settings: true,
+            theme: { select: { id: true, name: true, code: true, category: true, status: true } },
+          },
+        }),
+        prisma.theme.findMany({
+          where: { deletedAt: null },
+          orderBy: [{ status: "desc" }, { name: "asc" }],
+          select: { id: true, name: true, code: true, status: true },
+        }),
+        prisma.template.count({
+          where: { deletedAt: null, status: "PUBLISHED", code: { not: TEMPLATE_STARTER_DEFAULTS_CODE } },
+        }),
+        prisma.template.findUnique({
+          where: { code: TEMPLATE_STARTER_DEFAULTS_CODE },
+          select: { previewData: true },
+        }),
+      ])
+    : Promise.resolve([[], [], 0, null] as const);
+
+  const [templates, themes, publishedTemplates, sharedDefaultsRow] = await queryDb;
 
   const sharedDefaultsSource = isRecord(sharedDefaultsRow?.previewData)
     ? sharedDefaultsRow.previewData.sharedDefaults
