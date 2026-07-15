@@ -160,28 +160,28 @@ export default function TemplatesPage() {
                 return (
                   <article
                     key={template.code}
-                    className="group relative flex flex-col overflow-hidden rounded-3xl border border-border/50 bg-white transition-all duration-500 hover:-translate-y-2 hover:border-champagne/40 hover:shadow-2xl hover:shadow-champagne/10"
+                    className="group relative flex flex-col overflow-hidden rounded-2xl border border-border/50 bg-white transition-all duration-300 hover:-translate-y-1 hover:border-champagne/40 hover:shadow-xl hover:shadow-champagne/10"
                     style={{ animationDelay: `${index * 100}ms` }}
                   >
                     {/* Preview Container */}
-                    <div className="relative aspect-[4/3] overflow-hidden bg-gradient-to-b from-muted/30 to-transparent">
-                      <Link href={`/templates/${template.code}/preview`} className="block h-full">
+                    <div className="relative overflow-hidden bg-gradient-to-b from-muted/20 to-transparent pb-0">
+                      <Link href={`/templates/${template.code}/preview`} className="block">
                         <TemplateLivePreview template={template} />
                       </Link>
 
                       {/* Badge */}
                       {meta.badge && (
-                        <span className="absolute right-4 top-4 z-10 inline-flex items-center gap-1.5 rounded-full bg-ink/90 px-4 py-2 text-[0.7rem] font-bold text-champagne shadow-xl backdrop-blur-md">
+                        <span className="absolute right-4 top-4 z-10 inline-flex items-center gap-1.5 rounded-full bg-ink/90 px-3 py-1.5 text-[0.65rem] font-bold text-champagne shadow-lg backdrop-blur-sm">
                           <Star className="size-3.5 fill-champagne" aria-hidden />
                           {meta.badge}
                         </span>
                       )}
 
                       {/* Hover Overlay */}
-                      <div className="absolute inset-0 flex items-center justify-center bg-ink/0 opacity-0 transition-all duration-300 group-hover:bg-ink/20 group-hover:opacity-100">
+                      <div className="absolute inset-0 flex items-center justify-center bg-ink/0 opacity-0 transition-all duration-300 group-hover:bg-ink/15 group-hover:opacity-100">
                         <Link
                           href={`/templates/${template.code}/preview`}
-                          className="flex items-center gap-2 rounded-full bg-white/95 px-6 py-3 text-sm font-semibold text-ink opacity-0 shadow-xl backdrop-blur-sm transition-all duration-300 hover:bg-white group-hover:opacity-100"
+                          className="flex items-center gap-2 rounded-full bg-white/95 px-5 py-2.5 text-sm font-semibold text-ink opacity-0 shadow-lg backdrop-blur-sm transition-all duration-300 hover:bg-white group-hover:opacity-100"
                         >
                           <Eye className="size-4" />
                           معاينة مباشرة
@@ -190,29 +190,29 @@ export default function TemplatesPage() {
                     </div>
 
                     {/* Content */}
-                    <div className="flex flex-1 flex-col p-6 md:p-7">
+                    <div className="flex flex-1 flex-col px-5 pt-4 pb-5 md:px-6 md:pt-5 md:pb-6">
                       {/* Title & Description */}
                       <div className="flex-1">
-                        <h3 className="text-lg font-semibold leading-[1.3] text-foreground md:text-xl">
+                        <h3 className="text-[0.95rem] font-semibold leading-[1.35] text-foreground md:text-base">
                           {template.name}
                         </h3>
-                        <p className="mt-3 text-[0.85rem] leading-[1.75] text-muted-foreground md:text-sm md:leading-[1.8]">
+                        <p className="mt-1.5 text-[0.78rem] leading-[1.7] text-muted-foreground md:text-sm md:leading-[1.75]">
                           {description}
                         </p>
                       </div>
 
                       {/* Actions */}
-                      <div className="mt-6 flex items-center gap-3 border-t border-border/50 pt-5">
+                      <div className="mt-4 flex items-center gap-3 border-t border-border/40 pt-4">
                         <Link
                           href={`/templates/${template.code}/preview`}
-                          className="inline-flex min-h-10 items-center justify-center gap-2 rounded-full bg-foreground px-5 text-[0.8rem] font-semibold text-background transition-all duration-200 hover:bg-foreground/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
+                          className="inline-flex min-h-[2.6rem] items-center justify-center gap-2 rounded-full bg-foreground px-5 text-[0.82rem] font-semibold text-background transition-all duration-200 hover:bg-foreground/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
                         >
                           <Eye className="size-3.5" aria-hidden />
                           شوف القالب
                         </Link>
                         <Link
                           href={`/signup?template=${template.code}`}
-                          className="text-[0.8rem] font-semibold text-champagne-strong transition-colors duration-150 hover:text-champagne-strong/70"
+                          className="inline-flex min-h-[2.6rem] items-center justify-center gap-2 rounded-full border border-champagne/50 bg-champagne/5 px-5 text-[0.82rem] font-semibold text-champagne-strong transition-all duration-200 hover:border-champagne hover:bg-champagne/10"
                         >
                           استخدمه لموقعي
                         </Link>
