@@ -79,25 +79,54 @@
     {
       "code": "basic",
       "name": "الباقة الأساسية",
-      "priceAmount": 40,
+      "priceAmount": 59900,
       "currency": "EGP",
-      "billingInterval": "unknown",
+      "billingInterval": "monthly",
       "features": {
-        "ctaLabel": "اختيار الباقة",
-        "isPopular": false,
+        "description": "باقة مثالية لبدء موقع تصوير احترافي",
         "badgeLabel": "",
-        "description": "باقة مناسبة لإدارة موقع تصوير احترافي بسهولة.",
-        "featureLines": [
-          "1 قوالب متاحة",
-          "1 GB مساحة تخزين",
-          "100 صورة في المعرض",
-          "لوحة تحكم للعميل",
-          "موقع عام قابل للنشر",
-          "تفعيل يدوي بعد مراجعة الدفع"
-        ],
+        "isPopular": false,
         "storageLabel": "1 GB مساحة تخزين",
+        "photoLimitLabel": "100 صورة",
+        "ctaLabel": "اختيار الباقة",
         "highlightText": "",
-        "photoLimitLabel": "100 صورة"
+        "featureLines": [
+          "موقع تصوير احترافي جاهز",
+          "لوحة تحكم سهلة للعميل",
+          "معرض صور يتسع لـ 100 صورة",
+          "باقة خدمات واحدة",
+          "نموذج تواصل أساسي",
+          "تفعيل يدوي بعد مراجعة الدفع"
+        ]
+      },
+      "isActive": true
+    },
+    {
+      "code": "professional",
+      "name": "الباقة الاحترافية",
+      "priceAmount": 99900,
+      "currency": "EGP",
+      "billingInterval": "monthly",
+      "features": {
+        "description": "كل ما تحتاجه لإدارة موقع تصوير متكامل",
+        "badgeLabel": "الأكثر طلبًا",
+        "isPopular": true,
+        "storageLabel": "5 GB مساحة تخزين",
+        "photoLimitLabel": "500 صورة",
+        "ctaLabel": "اختيار الباقة",
+        "highlightText": "",
+        "featureLines": [
+          "موقع تصوير احترافي كامل",
+          "جميع القوالب المتاحة",
+          "معرض صور يتسع لـ 500 صورة",
+          "3 باقات خدمات",
+          "خدمات إضافية غير محدودة",
+          "ربط دومين خاص",
+          "إحصائيات متقدمة",
+          "SEO محسن لمحركات البحث",
+          "دعم أولوية عبر الواتساب",
+          "تفعيل يدوي بعد مراجعة الدفع"
+        ]
       },
       "isActive": true
     },
@@ -108,34 +137,27 @@
       "currency": "EGP",
       "billingInterval": "monthly",
       "features": {
-        "themes": 10,
-        "storage": "20 GB",
-        "priority": "vip",
-        "dashboard": true,
-        "publicSite": true,
-        "customDomain": true,
-        "galleryImages": 9999,
-        "manualActivation": true
+        "description": "الحل المتكامل للاستوديوهات والوكالات",
+        "badgeLabel": "الأفضل",
+        "isPopular": false,
+        "storageLabel": "20 GB مساحة تخزين",
+        "photoLimitLabel": "صور غير محدودة",
+        "ctaLabel": "اختيار الباقة",
+        "highlightText": "",
+        "featureLines": [
+          "موقع تصوير احترافي كامل",
+          "جميع القوالب المتاحة",
+          "صور غير محدودة في المعرض",
+          "باقات وخدمات إضافية غير محدودة",
+          "ربط دومين خاص",
+          "تقارير وإحصائيات متقدمة",
+          "SEO محسن",
+          "دعم VIP مخصص",
+          "نسخ احتياطي يومي",
+          "تفعيل يدوي بعد مراجعة الدفع"
+        ]
       },
       "isActive": false
-    },
-    {
-      "code": "professional",
-      "name": "الباقة الاحترافية",
-      "priceAmount": 99900,
-      "currency": "EGP",
-      "billingInterval": "monthly",
-      "features": {
-        "themes": 3,
-        "storage": "5 GB",
-        "priority": "high",
-        "dashboard": true,
-        "publicSite": true,
-        "customDomain": true,
-        "galleryImages": 500,
-        "manualActivation": true
-      },
-      "isActive": true
     }
   ],
   "paymentSettings": [

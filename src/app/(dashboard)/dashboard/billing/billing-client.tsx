@@ -153,12 +153,25 @@ function normalizeFeatures(value: unknown): { description: string; badgeLabel: s
     ? record.featureLines.map((item) => String(item).trim()).filter(Boolean)
     : Array.isArray(record.features)
       ? (record.features as unknown[]).map((item) => String(item).trim()).filter(Boolean)
-      : [];
+      : Array.isArray(record.lines)
+        ? (record.lines as unknown[]).map((item) => String(item).trim()).filter(Boolean)
+        : [];
+  const generated = lines.length > 0 ? lines : (() => {
+    const g: string[] = [];
+    if (record.themes != null) g.push(`${record.themes} قوالب متاحة`);
+    if (record.storage != null) g.push(`${record.storage} مساحة تخزين`);
+    if (record.galleryImages != null) g.push(`${record.galleryImages} صورة في المعرض`);
+    if (record.dashboard === true) g.push("لوحة تحكم للعميل");
+    if (record.publicSite === true) g.push("موقع عام قابل للنشر");
+    if (record.customDomain === true) g.push("ربط دومين خاص");
+    if (record.manualActivation === true) g.push("تفعيل يدوي بعد مراجعة الدفع");
+    return g;
+  })();
   return {
     description: typeof record.description === "string" ? record.description : "",
     badgeLabel: typeof record.badgeLabel === "string" ? record.badgeLabel : typeof record.badge === "string" ? record.badge : "",
     isPopular: record.isPopular === true || record.popular === true,
-    featureLines: lines,
+    featureLines: generated,
   };
 }
 
