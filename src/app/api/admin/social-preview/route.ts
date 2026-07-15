@@ -28,18 +28,25 @@ export async function PATCH(request: Request) {
     const mode = payload.mode === "custom" ? "custom" : "default";
     const deleteImage = payload.deleteImage === true;
 
+    const imageBump = Date.now().toString(36);
     const next = {
       ...current,
       enabled: mode === "custom",
       title: cleanText(payload.title, 120),
       description: cleanText(payload.description, 240),
-      imageUrl: deleteImage ? null : current.imageData ? PLATFORM_CUSTOM_SOCIAL_IMAGE : null,
-      storageKey: null,
+      imageUrl: deleteImage
+        ? null
+        : current.imageData
+          ? PLATFORM_CUSTOM_SOCIAL_IMAGE
+          : current.imageUrl,
+      storageKey: deleteImage ? null : current.storageKey,
       imageData: deleteImage ? null : current.imageData,
       imageMimeType: deleteImage ? null : current.imageMimeType,
+      imageVersion: deleteImage || mode === "default" ? null : (current.imageVersion ?? imageBump),
     };
 
-    if (mode === "custom" && !next.imageData) {
+    const hasImage = Boolean(next.imageUrl || next.imageData);
+    if (mode === "custom" && !hasImage) {
       return NextResponse.json({ ok: false, error: "لا توجد صورة مرفوعة فعلًا. ارفع الصورة واعتمد القص أولًا." }, { status: 400 });
     }
 
@@ -54,7 +61,7 @@ export async function PATCH(request: Request) {
           mode,
           title: next.title,
           description: next.description,
-          hasImage: Boolean(next.imageData),
+          hasImage: Boolean(next.imageUrl || next.imageData),
           deletedImage: deleteImage,
         } as Prisma.InputJsonObject,
       },
@@ -72,8 +79,8 @@ export async function PATCH(request: Request) {
         enabled: next.enabled,
         title: next.title,
         description: next.description,
-        imageUrl: next.imageData ? `${PLATFORM_CUSTOM_SOCIAL_IMAGE}?v=${Date.now()}` : null,
-        hasImage: Boolean(next.imageData),
+        imageUrl: next.imageUrl ? `${next.imageUrl}${next.imageUrl.includes("?") ? "&" : "?"}v=${Date.now()}` : null,
+        hasImage: Boolean(next.imageUrl || next.imageData),
       },
     });
   } catch (error) {

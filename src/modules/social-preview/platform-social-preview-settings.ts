@@ -32,6 +32,7 @@ function parseValue(value: unknown, enabled: boolean): PlatformSocialPreviewSett
     storageKey: readText(record.storageKey),
     imageData: readText(record.imageData),
     imageMimeType: readText(record.imageMimeType),
+    imageVersion: readText(record.imageVersion),
   };
 }
 
@@ -63,6 +64,9 @@ export async function savePlatformSocialPreviewSettings(settings: PlatformSocial
     description: settings.description,
     imageUrl: settings.imageUrl,
     storageKey: settings.storageKey,
+    imageData: settings.imageData ?? null,
+    imageMimeType: settings.imageMimeType ?? null,
+    imageVersion: settings.imageVersion ?? null,
   };
 
   if (existing) {
