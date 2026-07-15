@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-07-15T19:57:01.569Z",
+  "updatedAt": "2026-07-15T21:02:39.704Z",
   "themes": [
     {
       "code": "noir-gold",
@@ -46,6 +46,26 @@
     }
   ],
   "templates": [
+    {
+      "code": "__starter-content-defaults__",
+      "name": "Starter Content Defaults",
+      "status": "ARCHIVED",
+      "version": "1.0.0",
+      "showroomOrder": -1,
+      "previewData": {
+        "sharedDefaults": {
+          "studioName": "Photography",
+          "description": "Wedding Photographer\r\nمصور زفاف",
+          "heroImageUrl": null,
+          "photographerName": "Badr Abdo"
+        }
+      },
+      "settings": {
+        "source": "template-content-source",
+        "internal": true
+      },
+      "themeCode": "noir-gold"
+    },
     {
       "code": "noir-gold",
       "name": "كلاسك",
@@ -186,7 +206,7 @@
           "instructions": "حوّل على رقم إنستا باي، ثم ارفع صورة إثبات الدفع من نفس الصفحة.",
           "notes": null,
           "isActive": true,
-          "sortOrder": 70
+          "sortOrder": 80
         }
       ]
     },
@@ -215,7 +235,7 @@
           "instructions": "حوّل على رقم فودافون كاش، ثم ارفع صورة إثبات الدفع من نفس الصفحة.",
           "notes": null,
           "isActive": true,
-          "sortOrder": 130
+          "sortOrder": 150
         }
       ]
     },
