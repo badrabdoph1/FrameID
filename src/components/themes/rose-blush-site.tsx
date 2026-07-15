@@ -240,7 +240,7 @@ function RoseBlushSiteInner({
               const imageUrl = item.imageUrl ?? galleryFallback;
               return (
                 <article key={item.id} className={cn("group relative flex min-h-full flex-col overflow-visible rounded-[1.8rem] border bg-white shadow-[0_20px_80px_rgba(44,24,16,0.07)] transition duration-500 hover:-translate-y-1", selected ? "border-[#d48a9e] shadow-[0_26px_90px_rgba(212,138,158,0.22)]" : item.isHighlighted ? "border-[#d48a9e]/45" : "border-[#eaddd4]/75")}>
-                  {item.isHighlighted ? <div className="absolute left-1/2 top-0 z-10 -translate-x-1/2 -translate-y-1/2"><span className="inline-flex items-center gap-1 rounded-full border border-[#d48a9e]/30 bg-[#d48a9e] px-3 py-1 text-xs font-black text-white shadow-lg"><Star className="size-3 fill-current" />الأكثر طلباً</span></div> : null}
+                  {item.isHighlighted ? <div className="absolute left-1/2 top-0 z-20 -translate-x-1/2 -translate-y-1/2"><span className="inline-flex items-center gap-1 rounded-full border border-[#d48a9e]/30 bg-[#d48a9e] px-3 py-1 text-xs font-black text-white shadow-lg"><Star className="size-3 fill-current" />الأكثر طلباً</span></div> : null}
                   {imageUrl ? (
                     <div className="relative h-48 overflow-hidden rounded-t-[1.8rem] md:h-60">
                       <Image src={imageUrl} alt={item.name} fill sizes="(min-width: 1024px) 31vw, 92vw" className="object-cover transition duration-700 group-hover:scale-105" />

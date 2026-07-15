@@ -95,6 +95,8 @@ export function SmartTip({ config }: { config: SmartTipConfig | null }) {
     return () => window.removeEventListener("mousemove", onMove);
   }, [showing]);
 
+  const dismissing = dismissed;
+
   useEffect(() => {
     if (dismissing) {
       const timer = setTimeout(() => setHintVisible(false), 250);
@@ -108,7 +110,6 @@ export function SmartTip({ config }: { config: SmartTipConfig | null }) {
   const glow = config.glowColor ?? accentToGlow(config.accent);
   const Icon = config.icon ?? Sparkles;
   const BtnIcon = config.buttonIcon ?? Sparkles;
-  const dismissing = dismissed;
   const placementClass = placementClasses[config.placement] ?? placementClasses.center;
   const animationClass = animationClasses[config.animation] ?? animationClasses["float-up"];
 

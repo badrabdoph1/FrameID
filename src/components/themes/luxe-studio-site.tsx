@@ -251,14 +251,14 @@ function LuxeStudioSiteInner({
                   <article
                     key={item.id}
                     className={cn(
-                      "group relative overflow-hidden rounded-2xl border p-6 transition",
+                      "group relative overflow-visible rounded-2xl border p-6 transition",
                       item.isHighlighted
                         ? "border-[#ff00ff]/30 bg-gradient-to-br from-[#ff00ff]/10 to-transparent shadow-[0_0_30px_rgba(255,0,255,0.15)]"
                         : "border-white/10 bg-white/5 hover:border-white/20"
                     )}
                   >
                     {item.isHighlighted ? (
-                      <div className="absolute left-1/2 top-0 z-10 -translate-x-1/2 -translate-y-1/2">
+                      <div className="absolute left-1/2 top-0 z-20 -translate-x-1/2 -translate-y-1/2">
                         <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-[#ff00ff] to-[#00ffff] px-3 py-1 text-xs font-bold text-white shadow-lg">
                           <Star className="size-3 fill-current" />
                           الأكثر طلباً
