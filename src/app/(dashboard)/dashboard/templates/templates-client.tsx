@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { AlertTriangle, CheckCircle2, Eye, MessageCircle, Palette, WandSparkles } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Eye, MessageCircle, Palette, WandSparkles, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -46,22 +46,6 @@ export function TemplatesClient({ templates, currentThemeName, currentThemeCode,
         </div>
       </section>
 
-      {templateChangeUsed ? (
-        <section className="overflow-hidden rounded-2xl border border-amber-300/20 bg-amber-300/[0.06]">
-          <div className="flex items-start gap-3 p-4">
-            <span className="grid size-9 shrink-0 place-items-center rounded-2xl bg-amber-300/10 text-[#f3cf73]"><AlertTriangle className="size-4" /></span>
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-black text-[#fff7e8]">استخدمت فرصة تغيير القالب</p>
-              <p className="mt-1 text-xs font-bold leading-6 text-white/50">تغيير القالب متاح مرة واحدة فقط. لو محتاج تغيير تاني، تواصل مع الدعم الفني.</p>
-            </div>
-            <Link href={supportHref} target="_blank" rel="noreferrer" className="inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-xl border border-emerald-300/20 bg-emerald-400/10 px-3 text-xs font-black text-emerald-200 no-underline transition hover:bg-emerald-400/16">
-              <MessageCircle className="size-3.5" aria-hidden />
-              الدعم
-            </Link>
-          </div>
-        </section>
-      ) : null}
-
       {message ? (
         <section className={message.tone === "success" ? "rounded-2xl border border-emerald-300/20 bg-emerald-300/10 px-4 py-3 text-sm font-black text-emerald-200" : "rounded-2xl border border-red-300/20 bg-red-500/10 px-4 py-3 text-sm font-black text-red-200"}>
           {message.text}
@@ -69,13 +53,37 @@ export function TemplatesClient({ templates, currentThemeName, currentThemeCode,
       ) : null}
 
       {showLimitNotice ? (
-        <section className="rounded-2xl border border-amber-300/20 bg-amber-300/10 px-4 py-3">
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
-              <AlertTriangle className="size-4 text-[#f3cf73]" />
-              <p className="text-sm font-black text-[#fff7e8]">مسموح بتغيير القالب مرة واحدة فقط</p>
+        <section className="overflow-hidden rounded-2xl border border-amber-300/20 bg-amber-300/[0.06]">
+          <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-start gap-3">
+              <span className="grid size-9 shrink-0 place-items-center rounded-2xl bg-amber-300/10 text-[#f3cf73]">
+                <AlertTriangle className="size-4" />
+              </span>
+              <div>
+                <p className="text-sm font-black text-[#fff7e8]">تغيير القالب غير متاح</p>
+                <p className="mt-1 text-xs font-bold leading-6 text-white/50">
+                  استخدمت فرصة تغيير القالب. للتمكن من تغييره مرة أخرى، يرجى التواصل مع الدعم الفني.
+                </p>
+              </div>
             </div>
-            <button type="button" onClick={() => setShowLimitNotice(false)} className="text-xs font-black text-white/50 hover:text-white">إخفاء</button>
+            <div className="flex items-center gap-2">
+              <Link
+                href={supportHref}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex min-h-10 shrink-0 items-center gap-2 rounded-xl border border-emerald-300/20 bg-emerald-400/10 px-4 text-sm font-black text-emerald-200 no-underline transition hover:bg-emerald-400/16"
+              >
+                <MessageCircle className="size-4" />
+                التواصل مع الدعم الفني عبر واتساب
+              </Link>
+              <button
+                type="button"
+                onClick={() => setShowLimitNotice(false)}
+                className="grid size-10 shrink-0 place-items-center rounded-xl border border-white/10 bg-white/[0.04] text-white/50 transition hover:text-white"
+              >
+                <X className="size-4" />
+              </button>
+            </div>
           </div>
         </section>
       ) : null}

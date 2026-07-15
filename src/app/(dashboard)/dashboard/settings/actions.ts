@@ -14,7 +14,8 @@ export async function updateSiteTitleAction(formData: FormData) {
     redirect("/login");
   }
 
-  const title = typeof formData.get("title") === "string" ? formData.get("title")!.trim() : "";
+  const rawTitle = formData.get("title");
+  const title = typeof rawTitle === "string" ? rawTitle.trim() : "";
 
   if (!title || title.length < 2) {
     redirect("/dashboard/settings?error=title-too-short");

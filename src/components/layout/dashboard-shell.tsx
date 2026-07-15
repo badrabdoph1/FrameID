@@ -171,12 +171,12 @@ export function DashboardShell({ children, siteSlug, hasSubscription }: { childr
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [supportSettings, setSupportSettings] = useState(() => normalizeSupportResponse(null));
-  const primaryNav = navItems.filter((item) => item.priority === "primary").slice(0, 4);
-  const secondaryNav = navItems.filter((item) => {
-    if (item.priority !== "secondary") return false;
+  const visibleNavItems = navItems.filter((item) => {
     if (item.href === "/dashboard/billing" && !hasSubscription) return false;
     return true;
   });
+  const primaryNav = visibleNavItems.filter((item) => item.priority === "primary").slice(0, 4);
+  const secondaryNav = visibleNavItems.filter((item) => item.priority === "secondary");
 
   useEffect(() => {
     setMobileMenuOpen(false);
@@ -326,7 +326,7 @@ export function DashboardShell({ children, siteSlug, hasSubscription }: { childr
             </div>
 
             <div className="grid gap-2">
-              {navItems.map((item) => (
+              {visibleNavItems.map((item) => (
                 <NavLink
                   key={item.href}
                   item={item}

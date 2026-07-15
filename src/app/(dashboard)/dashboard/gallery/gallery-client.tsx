@@ -108,6 +108,25 @@ function getGalleryNotice(messages: Messages):
   return null;
 }
 
+const imageTypes = [
+  {
+    id: "avatar",
+    title: "صورة المصور",
+    description: "تظهر مربعة في أعلى يسار الموقع بجانب اسمك. اختار صورة شخصية احترافية.",
+    icon: UserSquare2,
+    field: "avatarAssetId" as const,
+    previewAspect: "square" as const,
+  },
+  {
+    id: "cover",
+    title: "صورة الغلاف",
+    description: "تظهر عريضة في أعلى الصفحة الرئيسية للموقع. أول انطباع يأخذه العميل عن شغلك.",
+    icon: Images,
+    field: "coverAssetId" as const,
+    previewAspect: "wide" as const,
+  },
+];
+
 export function GalleryClient({ albums, selectedAlbumId: initialAlbumId, avatarUrl, coverUrl, messages }: GalleryClientProps) {
   const router = useRouter();
   const [currentAlbumId, setCurrentAlbumId] = useState<string | null>(() => {
@@ -217,7 +236,7 @@ export function GalleryClient({ albums, selectedAlbumId: initialAlbumId, avatarU
             <p className="text-[0.72rem] font-black text-[#f3cf73]">الصور</p>
             <h1 className="mt-1 text-2xl font-black text-[#fff7e8] sm:text-3xl">معرض الصور</h1>
             <p className="mt-2 max-w-2xl text-sm font-bold leading-7 text-white/55">
-              الصورة الشخصية والغلاف وألبومات من أعمالك. كل صورة ليها مكان محدد في الموقع.
+              الصورة الشخصية والغلاف وألبومات أعمالك. كل صورة تظهر في مكان محدد داخل موقعك.
             </p>
           </div>
         </div>
@@ -243,22 +262,21 @@ export function GalleryClient({ albums, selectedAlbumId: initialAlbumId, avatarU
         />
       ) : (
         <div data-smart-tip="gallery-grid">
-          <section className="grid gap-4 lg:grid-cols-[1fr_1fr]">
-            <ImageCard
-              title="صورة المصور"
-              description="تظهر مربعة أعلى الموقع بجانب اسمك."
-              preview={avatarPreview}
-              square
-              icon={UserSquare2}
-              onUpload={(files) => uploadProfileImage("avatarAssetId", files)}
-            />
-            <ImageCard
-              title="صورة الغلاف"
-              description="تظهر عريضة في أعلى الصفحة الرئيسية."
-              preview={coverPreview}
-              icon={Images}
-              onUpload={(files) => uploadProfileImage("coverAssetId", files)}
-            />
+          <section className="grid gap-4 sm:grid-cols-2">
+            {imageTypes.map((imgType) => {
+              const preview = imgType.id === "avatar" ? avatarPreview : coverPreview;
+              return (
+                <ProfileImageCard
+                  key={imgType.id}
+                  title={imgType.title}
+                  description={imgType.description}
+                  preview={preview}
+                  aspect={imgType.previewAspect}
+                  icon={imgType.icon}
+                  onUpload={(files) => uploadProfileImage(imgType.field, files)}
+                />
+              );
+            })}
           </section>
 
           <section className="overflow-hidden rounded-[1.35rem] border border-white/10 bg-white/[0.035]">
@@ -275,7 +293,7 @@ export function GalleryClient({ albums, selectedAlbumId: initialAlbumId, avatarU
 
             <div className="p-4">
               {showCreateForm ? (
-                <form action={handleCreateAlbum} className="grid gap-3 rounded-2xl border border-amber-300/18 bg-amber-300/8 p-3" onSubmit={() => setShowCreateForm(false)}>
+                <form action={handleCreateAlbum} className="mb-4 grid gap-3 rounded-2xl border border-amber-300/18 bg-amber-300/8 p-3" onSubmit={() => setShowCreateForm(false)}>
                   <label className="grid gap-1.5"><span className="text-xs font-black text-white/55">عنوان الألبوم</span><Input name="title" placeholder="مثلاً: جلسات زفاف" required autoFocus /></label>
                   <label className="grid gap-1.5"><span className="text-xs font-black text-white/55">وصف الألبوم (اختياري)</span><Input name="description" placeholder="وصف بسيط يظهر للعميل" /></label>
                   <div className="grid grid-cols-2 gap-2"><Button type="submit" variant="luxury" className="rounded-xl">إنشاء</Button><Button type="button" variant="ghost" className="rounded-xl" onClick={() => setShowCreateForm(false)}>إلغاء</Button></div>
@@ -317,21 +335,32 @@ export function GalleryClient({ albums, selectedAlbumId: initialAlbumId, avatarU
   );
 }
 
-function ImageCard({ title, description, preview, onUpload, square, icon: Icon }: { title: string; description: string; preview: string | null; onUpload: (files: File[]) => void; square?: boolean; icon: typeof UserSquare2 }) {
+function ProfileImageCard({ title, description, preview, onUpload, aspect, icon: Icon }: { title: string; description: string; preview: string | null; onUpload: (files: File[]) => void; aspect: "square" | "wide"; icon: typeof UserSquare2 }) {
   return (
     <section className="overflow-hidden rounded-[1.35rem] border border-white/10 bg-white/[0.035]">
       <div className="flex items-start gap-3 border-b border-white/8 px-4 py-3">
-        <span className="grid size-8 shrink-0 place-items-center rounded-xl bg-amber-300/10 text-[#f3cf73]"><Icon className="size-4" /></span>
-        <div className="min-w-0"><h2 className="text-sm font-black text-[#fff7e8]">{title}</h2><p className="mt-0.5 text-[0.68rem] font-bold leading-5 text-white/45">{description}</p></div>
+        <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-amber-300/10 text-[#f3cf73]"><Icon className="size-4" /></span>
+        <div className="min-w-0">
+          <h2 className="text-sm font-black text-[#fff7e8]">{title}</h2>
+          <p className="mt-0.5 text-[0.68rem] font-bold leading-5 text-white/45">{description}</p>
+        </div>
       </div>
-      <div className="p-3">
-        <div className={square ? "relative mx-auto aspect-square w-full max-w-[160px] overflow-hidden rounded-2xl border border-white/10 bg-black/20" : "relative aspect-[16/7] w-full overflow-hidden rounded-2xl border border-white/10 bg-black/20"}>
+      <div className="p-4">
+        <div className={aspect === "square" ? "relative mx-auto aspect-square w-full max-w-[200px] overflow-hidden rounded-2xl border border-white/8 bg-black/20" : "relative aspect-[16/7] w-full overflow-hidden rounded-2xl border border-white/8 bg-black/20"}>
           {preview ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={preview} alt={title} className="size-full object-cover" />
-          ) : <div className="grid size-full place-items-center text-white/28"><ImagePlus className="size-7" /></div>}
+          ) : (
+            <div className="grid size-full place-items-center gap-1.5 text-white/22">
+              <ImagePlus className="size-7" />
+              <span className="text-[0.62rem] font-bold">ارفع صورة</span>
+            </div>
+          )}
         </div>
-        <div className="mt-2.5"><ImageUploader onUpload={onUpload} multiple={false} maxFiles={1} maxSizeMB={20} /></div>
+        <p className="mt-2.5 text-center text-[0.65rem] font-bold text-white/35">
+          {aspect === "square" ? "الحجم الموصى: ٤٠٠×٤٠٠ بكسل" : "الحجم الموصى: ١٢٠٠×٦٠٠ بكسل"}
+        </p>
+        <div className="mt-3"><ImageUploader onUpload={onUpload} multiple={false} maxFiles={1} maxSizeMB={20} /></div>
       </div>
     </section>
   );
@@ -434,7 +463,26 @@ function AlbumCard({ album, renaming, confirmingDelete, onOpen, onRename, onCanc
   const coverUrl = getCoverUrl(album);
   if (renaming) return <form action={handleRenameAlbum} className="grid gap-2 rounded-2xl border border-amber-300/18 bg-amber-300/8 p-3"><input type="hidden" name="albumId" value={album.id} /><Input name="title" defaultValue={album.title} autoFocus required /><Input name="description" defaultValue={album.description ?? ""} placeholder="وصف الألبوم" /><div className="grid grid-cols-2 gap-2"><Button type="submit" variant="luxury" className="rounded-xl">حفظ</Button><Button type="button" variant="ghost" className="rounded-xl" onClick={onCancelRename}>إلغاء</Button></div></form>;
   if (confirmingDelete) return <div className="grid gap-3 rounded-2xl border border-red-300/20 bg-red-500/10 p-3 text-center"><p className="text-sm font-black text-[#fff7e8]">تمسح &quot;{album.title}&quot;؟</p><p className="text-xs font-bold text-white/45">الصور المرتبطة بالألبوم مش هتظهر للعميل.</p><div className="grid grid-cols-2 gap-2"><Button size="sm" variant="luxury" onClick={onConfirmDelete}>حذف</Button><Button size="sm" variant="ghost" onClick={onCancelDelete}>إلغاء</Button></div></div>;
-  return <article className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.035]"><button type="button" onClick={onOpen} className="block w-full text-start"><div className="relative aspect-[4/3] bg-black/20">{coverUrl ? <Image src={coverUrl} alt="" fill sizes="(min-width: 1024px) 25vw, 100vw" className="object-cover" aria-hidden /> : <div className="flex h-full items-center justify-center"><FolderOpen className="size-10 text-white/25" /></div>}</div><div className="p-3"><h3 className="truncate text-sm font-black text-[#fff7e8]">{album.title}</h3>{album.description ? <p className="mt-1 line-clamp-2 text-xs font-bold text-white/42">{album.description}</p> : null}<p className="mt-1 text-xs font-bold text-white/42">{album.images.length}/5 صور</p></div></button><div className="grid grid-cols-2 gap-2 border-t border-white/8 p-2"><button type="button" onClick={onRename} className="inline-flex min-h-9 items-center justify-center gap-1 rounded-xl bg-white/[0.04] text-xs font-black text-white/60"><Pencil className="size-3.5" />تعديل</button><button type="button" onClick={onDelete} className="inline-flex min-h-9 items-center justify-center gap-1 rounded-xl bg-red-500/10 text-xs font-black text-red-200"><Trash2 className="size-3.5" />حذف</button></div></article>;
+  return (
+    <article className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.035]">
+      <button type="button" onClick={onOpen} className="block w-full text-start">
+        <div className="relative aspect-[4/3] bg-black/20">
+          {coverUrl ? <Image src={coverUrl} alt="" fill sizes="(min-width: 1024px) 25vw, 100vw" className="object-cover" aria-hidden /> : <div className="flex size-full items-center justify-center"><FolderOpen className="size-10 text-white/25" /></div>}
+          <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-3 pt-8">
+            <h3 className="truncate text-sm font-black text-[#fff7e8] drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)]">{album.title}</h3>
+          </div>
+        </div>
+        <div className="p-3">
+          {album.description ? <p className="mb-1 line-clamp-2 text-xs font-bold text-white/42">{album.description}</p> : null}
+          <p className="text-xs font-bold text-white/42">{album.images.length}/5 صور</p>
+        </div>
+      </button>
+      <div className="grid grid-cols-2 gap-2 border-t border-white/8 p-2">
+        <button type="button" onClick={onRename} className="inline-flex min-h-9 items-center justify-center gap-1 rounded-xl bg-white/[0.04] text-xs font-black text-white/60"><Pencil className="size-3.5" />تعديل</button>
+        <button type="button" onClick={onDelete} className="inline-flex min-h-9 items-center justify-center gap-1 rounded-xl bg-red-500/10 text-xs font-black text-red-200"><Trash2 className="size-3.5" />حذف</button>
+      </div>
+    </article>
+  );
 }
 
 function EmptyGalleryState({ onCreate }: { onCreate: () => void }) {
