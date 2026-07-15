@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import React from "react";
-import { ArrowLeft, Eye, Sparkles, Star } from "lucide-react";
+import { Eye, MessageCircle, Sparkles, Star } from "lucide-react";
 
 import { MarketingFooter } from "@/components/layout/marketing-footer";
 import { MarketingNav } from "@/components/layout/marketing-nav";
@@ -142,7 +142,7 @@ export default function TemplatesPage() {
         </section>
 
         {/* Templates Grid */}
-        <section className="container-page -mt-10 pb-20 md:-mt-16 md:pb-28">
+        <section className="container-page -mt-10 pb-24 md:-mt-16 md:pb-32">
           {templates.length === 0 ? (
             <div className="rounded-2xl border border-border/60 bg-card p-12 text-center">
               <div className="mx-auto mb-4 flex size-16 items-center justify-center rounded-full bg-muted/50">
@@ -152,7 +152,7 @@ export default function TemplatesPage() {
               <p className="mt-2 text-sm text-muted-foreground">سنضيف قوالب جديدة قريباً</p>
             </div>
           ) : (
-            <div className="grid gap-6 md:grid-cols-2 md:gap-8">
+            <div className="grid gap-8 md:grid-cols-2 md:gap-10">
               {templates.map((template, index) => {
                 const meta = templateHighlights[template.code] ?? {};
                 const description = meta.highlight ?? template.description;
@@ -160,28 +160,30 @@ export default function TemplatesPage() {
                 return (
                   <article
                     key={template.code}
-                    className="group relative flex flex-col overflow-hidden rounded-2xl border border-border/50 bg-white transition-all duration-300 hover:-translate-y-1 hover:border-champagne/40 hover:shadow-xl hover:shadow-champagne/10"
+                    className="group relative flex flex-col overflow-hidden rounded-3xl border border-border/40 bg-white/80 shadow-sm ring-1 ring-black/[0.02] backdrop-blur-sm transition-all duration-500 hover:-translate-y-1.5 hover:border-champagne/30 hover:shadow-[0_32px_64px_-12px_rgb(10,10,10,0.08),0_0_0_1px_rgb(201,169,110,0.15)]"
                     style={{ animationDelay: `${index * 100}ms` }}
                   >
                     {/* Preview Container */}
-                    <div className="relative overflow-hidden bg-gradient-to-b from-muted/20 to-transparent pb-0">
-                      <Link href={`/templates/${template.code}/preview`} className="block">
-                        <TemplateLivePreview template={template} />
-                      </Link>
+                    <div className="relative overflow-hidden bg-gradient-to-br from-muted/30 via-muted/10 to-transparent px-4 pt-5 pb-4">
+                      <div className="relative overflow-hidden rounded-2xl shadow-[0_8px_32px_-4px_rgb(0,0,0,0.08)] ring-1 ring-black/[0.04] transition-all duration-500 group-hover:shadow-[0_12px_40px_-4px_rgb(0,0,0,0.12)]">
+                        <Link href={`/templates/${template.code}/preview`} className="block">
+                          <TemplateLivePreview template={template} />
+                        </Link>
+                      </div>
 
                       {/* Badge */}
                       {meta.badge && (
-                        <span className="absolute right-4 top-4 z-10 inline-flex items-center gap-1.5 rounded-full bg-ink/90 px-3 py-1.5 text-[0.65rem] font-bold text-champagne shadow-lg backdrop-blur-sm">
-                          <Star className="size-3.5 fill-champagne" aria-hidden />
+                        <span className="absolute right-7 top-8 z-10 inline-flex items-center gap-1.5 rounded-full bg-ink/85 px-3.5 py-1.5 text-[0.65rem] font-bold tracking-wide text-champagne shadow-lg backdrop-blur-md">
+                          <Star className="size-3 fill-champagne" aria-hidden />
                           {meta.badge}
                         </span>
                       )}
 
                       {/* Hover Overlay */}
-                      <div className="absolute inset-0 flex items-center justify-center bg-ink/0 opacity-0 transition-all duration-300 group-hover:bg-ink/15 group-hover:opacity-100">
+                      <div className="pointer-events-none absolute inset-0 flex items-center justify-center opacity-0 transition-all duration-500 group-hover:opacity-100">
                         <Link
                           href={`/templates/${template.code}/preview`}
-                          className="flex items-center gap-2 rounded-full bg-white/95 px-5 py-2.5 text-sm font-semibold text-ink opacity-0 shadow-lg backdrop-blur-sm transition-all duration-300 hover:bg-white group-hover:opacity-100"
+                          className="pointer-events-auto flex items-center gap-2 rounded-full bg-white/95 px-5 py-2.5 text-sm font-semibold text-ink shadow-xl backdrop-blur-sm transition-all duration-300 hover:bg-white hover:shadow-2xl"
                         >
                           <Eye className="size-4" />
                           معاينة مباشرة
@@ -190,29 +192,29 @@ export default function TemplatesPage() {
                     </div>
 
                     {/* Content */}
-                    <div className="flex flex-1 flex-col px-5 pt-4 pb-5 md:px-6 md:pt-5 md:pb-6">
+                    <div className="flex flex-1 flex-col px-6 pt-2 pb-6">
                       {/* Title & Description */}
                       <div className="flex-1">
-                        <h3 className="text-[0.95rem] font-semibold leading-[1.35] text-foreground md:text-base">
+                        <h3 className="text-[1.05rem] font-semibold leading-[1.35] tracking-tight text-foreground md:text-[1.1rem]">
                           {template.name}
                         </h3>
-                        <p className="mt-1.5 text-[0.78rem] leading-[1.7] text-muted-foreground md:text-sm md:leading-[1.75]">
+                        <p className="mt-2 text-[0.82rem] leading-[1.75] text-muted-foreground md:text-sm">
                           {description}
                         </p>
                       </div>
 
                       {/* Actions */}
-                      <div className="mt-4 flex items-center gap-3 border-t border-border/40 pt-4">
+                      <div className="mt-5 flex items-center gap-3 border-t border-border/30 pt-5">
                         <Link
                           href={`/templates/${template.code}/preview`}
-                          className="inline-flex min-h-[2.6rem] items-center justify-center gap-2 rounded-full bg-foreground px-5 text-[0.82rem] font-semibold text-background transition-all duration-200 hover:bg-foreground/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
+                          className="inline-flex min-h-[2.6rem] items-center justify-center gap-2 rounded-full bg-foreground px-6 text-[0.82rem] font-semibold text-background transition-all duration-300 hover:bg-foreground/85 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
                         >
                           <Eye className="size-3.5" aria-hidden />
                           شوف القالب
                         </Link>
                         <Link
                           href={`/signup?template=${template.code}`}
-                          className="inline-flex min-h-[2.6rem] items-center justify-center gap-2 rounded-full border border-champagne/50 bg-champagne/5 px-5 text-[0.82rem] font-semibold text-champagne-strong transition-all duration-200 hover:border-champagne hover:bg-champagne/10"
+                          className="inline-flex min-h-[2.6rem] items-center justify-center gap-2 rounded-full border border-champagne/40 bg-champagne/[0.04] px-6 text-[0.82rem] font-semibold text-champagne-strong transition-all duration-300 hover:border-champagne/70 hover:bg-champagne/10 hover:shadow-sm"
                         >
                           استخدمه لموقعي
                         </Link>
@@ -230,18 +232,20 @@ export default function TemplatesPage() {
           <div className="container-page">
             <div className="mx-auto max-w-2xl text-center">
               <h2 className="text-balance text-2xl font-semibold leading-[1.2] text-foreground md:text-4xl md:leading-[1.15]">
-                ما لقيت اللي يناسبك؟
+                مالقتش حاجه تناسب شخصيتك؟
               </h2>
               <p className="mx-auto mt-4 max-w-lg text-sm leading-[1.8] text-muted-foreground md:text-base md:leading-[1.85]">
-                كل القوالب قابلة للتخصيص بالكامل. ابدأ بقالب قريب من ذوقك وعدّله حسب احتياجك.
+                اتواصل معانا ع واتساب وهنعملك تصميم مخصوص ليك انت لوحدك
               </p>
-              <Link
-                href="/signup"
-                className="mt-8 inline-flex items-center gap-2 rounded-full bg-ink px-8 py-4 text-sm font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:bg-ink/90 md:text-base"
+              <a
+                href="https://wa.me/201038434472?text=مرحبًا،%20أحتاج%20دعم%20فني%20في%20FrameID."
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-8 inline-flex items-center gap-2 rounded-full bg-[#25d366] px-8 py-4 text-sm font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#20bd5a] md:text-base"
               >
-                ابدأ مجاناً الآن
-                <ArrowLeft className="size-4" />
-              </Link>
+                <MessageCircle className="size-4" />
+                الدعم الفني
+              </a>
             </div>
           </div>
         </section>
