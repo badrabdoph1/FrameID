@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useMemo, useState, type ChangeEvent, type ReactNode } from "react";
+import { useActionState, useCallback, useEffect, useMemo, useState, type ChangeEvent, type ReactNode } from "react";
 import { AlertTriangle, Check, CheckCircle2, Copy, CreditCard, Loader2, Package, Upload, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -224,25 +224,20 @@ export function BillingClient({ session, plans, paymentMethods, paymentRequest, 
   const [featurePlan, setFeaturePlan] = useState<PlanData | null>(null);
   const [step, setStep] = useState<CheckoutStep>(() => getInitialStep(paymentRequest, Boolean(paymentRequest?.id ?? draftId), Boolean(paymentRequest?.proofAssetId)));
 
-  const [createState, createAction, createPending] = useActionState<ActionResult | null, FormData>(async (_prev, fd) => createPaymentDraftAction(fd), null);
-  const [completePaymentState, completePaymentAction, completePaymentPending] = useActionState<ActionResult | null, FormData>(async (_prev, fd) => {
+  const wrappedCreate = useCallback(async (_prev: ActionResult | null, fd: FormData): Promise<ActionResult | null> => createPaymentDraftAction(fd), []);
+  const [createState, createAction, createPending] = useActionState<ActionResult | null, FormData>(wrappedCreate, null);
+  const completeSubmitAction = useCallback(async (_prev: ActionResult | null, fd: FormData): Promise<ActionResult | null> => {
     const uploaded = await uploadProofAction(fd);
     if (!uploaded.success) return uploaded;
-
     const submittedForm = new FormData();
     submittedForm.set("draftId", String(fd.get("draftId") ?? ""));
-    const submittedResult = await submitPaymentRequestAction(submittedForm);
-
-    if (submittedResult.success) {
-      setProofUploaded(true);
-      setProofFile(null);
-      setStep(3);
-    }
-
-    return submittedResult;
-  }, null);
-  const [submitState, submitAction, submitPending] = useActionState<ActionResult | null, FormData>(async (_prev, fd) => submitPaymentRequestAction(fd), null);
-  const [cancelState, cancelAction, cancelPending] = useActionState<ActionResult | null, FormData>(async (_prev, fd) => cancelPaymentRequestAction(fd), null);
+    return submitPaymentRequestAction(submittedForm);
+  }, []);
+  const [completePaymentState, completePaymentAction, completePaymentPending] = useActionState<ActionResult | null, FormData>(completeSubmitAction, null);
+  const wrappedSubmit = useCallback(async (_prev: ActionResult | null, fd: FormData): Promise<ActionResult | null> => submitPaymentRequestAction(fd), []);
+  const [submitState, submitAction, submitPending] = useActionState<ActionResult | null, FormData>(wrappedSubmit, null);
+  const wrappedCancel = useCallback(async (_prev: ActionResult | null, fd: FormData): Promise<ActionResult | null> => cancelPaymentRequestAction(fd), []);
+  const [cancelState, cancelAction, cancelPending] = useActionState<ActionResult | null, FormData>(wrappedCancel, null);
 
   const selectedPlan = useMemo(() => plans.find((p) => p.id === selectedPlanId), [plans, selectedPlanId]);
   const selectedMethod = useMemo(() => paymentMethods.find((method) => method.id === selectedMethodId) ?? initialMethod, [paymentMethods, selectedMethodId, initialMethod]);
@@ -267,6 +262,14 @@ export function BillingClient({ session, plans, paymentMethods, paymentRequest, 
       setStep(2);
     }
   }, [createState]);
+
+  useEffect(() => {
+    if (isActionSuccess(completePaymentState)) {
+      setProofUploaded(true);
+      setProofFile(null);
+      setStep(3);
+    }
+  }, [completePaymentState]);
 
   useEffect(() => {
     if (isActionSuccess(submitState)) setStep(3);

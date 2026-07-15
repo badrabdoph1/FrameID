@@ -60,6 +60,7 @@ export default async function BillingPage({
   const tenant = await prisma.tenant.findUnique({
     where: { id: session.tenant.id },
     select: {
+      id: true,
       trialStartedAt: true,
       trialEndsAt: true,
       trialDays: true,
@@ -109,13 +110,15 @@ export default async function BillingPage({
       session={{
         user: session.user,
         tenant: {
-          ...session.tenant,
-          trialStartedAt: tenant?.trialStartedAt ?? new Date(),
-          trialEndsAt: tenant?.trialEndsAt ?? new Date(),
-          trialDays: tenant?.trialDays ?? 14,
-          gracePeriodEndsAt: tenant?.gracePeriodEndsAt ?? null,
+          id: session.tenant.id,
+          displayName: session.tenant.displayName,
+          status: session.tenant.status,
+          trialEndsAt: tenant?.trialEndsAt ?? session.tenant.trialEndsAt ?? new Date(),
+          trialStartedAt: tenant?.trialStartedAt ?? session.tenant.trialStartedAt ?? new Date(),
+          trialDays: tenant?.trialDays ?? session.tenant.trialDays ?? 14,
+          gracePeriodEndsAt: tenant?.gracePeriodEndsAt ?? session.tenant.gracePeriodEndsAt ?? null,
         },
-        site: session.site,
+        site: session.site ?? { id: "", slug: "", title: "", status: "DRAFT", slugChangeUsed: false },
         subscription: session.subscription,
       }}
       plans={plans.map((p) => ({

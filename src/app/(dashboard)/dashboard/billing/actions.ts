@@ -32,7 +32,7 @@ async function getSessionWithSub() {
   const session = await getCurrentRequestSession();
   if (!session) redirect("/login");
   if (!session.subscription) redirect("/dashboard/billing?error=no-subscription");
-  return session as NonNullable<typeof session>;
+  return session;
 }
 
 function cleanString(value: FormDataEntryValue | null): string | null {
