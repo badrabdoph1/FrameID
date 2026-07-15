@@ -138,9 +138,17 @@ function PackagesSection({ section, site, variant }: { section: NormalizedTempla
             const imageUrl = item.imageUrl ?? site.gallery[index % Math.max(site.gallery.length, 1)]?.url;
             return <article key={item.id} className={cn("flex flex-col overflow-hidden rounded-[1.6rem] border p-4", snap && "w-[84vw] shrink-0 snap-center md:w-auto", dark ? "border-white/9 bg-[#101010]" : "border-[#eaddd4] bg-white shadow-[0_20px_60px_rgba(44,24,16,.07)]") }>
               {imageUrl ? <div className="relative -mx-4 -mt-4 mb-4 aspect-[16/10] overflow-hidden"><Image src={imageUrl} alt={item.name} fill sizes="(min-width: 768px) 30vw, 84vw" className="object-cover" /></div> : null}
-              <div className="flex items-start justify-between gap-3"><div><h3 className="font-display text-xl font-bold">{item.name}</h3>{item.subtitle ? <p className={cn("mt-1 text-xs font-bold", dark ? "text-white/48" : "text-[#6f5c55]")}>{item.subtitle}</p> : null}</div><span className={cn("shrink-0 rounded-xl px-3 py-2 text-xs font-black", dark ? "bg-[#e5c07b]/12 text-[#e5c07b]" : "bg-[#f5e4ea] text-[#b87084]")}>{item.price}</span></div>
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h3 className="font-display text-xl font-bold">{item.name}</h3>
+                    {item.isHighlighted ? <span className={cn("inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-black", dark ? "bg-[#e5c07b]/15 text-[#e5c07b]" : "bg-[#f5e4ea] text-[#b87084]")}><Star className="size-3 fill-current" aria-hidden />الأكثر طلباً</span> : null}
+                  </div>
+                  {item.subtitle ? <p className={cn("mt-1 text-xs font-bold", dark ? "text-white/48" : "text-[#6f5c55]")}>{item.subtitle}</p> : null}
+                </div>
+                <span className={cn("shrink-0 rounded-xl px-3 py-2 text-xs font-black", dark ? "bg-[#e5c07b]/12 text-[#e5c07b]" : "bg-[#f5e4ea] text-[#b87084]")}>{item.price}</span>
+              </div>
               <ul className={cn("mt-4 flex-1 space-y-2 text-xs leading-6", dark ? "text-white/62" : "text-[#6f5c55]")}>{item.features.map((feature) => <li key={feature}>• {feature}</li>)}</ul>
-              {item.isHighlighted ? <p className={cn("mt-3 inline-flex items-center gap-1 text-xs font-black", dark ? "text-[#e5c07b]" : "text-[#d48a9e]")}><Star className="size-3 fill-current" aria-hidden /> الأكثر اختيارًا</p> : null}
               <PackageSelectButton id={item.id} variant={variant} />
             </article>;
           })}
