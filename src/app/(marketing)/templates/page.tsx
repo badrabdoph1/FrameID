@@ -100,37 +100,38 @@ export default function TemplatesPage() {
               {/* Badge */}
               <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-champagne/30 bg-champagne/10 px-5 py-2.5 text-xs font-semibold text-champagne backdrop-blur-sm">
                 <Sparkles className="size-3.5" />
-                مجموعة حصرية من القوالب
+                ابدأ بموقع جاهز خلال دقائق
               </div>
 
               {/* Title */}
               <h1 className="text-balance text-[2.5rem] font-semibold leading-[1.1] text-white md:text-[4.5rem] md:leading-[1.05]">
-                اختار القالب اللي
+                اختار شكل موقع
                 <br />
-                <span className="text-champagne">يعكس شغلك</span>
+                <span className="text-champagne">يناسب شخصيتك</span>
               </h1>
 
               {/* Subtitle */}
               <p className="mx-auto mt-6 max-w-xl text-base leading-[1.8] text-white/60 md:mt-8 md:text-lg md:leading-[1.85]">
-                قوالب مصممة خصيصاً للمصورين المحترفين. افتح أي قالب وكأنه موقع حقيقي،
-                وجربه قبل ما تبدأ.
+                موقعك وطريقة عرض أسعارك هما أول انطباع بياخده عميلك. ✨
+                <br />
+                اختار الموقع اللي يناسبك، وعدّل كل الصور والنصوص والتفاصيل براحتك بعدين.
               </p>
 
               {/* Stats */}
               <div className="mt-12 flex items-center justify-center gap-8 md:mt-16 md:gap-12">
                 <div className="text-center">
-                  <div className="text-3xl font-bold text-champagne md:text-4xl">{templates.length}+</div>
-                  <div className="mt-1 text-xs text-white/50 md:text-sm">قالب متاح</div>
+                  <div className="text-3xl font-bold text-champagne md:text-4xl">✨ جاهز خلال دقائق</div>
+                  <div className="mt-1 text-xs text-white/50 md:text-sm">بضغطة واحدة</div>
                 </div>
                 <div className="h-10 w-px bg-white/10" />
                 <div className="text-center">
-                  <div className="text-3xl font-bold text-champagne md:text-4xl">100%</div>
-                  <div className="mt-1 text-xs text-white/50 md:text-sm">قابل للتخصيص</div>
+                  <div className="text-3xl font-bold text-champagne md:text-4xl">🎨 عدّل كل حاجة</div>
+                  <div className="mt-1 text-xs text-white/50 md:text-sm">براحتك في أي وقت</div>
                 </div>
                 <div className="h-10 w-px bg-white/10" />
                 <div className="text-center">
-                  <div className="text-3xl font-bold text-champagne md:text-4xl">مجاني</div>
-                  <div className="mt-1 text-xs text-white/50 md:text-sm">تجربة كاملة</div>
+                  <div className="text-3xl font-bold text-champagne md:text-4xl">🚀 ابدأ مجانًا</div>
+                  <div className="mt-1 text-xs text-white/50 md:text-sm">بدون أي رسوم</div>
                 </div>
               </div>
             </div>
