@@ -49,25 +49,25 @@ export function MarketingNav({ links = defaultLinks, previewMode = false }: Mark
     <>
       <Link
         href="#main-content"
-        className="fixed start-4 top-4 z-50 -translate-y-24 rounded-full bg-white px-4 py-2 text-sm font-semibold text-ink shadow-soft transition-transform focus-visible:translate-y-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+        className="fixed start-4 top-4 z-50 -translate-y-24 rounded-full bg-white px-4 py-2 text-sm font-semibold text-ink shadow-lg transition-transform focus-visible:translate-y-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
       >
         انتقال للمحتوى
       </Link>
-      <header className={`${previewMode ? "sticky -mb-16" : "fixed"} inset-x-0 top-0 z-30 border-b border-white/8 bg-ink/60 backdrop-blur-xl`}>
+      <header className={`${previewMode ? "sticky -mb-16" : "fixed"} inset-x-0 top-0 z-30 border-b border-white/8 bg-ink/85 backdrop-blur-xl`}>
         <nav className="container-page flex h-14 items-center justify-between gap-3 text-white md:h-16">
           <Link
             href="/"
-            className="font-display text-lg font-semibold tracking-normal md:text-xl"
+            className="font-display text-lg font-semibold tracking-tight md:text-xl"
             translate="no"
           >
             FrameID
           </Link>
-          <div className="hidden items-center gap-0.5 text-sm md:flex">
+          <div className="hidden items-center gap-1 text-sm md:flex">
             {otherLinks.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
-                className="rounded-full px-3.5 py-2 text-white/65 transition hover:bg-white/8 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+                className="rounded-full px-4 py-2 text-[0.82rem] font-medium text-white/70 transition-colors duration-150 hover:bg-white/8 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30"
               >
                 {item.label}
               </Link>
@@ -75,7 +75,7 @@ export function MarketingNav({ links = defaultLinks, previewMode = false }: Mark
             {signupLink && (
               <Link
                 href={signupLink.href}
-                className="ms-2 inline-flex min-h-9 items-center justify-center rounded-full bg-white px-4 text-sm font-semibold text-ink transition hover:bg-white/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+                className="ms-3 inline-flex min-h-9 items-center justify-center rounded-full bg-white px-5 text-[0.82rem] font-semibold text-ink transition-all duration-150 hover:bg-white/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
               >
                 {signupLink.label}
               </Link>
@@ -85,7 +85,7 @@ export function MarketingNav({ links = defaultLinks, previewMode = false }: Mark
             {signupLink && (
               <Link
                 href={signupLink.href}
-                className="inline-flex min-h-9 items-center justify-center rounded-full bg-white px-3.5 text-xs font-semibold text-ink transition hover:bg-white/90"
+                className="inline-flex min-h-9 items-center justify-center rounded-full bg-white px-4 text-xs font-semibold text-ink transition-colors duration-150 hover:bg-white/90"
               >
                 {signupLink.label}
               </Link>
@@ -96,7 +96,7 @@ export function MarketingNav({ links = defaultLinks, previewMode = false }: Mark
               aria-controls="marketing-mobile-menu"
               aria-expanded={menuOpen}
               onClick={() => setMenuOpen((open) => !open)}
-              className="inline-flex size-9 items-center justify-center rounded-full border border-white/12 bg-white/5 text-white transition hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+              className="inline-flex size-9 items-center justify-center rounded-full border border-white/15 bg-white/5 text-white transition-colors duration-150 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30"
             >
               {menuOpen ? <X className="size-4" aria-hidden /> : <Menu className="size-4" aria-hidden />}
             </button>
@@ -106,9 +106,9 @@ export function MarketingNav({ links = defaultLinks, previewMode = false }: Mark
           <nav
             id="marketing-mobile-menu"
             aria-label="قائمة الموقع"
-            className="border-t border-white/8 bg-ink/95 px-4 py-3 text-white shadow-soft md:hidden"
+            className="border-t border-white/10 bg-ink/95 px-4 py-4 text-white shadow-xl md:hidden"
           >
-            <div className="container-page grid max-h-[calc(100dvh-4rem)] gap-2 overflow-y-auto px-0 pb-[env(safe-area-inset-bottom)]">
+            <div className="container-page grid max-h-[calc(100dvh-4rem)] gap-2.5 overflow-y-auto px-0 pb-[env(safe-area-inset-bottom)]">
               {links.map((item) => (
                 <Link
                   key={item.href}
@@ -116,8 +116,8 @@ export function MarketingNav({ links = defaultLinks, previewMode = false }: Mark
                   onClick={() => setMenuOpen(false)}
                   className={
                     item.href === "/signup"
-                      ? "inline-flex min-h-11 items-center justify-center rounded-full bg-white px-4 text-sm font-semibold text-ink transition hover:bg-white/90"
-                      : "inline-flex min-h-11 items-center justify-center rounded-full border border-white/10 bg-white/5 px-4 text-sm font-medium text-white/80 transition hover:bg-white/10"
+                      ? "inline-flex min-h-12 items-center justify-center rounded-full bg-white px-5 text-sm font-semibold text-ink transition-colors duration-150 hover:bg-white/90"
+                      : "inline-flex min-h-12 items-center justify-center rounded-full border border-white/12 bg-white/5 px-5 text-sm font-medium text-white/80 transition-colors duration-150 hover:bg-white/10"
                   }
                 >
                   {item.label}

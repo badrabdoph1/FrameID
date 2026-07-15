@@ -130,12 +130,12 @@ function HomeHero({
       {renderImage
         ? renderImage({ sectionId, path: ["heroImage"], value: imageUrl, alt: "صورة القسم الرئيسي", reference: content.heroImage }, image)
         : image}
-      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(7,7,7,.72)_0%,rgba(7,7,7,.52)_40%,rgba(7,7,7,.88)_100%)]" />
-      <div className="container-page relative z-10 flex flex-col items-center py-24 text-center md:py-32">
-        <p className="mb-5 text-xs font-semibold tracking-wide text-champagne uppercase md:text-sm">
+      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(7,7,7,.78)_0%,rgba(7,7,7,.58)_45%,rgba(7,7,7,.92)_100%)]" />
+      <div className="container-page relative z-10 flex flex-col items-center py-28 text-center md:py-36">
+        <p className="mb-6 text-[0.65rem] font-bold tracking-[0.2em] text-champagne/90 uppercase md:text-xs md:tracking-[0.25em]">
           <Text field={{ sectionId, path: ["badge"], value: content.badge }} render={renderText} />
         </p>
-        <h1 className="max-w-[14ch] text-balance text-[clamp(2.2rem,6.5vw,5.5rem)] font-semibold leading-[1.05] tracking-[-0.03em]">
+        <h1 className="max-w-[16ch] text-balance text-[clamp(2.4rem,7vw,6rem)] font-semibold leading-[1.04] tracking-[-0.025em]">
           <Text field={{ sectionId, path: ["headline"], value: content.headline }} render={renderText} />{" "}
           <span className="text-champagne">
             <Text
@@ -144,13 +144,13 @@ function HomeHero({
             />
           </span>
         </h1>
-        <p className="mt-5 max-w-[42ch] text-balance text-sm leading-7 text-white/60 md:mt-6 md:text-lg md:leading-8">
+        <p className="mt-6 max-w-[44ch] text-balance text-[0.9rem] leading-[1.7] text-white/65 md:mt-7 md:text-lg md:leading-[1.75]">
           <Text
             field={{ sectionId, path: ["subheadline"], value: content.subheadline, multiline: true }}
             render={renderText}
           />
         </p>
-        <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row">
+        <div className="mt-10 flex flex-col items-center gap-3 sm:flex-row sm:gap-4">
           <Link
             href={content.cta.href}
             data-journey-source="home-start"
@@ -173,10 +173,10 @@ function HomeHero({
           </Link>
         </div>
         {content.trustPoints.length > 0 ? (
-          <div className="mt-10 flex flex-wrap justify-center gap-x-6 gap-y-2">
+          <div className="mt-12 flex flex-wrap justify-center gap-x-7 gap-y-2.5">
             {content.trustPoints.slice(0, 3).map((point, index) => (
-              <span key={`${point.text}-${index}`} className="inline-flex items-center gap-1.5 text-[0.7rem] font-medium tracking-wide text-white/36 md:text-xs">
-                <Check className="size-3 text-champagne/70" aria-hidden />
+              <span key={`${point.text}-${index}`} className="inline-flex items-center gap-2 text-[0.68rem] font-medium tracking-wide text-white/40 md:text-xs">
+                <Check className="size-3.5 text-champagne/80" aria-hidden />
                 <Text
                   field={{ sectionId, path: ["trustPoints", index, "text"], value: point.text }}
                   render={renderText}
@@ -200,16 +200,16 @@ function HomeTemplates({
   featuredTemplate?: FeaturedTemplatePreview | null;
 }) {
   return (
-    <section data-page-section={sectionId} data-page-section-type="home.templates" className="bg-surface py-14 md:py-20">
-      <div className="container-page flex flex-col items-center gap-8 text-center md:gap-10">
+    <section data-page-section={sectionId} data-page-section-type="home.templates" className="bg-surface py-16 md:py-24">
+      <div className="container-page flex flex-col items-center gap-10 text-center md:gap-12">
         <header className="max-w-lg">
-          <p className="text-xs font-semibold tracking-wide text-champagne-strong uppercase md:text-sm">
+          <p className="text-[0.65rem] font-bold tracking-[0.2em] text-champagne-strong/85 uppercase md:text-xs md:tracking-[0.22em]">
             <Text field={{ sectionId, path: ["badge"], value: content.badge }} render={renderText} />
           </p>
-          <h2 className="mt-3 text-balance text-2xl font-semibold leading-snug text-ink md:text-4xl">
+          <h2 className="mt-4 text-balance text-[1.6rem] font-semibold leading-[1.15] text-ink md:text-[2.5rem] md:leading-[1.1]">
             <Text field={{ sectionId, path: ["title"], value: content.title }} render={renderText} />
           </h2>
-          <p className="mt-3 max-w-[48ch] text-sm leading-7 text-muted-foreground md:text-base">
+          <p className="mt-4 max-w-[50ch] text-sm leading-[1.75] text-muted-foreground md:text-base md:leading-[1.8]">
             <Text
               field={{ sectionId, path: ["subtitle"], value: content.subtitle, multiline: true }}
               render={renderText}
@@ -219,21 +219,21 @@ function HomeTemplates({
         {featuredTemplate ? (
           <Link
             href={featuredTemplate.href}
-            className="group block w-full max-w-xl overflow-hidden rounded-2xl border border-border bg-white text-ink no-underline transition hover:-translate-y-0.5 hover:shadow-xl"
+            className="group block w-full max-w-xl overflow-hidden rounded-2xl border border-border/70 bg-white text-ink no-underline transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl hover:shadow-ink/10"
           >
-            <div className="relative aspect-[4/3] overflow-hidden bg-ink/5 md:aspect-[16/10]">
-              <Image src={featuredTemplate.image} alt="" fill sizes="(max-width: 768px) 100vw, 640px" className="object-cover transition duration-500 group-hover:scale-[1.02]" />
+            <div className="relative aspect-[4/3] overflow-hidden bg-muted/40 md:aspect-[16/10]">
+              <Image src={featuredTemplate.image} alt="" fill sizes="(max-width: 768px) 100vw, 640px" className="object-cover transition-transform duration-700 group-hover:scale-[1.03]" />
             </div>
-            <div className="flex items-center justify-between gap-4 p-4 md:p-5">
+            <div className="flex items-center justify-between gap-4 border-t border-border/50 p-5 md:p-6">
               <div className="text-start">
                 <h3 className="text-base font-semibold md:text-lg">{featuredTemplate.name}</h3>
-                <p className="mt-0.5 text-xs leading-5 text-muted-foreground md:text-sm">{featuredTemplate.description}</p>
+                <p className="mt-1 text-xs leading-6 text-muted-foreground md:text-sm md:leading-6">{featuredTemplate.description}</p>
               </div>
-              <ArrowLeft className="size-4 shrink-0 text-champagne-strong transition group-hover:-translate-x-1" aria-hidden />
+              <ArrowLeft className="size-4 shrink-0 text-champagne-strong transition-transform duration-300 group-hover:-translate-x-1.5" aria-hidden />
             </div>
           </Link>
         ) : (
-          <div className="grid min-h-48 w-full max-w-xl place-items-center rounded-2xl border border-dashed border-border bg-white/60 p-8 text-center text-sm text-muted-foreground">
+          <div className="grid min-h-48 w-full max-w-xl place-items-center rounded-2xl border border-dashed border-border/60 bg-muted/20 p-8 text-center text-sm text-muted-foreground">
             ستظهر هنا معاينة القالب المنشور.
           </div>
         )}
@@ -244,32 +244,35 @@ function HomeTemplates({
 
 function HomeBenefits({ sectionId, content, renderText }: SectionEditingProps & { content: HomeBenefitsContent }) {
   return (
-    <section data-page-section={sectionId} data-page-section-type="home.benefits" className="bg-background py-14 md:py-20">
+    <section data-page-section={sectionId} data-page-section-type="home.benefits" className="border-y border-border/60 bg-background py-16 md:py-24">
       <div className="container-page">
         <header className="mx-auto max-w-lg text-center">
-          <h2 className="text-balance text-2xl font-semibold text-ink md:text-4xl">
+          <h2 className="text-balance text-[1.6rem] font-semibold leading-[1.2] text-ink md:text-[2.5rem] md:leading-[1.15]">
             <Text field={{ sectionId, path: ["title"], value: content.title }} render={renderText} />
           </h2>
-          <p className="mt-3 text-sm leading-7 text-muted-foreground md:text-base">
+          <p className="mt-4 text-sm leading-[1.75] text-muted-foreground md:text-base md:leading-[1.8]">
             <Text field={{ sectionId, path: ["subtitle"], value: content.subtitle, multiline: true }} render={renderText} />
           </p>
         </header>
-        <div className="mx-auto mt-10 grid max-w-3xl gap-0 md:mt-14 md:grid-cols-2 md:gap-x-10">
+        <div className="mx-auto mt-12 max-w-2xl md:mt-16">
           {content.items.map((item, index) => (
-            <article key={`${item.title}-${index}`} className={`border-border py-6 md:py-7 ${index < content.items.length - (content.items.length % 2 === 0 ? 2 : 1) ? "border-b" : ""} md:[&:nth-last-child(-n+2)]:border-b-0 ${index % 2 === 0 ? "md:border-e" : ""}`}>
-              <div className="flex items-start gap-4">
-                <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-ink/[0.04] text-xs font-bold tabular-nums text-champagne-strong md:size-9 md:text-sm">{String(index + 1).padStart(2, "0")}</span>
-                <div className="min-w-0">
-                  <h3 className="text-sm font-semibold text-ink md:text-base">
-                    <Text field={{ sectionId, path: ["items", index, "title"], value: item.title }} render={renderText} />
-                  </h3>
-                  <p className="mt-1 text-xs leading-6 text-muted-foreground md:text-sm md:leading-7">
-                    <Text
-                      field={{ sectionId, path: ["items", index, "body"], value: item.body, multiline: true }}
-                      render={renderText}
-                    />
-                  </p>
-                </div>
+            <article
+              key={`${item.title}-${index}`}
+              className={`flex items-start gap-5 py-7 md:gap-6 md:py-9 ${index > 0 ? "border-t border-border/50" : ""}`}
+            >
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-champagne/12 text-[0.7rem] font-bold tabular-nums text-champagne-strong md:h-10 md:w-10 md:text-xs">
+                {String(index + 1).padStart(2, "0")}
+              </span>
+              <div className="min-w-0 flex-1">
+                <h3 className="text-[0.95rem] font-semibold leading-[1.4] text-ink md:text-base">
+                  <Text field={{ sectionId, path: ["items", index, "title"], value: item.title }} render={renderText} />
+                </h3>
+                <p className="mt-1.5 text-[0.82rem] leading-[1.7] text-muted-foreground md:text-sm md:leading-[1.75]">
+                  <Text
+                    field={{ sectionId, path: ["items", index, "body"], value: item.body, multiline: true }}
+                    render={renderText}
+                  />
+                </p>
               </div>
             </article>
           ))}
@@ -281,17 +284,17 @@ function HomeBenefits({ sectionId, content, renderText }: SectionEditingProps & 
 
 function HomeJourney({ sectionId, content, renderText }: SectionEditingProps & { content: HomeJourneyContent }) {
   return (
-    <section data-page-section={sectionId} data-page-section-type="home.journey" className="bg-surface py-14 md:py-20">
+    <section data-page-section={sectionId} data-page-section-type="home.journey" className="bg-surface py-16 md:py-24">
       <div className="container-page">
         <header className="mx-auto max-w-lg text-center">
-          <h2 className="text-2xl font-semibold text-ink md:text-4xl">
+          <h2 className="text-[1.6rem] font-semibold leading-[1.2] text-ink md:text-[2.5rem] md:leading-[1.15]">
             <Text field={{ sectionId, path: ["title"], value: content.title }} render={renderText} />
           </h2>
-          <p className="mt-3 text-sm leading-7 text-muted-foreground md:text-base">
+          <p className="mt-4 text-sm leading-[1.75] text-muted-foreground md:text-base md:leading-[1.8]">
             <Text field={{ sectionId, path: ["subtitle"], value: content.subtitle, multiline: true }} render={renderText} />
           </p>
         </header>
-        <div className="mx-auto mt-10 grid max-w-3xl gap-3 md:mt-14 md:grid-cols-3 md:gap-4">
+        <div className="mx-auto mt-12 grid max-w-3xl gap-4 md:mt-16 md:grid-cols-3 md:gap-5">
           {content.items.map((item, index) => (
             <Link
               key={`${item.title}-${index}`}
@@ -304,18 +307,25 @@ function HomeJourney({ sectionId, content, renderText }: SectionEditingProps & {
               )}
               className={journeyCardClasses(item.style ?? "secondary")}
             >
-              <span className="grid size-8 shrink-0 place-items-center rounded-full bg-ink text-xs font-bold text-white md:size-9 md:text-sm">{index + 1}</span>
-              <span className="min-w-0 flex-1">
-                <strong className="block text-sm font-semibold md:text-base">
-                  <Text field={{ sectionId, path: ["items", index, "title"], value: item.title }} render={renderText} />
-                </strong>
-                <span className={`mt-1 block text-xs leading-6 ${item.style === "primary" ? "text-white/55" : "text-muted-foreground"} md:text-sm md:leading-7`}>
-                  <Text
-                    field={{ sectionId, path: ["items", index, "body"], value: item.body, multiline: true }}
-                    render={renderText}
-                  />
-                </span>
-              </span>
+              <div className="flex w-full flex-col gap-4 md:gap-5">
+                <div className="flex items-center gap-3.5">
+                  <span className="grid h-9 w-9 place-items-center rounded-full bg-ink text-[0.7rem] font-bold text-white md:h-10 md:w-10 md:text-xs">
+                    {index + 1}
+                  </span>
+                  <span className="h-px flex-1 bg-border/60" />
+                </div>
+                <div className="text-start">
+                  <strong className="block text-[0.95rem] font-semibold leading-[1.4] md:text-base">
+                    <Text field={{ sectionId, path: ["items", index, "title"], value: item.title }} render={renderText} />
+                  </strong>
+                  <span className={`mt-2 block text-[0.8rem] leading-[1.7] ${item.style === "primary" ? "text-white/60" : "text-muted-foreground"} md:text-sm md:leading-[1.75]`}>
+                    <Text
+                      field={{ sectionId, path: ["items", index, "body"], value: item.body, multiline: true }}
+                      render={renderText}
+                    />
+                  </span>
+                </div>
+              </div>
             </Link>
           ))}
         </div>
@@ -326,34 +336,38 @@ function HomeJourney({ sectionId, content, renderText }: SectionEditingProps & {
 
 function HomeFaq({ sectionId, content, renderText }: SectionEditingProps & { content: HomeFaqContent }) {
   return (
-    <section data-page-section={sectionId} data-page-section-type="home.faq" className="bg-ink py-14 text-white md:py-20">
+    <section data-page-section={sectionId} data-page-section-type="home.faq" className="bg-ink py-16 text-white md:py-24">
       <div className="container-page mx-auto max-w-3xl">
-        <header className="mb-8 text-center md:mb-10">
-          <p className="text-xs font-semibold tracking-wide text-champagne uppercase md:text-sm">
+        <header className="mb-10 text-center md:mb-12">
+          <p className="text-[0.65rem] font-bold tracking-[0.2em] text-champagne/90 uppercase md:text-xs md:tracking-[0.22em]">
             <Text field={{ sectionId, path: ["badge"], value: content.badge }} render={renderText} />
           </p>
-          <h2 className="mt-3 text-balance text-2xl font-semibold md:text-4xl">
+          <h2 className="mt-4 text-balance text-[1.6rem] font-semibold leading-[1.2] md:text-[2.5rem] md:leading-[1.15]">
             <Text field={{ sectionId, path: ["title"], value: content.title }} render={renderText} />
           </h2>
         </header>
-        <div className="border-t border-white/10">
+        <div className="border-t border-white/12">
           {content.items.map((item, index) => (
-            <details key={`${item.question}-${index}`} className="group border-b border-white/8 py-0.5">
-              <summary className="flex cursor-pointer list-none items-center justify-between gap-4 py-4 text-start [&::-webkit-details-marker]:hidden md:py-5">
-                <span className="text-sm font-semibold leading-6 md:text-base md:leading-7">
+            <details key={`${item.question}-${index}`} className="group border-b border-white/8">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-4 py-5 text-start [&::-webkit-details-marker]:hidden md:py-6">
+                <span className="text-[0.9rem] font-semibold leading-[1.5] md:text-base md:leading-[1.55]">
                   <Text
                     field={{ sectionId, path: ["items", index, "question"], value: item.question }}
                     render={renderText}
                   />
                 </span>
-                <span className="text-lg text-champagne/70 transition group-open:rotate-45" aria-hidden>+</span>
+                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white/8 text-lg text-champagne/80 transition-all duration-200 group-open:rotate-45 group-open:bg-champagne/20" aria-hidden>
+                  +
+                </span>
               </summary>
-              <p className="max-w-2xl pb-4 text-xs leading-6 text-white/50 md:pb-5 md:text-sm md:leading-7">
-                <Text
-                  field={{ sectionId, path: ["items", index, "answer"], value: item.answer, multiline: true }}
-                  render={renderText}
-                />
-              </p>
+              <div className="overflow-hidden pb-5 transition-all duration-200 md:pb-6">
+                <p className="text-[0.82rem] leading-[1.75] text-white/55 md:text-sm md:leading-[1.8]">
+                  <Text
+                    field={{ sectionId, path: ["items", index, "answer"], value: item.answer, multiline: true }}
+                    render={renderText}
+                  />
+                </p>
+              </div>
             </details>
           ))}
         </div>
@@ -364,14 +378,14 @@ function HomeFaq({ sectionId, content, renderText }: SectionEditingProps & { con
 
 function HomeFinalCta({ sectionId, content, renderText }: SectionEditingProps & { content: HomeFinalCtaContent }) {
   return (
-    <section data-page-section={sectionId} data-page-section-type="home.final-cta" className="bg-surface py-6 md:py-10">
+    <section data-page-section={sectionId} data-page-section-type="home.final-cta" className="bg-surface py-8 md:py-12">
       <div className="container-page">
-        <div className="flex flex-col items-center gap-5 rounded-2xl bg-ink px-6 py-7 text-center text-white md:flex-row md:justify-between md:px-10 md:py-9 md:text-start">
+        <div className="flex flex-col items-center gap-6 rounded-2xl bg-ink px-7 py-8 text-center text-white md:flex-row md:justify-between md:px-12 md:py-10 md:text-start">
           <div className="max-w-xl">
-            <h2 className="text-xl font-semibold md:text-3xl">
+            <h2 className="text-[1.3rem] font-semibold leading-[1.25] md:text-2xl md:leading-[1.2]">
               <Text field={{ sectionId, path: ["title"], value: content.title }} render={renderText} />
             </h2>
-            <p className="mt-2 text-xs leading-6 text-white/50 md:text-sm md:leading-7">
+            <p className="mt-3 text-[0.82rem] leading-[1.7] text-white/55 md:text-sm md:leading-[1.75]">
               <Text
                 field={{ sectionId, path: ["subtext"], value: content.subtext, multiline: true }}
                 render={renderText}
@@ -416,17 +430,17 @@ function buttonEditingAttributes(
 }
 
 function buttonClasses(style: "primary" | "secondary" | "quiet"): string {
-  const base = "inline-flex min-h-11 items-center justify-center gap-2 rounded-full px-6 text-sm font-semibold no-underline transition hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white";
-  if (style === "secondary") return `${base} border border-white/20 bg-white/8 text-white hover:bg-white/14`;
-  if (style === "quiet") return `${base} px-3 text-white/65 hover:text-white`;
-  return `${base} bg-champagne text-ink hover:bg-champagne/90`;
+  const base = "inline-flex min-h-12 items-center justify-center gap-2.5 rounded-full px-7 text-[0.85rem] font-semibold no-underline transition-all duration-200 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50";
+  if (style === "secondary") return `${base} border border-white/25 bg-white/10 text-white backdrop-blur-sm hover:bg-white/18`;
+  if (style === "quiet") return `${base} px-4 text-white/70 hover:text-white`;
+  return `${base} bg-champagne text-ink shadow-lg shadow-champagne/20 hover:bg-champagne/90 hover:shadow-xl hover:shadow-champagne/30`;
 }
 
 function journeyCardClasses(style: "primary" | "secondary" | "quiet"): string {
-  const base = "group flex min-h-[7.5rem] flex-col items-start gap-3 rounded-2xl border p-4 no-underline transition md:min-h-[9rem] md:p-5";
-  if (style === "primary") return `${base} border-ink bg-ink text-white hover:border-champagne-strong/50`;
-  if (style === "quiet") return `${base} border-border bg-transparent text-ink hover:border-champagne-strong/30 hover:bg-white`;
-  return `${base} border-border bg-white text-ink hover:border-champagne-strong/30`;
+  const base = "group flex min-h-[10rem] flex-col justify-between rounded-2xl border p-5 no-underline transition-all duration-200 hover:-translate-y-0.5 md:min-h-[11rem] md:p-6";
+  if (style === "primary") return `${base} border-ink bg-ink text-white hover:shadow-lg hover:shadow-ink/10`;
+  if (style === "quiet") return `${base} border-border/60 bg-transparent text-ink hover:border-champagne/40 hover:bg-champagne/5`;
+  return `${base} border-border/60 bg-white text-ink hover:border-champagne/40 hover:shadow-md hover:shadow-ink/5`;
 }
 
 function ButtonIcon({ icon }: { icon: "arrow" | "external" | "none" }) {
