@@ -17,6 +17,7 @@ import {
   Mail,
   MessageSquareText,
   Palette,
+  PauseCircle,
   Search,
   Settings,
   Share2,
@@ -90,6 +91,7 @@ export const adminRoutes: AdminRouteDefinition[] = [
   defineRoute({ id: "payments", href: "/admin/payments", labelAr: "مراجعة المدفوعات", descriptionAr: "قبول أو رفض إثباتات الدفع", sectionId: "billing", visibility: "daily", keywords: ["دفع", "إثبات", "مراجعة"], icon: CreditCard, parentHref: "/admin/billing" }),
   defineRoute({ id: "subscriptions", href: "/admin/subscriptions", labelAr: "الاشتراكات", descriptionAr: "التجارب والاشتراكات والتجديدات", sectionId: "billing", visibility: "daily", keywords: ["اشتراك", "تجربة", "تجديد"], icon: BadgeCheck, parentHref: "/admin/billing" }),
   defineRoute({ id: "plans", href: "/admin/plans", labelAr: "الباقات", descriptionAr: "أسعار ومزايا الباقات", sectionId: "billing", visibility: "daily", keywords: ["باقات", "سعر", "خطة"], icon: BadgeCheck, parentHref: "/admin/billing" }),
+  defineRoute({ id: "deactivation-control", href: "/admin/deactivation-control", labelAr: "التحكم في التعطيل", descriptionAr: "تعليق التعطيل التلقائي للحسابات التجريبية والمدفوعة", sectionId: "billing", visibility: "daily", keywords: ["تعطيل", "تعليق", "إيقاف", "حسابات"], icon: PauseCircle, parentHref: "/admin/billing" }),
   defineRoute({ id: "payment-settings", href: "/admin/settings/payment", labelAr: "وسائل الدفع", descriptionAr: "الحسابات التي يستقبل عليها الدفع", sectionId: "billing", visibility: "daily", keywords: ["حساب", "محفظة", "تحويل"], icon: Settings, parentHref: "/admin/settings" }),
 
   defineRoute({ id: "content", href: "/admin/content", labelAr: "مركز المحتوى", descriptionAr: "الوصول لكل أدوات المحتوى من مكان واحد", sectionId: "content", visibility: "daily", keywords: ["محتوى", "تحرير", "نشر"], icon: Palette, parentHref: "/admin" }),
@@ -139,7 +141,7 @@ function routeToNavItem(routeId: string): AdminNavItem {
 const sectionDefinitions: Array<Omit<AdminSection, "links"> & { routeIds: string[] }> = [
   { id: "command", title: "القيادة", shortDescription: "ما يحتاج تدخلك الآن", description: "أولويات اليوم والبحث الشامل", accent: "gold", badge: "اليوم", icon: Home, routeIds: ["admin-home", "admin-search"] },
   { id: "customers", title: "العملاء", shortDescription: "العملاء والمواقع", description: "العملاء ومواقعهم وحالة حساباتهم", accent: "green", icon: Users, routeIds: ["customers", "customer-requests", "sites"] },
-  { id: "billing", title: "المالية", shortDescription: "المدفوعات والاشتراكات", description: "التحصيل والتجديد والباقات ووسائل الدفع", accent: "blue", icon: CreditCard, routeIds: ["billing", "payments", "subscriptions", "plans", "payment-settings"] },
+  { id: "billing", title: "المالية", shortDescription: "المدفوعات والاشتراكات", description: "التحصيل والتجديد والباقات ووسائل الدفع", accent: "blue", icon: CreditCard, routeIds: ["billing", "payments", "subscriptions", "deactivation-control", "plans", "payment-settings"] },
   { id: "content", title: "المحتوى", shortDescription: "الصفحات والقوالب والوسائط", description: "كل أدوات تحرير ونشر المحتوى", accent: "rose", icon: Palette, routeIds: ["content", "templates", "onboarding-cards", "themes", "media", "social-preview"] },
   { id: "communication", title: "التواصل", shortDescription: "الرسائل والدعم", description: "تجربة العميل والإشعارات والدعم والبريد", accent: "violet", icon: MessageSquareText, routeIds: ["communications", "messages", "notifications", "support", "email"] },
   { id: "system", title: "النظام", shortDescription: "الصحة والتشغيل والطوارئ", description: "الأخطاء والنسخ والإعدادات والأدوات المتقدمة", accent: "slate", icon: ShieldCheck, routeIds: ["system", "operations", "errors", "backups", "settings"] },

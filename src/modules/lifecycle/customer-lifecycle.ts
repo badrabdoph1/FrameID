@@ -1,6 +1,8 @@
 import type { Prisma, PrismaClient } from "@prisma/client";
 
 export const LIFECYCLE_TIMER_SETTINGS_KEY = "platform.lifecycle.timers";
+const DEACTIVATION_PAUSE_TRIAL_KEY = "deactivation.pause.trial";
+const DEACTIVATION_PAUSE_PAID_KEY = "deactivation.pause.paid";
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 type LifecyclePrismaClient = PrismaClient;
@@ -156,30 +158,160 @@ async function notifyLifecycleExpired(prisma: LifecyclePrismaClient, tenant: { i
   await prisma.notificationLog.create({ data: { type: "danger", title, body, category: "lifecycle", tenantId: tenant.id } }).catch(() => undefined);
 }
 
+export async function isDeactivationPaused(prisma: LifecyclePrismaClient, type: "trial" | "paid"): Promise<boolean> {
+  const key = type === "trial" ? DEACTIVATION_PAUSE_TRIAL_KEY : DEACTIVATION_PAUSE_PAID_KEY;
+  const flag = await prisma.featureFlag.findFirst({
+    where: { key, scope: "PLATFORM", tenantId: null, siteId: null },
+    select: { enabled: true },
+  });
+  return flag?.enabled ?? false;
+}
+
+export async function setDeactivationPause(prisma: LifecyclePrismaClient, type: "trial" | "paid", paused: boolean, metadata?: Record<string, unknown>) {
+  const key = type === "trial" ? DEACTIVATION_PAUSE_TRIAL_KEY : DEACTIVATION_PAUSE_PAID_KEY;
+  const current = await prisma.featureFlag.findFirst({
+    where: { key, scope: "PLATFORM", tenantId: null, siteId: null },
+    select: { id: true },
+  });
+
+  if (current) {
+    await prisma.featureFlag.update({
+      where: { id: current.id },
+      data: { enabled: paused, value: metadata !== undefined ? (metadata as Prisma.InputJsonValue) : undefined },
+    });
+  } else {
+    await prisma.featureFlag.create({
+      data: {
+        key,
+        scope: "PLATFORM",
+        tenantId: null,
+        siteId: null,
+        enabled: paused,
+        value: metadata !== undefined ? (metadata as Prisma.InputJsonValue) : undefined,
+      },
+    });
+  }
+}
+
 export async function syncCustomerLifecycle(prisma: LifecyclePrismaClient, options: { tenantId?: string; now?: Date; limit?: number } = {}) {
   const now = options.now ?? new Date();
   const limit = options.limit ?? 200;
   const tenantScope = options.tenantId ? { id: options.tenantId } : {};
 
-  const expiredTrials = await prisma.tenant.findMany({
-    where: { ...tenantScope, deletedAt: null, status: "TRIAL", trialEndsAt: { lte: now } },
-    take: limit,
-    select: { id: true, ownerUserId: true, trialEndsAt: true },
-  });
+  const trialPaused = await isDeactivationPaused(prisma, "trial");
+  const paidPaused = await isDeactivationPaused(prisma, "paid");
 
-  for (const tenant of expiredTrials) {
-    await prisma.tenant.update({ where: { id: tenant.id }, data: { status: "TRIAL_EXPIRED", gracePeriodEndsAt: null } });
-    await prisma.subscription.updateMany({ where: { tenantId: tenant.id, status: "TRIAL" }, data: { status: "EXPIRED", currentPeriodEnd: tenant.trialEndsAt, expiresAt: tenant.trialEndsAt } });
-    await prisma.site.updateMany({ where: { tenantId: tenant.id, deletedAt: null }, data: { status: "EXPIRED", isPublished: false } });
-    await notifyLifecycleExpired(prisma, tenant, "trial");
-    await prisma.auditLog.create({ data: { actorId: null, tenantId: tenant.id, action: "TRIAL_AUTO_EXPIRED", entityType: "Tenant", entityId: tenant.id, metadata: { expiredAt: now.toISOString(), trialEndsAt: tenant.trialEndsAt.toISOString() } } }).catch(() => undefined);
+  let expiredTrialsCount = 0;
+  let expiredSubscriptionsCount = 0;
+
+  if (!trialPaused) {
+    const expiredTrials = await prisma.tenant.findMany({
+      where: { ...tenantScope, deletedAt: null, status: "TRIAL", trialEndsAt: { lte: now } },
+      take: limit,
+      select: { id: true, ownerUserId: true, trialEndsAt: true },
+    });
+
+    for (const tenant of expiredTrials) {
+      await prisma.tenant.update({ where: { id: tenant.id }, data: { status: "TRIAL_EXPIRED", gracePeriodEndsAt: null } });
+      await prisma.subscription.updateMany({ where: { tenantId: tenant.id, status: "TRIAL" }, data: { status: "EXPIRED", currentPeriodEnd: tenant.trialEndsAt, expiresAt: tenant.trialEndsAt } });
+      await prisma.site.updateMany({ where: { tenantId: tenant.id, deletedAt: null }, data: { status: "EXPIRED", isPublished: false } });
+      await notifyLifecycleExpired(prisma, tenant, "trial");
+      await prisma.auditLog.create({ data: { actorId: null, tenantId: tenant.id, action: "TRIAL_AUTO_EXPIRED", entityType: "Tenant", entityId: tenant.id, metadata: { expiredAt: now.toISOString(), trialEndsAt: tenant.trialEndsAt.toISOString() } } }).catch(() => undefined);
+    }
+    expiredTrialsCount = expiredTrials.length;
+  }
+
+  if (!paidPaused) {
+    const expiredSubscriptions = await prisma.subscription.findMany({
+      where: {
+        status: "ACTIVE",
+        OR: [{ currentPeriodEnd: { lte: now } }, { expiresAt: { lte: now } }],
+        tenant: { ...tenantScope, deletedAt: null },
+      },
+      take: limit,
+      select: { id: true, tenantId: true, currentPeriodEnd: true, expiresAt: true, tenant: { select: { id: true, ownerUserId: true } } },
+    });
+
+    for (const subscription of expiredSubscriptions) {
+      await prisma.subscription.update({ where: { id: subscription.id }, data: { status: "EXPIRED" } });
+      await prisma.tenant.update({ where: { id: subscription.tenantId }, data: { status: "EXPIRED", gracePeriodEndsAt: null } });
+      await prisma.site.updateMany({ where: { tenantId: subscription.tenantId, deletedAt: null }, data: { status: "EXPIRED", isPublished: false } });
+      await notifyLifecycleExpired(prisma, subscription.tenant, "subscription");
+      await prisma.auditLog.create({ data: { actorId: null, tenantId: subscription.tenantId, action: "SUBSCRIPTION_AUTO_EXPIRED", entityType: "Subscription", entityId: subscription.id, metadata: { expiredAt: now.toISOString(), endAt: (subscription.currentPeriodEnd ?? subscription.expiresAt)?.toISOString() } } }).catch(() => undefined);
+    }
+    expiredSubscriptionsCount = expiredSubscriptions.length;
+  }
+
+  return { expiredTrials: expiredTrialsCount, expiredSubscriptions: expiredSubscriptionsCount };
+}
+
+export async function getDeactivationPauseStats(prisma: LifecyclePrismaClient) {
+  const now = new Date();
+  const [trialPaused, paidPaused] = await Promise.all([
+    isDeactivationPaused(prisma, "trial"),
+    isDeactivationPaused(prisma, "paid"),
+  ]);
+
+  const [
+    totalTrial,
+    activeTrial,
+    expiredTrialStillActive,
+    totalPaid,
+    activePaid,
+    expiredPaidStillActive,
+  ] = await Promise.all([
+    prisma.tenant.count({ where: { deletedAt: null, status: "TRIAL" } }),
+    prisma.tenant.count({ where: { deletedAt: null, status: "TRIAL", trialEndsAt: { gt: now } } }),
+    prisma.tenant.count({ where: { deletedAt: null, status: "TRIAL", trialEndsAt: { lte: now } } }),
+    prisma.tenant.count({ where: { deletedAt: null, status: "ACTIVE" } }),
+    prisma.tenant.count({ where: { deletedAt: null, status: "ACTIVE", subscriptions: { some: { status: "ACTIVE", currentPeriodEnd: { gt: now } } } } }),
+    prisma.tenant.count({ where: { deletedAt: null, status: "ACTIVE", subscriptions: { some: { status: "ACTIVE", OR: [{ currentPeriodEnd: { lte: now } }, { expiresAt: { lte: now } }] } } } }),
+  ]);
+
+  return {
+    trial: {
+      paused: trialPaused,
+      total: totalTrial,
+      active: activeTrial,
+      expiredButActive: trialPaused ? expiredTrialStillActive : 0,
+      wouldDeactivate: trialPaused ? expiredTrialStillActive : 0,
+    },
+    paid: {
+      paused: paidPaused,
+      total: totalPaid,
+      active: activePaid,
+      expiredButActive: paidPaused ? expiredPaidStillActive : 0,
+      wouldDeactivate: paidPaused ? expiredPaidStillActive : 0,
+    },
+  };
+}
+
+export async function runCatchUpDeactivation(prisma: LifecyclePrismaClient, type: "trial" | "paid", limit = 500) {
+  const now = new Date();
+
+  if (type === "trial") {
+    const expiredTrials = await prisma.tenant.findMany({
+      where: { deletedAt: null, status: "TRIAL", trialEndsAt: { lte: now } },
+      take: limit,
+      select: { id: true, ownerUserId: true, trialEndsAt: true },
+    });
+
+    for (const tenant of expiredTrials) {
+      await prisma.tenant.update({ where: { id: tenant.id }, data: { status: "TRIAL_EXPIRED", gracePeriodEndsAt: null } });
+      await prisma.subscription.updateMany({ where: { tenantId: tenant.id, status: "TRIAL" }, data: { status: "EXPIRED", currentPeriodEnd: tenant.trialEndsAt, expiresAt: tenant.trialEndsAt } });
+      await prisma.site.updateMany({ where: { tenantId: tenant.id, deletedAt: null }, data: { status: "EXPIRED", isPublished: false } });
+      await notifyLifecycleExpired(prisma, tenant, "trial");
+      await prisma.auditLog.create({ data: { actorId: null, tenantId: tenant.id, action: "TRIAL_CATCH_UP_EXPIRED", entityType: "Tenant", entityId: tenant.id, metadata: { expiredAt: now.toISOString(), trialEndsAt: tenant.trialEndsAt.toISOString() } } }).catch(() => undefined);
+    }
+
+    return { count: expiredTrials.length };
   }
 
   const expiredSubscriptions = await prisma.subscription.findMany({
     where: {
       status: "ACTIVE",
       OR: [{ currentPeriodEnd: { lte: now } }, { expiresAt: { lte: now } }],
-      tenant: { ...tenantScope, deletedAt: null },
+      tenant: { deletedAt: null },
     },
     take: limit,
     select: { id: true, tenantId: true, currentPeriodEnd: true, expiresAt: true, tenant: { select: { id: true, ownerUserId: true } } },
@@ -190,10 +322,115 @@ export async function syncCustomerLifecycle(prisma: LifecyclePrismaClient, optio
     await prisma.tenant.update({ where: { id: subscription.tenantId }, data: { status: "EXPIRED", gracePeriodEndsAt: null } });
     await prisma.site.updateMany({ where: { tenantId: subscription.tenantId, deletedAt: null }, data: { status: "EXPIRED", isPublished: false } });
     await notifyLifecycleExpired(prisma, subscription.tenant, "subscription");
-    await prisma.auditLog.create({ data: { actorId: null, tenantId: subscription.tenantId, action: "SUBSCRIPTION_AUTO_EXPIRED", entityType: "Subscription", entityId: subscription.id, metadata: { expiredAt: now.toISOString(), endAt: (subscription.currentPeriodEnd ?? subscription.expiresAt)?.toISOString() } } }).catch(() => undefined);
+    await prisma.auditLog.create({ data: { actorId: null, tenantId: subscription.tenantId, action: "SUBSCRIPTION_CATCH_UP_EXPIRED", entityType: "Subscription", entityId: subscription.id, metadata: { expiredAt: now.toISOString(), endAt: (subscription.currentPeriodEnd ?? subscription.expiresAt)?.toISOString() } } }).catch(() => undefined);
   }
 
-  return { expiredTrials: expiredTrials.length, expiredSubscriptions: expiredSubscriptions.length };
+  return { count: expiredSubscriptions.length };
+}
+
+export async function getDeactivationPausedAccounts(
+  prisma: LifecyclePrismaClient,
+  type: "trial" | "paid",
+  options: { search?: string; sortBy?: string; sortOrder?: "asc" | "desc"; page?: number; pageSize?: number; filter?: "all" | "expired-active" } = {},
+) {
+  const now = new Date();
+  const page = options.page ?? 1;
+  const pageSize = options.pageSize ?? 20;
+  const skip = (page - 1) * pageSize;
+  const sortOrder = options.sortOrder ?? "asc";
+  const accountFilter = options.filter ?? "expired-active";
+
+  const baseWhere: Prisma.TenantWhereInput = type === "trial"
+    ? {
+        deletedAt: null,
+        status: "TRIAL",
+        ...(accountFilter === "expired-active" ? { trialEndsAt: { lte: now } } : {}),
+      }
+    : {
+        deletedAt: null,
+        status: "ACTIVE",
+        ...(accountFilter === "expired-active"
+          ? { subscriptions: { some: { status: "ACTIVE", OR: [{ currentPeriodEnd: { lte: now } }, { expiresAt: { lte: now } }] } } }
+          : {}),
+      };
+
+  const searchFilter = options.search?.trim();
+  const where: Prisma.TenantWhereInput = searchFilter
+    ? {
+        AND: [
+          baseWhere,
+          {
+            OR: [
+              { displayName: { contains: searchFilter, mode: "insensitive" } },
+              { owner: { name: { contains: searchFilter, mode: "insensitive" } } },
+              { owner: { email: { contains: searchFilter, mode: "insensitive" } } },
+            ],
+          },
+        ],
+      }
+    : baseWhere;
+
+  const [accounts, total] = await Promise.all([
+    prisma.tenant.findMany({
+      where,
+      skip,
+      take: pageSize,
+      orderBy: options.sortBy === "displayName"
+        ? { displayName: sortOrder }
+        : options.sortBy === "email"
+          ? { owner: { email: sortOrder } }
+          : options.sortBy === "trialEndsAt" || options.sortBy === "endsAt"
+            ? { trialEndsAt: sortOrder }
+            : options.sortBy === "daysOverdue"
+              ? { trialEndsAt: sortOrder }
+              : { createdAt: "desc" },
+      select: {
+        id: true,
+        displayName: true,
+        trialEndsAt: true,
+        createdAt: true,
+        updatedAt: true,
+        status: true,
+        owner: {
+          select: { id: true, name: true, email: true },
+        },
+        sites: {
+          where: { deletedAt: null },
+          select: { id: true, title: true, slug: true },
+          take: 1,
+          orderBy: { createdAt: "asc" },
+        },
+        subscriptions: type === "paid" ? {
+          where: { status: "ACTIVE", OR: [{ currentPeriodEnd: { lte: now } }, { expiresAt: { lte: now } }] },
+          select: { id: true, currentPeriodEnd: true, expiresAt: true },
+          take: 1,
+          orderBy: { createdAt: "desc" },
+        } : undefined,
+      },
+    }),
+    prisma.tenant.count({ where }),
+  ]);
+
+  const mapped = accounts.map((a) => {
+    const endDate = type === "trial"
+      ? a.trialEndsAt
+      : (a.subscriptions?.[0]?.currentPeriodEnd ?? a.subscriptions?.[0]?.expiresAt ?? null);
+    const daysOverdue = endDate ? Math.floor((now.getTime() - endDate.getTime()) / DAY_MS) : 0;
+    return {
+      id: a.id,
+      ownerName: a.owner?.name ?? "—",
+      siteName: a.sites?.[0]?.title ?? "—",
+      siteSlug: a.sites?.[0]?.slug ?? null,
+      email: a.owner?.email ?? "—",
+      createdAt: a.createdAt.toISOString(),
+      endDate: endDate?.toISOString() ?? null,
+      daysOverdue,
+      status: a.status,
+      reason: type === "trial" ? "تعليق تعطيل الحسابات التجريبية" : "تعليق تعطيل الحسابات المدفوعة",
+    };
+  });
+
+  return { accounts: mapped, total, page, pageSize };
 }
 
 export async function applyTrialTimerToTenants(prisma: LifecyclePrismaClient, tenantIds: string[], days: number | "keep") {

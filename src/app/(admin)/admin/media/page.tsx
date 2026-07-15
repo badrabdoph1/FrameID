@@ -18,36 +18,46 @@ function formatSize(bytes: number) {
 export default async function AdminMediaPage() {
   await requireAdminPermission("media", "view");
 
-  const [assets, templates, paymentSettings] = await Promise.all([
-    prisma.mediaAsset.findMany({
-      where: { deletedAt: null },
-      orderBy: { createdAt: "desc" },
-      take: 200,
-      select: {
-        id: true,
-        url: true,
-        storageKey: true,
-        kind: true,
-        mimeType: true,
-        sizeBytes: true,
-        width: true,
-        height: true,
-        alt: true,
-        createdAt: true,
-        tenant: {
-          select: { id: true, displayName: true },
-        },
-      },
-    }),
-    prisma.template.findMany({
-      where: { deletedAt: null },
-      select: { id: true, name: true, previewData: true },
-    }),
-    prisma.paymentSettings.findMany({
-      where: { qrCodeAssetId: { not: null } },
-      select: { id: true, paymentMethod: true, qrCodeAssetId: true },
-    }),
-  ]);
+  let assets: any[] = [];
+  let templates: any[] = [];
+  let paymentSettings: any[] = [];
+
+  if (process.env.DATABASE_URL) {
+    try {
+      [assets, templates, paymentSettings] = await Promise.all([
+        prisma.mediaAsset.findMany({
+          where: { deletedAt: null },
+          orderBy: { createdAt: "desc" },
+          take: 200,
+          select: {
+            id: true,
+            url: true,
+            storageKey: true,
+            kind: true,
+            mimeType: true,
+            sizeBytes: true,
+            width: true,
+            height: true,
+            alt: true,
+            createdAt: true,
+            tenant: {
+              select: { id: true, displayName: true },
+            },
+          },
+        }),
+        prisma.template.findMany({
+          where: { deletedAt: null },
+          select: { id: true, name: true, previewData: true },
+        }),
+        prisma.paymentSettings.findMany({
+          where: { qrCodeAssetId: { not: null } },
+          select: { id: true, paymentMethod: true, qrCodeAssetId: true },
+        }),
+      ]);
+    } catch {
+      // Database unavailable
+    }
+  }
 
   const templateCoverUrls = new Set<string>();
   const templatePreviewUrls = new Set<string>();

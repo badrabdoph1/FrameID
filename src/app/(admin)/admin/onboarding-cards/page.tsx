@@ -21,16 +21,24 @@ export default async function AdminOnboardingCardsPage({ searchParams }: Props) 
   const params = await searchParams;
 
   const flagKeys = allCards.map((card) => `onboarding-card:${card.id}`);
-  const flags = await prisma.featureFlag.findMany({
-    where: {
-      key: { in: flagKeys },
-      scope: "PLATFORM",
-      tenantId: null,
-      siteId: null,
-      enabled: true,
-    },
-    select: { key: true, value: true },
-  });
+
+  let flags: any[] = [];
+  if (process.env.DATABASE_URL) {
+    try {
+      flags = await prisma.featureFlag.findMany({
+        where: {
+          key: { in: flagKeys },
+          scope: "PLATFORM",
+          tenantId: null,
+          siteId: null,
+          enabled: true,
+        },
+        select: { key: true, value: true },
+      });
+    } catch {
+      // Database unavailable
+    }
+  }
 
   const overrides = new Map<string, { title: string; description: string }>();
   for (const flag of flags) {
