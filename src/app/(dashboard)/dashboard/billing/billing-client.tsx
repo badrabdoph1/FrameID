@@ -329,7 +329,7 @@ export function BillingClient({ session, plans, paymentMethods, paymentRequest, 
   }
 
   return (
-    <main className="mx-auto max-w-4xl space-y-4">
+    <main className="mx-auto max-w-4xl space-y-4" data-smart-tip="billing-main">
       <style>{`
         .billing-step-motion { animation: billingStepIn 260ms cubic-bezier(0.22, 1, 0.36, 1) both; }
         @keyframes billingStepIn {
