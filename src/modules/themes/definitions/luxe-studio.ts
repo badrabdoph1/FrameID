@@ -28,7 +28,7 @@ export const luxeStudioTemplate: TemplateSummary = {
         isVisible: true,
         headline: defaults.photographerName,
         subheadline: defaults.description,
-        imageUrl: "https://images.unsplash.com/photo-1606293946076-5a2f8f8f8f8f?auto=format&fit=crop&w=1800&q=85",
+        imageUrl: "https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1800&q=85",
         overlay: "medium",
         position: "center",
         height: "screen",
@@ -89,7 +89,7 @@ export const luxeStudioTemplate: TemplateSummary = {
           "تعديل احترافي للصور",
           "تصوير Reels قصير للسوشيال ميديا"
         ],
-        imageUrl: "https://images.unsplash.com/photo-1606293946076-5a2f8f8f8f8f?auto=format&fit=crop&w=900&q=85",
+        imageUrl: "https://images.unsplash.com/photo-1511285560929-80b456fea0bc?auto=format&fit=crop&w=900&q=85",
         isHighlighted: false,
         sortOrder: 0
       },
@@ -106,7 +106,7 @@ export const luxeStudioTemplate: TemplateSummary = {
           "تصوير Reels احترافي",
           "جلسة إضافية داخلية"
         ],
-        imageUrl: "https://images.unsplash.com/photo-1606800052026-8f8f8f8f?auto=format&fit=crop&w=900&q=85",
+        imageUrl: "https://images.unsplash.com/photo-1465495976277-4387d4b0b4c6?auto=format&fit=crop&w=900&q=85",
         isHighlighted: true,
         sortOrder: 1
       },
@@ -125,7 +125,7 @@ export const luxeStudioTemplate: TemplateSummary = {
           "جلسة إضافية داخلية",
           "تصوير جوي بالدرور"
         ],
-        imageUrl: "https://images.unsplash.com/photo-1606900052026-8f8f8f8f?auto=format&fit=crop&w=900&q=85",
+        imageUrl: "https://images.unsplash.com/photo-1474552226712-ac0f0961a954?auto=format&fit=crop&w=900&q=85",
         isHighlighted: false,
         sortOrder: 2
       }
@@ -177,7 +177,7 @@ export const luxeStudioTemplate: TemplateSummary = {
       images: [
         {
           id: "luxe-gallery-1",
-          url: "https://images.unsplash.com/photo-1606293946076-5a2f8f8f8f8f?auto=format&fit=crop&w=1200&q=85",
+          url: "https://images.unsplash.com/photo-1511285560929-80b456fea0bc?auto=format&fit=crop&w=1200&q=85",
           alt: "عروسان في حفل فاخر",
           caption: "لحظة ساحرة",
           sortOrder: 0,
@@ -185,7 +185,7 @@ export const luxeStudioTemplate: TemplateSummary = {
         },
         {
           id: "luxe-gallery-2",
-          url: "https://images.unsplash.com/photo-1606800052026-8f8f8f8f?auto=format&fit=crop&w=1200&q=85",
+          url: "https://images.unsplash.com/photo-1465495976277-4387d4b0b4c6?auto=format&fit=crop&w=1200&q=85",
           alt: "تفاصيل حفل أنيقة",
           caption: "تفاصيل لا تُنسى",
           sortOrder: 1,
@@ -193,7 +193,7 @@ export const luxeStudioTemplate: TemplateSummary = {
         },
         {
           id: "luxe-gallery-3",
-          url: "https://images.unsplash.com/photo-1606900052026-8f8f8f8f?auto=format&fit=crop&w=1200&q=85",
+          url: "https://images.unsplash.com/photo-1529636798458-92182e662485?auto=format&fit=crop&w=1200&q=85",
           alt: "إضاءة احترافية",
           caption: "فن الإضاءة",
           sortOrder: 2,

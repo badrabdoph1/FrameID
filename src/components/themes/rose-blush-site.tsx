@@ -239,20 +239,18 @@ function RoseBlushSiteInner({
               const galleryFallback = site.gallery.length ? site.gallery[index % site.gallery.length]?.url : null;
               const imageUrl = item.imageUrl ?? galleryFallback;
               return (
-                <article key={item.id} className={cn("group relative flex min-h-full flex-col overflow-hidden rounded-[1.8rem] border bg-white shadow-[0_20px_80px_rgba(44,24,16,0.07)] transition duration-500 hover:-translate-y-1", selected ? "border-[#d48a9e] shadow-[0_26px_90px_rgba(212,138,158,0.22)]" : item.isHighlighted ? "border-[#d48a9e]/45" : "border-[#eaddd4]/75")}>
+                <article key={item.id} className={cn("group relative flex min-h-full flex-col overflow-visible rounded-[1.8rem] border bg-white shadow-[0_20px_80px_rgba(44,24,16,0.07)] transition duration-500 hover:-translate-y-1", selected ? "border-[#d48a9e] shadow-[0_26px_90px_rgba(212,138,158,0.22)]" : item.isHighlighted ? "border-[#d48a9e]/45" : "border-[#eaddd4]/75")}>
+                  {item.isHighlighted ? <div className="absolute left-1/2 top-0 z-10 -translate-x-1/2 -translate-y-1/2"><span className="inline-flex items-center gap-1 rounded-full border border-[#d48a9e]/30 bg-[#d48a9e] px-3 py-1 text-xs font-black text-white shadow-lg"><Star className="size-3 fill-current" />الأكثر طلباً</span></div> : null}
                   {imageUrl ? (
-                    <div className="relative h-48 overflow-hidden md:h-60">
+                    <div className="relative h-48 overflow-hidden rounded-t-[1.8rem] md:h-60">
                       <Image src={imageUrl} alt={item.name} fill sizes="(min-width: 1024px) 31vw, 92vw" className="object-cover transition duration-700 group-hover:scale-105" />
                       <div className="absolute inset-0 bg-gradient-to-t from-white via-white/20 to-transparent" />
                     </div>
                   ) : null}
-                  <div className="flex flex-1 flex-col p-5 md:p-6">
+                  <div className="flex flex-1 flex-col p-5 pt-8 md:p-6">
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex-1">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <h3 className="font-display text-2xl font-bold tracking-wide text-[#2c1810]">{item.name}</h3>
-                          {item.isHighlighted ? <span className="inline-flex items-center gap-1 rounded-full border border-[#d48a9e]/30 bg-[#f5e4ea] px-2.5 py-0.5 text-xs font-black text-[#d48a9e]"><Star className="size-3 fill-[#d48a9e]" />الأكثر طلباً</span> : null}
-                        </div>
+                        <h3 className="font-display text-2xl font-bold tracking-wide text-[#2c1810]">{item.name}</h3>
                         {item.subtitle ? <p className="mt-1 text-sm font-bold text-[#6d9a78]">{item.subtitle}</p> : null}
                       </div>
                       <p className="shrink-0 rounded-2xl border border-[#d48a9e]/16 bg-[#f5e4ea] px-3 py-2 text-sm font-black text-[#b87084]">{item.price}</p>

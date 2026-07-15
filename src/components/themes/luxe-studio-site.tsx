@@ -257,17 +257,17 @@ function LuxeStudioSiteInner({
                         : "border-white/10 bg-white/5 hover:border-white/20"
                     )}
                   >
-                    <div className="flex items-start justify-between gap-4">
+                    {item.isHighlighted ? (
+                      <div className="absolute left-1/2 top-0 z-10 -translate-x-1/2 -translate-y-1/2">
+                        <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-[#ff00ff] to-[#00ffff] px-3 py-1 text-xs font-bold text-white shadow-lg">
+                          <Star className="size-3 fill-current" />
+                          الأكثر طلباً
+                        </span>
+                      </div>
+                    ) : null}
+                    <div className="flex items-start justify-between gap-4 pt-4">
                       <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <h3 className="font-display text-xl font-bold">{item.name}</h3>
-                          {item.isHighlighted ? (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-[#ff00ff] to-[#00ffff] px-2.5 py-0.5 text-xs font-bold text-white">
-                              <Star className="size-3 fill-current" />
-                              الأكثر طلباً
-                            </span>
-                          ) : null}
-                        </div>
+                        <h3 className="font-display text-xl font-bold">{item.name}</h3>
                         {item.subtitle ? (
                           <p className="mt-2 text-sm text-white/50">{item.subtitle}</p>
                         ) : null}
