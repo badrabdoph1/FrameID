@@ -7,6 +7,42 @@ import { prisma } from "@/lib/prisma";
 import { processError } from "@/lib/errors";
 import { getCurrentRequestSession } from "@/modules/auth/request-session";
 
+export async function updateSiteTitleAction(formData: FormData) {
+  const session = await getCurrentRequestSession();
+
+  if (!session) {
+    redirect("/login");
+  }
+
+  const title = typeof formData.get("title") === "string" ? formData.get("title")!.trim() : "";
+
+  if (!title || title.length < 2) {
+    redirect("/dashboard/settings?error=title-too-short");
+  }
+
+  if (title.length > 60) {
+    redirect("/dashboard/settings?error=title-too-long");
+  }
+
+  try {
+    await prisma.site.update({
+      where: { id: session.site.id },
+      data: { title },
+    });
+  } catch (error) {
+    const { userError } = await processError(error, {
+      userId: session.user.id,
+      tenantId: session.tenant.id,
+      metadata: { action: "updateSiteTitle" },
+    });
+    redirect(`/dashboard/settings?error=${encodeURIComponent(userError.message)}`);
+  }
+
+  revalidatePath("/dashboard/settings");
+  revalidatePath(`/p/${session.site.slug}`);
+  redirect("/dashboard/settings?updated=title");
+}
+
 export async function requestAccountDeletionAction() {
   const session = await getCurrentRequestSession();
 
