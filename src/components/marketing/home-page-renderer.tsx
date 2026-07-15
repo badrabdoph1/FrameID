@@ -199,43 +199,88 @@ function HomeTemplates({
   featuredTemplate?: FeaturedTemplatePreview | null;
 }) {
   return (
-    <section data-page-section={sectionId} data-page-section-type="home.templates" className="bg-surface py-16 md:py-24">
-      <div className="container-page flex flex-col items-center gap-10 text-center md:gap-12">
-        <header className="max-w-lg">
-          <p className="text-[0.65rem] font-bold tracking-[0.2em] text-champagne-strong/85 uppercase md:text-xs md:tracking-[0.22em]">
+    <section data-page-section={sectionId} data-page-section-type="home.templates" className="relative overflow-hidden bg-surface py-20 md:py-28">
+      {/* Subtle background decoration */}
+      <div className="absolute inset-0 opacity-[0.015]" style={{
+        backgroundImage: `radial-gradient(circle at 1px 1px, currentColor 1px, transparent 0)`,
+        backgroundSize: '48px 48px'
+      }} />
+
+      <div className="container-page relative z-10">
+        {/* Section Header */}
+        <div className="mx-auto mb-12 max-w-lg text-center md:mb-16">
+          <p className="text-[0.65rem] font-bold tracking-[0.22em] text-champagne-strong/80 uppercase md:text-xs md:tracking-[0.25em]">
             <Text field={{ sectionId, path: ["badge"], value: content.badge }} render={renderText} />
           </p>
-          <h2 className="mt-4 text-balance text-[1.6rem] font-semibold leading-[1.15] text-ink md:text-[2.5rem] md:leading-[1.1]">
+          <h2 className="mt-4 text-balance text-[1.75rem] font-semibold leading-[1.15] text-ink md:text-[2.75rem] md:leading-[1.1]">
             <Text field={{ sectionId, path: ["title"], value: content.title }} render={renderText} />
           </h2>
-          <p className="mt-4 max-w-[50ch] text-sm leading-[1.75] text-muted-foreground md:text-base md:leading-[1.8]">
+          <p className="mt-4 text-sm leading-[1.75] text-muted-foreground md:text-base md:leading-[1.8]">
             <Text
               field={{ sectionId, path: ["subtitle"], value: content.subtitle, multiline: true }}
               render={renderText}
             />
           </p>
-        </header>
+        </div>
+
+        {/* Featured Template Card */}
         {featuredTemplate ? (
           <Link
             href={featuredTemplate.href}
-            className="group block w-full max-w-xl overflow-hidden rounded-2xl border border-border/70 bg-white text-ink no-underline transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl hover:shadow-ink/10"
+            className="group mx-auto block max-w-2xl"
           >
-            <div className="relative aspect-[4/3] overflow-hidden bg-muted/40 md:aspect-[16/10]">
-              <Image src={featuredTemplate.image} alt="" fill sizes="(max-width: 768px) 100vw, 640px" className="object-cover transition-transform duration-700 group-hover:scale-[1.03]" />
-            </div>
-            <div className="flex items-center justify-between gap-4 border-t border-border/50 p-5 md:p-6">
-              <div className="text-start">
-                <h3 className="text-base font-semibold md:text-lg">{featuredTemplate.name}</h3>
-                <p className="mt-1 text-xs leading-6 text-muted-foreground md:text-sm md:leading-6">{featuredTemplate.description}</p>
+            <div className="relative overflow-hidden rounded-3xl border border-border/50 bg-white shadow-xl shadow-ink/5 transition-all duration-500 group-hover:-translate-y-1 group-hover:shadow-2xl group-hover:shadow-champagne/10">
+              {/* Preview Image */}
+              <div className="relative aspect-[16/10] overflow-hidden bg-gradient-to-br from-muted/40 via-muted/20 to-white">
+                <Image
+                  src={featuredTemplate.image}
+                  alt=""
+                  fill
+                  sizes="(max-width: 768px) 100vw, 768px"
+                  className="object-cover transition-transform duration-700 group-hover:scale-[1.04]"
+                />
+                {/* Subtle gradient overlay */}
+                <div className="absolute inset-0 bg-gradient-to-t from-ink/20 via-transparent to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
+
+                {/* Floating badge */}
+                <span className="absolute right-4 top-4 inline-flex items-center gap-1.5 rounded-full bg-white/95 px-3.5 py-1.5 text-[0.7rem] font-bold text-ink shadow-lg backdrop-blur-sm">
+                  <span className="size-1.5 rounded-full bg-champagne animate-pulse" />
+                  قالب مباشر
+                </span>
               </div>
-              <ArrowLeft className="size-4 shrink-0 text-champagne-strong transition-transform duration-300 group-hover:-translate-x-1.5" aria-hidden />
+
+              {/* Card Content */}
+              <div className="flex items-center justify-between p-5 md:p-7">
+                <div className="min-w-0 text-start">
+                  <h3 className="text-lg font-semibold leading-[1.3] text-ink md:text-xl">
+                    {featuredTemplate.name}
+                  </h3>
+                  <p className="mt-1 text-[0.82rem] leading-[1.65] text-muted-foreground md:text-sm md:leading-[1.7] line-clamp-1">
+                    {featuredTemplate.description}
+                  </p>
+                </div>
+                <div className="mr-4 flex size-10 shrink-0 items-center justify-center rounded-full bg-ink text-white transition-all duration-300 group-hover:-translate-x-1 group-hover:bg-champagne group-hover:text-ink md:mr-6">
+                  <ArrowLeft className="size-4" aria-hidden />
+                </div>
+              </div>
             </div>
           </Link>
         ) : (
-          <div className="grid min-h-48 w-full max-w-xl place-items-center rounded-2xl border border-dashed border-border/60 bg-muted/20 p-8 text-center text-sm text-muted-foreground">
+          <div className="mx-auto grid min-h-56 w-full max-w-2xl place-items-center rounded-3xl border border-dashed border-border/60 bg-muted/20 p-8 text-center text-sm text-muted-foreground">
             ستظهر هنا معاينة القالب المنشور.
           </div>
         )}
+
+        {/* Subtle bottom link */}
+        <div className="mt-10 text-center md:mt-12">
+          <Link
+            href="/templates"
+            className="inline-flex items-center gap-2 text-[0.82rem] font-semibold text-champagne-strong transition-colors duration-150 hover:text-champagne"
+          >
+            تصفّح كل القوالب
+            <ArrowLeft className="size-3.5 transition-transform duration-200 group-hover:-translate-x-0.5" aria-hidden />
+          </Link>
+        </div>
       </div>
     </section>
   );
