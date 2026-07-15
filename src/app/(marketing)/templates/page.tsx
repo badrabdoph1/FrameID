@@ -1,13 +1,12 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
 import React from "react";
 import { Eye, Star } from "lucide-react";
 
 import { MarketingFooter } from "@/components/layout/marketing-footer";
 import { MarketingNav } from "@/components/layout/marketing-nav";
+import { TemplateLivePreview } from "@/components/themes/template-live-preview";
 import { getContent } from "@/lib/content";
-import { getTemplatePreviewImage } from "@/modules/marketing/platform-content";
 import { getPublishedTemplates } from "@/modules/themes/theme-registry";
 
 export const metadata: Metadata = {
@@ -108,29 +107,26 @@ export default function TemplatesPage() {
               {templates.map((template) => {
                 const meta = templateHighlights[template.code] ?? {};
                 const description = meta.highlight ?? template.description;
+                const palette = template.themeCode === "noir-gold"
+                  ? ["#0b0d12", "#f3cf73", "#fff7e8"]
+                  : ["#fff4f5", "#d88a9a", "#34252a"];
 
                 return (
                   <article
                     key={template.code}
                     className="group flex flex-col overflow-hidden rounded-2xl border border-border/60 bg-white transition-all duration-300 hover:-translate-y-1 hover:border-champagne/35 hover:shadow-xl hover:shadow-ink/8 md:rounded-[1.5rem]"
                   >
-                    <Link href={`/templates/${template.code}/preview`} className="block">
-                      <div className="relative aspect-[16/10] overflow-hidden bg-muted/40">
-                        <Image
-                          src={getTemplatePreviewImage(template)}
-                          alt={`معاينة قالب ${template.name}`}
-                          fill
-                          sizes="(max-width: 768px) 100vw, 600px"
-                          className="object-cover transition-transform duration-700 group-hover:scale-[1.04]"
-                        />
-                        {meta.badge ? (
-                          <span className="absolute right-3 top-3 inline-flex items-center gap-1.5 rounded-full bg-ink/85 px-3 py-1.5 text-[0.65rem] font-bold text-champagne shadow-lg backdrop-blur-sm">
-                            <Star className="size-3" aria-hidden />
-                            {meta.badge}
-                          </span>
-                        ) : null}
-                      </div>
-                    </Link>
+                    <div className="relative overflow-hidden bg-gradient-to-b from-ink/[0.03] to-transparent p-4 pb-0">
+                      <Link href={`/templates/${template.code}/preview`} className="block">
+                        <TemplateLivePreview template={template} />
+                      </Link>
+                      {meta.badge ? (
+                        <span className="absolute right-5 top-5 z-10 inline-flex items-center gap-1.5 rounded-full bg-ink/85 px-3 py-1.5 text-[0.65rem] font-bold text-champagne shadow-lg backdrop-blur-sm">
+                          <Star className="size-3" aria-hidden />
+                          {meta.badge}
+                        </span>
+                      ) : null}
+                    </div>
                     <div className="flex flex-1 flex-col p-5 md:p-6">
                       <div className="min-w-0 flex-1">
                         <h3 className="text-base font-semibold leading-[1.35] text-foreground md:text-lg">
@@ -139,6 +135,13 @@ export default function TemplatesPage() {
                         <p className="mt-2 text-[0.82rem] leading-[1.7] text-muted-foreground md:text-sm md:leading-[1.75]">
                           {description}
                         </p>
+                      </div>
+                      <div className="mt-4 flex flex-wrap items-center gap-2">
+                        {palette.map((color) => (
+                          <span key={color} className="size-5 rounded-full border border-border/60 shadow-sm" style={{ background: color }} title={color} />
+                        ))}
+                        <span className="rounded-full bg-muted/60 px-2.5 py-0.5 text-[0.65rem] font-semibold text-muted-foreground">موبايل</span>
+                        <span className="rounded-full bg-muted/60 px-2.5 py-0.5 text-[0.65rem] font-semibold text-muted-foreground">ديسكتوب</span>
                       </div>
                       <div className="mt-5 flex items-center gap-3">
                         <Link
