@@ -127,15 +127,24 @@ function CommonFields({ section }: { section: EditorSection }) {
 function HeroFields({ data, coverUrl }: { data: Record<string, unknown>; coverUrl: string | null }) {
   const settings = readRecord(data.settings);
   const cta = readRecord(data.cta);
-  const [preview, setPreview] = useState(coverUrl ?? readString(data.imageUrl, ""));
+  const initialImageUrl = readString(data.imageUrl, "");
+  const [imageUrl, setImageUrl] = useState(initialImageUrl);
+  const [preview, setPreview] = useState(coverUrl ?? initialImageUrl);
   const [uploading, startUpload] = useTransition();
 
-  function upload(file: File | undefined) {
+  async function upload(file: File | undefined) {
     if (!file) return;
     setPreview(URL.createObjectURL(file));
     const formData = new FormData();
     formData.set("image", file);
-    startUpload(async () => { await uploadHeroImageAction(formData); });
+    startUpload(async () => {
+      const result = await uploadHeroImageAction(formData);
+      if (result.ok && result.assetId) {
+        const assetUrl = `/api/media/${result.assetId}`;
+        setImageUrl(assetUrl);
+        setPreview(assetUrl);
+      }
+    });
   }
 
   return (
@@ -146,7 +155,7 @@ function HeroFields({ data, coverUrl }: { data: Record<string, unknown>; coverUr
       </div>
       <Field label="الوصف"><Textarea name="subheadline" rows={3} defaultValue={readString(data.subheadline, "")} /></Field>
       <input type="hidden" name="description" value={readString(data.description, "")} />
-      <input type="hidden" name="imageUrl" value={readString(data.imageUrl, "")} />
+      <input type="hidden" name="imageUrl" value={imageUrl} />
 
       <div className="overflow-hidden rounded-2xl border border-white/10 bg-black/20">
         {preview ? <div className="relative aspect-[16/9]"><Image src={preview} alt="معاينة صورة الـ Hero" fill unoptimized className="object-cover" /></div> : <div className="grid aspect-[16/9] place-items-center text-sm font-bold text-white/35">لا توجد صورة Hero</div>}

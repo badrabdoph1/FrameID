@@ -138,6 +138,7 @@ export async function updatePackageAction(formData: FormData) {
   }
 
   revalidateCustomerServices(session.site.slug);
+  redirect("/dashboard/services?updated=package");
 }
 
 export async function deletePackageAction(formData: FormData) {
@@ -162,6 +163,7 @@ export async function deletePackageAction(formData: FormData) {
   }
 
   revalidateCustomerServices(session.site.slug);
+  redirect("/dashboard/services?deleted=package");
 }
 
 export async function duplicatePackageAction(formData: FormData) {
@@ -202,6 +204,7 @@ export async function duplicatePackageAction(formData: FormData) {
   }
 
   revalidateCustomerServices(session.site.slug);
+  redirect("/dashboard/services?duplicated=package");
 }
 
 export async function reorderPackageAction(formData: FormData) {
@@ -242,6 +245,7 @@ export async function reorderPackageAction(formData: FormData) {
   }
 
   revalidateCustomerServices(session.site.slug);
+  redirect("/dashboard/services?reordered=package");
 }
 
 export async function addExtraAction(formData: FormData) {
@@ -311,6 +315,7 @@ export async function updateExtraAction(formData: FormData) {
   }
 
   revalidateCustomerServices(session.site.slug);
+  redirect("/dashboard/services?updated=extra");
 }
 
 export async function deleteExtraAction(formData: FormData) {
@@ -335,6 +340,7 @@ export async function deleteExtraAction(formData: FormData) {
   }
 
   revalidateCustomerServices(session.site.slug);
+  redirect("/dashboard/services?deleted=extra");
 }
 
 export async function duplicateExtraAction(formData: FormData) {
@@ -374,6 +380,7 @@ export async function duplicateExtraAction(formData: FormData) {
   }
 
   revalidateCustomerServices(session.site.slug);
+  redirect("/dashboard/services?duplicated=extra");
 }
 
 export async function reorderExtraAction(formData: FormData) {
@@ -414,4 +421,5 @@ export async function reorderExtraAction(formData: FormData) {
   }
 
   revalidateCustomerServices(session.site.slug);
+  redirect("/dashboard/services?reordered=extra");
 }

@@ -154,15 +154,7 @@ export async function uploadToAlbumAction(formData: FormData) {
     redirect("/dashboard/gallery?error=invalid-album");
   }
 
-  const existingImages = await prisma.galleryImage.count({
-    where: { albumId, deletedAt: null },
-  });
-
-  const validFiles = images.filter((f): f is File => f instanceof File && f.size > 0).slice(0, Math.max(0, 5 - existingImages));
-
-  if (existingImages >= 5) {
-    redirect(`/dashboard/gallery?albumId=${encodeURIComponent(albumId)}&error=max-five-images`);
-  }
+  const validFiles = images.filter((f): f is File => f instanceof File && f.size > 0);
 
   if (validFiles.length === 0) {
     redirect(`/dashboard/gallery?albumId=${encodeURIComponent(albumId)}&error=no-images`);
@@ -177,6 +169,13 @@ export async function uploadToAlbumAction(formData: FormData) {
 
   try {
     for (const file of validFiles) {
+      const currentCount = await prisma.galleryImage.count({
+        where: { albumId, deletedAt: null },
+      });
+
+      if (currentCount >= 5) {
+        redirect(`/dashboard/gallery?albumId=${encodeURIComponent(albumId)}&error=max-five-images`);
+      }
       const asset = await uploadService.uploadImage({
         tenantId: session.tenant.id,
         file,

@@ -31,7 +31,7 @@ type ActionResult = { success: true; draftId?: string } | { success: false; erro
 async function getSessionWithSub() {
   const session = await getCurrentRequestSession();
   if (!session) redirect("/login");
-  if (!session.subscription) redirect("/dashboard/billing?error=no-subscription");
+  if (!session.subscription) throw new Error("لا يوجد اشتراك مفعّل. يرجى تفعيل حسابك أولاً.");
   return session;
 }
 

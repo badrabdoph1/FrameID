@@ -61,6 +61,10 @@ type ServicesClientProps = {
   packages: PackageData[];
   extras: ExtraData[];
   created?: string;
+  updated?: string;
+  deleted?: string;
+  duplicated?: string;
+  reordered?: string;
   error?: string;
 };
 
@@ -68,7 +72,7 @@ function money(amount: number, currency: string): string {
   return `${amount.toLocaleString("ar-EG")} ${currency || "EGP"}`;
 }
 
-export function ServicesClient({ packages, extras, created, error }: ServicesClientProps) {
+export function ServicesClient({ packages, extras, created, updated, deleted, duplicated, reordered, error }: ServicesClientProps) {
   const [showPackageForm, setShowPackageForm] = useState(packages.length === 0);
   const [showExtraForm, setShowExtraForm] = useState(false);
   const [editingPackageId, setEditingPackageId] = useState<string | null>(null);
@@ -81,12 +85,20 @@ export function ServicesClient({ packages, extras, created, error }: ServicesCli
     ? { tone: "error" as const, title: "مقدرناش نحفظ التعديل", description: decodeURIComponent(error) }
     : created
       ? { tone: "success" as const, title: created === "package" ? "تم حفظ الباقة" : "تم حفظ الخدمة الإضافية", description: "كمل باقي البيانات بالترتيب." }
-      : null;
+      : updated
+        ? { tone: "success" as const, title: updated === "package" ? "تم تعديل الباقة" : "تم تعديل الإضافة", description: "التغييرات ظهرت على الموقع." }
+        : deleted
+          ? { tone: "success" as const, title: deleted === "package" ? "تم حذف الباقة" : "تم حذف الإضافة", description: "التغيير اختفى من الموقع." }
+          : duplicated
+            ? { tone: "success" as const, title: duplicated === "package" ? "تم نسخ الباقة" : "تم نسخ الإضافة", description: "النسخة الجديدة مضافة ومخفية." }
+            : reordered
+              ? { tone: "success" as const, title: "تم تغيير الترتيب", description: "الترتيب الجديد ظاهر على الموقع." }
+              : null;
 
-  function runPackageAction(action: (formData: FormData) => void, id: string, close?: () => void) {
+  async function runPackageAction(action: (formData: FormData) => Promise<void>, id: string, close?: () => void) {
     const fd = new FormData();
     fd.set("id", id);
-    action(fd);
+    await action(fd);
     close?.();
   }
 

@@ -4,6 +4,7 @@ import {
   type DragEvent,
   type ReactNode,
   useCallback,
+  useEffect,
   useId,
   useMemo,
   useRef,
@@ -174,12 +175,29 @@ export function ImageUploader({
   children,
   disabled,
 }: ImageUploaderProps) {
+  const compressedRef = useRef<Map<string, CompressedImage>>(new Map());
+
   const [files, setFiles] = useState<PreviewFile[]>([]);
+  const filesRef = useRef<PreviewFile[]>([]);
+  filesRef.current = files;
+
+  useEffect(() => {
+    const compressedCache = compressedRef.current;
+    const fileList = filesRef.current;
+    return () => {
+      for (const [, compressed] of compressedCache) {
+        revokePreview(compressed.preview);
+      }
+      compressedCache.clear();
+      for (const f of fileList) {
+        revokePreview(f.preview);
+      }
+    };
+  }, []);
+
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
-
-  const compressedRef = useRef<Map<string, CompressedImage>>(new Map());
 
   const maxBytes = maxSizeMB * 1024 * 1024;
   const rawMaxBytes = Math.max(maxBytes, 20 * 1024 * 1024);

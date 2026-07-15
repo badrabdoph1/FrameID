@@ -23,6 +23,21 @@ function revalidateContact(siteSlug: string) {
   revalidatePath(`/p/${siteSlug}`);
 }
 
+function normalizeWhatsAppServer(value: string): string {
+  const trimmed = value.trim();
+  if (!trimmed) return "";
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+
+  let digits = trimmed.replace(/[^0-9+]/g, "");
+  if (digits.startsWith("00")) digits = `+${digits.slice(2)}`;
+  if (digits.startsWith("01") && digits.length === 11) digits = `+20${digits.slice(1)}`;
+  if (digits.startsWith("1") && digits.length === 10) digits = `+20${digits}`;
+  if (!digits.startsWith("+")) digits = `+${digits}`;
+
+  const clean = digits.replace(/[^0-9]/g, "");
+  return clean ? `https://wa.me/${clean}` : trimmed;
+}
+
 export async function updateSiteInfoAction(
   formData: FormData,
 ): Promise<AutosaveState> {
@@ -45,12 +60,39 @@ export async function updateSiteInfoAction(
     "instagram",
     "tiktok",
     "workLocation",
+    "city",
+    "country",
+    "address",
+    "googleMapsUrl",
+    "bookingMessageTemplate",
+    "snapchat",
+    "youtube",
+    "behance",
+    "fiveHundredPx",
+    "linkedin",
+    "telegram",
+    "xTwitter",
+    "threads",
+    "website",
   ] as const;
 
   for (const field of textFields) {
     if (formData.has(field)) {
-      const val = readString(formData, field);
+      let val = readString(formData, field);
+      if (field === "whatsapp" && val) {
+        val = normalizeWhatsAppServer(val);
+      }
       fields[field] = val || null;
+    }
+  }
+
+  const workingHoursRaw = readString(formData, "workingHours");
+  if (workingHoursRaw) {
+    try {
+      const parsed = JSON.parse(workingHoursRaw);
+      fields["workingHours"] = typeof parsed === "object" && parsed !== null ? workingHoursRaw : null;
+    } catch {
+      fields["workingHours"] = null;
     }
   }
 

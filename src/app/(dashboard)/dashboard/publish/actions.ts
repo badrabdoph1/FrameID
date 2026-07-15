@@ -22,7 +22,7 @@ async function revalidateCustomerSite(siteSlug: string) {
 }
 
 async function getPublishReadiness(siteId: string) {
-  const [packagesCount, imagesCount, contactProfile, seoSettings] = await Promise.all([
+  const [packagesCount, imagesCount, contactProfile] = await Promise.all([
     prisma.package.count({ where: { siteId, deletedAt: null } }),
     prisma.galleryImage.count({
       where: {
@@ -32,18 +32,15 @@ async function getPublishReadiness(siteId: string) {
       },
     }),
     prisma.contactProfile.findUnique({ where: { siteId } }),
-    prisma.sEOSettings.findUnique({ where: { siteId }, select: { title: true, description: true, ogAssetId: true } }),
   ]);
 
   const hasContact = Boolean(contactProfile?.phone || contactProfile?.whatsapp || contactProfile?.email);
-  const hasSeo = Boolean(seoSettings?.title && (seoSettings.description || seoSettings.ogAssetId));
 
   return {
     hasContact,
     hasPortfolio: imagesCount > 0,
     hasPackage: packagesCount > 0,
-    hasSeo,
-    canPublish: hasContact && imagesCount > 0 && packagesCount > 0 && hasSeo,
+    canPublish: hasContact && imagesCount > 0 && packagesCount > 0,
   };
 }
 

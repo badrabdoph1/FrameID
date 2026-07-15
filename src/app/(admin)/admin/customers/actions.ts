@@ -45,9 +45,9 @@ async function withErrorHandling<T>(action: string, fn: () => Promise<T>, contex
   catch (error) { await processError(error, { userId: context?.userId, tenantId: context?.tenantId, metadata: { action } }); throw error; }
 }
 
-async function auditBulkAction(input: { action: string; tenantIds: string[]; metadata?: Prisma.InputJsonObject }) {
+async function auditBulkAction(actorId: string, input: { action: string; tenantIds: string[]; metadata?: Prisma.InputJsonObject }) {
   await prisma.auditLog.create({
-    data: { actorId: null, action: input.action, entityType: "Tenant", metadata: { tenantIds: input.tenantIds, count: input.tenantIds.length, ...(input.metadata ?? {}) } },
+    data: { actorId, action: input.action, entityType: "Tenant", metadata: { tenantIds: input.tenantIds, count: input.tenantIds.length, ...(input.metadata ?? {}) } },
   }).catch(() => undefined);
 }
 
@@ -152,8 +152,38 @@ export async function sendNotificationAction(formData: FormData) {
 export async function impersonateCustomerAction(formData: FormData) {
   const { admin } = await getService();
   const tenantId = readFormString(formData, "tenantId");
+  if (!tenantId) redirect("/admin/customers?error=missing-tenant");
+
+  const tenant = await prisma.tenant.findUnique({
+    where: { id: tenantId, deletedAt: null },
+    select: {
+      id: true,
+      sites: {
+        where: { deletedAt: null },
+        select: { slug: true },
+        take: 1,
+      },
+    },
+  });
+
+  if (!tenant) redirect("/admin/customers?error=tenant-not-found");
+
+  await prisma.impersonationSession.create({
+    data: {
+      adminId: admin.id,
+      tenantId,
+      expiresAt: new Date(Date.now() + 1000 * 60 * 60),
+    },
+  });
+
   const repo = createCustomerAdminRepository(prisma);
   await repo.createAuditLog(admin.id, tenantId, "ADMIN_IMPERSONATED", "Tenant", tenantId, { adminName: admin.name });
+
+  const siteSlug = tenant.sites[0]?.slug;
+  if (siteSlug) {
+    redirect(`/p/${siteSlug}`);
+  }
+  redirect("/admin/customers?impersonated=1");
 }
 
 export async function bulkCustomerLifecycleAction(formData: FormData) {
@@ -184,26 +214,26 @@ export async function bulkCustomerLifecycleAction(formData: FormData) {
       await prisma.tenant.updateMany({ where: { id: { in: tenantIds }, deletedAt: null }, data: { status: "ACTIVE", gracePeriodEndsAt: null } });
       await prisma.site.updateMany({ where: { tenantId: { in: tenantIds }, deletedAt: null }, data: { status: "PUBLISHED", isPublished: true } });
       doneCount = tenantIds.length;
-      await auditBulkAction({ action: "CUSTOMERS_BULK_ACTIVATED", tenantIds, metadata: { preset, customDays, endAt: end?.toISOString() ?? null } as Prisma.InputJsonObject });
+      await auditBulkAction(admin.id, { action: "CUSTOMERS_BULK_ACTIVATED", tenantIds, metadata: { preset, customDays, endAt: end?.toISOString() ?? null } as Prisma.InputJsonObject });
     } else if (action === "suspend") {
       await prisma.tenant.updateMany({ where: { id: { in: tenantIds }, deletedAt: null }, data: { status: "SUSPENDED" } });
       await prisma.subscription.updateMany({ where: { tenantId: { in: tenantIds } }, data: { status: "SUSPENDED" } });
       await prisma.site.updateMany({ where: { tenantId: { in: tenantIds }, deletedAt: null }, data: { status: "SUSPENDED", isPublished: false } });
       doneCount = tenantIds.length;
-      await auditBulkAction({ action: "CUSTOMERS_BULK_SUSPENDED", tenantIds });
+      await auditBulkAction(admin.id, { action: "CUSTOMERS_BULK_SUSPENDED", tenantIds });
     } else if (action === "archive" || action === "delete") {
       const now = new Date();
       await prisma.tenant.updateMany({ where: { id: { in: tenantIds }, deletedAt: null }, data: { deletedAt: now, status: "SUSPENDED" } });
       await prisma.site.updateMany({ where: { tenantId: { in: tenantIds }, deletedAt: null }, data: { status: "SUSPENDED", isPublished: false, deletedAt: now } });
       doneCount = tenantIds.length;
-      await auditBulkAction({ action: "CUSTOMERS_BULK_ARCHIVED", tenantIds });
+      await auditBulkAction(admin.id, { action: "CUSTOMERS_BULK_ARCHIVED", tenantIds });
     } else if (action === "notify" || action === "email") {
       if (!body) redirect(buildCustomersRedirect({ bulkError: "اكتب نص الرسالة أولًا." }));
       const tenants = await prisma.tenant.findMany({ where: { id: { in: tenantIds }, deletedAt: null }, select: { id: true, ownerUserId: true } });
       await prisma.notification.createMany({ data: tenants.map((tenant) => ({ tenantId: tenant.id, type: "admin_bulk_message", title, body, priority: "high" })) });
       await prisma.notificationLog.createMany({ data: tenants.map((tenant) => ({ tenantId: tenant.id, userId: tenant.ownerUserId, type: "info", title, body, category: "customer_lifecycle" })) });
       doneCount = tenants.length;
-      await auditBulkAction({ action: action === "email" ? "CUSTOMERS_BULK_EMAIL_REQUESTED" : "CUSTOMERS_BULK_NOTIFIED", tenantIds, metadata: { title, body, emailConfigured: false } as Prisma.InputJsonObject });
+      await auditBulkAction(admin.id, { action: action === "email" ? "CUSTOMERS_BULK_EMAIL_REQUESTED" : "CUSTOMERS_BULK_NOTIFIED", tenantIds, metadata: { title, body, emailConfigured: false } as Prisma.InputJsonObject });
     } else {
       redirect(buildCustomersRedirect({ bulkError: "اختر عملية صحيحة." }));
     }

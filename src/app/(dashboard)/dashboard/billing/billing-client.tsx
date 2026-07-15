@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useCallback, useEffect, useMemo, useState, type ChangeEvent, type ReactNode } from "react";
-import { AlertTriangle, ArrowLeft, BadgeCheck, CalendarDays, Check, CheckCircle2, Clock, Copy, CreditCard, ExternalLink, Loader2, MessageCircle, Package, RefreshCw, Upload, X, Zap } from "lucide-react";
+import { AlertTriangle, BadgeCheck, CalendarDays, Check, CheckCircle2, Clock, Copy, CreditCard, Loader2, MessageCircle, Package, RefreshCw, Upload, X, Zap } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { BuilderPageHeader } from "@/components/dashboard/builder-primitives";
@@ -746,7 +746,7 @@ function PaymentMethodPicker({ methods, selectedMethodId, selectedPlanId, pendin
 
 function PaymentInstructionCard({ account, method, fallbackMethod, copied, onCopy }: { account: PaymentAccountData | null | undefined; method: PaymentMethodData | null | undefined; fallbackMethod: string | null; copied: boolean; onCopy: () => void }) {
   const accountNumber = account?.phoneNumber ?? account?.accountNumber ?? "";
-  const ownerName = "Badr A** B** H****";
+  const ownerName = account?.accountName ?? "صاحب الحساب";
   return (
     <div className="overflow-hidden rounded-3xl border border-amber-400/20 bg-gradient-to-b from-amber-500/10 to-amber-500/[0.02]">
       <div className="flex items-center justify-between border-b border-white/[0.04] px-4 py-3 sm:px-5">

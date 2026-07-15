@@ -213,7 +213,7 @@ export async function saveSubscriptionExperienceDefaultsAction(formData: FormDat
 
     await prisma.auditLog.create({
       data: {
-        actorId: null,
+        actorId: admin.id,
         action: "SUBSCRIPTION_EXPERIENCE_DEFAULTS_UPDATED",
         entityType: "FeatureFlag",
         entityId: "platform.subscription.experience.defaults",
@@ -271,7 +271,7 @@ export async function saveSubscriptionExperienceOverrideAction(formData: FormDat
 
     await prisma.auditLog.create({
       data: {
-        actorId: null,
+        actorId: admin.id,
         action: "SUBSCRIPTION_EXPERIENCE_OVERRIDE_SAVED",
         entityType: "FeatureFlag",
         metadata: {
@@ -323,7 +323,7 @@ export async function clearSubscriptionExperienceOverrideAction(formData: FormDa
 
     await prisma.auditLog.create({
       data: {
-        actorId: null,
+        actorId: admin.id,
         action: "SUBSCRIPTION_EXPERIENCE_OVERRIDE_CLEARED",
         entityType: "FeatureFlag",
         metadata: {
@@ -365,7 +365,7 @@ export async function grantFreshTrialFromMessagesAction(formData: FormData) {
 
     await prisma.auditLog.create({
       data: {
-        actorId: null,
+        actorId: admin.id,
         action: "TRIAL_FRESH_GRANT_FROM_MESSAGES",
         entityType: "Tenant",
         metadata: {

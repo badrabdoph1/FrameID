@@ -12,14 +12,14 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 type ServicesPageProps = {
-  searchParams: Promise<{ created?: string; error?: string }>;
+  searchParams: Promise<{ created?: string; updated?: string; deleted?: string; duplicated?: string; reordered?: string; error?: string }>;
 };
 
 export default async function DashboardServicesPage({
   searchParams,
 }: ServicesPageProps) {
   const session = await getCurrentRequestSession();
-  const { created, error } = await searchParams;
+  const { created, updated, deleted, duplicated, reordered, error } = await searchParams;
 
   if (!session) {
     redirect("/login");
@@ -60,6 +60,10 @@ export default async function DashboardServicesPage({
         sortOrder: extra.sortOrder,
       }))}
       created={created}
+      updated={updated}
+      deleted={deleted}
+      duplicated={duplicated}
+      reordered={reordered}
       error={error}
     />
   );

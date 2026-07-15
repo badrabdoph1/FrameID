@@ -22,7 +22,7 @@ export async function selectTemplateAction(formData: FormData) {
   const templateCode = readString(formData, "templateCode");
 
   if (!templateCode) {
-    redirect("/dashboard/design?error=لم يتم اختيار قالب");
+    redirect("/dashboard/templates?error=لم يتم اختيار قالب");
   }
 
   try {
@@ -52,10 +52,10 @@ export async function selectTemplateAction(formData: FormData) {
       tenantId: session.tenant.id,
       metadata: { action: "selectTemplate", templateCode },
     });
-    redirect(`/dashboard/design?error=${encodeURIComponent(userError.message)}`);
+    redirect(`/dashboard/templates?error=${encodeURIComponent(userError.message)}`);
   }
 
-  revalidatePath("/dashboard/design");
+  revalidatePath("/dashboard/templates");
   revalidatePath("/dashboard/templates");
   revalidatePath(`/p/${session.site.slug}`);
   redirect("/dashboard/templates?selected=1");

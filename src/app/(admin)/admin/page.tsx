@@ -37,6 +37,7 @@ export default async function AdminDashboardPage() {
   const now = new Date();
   const week = addDays(now, 7);
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
   const [
     totalCustomers,
@@ -52,6 +53,7 @@ export default async function AdminDashboardPage() {
     revenue,
     recentCustomers,
     issueStats,
+    newUsersToday,
   ] = await Promise.all([
     prisma.tenant.count({ where: { deletedAt: null } }),
     prisma.tenant.count({ where: { deletedAt: null, status: "TRIAL" } }),
@@ -66,10 +68,11 @@ export default async function AdminDashboardPage() {
     prisma.paymentRequest.aggregate({ where: { deletedAt: null, status: "APPROVED", reviewedAt: { gte: monthStart } }, _sum: { amount: true } }),
     prisma.tenant.findMany({ where: { deletedAt: null }, orderBy: { createdAt: "desc" }, take: 6, select: { id: true, displayName: true, status: true, owner: { select: { email: true } }, subscriptions: { where: {}, orderBy: { createdAt: "desc" }, take: 1, select: { status: true, currentPeriodEnd: true, expiresAt: true } } } }),
     getCustomerIssueStats(),
+    prisma.user.count({ where: { createdAt: { gte: todayStart } } }),
   ]);
 
   const overview = createAdminOverviewViewModel({
-    newUsersToday: 0,
+    newUsersToday,
     activeTrials: trialCustomers,
     expiringTrials,
     pendingPayments,
