@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import React from "react";
-import { Eye, Star, WandSparkles } from "lucide-react";
+import { Eye, Star } from "lucide-react";
 
 import { MarketingFooter } from "@/components/layout/marketing-footer";
 import { MarketingNav } from "@/components/layout/marketing-nav";
@@ -81,32 +81,32 @@ export default function TemplatesPage() {
   return (
     <>
       <MarketingNav />
-      <main id="main-content" className="min-h-screen bg-background pt-20">
-        <section className="container-page pb-10 pt-8 md:pb-14 md:pt-14">
+      <main id="main-content" className="min-h-screen bg-background">
+        <section className="container-page pb-12 pt-24 md:pb-16 md:pt-32">
           <div className="max-w-2xl">
-            <p className="text-sm font-semibold text-champagne-strong">
+            <p className="text-[0.65rem] font-bold tracking-[0.2em] text-champagne-strong/85 uppercase md:text-xs md:tracking-[0.22em]">
               القوالب
             </p>
-            <h1 className="mt-3 text-balance text-4xl font-semibold leading-tight text-foreground md:text-6xl lg:text-7xl lg:leading-[1.02]">
+            <h1 className="mt-4 text-balance text-[2rem] font-semibold leading-[1.15] text-foreground md:text-[3.2rem] md:leading-[1.1]">
               اختار شكل موقعك
             </h1>
-            <p className="mt-4 max-w-xl text-base leading-8 text-muted-foreground md:text-lg md:leading-9">
+            <p className="mt-4 max-w-lg text-sm leading-[1.8] text-muted-foreground md:text-base md:leading-[1.85]">
               قوالب جاهزة للمصورين. افتح أي قالب كأنه موقع حقيقي، وشوف شكله قبل ما تبدأ.
             </p>
           </div>
         </section>
 
-        <section id="templates-list" className="container-page scroll-mt-24 pb-14 md:pb-20">
-
+        <section id="templates-list" className="container-page scroll-mt-24 pb-16 md:pb-24">
           {templates.length === 0 ? (
-            <div className="rounded-[var(--radius-panel)] border border-border bg-card p-5 text-sm font-semibold text-muted-foreground">
+            <div className="rounded-2xl border border-border/60 bg-card p-6 text-center text-sm font-medium text-muted-foreground">
               لا توجد قوالب منشورة حاليًا.
             </div>
           ) : (
             <div
-              className="grid gap-4 md:grid-cols-2 md:gap-6"
+              className="grid gap-5 md:grid-cols-2 md:gap-7"
               data-smart-hint="templates-grid"
               data-journey-source="templates-grid"
+              data-guide-target="templates-grid"
             >
               {templates.map((template) => {
                 const meta = templateHighlights[template.code] ?? {};
@@ -116,49 +116,48 @@ export default function TemplatesPage() {
                   <article
                     key={template.code}
                     data-journey-card
-                    className="group flex overflow-hidden rounded-[1.35rem] border border-border bg-white shadow-soft transition-[border-color,box-shadow,transform] hover:-translate-y-0.5 hover:border-champagne/45 hover:shadow-champagne md:rounded-[1.75rem]"
+                    className="group flex flex-col overflow-hidden rounded-2xl border border-border/60 bg-white transition-all duration-300 hover:-translate-y-1 hover:border-champagne/35 hover:shadow-xl hover:shadow-ink/8 md:rounded-[1.5rem]"
                   >
-                    <div className="flex w-full flex-col">
-                      <div className="relative aspect-[16/10] overflow-hidden bg-ink">
+                    <Link href={`/templates/${template.code}/preview`} className="block">
+                      <div className="relative aspect-[16/10] overflow-hidden bg-muted/40">
                         <Image
                           src={getTemplatePreviewImage(template)}
                           alt={`معاينة قالب ${template.name}`}
                           fill
                           sizes="(max-width: 768px) 100vw, 600px"
-                          className="object-cover transition duration-700 group-hover:scale-105"
+                          className="object-cover transition-transform duration-700 group-hover:scale-[1.04]"
                         />
                         {meta.badge ? (
-                          <span className="absolute right-3 top-3 inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-ink/80 px-3 py-1.5 text-[0.68rem] font-semibold text-champagne shadow-soft backdrop-blur">
+                          <span className="absolute right-3 top-3 inline-flex items-center gap-1.5 rounded-full bg-ink/85 px-3 py-1.5 text-[0.65rem] font-bold text-champagne shadow-lg backdrop-blur-sm">
                             <Star className="size-3" aria-hidden />
                             {meta.badge}
                           </span>
                         ) : null}
                       </div>
-                      <div className="flex flex-1 flex-col p-4 md:p-5">
-                        <div className="min-w-0 flex-1">
-                          <h3 className="text-lg font-semibold text-foreground md:text-xl">
-                            {template.name}
-                          </h3>
-                          <p className="mt-2 text-sm leading-7 text-muted-foreground md:min-h-14">
-                            {description}
-                          </p>
-                        </div>
-                        <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                          <Link
-                            href={`/templates/${template.code}/preview`}
-                            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-[var(--radius-control)] bg-foreground px-4 text-sm font-semibold text-background transition-[background-color,transform] hover:-translate-y-0.5 hover:bg-foreground/90 active:translate-y-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                          >
-                            <Eye className="size-4" aria-hidden />
-                            شوف القالب
-                          </Link>
-                          <Link
-                            href={`/signup?template=${template.code}`}
-                            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-[var(--radius-control)] border border-border bg-surface px-4 text-sm font-semibold text-foreground transition-[background-color,transform] hover:-translate-y-0.5 hover:bg-muted active:translate-y-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                          >
-                            <WandSparkles className="size-4" aria-hidden />
-                            استخدمه لموقعي
-                          </Link>
-                        </div>
+                    </Link>
+                    <div className="flex flex-1 flex-col p-5 md:p-6">
+                      <div className="min-w-0 flex-1">
+                        <h3 className="text-base font-semibold leading-[1.35] text-foreground md:text-lg">
+                          {template.name}
+                        </h3>
+                        <p className="mt-2 text-[0.82rem] leading-[1.7] text-muted-foreground md:text-sm md:leading-[1.75]">
+                          {description}
+                        </p>
+                      </div>
+                      <div className="mt-5 flex items-center gap-3">
+                        <Link
+                          href={`/templates/${template.code}/preview`}
+                          className="inline-flex min-h-10 items-center justify-center gap-2 rounded-full bg-foreground px-5 text-[0.8rem] font-semibold text-background transition-all duration-200 hover:bg-foreground/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
+                        >
+                          <Eye className="size-3.5" aria-hidden />
+                          شوف القالب
+                        </Link>
+                        <Link
+                          href={`/signup?template=${template.code}`}
+                          className="text-[0.8rem] font-semibold text-champagne-strong transition-colors duration-150 hover:text-champagne-strong/70"
+                        >
+                          استخدمه لموقعي
+                        </Link>
                       </div>
                     </div>
                   </article>

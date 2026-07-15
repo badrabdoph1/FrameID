@@ -50,7 +50,9 @@ export default async function SignupPage({ searchParams }: SignupPageProps) {
           </div>
         </div>
       ) : null}
-      <SignupForm error={error} template={template} />
+      <div data-guide-target="signup-form">
+        <SignupForm error={error} template={template} />
+      </div>
       <p className="mt-6 text-sm text-muted-foreground">
         عندك حساب؟{" "}
         <Link href="/login" className="font-semibold text-foreground">

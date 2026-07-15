@@ -28,7 +28,9 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
       title="تسجيل الدخول"
       description="ادخل برقم الهاتف أو البريد عشان تدير موقعك، صورك، وباقاتك."
     >
-      <LoginForm error={error} message={message} />
+      <div data-guide-target="login-form">
+        <LoginForm error={error} message={message} />
+      </div>
       <div className="mt-6 flex items-center justify-between text-sm">
         <Link href="/forgot-password" className="text-muted-foreground hover:text-foreground">
           نسيت كلمة السر؟

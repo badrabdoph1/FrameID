@@ -64,6 +64,7 @@ export default async function TemplatePreviewPage({ params, searchParams }: Prop
           <Link
             href={`/signup?template=${template.code}`}
             data-journey-source="preview-use"
+            data-guide-target="preview-use-btn"
             className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-[var(--radius-control)] bg-white px-4 text-sm font-semibold text-ink hover:bg-white/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/55"
           >
             <WandSparkles className="size-4" aria-hidden />
