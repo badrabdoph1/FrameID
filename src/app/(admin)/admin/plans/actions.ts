@@ -90,6 +90,7 @@ export async function savePlanAction(formData: FormData) {
   const billingInterval = readFormString(formData, "billingInterval").trim() || "monthly";
   const isActive = formData.get("isActive") === "on" || formData.get("isActive") === "true";
   const priceAmount = readAmount(formData);
+  const sortOrder = Number.parseInt(readFormString(formData, "sortOrder"), 10) || 0;
 
   if (!name || name.length < 2) redirectPlanError("invalid-name");
 
@@ -98,14 +99,16 @@ export async function savePlanAction(formData: FormData) {
     if (!code || code.length < 2) redirectPlanError("invalid-code");
 
     const features = readPlanFeatures(formData);
+    (features as Record<string, unknown>).isComingSoon = formData.get("isComingSoon") === "on";
+
     const existing = id ? await prisma.plan.findUnique({ where: { id } }) : await prisma.plan.findUnique({ where: { code } });
     const saved = existing
       ? await prisma.plan.update({
           where: { id: existing.id },
-          data: { code, name, priceAmount, currency, billingInterval, features, isActive } as never,
+          data: { code, name, priceAmount, currency, billingInterval, features, isActive, sortOrder } as never,
         })
       : await prisma.plan.create({
-          data: { code, name, priceAmount, currency, billingInterval, features, isActive } as never,
+          data: { code, name, priceAmount, currency, billingInterval, features, isActive, sortOrder } as never,
         });
 
     await auditPlan({
@@ -120,6 +123,8 @@ export async function savePlanAction(formData: FormData) {
         billingInterval,
         isActive,
         isPopular: Boolean(features.isPopular),
+        isComingSoon: Boolean(features.isComingSoon),
+        sortOrder,
       },
     });
     await syncPlatformConfigurationToGitHub({ actor: admin, reason: existing ? "تعديل باقة" : "إنشاء باقة" });

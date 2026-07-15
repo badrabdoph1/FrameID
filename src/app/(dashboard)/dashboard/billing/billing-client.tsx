@@ -141,12 +141,12 @@ function billingIntervalLabel(value: string) {
   return "شهري";
 }
 
-function normalizeFeatures(value: unknown): { description: string; badgeLabel: string; isPopular: boolean; featureLines: string[] } {
+function normalizeFeatures(value: unknown): { description: string; badgeLabel: string; isPopular: boolean; isComingSoon: boolean; featureLines: string[] } {
   if (Array.isArray(value)) {
-    return { description: "", badgeLabel: "", isPopular: false, featureLines: value.map((item) => String(item).trim()).filter(Boolean) };
+    return { description: "", badgeLabel: "", isPopular: false, isComingSoon: false, featureLines: value.map((item) => String(item).trim()).filter(Boolean) };
   }
   if (typeof value !== "object" || value === null) {
-    return { description: "", badgeLabel: "", isPopular: false, featureLines: [] };
+    return { description: "", badgeLabel: "", isPopular: false, isComingSoon: false, featureLines: [] };
   }
   const record = value as Record<string, unknown>;
   const lines = Array.isArray(record.featureLines)
@@ -171,6 +171,7 @@ function normalizeFeatures(value: unknown): { description: string; badgeLabel: s
     description: typeof record.description === "string" ? record.description : "",
     badgeLabel: typeof record.badgeLabel === "string" ? record.badgeLabel : typeof record.badge === "string" ? record.badge : "",
     isPopular: record.isPopular === true || record.popular === true,
+    isComingSoon: record.isComingSoon === true || record.isComingSoon === "true",
     featureLines: generated,
   };
 }
@@ -290,6 +291,10 @@ export function BillingClient({ session, plans, paymentMethods, paymentRequest, 
 
   function handlePlanSelect(planId: string) {
     if (draftState || requestLocked) return;
+    const plan = plans.find((p) => p.id === planId);
+    if (!plan) return;
+    const features = normalizeFeatures(plan.features);
+    if (features.isComingSoon) return;
     setSelectedPlanId(planId);
   }
 
@@ -564,21 +569,31 @@ function PlanCard({ plan, selected, disabled, onSelect, onShowDetails }: { plan:
   const visual = normalizeFeatures(plan.features);
   const intervalText = billingIntervalLabel(plan.billingInterval);
   const badge = visual.isPopular ? visual.badgeLabel || "الأكثر طلبًا" : visual.badgeLabel;
+  const isComingSoon = visual.isComingSoon;
   return (
-    <article className={`relative overflow-hidden rounded-[1.65rem] border p-4 text-right shadow-2xl shadow-amber-950/20 ${selected ? "border-amber-300/75 bg-amber-500/12" : "border-amber-300/30 bg-[linear-gradient(145deg,rgba(243,207,115,0.13),rgba(255,255,255,0.035))]"}`}>
+    <article className={`relative overflow-hidden rounded-[1.65rem] border p-4 text-right shadow-2xl shadow-amber-950/20 ${isComingSoon ? "border-white/10 bg-white/[0.02] opacity-60" : selected ? "border-amber-300/75 bg-amber-500/12" : "border-amber-300/30 bg-[linear-gradient(145deg,rgba(243,207,115,0.13),rgba(255,255,255,0.035))]"}`}>
       <div className="pointer-events-none absolute inset-x-6 top-0 h-px bg-gradient-to-l from-transparent via-amber-200/70 to-transparent" />
       <div className="flex items-start justify-between gap-3">
         <div>
-          {badge ? <span className="inline-flex rounded-full border border-amber-200/24 bg-amber-200/10 px-3 py-1 text-[0.68rem] font-black text-[#f3cf73]">{badge}</span> : null}
-          <h3 className="mt-3 text-xl font-black text-[#fff7e8]">{plan.name}</h3>
+          <div className="flex flex-wrap items-center gap-2">
+            {badge ? <span className="inline-flex rounded-full border border-amber-200/24 bg-amber-200/10 px-3 py-1 text-[0.68rem] font-black text-[#f3cf73]">{badge}</span> : null}
+            {isComingSoon ? <span className="inline-flex rounded-full border border-white/15 bg-white/8 px-3 py-1 text-[0.68rem] font-black text-white/50">قريبًا</span> : null}
+            <h3 className="text-xl font-black text-[#fff7e8]">{plan.name}</h3>
+          </div>
           {visual.description ? <p className="mt-1 text-xs font-bold leading-5 text-white/45">{visual.description}</p> : null}
         </div>
         {selected ? <span className="inline-flex items-center gap-1 rounded-full bg-emerald-300 px-2.5 py-1 text-[0.68rem] font-black text-black"><Check size={12} />مختارة</span> : null}
       </div>
 
       <div className="mt-4 flex items-end gap-2">
-        <strong className="text-4xl font-black text-[#f3cf73]">{plan.priceAmount.toLocaleString("ar-EG")}</strong>
-        <span className="pb-1 text-sm font-black text-white/50">{intervalText ? `${plan.currency} / ${intervalText}` : plan.currency}</span>
+        {isComingSoon ? (
+          <strong className="text-3xl font-black text-white/35">قريبًا</strong>
+        ) : (
+          <>
+            <strong className="text-4xl font-black text-[#f3cf73]">{plan.priceAmount.toLocaleString("ar-EG")}</strong>
+            <span className="pb-1 text-sm font-black text-white/50">{intervalText ? `${plan.currency} / ${intervalText}` : plan.currency}</span>
+          </>
+        )}
       </div>
 
       {visual.featureLines.length > 0 ? (
@@ -588,7 +603,11 @@ function PlanCard({ plan, selected, disabled, onSelect, onShowDetails }: { plan:
       ) : null}
 
       <div className="mt-4 grid gap-2 sm:grid-cols-2">
-        <button type="button" disabled={disabled} onClick={onSelect} className={`min-h-11 rounded-2xl px-4 text-sm font-black transition ${selected ? "bg-emerald-300 text-black" : "bg-[#f3cf73] text-[#17120a] hover:bg-[#ffe08a]"} ${disabled ? "cursor-not-allowed opacity-60" : ""}`}>{selected ? "تم الاختيار" : "اختيار الباقة"}</button>
+        {isComingSoon ? (
+          <button type="button" disabled className="min-h-11 rounded-2xl border border-white/10 bg-white/[0.03] px-4 text-sm font-black text-white/35 cursor-not-allowed">قريبًا</button>
+        ) : (
+          <button type="button" disabled={disabled} onClick={onSelect} className={`min-h-11 rounded-2xl px-4 text-sm font-black transition ${selected ? "bg-emerald-300 text-black" : "bg-[#f3cf73] text-[#17120a] hover:bg-[#ffe08a]"} ${disabled ? "cursor-not-allowed opacity-60" : ""}`}>{selected ? "تم الاختيار" : "اختيار الباقة"}</button>
+        )}
         <button type="button" onClick={onShowDetails} className="min-h-11 rounded-2xl border border-white/12 bg-white/[0.045] px-4 text-sm font-black text-white/75 transition hover:border-amber-300/30 hover:text-white">عرض المميزات</button>
       </div>
     </article>

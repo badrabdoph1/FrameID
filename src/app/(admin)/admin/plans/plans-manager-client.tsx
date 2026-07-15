@@ -25,6 +25,7 @@ type PlanRow = {
   billingInterval: string;
   features: unknown;
   isActive: boolean;
+  sortOrder: number;
   _count: { subscriptions: number; paymentRequests: number };
 };
 
@@ -38,6 +39,7 @@ type VisualFeatures = {
   description: string;
   badgeLabel: string;
   isPopular: boolean;
+  isComingSoon: boolean;
   storageLabel: string;
   photoLimitLabel: string;
   ctaLabel: string;
@@ -49,6 +51,7 @@ const defaults: VisualFeatures = {
   description: "باقة مناسبة لإدارة موقع تصوير احترافي بسهولة.",
   badgeLabel: "",
   isPopular: false,
+  isComingSoon: false,
   storageLabel: "",
   photoLimitLabel: "",
   ctaLabel: "اختيار الباقة",
@@ -92,6 +95,7 @@ function normalizeFeatures(value: unknown): VisualFeatures {
     description: stringFrom(value.description ?? value.summary) || defaults.description,
     badgeLabel: stringFrom(value.badgeLabel ?? value.badge ?? value.ribbon),
     isPopular: boolFrom(value.isPopular ?? value.popular ?? value.recommended),
+    isComingSoon: value.isComingSoon === true || value.isComingSoon === "true",
     storageLabel: stringFrom(value.storageLabel ?? (value.storage ? `${value.storage} مساحة تخزين` : "")),
     photoLimitLabel: stringFrom(value.photoLimitLabel ?? (value.galleryImages ? `${value.galleryImages} صورة` : "")),
     ctaLabel: stringFrom(value.ctaLabel) || defaults.ctaLabel,
@@ -114,7 +118,7 @@ function formatMoney(amount: number, currency: string) {
 export function PlansManagerClient({ plans, metrics, banner }: Props) {
   const [editor, setEditor] = useState<"create" | string | null>(plans.length === 0 ? "create" : null);
   const sortedPlans = useMemo(
-    () => [...plans].sort((a, b) => Number(b.isActive) - Number(a.isActive) || a.priceAmount - b.priceAmount),
+    () => [...plans].sort((a, b) => Number(b.isActive) - Number(a.isActive) || a.sortOrder - b.sortOrder || a.priceAmount - b.priceAmount),
     [plans],
   );
   const selectedPlan = editor && editor !== "create" ? plans.find((plan) => plan.id === editor) ?? null : null;
@@ -198,20 +202,26 @@ export function PlansManagerClient({ plans, metrics, banner }: Props) {
 function PlanCard({ plan, order, selected, onEdit }: { plan: PlanRow; order: number; selected: boolean; onEdit: () => void }) {
   const visual = normalizeFeatures(plan.features);
   const badge = visual.isPopular ? visual.badgeLabel || "الأكثر طلبًا" : visual.badgeLabel;
+  const isComingSoon = visual.isComingSoon;
 
   return (
-    <article className={selected ? "rounded-2xl border border-amber-300/35 bg-amber-300/[0.07] p-4" : "rounded-2xl border border-white/10 bg-white/[0.03] p-4"}>
+    <article className={`rounded-2xl border p-4 ${isComingSoon ? "border-white/6 bg-white/[0.015] opacity-70" : selected ? "border-amber-300/35 bg-amber-300/[0.07]" : "border-white/10 bg-white/[0.03]"}`}>
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <h2 className="text-base font-black text-[#fff7e8]">{plan.name}</h2>
             {badge ? <AdminStatusBadge label={badge} tone="gold" /> : null}
-            <AdminStatusBadge label={plan.isActive ? "ظاهرة" : "مخفية"} tone={plan.isActive ? "success" : "neutral"} />
+            {isComingSoon ? <AdminStatusBadge label="قريبًا" tone="neutral" /> : null}
+            <AdminStatusBadge label={plan.isActive ? "ظاهرة" : "مخفي"} tone={plan.isActive ? "success" : "neutral"} />
           </div>
           <p className="mt-1 line-clamp-2 text-sm font-bold leading-6 text-white/50">{visual.description}</p>
           <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs font-bold text-white/40">
-            <strong className="text-base font-black text-[#f3cf73]">{formatMoney(plan.priceAmount, plan.currency)}{intervalLabel(plan.billingInterval) ? ` / ${intervalLabel(plan.billingInterval)}` : ""}</strong>
-            <span>الترتيب: {order.toLocaleString("ar-EG")}</span>
+            {isComingSoon ? (
+              <strong className="text-base font-black text-white/40">قريبًا</strong>
+            ) : (
+              <strong className="text-base font-black text-[#f3cf73]">{formatMoney(plan.priceAmount, plan.currency)}{intervalLabel(plan.billingInterval) ? ` / ${intervalLabel(plan.billingInterval)}` : ""}</strong>
+            )}
+            <span>الترتيب: {plan.sortOrder.toLocaleString("ar-EG")}</span>
             <span>{plan._count.subscriptions.toLocaleString("ar-EG")} مشترك</span>
             <span>{plan._count.paymentRequests.toLocaleString("ar-EG")} طلب دفع</span>
           </div>
@@ -259,13 +269,14 @@ function PlanEditor({ plan, submitLabel }: { plan?: PlanRow; submitLabel: string
       {plan ? <input type="hidden" name="code" value={plan.code} /> : null}
       <input type="hidden" name="isActive" value={String(plan?.isActive ?? true)} />
 
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid gap-3 sm:grid-cols-3">
         <Field label="اسم الباقة"><input name="name" required defaultValue={plan?.name ?? ""} className={inputClass} /></Field>
         <Field label="السعر"><input name="priceAmount" required type="number" min="0" defaultValue={plan?.priceAmount ?? 0} className={inputClass} /></Field>
+        <Field label="ترتيب الظهور"><input name="sortOrder" type="number" min="0" defaultValue={plan?.sortOrder ?? 0} className={inputClass} /></Field>
       </div>
       <div className="grid gap-3 sm:grid-cols-3">
         <Field label="العملة"><select name="currency" defaultValue={plan?.currency ?? "EGP"} className={inputClass}><option value="EGP">EGP</option><option value="USD">USD</option><option value="EUR">EUR</option></select></Field>
-        <Field label="مدة الدفع"><select name="billingInterval" defaultValue={plan?.billingInterval ?? "monthly"} className={inputClass}><option value="monthly">شهري</option><option value="yearly">سنوي</option><option value="lifetime">مدى الحياة</option><option value="unknown">غير معروف</option></select></Field>
+        <Field label="مدة الدفع"><select name="billingInterval" defaultValue={plan?.billingInterval ?? "monthly"} className={inputClass}><option value="monthly">شهري</option><option value="yearly">سنوي</option><option value="lifetime">مدى الحياة</option></select></Field>
         <Field label="نص الزر"><input name="ctaLabel" defaultValue={visual.ctaLabel} className={inputClass} /></Field>
       </div>
       <Field label="وصف مختصر"><textarea name="description" rows={3} defaultValue={visual.description} className={`${inputClass} py-3`} /></Field>
@@ -293,9 +304,14 @@ function PlanEditor({ plan, submitLabel }: { plan?: PlanRow; submitLabel: string
         </div>
       </section>
 
-      <label className="flex min-h-11 items-center gap-3 rounded-2xl border border-white/10 bg-black/18 px-3 text-sm font-bold text-white/68">
-        <input name="isPopular" type="checkbox" defaultChecked={visual.isPopular} /> إضافة شعار الأكثر طلبًا
-      </label>
+      <div className="flex flex-wrap gap-4">
+        <label className="flex min-h-11 items-center gap-3 rounded-2xl border border-white/10 bg-black/18 px-3 text-sm font-bold text-white/68">
+          <input name="isPopular" type="checkbox" defaultChecked={visual.isPopular} /> إضافة شعار الأكثر طلبًا
+        </label>
+        <label className="flex min-h-11 items-center gap-3 rounded-2xl border border-amber-300/15 bg-amber-300/[0.04] px-3 text-sm font-bold text-amber-200/80">
+          <input name="isComingSoon" type="checkbox" defaultChecked={visual.isComingSoon} /> الباقة قريبًا (غير قابلة للشراء)
+        </label>
+      </div>
 
       <button className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-[#f3cf73] px-4 text-sm font-black text-[#17120a] hover:bg-[#f8da8a]">
         <Save className="size-4" /> {submitLabel}

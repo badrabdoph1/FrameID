@@ -20,6 +20,7 @@ const plans = [
     billingInterval: "monthly",
     features: { description: "للبداية", featureLines: ["موقع جاهز"] },
     isActive: true,
+    sortOrder: 0,
     _count: { subscriptions: 3, paymentRequests: 2 }
   },
   {
@@ -31,6 +32,7 @@ const plans = [
     billingInterval: "monthly",
     features: { description: "للمحترفين", featureLines: ["دومين خاص"] },
     isActive: false,
+    sortOrder: 1,
     _count: { subscriptions: 7, paymentRequests: 4 }
   }
 ];

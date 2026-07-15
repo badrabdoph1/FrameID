@@ -26,7 +26,7 @@ export default async function AdminPlansPage({ searchParams }: Props) {
   const [plans, totalPlans, activePlans, subscriptionCount, paymentCount] = await Promise.all([
     prisma.plan.findMany({
       where: where as never,
-      orderBy: [{ isActive: "desc" }, { priceAmount: "asc" }],
+      orderBy: [{ isActive: "desc" }, { sortOrder: "asc" }, { priceAmount: "asc" }],
       include: { _count: { select: { subscriptions: true, paymentRequests: true } } },
     }),
     prisma.plan.count({ where: {} }),
@@ -62,6 +62,7 @@ export default async function AdminPlansPage({ searchParams }: Props) {
           billingInterval: plan.billingInterval,
           features: plan.features,
           isActive: plan.isActive,
+          sortOrder: plan.sortOrder,
           _count: plan._count,
         }))}
         metrics={{ totalPlans, activePlans, subscriptionCount, paymentCount }}
