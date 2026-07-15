@@ -11,6 +11,7 @@ type PrismaBillingActivationClient = {
   auditLog: { create(input: unknown): Promise<unknown> };
   subscriptionChange: { create(input: unknown): Promise<unknown> };
   plan: { findUnique(input: unknown): Promise<unknown | null> };
+  featureFlag: { deleteMany(input: unknown): Promise<{ count: number }> };
 };
 
 type PaymentRequestUpdateResult = { tenantId: string; subscriptionId: string; planId: string | null };
