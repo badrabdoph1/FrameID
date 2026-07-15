@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-07-15T22:35:08.392Z",
+  "updatedAt": "2026-07-15T22:35:21.276Z",
   "themes": [
     {
       "code": "noir-gold",
@@ -316,7 +316,7 @@
           "message": {
             "tone": "info",
             "title": "حسابك تجريبي برجاء التأكد من التفعيل",
-            "enabled": false,
+            "enabled": true,
             "description": "فعّل الاشتراك قبل نهاية الفترة التجريبية حتى يظل موقعك متاحًا للعملاء."
           }
         },
