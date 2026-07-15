@@ -10,7 +10,7 @@ describe("marketing templates page", () => {
 
     expect(
       screen.getByRole("heading", {
-        name: /اختار القالب/u
+        name: /اختار شكل موقع/u
       })
     ).toBeInTheDocument();
 
