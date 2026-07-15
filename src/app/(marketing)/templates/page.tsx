@@ -117,21 +117,30 @@ export default function TemplatesPage() {
                 اختار القالب اللي يعبر عنك، وكل حاجة تتغير بعدين.
               </p>
 
+              {/* CTA */}
+              <a
+                href="#templates-grid"
+                className="mt-7 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.06] px-6 py-2.5 text-sm font-semibold text-white/80 backdrop-blur-sm transition-all duration-300 hover:border-champagne/40 hover:bg-white/[0.1] hover:text-champagne md:mt-9"
+              >
+                شوف القوالب
+                <ChevronDown className="size-4" />
+              </a>
+
               {/* Stats */}
               <div className="mt-10 flex items-center justify-center gap-6 md:mt-14 md:gap-10">
-                <div className="text-center">
-                  <div className="text-sm font-semibold text-champagne md:text-base">✨ جاهز خلال دقائق</div>
-                  <div className="mt-1 text-[0.7rem] text-white/45 md:text-xs">بضغطة واحدة</div>
+                <div className="flex items-center gap-2 text-white/50">
+                  <Zap className="size-4 text-champagne/70" />
+                  <span className="text-[0.8rem] font-medium">جاهز خلال دقائق</span>
                 </div>
-                <div className="h-6 w-px bg-white/10" />
-                <div className="text-center">
-                  <div className="text-sm font-semibold text-champagne md:text-base">🎨 عدّل كل حاجة</div>
-                  <div className="mt-1 text-[0.7rem] text-white/45 md:text-xs">براحتك في أي وقت</div>
+                <div className="h-4 w-px bg-white/10" />
+                <div className="flex items-center gap-2 text-white/50">
+                  <Palette className="size-4 text-champagne/70" />
+                  <span className="text-[0.8rem] font-medium">عدّل كل حاجة</span>
                 </div>
-                <div className="h-6 w-px bg-white/10" />
-                <div className="text-center">
-                  <div className="text-sm font-semibold text-champagne md:text-base">🚀 ابدأ مجانًا</div>
-                  <div className="mt-1 text-[0.7rem] text-white/45 md:text-xs">بدون أي رسوم</div>
+                <div className="h-4 w-px bg-white/10" />
+                <div className="flex items-center gap-2 text-white/50">
+                  <CreditCard className="size-4 text-champagne/70" />
+                  <span className="text-[0.8rem] font-medium">ابدأ مجانًا</span>
                 </div>
               </div>
             </div>
@@ -142,7 +151,7 @@ export default function TemplatesPage() {
         </section>
 
         {/* Templates Grid */}
-        <section className="container-page -mt-10 pb-24 md:-mt-16 md:pb-32">
+        <section id="templates-grid" className="container-page -mt-10 pb-24 md:-mt-16 md:pb-32">
           {templates.length === 0 ? (
             <div className="rounded-2xl border border-border/60 bg-card p-12 text-center">
               <div className="mx-auto mb-4 flex size-16 items-center justify-center rounded-full bg-muted/50">
