@@ -49,10 +49,12 @@ export function ImmersiveOnboarding({ onComplete, photographerName }: { onComple
   useEffect(() => {
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
+    window.dispatchEvent(new CustomEvent("frameid:onboarding", { detail: true }));
     return () => {
       mountedRef.current = false;
       clearAllTimers();
       document.body.style.overflow = prevOverflow;
+      window.dispatchEvent(new CustomEvent("frameid:onboarding", { detail: false }));
     };
   }, [clearAllTimers]);
 
@@ -73,11 +75,8 @@ export function ImmersiveOnboarding({ onComplete, photographerName }: { onComple
     setTransitioning(true);
     addTimer(() => {
       if (!mountedRef.current) return;
+      setTransitioning(false);
       setStep((s) => s + 1);
-      addTimer(() => {
-        if (!mountedRef.current) return;
-        setTransitioning(false);
-      }, 16);
     }, CARD_EXIT_MS);
   }, [step, transitioning, exiting, onComplete, router, addTimer]);
 
@@ -86,11 +85,8 @@ export function ImmersiveOnboarding({ onComplete, photographerName }: { onComple
     setTransitioning(true);
     addTimer(() => {
       if (!mountedRef.current) return;
+      setTransitioning(false);
       setStep((s) => s - 1);
-      addTimer(() => {
-        if (!mountedRef.current) return;
-        setTransitioning(false);
-      }, 16);
     }, CARD_EXIT_MS);
   }, [step, transitioning, exiting, addTimer]);
 

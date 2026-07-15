@@ -103,6 +103,14 @@ export function PwaInstallButton({ context }: PwaInstallButtonProps) {
   const [showUpdateToast, setShowUpdateToast] = useState(false);
   const [entered, setEntered] = useState(false);
   const [shouldAnimate, setShouldAnimate] = useState(false);
+  const [onboardingActive, setOnboardingActive] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const onEvent = (e: Event) => setOnboardingActive((e as CustomEvent).detail === true);
+    window.addEventListener("frameid:onboarding", onEvent);
+    return () => window.removeEventListener("frameid:onboarding", onEvent);
+  }, []);
 
   const allowedInThisRoute = useMemo(() => {
     if (!pathname) return false;
@@ -290,6 +298,7 @@ export function PwaInstallButton({ context }: PwaInstallButtonProps) {
   };
 
   if (!allowedInThisRoute) return null;
+  if (onboardingActive) return null;
 
   return (
     <>
