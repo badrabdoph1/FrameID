@@ -142,7 +142,7 @@ export default function TemplatesPage() {
         </section>
 
         {/* Templates Grid */}
-        <section id="templates-list" className="container-page -mt-10 pb-20 md:-mt-16 md:pb-28">
+        <section className="container-page -mt-10 pb-20 md:-mt-16 md:pb-28">
           {templates.length === 0 ? (
             <div className="rounded-2xl border border-border/60 bg-card p-12 text-center">
               <div className="mx-auto mb-4 flex size-16 items-center justify-center rounded-full bg-muted/50">
