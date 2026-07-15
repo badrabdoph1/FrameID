@@ -22,6 +22,7 @@ export default async function AdminOnboardingCardsPage({ searchParams }: Props) 
 
   const flagKeys = allCards.map((card) => `onboarding-card:${card.id}`);
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let flags: any[] = [];
   if (process.env.DATABASE_URL) {
     try {

@@ -13,6 +13,7 @@ const status = { PUBLISHED: { label: "منشور", tone: "success" as const }, D
 export default async function AdminThemesPage() {
   await requireAdminPermission("themes", "view");
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let themes: any[] = [];
   if (process.env.DATABASE_URL) {
     try {

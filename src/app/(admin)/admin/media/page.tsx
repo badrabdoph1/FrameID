@@ -1,5 +1,4 @@
 import { Image as ImageIcon } from "lucide-react";
-import Image from "next/image";
 
 import { AdminEmptyState } from "@/components/admin/admin-workspace-primitives";
 import { AdminPageShell } from "@/components/layout/admin-page-shell";
@@ -18,8 +17,11 @@ function formatSize(bytes: number) {
 export default async function AdminMediaPage() {
   await requireAdminPermission("media", "view");
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let assets: any[] = [];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let templates: any[] = [];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let paymentSettings: any[] = [];
 
   if (process.env.DATABASE_URL) {
