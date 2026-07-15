@@ -202,13 +202,19 @@ export default function TemplatesPage() {
                       </div>
 
                       {/* Actions */}
-                      <div className="mt-6 flex items-center justify-between border-t border-border/50 pt-5">
+                      <div className="mt-6 flex items-center gap-3 border-t border-border/50 pt-5">
+                        <Link
+                          href={`/templates/${template.code}/preview`}
+                          className="inline-flex min-h-10 items-center justify-center gap-2 rounded-full bg-foreground px-5 text-[0.8rem] font-semibold text-background transition-all duration-200 hover:bg-foreground/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
+                        >
+                          <Eye className="size-3.5" aria-hidden />
+                          شوف القالب
+                        </Link>
                         <Link
                           href={`/signup?template=${template.code}`}
-                          className="inline-flex items-center gap-2 text-sm font-semibold text-champagne-strong transition-all duration-200 hover:gap-3 hover:text-champagne"
+                          className="text-[0.8rem] font-semibold text-champagne-strong transition-colors duration-150 hover:text-champagne-strong/70"
                         >
-                          استخدم هذا القالب
-                          <ArrowLeft className="size-4 transition-transform duration-200" />
+                          استخدمه لموقعي
                         </Link>
                       </div>
                     </div>
