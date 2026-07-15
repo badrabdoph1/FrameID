@@ -31,10 +31,13 @@
 
   .customer-desktop-sidebar {
     top: 22px;
-    height: calc(100vh - 44px);
+    height: calc(100dvh - 44px);
     width: 318px;
     border-radius: 34px;
     border: 1px solid rgba(255, 255, 255, 0.09);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
     background:
       radial-gradient(circle at top right, rgba(243, 207, 115, 0.13), transparent 35%),
       linear-gradient(180deg, rgba(16, 19, 27, 0.98), rgba(9, 12, 18, 0.98));
@@ -50,6 +53,8 @@
 
   .customer-desktop-sidebar-nav {
     padding-left: 3px;
+    min-height: 0;
+    flex: 1;
   }
 
   .customer-desktop-nav-link {

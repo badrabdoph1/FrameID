@@ -232,8 +232,8 @@ export function DashboardShell({ children, siteSlug, hasSubscription }: { childr
       </header>
 
       <div className="customer-desktop-layout mx-auto flex min-h-dvh max-w-[1440px] lg:min-h-screen">
-        <aside className="customer-desktop-sidebar sticky top-0 hidden h-screen w-[296px] shrink-0 flex-col min-h-0 border-l border-white/8 bg-[#0c0e13] p-4 lg:flex">
-          <Link href="/dashboard" className="customer-desktop-brand-card flex items-center gap-3 rounded-3xl border border-white/8 bg-white/[0.035] p-3 no-underline transition hover:border-amber-300/20 hover:bg-amber-300/8">
+        <aside className="customer-desktop-sidebar sticky top-0 hidden w-[296px] shrink-0 flex-col overflow-hidden border-l border-white/8 bg-[#0c0e13] p-4 lg:flex">
+          <Link href="/dashboard" className="customer-desktop-brand-card flex shrink-0 items-center gap-3 rounded-3xl border border-white/8 bg-white/[0.035] p-3 no-underline transition hover:border-amber-300/20 hover:bg-amber-300/8">
             <BrandMark large />
             <span>
               <strong className="block text-lg font-black text-[#fff7e8]">FrameID</strong>
@@ -241,19 +241,19 @@ export function DashboardShell({ children, siteSlug, hasSubscription }: { childr
             </span>
           </Link>
 
-          <div className="customer-desktop-sidebar-nav mt-4 grid flex-1 min-h-0 gap-2 overflow-y-auto pb-4 pr-0.5 admin-scrollbar">
-            <p className="px-2 text-[0.68rem] font-black uppercase tracking-wider text-white/28">خطوات العمل</p>
+          <nav className="customer-desktop-sidebar-nav mt-4 flex flex-1 flex-col gap-2 overflow-y-auto overflow-x-hidden pb-4 pr-0.5 admin-scrollbar">
+            <p className="shrink-0 px-2 text-[0.68rem] font-black uppercase tracking-wider text-white/28">خطوات العمل</p>
             {primaryNav.map((item) => (
               <NavLink key={item.href} item={item} active={isActivePath(pathname, item.href)} />
             ))}
 
-            <p className="mt-3 px-2 text-[0.68rem] font-black uppercase tracking-wider text-white/28">أدوات إضافية</p>
+            <p className="mt-3 shrink-0 px-2 text-[0.68rem] font-black uppercase tracking-wider text-white/28">أدوات إضافية</p>
             {secondaryNav.map((item) => (
               <NavLink key={item.href} item={item} active={isActivePath(pathname, item.href)} compact />
             ))}
-          </div>
+          </nav>
 
-          <div className="mt-auto grid gap-2 border-t border-white/8 pt-3">
+          <div className="mt-auto shrink-0 grid gap-2 border-t border-white/8 pt-3">
             {siteSlug ? (
               <Link href={`/p/${siteSlug}`} target="_blank" className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-amber-300/18 bg-amber-300/10 px-3 text-sm font-black text-[#f3cf73] no-underline transition hover:bg-amber-300/16 hover:text-[#ffe9a8]">
                 <ExternalLink className="size-4" aria-hidden />
