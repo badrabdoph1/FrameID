@@ -1,21 +1,20 @@
 {
   "$schema": "marketing/footer",
-  "version": 4,
-  "updatedAt": "2026-07-09T00:00:00.000Z",
+  "version": 5,
+  "updatedAt": "2026-07-15T00:00:00.000Z",
   "data": {
-    "description": "منصة عربية بتقدم للمصورين موقع احترافي جاهز للرابط والمشاركة، مع لوحة بسيطة لتعديل الصور والباقات في أي وقت.",
+    "description": "منصة مواقع المصورين — موقع احترافي جاهز للرابط والمشاركة.",
     "quickLinks": [
       { "label": "القوالب", "href": "/templates" },
-      { "label": "سياسة الخصوصية", "href": "/privacy" },
-      { "label": "شروط الاستخدام", "href": "/terms" },
-      { "label": "ملفات الارتباط", "href": "/cookies" }
+      { "label": "الخصوصية", "href": "/privacy" },
+      { "label": "الشروط", "href": "/terms" }
     ],
     "cta": {
       "title": "ابدأ دلوقتي",
-      "subtitle": "جهّز موقعك ورابطك الخاص في دقائق، وخلي العميل يشوف شغلك وباقاتك من مكان واحد.",
+      "subtitle": "جهّز موقعك في دقايق.",
       "label": "أنشئ موقعك",
       "href": "/signup"
     },
-    "copyright": "© 2026 FrameID. كل الحقوق محفوظة."
+    "copyright": "© 2026 FrameID"
   }
 }

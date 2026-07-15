@@ -20,10 +20,6 @@ describe("marketing nav", () => {
       "href",
       "/login"
     );
-    expect(within(mobileMenu).getByRole("link", { name: "الدعم الفني" })).toHaveAttribute(
-      "href",
-      "mailto:support@frameid.app"
-    );
     expect(within(mobileMenu).getByRole("link", { name: "جرب مجاناً" })).toHaveAttribute(
       "href",
       "/signup"

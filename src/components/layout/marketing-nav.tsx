@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Menu, X } from "lucide-react";
 
 export interface NavLink {
@@ -17,13 +17,13 @@ interface MarketingNavProps {
 const defaultLinks: NavLink[] = [
   { href: "/templates", label: "القوالب" },
   { href: "/login", label: "تسجيل دخول" },
-  { href: "mailto:support@frameid.app", label: "الدعم الفني" },
   { href: "/signup", label: "جرب مجاناً" }
 ];
 
 export function MarketingNav({ links = defaultLinks, previewMode = false }: MarketingNavProps) {
   const [menuOpen, setMenuOpen] = useState(false);
-  const primaryLink = links.find((l) => l.href === "/signup");
+  const signupLink = links.find((l) => l.href === "/signup");
+  const otherLinks = links.filter((l) => l.href !== "/signup");
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -49,47 +49,45 @@ export function MarketingNav({ links = defaultLinks, previewMode = false }: Mark
     <>
       <Link
         href="#main-content"
-        className="fixed start-4 top-4 z-50 -translate-y-24 rounded-[var(--radius-control)] bg-white px-4 py-2 text-sm font-semibold text-ink shadow-soft transition-transform focus-visible:translate-y-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+        className="fixed start-4 top-4 z-50 -translate-y-24 rounded-full bg-white px-4 py-2 text-sm font-semibold text-ink shadow-soft transition-transform focus-visible:translate-y-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
       >
-       انتقال للمحتوى
+        انتقال للمحتوى
       </Link>
-      <header className={`${previewMode ? "sticky -mb-16" : "fixed"} inset-x-0 top-0 z-30 border-b border-white/10 bg-ink/70 backdrop-blur-xl`}>
-        <nav className="container-page flex h-16 items-center justify-between gap-3 text-white">
+      <header className={`${previewMode ? "sticky -mb-16" : "fixed"} inset-x-0 top-0 z-30 border-b border-white/8 bg-ink/60 backdrop-blur-xl`}>
+        <nav className="container-page flex h-14 items-center justify-between gap-3 text-white md:h-16">
           <Link
             href="/"
-            className="font-display text-xl font-semibold tracking-normal"
+            className="font-display text-lg font-semibold tracking-normal md:text-xl"
             translate="no"
           >
             FrameID
           </Link>
-          <div className="hidden min-w-0 items-center gap-1 text-sm md:flex">
-            {links.map((item) => {
-              const isPrimary = item.href === "/signup";
-              const isQuiet = item.href === "/login";
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={
-                    isPrimary
-                      ? "inline-flex min-h-10 items-center justify-center rounded-full bg-white px-4 text-sm font-semibold text-ink transition-[background-color] hover:bg-white/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
-                      : isQuiet
-                        ? "hidden rounded-full px-3 py-2 text-white/72 transition-[background-color,color] hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white sm:inline-flex"
-                        : "rounded-full px-3 py-2 text-white/78 transition-[background-color,color] hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
-                  }
-                >
-                  {item.label}
-                </Link>
-              );
-            })}
+          <div className="hidden items-center gap-0.5 text-sm md:flex">
+            {otherLinks.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="rounded-full px-3.5 py-2 text-white/65 transition hover:bg-white/8 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+              >
+                {item.label}
+              </Link>
+            ))}
+            {signupLink && (
+              <Link
+                href={signupLink.href}
+                className="ms-2 inline-flex min-h-9 items-center justify-center rounded-full bg-white px-4 text-sm font-semibold text-ink transition hover:bg-white/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+              >
+                {signupLink.label}
+              </Link>
+            )}
           </div>
           <div className="flex items-center gap-2 md:hidden">
-            {primaryLink && (
+            {signupLink && (
               <Link
-                href={primaryLink.href}
-                className="inline-flex min-h-10 items-center justify-center rounded-full bg-white px-4 text-sm font-semibold text-ink transition-[background-color] hover:bg-white/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+                href={signupLink.href}
+                className="inline-flex min-h-9 items-center justify-center rounded-full bg-white px-3.5 text-xs font-semibold text-ink transition hover:bg-white/90"
               >
-                {primaryLink.label}
+                {signupLink.label}
               </Link>
             )}
             <button
@@ -98,7 +96,7 @@ export function MarketingNav({ links = defaultLinks, previewMode = false }: Mark
               aria-controls="marketing-mobile-menu"
               aria-expanded={menuOpen}
               onClick={() => setMenuOpen((open) => !open)}
-              className="inline-flex size-10 items-center justify-center rounded-full border border-white/15 bg-white/5 text-white transition hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+              className="inline-flex size-9 items-center justify-center rounded-full border border-white/12 bg-white/5 text-white transition hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
             >
               {menuOpen ? <X className="size-4" aria-hidden /> : <Menu className="size-4" aria-hidden />}
             </button>
@@ -108,9 +106,9 @@ export function MarketingNav({ links = defaultLinks, previewMode = false }: Mark
           <nav
             id="marketing-mobile-menu"
             aria-label="قائمة الموقع"
-            className="border-t border-white/10 bg-ink/95 px-4 py-3 text-white shadow-soft md:hidden"
+            className="border-t border-white/8 bg-ink/95 px-4 py-3 text-white shadow-soft md:hidden"
           >
-            <div className="container-page grid max-h-[calc(100dvh-5rem)] gap-2 overflow-y-auto px-0 pb-[env(safe-area-inset-bottom)]">
+            <div className="container-page grid max-h-[calc(100dvh-4rem)] gap-2 overflow-y-auto px-0 pb-[env(safe-area-inset-bottom)]">
               {links.map((item) => (
                 <Link
                   key={item.href}
@@ -118,8 +116,8 @@ export function MarketingNav({ links = defaultLinks, previewMode = false }: Mark
                   onClick={() => setMenuOpen(false)}
                   className={
                     item.href === "/signup"
-                      ? "inline-flex min-h-12 items-center justify-center rounded-[var(--radius-control)] bg-white px-4 text-sm font-semibold text-ink transition hover:bg-white/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
-                      : "inline-flex min-h-12 items-center justify-center rounded-[var(--radius-control)] border border-white/10 bg-white/5 px-4 text-sm font-semibold text-white transition hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+                      ? "inline-flex min-h-11 items-center justify-center rounded-full bg-white px-4 text-sm font-semibold text-ink transition hover:bg-white/90"
+                      : "inline-flex min-h-11 items-center justify-center rounded-full border border-white/10 bg-white/5 px-4 text-sm font-medium text-white/80 transition hover:bg-white/10"
                   }
                 >
                   {item.label}
