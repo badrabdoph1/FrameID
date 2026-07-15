@@ -353,12 +353,11 @@ function LifecycleStatusCard({
   subscription: NonNullable<DashboardViewModel["subscription"]>;
   experience: NonNullable<DashboardViewModel["subscriptionExperience"]>;
 }) {
-  const hasMessage = experience.message.enabled && experience.message.title;
-  const hasTimer = experience.timer.enabled && experience.timer.daysRemaining !== null;
-  const hasAction = experience.action.visible && experience.action.href;
-  if (!hasMessage && !hasTimer && !hasAction) {
+  if (!experience.message.enabled) {
     return null;
   }
+  const hasTimer = experience.timer.enabled && experience.timer.daysRemaining !== null;
+  const hasAction = experience.action.visible && experience.action.href;
   const endDate = subscription.endsAt ? new Date(subscription.endsAt).toLocaleDateString("ar-EG") : "دائم";
   const tone =
     experience.message.tone === "danger"
@@ -372,35 +371,32 @@ function LifecycleStatusCard({
   const toneText = tone === "danger" ? "text-red-100" : tone === "warning" ? "text-amber-100" : "text-emerald-100";
   const barClass = tone === "danger" ? "bg-red-400" : tone === "warning" ? "bg-amber-400" : "bg-emerald-400";
   const buttonClass = tone === "danger" ? "bg-red-400 hover:bg-red-300 text-white" : tone === "warning" ? "bg-amber-400 hover:bg-amber-300 text-[#17120a]" : "bg-emerald-400 hover:bg-emerald-300 text-[#17120a]";
-  const daysText =
-    hasTimer
-      ? `متبقي ${experience.timer.daysRemaining} يوم`
-      : subscription.daysRemaining === null
-        ? "اشتراك دائم"
-        : `متبقي ${subscription.daysRemaining} يوم`;
+  const daysText = hasTimer
+    ? `متبقي ${experience.timer.daysRemaining} يوم`
+    : null;
   return (
     <section className={`flex flex-wrap items-center gap-2 rounded-xl border p-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] sm:rounded-2xl sm:gap-3 sm:p-2.5 ${toneClasses}`}>
       <span className={`grid size-7 shrink-0 place-items-center rounded-md bg-white/8 ${toneText} sm:size-8 sm:rounded-lg`}>
         <CalendarDays className="size-3.5 sm:size-4" aria-hidden />
       </span>
       <div className="min-w-0 flex-1">
-        {hasMessage ? (
-          <>
-            <div className="flex flex-wrap items-center gap-x-1 gap-y-0">
-              <span className="text-[0.65rem] font-black text-[#fff7e8] sm:text-xs">{experience.message.title}</span>
-              <span className="mx-1 text-[0.55rem] font-bold text-white/30">·</span>
-              <span className="text-[0.6rem] font-bold text-white/45">{subscription.planName ?? subscription.accountType}</span>
+        <div className="flex flex-wrap items-center gap-x-1 gap-y-0">
+          <span className="text-[0.65rem] font-black text-[#fff7e8] sm:text-xs">{experience.message.title}</span>
+          <span className="mx-1 text-[0.55rem] font-bold text-white/30">·</span>
+          <span className="text-[0.6rem] font-bold text-white/45">{subscription.planName ?? subscription.accountType}</span>
+          {hasTimer ? (
+            <>
               <span className="mx-1 text-[0.55rem] font-bold text-white/25">·</span>
               <span className="text-[0.6rem] font-bold text-white/50">{daysText}</span>
               <span className="mx-1 text-[0.55rem] font-bold text-white/25">·</span>
               <span className="text-[0.6rem] font-bold text-white/40">ينتهي: {endDate}</span>
-            </div>
-            {experience.message.description ? (
-              <p className="mt-0.5 text-[0.6rem] font-bold leading-4 text-white/55 sm:text-[0.65rem]">
-                {experience.message.description}
-              </p>
-            ) : null}
-          </>
+            </>
+          ) : null}
+        </div>
+        {experience.message.description ? (
+          <p className="mt-0.5 text-[0.6rem] font-bold leading-4 text-white/55 sm:text-[0.65rem]">
+            {experience.message.description}
+          </p>
         ) : null}
       </div>
       <div className="flex items-center gap-2 sm:gap-2.5">
