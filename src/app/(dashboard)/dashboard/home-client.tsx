@@ -55,10 +55,6 @@ export function DashboardHomeClient({ siteUrl, statusLabel, checklist, lastModif
     if (onboardingResolvedRef.current) return;
     onboardingResolvedRef.current = true;
 
-    if (showWelcome) {
-      router.replace("/dashboard", { scroll: false });
-    }
-
     try {
       const saved = window.localStorage.getItem(CHECKLIST_STORAGE_KEY);
       if (saved) {
@@ -66,6 +62,12 @@ export function DashboardHomeClient({ siteUrl, statusLabel, checklist, lastModif
         setChecklistHidden(Boolean(preferences.hidden));
       }
     } catch {
+    }
+
+    if (showWelcome) {
+      setShowOnboarding(true);
+      router.replace("/dashboard", { scroll: false });
+      return;
     }
 
     try {
