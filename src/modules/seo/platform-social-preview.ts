@@ -2,7 +2,8 @@ import "server-only";
 
 import { prisma } from "@/lib/prisma";
 
-export const PLATFORM_SOCIAL_PREVIEW_FLAG_KEY = "platform-social-preview";
+export const PLATFORM_SOCIAL_PREVIEW_FLAG_KEY = "platform.social-preview";
+const LEGACY_PLATFORM_SOCIAL_PREVIEW_FLAG_KEY = "platform-social-preview";
 
 export type PlatformSocialPreviewSettings = {
   enabled: boolean;
@@ -43,13 +44,32 @@ export async function loadPlatformSocialPreview(): Promise<PlatformSocialPreview
       select: { enabled: true, value: true },
     });
 
-    if (!row) return DEFAULT_PLATFORM_SOCIAL_PREVIEW;
-    return normalizePlatformSocialPreview({
-      ...(isRecord(row.value) ? row.value : {}),
-      enabled: row.enabled,
+    if (row) {
+      return normalizePlatformSocialPreview({
+        ...(isRecord(row.value) ? row.value : {}),
+        enabled: row.enabled,
+      });
+    }
+
+    const legacyRow = await prisma.featureFlag.findFirst({
+      where: {
+        key: LEGACY_PLATFORM_SOCIAL_PREVIEW_FLAG_KEY,
+        scope: "PLATFORM",
+        tenantId: null,
+        siteId: null,
+      },
+      select: { enabled: true, value: true },
     });
+
+    if (legacyRow) {
+      return normalizePlatformSocialPreview({
+        ...(isRecord(legacyRow.value) ? legacyRow.value : {}),
+        enabled: legacyRow.enabled,
+      });
+    }
+
+    return DEFAULT_PLATFORM_SOCIAL_PREVIEW;
   } catch {
-    // Metadata must remain available during builds and temporary database outages.
     return DEFAULT_PLATFORM_SOCIAL_PREVIEW;
   }
 }

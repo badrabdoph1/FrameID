@@ -1,4 +1,4 @@
-import { Prisma, PrismaClient } from "@prisma/client";
+import { Prisma, PrismaClient, PlatformPageKind } from "@prisma/client";
 
 import { getPlatformSeedData } from "../src/modules/setup/platform-seed-data";
 import { seedSuperAdminUser } from "../src/modules/setup/super-admin-seed-service";
@@ -156,6 +156,27 @@ async function main() {
   for (const message of seedData.platformMessages) {
     await prisma.notificationLog.updateMany({ where: { tenantId: null, category: message.category, title: message.title, deletedAt: null }, data: { deletedAt: new Date() } });
     await prisma.notificationLog.create({ data: { tenantId: null, category: message.category, type: message.type, title: message.title, body: message.body } });
+  }
+
+  for (const page of seedData.platformPages) {
+    await prisma.platformPage.upsert({
+      where: { key: page.key },
+      update: {
+        route: page.route,
+        kind: page.kind as PlatformPageKind,
+        document: page.document as Prisma.InputJsonValue,
+        version: page.version,
+        schemaVersion: page.schemaVersion,
+      },
+      create: {
+        key: page.key,
+        route: page.route,
+        kind: page.kind as PlatformPageKind,
+        document: page.document as Prisma.InputJsonValue,
+        version: page.version,
+        schemaVersion: page.schemaVersion,
+      },
+    });
   }
 
   const backupSettingsData = [

@@ -187,6 +187,7 @@ export function AccountsModal({
                   <SortableHeader field="endsAt" label="تاريخ الانتهاء" currentSort={sortBy} currentOrder={sortOrder} onToggle={toggleSort} />
                   <SortableHeader field="daysOverdue" label="أيام التجاوز" currentSort={sortBy} currentOrder={sortOrder} onToggle={toggleSort} />
                   <th className="px-4 py-3 text-[0.7rem] font-extrabold text-white/35">الحالة</th>
+                  <th className="px-4 py-3 text-[0.7rem] font-extrabold text-white/35">سبب الاستمرار</th>
                 </tr>
               </thead>
               <tbody>
@@ -210,6 +211,7 @@ export function AccountsModal({
                         {statusLabel(account.status)}
                       </span>
                     </td>
+                    <td className="max-w-[120px] truncate px-4 py-3 text-xs font-extrabold text-amber-300/70">{account.reason}</td>
                   </tr>
                 ))}
               </tbody>

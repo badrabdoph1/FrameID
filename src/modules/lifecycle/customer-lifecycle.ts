@@ -426,7 +426,9 @@ export async function getDeactivationPausedAccounts(
       endDate: endDate?.toISOString() ?? null,
       daysOverdue,
       status: a.status,
-      reason: type === "trial" ? "تعليق تعطيل الحسابات التجريبية" : "تعليق تعطيل الحسابات المدفوعة",
+      reason: daysOverdue > 0
+        ? (type === "trial" ? "تعليق تعطيل الحسابات التجريبية" : "تعليق تعطيل الحسابات المدفوعة")
+        : "يعمل بشكل طبيعي",
     };
   });
 

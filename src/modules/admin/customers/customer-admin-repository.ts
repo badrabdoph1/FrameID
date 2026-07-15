@@ -461,6 +461,18 @@ export function createCustomerAdminRepository(prisma: PrismaClient) {
           where: { id },
           data: { status, deletedAt: null },
         });
+        await tx.subscription.updateMany({
+          where: { tenantId: id },
+          data: { status: "ACTIVE" },
+        });
+        await tx.featureFlag.deleteMany({
+          where: {
+            key: "platform.subscription.experience.override",
+            scope: "TENANT",
+            tenantId: id,
+            siteId: null,
+          },
+        });
       } else {
         await tx.tenant.update({
           where: { id },

@@ -93,6 +93,14 @@ export function createPrismaBillingActivationRepository(prisma: PrismaBillingAct
       await prisma.subscription.update({ where: { id: subscriptionId }, data: { status: "ACTIVE", planId: planId ?? undefined, activatedAt, currentPeriodStart: activatedAt, currentPeriodEnd: currentPeriodEnd ?? null, expiresAt: currentPeriodEnd ?? null } });
       await prisma.tenant.update({ where: { id: tenantId }, data: { status: "ACTIVE" } });
       await prisma.site.updateMany({ where: { tenantId, deletedAt: null }, data: { status: "PUBLISHED", isPublished: true } });
+      await prisma.featureFlag.deleteMany({
+        where: {
+          key: "platform.subscription.experience.override",
+          scope: "TENANT",
+          tenantId,
+          siteId: null,
+        },
+      });
     },
 
     async cancelSubscription(subscriptionId) {

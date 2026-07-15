@@ -15,13 +15,14 @@ export async function syncPlatformConfigurationToGitHub(input: {
   reason: string;
 }) {
   const before = existsSync(ABSOLUTE_PATH) ? JSON.parse(readFileSync(ABSOLUTE_PATH, "utf8")) as unknown : null;
-  const [themes, templates, plans, paymentSettings, featureFlags, platformMessages] = await Promise.all([
+  const [themes, templates, plans, paymentSettings, featureFlags, platformMessages, platformPages] = await Promise.all([
     prisma.theme.findMany({ where: { deletedAt: null }, orderBy: { code: "asc" }, select: { code: true, name: true, status: true, version: true, category: true, defaultConfig: true, contentSchema: true } }),
     prisma.template.findMany({ where: { deletedAt: null }, orderBy: { showroomOrder: "asc" }, select: { code: true, name: true, status: true, version: true, showroomOrder: true, previewData: true, settings: true, theme: { select: { code: true } } } }),
     prisma.plan.findMany({ orderBy: { code: "asc" }, select: { code: true, name: true, priceAmount: true, currency: true, billingInterval: true, features: true, isActive: true } }),
     prisma.paymentSettings.findMany({ orderBy: { sortOrder: "asc" }, select: { paymentMethod: true, isActive: true, label: true, description: true, config: true, sortOrder: true, accounts: { where: { deletedAt: null }, orderBy: { sortOrder: "asc" }, select: { label: true, displayName: true, accountName: true, accountNumber: true, accountIdentifier: true, iban: true, swift: true, phoneNumber: true, bankName: true, instructions: true, notes: true, isActive: true, sortOrder: true } } } }),
     prisma.featureFlag.findMany({ where: { scope: "PLATFORM", tenantId: null, siteId: null }, orderBy: { key: "asc" }, select: { key: true, enabled: true, value: true } }),
     prisma.notificationLog.findMany({ where: { tenantId: null, category: "ACTIVATION_MESSAGE_TEMPLATE", deletedAt: null }, orderBy: { title: "asc" }, select: { category: true, type: true, title: true, body: true } }),
+    prisma.platformPage.findMany({ orderBy: { key: "asc" }, select: { key: true, route: true, kind: true, document: true, version: true, schemaVersion: true } }),
   ]);
   const after = {
     version: 1,
@@ -32,6 +33,7 @@ export async function syncPlatformConfigurationToGitHub(input: {
     paymentSettings,
     featureFlags,
     platformMessages,
+    platformPages,
   };
   mkdirSync(dirname(ABSOLUTE_PATH), { recursive: true });
   writeFileSync(ABSOLUTE_PATH, JSON.stringify(after, null, 2), "utf8");

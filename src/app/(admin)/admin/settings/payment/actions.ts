@@ -4,6 +4,9 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { requireAdminPermission } from "@/modules/admin/admin-permission-guards";
+import { commitContentFilesToGitHub } from "@/lib/content/git-sync";
+import { readFile, writeFile } from "node:fs/promises";
+import { join } from "node:path";
 
 function readString(formData: FormData, key: string): string {
   const value = formData.get(key);
@@ -18,7 +21,7 @@ export async function addPaymentAccountAction() { redirect("/admin/settings/paym
 export async function uploadPaymentQRCodeAction() { redirect("/admin/settings/payment"); }
 
 export async function updatePaymentAccountAction(formData: FormData) {
-  await requireAdminPermission("payment-settings", "edit");
+  const admin = await requireAdminPermission("payment-settings", "edit");
 
   const accountId = readString(formData, "accountId");
   const accountName = readString(formData, "accountName");
@@ -29,9 +32,6 @@ export async function updatePaymentAccountAction(formData: FormData) {
   }
 
   try {
-    const { readFile, writeFile } = await import("node:fs/promises");
-    const { join } = await import("node:path");
-
     const configPath = join(
       process.cwd(),
       "content/platform/admin-config.json",
@@ -66,6 +66,11 @@ export async function updatePaymentAccountAction(formData: FormData) {
     };
 
     await writeFile(configPath, JSON.stringify(config, null, 2), "utf-8");
+
+    await commitContentFilesToGitHub({
+      files: [{ path: "content/platform/admin-config.json", absolutePath: configPath }],
+      message: "تحديث حسابات الدفع",
+    });
   } catch (error) {
     console.error("[payment] failed to save:", error);
     redirect("/admin/settings/payment?error=فشل حفظ التغيير");

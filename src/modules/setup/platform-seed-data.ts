@@ -170,6 +170,7 @@ export function getPlatformSeedData() {
     ],
     featureFlags: [] as Array<{ key: string; enabled: boolean; value: unknown }>,
     platformMessages: [] as Array<{ category: string | null; type: string; title: string; body: string | null }>,
+    platformPages: [] as Array<{ key: string; route: string; kind: string; document: unknown; version: number; schemaVersion: number }>,
   };
   const configPath = join(process.cwd(), "content", "platform", "admin-config.json");
   if (!existsSync(configPath)) return baseline;
@@ -182,6 +183,7 @@ export function getPlatformSeedData() {
       paymentSettings: Array.isArray(saved.paymentSettings) && saved.paymentSettings.length ? saved.paymentSettings : baseline.paymentSettings,
       featureFlags: Array.isArray(saved.featureFlags) ? saved.featureFlags : baseline.featureFlags,
       platformMessages: Array.isArray(saved.platformMessages) ? saved.platformMessages : baseline.platformMessages,
+      platformPages: Array.isArray(saved.platformPages) && saved.platformPages.length ? saved.platformPages : baseline.platformPages,
     } as typeof baseline;
   } catch {
     return baseline;

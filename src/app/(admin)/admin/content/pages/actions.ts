@@ -13,6 +13,7 @@ import {
   createPlatformPageService,
 } from "@/modules/platform-pages/page-service";
 import { requireAdminPermission } from "@/modules/admin/admin-permission-guards";
+import { syncPlatformConfigurationToGitHub } from "@/modules/setup/platform-configuration-git";
 
 type SavePlatformPageActionInput = {
   pageKey: string;
@@ -112,6 +113,11 @@ export async function restorePlatformPageRevisionAction(
     revalidatePath(`/admin/content/pages/${definition.key}`);
     revalidatePath("/admin/content");
 
+    await syncPlatformConfigurationToGitHub({
+      actor: admin,
+      reason: `استعادة نسخة من صفحة ${definition.key}`,
+    });
+
     return {
       success: true,
       version: result.page.version,
@@ -171,6 +177,11 @@ export async function savePlatformPageAction(
     revalidatePath(definition.route);
     revalidatePath(`/admin/content/pages/${definition.key}`);
     revalidatePath("/admin/content");
+
+    await syncPlatformConfigurationToGitHub({
+      actor: admin,
+      reason: `حفظ صفحة ${definition.key}`,
+    });
 
     return {
       success: true,
