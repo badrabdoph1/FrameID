@@ -29,26 +29,25 @@ export async function saveCardOverride(formData: FormData) {
   const { cardId, title, description } = parsed.data;
   const flagKey = `onboarding-card:${cardId}`;
 
-  await prisma.featureFlag.upsert({
-    where: {
-      key_scope_tenantId_siteId: {
+  const existing = await prisma.featureFlag.findFirst({
+    where: { key: flagKey, scope: "PLATFORM", tenantId: null, siteId: null },
+  });
+
+  if (existing) {
+    await prisma.featureFlag.update({
+      where: { id: existing.id },
+      data: { value: { title, description }, enabled: true },
+    });
+  } else {
+    await prisma.featureFlag.create({
+      data: {
         key: flagKey,
         scope: "PLATFORM",
-        tenantId: null,
-        siteId: null,
+        value: { title, description },
+        enabled: true,
       },
-    },
-    create: {
-      key: flagKey,
-      scope: "PLATFORM",
-      enabled: true,
-      value: { title, description },
-    },
-    update: {
-      value: { title, description },
-      enabled: true,
-    },
-  });
+    });
+  }
 
   revalidatePath("/admin/onboarding-cards");
   return { ok: true };
