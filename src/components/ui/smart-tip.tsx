@@ -78,6 +78,7 @@ export function SmartTip({ config }: { config: SmartTipConfig | null }) {
   const { showing, dismissed, dismiss } = useSmartTip(config);
   const cardRef = useRef<HTMLDivElement>(null);
   const [mousePos, setMousePos] = useState({ x: 0.5, y: 0.5 });
+  const [hintVisible, setHintVisible] = useState(true);
 
   useEffect(() => {
     if (!showing || !cardRef.current) return;
@@ -94,20 +95,28 @@ export function SmartTip({ config }: { config: SmartTipConfig | null }) {
     return () => window.removeEventListener("mousemove", onMove);
   }, [showing]);
 
+  useEffect(() => {
+    if (dismissing) {
+      const timer = setTimeout(() => setHintVisible(false), 250);
+      return () => clearTimeout(timer);
+    }
+    setHintVisible(true);
+  }, [dismissing]);
+
   if (!config || !showing) return null;
 
   const glow = config.glowColor ?? accentToGlow(config.accent);
   const Icon = config.icon ?? Sparkles;
   const BtnIcon = config.buttonIcon ?? Sparkles;
-  const closing = dismissed;
+  const dismissing = dismissed;
   const placementClass = placementClasses[config.placement] ?? placementClasses.center;
   const animationClass = animationClasses[config.animation] ?? animationClasses["float-up"];
 
   return (
     <>
-      {config.hintTarget ? <SmartHint selector={config.hintTarget} glow={glow} cardRef={cardRef} /> : null}
-      <div className={`fixed inset-0 z-40 pointer-events-none ${closing ? "smart-tip-overlay-out" : "smart-tip-overlay-in"}`} />
-      <div className={`${placementClass} z-50 ${closing ? "smart-tip-card-out" : animationClass}`}>
+      {config.hintTarget && hintVisible ? <SmartHint selector={config.hintTarget} glow={glow} cardRef={cardRef} dismissing={dismissing} /> : null}
+      <div className={`fixed inset-0 z-40 pointer-events-none ${dismissing ? "smart-tip-overlay-out" : "smart-tip-overlay-in"}`} />
+      <div className={`${placementClass} z-50 ${dismissing ? "smart-tip-card-out" : animationClass}`}>
         <div
           ref={cardRef}
           className="pointer-events-auto relative w-full max-w-md overflow-hidden rounded-2xl border border-white/[0.14] p-4 shadow-2xl backdrop-blur-xl sm:rounded-3xl sm:p-5"
@@ -166,7 +175,7 @@ export function SmartTip({ config }: { config: SmartTipConfig | null }) {
   );
 }
 
-function SmartHint({ selector, glow, cardRef }: { selector: string; glow: string; cardRef: React.RefObject<HTMLDivElement | null> }) {
+function SmartHint({ selector, glow, cardRef, dismissing }: { selector: string; glow: string; cardRef: React.RefObject<HTMLDivElement | null>; dismissing: boolean }) {
   const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
   const [cardRect, setCardRect] = useState<DOMRect | null>(null);
 
@@ -229,7 +238,7 @@ function SmartHint({ selector, glow, cardRef }: { selector: string; glow: string
 
   return (
     <svg
-      className="pointer-events-none fixed inset-0 z-30"
+      className={`pointer-events-none fixed inset-0 z-30 smart-hint-svg${dismissing ? ' smart-hint-dismissing' : ''}`}
       style={{ width: "100vw", height: "100vh" }}
       aria-hidden="true"
     >

@@ -13,5 +13,5 @@ export function SmartTipRouter() {
   }
 
   const tip = getTipForPath(pathname);
-  return <SmartTip config={tip} />;
+  return <SmartTip key={pathname} config={tip} />;
 }

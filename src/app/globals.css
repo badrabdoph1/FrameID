@@ -710,6 +710,15 @@
   50% { opacity: 1; r: 5; }
 }
 
+.smart-hint-svg.smart-hint-dismissing {
+  animation: smartHintFadeOut 200ms ease-out forwards;
+}
+
+@keyframes smartHintFadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
 /* ── Home Nav Tooltip Glow ─ */
 
 /* ── Immersive Onboarding V2 ─ */
