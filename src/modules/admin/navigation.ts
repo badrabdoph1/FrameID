@@ -21,6 +21,7 @@ import {
   Settings,
   Share2,
   ShieldCheck,
+  Sparkles,
   Users,
   type LucideIcon,
 } from "lucide-react";
@@ -95,6 +96,7 @@ export const adminRoutes: AdminRouteDefinition[] = [
   defineRoute({ id: "content-page-workspace", href: "/admin/content/pages/[pageKey]", labelAr: "تحرير الصفحة", descriptionAr: "تعديل الصفحة نفسها مباشرة", sectionId: "content", visibility: "contextual", keywords: ["صفحة", "تحرير", "معاينة"], icon: Edit, parentHref: "/admin/content" }),
   defineRoute({ id: "content-editor", href: "/admin/content/[...slug]", labelAr: "محرر المحتوى", descriptionAr: "تعديل نصوص وبيانات الصفحة المحددة", sectionId: "content", visibility: "contextual", keywords: ["تحرير", "نصوص", "صفحة"], icon: Edit, parentHref: "/admin/content" }),
   defineRoute({ id: "templates", href: "/admin/templates", labelAr: "القوالب", descriptionAr: "إدارة القوالب وصورها وإعداداتها", sectionId: "content", visibility: "daily", keywords: ["قالب", "تصميم", "صورة"], icon: Layout, parentHref: "/admin/content" }),
+  defineRoute({ id: "onboarding-cards", href: "/admin/onboarding-cards", labelAr: "الكروت الترحيبية", descriptionAr: "إدارة نصوص الكروت التوجيهية والترحيبية", sectionId: "content", visibility: "daily", keywords: ["كروت", "ترحيب", "توجيه", "نصوص"], icon: Sparkles, parentHref: "/admin/content" }),
   defineRoute({ id: "themes", href: "/admin/themes", labelAr: "الثيمات", descriptionAr: "إدارة الهوية البصرية المتاحة", sectionId: "content", visibility: "daily", keywords: ["ثيم", "ألوان", "تصميم"], icon: Palette, parentHref: "/admin/content" }),
   defineRoute({ id: "media", href: "/admin/media", labelAr: "مكتبة الوسائط", descriptionAr: "الصور والملفات المستخدمة في المنصة", sectionId: "content", visibility: "daily", keywords: ["صور", "ملفات", "وسائط"], icon: Image, parentHref: "/admin/content" }),
   defineRoute({ id: "revisions", href: "/admin/revisions", labelAr: "سجل التعديلات", descriptionAr: "مراجعة نسخ المحتوى السابقة", sectionId: "content", visibility: "advanced", keywords: ["مراجعات", "نسخ", "استرجاع"], icon: ClipboardList, parentHref: "/admin/content" }),
@@ -138,7 +140,7 @@ const sectionDefinitions: Array<Omit<AdminSection, "links"> & { routeIds: string
   { id: "command", title: "القيادة", shortDescription: "ما يحتاج تدخلك الآن", description: "أولويات اليوم والبحث الشامل", accent: "gold", badge: "اليوم", icon: Home, routeIds: ["admin-home", "admin-search"] },
   { id: "customers", title: "العملاء", shortDescription: "العملاء والمواقع", description: "العملاء ومواقعهم وحالة حساباتهم", accent: "green", icon: Users, routeIds: ["customers", "customer-requests", "sites"] },
   { id: "billing", title: "المالية", shortDescription: "المدفوعات والاشتراكات", description: "التحصيل والتجديد والباقات ووسائل الدفع", accent: "blue", icon: CreditCard, routeIds: ["billing", "payments", "subscriptions", "plans", "payment-settings"] },
-  { id: "content", title: "المحتوى", shortDescription: "الصفحات والقوالب والوسائط", description: "كل أدوات تحرير ونشر المحتوى", accent: "rose", icon: Palette, routeIds: ["content", "templates", "themes", "media", "social-preview"] },
+  { id: "content", title: "المحتوى", shortDescription: "الصفحات والقوالب والوسائط", description: "كل أدوات تحرير ونشر المحتوى", accent: "rose", icon: Palette, routeIds: ["content", "templates", "onboarding-cards", "themes", "media", "social-preview"] },
   { id: "communication", title: "التواصل", shortDescription: "الرسائل والدعم", description: "تجربة العميل والإشعارات والدعم والبريد", accent: "violet", icon: MessageSquareText, routeIds: ["communications", "messages", "notifications", "support", "email"] },
   { id: "system", title: "النظام", shortDescription: "الصحة والتشغيل والطوارئ", description: "الأخطاء والنسخ والإعدادات والأدوات المتقدمة", accent: "slate", icon: ShieldCheck, routeIds: ["system", "operations", "errors", "backups", "settings"] },
 ];
