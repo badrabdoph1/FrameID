@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-07-14T23:23:54.310Z",
+  "updatedAt": "2026-07-15T14:38:53.472Z",
   "themes": [
     {
       "code": "noir-gold",
@@ -79,7 +79,7 @@
     {
       "code": "basic",
       "name": "الباقة الأساسية",
-      "priceAmount": 59900,
+      "priceAmount": 40,
       "currency": "EGP",
       "billingInterval": "unknown",
       "features": {
@@ -164,7 +164,7 @@
           "instructions": "حوّل على رقم إنستا باي، ثم ارفع صورة إثبات الدفع من نفس الصفحة.",
           "notes": null,
           "isActive": true,
-          "sortOrder": 50
+          "sortOrder": 60
         }
       ]
     },
@@ -193,7 +193,7 @@
           "instructions": "حوّل على رقم فودافون كاش، ثم ارفع صورة إثبات الدفع من نفس الصفحة.",
           "notes": null,
           "isActive": true,
-          "sortOrder": 90
+          "sortOrder": 110
         }
       ]
     },
