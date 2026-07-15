@@ -14,6 +14,7 @@ import {
 } from "@/modules/platform-pages/page-service";
 import { requireAdminPermission } from "@/modules/admin/admin-permission-guards";
 import { syncPlatformConfigurationToGitHub } from "@/modules/setup/platform-configuration-git";
+import { commitPlatformAssetToGitHub } from "@/lib/content/git-sync";
 
 type SavePlatformPageActionInput = {
   pageKey: string;
@@ -75,6 +76,21 @@ export async function uploadPlatformPageImageAction(
       zoom,
       actorId: admin.id,
     });
+
+    const { readFile } = await import("node:fs/promises");
+    const { join } = await import("node:path");
+    const publicRoot = process.env.PLATFORM_MEDIA_PUBLIC_ROOT?.trim() || join(process.cwd(), "public");
+    const filePath = `public${stored.url}`;
+    const fileBytes = new Uint8Array(await readFile(join(publicRoot, stored.url.replace(/^\//, ""))));
+
+    const gitResult = await commitPlatformAssetToGitHub({
+      path: filePath,
+      bytes: fileBytes,
+      message: `رفع صورة صفحة منصة: ${file.name}`,
+    });
+    if (!gitResult.commitSha && gitResult.enabled) {
+      console.error("[platform-page-image] Git commit failed:", gitResult.error);
+    }
 
     return {
       success: true,

@@ -5,6 +5,7 @@ import { z } from "zod";
 
 import { prisma } from "@/lib/prisma";
 import { requireAdminPermission } from "@/modules/admin/admin-permission-guards";
+import { syncPlatformConfigurationToGitHub } from "@/modules/setup/platform-configuration-git";
 
 const saveSchema = z.object({
   cardId: z.string().min(1),
@@ -13,7 +14,7 @@ const saveSchema = z.object({
 });
 
 export async function saveCardOverride(formData: FormData) {
-  await requireAdminPermission("onboarding-cards", "edit");
+  const admin = await requireAdminPermission("onboarding-cards", "edit");
 
   const raw = {
     cardId: formData.get("cardId"),
@@ -49,12 +50,13 @@ export async function saveCardOverride(formData: FormData) {
     });
   }
 
+  await syncPlatformConfigurationToGitHub({ actor: admin, reason: "تحديث كروت الإعداد" });
   redirect("/admin/onboarding-cards?saved=1");
   return;
 }
 
 export async function resetCardOverride(formData: FormData) {
-  await requireAdminPermission("onboarding-cards", "edit");
+  const admin = await requireAdminPermission("onboarding-cards", "edit");
 
   const cardId = formData.get("cardId");
   if (typeof cardId !== "string" || !cardId) {
@@ -73,6 +75,7 @@ export async function resetCardOverride(formData: FormData) {
     data: { enabled: false },
   });
 
+  await syncPlatformConfigurationToGitHub({ actor: admin, reason: `إعادة تعيين كارت ${cardId}` });
   redirect("/admin/onboarding-cards?reset=1");
   return;
 }
