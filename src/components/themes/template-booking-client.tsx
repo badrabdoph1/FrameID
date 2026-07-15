@@ -63,7 +63,7 @@ export function TemplateBookingProvider({
   );
 }
 
-export function PackageSelectButton({ id, variant }: { id: string; variant: "noir" | "rose" }) {
+export function PackageSelectButton({ id, variant }: { id: string; variant: "noir" | "rose" | "luxe" }) {
   const booking = useBooking();
   const selected = booking.selectedPackageId === id;
   return (
@@ -75,7 +75,9 @@ export function PackageSelectButton({ id, variant }: { id: string; variant: "noi
         "mt-5 min-h-12 w-full rounded-2xl border px-4 text-sm font-black outline-none transition focus-visible:ring-2 focus-visible:ring-offset-2",
         variant === "noir"
           ? selected ? "border-[#e5c07b] bg-[#e5c07b] text-black ring-offset-[#111]" : "border-white/14 bg-white/[0.05] text-white hover:border-[#e5c07b] ring-[#e5c07b] ring-offset-[#111]"
-          : selected ? "border-[#d48a9e] bg-[#d48a9e] text-white ring-offset-white" : "border-[#eaddd4] bg-white text-[#2c1810] hover:border-[#d48a9e] ring-[#d48a9e] ring-offset-white",
+          : variant === "luxe"
+            ? selected ? "border-[#ff00ff] bg-gradient-to-r from-[#ff00ff] to-[#00ffff] text-white ring-offset-[#0a0a0f]" : "border-[#ff00ff]/30 bg-white/[0.05] text-white hover:border-[#ff00ff] ring-[#ff00ff] ring-offset-[#0a0a0f]"
+            : selected ? "border-[#d48a9e] bg-[#d48a9e] text-white ring-offset-white" : "border-[#eaddd4] bg-white text-[#2c1810] hover:border-[#d48a9e] ring-[#d48a9e] ring-offset-white",
       )}
     >
       {selected ? "تم اختيار الباقة" : "اختر الباقة"}
@@ -110,7 +112,7 @@ export function BookingAction({
   sticky = false,
 }: {
   label: string;
-  variant: "noir" | "rose";
+  variant: "noir" | "rose" | "luxe";
   sticky?: boolean;
 }) {
   const booking = useBooking();
@@ -121,7 +123,7 @@ export function BookingAction({
       className={cn(
         "inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl px-5 text-sm font-black outline-none transition focus-visible:ring-2 focus-visible:ring-offset-2",
         sticky ? "w-full shadow-[0_15px_50px_rgba(0,0,0,.25)]" : "w-full",
-        variant === "noir" ? "bg-[#e5c07b] text-black ring-[#e5c07b] ring-offset-black" : "bg-[#d48a9e] text-white ring-[#d48a9e] ring-offset-[#fff8f4]",
+        variant === "noir" ? "bg-[#e5c07b] text-black ring-[#e5c07b] ring-offset-black" : variant === "luxe" ? "bg-gradient-to-r from-[#ff00ff] to-[#00ffff] text-white shadow-[0_0_30px_rgba(255,0,255,0.3)] ring-[#ff00ff] ring-offset-[#0a0a0f]" : "bg-[#d48a9e] text-white ring-[#d48a9e] ring-offset-[#fff8f4]",
       )}
     >
       <MessageCircle className="size-4" aria-hidden />
@@ -130,7 +132,7 @@ export function BookingAction({
   );
 }
 
-export function BookingFAB({ variant }: { variant: "noir" | "rose" }) {
+export function BookingFAB({ variant }: { variant: "noir" | "rose" | "luxe" }) {
   const booking = useBooking();
   const hasSelection = Boolean(booking.selectedPackageId) || booking.selectedExtraIds.length > 0;
 
