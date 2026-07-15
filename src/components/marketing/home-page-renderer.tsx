@@ -146,7 +146,7 @@ function HomeHero({
             />
           </span>
         </h1>
-        <p className="mt-5 max-w-[48ch] text-pretty text-[0.88rem] leading-[1.75] text-white/55 md:mt-7 md:text-[1.05rem] md:leading-[1.8]">
+        <p className="mt-5 max-w-[48ch] text-pretty text-[0.88rem] leading-[1.75] text-white/65 md:mt-7 md:text-[1.05rem] md:leading-[1.8]">
           <Text
             field={{ sectionId, path: ["subheadline"], value: content.subheadline, multiline: true }}
             render={renderText}
@@ -210,7 +210,7 @@ function HomeTemplates({
           <h2 className="text-2xl font-semibold text-ink md:text-3xl">
             <Text field={{ sectionId, path: ["title"], value: content.title }} render={renderText} />
           </h2>
-          <p className="mx-auto mt-3 max-w-md text-sm text-muted-foreground md:text-base">
+          <p className="mx-auto mt-3 max-w-md text-[0.9rem] text-foreground/70 md:text-[1.05rem]">
             <Text
               field={{ sectionId, path: ["subtitle"], value: content.subtitle, multiline: true }}
               render={renderText}
@@ -287,7 +287,7 @@ function HomeBenefits({ sectionId, content, renderText }: SectionEditingProps & 
           <h2 className="text-balance text-[1.5rem] font-semibold leading-[1.2] text-ink md:text-[2.4rem] md:leading-[1.12]">
             <Text field={{ sectionId, path: ["title"], value: content.title }} render={renderText} />
           </h2>
-          <p className="mx-auto mt-4 max-w-md text-[0.85rem] leading-[1.75] text-muted-foreground md:text-base md:leading-[1.8]">
+          <p className="mx-auto mt-4 max-w-md text-[0.9rem] leading-[1.75] text-foreground/70 md:text-[1.05rem] md:leading-[1.8]">
             <Text field={{ sectionId, path: ["subtitle"], value: content.subtitle, multiline: true }} render={renderText} />
           </p>
         </header>
@@ -297,16 +297,16 @@ function HomeBenefits({ sectionId, content, renderText }: SectionEditingProps & 
             return (
               <article
                 key={`${item.title}-${index}`}
-                className="group relative flex flex-col gap-4 rounded-2xl border border-border/60 bg-surface p-6 transition-all duration-200 hover:border-champagne/25 hover:shadow-[0_8px_30px_rgb(16_16_16/0.04)] md:p-7"
+                className="group relative flex flex-col gap-4 rounded-2xl border border-border/50 bg-card p-6 transition-all duration-200 hover:border-champagne/25 hover:shadow-[0_8px_30px_rgb(16_16_16/0.04)] md:p-7"
               >
-                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-champagne/[0.08] text-champagne-strong transition-colors duration-200 group-hover:bg-champagne/[0.14]">
+                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-champagne/[0.10] text-champagne-strong transition-colors duration-200 group-hover:bg-champagne/[0.16]">
                   <Icon className="size-[1.15rem]" aria-hidden />
                 </span>
                 <div className="min-w-0">
-                  <h3 className="text-[0.95rem] font-semibold leading-[1.35] text-ink md:text-base">
+                  <h3 className="text-[1rem] font-semibold leading-[1.35] text-ink md:text-[1.1rem]">
                     <Text field={{ sectionId, path: ["items", index, "title"], value: item.title }} render={renderText} />
                   </h3>
-                  <p className="mt-2 text-[0.8rem] leading-[1.75] text-muted-foreground md:text-[0.85rem] md:leading-[1.8]">
+                  <p className="mt-2 text-[0.88rem] leading-[1.75] text-foreground/75 md:text-[0.95rem] md:leading-[1.8]">
                     <Text
                       field={{ sectionId, path: ["items", index, "body"], value: item.body, multiline: true }}
                       render={renderText}
@@ -324,13 +324,13 @@ function HomeBenefits({ sectionId, content, renderText }: SectionEditingProps & 
 
 function HomeJourney({ sectionId, content, renderText }: SectionEditingProps & { content: HomeJourneyContent }) {
   return (
-    <section data-page-section={sectionId} data-page-section-type="home.journey" className="bg-surface py-20 md:py-28">
+    <section data-page-section={sectionId} data-page-section-type="home.journey" className="bg-background py-20 md:py-28">
       <div className="container-page">
         <header className="mx-auto max-w-xl text-center">
           <h2 className="text-balance text-[1.5rem] font-semibold leading-[1.2] text-ink md:text-[2.4rem] md:leading-[1.12]">
             <Text field={{ sectionId, path: ["title"], value: content.title }} render={renderText} />
           </h2>
-          <p className="mx-auto mt-4 max-w-md text-[0.85rem] leading-[1.75] text-muted-foreground md:text-base md:leading-[1.8]">
+          <p className="mx-auto mt-4 max-w-md text-[0.9rem] leading-[1.75] text-foreground/70 md:text-[1.05rem] md:leading-[1.8]">
             <Text field={{ sectionId, path: ["subtitle"], value: content.subtitle, multiline: true }} render={renderText} />
           </p>
         </header>
@@ -349,16 +349,16 @@ function HomeJourney({ sectionId, content, renderText }: SectionEditingProps & {
                   { label: item.title, href: item.href ?? "/templates", icon: item.icon ?? "arrow", style: item.style ?? "secondary" },
                   "title",
                 )}
-                className="group relative flex flex-col items-center rounded-2xl border border-border/50 bg-surface px-6 py-8 text-center no-underline transition-all duration-200 hover:border-champagne/25 hover:shadow-[0_8px_30px_rgb(16_16_16/0.04)] md:py-9"
+                className="group relative flex flex-col items-center rounded-2xl border border-border/50 bg-card px-6 py-8 text-center no-underline transition-all duration-200 hover:border-champagne/25 hover:shadow-[0_8px_30px_rgb(16_16_16/0.04)] md:py-9"
               >
                 <span className="relative z-10 grid h-10 w-10 place-items-center rounded-full bg-ink text-[0.75rem] font-bold tabular-nums text-white md:h-11 md:w-11 md:text-xs">
                   {index + 1}
                 </span>
                 <div className="mt-5">
-                  <strong className="block text-[0.95rem] font-semibold leading-[1.35] text-ink md:text-base">
+                  <strong className="block text-[1rem] font-semibold leading-[1.35] text-ink md:text-[1.1rem]">
                     <Text field={{ sectionId, path: ["items", index, "title"], value: item.title }} render={renderText} />
                   </strong>
-                  <span className="mt-2 block text-[0.8rem] leading-[1.75] text-muted-foreground md:text-[0.85rem] md:leading-[1.8]">
+                  <span className="mt-2 block text-[0.88rem] leading-[1.75] text-foreground/75 md:text-[0.95rem] md:leading-[1.8]">
                     <Text
                       field={{ sectionId, path: ["items", index, "body"], value: item.body, multiline: true }}
                       render={renderText}
@@ -401,7 +401,7 @@ function HomeFaq({ sectionId, content, renderText }: SectionEditingProps & { con
                 </span>
               </summary>
               <div className="overflow-hidden pb-5 transition-all duration-200 md:pb-6">
-                <p className="text-[0.82rem] leading-[1.75] text-white/55 md:text-sm md:leading-[1.8]">
+                <p className="text-[0.85rem] leading-[1.75] text-white/65 md:text-[0.95rem] md:leading-[1.8]">
                   <Text
                     field={{ sectionId, path: ["items", index, "answer"], value: item.answer, multiline: true }}
                     render={renderText}
@@ -425,7 +425,7 @@ function HomeFinalCta({ sectionId, content, renderText }: SectionEditingProps & 
             <h2 className="text-[1.3rem] font-semibold leading-[1.25] md:text-2xl md:leading-[1.2]">
               <Text field={{ sectionId, path: ["title"], value: content.title }} render={renderText} />
             </h2>
-            <p className="mt-3 text-[0.82rem] leading-[1.7] text-white/55 md:text-sm md:leading-[1.75]">
+            <p className="mt-3 text-[0.85rem] leading-[1.7] text-white/65 md:text-[0.95rem] md:leading-[1.75]">
               <Text
                 field={{ sectionId, path: ["subtext"], value: content.subtext, multiline: true }}
                 render={renderText}
