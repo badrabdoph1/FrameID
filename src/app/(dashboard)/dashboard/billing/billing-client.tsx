@@ -424,6 +424,7 @@ export function BillingClient({ session, plans, paymentMethods, paymentRequest, 
                       </div>
                       <div className="flex flex-col gap-3">
                         <ProofSubmitCard
+                          draftId={draftState}
                           proofFile={proofFile}
                           proofUploaded={uploadSucceeded}
                           pending={completePaymentPending}
@@ -435,7 +436,7 @@ export function BillingClient({ session, plans, paymentMethods, paymentRequest, 
                         {getActionError(completePaymentState) ? <ErrorText text={getActionError(completePaymentState)!} /> : null}
                         {uploadSucceeded && !submitted ? (
                           <form action={submitAction} className="mt-auto">
-                            <input type="hidden" name="draftId" value={draftState} />
+                            <input type="hidden" name="draftId" value={draftState ?? ""} />
                             <Button type="submit" variant="luxury" className="w-full" disabled={!canSubmitExistingProof || submitPending}>{submitPending ? <Loader2 className="size-4 animate-spin" /> : <CheckCircle2 className="size-4" />}{submitPending ? "جاري تقديم الطلب..." : "تقديم الطلب الآن"}</Button>
                           </form>
                         ) : null}
@@ -812,9 +813,10 @@ function PaymentAmountCard({ plan, request }: { plan: PlanData | undefined; requ
   );
 }
 
-function ProofSubmitCard({ proofFile, proofUploaded, pending, canSubmit, action, onFileSelect }: { proofFile: File | null; proofUploaded: boolean; pending: boolean; canSubmit: boolean; action: (payload: FormData) => void; onFileSelect: (event: ChangeEvent<HTMLInputElement>) => void }) {
+function ProofSubmitCard({ draftId, proofFile, proofUploaded, pending, canSubmit, action, onFileSelect }: { draftId: string | null; proofFile: File | null; proofUploaded: boolean; pending: boolean; canSubmit: boolean; action: (payload: FormData) => void; onFileSelect: (event: ChangeEvent<HTMLInputElement>) => void }) {
   return (
     <form action={action} className="overflow-hidden rounded-3xl border border-white/[0.08] bg-gradient-to-b from-white/[0.04] to-white/[0.01]">
+      <input type="hidden" name="draftId" value={draftId ?? ""} />
       <div className="flex items-center gap-3 border-b border-white/[0.04] px-4 py-3 sm:px-5">
         <div className="grid size-9 shrink-0 place-items-center rounded-xl bg-sky-500/12">
           <Upload className="size-4 text-sky-400" />

@@ -398,3 +398,137 @@ export async function toggleFeaturedAction(formData: FormData) {
   revalidateGallery(session.site.slug);
   redirect(`/dashboard/gallery?albumId=${encodeURIComponent(albumId)}&featuredToggled=1`);
 }
+
+export async function toggleGallerySectionAction() {
+  const session = await getCurrentRequestSession();
+
+  if (!session) {
+    redirect("/login");
+  }
+
+  try {
+    const existing = await prisma.siteSection.findFirst({
+      where: { siteId: session.site.id, type: "gallery", deletedAt: null },
+      select: { id: true, isVisible: true },
+    });
+
+    if (existing) {
+      await prisma.siteSection.update({
+        where: { id: existing.id },
+        data: { isVisible: !existing.isVisible },
+      });
+    } else {
+      await prisma.siteSection.create({
+        data: {
+          siteId: session.site.id,
+          type: "gallery",
+          title: "المعرض",
+          data: {},
+          sortOrder: 0,
+          isVisible: false,
+        },
+      });
+    }
+  } catch (error) {
+    const { userError } = await processError(error, {
+      userId: session.user.id,
+      tenantId: session.tenant.id,
+      metadata: { action: "toggleGallerySection" },
+    });
+    redirect(`/dashboard/gallery?error=${encodeURIComponent(userError.message)}`);
+  }
+
+  revalidateGallery(session.site.slug);
+  redirect("/dashboard/gallery?toggled=1");
+}
+
+export async function replaceGallerySlotAction(formData: FormData) {
+  const session = await getCurrentRequestSession();
+
+  if (!session) {
+    redirect("/login");
+  }
+
+  const slotIndex = parseInt(readString(formData, "slot"), 10);
+  const file = formData.get("image") as File | null;
+
+  if (isNaN(slotIndex) || slotIndex < 0 || slotIndex > 3) {
+    redirect("/dashboard/gallery?error=invalid-slot");
+  }
+
+  if (!file || !(file instanceof File) || file.size === 0) {
+    redirect("/dashboard/gallery?error=no-image");
+  }
+
+  try {
+    const uploadService = createMediaUploadService({
+      storage: createLocalMediaStorage(),
+      repository: createPrismaMediaUploadRepository(prisma),
+    });
+
+    const asset = await uploadService.uploadImage({
+      tenantId: session.tenant.id,
+      file,
+    });
+
+    let album = await prisma.galleryAlbum.findFirst({
+      where: { siteId: session.site.id, deletedAt: null },
+      orderBy: { sortOrder: "asc" },
+      select: { id: true },
+    });
+
+    if (!album) {
+      album = await prisma.galleryAlbum.create({
+        data: {
+          siteId: session.site.id,
+          title: "معرض الأعمال",
+          slug: `main-${Date.now().toString(36)}`,
+          sortOrder: 0,
+          isVisible: true,
+        },
+        select: { id: true },
+      });
+    }
+
+    const existingImage = await prisma.galleryImage.findFirst({
+      where: { albumId: album.id, sortOrder: slotIndex, deletedAt: null },
+      select: { id: true },
+    });
+
+    if (existingImage) {
+      await prisma.galleryImage.update({
+        where: { id: existingImage.id },
+        data: { deletedAt: new Date() },
+      });
+    }
+
+    await prisma.galleryImage.create({
+      data: {
+        albumId: album.id,
+        assetId: asset.id,
+        sortOrder: slotIndex,
+      },
+    });
+
+    const hasCover = await prisma.galleryAlbum.findUnique({
+      where: { id: album.id },
+      select: { coverAssetId: true },
+    });
+    if (!hasCover?.coverAssetId) {
+      await prisma.galleryAlbum.update({
+        where: { id: album.id },
+        data: { coverAssetId: asset.id },
+      });
+    }
+  } catch (error) {
+    const { userError } = await processError(error, {
+      userId: session.user.id,
+      tenantId: session.tenant.id,
+      metadata: { action: "replaceGallerySlot" },
+    });
+    redirect(`/dashboard/gallery?error=${encodeURIComponent(userError.message)}`);
+  }
+
+  revalidateGallery(session.site.slug);
+  redirect(`/dashboard/gallery?replaced=${slotIndex}`);
+}

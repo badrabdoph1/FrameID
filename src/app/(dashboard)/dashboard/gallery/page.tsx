@@ -13,15 +13,10 @@ export const dynamic = "force-dynamic";
 
 type GalleryPageProps = {
   searchParams: Promise<{
-    albumId?: string;
-    uploaded?: string;
+    toggled?: string;
+    replaced?: string;
+    coverReplaced?: string;
     error?: string;
-    created?: string;
-    deleted?: string;
-    renamed?: string;
-    coverSet?: string;
-    featuredToggled?: string;
-    reordered?: string;
   }>;
 };
 
@@ -35,46 +30,49 @@ export default async function DashboardGalleryPage({
     redirect("/login");
   }
 
-  const [albums, profile] = await Promise.all([
-    prisma.galleryAlbum.findMany({
+  const [profile, gallerySection, firstAlbum] = await Promise.all([
+    prisma.contactProfile.findUnique({
+      where: { siteId: session.site.id },
+      include: {
+        coverAsset: { select: { url: true } },
+      },
+    }),
+    prisma.siteSection.findFirst({
+      where: { siteId: session.site.id, type: "gallery", deletedAt: null },
+      select: { isVisible: true },
+    }),
+    prisma.galleryAlbum.findFirst({
       where: { siteId: session.site.id, deletedAt: null },
       orderBy: { sortOrder: "asc" },
-      include: {
-        cover: { select: { url: true } },
+      select: {
+        id: true,
         images: {
           where: { deletedAt: null },
           orderBy: { sortOrder: "asc" },
-          include: {
-            asset: { select: { url: true, width: true, height: true, sizeBytes: true } },
+          select: {
+            id: true,
+            sortOrder: true,
+            asset: { select: { url: true } },
           },
         },
       },
     }),
-    prisma.contactProfile.findUnique({
-      where: { siteId: session.site.id },
-      include: {
-        avatarAsset: { select: { url: true } },
-        coverAsset: { select: { url: true } },
-      },
-    }),
   ]);
+
+  const slotImages: Array<{ slot: number; imageId: string | null; url: string | null }> = [0, 1, 2, 3].map((slot) => {
+    const img = firstAlbum?.images.find((i) => i.sortOrder === slot);
+    return { slot, imageId: img?.id ?? null, url: img?.asset.url ?? null };
+  });
 
   return (
     <GalleryClient
-      albums={albums}
-      selectedAlbumId={params.albumId || null}
-      avatarUrl={profile?.avatarAsset?.url ?? null}
       coverUrl={profile?.coverAsset?.url ?? null}
-      messages={{
-        uploaded: params.uploaded,
-        error: params.error,
-        created: params.created,
-        deleted: params.deleted,
-        renamed: params.renamed,
-        coverSet: params.coverSet,
-        featuredToggled: params.featuredToggled,
-        reordered: params.reordered,
-      }}
+      galleryVisible={gallerySection?.isVisible ?? true}
+      slotImages={slotImages}
+      toggled={typeof params.toggled === "string" ? true : false}
+      replaced={typeof params.replaced === "string" ? params.replaced : undefined}
+      coverReplaced={typeof params.coverReplaced === "string" ? true : false}
+      error={typeof params.error === "string" ? params.error : undefined}
     />
   );
 }
