@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { AlertTriangle, Eye, RefreshCw, ShieldAlert, X } from "lucide-react";
+import { AlertTriangle, Eye, RefreshCw, X } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils/cn";
 import { toggleDeactivationPauseAction } from "@/app/(admin)/admin/deactivation-control/actions";
@@ -94,18 +94,6 @@ function DeactivationCard({
   const [showUnpauseConfirm, setShowUnpauseConfirm] = useState(false);
   const [resultMessage, setResultMessage] = useState<string | null>(null);
 
-  const handleToggle = useCallback((checked: boolean) => {
-    if (toggling) return;
-
-    if (checked) {
-      setShowPauseWarning(true);
-    } else if (initialStats.wouldDeactivate > 0) {
-      setShowUnpauseConfirm(true);
-    } else {
-      executeToggle(checked);
-    }
-  }, [toggling, initialStats.wouldDeactivate]);
-
   const executeToggle = useCallback(async (checked: boolean) => {
     setToggling(true);
     setShowPauseWarning(false);
@@ -115,7 +103,7 @@ function DeactivationCard({
     try {
       const result = await toggleDeactivationPauseAction(type, checked);
       if (result.success) {
-        setPaused(result.paused ?? paused);
+        setPaused(result.paused ?? false);
         const deactivated = result.deactivatedCount ?? 0;
         if (!result.paused && deactivated > 0) {
           setResultMessage(`تم تعطيل ${deactivated} ${type === "trial" ? "حسابًا تجريبيًا" : "حسابًا مدفوعًا"} انتهت مدتها.`);
@@ -133,6 +121,18 @@ function DeactivationCard({
       setToggling(false);
     }
   }, [type]);
+
+  const handleToggle = useCallback((checked: boolean) => {
+    if (toggling) return;
+
+    if (checked) {
+      setShowPauseWarning(true);
+    } else if (initialStats.wouldDeactivate > 0) {
+      setShowUnpauseConfirm(true);
+    } else {
+      executeToggle(checked);
+    }
+  }, [toggling, initialStats.wouldDeactivate, executeToggle]);
 
   return (
     <section className="rounded-2xl border border-white/8 bg-[#0c0e13] p-5 shadow-lg shadow-black/20">

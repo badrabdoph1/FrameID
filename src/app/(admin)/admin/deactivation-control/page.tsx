@@ -1,4 +1,3 @@
-import { PauseCircle } from "lucide-react";
 import { AdminPageShell } from "@/components/layout/admin-page-shell";
 import { prisma } from "@/lib/prisma";
 import { requireAdminPermission } from "@/modules/admin/admin-permission-guards";
