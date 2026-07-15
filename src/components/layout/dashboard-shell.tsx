@@ -65,9 +65,8 @@ function normalizeSupportResponse(input: SupportSettingsResponse | null) {
   };
 }
 
-function NavLink({ item, active, compact = false, onClick, showTooltip = false }: { item: NavItem; active: boolean; compact?: boolean; onClick?: () => void; showTooltip?: boolean }) {
+function NavLink({ item, active, compact = false, onClick }: { item: NavItem; active: boolean; compact?: boolean; onClick?: () => void }) {
   const Icon = item.icon;
-  const isHomeItem = item.href === "/dashboard";
   return (
     <div className="relative">
       <Link
@@ -79,12 +78,8 @@ function NavLink({ item, active, compact = false, onClick, showTooltip = false }
           active
             ? "border-amber-300/28 bg-amber-300/13 text-[#f3cf73] shadow-[0_12px_38px_rgba(243,207,115,0.08)]"
             : "border-white/8 bg-white/[0.035] text-white/65 hover:border-amber-300/22 hover:bg-amber-300/8 hover:text-white",
-          isHomeItem && showTooltip ? "animate-home-tooltip-glow" : "",
         )}
       >
-        {isHomeItem && showTooltip ? (
-          <span className="absolute -top-1 -left-1 size-2.5 rounded-full bg-[#f3cf73] shadow-[0_0_8px_rgba(243,207,115,0.8)] animate-pulse" />
-        ) : null}
         <span className={cn("grid shrink-0 place-items-center rounded-xl transition", compact ? "size-9" : "size-10", active ? "bg-amber-300/16 text-[#f3cf73]" : "bg-white/[0.045]")}> 
           <Icon className="size-4" aria-hidden />
         </span>
@@ -94,15 +89,6 @@ function NavLink({ item, active, compact = false, onClick, showTooltip = false }
         </span>
         <ChevronLeft className="size-4 text-white/25 transition group-hover:text-[#f3cf73]" aria-hidden />
       </Link>
-      {isHomeItem && showTooltip ? (
-        <div className="absolute right-full top-1/2 z-50 mr-3 w-56 -translate-y-1/2 rounded-2xl border border-amber-300/20 bg-[#131820] p-3 shadow-2xl lg:w-64">
-          <p className="text-xs font-black text-[#fff7e8]">من هنا تتحكم في كل حاجة 🏠</p>
-          <p className="mt-1 text-[0.65rem] font-bold leading-5 text-white/50">
-            في الرئيسية تلاقي كل خطوات التجهيز والرابط وحالة الموقع.
-          </p>
-          <div className="absolute right-[-6px] top-1/2 size-3 -translate-y-1/2 rotate-45 border-r border-t border-amber-300/20 bg-[#131820]" />
-        </div>
-      ) : null}
     </div>
   );
 }
@@ -185,35 +171,12 @@ export function DashboardShell({ children, siteSlug }: { children: ReactNode; si
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [supportSettings, setSupportSettings] = useState(() => normalizeSupportResponse(null));
-  const [showHomeTooltip, setShowHomeTooltip] = useState(false);
   const primaryNav = navItems.filter((item) => item.priority === "primary").slice(0, 4);
   const secondaryNav = navItems.filter((item) => item.priority === "secondary");
-  const isOnHomePage = pathname === "/dashboard";
 
   useEffect(() => {
     setMobileMenuOpen(false);
   }, [pathname]);
-
-  useEffect(() => {
-    if (!isOnHomePage) {
-      try {
-        const seen = window.localStorage.getItem("frameid:home-nav-tooltip-seen");
-        if (!seen) {
-          setShowHomeTooltip(true);
-        }
-      } catch {
-        setShowHomeTooltip(true);
-      }
-    }
-  }, [isOnHomePage]);
-
-  const dismissHomeTooltip = () => {
-    setShowHomeTooltip(false);
-    try {
-      window.localStorage.setItem("frameid:home-nav-tooltip-seen", "1");
-    } catch {
-    }
-  };
 
   useEffect(() => {
     const controller = new AbortController();
@@ -277,7 +240,7 @@ export function DashboardShell({ children, siteSlug }: { children: ReactNode; si
           <div className="customer-desktop-sidebar-nav mt-4 grid gap-2 overflow-y-auto pb-4 pr-0.5 admin-scrollbar">
             <p className="px-2 text-[0.68rem] font-black uppercase tracking-wider text-white/28">خطوات العمل</p>
             {primaryNav.map((item) => (
-              <NavLink key={item.href} item={item} active={isActivePath(pathname, item.href)} showTooltip={item.href === "/dashboard" && showHomeTooltip} />
+              <NavLink key={item.href} item={item} active={isActivePath(pathname, item.href)} />
             ))}
 
             <p className="mt-3 px-2 text-[0.68rem] font-black uppercase tracking-wider text-white/28">أدوات إضافية</p>
@@ -315,20 +278,15 @@ export function DashboardShell({ children, siteSlug }: { children: ReactNode; si
           {primaryNav.map((item) => {
             const active = isActivePath(pathname, item.href);
             const Icon = item.icon;
-            const isHomeItem = item.href === "/dashboard";
             return (
               <Link
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "relative grid min-h-[3.25rem] place-items-center gap-0.5 rounded-2xl px-1 text-center no-underline transition",
+                  "grid min-h-[3.25rem] place-items-center gap-0.5 rounded-2xl px-1 text-center no-underline transition",
                   active ? "bg-amber-300/12 text-[#f3cf73]" : "text-white/45 hover:bg-white/[0.05] hover:text-white/70",
-                  isHomeItem && showHomeTooltip ? "animate-home-tooltip-glow" : "",
                 )}
               >
-                {isHomeItem && showHomeTooltip ? (
-                  <span className="absolute -top-1 -right-1 size-2.5 rounded-full bg-[#f3cf73] shadow-[0_0_8px_rgba(243,207,115,0.8)] animate-pulse" />
-                ) : null}
                 <Icon className="size-5" aria-hidden />
                 <span className="max-w-full truncate text-[0.62rem] font-black leading-tight">{item.shortLabel}</span>
               </Link>
@@ -336,30 +294,6 @@ export function DashboardShell({ children, siteSlug }: { children: ReactNode; si
           })}
           <button type="button" onClick={() => setMobileMenuOpen(true)} aria-label="فتح باقي أقسام لوحة العميل" aria-expanded={mobileMenuOpen} aria-controls="dashboard-mobile-menu" className="grid min-h-[3.25rem] place-items-center gap-0.5 rounded-2xl px-1 text-center text-white/45 transition hover:bg-white/[0.05] hover:text-white/70"><Menu className="size-5" aria-hidden /><span className="text-[0.62rem] font-black leading-tight">المزيد</span></button>
         </div>
-
-        {showHomeTooltip ? (
-          <div className="absolute bottom-full left-1/2 mb-2 w-64 -translate-x-1/2 rounded-2xl border border-amber-300/20 bg-[#131820] p-3 shadow-2xl sm:w-72">
-            <button
-              type="button"
-              onClick={dismissHomeTooltip}
-              className="absolute -top-2 -left-2 grid size-6 place-items-center rounded-full bg-white/10 text-white/60 transition hover:bg-white/20 hover:text-white"
-              aria-label="إغلاق"
-            >
-              <X className="size-3.5" aria-hidden />
-            </button>
-            <p className="text-xs font-black text-[#fff7e8]">من هنا تتحكم في كل حاجة 🏠</p>
-            <p className="mt-1 text-[0.65rem] font-bold leading-5 text-white/50">
-              في الرئيسية تلاقي كل خطوات التجهيز والرابط وحالة الموقع.
-            </p>
-            <button
-              type="button"
-              onClick={dismissHomeTooltip}
-              className="mt-2.5 w-full rounded-xl bg-[#f3cf73] py-1.5 text-[0.7rem] font-black text-[#17120a] transition hover:bg-[#ffe08a]"
-            >
-              فهمت
-            </button>
-          </div>
-        ) : null}
       </nav>
 
       {mobileMenuOpen ? (

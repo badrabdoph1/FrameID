@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import Image from "next/image";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -10,10 +9,7 @@ import {
   CheckCircle2,
   ChevronLeft,
   Circle,
-  Copy,
   ExternalLink,
-  Eye,
-  LayoutDashboard,
   RotateCcw,
   X,
 } from "lucide-react";
@@ -24,6 +20,7 @@ import { ImmersiveOnboarding } from "@/components/ui/immersive-onboarding";
 type BannerTone = "success" | "warning" | "danger" | "info";
 
 const CHECKLIST_STORAGE_KEY = "frameid:onboarding-checklist";
+const ONBOARDING_COMPLETED_KEY = "frameid:onboarding-completed";
 
 const onboardingCopy: Record<string, { label: string; description: string }> = {
   package: { label: "الباقات والأسعار", description: "اكتب أسماء الباقات والأسعار والمميزات." },
@@ -33,10 +30,10 @@ const onboardingCopy: Record<string, { label: string; description: string }> = {
   album: { label: "معرض الصور", description: "أضف أعمالك الحقيقية داخل الألبومات." },
 };
 
-export function DashboardHomeClient({ siteUrl, statusLabel, checklist, lastModified, nextStepHref, nextStepLabel, nextStepTitle, nextStepDescription, subscription, subscriptionExperience, customerMessages, heroImageUrl, photographerName, isPublished, showWelcome }: DashboardViewModel & { showWelcome: boolean }) {
-  const [copied, setCopied] = useState(false);
+export function DashboardHomeClient({ siteUrl, checklist, nextStepHref, nextStepLabel, nextStepTitle, nextStepDescription, subscription, subscriptionExperience, customerMessages, photographerName, showWelcome }: DashboardViewModel & { showWelcome: boolean }) {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [checklistHidden, setChecklistHidden] = useState(false);
+  const onboardingResolvedRef = useRef(false);
   const router = useRouter();
 
   const onboardingItems = useMemo(
@@ -50,10 +47,9 @@ export function DashboardHomeClient({ siteUrl, statusLabel, checklist, lastModif
   const nextIncomplete = incompleteItems[0];
 
   useEffect(() => {
-    if (showWelcome) {
-      setShowOnboarding(true);
-      router.replace("/dashboard", { scroll: false });
-    }
+    if (onboardingResolvedRef.current) return;
+    onboardingResolvedRef.current = true;
+
     try {
       const saved = window.localStorage.getItem(CHECKLIST_STORAGE_KEY);
       if (saved) {
@@ -62,16 +58,28 @@ export function DashboardHomeClient({ siteUrl, statusLabel, checklist, lastModif
       }
     } catch {
     }
+
+    if (showWelcome) {
+      setShowOnboarding(true);
+      router.replace("/dashboard", { scroll: false });
+      return;
+    }
+
+    try {
+      const completed = window.localStorage.getItem(ONBOARDING_COMPLETED_KEY);
+      if (!completed) {
+        setShowOnboarding(true);
+      }
+    } catch {
+    }
   }, [showWelcome, router]);
 
   const completeOnboarding = () => {
     setShowOnboarding(false);
-  };
-
-  const copySiteUrl = async () => {
-    await navigator.clipboard?.writeText(siteUrl);
-    setCopied(true);
-    window.setTimeout(() => setCopied(false), 1800);
+    try {
+      window.localStorage.setItem(ONBOARDING_COMPLETED_KEY, "1");
+    } catch {
+    }
   };
 
   return (
@@ -79,17 +87,6 @@ export function DashboardHomeClient({ siteUrl, statusLabel, checklist, lastModif
       {subscription && subscriptionExperience ? <LifecycleStatusCard subscription={subscription} experience={subscriptionExperience} /> : null}
 
       {customerMessages.length > 0 ? <section className="grid gap-2 lg:grid-cols-2">{customerMessages.map((message) => <CustomerMessageBanner key={message.id} message={message} />)}</section> : null}
-
-      <SiteIdentityCard
-        siteUrl={siteUrl}
-        statusLabel={statusLabel}
-        isPublished={isPublished}
-        lastModified={lastModified}
-        photographerName={photographerName}
-        heroImageUrl={heroImageUrl}
-        copied={copied}
-        onCopy={copySiteUrl}
-      />
 
       {checklistHidden ? (
         <button
@@ -139,95 +136,6 @@ export function DashboardHomeClient({ siteUrl, statusLabel, checklist, lastModif
         <ImmersiveOnboarding onComplete={completeOnboarding} photographerName={photographerName} />
       ) : null}
     </main>
-  );
-}
-
-function SiteIdentityCard({
-  siteUrl,
-  statusLabel,
-  isPublished,
-  lastModified,
-  photographerName,
-  heroImageUrl,
-  copied,
-  onCopy,
-}: {
-  siteUrl: string;
-  statusLabel: string;
-  isPublished: boolean;
-  lastModified: string;
-  photographerName: string;
-  heroImageUrl: string | null;
-  copied: boolean;
-  onCopy: () => void;
-}) {
-  return (
-    <section className="relative overflow-hidden rounded-2xl border border-white/12 bg-[linear-gradient(135deg,#121720_0%,#0f1419_100%)] shadow-[0_8px_32px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.04)] sm:rounded-[1.5rem]">
-      {heroImageUrl ? (
-        <div className="absolute inset-0 opacity-[0.07]">
-          <Image src={heroImageUrl} alt="" fill sizes="100vw" className="object-cover" />
-        </div>
-      ) : null}
-      
-      <div className="relative">
-        <div className="border-b border-white/8 bg-[linear-gradient(135deg,rgba(243,207,115,0.14),rgba(243,207,115,0.06))] px-3.5 py-3 sm:px-5 sm:py-4">
-          <div className="flex items-center gap-2.5">
-            <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-amber-300/20 to-amber-300/8 text-[#f3cf73] shadow-[0_0_16px_rgba(243,207,115,0.25)] sm:size-10 sm:rounded-xl">
-              <LayoutDashboard className="size-4 sm:size-5" aria-hidden />
-            </span>
-            <div className="min-w-0 flex-1">
-              <p className="text-xs font-black text-[#fff7e8] drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)] sm:text-sm lg:text-base">موقعك من هنا</p>
-              <p className="mt-0.5 text-[0.62rem] font-bold text-white/55 drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)] sm:text-xs lg:text-sm">تعدّل كل حاجة من هنا. عملاؤك مش هيشوفوا الصفحة دي.</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="grid gap-3 p-3.5 sm:gap-5 sm:p-5 lg:grid-cols-[1fr_auto] lg:items-center lg:gap-6">
-          <div className="flex items-start gap-3 sm:items-center sm:gap-4">
-            {heroImageUrl ? (
-              <div className="relative h-14 w-20 shrink-0 overflow-hidden rounded-lg border border-white/10 bg-black/20 shadow-lg sm:h-20 sm:w-32 sm:rounded-2xl">
-                <Image src={heroImageUrl} alt="" fill sizes="(max-width: 640px) 80px, 128px" className="object-cover" />
-              </div>
-            ) : (
-              <div className="grid size-12 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-amber-300/20 to-amber-300/5 text-[#f3cf73] shadow-lg sm:size-16 sm:rounded-2xl">
-                <Eye className="size-5 sm:size-7" aria-hidden />
-              </div>
-            )}
-            <div className="min-w-0 flex-1">
-              <h1 className="truncate text-sm font-black text-[#fff7e8] drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)] sm:text-xl lg:text-2xl">{photographerName}</h1>
-              <div className="mt-1 flex flex-wrap items-center gap-1.5 sm:gap-2">
-                <span className={isPublished ? "inline-flex items-center gap-1 rounded-full bg-emerald-300/12 px-2 py-0.5 text-[0.62rem] font-black text-emerald-300 sm:px-2.5" : "inline-flex items-center gap-1 rounded-full bg-amber-300/12 px-2 py-0.5 text-[0.62rem] font-black text-[#f3cf73] sm:px-2.5"}>
-                  <span className={isPublished ? "size-1.5 rounded-full bg-emerald-300" : "size-1.5 rounded-full bg-[#f3cf73]"} />
-                  {statusLabel}
-                </span>
-                <span className="text-[0.6rem] font-bold text-white/40 sm:text-xs">آخر تعديل {lastModified}</span>
-              </div>
-              <p dir="ltr" className="mt-1.5 truncate text-[0.65rem] font-black text-[#f3cf73]/70 sm:text-sm lg:text-base">{siteUrl}</p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-2 sm:flex sm:justify-end sm:gap-3">
-            <Link
-              href={siteUrl}
-              target="_blank"
-              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-gradient-to-br from-[#f3cf73] to-[#e8c15e] px-3.5 text-xs font-black text-[#17120a] no-underline shadow-lg shadow-amber-500/20 transition hover:-translate-y-0.5 hover:shadow-amber-500/30 sm:min-h-12 sm:px-5 sm:text-sm"
-            >
-              <Eye className="size-4" aria-hidden />
-              <span className="hidden sm:inline">شاهد موقعك كما يراه العميل</span>
-              <span className="sm:hidden">شاهد موقعك</span>
-            </Link>
-            <button
-              type="button"
-              onClick={onCopy}
-              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-white/12 bg-white/[0.045] px-3.5 text-xs font-black text-white/78 transition hover:border-amber-300/24 hover:bg-white/[0.075] hover:text-white sm:min-h-12 sm:px-5 sm:text-sm"
-            >
-              {copied ? <CheckCircle2 className="size-4 text-emerald-300" aria-hidden /> : <Copy className="size-4" aria-hidden />}
-              <span>{copied ? "اتنسخ" : "انسخ الرابط"}</span>
-            </button>
-          </div>
-        </div>
-      </div>
-    </section>
   );
 }
 

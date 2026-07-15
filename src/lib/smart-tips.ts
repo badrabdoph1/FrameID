@@ -3,7 +3,6 @@ import {
   CreditCard,
   Globe2,
   Images,
-  LayoutDashboard,
   Package,
   Palette,
   Phone,
@@ -39,26 +38,6 @@ export function accentToGlow(hex: string, opacity = 0.25): string {
 }
 
 const tips: PageTip[] = [
-  // ── Dashboard: Home ──
-  {
-    id: "dashboard-home",
-    routes: ["/dashboard"],
-    title: "لوحة التحكم — مركز قيادتك",
-    description: "من هنا تشوف إيه ناقص، وتوصل لأي صفحة في ثانية. كل حاجة جاهزة تكملها.",
-    icon: LayoutDashboard,
-    accent: "#f3cf73",
-    button: "فهمت",
-    buttonIcon: Check,
-    placement: "top",
-    animation: "float-up",
-    hintTarget: "[data-smart-tip='checklist']",
-    showOnce: true,
-    enabled: true,
-    priority: 0,
-    audience: "authenticated",
-    version: 1,
-  },
-
   // ── Dashboard: Services ──
   {
     id: "dashboard-services",

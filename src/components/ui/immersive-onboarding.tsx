@@ -14,7 +14,8 @@ import {
 } from "lucide-react";
 
 const TOTAL_STEPS = 5;
-const CARD_EXIT_MS = 320;
+const CARD_EXIT_MS = 280;
+const OVERLAY_EXIT_MS = 500;
 
 const cardColors = [
   { glow: "rgba(243,207,115,0.25)", accent: "#f3cf73", spotlight: "30% 40%" },
@@ -29,44 +30,69 @@ export function ImmersiveOnboarding({ onComplete, photographerName }: { onComple
   const [transitioning, setTransitioning] = useState(false);
   const [exiting, setExiting] = useState(false);
   const router = useRouter();
-  const timerRef = useRef<ReturnType<typeof setTimeout>>(null);
+  const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const mountedRef = useRef(true);
 
-  useEffect(() => {
-    document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = ""; };
+  const clearAllTimers = useCallback(() => {
+    for (const t of timersRef.current) clearTimeout(t);
+    timersRef.current = [];
   }, []);
 
+  const addTimer = useCallback((fn: () => void, ms: number) => {
+    const id = setTimeout(() => {
+      if (mountedRef.current) fn();
+    }, ms);
+    timersRef.current.push(id);
+    return id;
+  }, []);
+
+  useEffect(() => {
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      mountedRef.current = false;
+      clearAllTimers();
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [clearAllTimers]);
+
   const advanceStep = useCallback(() => {
-    if (transitioning) return;
+    if (transitioning || exiting) return;
     if (step >= TOTAL_STEPS - 1) {
       setExiting(true);
-      timerRef.current = setTimeout(() => {
+      addTimer(() => {
+        if (!mountedRef.current) return;
         onComplete();
+      }, OVERLAY_EXIT_MS);
+      addTimer(() => {
+        if (!mountedRef.current) return;
         router.push("/dashboard/services");
-      }, 700);
+      }, OVERLAY_EXIT_MS + 50);
       return;
     }
     setTransitioning(true);
-    timerRef.current = setTimeout(() => {
+    addTimer(() => {
+      if (!mountedRef.current) return;
       setStep((s) => s + 1);
-      timerRef.current = setTimeout(() => setTransitioning(false), 60);
+      addTimer(() => {
+        if (!mountedRef.current) return;
+        setTransitioning(false);
+      }, 16);
     }, CARD_EXIT_MS);
-  }, [step, transitioning, onComplete, router]);
+  }, [step, transitioning, exiting, onComplete, router, addTimer]);
 
   const goBack = useCallback(() => {
-    if (transitioning || step === 0) return;
+    if (transitioning || exiting || step === 0) return;
     setTransitioning(true);
-    timerRef.current = setTimeout(() => {
+    addTimer(() => {
+      if (!mountedRef.current) return;
       setStep((s) => s - 1);
-      timerRef.current = setTimeout(() => setTransitioning(false), 60);
+      addTimer(() => {
+        if (!mountedRef.current) return;
+        setTransitioning(false);
+      }, 16);
     }, CARD_EXIT_MS);
-  }, [step, transitioning]);
-
-  useEffect(() => {
-    return () => {
-      if (timerRef.current) clearTimeout(timerRef.current);
-    };
-  }, []);
+  }, [step, transitioning, exiting, addTimer]);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -84,7 +110,7 @@ export function ImmersiveOnboarding({ onComplete, photographerName }: { onComple
       className={`fixed inset-0 z-50 ${exiting ? "io-overlay-exit" : "io-overlay-enter"}`}
       dir="rtl"
     >
-      <div className="absolute inset-0 bg-[#0b0d12]/55 backdrop-blur-md" style={{ backdropFilter: "blur(12px) saturate(1.2)" }} />
+      <div className="io-backdrop absolute inset-0 bg-[#0b0d12]/60" />
 
       <IoSpotlight color={currentColor.glow} position={currentColor.spotlight} />
       <IoAmbientBackground step={step} />
@@ -133,13 +159,14 @@ function IoProgressCapsule({ step, total, accentColor }: { step: number; total: 
       {Array.from({ length: total }, (_, i) => (
         <span
           key={i}
-          className="io-capsule rounded-full transition-all duration-500 ease-out"
+          className="io-capsule rounded-full"
           style={{
             width: i === step ? 32 : 8,
             height: 8,
             background: i === step ? accentColor : i < step ? accentColor : "rgba(255,255,255,0.12)",
             opacity: i === step ? 1 : i < step ? 0.6 : 0.4,
-            boxShadow: i === step ? `0 0 16px ${accentColor}, 0 0 8px ${accentColor}` : "none",
+            boxShadow: i === step ? `0 0 12px ${accentColor}` : "none",
+            willChange: "width, background, opacity",
           }}
         />
       ))}
@@ -150,26 +177,26 @@ function IoProgressCapsule({ step, total, accentColor }: { step: number; total: 
 function IoSpotlight({ color, position }: { color: string; position: string }) {
   const [x, y] = position.split(" ");
   return (
-    <div className="pointer-events-none absolute inset-0 overflow-hidden transition-all duration-1000 ease-out">
+    <div className="pointer-events-none absolute inset-0 overflow-hidden">
       <div
-        className="absolute h-[600px] w-[600px] -translate-x-1/2 -translate-y-1/2 rounded-full opacity-40 blur-[100px] transition-all duration-1000 ease-out sm:h-[800px] sm:w-[800px]"
-        style={{ background: `radial-gradient(circle, ${color} 0%, transparent 70%)`, left: x, top: y }}
+        className="absolute h-[500px] w-[500px] -translate-x-1/2 -translate-y-1/2 rounded-full opacity-30 transition-all duration-700 ease-out sm:h-[700px] sm:w-[700px]"
+        style={{ background: `radial-gradient(circle, ${color} 0%, transparent 70%)`, left: x, top: y, willChange: "left, top, background" }}
       />
     </div>
   );
 }
 
-function IoCardGlass({ step, accentColor, glowColor, children }: { step: number; accentColor: string; glowColor: string; children: React.ReactNode }) {
+function IoCardGlass({ glowColor, children }: { step: number; accentColor: string; glowColor: string; children: React.ReactNode }) {
   return (
     <div
       className="io-glass-card relative overflow-hidden rounded-[1.5rem] border border-white/[0.12] p-5 sm:rounded-[1.75rem] sm:p-7"
       style={{
         background: `linear-gradient(145deg, rgba(17,23,32,0.92) 0%, rgba(12,16,22,0.96) 100%)`,
-        boxShadow: `0 24px 64px rgba(0,0,0,0.5), 0 0 80px ${glowColor}, inset 0 1px 0 rgba(255,255,255,0.08)`,
+        boxShadow: `0 24px 48px rgba(0,0,0,0.45), 0 0 48px ${glowColor}, inset 0 1px 0 rgba(255,255,255,0.08)`,
       }}
     >
       <span className="pointer-events-none absolute inset-x-6 top-0 h-px bg-gradient-to-l from-transparent via-white/20 to-transparent" />
-      <div className="pointer-events-none absolute inset-0 opacity-30" style={{ background: `radial-gradient(ellipse at 50% 0%, ${glowColor} 0%, transparent 50%)` }} />
+      <div className="pointer-events-none absolute inset-0 opacity-25" style={{ background: `radial-gradient(ellipse at 50% 0%, ${glowColor} 0%, transparent 50%)` }} />
       {children}
     </div>
   );
@@ -180,15 +207,15 @@ function IoCardWelcome({ photographerName }: { photographerName?: string }) {
   return (
     <div className="flex flex-col items-center py-2 text-center">
       <div className="io-stagger io-icon-entrance mb-4 relative">
-        <div className="absolute inset-0 animate-pulse rounded-full bg-[#f3cf73]/25 blur-xl" />
-        <div className="relative grid size-16 place-items-center rounded-2xl bg-gradient-to-br from-[#f3cf73]/20 to-[#f3cf73]/5 shadow-[0_0_32px_rgba(243,207,115,0.3)] sm:size-20 sm:rounded-3xl">
+        <div className="absolute inset-0 rounded-full bg-[#f3cf73]/20 io-glow-pulse" />
+        <div className="relative grid size-16 place-items-center rounded-2xl bg-gradient-to-br from-[#f3cf73]/20 to-[#f3cf73]/5 shadow-[0_0_24px_rgba(243,207,115,0.25)] sm:size-20 sm:rounded-3xl">
           <Sparkles className="size-8 text-[#f3cf73] sm:size-9" aria-hidden />
         </div>
       </div>
       <h2 className="io-stagger text-xl font-black text-[#fff7e8] sm:text-2xl">
         {greeting} 👋
       </h2>
-      <p className="io-stagger mt-2 max-w-sm text-sm leading-6 font-bold text-white/85 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] sm:text-base">
+      <p className="io-stagger mt-2 max-w-sm text-sm leading-6 font-bold text-white/85 sm:text-base">
         موقعك جاهز بالفعل… فاضل بس تضبطه على ذوقك.
       </p>
     </div>
@@ -201,7 +228,7 @@ function IoCardContrast() {
       <h2 className="io-stagger text-center text-xl font-black text-[#fff7e8] sm:text-2xl">
         دي لوحة التحكم بتاعتك
       </h2>
-      <p className="io-stagger mt-1.5 text-center text-sm leading-6 font-bold text-white/85 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] sm:text-base">
+      <p className="io-stagger mt-1.5 text-center text-sm leading-6 font-bold text-white/85 sm:text-base">
         هنا بتعدل كل حاجة… والعميل بيشوف النتيجة على موقعه.
       </p>
       <div className="io-stagger mt-5 grid grid-cols-[1fr_auto_1fr] items-center gap-2 sm:gap-3">
@@ -242,8 +269,8 @@ function IoCardReady() {
   return (
     <div className="flex flex-col items-center py-2 text-center">
       <div className="io-stagger relative mb-4">
-        <div className="absolute inset-0 animate-pulse rounded-full bg-emerald-400/20 blur-2xl" />
-        <div className="relative grid size-16 place-items-center rounded-full bg-emerald-300/15 shadow-[0_0_32px_rgba(52,211,153,0.3)] sm:size-20">
+        <div className="absolute inset-0 rounded-full bg-emerald-400/15 io-glow-pulse-green" />
+        <div className="relative grid size-16 place-items-center rounded-full bg-emerald-300/15 shadow-[0_0_24px_rgba(52,211,153,0.25)] sm:size-20">
           <div className="io-check-draw grid size-10 place-items-center rounded-full bg-emerald-300/25 sm:size-12">
             <Check className="size-6 text-emerald-300 sm:size-7" aria-hidden />
           </div>
@@ -252,7 +279,7 @@ function IoCardReady() {
       <h2 className="io-stagger text-xl font-black text-[#fff7e8] sm:text-2xl">
         موقعك شغال بالفعل ✅
       </h2>
-      <p className="io-stagger mt-1.5 max-w-sm text-sm leading-6 font-bold text-white/85 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] sm:text-base">
+      <p className="io-stagger mt-1.5 max-w-sm text-sm leading-6 font-bold text-white/85 sm:text-base">
         إنت مش بتبدأ من الصفر… الموقع جاهز، وإنت بس هتضيف لمستك.
       </p>
     </div>
@@ -270,7 +297,7 @@ function IoCardGuided() {
       <h2 className="io-stagger text-xl font-black text-[#fff7e8] sm:text-2xl">
         مش لازم تعمل كل حاجة مرة واحدة
       </h2>
-      <p className="io-stagger mt-1.5 text-sm leading-6 font-bold text-white/85 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] sm:text-base">
+      <p className="io-stagger mt-1.5 text-sm leading-6 font-bold text-white/85 sm:text-base">
         امشي خطوة خطوة… وإحنا هنوصلك لموقع جاهز في دقائق.
       </p>
       <div className="mt-4 grid gap-2">
@@ -280,7 +307,7 @@ function IoCardGuided() {
             <div
               key={s.label}
               className="io-guided-step flex items-center gap-3 rounded-xl border border-white/[0.08] bg-white/[0.03] p-2.5 sm:rounded-2xl sm:p-3"
-              style={{ animationDelay: `${0.4 + i * 0.15}s` }}
+              style={{ animationDelay: `${0.35 + i * 0.12}s` }}
             >
               <span
                 className="grid size-8 shrink-0 place-items-center rounded-lg sm:size-9 sm:rounded-xl"
@@ -306,14 +333,14 @@ function IoCardStart({ onNext }: { onNext: () => void }) {
   return (
     <div className="py-1 text-center">
       <div className="io-stagger mb-3">
-        <div className="mx-auto grid size-12 place-items-center rounded-2xl bg-gradient-to-br from-[#f3cf73]/20 to-[#f3cf73]/5 shadow-[0_0_28px_rgba(243,207,115,0.3)] sm:size-14 sm:rounded-3xl">
+        <div className="mx-auto grid size-12 place-items-center rounded-2xl bg-gradient-to-br from-[#f3cf73]/20 to-[#f3cf73]/5 shadow-[0_0_24px_rgba(243,207,115,0.25)] sm:size-14 sm:rounded-3xl">
           <Zap className="size-6 text-[#f3cf73] sm:size-7" aria-hidden />
         </div>
       </div>
       <h2 className="io-stagger text-xl font-black text-[#fff7e8] sm:text-2xl">
         يلا نجهز موقعك
       </h2>
-      <p className="io-stagger mt-1.5 text-sm leading-6 font-bold text-white/85 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
+      <p className="io-stagger mt-1.5 text-sm leading-6 font-bold text-white/85">
         ابدأ بالباقات لأنها أول حاجة العميل هيشوفها.
       </p>
       <div className="mt-4 grid gap-1.5">
@@ -323,7 +350,7 @@ function IoCardStart({ onNext }: { onNext: () => void }) {
             <div
               key={item.label}
               className="io-start-item flex items-center gap-2.5 rounded-xl border border-white/[0.08] bg-white/[0.03] p-2.5 sm:rounded-2xl sm:gap-3 sm:p-3"
-              style={{ animationDelay: `${0.4 + i * 0.12}s` }}
+              style={{ animationDelay: `${0.35 + i * 0.1}s` }}
             >
               <span
                 className="grid size-7 shrink-0 place-items-center rounded-lg sm:size-8 sm:rounded-xl"
@@ -336,14 +363,14 @@ function IoCardStart({ onNext }: { onNext: () => void }) {
           );
         })}
       </div>
-      <p className="io-stagger mt-3 text-xs font-bold text-white/75 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] sm:text-sm" style={{ animationDelay: "0.9s" }}>
+      <p className="io-stagger mt-3 text-xs font-bold text-white/75 sm:text-sm" style={{ animationDelay: "0.8s" }}>
         ٣ خطوات بس… وبعدها ابعت موقعك لأي عميل.
       </p>
       <button
         type="button"
         onClick={onNext}
         className="io-start-btn mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-br from-[#f3cf73] to-[#e8c15e] py-3 text-sm font-black text-[#17120a] shadow-lg shadow-amber-500/25 transition hover:-translate-y-0.5 hover:shadow-amber-500/35 sm:py-3.5 sm:text-base"
-        style={{ animationDelay: "1s" }}
+        style={{ animationDelay: "0.9s" }}
       >
         يلا نبدأ بالباقات
         <ArrowLeft className="size-4 sm:size-5" aria-hidden />
@@ -353,23 +380,12 @@ function IoCardStart({ onNext }: { onNext: () => void }) {
 }
 
 function IoAmbientBackground({ step }: { step: number }) {
-  const color = cardColors[step];
   return (
     <div className="pointer-events-none absolute inset-0 overflow-hidden">
       <div
-        className="absolute left-1/2 top-1/2 h-[500px] w-[500px] -translate-x-1/2 -translate-y-1/2 rounded-full opacity-50 blur-[100px] transition-all duration-[1200ms] ease-out sm:h-[700px] sm:w-[700px]"
-        style={{ background: color.glow }}
-      />
-      <div
-        className="absolute left-[20%] top-[25%] h-40 w-40 rounded-full opacity-25 blur-[70px] transition-all duration-[1400ms] ease-out sm:h-52 sm:w-52"
-        style={{ background: cardColors[(step + 1) % TOTAL_STEPS].glow }}
-      />
-      <div
-        className="absolute bottom-[20%] right-[15%] h-36 w-36 rounded-full opacity-20 blur-[60px] transition-all duration-[1600ms] ease-out sm:h-44 sm:w-44"
-        style={{ background: cardColors[(step + 2) % TOTAL_STEPS].glow }}
+        className="absolute left-1/2 top-1/2 h-[400px] w-[400px] -translate-x-1/2 -translate-y-1/2 rounded-full opacity-40 transition-colors duration-[800ms] ease-out sm:h-[600px] sm:w-[600px]"
+        style={{ background: `radial-gradient(circle, ${cardColors[step].glow} 0%, transparent 70%)`, willChange: "background" }}
       />
     </div>
   );
 }
-
-
