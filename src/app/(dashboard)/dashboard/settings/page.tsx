@@ -34,6 +34,13 @@ export default async function DashboardSettingsPage({
     select: { id: true, status: true, createdAt: true },
   });
 
+  let requestMessage: string | undefined;
+  if (typeof params.request === "string") {
+    requestMessage = params.request;
+  } else if (typeof params.updated === "string" && params.updated === "title") {
+    requestMessage = "title-updated";
+  }
+
   return (
     <SettingsClient
       userName={session.user.name}
@@ -47,7 +54,7 @@ export default async function DashboardSettingsPage({
       slugChangeUsed={session.site.slugChangeUsed}
       templateChangeUsed={session.site.templateChangeUsed}
       hasDeletionRequest={Boolean(pendingDeletionRequest)}
-      requestMessage={typeof params.request === "string" ? params.request : undefined}
+      requestMessage={requestMessage}
       errorMessage={typeof params.error === "string" ? params.error : undefined}
     />
   );
