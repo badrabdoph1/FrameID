@@ -57,7 +57,11 @@ export default async function PublicSitePage({ params }: Props) {
   if (!site) notFound();
 
   const { result: access } = await checkSiteAccessBySlug(slug);
-  if (!access.allowed) return <SiteExpiredPage />;
+  if (!access.allowed) {
+    const session = await getCurrentRequestSession();
+    const isOwner = session?.site.slug === slug;
+    return <SiteExpiredPage isOwner={isOwner} />;
+  }
 
   const session = await getCurrentRequestSession();
   const isOwner = session?.site.slug === slug;

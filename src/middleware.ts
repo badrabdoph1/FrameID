@@ -201,7 +201,7 @@ export async function middleware(request: NextRequest) {
   } else if (pathname.startsWith("/api/") && !isSystemApiPath(pathname)) {
     const access = await checkApiAccess(request)
     if (access === "DENY") {
-      response = new NextResponse(JSON.stringify({ error: "الاشتراك منتهي. يرجى تجديد الاشتراك.", requestId, correlationId }), {
+      response = new NextResponse(JSON.stringify({ error: "الخدمة غير متاحة حاليًا.", requestId, correlationId }), {
         status: 403,
         headers: { "content-type": "application/json" },
       })
@@ -211,7 +211,9 @@ export async function middleware(request: NextRequest) {
   } else if (pathname.startsWith("/p/")) {
     const access = await checkSiteAccess(request)
     if (access === "DENY") {
+      const slug = pathname.replace(/^\/p\//, "").split("/")[0]
       const url = new URL("/expired", request.url)
+      if (slug) url.searchParams.set("slug", slug)
       response = NextResponse.rewrite(url, { request: { headers: requestHeaders } })
     } else {
       response = nextWithTrace(requestHeaders)

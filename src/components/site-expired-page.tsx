@@ -1,5 +1,9 @@
-import { ErrorExperience } from "@/components/errors/error-experience";
+import { SiteUnavailableExperience } from "@/components/errors/site-unavailable-experience";
 
-export function SiteExpiredPage() {
-  return <ErrorExperience variant="expired" homeHref="/login" />;
+type Props = {
+  isOwner?: boolean;
+};
+
+export function SiteExpiredPage({ isOwner = false }: Props) {
+  return <SiteUnavailableExperience isOwner={isOwner} homeHref="/" loginHref="/login" dashboardHref="/dashboard" />;
 }
