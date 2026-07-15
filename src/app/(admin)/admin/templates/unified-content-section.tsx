@@ -6,7 +6,12 @@ import type { z } from "zod";
 type UnifiedContent = z.infer<typeof UnifiedTemplateContentSchema>;
 
 export async function UnifiedContentSection() {
-  const content = getContent("templates/unified-content") as unknown as UnifiedContent;
+  let content: UnifiedContent | null = null;
+  try {
+    content = getContent("templates/unified-content") as unknown as UnifiedContent;
+  } catch {
+    return null;
+  }
 
   return <UnifiedContentEditor content={content} />;
 }

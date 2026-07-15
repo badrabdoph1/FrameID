@@ -353,7 +353,10 @@ function LifecycleStatusCard({
   subscription: NonNullable<DashboardViewModel["subscription"]>;
   experience: NonNullable<DashboardViewModel["subscriptionExperience"]>;
 }) {
-  if (!experience.message.enabled && !experience.timer.enabled && !experience.action.visible) {
+  const hasMessage = experience.message.enabled && experience.message.title;
+  const hasTimer = experience.timer.enabled && experience.timer.daysRemaining !== null;
+  const hasAction = experience.action.visible && experience.action.href;
+  if (!hasMessage && !hasTimer && !hasAction) {
     return null;
   }
   const endDate = subscription.endsAt ? new Date(subscription.endsAt).toLocaleDateString("ar-EG") : "دائم";
@@ -370,7 +373,7 @@ function LifecycleStatusCard({
   const barClass = tone === "danger" ? "bg-red-400" : tone === "warning" ? "bg-amber-400" : "bg-emerald-400";
   const buttonClass = tone === "danger" ? "bg-red-400 hover:bg-red-300 text-white" : tone === "warning" ? "bg-amber-400 hover:bg-amber-300 text-[#17120a]" : "bg-emerald-400 hover:bg-emerald-300 text-[#17120a]";
   const daysText =
-    experience.timer.enabled && experience.timer.daysRemaining !== null
+    hasTimer
       ? `متبقي ${experience.timer.daysRemaining} يوم`
       : subscription.daysRemaining === null
         ? "اشتراك دائم"
@@ -381,19 +384,23 @@ function LifecycleStatusCard({
         <CalendarDays className="size-3.5 sm:size-4" aria-hidden />
       </span>
       <div className="min-w-0 flex-1">
-        <div className="flex flex-wrap items-center gap-x-1 gap-y-0">
-          <span className="text-[0.65rem] font-black text-[#fff7e8] sm:text-xs">{experience.message.title}</span>
-          <span className="mx-1 text-[0.55rem] font-bold text-white/30">·</span>
-          <span className="text-[0.6rem] font-bold text-white/45">{subscription.planName ?? subscription.accountType}</span>
-          <span className="mx-1 text-[0.55rem] font-bold text-white/25">·</span>
-          <span className="text-[0.6rem] font-bold text-white/50">{daysText}</span>
-          <span className="mx-1 text-[0.55rem] font-bold text-white/25">·</span>
-          <span className="text-[0.6rem] font-bold text-white/40">ينتهي: {endDate}</span>
-        </div>
-        {experience.message.description ? (
-          <p className="mt-0.5 text-[0.6rem] font-bold leading-4 text-white/55 sm:text-[0.65rem]">
-            {experience.message.description}
-          </p>
+        {hasMessage ? (
+          <>
+            <div className="flex flex-wrap items-center gap-x-1 gap-y-0">
+              <span className="text-[0.65rem] font-black text-[#fff7e8] sm:text-xs">{experience.message.title}</span>
+              <span className="mx-1 text-[0.55rem] font-bold text-white/30">·</span>
+              <span className="text-[0.6rem] font-bold text-white/45">{subscription.planName ?? subscription.accountType}</span>
+              <span className="mx-1 text-[0.55rem] font-bold text-white/25">·</span>
+              <span className="text-[0.6rem] font-bold text-white/50">{daysText}</span>
+              <span className="mx-1 text-[0.55rem] font-bold text-white/25">·</span>
+              <span className="text-[0.6rem] font-bold text-white/40">ينتهي: {endDate}</span>
+            </div>
+            {experience.message.description ? (
+              <p className="mt-0.5 text-[0.6rem] font-bold leading-4 text-white/55 sm:text-[0.65rem]">
+                {experience.message.description}
+              </p>
+            ) : null}
+          </>
         ) : null}
       </div>
       <div className="flex items-center gap-2 sm:gap-2.5">
@@ -403,9 +410,9 @@ function LifecycleStatusCard({
           </div>
           <span className={`text-[0.6rem] font-black ${toneText}`}>{subscription.progressPercent ?? 0}%</span>
         </div>
-        {experience.action.visible && experience.action.href ? (
+        {hasAction ? (
           <Link
-            href={experience.action.href}
+            href={experience.action.href as string}
             target={experience.action.target}
             className={`inline-flex min-h-7 shrink-0 items-center justify-center rounded-md px-2.5 text-[0.6rem] font-black no-underline transition sm:min-h-8 sm:rounded-lg sm:px-3 sm:text-xs ${buttonClass}`}
           >

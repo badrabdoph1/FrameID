@@ -47,8 +47,16 @@ export default async function AdminTemplatesPage({ searchParams }: Props) {
   await requireAdminPermission("templates", "view");
   const params = await searchParams;
 
-  const queryDb = process.env.DATABASE_URL
-    ? Promise.all([
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let templates: any[] = [];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let themes: any[] = [];
+  let publishedTemplates = 0;
+  let sharedDefaultsRow: Record<string, unknown> | null = null;
+
+  if (process.env.DATABASE_URL) {
+    try {
+      [templates, themes, publishedTemplates, sharedDefaultsRow] = await Promise.all([
         prisma.template.findMany({
           where: { deletedAt: null, code: { not: TEMPLATE_STARTER_DEFAULTS_CODE } },
           orderBy: [{ status: "desc" }, { showroomOrder: "asc" }, { updatedAt: "desc" }],
@@ -75,10 +83,11 @@ export default async function AdminTemplatesPage({ searchParams }: Props) {
           where: { code: TEMPLATE_STARTER_DEFAULTS_CODE },
           select: { previewData: true },
         }),
-      ])
-    : Promise.resolve([[], [], 0, null] as const);
-
-  const [templates, themes, publishedTemplates, sharedDefaultsRow] = await queryDb;
+      ]);
+    } catch {
+      // Database unavailable — show empty state
+    }
+  }
 
   const sharedDefaultsSource = isRecord(sharedDefaultsRow?.previewData)
     ? sharedDefaultsRow.previewData.sharedDefaults

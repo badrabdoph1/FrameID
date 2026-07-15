@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import React from "react";
-import { Eye, MessageCircle, Sparkles, Star } from "lucide-react";
+import { ChevronDown, CreditCard, Eye, MessageCircle, Palette, Sparkles, Star, Zap } from "lucide-react";
 
 import { MarketingFooter } from "@/components/layout/marketing-footer";
 import { MarketingNav } from "@/components/layout/marketing-nav";
@@ -112,9 +112,9 @@ export default function TemplatesPage() {
 
               {/* Subtitle */}
               <p className="mx-auto mt-6 max-w-xl text-base leading-[1.8] text-white/60 md:mt-8 md:text-lg md:leading-[1.85]">
-                موقعك وطريقة عرض أسعارك هما أول انطباع بياخده عميلك. ✨
+                أول انطباع لعميلك يبدأ من موقعك.
                 <br />
-                اختار الموقع اللي يناسبك، وعدّل كل الصور والنصوص والتفاصيل براحتك بعدين.
+                اختار القالب اللي يعبر عنك، وكل حاجة تتغير بعدين.
               </p>
 
               {/* Stats */}
