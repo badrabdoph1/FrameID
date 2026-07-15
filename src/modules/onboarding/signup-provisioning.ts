@@ -52,6 +52,7 @@ export type AccountCreationInput = {
 
 export type SignupProvisioningRepository = {
   identifierExists(input: { email: string; phone: string | null }): Promise<boolean>;
+  identifierExistsInTrash(input: { email: string; phone: string | null }): Promise<boolean>;
   getUnavailableSlugs(): Promise<ReadonlySet<string>>;
   isTemplateAvailable(templateCode: string): Promise<boolean>;
   createAccountWithSite(
@@ -92,6 +93,10 @@ export function createSignupProvisioningService({
         ownerName: input.name,
         registrationIdentity,
       });
+
+      if (await repository.identifierExistsInTrash({ email: input.email, phone: input.phone })) {
+        throw new Error("هذا الرقم أو البريد الإلكتروني مسجل سابقًا وتم حذف الحساب. لا يمكن إعادة التسجيل بنفس البيانات. للاستفسار، تواصل مع الدعم.");
+      }
 
       if (await repository.identifierExists({ email: input.email, phone: input.phone })) {
         throw new Error("رقم الهاتف أو البريد الإلكتروني مستخدم بالفعل");
