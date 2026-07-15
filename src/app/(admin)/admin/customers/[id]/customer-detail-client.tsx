@@ -20,6 +20,7 @@ import { CustomerMediaTab } from "./components/customer-media-tab"
 import { CustomerSessionsTab } from "./components/customer-sessions-tab"
 import { CustomerNotificationsTab } from "./components/customer-notifications-tab"
 import { CustomerNotesTab } from "./components/customer-notes-tab"
+import { CustomerPasswordCard } from "./components/customer-password-card"
 
 import {
   suspendCustomerAction, activateCustomerAction, archiveCustomerAction,
@@ -143,6 +144,18 @@ export function CustomerDetailClient({ initialTab, customer, media, notification
         onCopy={copyToClipboard}
         onNotify={() => changeTab("notifications")}
         onEmail={() => window.location.href = `mailto:${customer.owner.email}`}
+      />
+
+      <CustomerPasswordCard
+        ownerEmail={customer.owner.email}
+        ownerId={customer.owner.id}
+        onReset={(userId, newPassword) => {
+          const fd = new FormData()
+          fd.set("userId", userId)
+          fd.set("newPassword", newPassword)
+          handleAction("reset-password", fd)
+        }}
+        onCopy={copyToClipboard}
       />
 
       <CustomerTabBar activeTab={activeTab} basePath={`/admin/customers/${customer.id}`} onChange={changeTab} />

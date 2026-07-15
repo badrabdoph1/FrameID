@@ -3,273 +3,75 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
-import { prisma } from "@/lib/prisma";
-import { processError } from "@/lib/errors";
-import { requireSuperAdminSession } from "@/modules/admin/admin-page-guards";
-import { createPaymentSettingsService } from "@/modules/billing/payment-settings-service";
-import { createPrismaPaymentSettingsRepository } from "@/modules/billing/prisma-payment-settings-repository";
-import { syncPlatformConfigurationToGitHub } from "@/modules/setup/platform-configuration-git";
+import { requireAdminPermission } from "@/modules/admin/admin-permission-guards";
 
-const service = createPaymentSettingsService(
-  createPrismaPaymentSettingsRepository(prisma as never),
-);
-
-export async function updatePaymentSettingsAction(formData: FormData) {
-  const session = await requireSuperAdminSession();
-  const id = formData.get("settingsId");
-  const label = formData.get("label");
-  const description = formData.get("description");
-  const sortOrder = formData.get("sortOrder");
-
-  if (typeof id !== "string" || !id) {
-    redirect("/admin/settings/payment?error=معرف الإعدادات مطلوب");
-  }
-
-  try {
-    const data: Record<string, unknown> = {};
-    if (typeof label === "string") data.label = label;
-    if (typeof description === "string") data.description = description;
-    if (typeof sortOrder === "string") data.sortOrder = parseInt(sortOrder, 10) || 0;
-    await service.updatePaymentSettings(id, data);
-    await syncPlatformConfigurationToGitHub({ actor: session.user, reason: "تعديل إعدادات الدفع" });
-  } catch (error) {
-    await processError(error, {
-      userId: session.user.id,
-      metadata: { action: "updatePaymentSettings", settingsId: id },
-    });
-    redirect(`/admin/settings/payment?error=${encodeURIComponent(
-      error instanceof Error ? error.message : "حدث خطأ",
-    )}`);
-  }
-
-  revalidatePath("/admin/settings/payment");
-  redirect("/admin/settings/payment?success=updated");
+function readString(formData: FormData, key: string): string {
+  const value = formData.get(key);
+  return typeof value === "string" ? value.trim() : "";
 }
 
-export async function togglePaymentMethodAction(formData: FormData) {
-  const session = await requireSuperAdminSession();
-  const id = formData.get("settingsId");
-  const isActive = formData.get("isActive");
-
-  if (typeof id !== "string" || !id) {
-    redirect("/admin/settings/payment?error=معرف الإعدادات مطلوب");
-  }
-
-  try {
-    await service.togglePaymentMethod(id, isActive === "1");
-    await syncPlatformConfigurationToGitHub({ actor: session.user, reason: "تغيير حالة وسيلة دفع" });
-  } catch (error) {
-    await processError(error, {
-      userId: session.user.id,
-      metadata: { action: "togglePaymentMethod", settingsId: id },
-    });
-    redirect(`/admin/settings/payment?error=${encodeURIComponent(
-      error instanceof Error ? error.message : "حدث خطأ",
-    )}`);
-  }
-
-  revalidatePath("/admin/settings/payment");
-  redirect("/admin/settings/payment?success=toggled");
-}
-
-export async function addPaymentAccountAction(formData: FormData) {
-  const session = await requireSuperAdminSession();
-  const settingsId = formData.get("settingsId");
-  const label = formData.get("label");
-  const accountName = formData.get("accountName");
-  const accountNumber = formData.get("accountNumber");
-  const bankName = formData.get("bankName");
-  const iban = formData.get("iban");
-  const swift = formData.get("swift");
-  const phoneNumber = formData.get("phoneNumber");
-  const instructions = formData.get("instructions");
-  const notes = formData.get("notes");
-
-  if (typeof settingsId !== "string" || !settingsId) {
-    redirect("/admin/settings/payment?error=معرف الإعدادات مطلوب");
-  }
-
-  try {
-    await service.addPaymentAccount(settingsId, {
-      label: typeof label === "string" ? label : "",
-      accountName: typeof accountName === "string" ? accountName : "",
-      accountNumber: typeof accountNumber === "string" ? accountNumber : "",
-      bankName: typeof bankName === "string" ? bankName : "",
-      iban: typeof iban === "string" ? iban : "",
-      swift: typeof swift === "string" ? swift : "",
-      phoneNumber: typeof phoneNumber === "string" ? phoneNumber : "",
-      instructions: typeof instructions === "string" ? instructions : "",
-      notes: typeof notes === "string" ? notes : "",
-      sortOrder: 0,
-    });
-    await syncPlatformConfigurationToGitHub({ actor: session.user, reason: "إضافة حساب دفع" });
-  } catch (error) {
-    await processError(error, {
-      userId: session.user.id,
-      metadata: { action: "addPaymentAccount", settingsId },
-    });
-    redirect(`/admin/settings/payment?error=${encodeURIComponent(
-      error instanceof Error ? error.message : "حدث خطأ",
-    )}`);
-  }
-
-  revalidatePath("/admin/settings/payment");
-  redirect("/admin/settings/payment?success=account-added");
-}
+// Legacy stubs — these actions are no longer available in the simplified payment settings.
+// They exist only so orphaned components compile. They redirect to the main page.
+export async function deletePaymentAccountAction() { redirect("/admin/settings/payment"); }
+export async function movePaymentAccountAction() { redirect("/admin/settings/payment"); }
+export async function addPaymentAccountAction() { redirect("/admin/settings/payment"); }
+export async function uploadPaymentQRCodeAction() { redirect("/admin/settings/payment"); }
 
 export async function updatePaymentAccountAction(formData: FormData) {
-  const session = await requireSuperAdminSession();
-  const id = formData.get("accountId");
-  const label = formData.get("label");
-  const accountName = formData.get("accountName");
-  const accountNumber = formData.get("accountNumber");
-  const bankName = formData.get("bankName");
-  const iban = formData.get("iban");
-  const swift = formData.get("swift");
-  const phoneNumber = formData.get("phoneNumber");
-  const instructions = formData.get("instructions");
-  const notes = formData.get("notes");
+  await requireAdminPermission("payment-settings", "edit");
 
-  if (typeof id !== "string" || !id) {
-    redirect("/admin/settings/payment?error=معرف الحساب مطلوب");
+  const accountId = readString(formData, "accountId");
+  const accountName = readString(formData, "accountName");
+  const accountNumber = readString(formData, "accountNumber");
+
+  if (!accountId || !accountName || !accountNumber) {
+    redirect("/admin/settings/payment?error=الاسم والرقم مطلوبان");
   }
 
   try {
-    const data: Record<string, unknown> = {};
-    if (typeof label === "string") data.label = label;
-    if (typeof accountName === "string") data.accountName = accountName;
-    if (typeof accountNumber === "string") data.accountNumber = accountNumber;
-    if (typeof bankName === "string") data.bankName = bankName;
-    if (typeof iban === "string") data.iban = iban;
-    if (typeof swift === "string") data.swift = swift;
-    if (typeof phoneNumber === "string") data.phoneNumber = phoneNumber;
-    if (typeof instructions === "string") data.instructions = instructions;
-    if (typeof notes === "string") data.notes = notes;
-    await service.updatePaymentAccount(id, data);
-    await syncPlatformConfigurationToGitHub({ actor: session.user, reason: "تعديل حساب دفع" });
-  } catch (error) {
-    await processError(error, {
-      userId: session.user.id,
-      metadata: { action: "updatePaymentAccount", accountId: id },
-    });
-    redirect(`/admin/settings/payment?error=${encodeURIComponent(
-      error instanceof Error ? error.message : "حدث خطأ",
-    )}`);
-  }
+    const { readFile, writeFile } = await import("node:fs/promises");
+    const { join } = await import("node:path");
 
-  revalidatePath("/admin/settings/payment");
-  redirect("/admin/settings/payment?success=account-updated");
-}
-
-export async function deletePaymentAccountAction(formData: FormData) {
-  const session = await requireSuperAdminSession();
-  const id = formData.get("accountId");
-
-  if (typeof id !== "string" || !id) {
-    redirect("/admin/settings/payment?error=معرف الحساب مطلوب");
-  }
-
-  try {
-    await service.deletePaymentAccount(id);
-    await syncPlatformConfigurationToGitHub({ actor: session.user, reason: "حذف حساب دفع" });
-  } catch (error) {
-    await processError(error, {
-      userId: session.user.id,
-      metadata: { action: "deletePaymentAccount", accountId: id },
-    });
-    redirect(`/admin/settings/payment?error=${encodeURIComponent(
-      error instanceof Error ? error.message : "حدث خطأ",
-    )}`);
-  }
-
-  revalidatePath("/admin/settings/payment");
-  redirect("/admin/settings/payment?success=account-deleted");
-}
-
-export async function movePaymentAccountAction(formData: FormData) {
-  const session = await requireSuperAdminSession();
-  const id = formData.get("accountId");
-  const direction = formData.get("direction");
-
-  if (typeof id !== "string" || !id) {
-    redirect("/admin/settings/payment?error=معرف الحساب مطلوب");
-  }
-
-  if (direction !== "up" && direction !== "down") {
-    redirect("/admin/settings/payment?error=اتجاه غير صالح");
-  }
-
-  try {
-    const current = await prisma.paymentAccount.findUnique({
-      where: { id },
-      select: { id: true, sortOrder: true },
-    });
-
-    if (!current) {
-      redirect("/admin/settings/payment?error=الحساب غير موجود");
-    }
-
-    const adjacent = await prisma.paymentAccount.findFirst({
-      where: {
-        isActive: true,
-        sortOrder: direction === "up"
-          ? { lt: current.sortOrder }
-          : { gt: current.sortOrder },
-      },
-      orderBy: { sortOrder: direction === "up" ? "desc" : "asc" },
-      select: { id: true, sortOrder: true },
-    });
-
-    if (adjacent) {
-      await prisma.paymentAccount.update({
-        where: { id: current.id },
-        data: { sortOrder: adjacent.sortOrder },
-      });
-      await prisma.paymentAccount.update({
-        where: { id: adjacent.id },
-        data: { sortOrder: current.sortOrder },
-      });
-    }
-    await syncPlatformConfigurationToGitHub({ actor: session.user, reason: "ترتيب حسابات الدفع" });
-  } catch (error) {
-    await processError(error, {
-      userId: session.user.id,
-      metadata: { action: "movePaymentAccount", accountId: id },
-    });
-    redirect(`/admin/settings/payment?error=${encodeURIComponent(
-      error instanceof Error ? error.message : "حدث خطأ",
-    )}`);
-  }
-
-  revalidatePath("/admin/settings/payment");
-  redirect("/admin/settings/payment?success=updated");
-}
-
-export async function uploadPaymentQRCodeAction(formData: FormData) {
-  const session = await requireSuperAdminSession();
-  const settingsId = formData.get("settingsId");
-  const assetId = formData.get("assetId");
-
-  if (typeof settingsId !== "string" || !settingsId) {
-    redirect("/admin/settings/payment?error=معرف الإعدادات مطلوب");
-  }
-
-  try {
-    await service.updateQRCode(
-      settingsId,
-      typeof assetId === "string" && assetId ? assetId : null,
+    const configPath = join(
+      process.cwd(),
+      "content/platform/admin-config.json",
     );
-    await syncPlatformConfigurationToGitHub({ actor: session.user, reason: "تعديل رمز دفع" });
+    const raw = await readFile(configPath, "utf-8");
+    const config = JSON.parse(raw);
+
+    const methodMap: Record<string, string> = {
+      instapay: "INSTAPAY",
+      "vodafone-cash": "VODAFONE_CASH",
+    };
+    const method = methodMap[accountId];
+    if (!method) throw new Error("حساب غير معروف");
+
+    const paymentSettings = config.paymentSettings;
+    if (!Array.isArray(paymentSettings)) throw new Error("إعدادات الدفع غير موجودة");
+
+    const setting = paymentSettings.find(
+      (s: Record<string, unknown>) => s.paymentMethod === method,
+    );
+    if (!setting || !Array.isArray(setting.accounts)) {
+      throw new Error("لم يتم العثور على الحساب");
+    }
+
+    setting.accounts[0] = {
+      ...setting.accounts[0],
+      accountName,
+      accountNumber,
+      accountIdentifier: accountNumber,
+      phoneNumber: accountNumber,
+      displayName: accountName,
+    };
+
+    await writeFile(configPath, JSON.stringify(config, null, 2), "utf-8");
   } catch (error) {
-    await processError(error, {
-      userId: session.user.id,
-      metadata: { action: "uploadPaymentQRCode", settingsId },
-    });
-    redirect(`/admin/settings/payment?error=${encodeURIComponent(
-      error instanceof Error ? error.message : "حدث خطأ",
-    )}`);
+    console.error("[payment] failed to save:", error);
+    redirect("/admin/settings/payment?error=فشل حفظ التغيير");
   }
 
   revalidatePath("/admin/settings/payment");
-  redirect("/admin/settings/payment?success=qr-updated");
+  revalidatePath("/admin/billing");
+  redirect("/admin/settings/payment?success=1");
 }

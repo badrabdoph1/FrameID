@@ -60,7 +60,7 @@ export const PLATFORM_PAGE_DEFINITIONS: PlatformPageDefinition[] = [
     description: "تقديم القوالب والبحث بينها دون تكرار بياناتها.",
     route: "/templates",
     kind: "EDITORIAL",
-    availability: "planned",
+    availability: "editable",
     sections: [
       { type: "templates.hero", label: "المقدمة", capabilities: flexibleSection },
       { type: "templates.filters", label: "التصفية", capabilities: protectedSection },
@@ -74,7 +74,7 @@ export const PLATFORM_PAGE_DEFINITIONS: PlatformPageDefinition[] = [
     description: "تقديم الخطط مع إبقاء الأسعار في نظام الخطط.",
     route: "/pricing",
     kind: "EDITORIAL",
-    availability: "planned",
+    availability: "editable",
     sections: [
       { type: "pricing.hero", label: "المقدمة", capabilities: flexibleSection },
       { type: "pricing.plans", label: "الخطط", capabilities: protectedSection },
@@ -87,7 +87,7 @@ export const PLATFORM_PAGE_DEFINITIONS: PlatformPageDefinition[] = [
     description: "النصوص المحيطة بنموذج تسجيل الدخول المحمي.",
     route: "/login",
     kind: "AUTH",
-    availability: "planned",
+    availability: "editable",
     sections: [{ type: "auth.login", label: "تسجيل الدخول", capabilities: protectedSection }],
   },
   {
@@ -96,7 +96,7 @@ export const PLATFORM_PAGE_DEFINITIONS: PlatformPageDefinition[] = [
     description: "تجربة الانضمام مع نموذج حساب محمي.",
     route: "/signup",
     kind: "AUTH",
-    availability: "planned",
+    availability: "editable",
     sections: [{ type: "auth.signup", label: "إنشاء الحساب", capabilities: protectedSection }],
   },
   {
@@ -105,7 +105,7 @@ export const PLATFORM_PAGE_DEFINITIONS: PlatformPageDefinition[] = [
     description: "المحتوى التوضيحي حول رحلة الدفع الآمنة.",
     route: "/checkout",
     kind: "FUNCTIONAL",
-    availability: "planned",
+    availability: "editable",
     sections: [{ type: "checkout.flow", label: "إتمام الدفع", capabilities: protectedSection }],
   },
   {
@@ -114,7 +114,7 @@ export const PLATFORM_PAGE_DEFINITIONS: PlatformPageDefinition[] = [
     description: "سياسة الخصوصية المنشورة.",
     route: "/privacy",
     kind: "LEGAL",
-    availability: "planned",
+    availability: "editable",
     sections: [{ type: "legal.privacy", label: "سياسة الخصوصية", capabilities: protectedSection }],
   },
   {
@@ -123,7 +123,7 @@ export const PLATFORM_PAGE_DEFINITIONS: PlatformPageDefinition[] = [
     description: "الشروط والأحكام المنشورة.",
     route: "/terms",
     kind: "LEGAL",
-    availability: "planned",
+    availability: "editable",
     sections: [{ type: "legal.terms", label: "الشروط والأحكام", capabilities: protectedSection }],
   },
   {
@@ -132,7 +132,7 @@ export const PLATFORM_PAGE_DEFINITIONS: PlatformPageDefinition[] = [
     description: "الغلاف التحريري حول بيانات العميل الحية.",
     route: "/dashboard",
     kind: "FUNCTIONAL",
-    availability: "planned",
+    availability: "editable",
     sections: [{ type: "dashboard.core", label: "لوحة التحكم", capabilities: protectedSection }],
   },
 ];

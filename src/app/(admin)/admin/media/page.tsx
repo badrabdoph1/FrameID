@@ -5,19 +5,133 @@ import { AdminEmptyState } from "@/components/admin/admin-workspace-primitives";
 import { AdminPageShell } from "@/components/layout/admin-page-shell";
 import { prisma } from "@/lib/prisma";
 import { requireAdminPermission } from "@/modules/admin/admin-permission-guards";
+import { MediaTableClient } from "./media-table-client";
 
 export const dynamic = "force-dynamic";
 
-function formatSize(bytes: number) { return bytes < 1024 * 1024 ? `${Math.max(1, Math.round(bytes / 1024)).toLocaleString("ar-EG")} ك.ب` : `${(bytes / 1024 / 1024).toLocaleString("ar-EG", { maximumFractionDigits: 1 })} م.ب`; }
+function formatSize(bytes: number) {
+  return bytes < 1024 * 1024
+    ? `${Math.max(1, Math.round(bytes / 1024)).toLocaleString("ar-EG")} ك.ب`
+    : `${(bytes / 1024 / 1024).toLocaleString("ar-EG", { maximumFractionDigits: 1 })} م.ب`;
+}
 
 export default async function AdminMediaPage() {
   await requireAdminPermission("media", "view");
-  const assets = await prisma.mediaAsset.findMany({ where: { deletedAt: null }, orderBy: { createdAt: "desc" }, take: 100, select: { id: true, url: true, storageKey: true, kind: true, mimeType: true, sizeBytes: true, width: true, height: true, alt: true, createdAt: true, tenant: { select: { id: true, displayName: true } } } });
+
+  const [assets, templates, paymentSettings] = await Promise.all([
+    prisma.mediaAsset.findMany({
+      where: { deletedAt: null },
+      orderBy: { createdAt: "desc" },
+      take: 200,
+      select: {
+        id: true,
+        url: true,
+        storageKey: true,
+        kind: true,
+        mimeType: true,
+        sizeBytes: true,
+        width: true,
+        height: true,
+        alt: true,
+        createdAt: true,
+        tenant: {
+          select: { id: true, displayName: true },
+        },
+      },
+    }),
+    prisma.template.findMany({
+      where: { deletedAt: null },
+      select: { id: true, name: true, previewData: true },
+    }),
+    prisma.paymentSettings.findMany({
+      where: { qrCodeAssetId: { not: null } },
+      select: { id: true, paymentMethod: true, qrCodeAssetId: true },
+    }),
+  ]);
+
+  const templateCoverUrls = new Set<string>();
+  const templatePreviewUrls = new Set<string>();
+  for (const t of templates) {
+    const pd = t.previewData as Record<string, unknown> | null;
+    if (pd) {
+      if (typeof pd.previewImage === "string") templateCoverUrls.add(pd.previewImage);
+      if (typeof pd.coverImage === "string") templateCoverUrls.add(pd.coverImage);
+      if (typeof pd.image === "string") templatePreviewUrls.add(pd.image);
+    }
+  }
+
+  const qrCodeAssetIds = new Set(paymentSettings.map((ps) => ps.qrCodeAssetId));
+
+  const rows = assets.map((asset) => {
+    const usages: string[] = [];
+    if (asset.tenant) usages.push(`عميل: ${asset.tenant.displayName}`);
+    if (templateCoverUrls.has(asset.url)) usages.push("غلاف قالب");
+    if (templatePreviewUrls.has(asset.url)) usages.push("معاينة قالب");
+    if (qrCodeAssetIds.has(asset.id)) usages.push("QR Code دفع");
+    if (asset.kind === "template-cover") usages.push("صورة قالب");
+
+    return {
+      id: asset.id,
+      url: asset.url,
+      storageKey: asset.storageKey,
+      fileName: asset.storageKey.split("/").at(-1) ?? "",
+      path: asset.storageKey,
+      alt: asset.alt,
+      mimeType: asset.mimeType,
+      sizeBytes: asset.sizeBytes,
+      sizeLabel: formatSize(asset.sizeBytes),
+      dimensions:
+        asset.width && asset.height ? `${asset.width}×${asset.height}` : null,
+      kind: asset.kind,
+      tenantName: asset.tenant?.displayName ?? "—",
+      usages: usages.length > 0 ? usages.join("، ") : "غير مستخدم",
+      createdAt: asset.createdAt.toISOString(),
+    };
+  });
+
+  const totalCount = assets.length;
+  const totalSize = assets.reduce((acc, a) => acc + a.sizeBytes, 0);
+
   return (
-    <AdminPageShell badge="المحتوى" title="مكتبة الوسائط" description="مرجع للملفات المرفوعة في مواقع العملاء. الرفع والتحرير يظلان داخل سياق الموقع أو القالب لمنع خلط الملكية." breadcrumbs={[{ label: "المحتوى", href: "/admin/content" }, { label: "الوسائط" }]}>
-      <section aria-label="ملفات الوسائط" className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-        {assets.length === 0 ? <div className="sm:col-span-2 xl:col-span-3"><AdminEmptyState title="لا توجد وسائط مرفوعة" description="ستظهر الصور والملفات هنا بعد رفعها من موقع العميل أو محرر القالب." icon={ImageIcon} /></div> : assets.map((asset) => <article key={asset.id} className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03]"><a href={asset.url} target="_blank" rel="noreferrer" aria-label={`فتح ${asset.alt ?? asset.storageKey}`} className="relative block aspect-[16/10] bg-black/20">{asset.mimeType.startsWith("image/") ? <Image src={asset.url} alt={asset.alt ?? ""} fill unoptimized sizes="(min-width: 1280px) 33vw, (min-width: 640px) 50vw, 100vw" className="object-cover" /> : <span className="grid size-full place-items-center"><ImageIcon className="size-9 text-white/20" /></span>}</a><div className="p-3"><h2 className="truncate text-sm font-black text-[#fff7e8]">{asset.alt ?? asset.storageKey.split("/").at(-1)}</h2><p className="mt-1 truncate text-xs font-bold text-white/42">{asset.tenant.displayName} · {asset.kind}</p><p className="mt-2 text-[0.68rem] font-bold text-white/32">{formatSize(asset.sizeBytes)}{asset.width && asset.height ? ` · ${asset.width}×${asset.height}` : ""}</p></div></article>)}
+    <AdminPageShell
+      badge="المحتوى"
+      title="مكتبة الوسائط"
+      description="كل الصور والملفات في المنصة. اعرف مكان كل ملف واستخدمته، واستبدله عند الحاجة."
+      breadcrumbs={[
+        { label: "المحتوى", href: "/admin/content" },
+        { label: "الوسائط" },
+      ]}
+    >
+      <section className="mb-4 grid gap-3 sm:grid-cols-3">
+        <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+          <p className="text-xs font-black text-white/42">إجمالي الملفات</p>
+          <p className="mt-1 text-2xl font-black text-[#fff7e8]">
+            {totalCount.toLocaleString("ar-EG")}
+          </p>
+        </div>
+        <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+          <p className="text-xs font-black text-white/42">الحجم الإجمالي</p>
+          <p className="mt-1 text-2xl font-black text-[#fff7e8]">
+            {formatSize(totalSize)}
+          </p>
+        </div>
+        <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+          <p className="text-xs font-black text-white/42">في القوالب</p>
+          <p className="mt-1 text-2xl font-black text-[#fff7e8]">
+            {templateCoverUrls.size.toLocaleString("ar-EG")}
+          </p>
+        </div>
       </section>
+
+      {rows.length === 0 ? (
+        <AdminEmptyState
+          title="لا توجد وسائط مرفوعة"
+          description="ستظهر الصور والملفات هنا بعد رفعها من موقع العميل أو محرر القالب."
+          icon={ImageIcon}
+        />
+      ) : (
+        <MediaTableClient rows={rows} />
+      )}
     </AdminPageShell>
   );
 }
