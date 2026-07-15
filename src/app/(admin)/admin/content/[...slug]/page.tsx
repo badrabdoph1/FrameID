@@ -18,7 +18,6 @@ const contentLabels: Partial<Record<ContentSchemaKey, { label: string; descripti
   "seo/metadata": { label: "تحسين محركات البحث", description: "تحرير البيانات الوصفية للمنصة" },
   "settings/platform": { label: "إعدادات المنصة", description: "تحرير الإعدادات العامة" },
   "templates/registry": { label: "سجل القوالب", description: "تحرير بيانات القوالب" },
-  "templates/unified-content": { label: "المحتوى الموحد للقوالب", description: "تحرير المحتوى المشترك لجميع القوالب (الباقات، الإضافات، الصور، البيانات)" },
 };
 
 export const dynamic = "force-dynamic";

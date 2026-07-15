@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { requireAdminPermission } from "@/modules/admin/admin-permission-guards";
 import { TemplateManager } from "@/app/(admin)/admin/templates/template-manager";
 import { StarterDefaultsCard } from "@/app/(admin)/admin/templates/starter-defaults-card";
+import { UnifiedContentSection } from "@/app/(admin)/admin/templates/unified-content-section";
 import {
   normalizeTemplateStarterSharedDefaults,
   OFFICIAL_TEMPLATE_STARTER_DEFAULTS,
@@ -107,6 +108,8 @@ export default async function AdminTemplatesPage({ searchParams }: Props) {
       </section>
 
       <StarterDefaultsCard defaults={sharedDefaults} />
+
+      <UnifiedContentSection />
 
       <TemplateManager
         templates={templates.map((template) => ({

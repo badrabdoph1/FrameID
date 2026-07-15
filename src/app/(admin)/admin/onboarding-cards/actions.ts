@@ -50,6 +50,7 @@ export async function saveCardOverride(formData: FormData) {
   }
 
   redirect("/admin/onboarding-cards?saved=1");
+  return;
 }
 
 export async function resetCardOverride(formData: FormData) {
@@ -73,4 +74,5 @@ export async function resetCardOverride(formData: FormData) {
   });
 
   redirect("/admin/onboarding-cards?reset=1");
+  return;
 }
