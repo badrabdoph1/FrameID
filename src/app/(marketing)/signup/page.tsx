@@ -30,32 +30,37 @@ export default async function SignupPage({ searchParams }: SignupPageProps) {
 
   return (
     <AuthShell
-      title="أنشئ حسابك"
+      title="ابدأ رحلتك الاحترافية"
       description="هنجهز الحساب والموقع والرابط تلقائيًا بعد التسجيل."
     >
       {publishedTemplate ? (
-        <div className="mb-5 flex items-center gap-3 rounded-[var(--radius-panel)] border border-champagne/25 bg-champagne/[0.06] p-2.5 shadow-[0_10px_35px_rgba(20,20,20,0.06)]">
-          <div className="relative h-12 w-16 shrink-0 overflow-hidden rounded-xl border border-border bg-muted">
+        <div className="mb-5 flex items-center gap-3 rounded-xl border border-champagne/30 bg-champagne/[0.06] p-3">
+          <div className="relative h-14 w-20 shrink-0 overflow-hidden rounded-lg border border-champagne/20 bg-muted">
             <Image
               src={getTemplatePreviewImage(publishedTemplate)}
               alt=""
               fill
-              sizes="64px"
+              sizes="80px"
               className="object-cover"
             />
           </div>
           <div className="min-w-0">
-            <p className="text-[0.68rem] font-semibold text-champagne-strong">القالب اللي اخترته</p>
+            <p className="text-[0.7rem] font-semibold text-champagne-strong">القالب المختار</p>
             <p className="mt-0.5 truncate text-sm font-semibold text-foreground">{publishedTemplate.name}</p>
           </div>
         </div>
       ) : null}
+
       <div data-guide-target="signup-form">
         <SignupForm error={error} template={template} />
       </div>
-      <p className="mt-6 text-sm text-muted-foreground">
-        عندك حساب؟{" "}
-        <Link href="/login" className="font-semibold text-foreground">
+
+      <p className="mt-6 text-center text-sm text-muted-foreground">
+        عندك حساب بالفعل؟{" "}
+        <Link
+          href="/login"
+          className="font-semibold text-champagne-strong transition-colors hover:text-champagne"
+        >
           سجل دخول
         </Link>
       </p>

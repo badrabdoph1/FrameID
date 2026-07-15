@@ -1,6 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
+import { Eye, EyeOff, Lock, Mail, Phone } from "lucide-react";
 
 import { loginAction } from "@/app/(marketing)/login/actions";
 import { Button } from "@/components/ui/button";
@@ -16,45 +18,63 @@ type LoginFormProps = {
 export function LoginForm({ error, message }: LoginFormProps) {
   const [mode, setMode] = useState<"phone" | "email">("phone");
   const [phoneValue, setPhoneValue] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   return (
     <>
+      {/* Success Message */}
       {message ? (
-        <p className="mb-4 rounded-[var(--radius-panel)] border border-success/20 bg-success-soft px-4 py-3 text-sm text-success">
-          {message}
-        </p>
-      ) : null}
-      {error ? (
-        <p className="mb-4 rounded-[var(--radius-panel)] border border-warning/30 bg-warning/10 px-4 py-3 text-sm text-foreground">
-          {error}
-        </p>
+        <div className="mb-5 flex items-start gap-3 rounded-xl border border-success/20 bg-success-soft/50 p-4">
+          <div className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-success/20">
+            <svg className="size-3 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <p className="text-sm leading-6 text-success">{message}</p>
+        </div>
       ) : null}
 
-      <div className="mb-4 flex gap-2">
+      {/* Error Message */}
+      {error ? (
+        <div className="mb-5 flex items-start gap-3 rounded-xl border border-danger/20 bg-danger-soft/50 p-4">
+          <div className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-danger/20">
+            <svg className="size-3 text-danger" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </div>
+          <p className="text-sm leading-6 text-danger">{error}</p>
+        </div>
+      ) : null}
+
+      {/* Mode Toggle */}
+      <div className="mb-6 grid grid-cols-2 gap-2 rounded-xl border border-border/60 bg-muted/30 p-1">
         <button
           type="button"
           onClick={() => setMode("phone")}
-          className={`flex-1 rounded-[var(--radius-control)] border px-3 py-2 text-sm font-medium transition ${
+          className={`flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-all ${
             mode === "phone"
-              ? "border-champagne bg-champagne/10 text-foreground"
-              : "border-border bg-surface text-muted-foreground hover:bg-muted"
+              ? "bg-white text-foreground shadow-sm"
+              : "text-muted-foreground hover:text-foreground"
           }`}
         >
+          <Phone className="size-4" />
           رقم الهاتف
         </button>
         <button
           type="button"
           onClick={() => setMode("email")}
-          className={`flex-1 rounded-[var(--radius-control)] border px-3 py-2 text-sm font-medium transition ${
+          className={`flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-all ${
             mode === "email"
-              ? "border-champagne bg-champagne/10 text-foreground"
-              : "border-border bg-surface text-muted-foreground hover:bg-muted"
+              ? "bg-white text-foreground shadow-sm"
+              : "text-muted-foreground hover:text-foreground"
           }`}
         >
+          <Mail className="size-4" />
           البريد الإلكتروني
         </button>
       </div>
 
+      {/* Form */}
       <form action={loginAction} className="space-y-4" data-smart-hint="login-form">
         {mode === "phone" && (
           <input type="hidden" name="identifier" value={phoneValue} />
@@ -62,7 +82,7 @@ export function LoginForm({ error, message }: LoginFormProps) {
 
         {mode === "phone" ? (
           <div className="space-y-2">
-            <Label htmlFor="phone-input">رقم الهاتف</Label>
+            <Label htmlFor="phone-input" className="text-sm font-medium">رقم الهاتف</Label>
             <PhoneInput
               id="phone-input"
               value={phoneValue}
@@ -73,31 +93,53 @@ export function LoginForm({ error, message }: LoginFormProps) {
           </div>
         ) : (
           <div className="space-y-2">
-            <Label htmlFor="identifier">البريد الإلكتروني</Label>
-            <Input
-              id="identifier"
-              name="identifier"
-              type="email"
-              inputMode="email"
-              autoComplete="email"
-              placeholder="name@example.com"
-              required
-            />
+            <Label htmlFor="identifier" className="text-sm font-medium">البريد الإلكتروني</Label>
+            <div className="relative">
+              <Mail className="absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground/50" />
+              <Input
+                id="identifier"
+                name="identifier"
+                type="email"
+                inputMode="email"
+                autoComplete="email"
+                placeholder="name@example.com"
+                className="pr-10"
+                required
+              />
+            </div>
           </div>
         )}
 
         <div className="space-y-2">
-          <Label htmlFor="password">كلمة المرور</Label>
-          <Input
-            id="password"
-            name="password"
-            type="password"
-            autoComplete="current-password"
-            required
-          />
+          <div className="flex items-center justify-between">
+            <Label htmlFor="password" className="text-sm font-medium">كلمة المرور</Label>
+            <Link href="/forgot-password" className="text-xs font-medium text-champagne-strong transition-colors hover:text-champagne">
+              نسيتها؟
+            </Link>
+          </div>
+          <div className="relative">
+            <Lock className="absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground/50" />
+            <Input
+              id="password"
+              name="password"
+              type={showPassword ? "text" : "password"}
+              autoComplete="current-password"
+              placeholder="••••••••"
+              className="pr-10"
+              required
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground/50 transition-colors hover:text-foreground"
+              tabIndex={-1}
+            >
+              {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+            </button>
+          </div>
         </div>
 
-        <Button type="submit" className="w-full">
+        <Button type="submit" className="w-full" size="lg">
           تسجيل الدخول
         </Button>
       </form>

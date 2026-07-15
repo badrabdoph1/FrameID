@@ -25,18 +25,25 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
 
   return (
     <AuthShell
-      title="تسجيل الدخول"
+      title="مرحباً بعودتك"
       description="ادخل برقم الهاتف أو البريد عشان تدير موقعك، صورك، وباقاتك."
     >
       <div data-guide-target="login-form">
         <LoginForm error={error} message={message} />
       </div>
-      <div className="mt-6 flex items-center justify-between text-sm">
-        <Link href="/forgot-password" className="text-muted-foreground hover:text-foreground">
+
+      <div className="mt-6 flex flex-col items-center gap-4 sm:flex-row sm:justify-between">
+        <Link
+          href="/forgot-password"
+          className="text-sm font-medium text-muted-foreground transition-colors hover:text-champagne-strong"
+        >
           نسيت كلمة السر؟
         </Link>
-        <Link href="/signup" className="font-semibold">
-          إنشاء حساب جديد
+        <Link
+          href="/signup"
+          className="text-sm font-semibold text-champagne-strong transition-colors hover:text-champagne"
+        >
+          إنشاء حساب جديد ←
         </Link>
       </div>
     </AuthShell>
