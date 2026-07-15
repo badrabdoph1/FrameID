@@ -140,7 +140,6 @@ export default function TemplatesPage() {
                         {palette.map((color) => (
                           <span key={color} className="size-5 rounded-full border border-border/60 shadow-sm" style={{ background: color }} title={color} />
                         ))}
-                        <span className="rounded-full bg-muted/60 px-2.5 py-0.5 text-[0.65rem] font-semibold text-muted-foreground">موبايل</span>
                         <span className="rounded-full bg-muted/60 px-2.5 py-0.5 text-[0.65rem] font-semibold text-muted-foreground">ديسكتوب</span>
                       </div>
                       <div className="mt-5 flex items-center gap-3">
