@@ -75,7 +75,7 @@ export function LoginForm({ error, message }: LoginFormProps) {
       </div>
 
       {/* Form */}
-      <form action={loginAction} className="space-y-4" data-smart-hint="login-form">
+      <form action={loginAction} className="space-y-4">
         {mode === "phone" && (
           <input type="hidden" name="identifier" value={phoneValue} />
         )}

@@ -28,9 +28,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
       title="مرحباً بعودتك"
       description="ادخل برقم الهاتف أو البريد عشان تدير موقعك، صورك، وباقاتك."
     >
-      <div data-guide-target="login-form">
-        <LoginForm error={error} message={message} />
-      </div>
+      <LoginForm error={error} message={message} />
 
       <div className="mt-6 flex flex-col items-center gap-4 sm:flex-row sm:justify-between">
         <Link

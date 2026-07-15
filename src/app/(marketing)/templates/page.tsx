@@ -104,9 +104,6 @@ export default function TemplatesPage() {
           ) : (
             <div
               className="grid gap-5 md:grid-cols-2 md:gap-7"
-              data-smart-hint="templates-grid"
-              data-journey-source="templates-grid"
-              data-guide-target="templates-grid"
             >
               {templates.map((template) => {
                 const meta = templateHighlights[template.code] ?? {};
@@ -115,7 +112,6 @@ export default function TemplatesPage() {
                 return (
                   <article
                     key={template.code}
-                    data-journey-card
                     className="group flex flex-col overflow-hidden rounded-2xl border border-border/60 bg-white transition-all duration-300 hover:-translate-y-1 hover:border-champagne/35 hover:shadow-xl hover:shadow-ink/8 md:rounded-[1.5rem]"
                   >
                     <Link href={`/templates/${template.code}/preview`} className="block">

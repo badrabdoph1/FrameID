@@ -65,7 +65,7 @@ export function SignupForm({ template, error }: SignupFormProps) {
       </div>
 
       {/* Form */}
-      <form action={signupAction} className="space-y-4" data-smart-hint="signup-form">
+      <form action={signupAction} className="space-y-4">
         <input
           name="selectedTemplateCode"
           type="hidden"
@@ -178,17 +178,14 @@ export function SignupForm({ template, error }: SignupFormProps) {
         </div>
 
         {/* Submit Button */}
-        <div data-journey-source="signup-create">
-          <Button
-            type="submit"
-            variant="luxury"
-            className="w-full"
-            size="lg"
-            data-journey-cta
-          >
-            إنشاء موقعي
-          </Button>
-        </div>
+        <Button
+          type="submit"
+          variant="luxury"
+          className="w-full"
+          size="lg"
+        >
+          إنشاء موقعي
+        </Button>
       </form>
     </>
   );

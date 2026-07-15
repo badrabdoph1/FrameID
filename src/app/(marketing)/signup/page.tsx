@@ -51,9 +51,7 @@ export default async function SignupPage({ searchParams }: SignupPageProps) {
         </div>
       ) : null}
 
-      <div data-guide-target="signup-form">
-        <SignupForm error={error} template={template} />
-      </div>
+      <SignupForm error={error} template={template} />
 
       <p className="mt-6 text-center text-sm text-muted-foreground">
         عندك حساب بالفعل؟{" "}

@@ -153,8 +153,6 @@ function HomeHero({
         <div className="mt-10 flex flex-col items-center gap-3 sm:flex-row sm:gap-4">
           <Link
             href={content.cta.href}
-            data-journey-source="home-start"
-            data-guide-target="home-cta"
             {...buttonEditingAttributes(sectionId, ["cta"], { ...content.cta, style: content.cta.style ?? "primary", icon: content.cta.icon ?? "arrow" })}
             className={buttonClasses(content.cta.style ?? "primary")}
           >
