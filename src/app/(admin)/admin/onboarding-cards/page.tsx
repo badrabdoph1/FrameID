@@ -105,8 +105,8 @@ function CardGroup({
   description: string;
   cards: OnboardingCardDef[];
   overrides: Map<string, { title: string; description: string }>;
-  saveAction: (formData: FormData) => Promise<{ ok: boolean; error?: string }>;
-  resetAction: (formData: FormData) => Promise<{ ok: boolean; error?: string }>;
+  saveAction: (formData: FormData) => void;
+  resetAction: (formData: FormData) => void;
 }) {
   return (
     <section>
@@ -188,8 +188,8 @@ function CardEditForm({
   title: string;
   description: string;
   isOverridden: boolean;
-  saveAction: (formData: FormData) => Promise<{ ok: boolean; error?: string }>;
-  resetAction: (formData: FormData) => Promise<{ ok: boolean; error?: string }>;
+  saveAction: (formData: FormData) => void;
+  resetAction: (formData: FormData) => void;
 }) {
   return (
     <form action={saveAction} className="mt-3 grid gap-2">

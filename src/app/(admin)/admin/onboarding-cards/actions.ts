@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { z } from "zod";
 
 import { prisma } from "@/lib/prisma";
@@ -23,7 +23,7 @@ export async function saveCardOverride(formData: FormData) {
 
   const parsed = saveSchema.safeParse(raw);
   if (!parsed.success) {
-    return { ok: false, error: parsed.error.issues[0]?.message ?? "بيانات غير صالحة" };
+    redirect("/admin/onboarding-cards?error=" + encodeURIComponent(parsed.error.issues[0]?.message ?? "بيانات غير صالحة"));
   }
 
   const { cardId, title, description } = parsed.data;
@@ -49,8 +49,7 @@ export async function saveCardOverride(formData: FormData) {
     });
   }
 
-  revalidatePath("/admin/onboarding-cards");
-  return { ok: true };
+  redirect("/admin/onboarding-cards?saved=1");
 }
 
 export async function resetCardOverride(formData: FormData) {
@@ -58,7 +57,7 @@ export async function resetCardOverride(formData: FormData) {
 
   const cardId = formData.get("cardId");
   if (typeof cardId !== "string" || !cardId) {
-    return { ok: false, error: "معرف الكارت مطلوب" };
+    redirect("/admin/onboarding-cards?error=" + encodeURIComponent("معرف الكارت مطلوب"));
   }
 
   const flagKey = `onboarding-card:${cardId}`;
@@ -73,6 +72,5 @@ export async function resetCardOverride(formData: FormData) {
     data: { enabled: false },
   });
 
-  revalidatePath("/admin/onboarding-cards");
-  return { ok: true };
+  redirect("/admin/onboarding-cards?reset=1");
 }
