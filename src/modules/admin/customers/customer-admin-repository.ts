@@ -504,10 +504,13 @@ export function createCustomerAdminRepository(prisma: PrismaClient) {
           sites: { select: { id: true } },
           payments: { select: { id: true } },
           subscriptions: { select: { id: true } },
+          owner: { select: { id: true } },
         },
       });
 
       if (!tenant) throw new Error("Customer not found");
+
+      const now = new Date();
 
       await tx.auditLog.create({
         data: {
@@ -530,7 +533,7 @@ export function createCustomerAdminRepository(prisma: PrismaClient) {
 
       await tx.site.updateMany({
         where: { tenantId: id },
-        data: { deletedAt: new Date() },
+        data: { deletedAt: now },
       });
 
       await tx.subscription.deleteMany({
@@ -539,12 +542,17 @@ export function createCustomerAdminRepository(prisma: PrismaClient) {
 
       await tx.paymentRequest.updateMany({
         where: { tenantId: id },
-        data: { deletedAt: new Date() },
+        data: { deletedAt: now },
       });
 
       await tx.tenant.update({
         where: { id },
-        data: { deletedAt: new Date(), status: "EXPIRED" },
+        data: { deletedAt: now, status: "EXPIRED" },
+      });
+
+      await tx.user.update({
+        where: { id: tenant.owner.id },
+        data: { deletedAt: now },
       });
     });
   }
@@ -747,6 +755,298 @@ export function createCustomerAdminRepository(prisma: PrismaClient) {
     return 0;
   }
 
+  async function listTrash(filter: { search?: string; page?: number; pageSize?: number }) {
+    const page = filter.page ?? 1;
+    const pageSize = filter.pageSize ?? 20;
+    const skip = (page - 1) * pageSize;
+
+    const where: Record<string, unknown> = { deletedAt: { not: null } };
+
+    if (filter.search) {
+      where.OR = [
+        { displayName: { contains: filter.search, mode: "insensitive" } },
+        { owner: { name: { contains: filter.search, mode: "insensitive" } } },
+        { owner: { email: { contains: filter.search, mode: "insensitive" } } },
+        { owner: { phone: { contains: filter.search, mode: "insensitive" } } },
+      ];
+    }
+
+    const [tenants, total] = await Promise.all([
+      prisma.tenant.findMany({
+        where: where as never,
+        orderBy: { deletedAt: "desc" },
+        skip,
+        take: pageSize,
+        select: {
+          id: true,
+          displayName: true,
+          status: true,
+          deletedAt: true,
+          createdAt: true,
+          owner: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              phone: true,
+            },
+          },
+          _count: {
+            select: {
+              sites: true,
+              payments: true,
+              mediaAssets: true,
+            },
+          },
+        },
+      }),
+      prisma.tenant.count({ where: where as never }),
+    ]);
+
+    return {
+      items: tenants.map((t) => ({
+        id: t.id,
+        displayName: t.displayName,
+        ownerName: t.owner.name,
+        ownerEmail: t.owner.email,
+        ownerPhone: t.owner.phone,
+        ownerId: t.owner.id,
+        previousStatus: t.status,
+        sitesCount: t._count.sites,
+        paymentsCount: t._count.payments,
+        mediaCount: t._count.mediaAssets,
+        deletedAt: t.deletedAt?.toISOString() ?? null,
+        createdAt: t.createdAt.toISOString(),
+      })),
+      total,
+      page,
+      pageSize,
+      totalPages: Math.ceil(total / pageSize),
+    };
+  }
+
+  async function restoreFromTrash(
+    id: string,
+    actorId: string,
+  ): Promise<{ ownerId: string; displayName: string } | null> {
+    return prisma.$transaction(async (tx: PrismaTransaction) => {
+      const tenant = await tx.tenant.findUnique({
+        where: { id },
+        include: { owner: { select: { id: true } } },
+      });
+
+      if (!tenant || !tenant.deletedAt) return null;
+
+      await tx.tenant.update({
+        where: { id },
+        data: { deletedAt: null, status: "EXPIRED" },
+      });
+
+      await tx.user.update({
+        where: { id: tenant.owner.id },
+        data: { deletedAt: null },
+      });
+
+      await tx.site.updateMany({
+        where: { tenantId: id, deletedAt: { not: null } },
+        data: { deletedAt: null },
+      });
+
+      await tx.paymentRequest.updateMany({
+        where: { tenantId: id, deletedAt: { not: null } },
+        data: { deletedAt: null },
+      });
+
+      await tx.auditLog.create({
+        data: {
+          actorId,
+          tenantId: id,
+          action: "CUSTOMER_RESTORED_FROM_TRASH",
+          entityType: "Tenant",
+          entityId: id,
+          metadata: { displayName: tenant.displayName },
+        },
+      });
+
+      return {
+        ownerId: tenant.owner.id,
+        displayName: tenant.displayName,
+      };
+    });
+  }
+
+  async function permanentDelete(
+    id: string,
+    actorId: string,
+  ): Promise<{ displayName: string } | null> {
+    return prisma.$transaction(async (tx: PrismaTransaction) => {
+      const tenant = await tx.tenant.findUnique({
+        where: { id },
+        include: {
+          sites: { select: { id: true, slug: true } },
+          subscriptions: { select: { id: true } },
+          payments: { select: { id: true, proofAssetId: true, paymentAccountId: true } },
+          owner: { select: { id: true } },
+        },
+      });
+
+      if (!tenant || !tenant.deletedAt) return null;
+
+      const siteIds = tenant.sites.map((s) => s.id);
+
+      await tx.auditLog.create({
+        data: {
+          actorId,
+          tenantId: id,
+          action: "CUSTOMER_PERMANENTLY_DELETED",
+          entityType: "Tenant",
+          entityId: id,
+          metadata: {
+            displayName: tenant.displayName,
+            sitesCount: tenant.sites.length,
+            paymentsCount: tenant.payments.length,
+          },
+        },
+      });
+
+      if (siteIds.length > 0) {
+        await tx.customerRequest.deleteMany({ where: { siteId: { in: siteIds } } });
+        await tx.customerIssue.updateMany({ where: { siteId: { in: siteIds } }, data: { siteId: null } });
+        await tx.featureFlag.deleteMany({ where: { siteId: { in: siteIds } } });
+        await tx.lifecycleEvent.deleteMany({ where: { siteId: { in: siteIds } } });
+        await tx.sEOSettings.deleteMany({ where: { siteId: { in: siteIds } } });
+        await tx.contactProfile.deleteMany({ where: { siteId: { in: siteIds } } });
+        await tx.galleryImage.deleteMany({ where: { album: { siteId: { in: siteIds } } } });
+        await tx.galleryAlbum.deleteMany({ where: { siteId: { in: siteIds } } });
+        await tx.extraService.deleteMany({ where: { siteId: { in: siteIds } } });
+        await tx.package.deleteMany({ where: { siteId: { in: siteIds } } });
+        await tx.siteSection.deleteMany({ where: { siteId: { in: siteIds } } });
+        await tx.siteThemeConfig.deleteMany({ where: { siteId: { in: siteIds } } });
+        await tx.siteContentSnapshot.deleteMany({ where: { siteId: { in: siteIds } } });
+        await tx.domain.deleteMany({ where: { siteId: { in: siteIds } } });
+        await tx.site.deleteMany({ where: { id: { in: siteIds } } });
+      }
+
+      await tx.customerRequest.deleteMany({ where: { tenantId: id } });
+      await tx.customerIssue.updateMany({ where: { tenantId: id }, data: { tenantId: null } });
+      await tx.customerDataChange.deleteMany({ where: { tenantId: id } });
+      await tx.featureFlag.deleteMany({ where: { tenantId: id } });
+      await tx.lifecycleEvent.deleteMany({ where: { tenantId: id } });
+      await tx.adminNote.deleteMany({ where: { tenantId: id } });
+      await tx.supportCase.deleteMany({ where: { tenantId: id } });
+      await tx.notification.deleteMany({ where: { tenantId: id } });
+      await tx.notificationLog.deleteMany({ where: { tenantId: id } });
+      await tx.impersonationSession.deleteMany({ where: { tenantId: id } });
+
+      await tx.paymentRequestLog.deleteMany({
+        where: { request: { tenantId: id } },
+      });
+      await tx.paymentRequest.deleteMany({ where: { tenantId: id } });
+
+      await tx.subscriptionChange.deleteMany({ where: { tenantId: id } });
+      await tx.subscription.deleteMany({ where: { tenantId: id } });
+
+      if (tenant.sites.length > 0) {
+        await tx.mediaAsset.deleteMany({
+          where: {
+            OR: [
+              { tenantId: id },
+              {
+                paymentProofs: { some: { tenantId: id } },
+              },
+            ],
+          },
+        });
+      } else {
+        await tx.mediaAsset.deleteMany({ where: { tenantId: id } });
+      }
+
+      const userId = tenant.owner.id;
+      await tx.passwordResetToken.deleteMany({ where: { userId } });
+      await tx.session.deleteMany({ where: { userId } });
+      await tx.impersonationSession.deleteMany({ where: { adminId: userId } });
+      await tx.tenant.delete({ where: { id } });
+      await tx.user.delete({ where: { id: userId } });
+
+      return { displayName: tenant.displayName };
+    });
+  }
+
+  async function emptyTrash(
+    actorId: string,
+  ): Promise<{ count: number }> {
+    return prisma.$transaction(async (tx: PrismaTransaction) => {
+      const deletedTenants = await tx.tenant.findMany({
+        where: { deletedAt: { not: null } },
+        select: { id: true, displayName: true, ownerUserId: true },
+      });
+
+      if (deletedTenants.length === 0) return { count: 0 };
+
+      const tenantIds = deletedTenants.map((t) => t.id);
+      const userIds = deletedTenants.map((t) => t.ownerUserId);
+      const siteRecords = await tx.site.findMany({
+        where: { tenantId: { in: tenantIds } },
+        select: { id: true },
+      });
+      const siteIds = siteRecords.map((s) => s.id);
+
+      await tx.auditLog.create({
+        data: {
+          actorId,
+          action: "TRASH_EMPTIED",
+          entityType: "Tenant",
+          metadata: { count: deletedTenants.length, tenantIds },
+        },
+      });
+
+      if (siteIds.length > 0) {
+        await tx.customerRequest.deleteMany({ where: { siteId: { in: siteIds } } });
+        await tx.customerIssue.updateMany({ where: { siteId: { in: siteIds } }, data: { siteId: null } });
+        await tx.featureFlag.deleteMany({ where: { siteId: { in: siteIds } } });
+        await tx.lifecycleEvent.deleteMany({ where: { siteId: { in: siteIds } } });
+        await tx.sEOSettings.deleteMany({ where: { siteId: { in: siteIds } } });
+        await tx.contactProfile.deleteMany({ where: { siteId: { in: siteIds } } });
+        await tx.galleryImage.deleteMany({ where: { album: { siteId: { in: siteIds } } } });
+        await tx.galleryAlbum.deleteMany({ where: { siteId: { in: siteIds } } });
+        await tx.extraService.deleteMany({ where: { siteId: { in: siteIds } } });
+        await tx.package.deleteMany({ where: { siteId: { in: siteIds } } });
+        await tx.siteSection.deleteMany({ where: { siteId: { in: siteIds } } });
+        await tx.siteThemeConfig.deleteMany({ where: { siteId: { in: siteIds } } });
+        await tx.siteContentSnapshot.deleteMany({ where: { siteId: { in: siteIds } } });
+        await tx.domain.deleteMany({ where: { siteId: { in: siteIds } } });
+        await tx.site.deleteMany({ where: { id: { in: siteIds } } });
+      }
+
+      await tx.customerRequest.deleteMany({ where: { tenantId: { in: tenantIds } } });
+      await tx.customerIssue.updateMany({ where: { tenantId: { in: tenantIds } }, data: { tenantId: null } });
+      await tx.customerDataChange.deleteMany({ where: { tenantId: { in: tenantIds } } });
+      await tx.featureFlag.deleteMany({ where: { tenantId: { in: tenantIds } } });
+      await tx.lifecycleEvent.deleteMany({ where: { tenantId: { in: tenantIds } } });
+      await tx.adminNote.deleteMany({ where: { tenantId: { in: tenantIds } } });
+      await tx.supportCase.deleteMany({ where: { tenantId: { in: tenantIds } } });
+      await tx.notification.deleteMany({ where: { tenantId: { in: tenantIds } } });
+      await tx.notificationLog.deleteMany({ where: { tenantId: { in: tenantIds } } });
+      await tx.impersonationSession.deleteMany({ where: { tenantId: { in: tenantIds } } });
+
+      await tx.paymentRequestLog.deleteMany({
+        where: { request: { tenantId: { in: tenantIds } } },
+      });
+      await tx.paymentRequest.deleteMany({ where: { tenantId: { in: tenantIds } } });
+      await tx.subscriptionChange.deleteMany({ where: { tenantId: { in: tenantIds } } });
+      await tx.subscription.deleteMany({ where: { tenantId: { in: tenantIds } } });
+      await tx.mediaAsset.deleteMany({ where: { tenantId: { in: tenantIds } } });
+
+      await tx.passwordResetToken.deleteMany({ where: { userId: { in: userIds } } });
+      await tx.session.deleteMany({ where: { userId: { in: userIds } } });
+      await tx.impersonationSession.deleteMany({ where: { adminId: { in: userIds } } });
+      await tx.tenant.deleteMany({ where: { id: { in: tenantIds } } });
+      await tx.user.deleteMany({ where: { id: { in: userIds } } });
+
+      return { count: deletedTenants.length };
+    });
+  }
+
   return {
     listCustomers,
     getCustomerDetail,
@@ -772,6 +1072,10 @@ export function createCustomerAdminRepository(prisma: PrismaClient) {
     toggleSiteSuspension,
     createNotification,
     getCustomerVisits,
+    listTrash,
+    restoreFromTrash,
+    permanentDelete,
+    emptyTrash,
   };
 }
 

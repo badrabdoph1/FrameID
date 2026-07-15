@@ -15,6 +15,9 @@ describe("signup trial duration", () => {
       async identifierExists() {
         return false;
       },
+      async identifierExistsInTrash() {
+        return false;
+      },
       async getUnavailableSlugs() {
         return new Set<string>();
       },

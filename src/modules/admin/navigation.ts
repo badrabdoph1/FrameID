@@ -23,6 +23,7 @@ import {
   Share2,
   ShieldCheck,
   Sparkles,
+  Trash2,
   Users,
   type LucideIcon,
 } from "lucide-react";
@@ -116,6 +117,7 @@ export const adminRoutes: AdminRouteDefinition[] = [
   defineRoute({ id: "operations", href: "/admin/operations", labelAr: "مركز التشغيل", descriptionAr: "الطوابير والعمليات التي تحتاج تدخلًا", sectionId: "system", visibility: "daily", keywords: ["تشغيل", "عمليات", "طوابير"], icon: Activity, parentHref: "/admin/system" }),
   defineRoute({ id: "errors", href: "/admin/errors", labelAr: "مشاكل العملاء", descriptionAr: "البلاغات والأخطاء التي أرسلها العملاء", sectionId: "system", visibility: "daily", keywords: ["مشاكل", "أخطاء", "بلاغات"], icon: Activity, parentHref: "/admin/system" }),
   defineRoute({ id: "issue-details", href: "/admin/errors/[id]", labelAr: "تفاصيل المشكلة", descriptionAr: "السياق الكامل للمشكلة وخطوات معالجتها", sectionId: "system", visibility: "contextual", keywords: ["مشكلة", "تفاصيل", "حل"], icon: Activity, parentHref: "/admin/errors" }),
+  defineRoute({ id: "trash", href: "/admin/trash", labelAr: "سلة المحذوفات", descriptionAr: "استعادة أو حذف نهائي للعملاء المحذوفين", sectionId: "system", visibility: "daily", keywords: ["سلة", "محذوفات", "استعادة", "حذف نهائي"], icon: Trash2, parentHref: "/admin/system" }),
   defineRoute({ id: "backups", href: "/admin/backups", labelAr: "النسخ الاحتياطي", descriptionAr: "إنشاء النسخ والتحقق والاستعادة", sectionId: "system", visibility: "daily", keywords: ["نسخ", "استعادة", "طوارئ"], icon: DatabaseBackup, parentHref: "/admin/system" }),
   defineRoute({ id: "audit", href: "/admin/audit", labelAr: "سجل التدقيق", descriptionAr: "تتبع الإجراءات الحساسة ومن نفذها", sectionId: "system", visibility: "advanced", keywords: ["تدقيق", "سجل", "إجراء"], icon: ClipboardList, parentHref: "/admin/system" }),
   defineRoute({ id: "security", href: "/admin/security", labelAr: "الأمان", descriptionAr: "الجلسات والمخاطر وسياسات الوصول", sectionId: "system", visibility: "advanced", keywords: ["أمان", "جلسات", "وصول"], icon: ShieldCheck, parentHref: "/admin/system" }),
@@ -144,7 +146,7 @@ const sectionDefinitions: Array<Omit<AdminSection, "links"> & { routeIds: string
   { id: "billing", title: "المالية", shortDescription: "المدفوعات والاشتراكات", description: "التحصيل والتجديد والباقات ووسائل الدفع", accent: "blue", icon: CreditCard, routeIds: ["billing", "payments", "subscriptions", "plans", "payment-settings"] },
   { id: "content", title: "المحتوى", shortDescription: "الصفحات والقوالب والوسائط", description: "كل أدوات تحرير ونشر المحتوى", accent: "rose", icon: Palette, routeIds: ["content", "templates", "onboarding-cards", "themes", "media", "social-preview"] },
   { id: "communication", title: "التواصل", shortDescription: "الرسائل والدعم", description: "تجربة العميل والإشعارات والدعم والبريد", accent: "violet", icon: MessageSquareText, routeIds: ["deactivation-control", "communications", "messages", "notifications", "support", "email"] },
-  { id: "system", title: "النظام", shortDescription: "الصحة والتشغيل والطوارئ", description: "الأخطاء والنسخ والإعدادات والأدوات المتقدمة", accent: "slate", icon: ShieldCheck, routeIds: ["system", "operations", "errors", "backups", "settings"] },
+  { id: "system", title: "النظام", shortDescription: "الصحة والتشغيل والطوارئ", description: "الأخطاء والنسخ والإعدادات والأدوات المتقدمة", accent: "slate", icon: ShieldCheck, routeIds: ["system", "operations", "errors", "trash", "backups", "settings"] },
 ];
 
 export const adminSections: AdminSection[] = sectionDefinitions.map(

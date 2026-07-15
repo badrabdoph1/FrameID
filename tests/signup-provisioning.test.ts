@@ -27,6 +27,10 @@ function createRepository(
       repository.calls.push(`identifier:${email}:${phone ?? "none"}`);
       return email === "used@example.com";
     },
+    async identifierExistsInTrash({ email, phone }) {
+      repository.calls.push(`trash:${email}:${phone ?? "none"}`);
+      return false;
+    },
     async getUnavailableSlugs() {
       repository.calls.push("slugs");
       return new Set(existingSlugs);

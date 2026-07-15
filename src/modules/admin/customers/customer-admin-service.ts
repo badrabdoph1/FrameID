@@ -175,6 +175,22 @@ export function createCustomerAdminService(repo: CustomerAdminRepository) {
     return repo.getCustomerActivity(tenantId);
   }
 
+  async function listTrash(filter: { search?: string; page?: number; pageSize?: number }) {
+    return repo.listTrash(filter);
+  }
+
+  async function restoreFromTrash(id: string, actor: AdminActor) {
+    return repo.restoreFromTrash(id, actor.id);
+  }
+
+  async function permanentDelete(id: string, actor: AdminActor) {
+    return repo.permanentDelete(id, actor.id);
+  }
+
+  async function emptyTrash(actor: AdminActor) {
+    return repo.emptyTrash(actor.id);
+  }
+
   return {
     listCustomers,
     getCustomer,
@@ -201,6 +217,10 @@ export function createCustomerAdminService(repo: CustomerAdminRepository) {
     suspendSite,
     sendNotification,
     getAuditEntries,
+    listTrash,
+    restoreFromTrash,
+    permanentDelete,
+    emptyTrash,
   };
 }
 
