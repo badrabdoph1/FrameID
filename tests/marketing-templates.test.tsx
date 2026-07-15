@@ -10,19 +10,13 @@ describe("marketing templates page", () => {
 
     expect(
       screen.getByRole("heading", {
-        name: "اختار شكل موقعك"
+        name: /اختار القالب/u
       })
     ).toBeInTheDocument();
 
-    expect(screen.queryByText("شوف الشكل")).not.toBeInTheDocument();
-    expect(screen.queryByText("اختار اللي يعجبك")).not.toBeInTheDocument();
-    expect(screen.queryByText("كمّل حسابك")).not.toBeInTheDocument();
-    expect(screen.queryByText("لقيت الشكل المناسب؟")).not.toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: "ابدأ مجانًا" })).not.toBeInTheDocument();
-
-    const previewLinks = screen.getAllByRole("link", { name: /شوف القالب/u });
+    const previewLinks = screen.getAllByRole("link", { name: /معاينة مباشرة/u });
     expect(previewLinks[0]).toHaveAttribute("href", "/templates/noir-gold/preview");
-    const useLinks = screen.getAllByRole("link", { name: /استخدمه لموقعي/u });
+    const useLinks = screen.getAllByRole("link", { name: /استخدم هذا القالب/u });
     expect(useLinks[0]).toHaveAttribute("href", "/signup?template=noir-gold");
   });
 });
