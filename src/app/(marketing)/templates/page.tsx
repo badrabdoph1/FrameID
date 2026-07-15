@@ -120,27 +120,27 @@ export default function TemplatesPage() {
               {/* CTA */}
               <a
                 href="#templates-grid"
-                className="mt-7 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.06] px-6 py-2.5 text-sm font-semibold text-white/80 backdrop-blur-sm transition-all duration-300 hover:border-champagne/40 hover:bg-white/[0.1] hover:text-champagne md:mt-9"
+                className="mt-7 inline-flex items-center gap-1.5 rounded-full border border-champagne/40 bg-champagne/[0.08] px-5 py-2 text-[0.82rem] font-semibold text-champagne backdrop-blur-sm transition-all duration-300 hover:border-champagne/60 hover:bg-champagne/[0.14] hover:text-champagne md:mt-9"
               >
                 شوف القوالب
-                <ChevronDown className="size-4" />
+                <ChevronDown className="size-3.5" />
               </a>
 
               {/* Stats */}
-              <div className="mt-10 flex items-center justify-center gap-6 md:mt-14 md:gap-10">
-                <div className="flex items-center gap-2 text-white/50">
-                  <Zap className="size-4 text-champagne/70" />
-                  <span className="text-[0.8rem] font-medium">جاهز خلال دقائق</span>
+              <div className="mt-10 flex flex-wrap items-center justify-center gap-x-5 gap-y-3 md:mt-14 md:gap-x-10">
+                <div className="flex items-center gap-2">
+                  <Zap className="size-3.5 text-champagne/60" />
+                  <span className="text-[0.75rem] font-medium text-white/45">جاهز خلال دقائق</span>
                 </div>
-                <div className="h-4 w-px bg-white/10" />
-                <div className="flex items-center gap-2 text-white/50">
-                  <Palette className="size-4 text-champagne/70" />
-                  <span className="text-[0.8rem] font-medium">عدّل كل حاجة</span>
+                <div className="hidden h-3.5 w-px bg-white/10 md:block" />
+                <div className="flex items-center gap-2">
+                  <Palette className="size-3.5 text-champagne/60" />
+                  <span className="text-[0.75rem] font-medium text-white/45">عدّل كل حاجة</span>
                 </div>
-                <div className="h-4 w-px bg-white/10" />
-                <div className="flex items-center gap-2 text-white/50">
-                  <CreditCard className="size-4 text-champagne/70" />
-                  <span className="text-[0.8rem] font-medium">ابدأ مجانًا</span>
+                <div className="hidden h-3.5 w-px bg-white/10 md:block" />
+                <div className="flex items-center gap-2">
+                  <CreditCard className="size-3.5 text-champagne/60" />
+                  <span className="text-[0.75rem] font-medium text-white/45">ابدأ مجانًا</span>
                 </div>
               </div>
             </div>
