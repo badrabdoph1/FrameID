@@ -167,12 +167,16 @@ function CustomerIdentityBar({ supportHref }: { supportHref: string }) {
   );
 }
 
-export function DashboardShell({ children, siteSlug }: { children: ReactNode; siteSlug?: string }) {
+export function DashboardShell({ children, siteSlug, hasSubscription }: { children: ReactNode; siteSlug?: string; hasSubscription?: boolean }) {
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [supportSettings, setSupportSettings] = useState(() => normalizeSupportResponse(null));
   const primaryNav = navItems.filter((item) => item.priority === "primary").slice(0, 4);
-  const secondaryNav = navItems.filter((item) => item.priority === "secondary");
+  const secondaryNav = navItems.filter((item) => {
+    if (item.priority !== "secondary") return false;
+    if (item.href === "/dashboard/billing" && !hasSubscription) return false;
+    return true;
+  });
 
   useEffect(() => {
     setMobileMenuOpen(false);

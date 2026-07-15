@@ -7,6 +7,7 @@ import {
   CreditCard,
   DatabaseBackup,
   Edit,
+  FileText,
   Flag,
   Globe,
   Headphones,
@@ -79,6 +80,7 @@ export const adminRoutes: AdminRouteDefinition[] = [
   defineRoute({ id: "admin-search", href: "/admin/search", labelAr: "البحث الشامل", descriptionAr: "العثور على أي عميل أو موقع أو عملية", sectionId: "command", visibility: "daily", keywords: ["بحث", "عميل", "عملية"], icon: Search, parentHref: "/admin" }),
 
   defineRoute({ id: "customers", href: "/admin/customers", labelAr: "العملاء", descriptionAr: "إدارة العملاء وحالة حساباتهم", sectionId: "customers", visibility: "daily", keywords: ["عملاء", "حسابات", "مصورون"], icon: Users, parentHref: "/admin" }),
+  defineRoute({ id: "customer-requests", href: "/admin/customer-requests", labelAr: "طلبات العملاء", descriptionAr: "طلبات الحذف والميزات والترقيات", sectionId: "customers", visibility: "daily", keywords: ["طلبات", "حذف", "ترقية", "ميزات"], icon: FileText, parentHref: "/admin" }),
   defineRoute({ id: "customer-details", href: "/admin/customers/[id]", labelAr: "ملف العميل", descriptionAr: "كل تفاصيل العميل واشتراكه وموقعه", sectionId: "customers", visibility: "contextual", keywords: ["تفاصيل", "عميل", "اشتراك"], icon: Users, parentHref: "/admin/customers" }),
   defineRoute({ id: "sites", href: "/admin/sites", labelAr: "المواقع", descriptionAr: "متابعة مواقع العملاء وحالة نشرها", sectionId: "customers", visibility: "daily", keywords: ["مواقع", "نشر", "دومين"], icon: Globe, parentHref: "/admin/customers" }),
   defineRoute({ id: "site-details", href: "/admin/sites/[id]", labelAr: "تفاصيل الموقع", descriptionAr: "محتوى الموقع ونشره وإعداداته", sectionId: "customers", visibility: "contextual", keywords: ["موقع", "قالب", "نشر"], icon: Globe, parentHref: "/admin/sites" }),
@@ -134,7 +136,7 @@ function routeToNavItem(routeId: string): AdminNavItem {
 
 const sectionDefinitions: Array<Omit<AdminSection, "links"> & { routeIds: string[] }> = [
   { id: "command", title: "القيادة", shortDescription: "ما يحتاج تدخلك الآن", description: "أولويات اليوم والبحث الشامل", accent: "gold", badge: "اليوم", icon: Home, routeIds: ["admin-home", "admin-search"] },
-  { id: "customers", title: "العملاء", shortDescription: "العملاء والمواقع", description: "العملاء ومواقعهم وحالة حساباتهم", accent: "green", icon: Users, routeIds: ["customers", "sites"] },
+  { id: "customers", title: "العملاء", shortDescription: "العملاء والمواقع", description: "العملاء ومواقعهم وحالة حساباتهم", accent: "green", icon: Users, routeIds: ["customers", "customer-requests", "sites"] },
   { id: "billing", title: "المالية", shortDescription: "المدفوعات والاشتراكات", description: "التحصيل والتجديد والباقات ووسائل الدفع", accent: "blue", icon: CreditCard, routeIds: ["billing", "payments", "subscriptions", "plans", "payment-settings"] },
   { id: "content", title: "المحتوى", shortDescription: "الصفحات والقوالب والوسائط", description: "كل أدوات تحرير ونشر المحتوى", accent: "rose", icon: Palette, routeIds: ["content", "templates", "themes", "media", "social-preview"] },
   { id: "communication", title: "التواصل", shortDescription: "الرسائل والدعم", description: "تجربة العميل والإشعارات والدعم والبريد", accent: "violet", icon: MessageSquareText, routeIds: ["communications", "messages", "notifications", "support", "email"] },

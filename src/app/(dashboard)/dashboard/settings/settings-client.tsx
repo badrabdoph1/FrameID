@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
-import { CheckCircle2, Clock, Copy, ExternalLink, Globe2, Link2, RotateCcw, ShieldCheck, Trash2, User, XCircle } from "lucide-react";
+import { useState, useTransition, type ReactNode } from "react";
+import { CheckCircle2, Clock, Copy, ExternalLink, Globe2, Link2, ShieldCheck, Trash2, User, XCircle } from "lucide-react";
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 import { SlugEditor } from "@/components/dashboard/slug-editor";
-import { resetSmartTips } from "@/components/ui/smart-tip";
+import { requestAccountDeletionAction } from "@/app/(dashboard)/dashboard/settings/actions";
 import { getPublicAccountIdentifier, isPhoneStorageEmail } from "@/modules/auth/auth-identifier";
 
 type SettingsClientProps = {
@@ -19,6 +19,10 @@ type SettingsClientProps = {
   siteStatus: string;
   siteUrl: string;
   slugChangeUsed: boolean;
+  templateChangeUsed: boolean;
+  hasDeletionRequest: boolean;
+  requestMessage?: string;
+  errorMessage?: string;
 };
 
 const statusBadge: Record<string, { label: string; color: string; bg: string; icon: typeof CheckCircle2 }> = {
@@ -34,8 +38,9 @@ const roleLabel: Record<string, string> = {
   SUPER_ADMIN: "مدير عام",
 };
 
-export function SettingsClient({ userName, userEmail, userPhone, userRole, siteTitle, siteSlug, siteStatus, siteUrl, slugChangeUsed }: SettingsClientProps) {
+export function SettingsClient({ userName, userEmail, userPhone, userRole, siteTitle, siteSlug, siteStatus, siteUrl, slugChangeUsed, templateChangeUsed: _templateChangeUsed, hasDeletionRequest, requestMessage, errorMessage }: SettingsClientProps) {
   const [copied, setCopied] = useState(false);
+  const [isPending, startTransition] = useTransition();
   const badge = statusBadge[siteStatus] ?? { label: siteStatus, color: "rgba(245, 234, 214, 0.5)", bg: "rgba(245, 234, 214, 0.05)", icon: ShieldCheck };
   const StatusIcon = badge.icon;
   const loginIdentifier = getPublicAccountIdentifier({ email: userEmail, phone: userPhone });
@@ -47,32 +52,40 @@ export function SettingsClient({ userName, userEmail, userPhone, userRole, siteT
     window.setTimeout(() => setCopied(false), 1800);
   }
 
+  void _templateChangeUsed;
+
   return (
-    <main className="mx-auto grid w-full max-w-6xl gap-4 pb-4">
-      <section className="rounded-[1.6rem] border border-white/10 bg-[radial-gradient(circle_at_top_right,rgba(243,207,115,0.12),transparent_36%),rgba(255,255,255,0.035)] p-4 sm:p-5">
-        <div className="grid gap-4 lg:grid-cols-[1fr_auto] lg:items-end">
-          <div>
-            <p className="text-[0.72rem] font-black text-[#f3cf73]">الإعدادات</p>
-            <h1 className="mt-1 text-2xl font-black text-[#fff7e8] sm:text-3xl">إعدادات الحساب والموقع</h1>
-            <p className="mt-2 max-w-2xl text-sm font-bold leading-7 text-white/58">
-              معلومات الحساب الأساسية، حالة الموقع، والرابط العام. خلي بالك: تغيير الرابط متاح مرة واحدة فقط.
-            </p>
+    <main className="mx-auto grid w-full max-w-6xl gap-4 pb-4" data-smart-tip="settings-main">
+      {requestMessage === "deletion-submitted" ? (
+        <NoticeCard tone="success" title="تم إرسال طلب حذف الحساب" description="سيتم مراجعته من فريق الدعم والتواصل معك قريبًا." />
+      ) : null}
+      {requestMessage === "pending" ? (
+        <NoticeCard tone="warning" title="لديك طلب حذف قيد المراجعة" description="لا يمكن إرسال طلب جديد حتى يتم الرد على الطلب السابق." />
+      ) : null}
+      {errorMessage ? (
+        <NoticeCard tone="error" title="حدث خطأ" description={errorMessage} />
+      ) : null}
+
+      <section className="overflow-hidden rounded-[1.6rem] border border-white/10 bg-[radial-gradient(circle_at_top_right,rgba(243,207,115,0.12),transparent_36%),rgba(255,255,255,0.035)]">
+        <header className="flex items-start gap-3 border-b border-white/8 p-4 sm:p-5">
+          <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-amber-300/10 text-[#f3cf73]"><User className="size-5" /></span>
+          <div className="min-w-0 flex-1">
+            <p className="text-[0.72rem] font-black text-[#f3cf73]">حسابك والموقع</p>
+            <h1 className="mt-1 text-xl font-black text-[#fff7e8] sm:text-2xl">{siteTitle}</h1>
           </div>
-          <div className="grid gap-2 sm:flex">
-            <Button type="button" variant="luxury" className="min-h-11 rounded-2xl font-black" onClick={copyUrl}>
+          <div className="grid shrink-0 gap-2 sm:flex">
+            <Button type="button" variant="luxury" className="min-h-10 rounded-2xl font-black" onClick={copyUrl}>
               {copied ? <CheckCircle2 className="size-4" /> : <Copy className="size-4" />}
               {copied ? "اتنسخ" : "نسخ الرابط"}
             </Button>
-            <Link href={`/p/${siteSlug}`} target="_blank" className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-4 text-sm font-black text-white/75 no-underline transition hover:bg-white/[0.08] hover:text-white">
+            <Link href={`/p/${siteSlug}`} target="_blank" className="inline-flex min-h-10 items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-4 text-sm font-black text-white/75 no-underline transition hover:bg-white/[0.08] hover:text-white">
               <ExternalLink className="size-4" />
               فتح الموقع
             </Link>
           </div>
-        </div>
-      </section>
+        </header>
 
-      <section className="grid gap-3 lg:grid-cols-[0.8fr_1fr]">
-        <Panel icon={User} title="حسابك" description="البيانات الأساسية للدخول وإدارة الموقع.">
+        <div className="grid gap-4 p-4 sm:p-5 lg:grid-cols-2">
           <div className="grid gap-2">
             <InfoRow label="الاسم" value={userName} />
             <InfoRow label="بيانات الدخول" value={loginIdentifier} dir="ltr" />
@@ -80,24 +93,21 @@ export function SettingsClient({ userName, userEmail, userPhone, userRole, siteT
             {showRealEmail ? <InfoRow label="البريد" value={userEmail} dir="ltr" /> : null}
             <InfoRow label="الدور" value={roleLabel[userRole] ?? userRole} />
           </div>
-        </Panel>
 
-        <Panel icon={Globe2} title="معلومات الموقع" description="حالة الموقع والرابط اللي بيظهر للزوار.">
           <div className="grid gap-2">
-            <InfoRow label="العنوان" value={siteTitle} />
-            <div className="rounded-2xl border border-white/8 bg-black/15 p-3">
-              <p className="text-xs font-black text-white/40">الرابط</p>
-              <p dir="ltr" className="mt-1 break-all text-sm font-black leading-6 text-[#f3cf73]">{siteUrl}</p>
+            <div className="flex items-center justify-between gap-3 rounded-2xl border border-white/8 bg-black/15 p-3">
+              <span className="shrink-0 text-xs font-black text-white/40">الرابط</span>
+              <p dir="ltr" className="min-w-0 truncate text-sm font-black leading-6 text-[#f3cf73]">{siteUrl}</p>
             </div>
             <div className="flex items-center justify-between gap-3 rounded-2xl border border-white/8 bg-black/15 p-3">
-              <span className="text-xs font-black text-white/40">الحالة</span>
+              <span className="shrink-0 text-xs font-black text-white/40">الحالة</span>
               <span className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-black" style={{ color: badge.color, background: badge.bg }}>
                 <StatusIcon className="size-3.5" />
                 {badge.label}
               </span>
             </div>
           </div>
-        </Panel>
+        </div>
       </section>
 
       <Panel icon={Link2} title="رابط الموقع" description="الرابط المختصر مهم جدًا. اختاره واضح وسهل في النطق والكتابة.">
@@ -112,56 +122,49 @@ export function SettingsClient({ userName, userEmail, userPhone, userRole, siteT
         </div>
       </Panel>
 
-      <Panel icon={Trash2} title="منطقة خطرة" description="أي حذف دائم لازم يكون واضح ومقصود.">
-        <div className="rounded-2xl border border-red-300/20 bg-red-500/10 p-4">
-          <p className="text-sm font-black text-red-100">حذف الحساب غير متاح من هنا حاليًا</p>
-          <p className="mt-1 text-xs font-bold leading-6 text-white/45">الحذف النهائي يحتاج مراجعة دعم حتى لا تفقد الصور والموقع بالغلط.</p>
-          <button disabled className="mt-3 inline-flex min-h-10 items-center gap-2 rounded-2xl border border-red-300/20 bg-red-500/10 px-4 text-sm font-black text-red-200/50">
-            <Trash2 className="size-4" />
-            قريبًا
-          </button>
+      <section className="overflow-hidden rounded-[1.35rem] border border-red-300/15 bg-red-500/[0.035]">
+        <div className="flex items-center justify-between gap-3 p-4">
+          <div className="flex items-start gap-3">
+            <span className="grid size-9 shrink-0 place-items-center rounded-2xl bg-red-500/10 text-red-300"><Trash2 className="size-4" /></span>
+            <div>
+              <h2 className="text-sm font-black text-red-100">حذف الحساب</h2>
+              <p className="mt-0.5 text-xs font-bold leading-6 text-white/45">
+                {hasDeletionRequest ? "لديك طلب حذف قيد المراجعة حاليًا." : "سيتم إرسال طلب للفريق لمراجعة الحذف والتواصل معك."}
+              </p>
+            </div>
+          </div>
+          <form action={requestAccountDeletionAction} onSubmit={() => { if (!window.confirm("هل أنت متأكد من طلب حذف الحساب؟ سيتم مراجعة الطلب من فريق الدعم.")) { return; } }}>
+            <button
+              type="submit"
+              disabled={hasDeletionRequest || isPending}
+              className="inline-flex min-h-9 items-center gap-2 rounded-xl border border-red-300/20 bg-red-500/10 px-3 text-xs font-black text-red-200 transition hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-45"
+            >
+              <Trash2 className="size-3.5" />
+              {hasDeletionRequest ? "طلب مُرسل" : "طلب الحذف"}
+            </button>
+          </form>
         </div>
-      </Panel>
-
-      <Panel icon={RotateCcw} title="جولة التعريف" description=" لو فاتتك أو عايز تفتكر حاجة.">
-        <div className="rounded-2xl border border-white/8 bg-black/15 p-4">
-          <p className="text-sm font-black text-[#fff7e8]">إعادة مشاهدة الجولة الافتتاحية</p>
-          <p className="mt-1 text-xs font-bold leading-6 text-white/45">الجولة بتظهر مع كل تسجيل دخول جديد. تقدر تعيد مشاهدتها من هنا.</p>
-          <button
-            type="button"
-            onClick={() => {
-              window.location.href = "/dashboard?welcome=1";
-            }}
-            className="mt-3 inline-flex min-h-10 items-center gap-2 rounded-2xl border border-amber-300/20 bg-amber-300/10 px-4 text-sm font-black text-[#f3cf73] transition hover:bg-amber-300/16 hover:text-[#ffe9a8]"
-          >
-            <RotateCcw className="size-4" />
-            إعادة الجولة
-          </button>
-        </div>
-      </Panel>
-
-      <Panel icon={RotateCcw} title="التلميحات الذكية" description="إعادة إظهار تلميحات الصفحات.">
-        <div className="rounded-2xl border border-white/8 bg-black/15 p-4">
-          <p className="text-sm font-black text-[#fff7e8]">إعادة تلميحات الصفحات</p>
-          <p className="mt-1 text-xs font-bold leading-6 text-white/45">كل صفحة ليها تلميح واحد بيظهر أول مرة. تقدر تعيد إظهارها كلها من هنا.</p>
-          <button
-            type="button"
-            onClick={() => {
-              resetSmartTips();
-              window.location.reload();
-            }}
-            className="mt-3 inline-flex min-h-10 items-center gap-2 rounded-2xl border border-amber-300/20 bg-amber-300/10 px-4 text-sm font-black text-[#f3cf73] transition hover:bg-amber-300/16 hover:text-[#ffe9a8]"
-          >
-            <RotateCcw className="size-4" />
-            إعادة التلميحات
-          </button>
-        </div>
-      </Panel>
+      </section>
     </main>
   );
 }
 
-function Panel({ icon: Icon, title, description, children }: { icon: typeof User; title: string; description: string; children: React.ReactNode }) {
+function NoticeCard({ tone, title, description }: { tone: "success" | "warning" | "error"; title: string; description: string }) {
+  const classes = tone === "success"
+    ? "border-emerald-300/20 bg-emerald-300/10 text-emerald-200"
+    : tone === "warning"
+      ? "border-amber-300/20 bg-amber-300/10 text-amber-200"
+      : "border-red-300/20 bg-red-500/10 text-red-200";
+
+  return (
+    <section className={`rounded-2xl border px-4 py-3 ${classes}`}>
+      <p className="text-sm font-black">{title}</p>
+      <p className="mt-0.5 text-xs font-bold leading-6 opacity-75">{description}</p>
+    </section>
+  );
+}
+
+function Panel({ icon: Icon, title, description, children }: { icon: typeof User; title: string; description: string; children: ReactNode }) {
   return (
     <section className="overflow-hidden rounded-[1.35rem] border border-white/10 bg-white/[0.035]">
       <header className="flex items-start gap-3 border-b border-white/8 p-4">

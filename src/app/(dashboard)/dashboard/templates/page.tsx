@@ -36,16 +36,20 @@ export default async function TemplatesPage({ searchParams }: TemplatesPageProps
           code: true,
           name: true
         }
-      }
+      },
+      templateChangeUsed: true,
+      status: true,
     }
   });
   const currentThemeCode = currentSite?.theme.code ?? null;
+  const currentThemeName = currentSite?.theme.name ?? null;
 
   return (
     <TemplatesClient
       templates={templates}
-      currentThemeName={currentSite?.theme.name ?? null}
+      currentThemeName={currentThemeName}
       currentThemeCode={currentThemeCode}
+      templateChangeUsed={currentSite?.templateChangeUsed ?? false}
       message={
         params.error
           ? { tone: "error", text: decodeURIComponent(params.error) }

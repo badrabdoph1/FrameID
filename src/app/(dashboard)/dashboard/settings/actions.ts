@@ -7,6 +7,47 @@ import { prisma } from "@/lib/prisma";
 import { processError } from "@/lib/errors";
 import { getCurrentRequestSession } from "@/modules/auth/request-session";
 
+export async function requestAccountDeletionAction() {
+  const session = await getCurrentRequestSession();
+
+  if (!session) {
+    redirect("/login");
+  }
+
+  try {
+    const existingRequest = await prisma.customerRequest.findFirst({
+      where: {
+        tenantId: session.tenant.id,
+        type: "ACCOUNT_DELETION",
+        status: { in: ["PENDING", "IN_REVIEW"] },
+      },
+    });
+
+    if (existingRequest) {
+      redirect("/dashboard/settings?request=pending");
+    }
+
+    await prisma.customerRequest.create({
+      data: {
+        tenantId: session.tenant.id,
+        siteId: session.site.id,
+        type: "ACCOUNT_DELETION",
+        title: "طلب حذف الحساب",
+        description: `طلب حذف الحساب من ${session.user.name} (${session.user.email})`,
+      },
+    });
+  } catch (error) {
+    const { userError } = await processError(error, {
+      userId: session.user.id,
+      tenantId: session.tenant.id,
+      metadata: { action: "requestAccountDeletion" },
+    });
+    redirect(`/dashboard/settings?error=${encodeURIComponent(userError.message)}`);
+  }
+
+  redirect("/dashboard/settings?request=deletion-submitted");
+}
+
 export async function updateSeoSettingsAction(formData: FormData) {
   const session = await getCurrentRequestSession();
 

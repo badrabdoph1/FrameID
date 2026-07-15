@@ -210,16 +210,35 @@ model Tenant {
   featureFlags          FeatureFlag[]
   impersonationSessions ImpersonationSession[]
   customerIssues        CustomerIssue[]
+  customerRequests      CustomerRequest[]
 
   @@index([ownerUserId, status])
 }
 
+enum CustomerRequestStatus {
+  PENDING
+  IN_REVIEW
+  APPROVED
+  REJECTED
+  COMPLETED
+  CANCELLED
+}
+
+enum CustomerRequestType {
+  ACCOUNT_DELETION
+  FEATURE_ACTIVATION
+  UPGRADE
+  ADDITIONAL_SERVICE
+  OTHER
+}
+
 model Site {
-  id              String     @id @default(cuid())
-  tenantId        String
-  themeId         String
-  slug            String     @unique
-  slugChangeUsed  Boolean    @default(false)
+  id                   String     @id @default(cuid())
+  tenantId             String
+  themeId              String
+  slug                 String     @unique
+  slugChangeUsed       Boolean    @default(false)
+  templateChangeUsed   Boolean    @default(false)
   title           String
   description     String?
   templateCode    String?
@@ -246,6 +265,7 @@ model Site {
   extraServices    ExtraService[]
   contentSnapshots SiteContentSnapshot[]
   customerIssues   CustomerIssue[]
+  customerRequests CustomerRequest[]
 
   @@index([tenantId, status])
   @@index([themeId])
@@ -724,6 +744,7 @@ model AdminUser {
   assignedCustomerIssues CustomerIssue[]      @relation("CustomerIssueAssignee")
   resolvedCustomerIssues CustomerIssue[]      @relation("CustomerIssueResolver")
   customerIssueEvents    CustomerIssueEvent[] @relation("CustomerIssueEventActor")
+  reviewedCustomerRequests CustomerRequest[]  @relation("CustomerRequestReviewer")
 }
 
 model AdminSession {
@@ -1074,4 +1095,30 @@ model CustomerDataChange {
   @@index([tenantId, createdAt])
   @@index([siteId, createdAt])
   @@index([createdAt])
+}
+
+model CustomerRequest {
+  id              String                 @id @default(cuid())
+  number          Int                    @unique @default(autoincrement())
+  tenantId        String
+  siteId          String
+  type            CustomerRequestType
+  status          CustomerRequestStatus  @default(PENDING)
+  title           String
+  description     String?
+  adminNote       String?
+  reviewedBy      String?
+  reviewedAt      DateTime?
+  completedAt     DateTime?
+  createdAt       DateTime               @default(now())
+  updatedAt       DateTime               @updatedAt
+
+  tenant     Tenant     @relation(fields: [tenantId], references: [id])
+  site       Site       @relation(fields: [siteId], references: [id])
+  reviewer   AdminUser? @relation("CustomerRequestReviewer", fields: [reviewedBy], references: [id], onDelete: SetNull)
+
+  @@index([status, createdAt])
+  @@index([tenantId, status])
+  @@index([siteId, status])
+  @@index([type, status])
 }

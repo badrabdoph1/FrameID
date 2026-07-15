@@ -23,7 +23,8 @@ function createSession(): CurrentSession {
       slug: "ali",
       title: "Ali Studio",
       status: "PUBLISHED",
-      slugChangeUsed: false
+      slugChangeUsed: false,
+      templateChangeUsed: false
     },
     subscription: {
       id: "subscription_1",

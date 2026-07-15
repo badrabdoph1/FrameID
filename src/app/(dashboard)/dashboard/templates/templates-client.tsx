@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { CheckCircle2, Eye, Palette, WandSparkles } from "lucide-react";
+import { CheckCircle2, Eye, MessageCircle, Palette, WandSparkles } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -9,16 +9,18 @@ import {
   selectTemplateAction,
 } from "@/app/(dashboard)/dashboard/design/actions";
 import { TemplateLivePreview } from "@/components/themes/template-live-preview";
+import { DEFAULT_SUPPORT_WHATSAPP_NUMBER, toWhatsappHref } from "@/modules/support/support-utils";
 import type { TemplateSummary } from "@/modules/themes/theme-registry";
 
 type TemplatesClientProps = {
   templates: TemplateSummary[];
   currentThemeName: string | null;
   currentThemeCode: string | null;
+  templateChangeUsed: boolean;
   message?: { tone: "success" | "error"; text: string } | null;
 };
 
-export function TemplatesClient({ templates, currentThemeName, currentThemeCode, message }: TemplatesClientProps) {
+export function TemplatesClient({ templates, currentThemeName, currentThemeCode, templateChangeUsed, message }: TemplatesClientProps) {
   return (
     <main className="mx-auto grid w-full max-w-6xl gap-4 pb-4">
       <section className="rounded-[1.6rem] border border-white/10 bg-[radial-gradient(circle_at_top_right,rgba(243,207,115,0.14),transparent_36%),rgba(255,255,255,0.035)] p-4 sm:p-5">
@@ -27,7 +29,8 @@ export function TemplatesClient({ templates, currentThemeName, currentThemeCode,
             <p className="text-[0.72rem] font-black text-[#f3cf73]">شكل الموقع</p>
             <h1 className="mt-1 text-2xl font-black text-[#fff7e8] sm:text-3xl">اختار شكل يليق بشغلك</h1>
             <p className="mt-2 max-w-2xl text-sm font-bold leading-7 text-white/58">
-              القالب بيغيّر شكل العرض بس. صورك، بياناتك، وأسعارك هتفضل محفوظة، وتقدر تبدّل القالب في أي وقت.
+              القالب بيغيّر شكل العرض بس. صورك، بياناتك، وأسعارك هتفضل محفوظة.
+              {templateChangeUsed ? "" : " تقدر تبدّل القالب مرة واحدة فقط."}
             </p>
           </div>
           <div className="rounded-[1.25rem] border border-amber-300/18 bg-amber-300/10 p-4">
@@ -57,7 +60,7 @@ export function TemplatesClient({ templates, currentThemeName, currentThemeCode,
 
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3" data-smart-tip="templates-grid">
           {templates.map((template) => (
-            <TemplateCard key={template.code} template={template} isCurrent={template.themeCode === currentThemeCode} />
+            <TemplateCard key={template.code} template={template} isCurrent={template.themeCode === currentThemeCode} templateChangeUsed={templateChangeUsed} />
           ))}
         </div>
       </section>
@@ -65,8 +68,9 @@ export function TemplatesClient({ templates, currentThemeName, currentThemeCode,
   );
 }
 
-function TemplateCard({ template, isCurrent }: { template: TemplateSummary; isCurrent: boolean }) {
+function TemplateCard({ template, isCurrent, templateChangeUsed }: { template: TemplateSummary; isCurrent: boolean; templateChangeUsed: boolean }) {
   const palette = template.themeCode === "noir-gold" ? ["#0b0d12", "#f3cf73", "#fff7e8"] : ["#fff4f5", "#d88a9a", "#34252a"];
+  const supportHref = toWhatsappHref(DEFAULT_SUPPORT_WHATSAPP_NUMBER, "مرحبًا، أحتاج تغيير قالب الموقع بعد استخدام الفرصة المتاحة.");
 
   return (
     <article className={isCurrent ? "overflow-hidden rounded-[1.35rem] border border-amber-300/35 bg-amber-300/8" : "overflow-hidden rounded-[1.35rem] border border-white/10 bg-black/16"}>
@@ -101,13 +105,25 @@ function TemplateCard({ template, isCurrent }: { template: TemplateSummary; isCu
             <Eye className="size-4" aria-hidden />
             معاينة
           </Link>
-          <form action={selectTemplateAction}>
-            <input name="templateCode" type="hidden" value={template.code} />
-            <Button type="submit" variant={isCurrent ? "secondary" : "luxury"} className="min-h-11 w-full rounded-2xl font-black" disabled={isCurrent}>
+          {isCurrent ? (
+            <Button variant="secondary" className="min-h-11 w-full rounded-2xl font-black" disabled>
               <WandSparkles className="size-4" aria-hidden />
-              {isCurrent ? "مفعل" : "شغّل القالب"}
+              مفعل
             </Button>
-          </form>
+          ) : templateChangeUsed ? (
+            <Link href={supportHref} target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-amber-300/20 bg-amber-300/10 px-4 text-sm font-black text-[#f3cf73] no-underline transition hover:bg-amber-300/16">
+              <MessageCircle className="size-4" aria-hidden />
+              التواصل مع الدعم
+            </Link>
+          ) : (
+            <form action={selectTemplateAction}>
+              <input name="templateCode" type="hidden" value={template.code} />
+              <Button type="submit" variant="luxury" className="min-h-11 w-full rounded-2xl font-black">
+                <WandSparkles className="size-4" aria-hidden />
+                شغّل القالب
+              </Button>
+            </form>
+          )}
         </div>
 
         <details className="rounded-2xl border border-red-300/15 bg-red-500/[0.055] p-3">

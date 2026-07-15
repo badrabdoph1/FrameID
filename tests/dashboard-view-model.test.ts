@@ -26,7 +26,8 @@ function createSession(status: "DRAFT" | "PUBLISHED" = "PUBLISHED"): CurrentSess
       slug: "ali-ahmed",
       title: "Ali Ahmed",
       status,
-      slugChangeUsed: false
+      slugChangeUsed: false,
+      templateChangeUsed: false
     },
     subscription: {
       id: "subscription_1",

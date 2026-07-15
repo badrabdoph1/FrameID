@@ -19,7 +19,7 @@ type RawCurrentSessionRecord = {
       trialEndsAt: Date;
       trialDays: number;
       gracePeriodEndsAt: Date | null;
-      sites: Array<{ id: string; slug: string; title: string; status: string; slugChangeUsed: boolean }>;
+      sites: Array<{ id: string; slug: string; title: string; status: string; slugChangeUsed: boolean; templateChangeUsed: boolean }>;
       subscriptions: Array<{
         id: string;
         planId: string | null;
@@ -73,7 +73,7 @@ export function createPrismaCurrentSessionRepository(prisma: PrismaCurrentSessio
                     where: { deletedAt: null },
                     orderBy: { createdAt: "asc" },
                     take: 1,
-                    select: { id: true, slug: true, title: true, status: true, slugChangeUsed: true }
+                    select: { id: true, slug: true, title: true, status: true, slugChangeUsed: true, templateChangeUsed: true }
                   },
                   subscriptions: {
                     where: { deletedAt: null },

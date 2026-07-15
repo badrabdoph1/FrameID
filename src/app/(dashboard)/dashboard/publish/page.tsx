@@ -7,7 +7,7 @@ import { getPlatformBaseUrl } from "@/lib/platform-url";
 import { PublishClient } from "@/app/(dashboard)/dashboard/publish/publish-client";
 
 export const metadata: Metadata = {
-  title: "النشر والمشاركة | FrameID"
+  title: "النشر والمميزات | FrameID"
 };
 
 export const dynamic = "force-dynamic";
@@ -29,14 +29,7 @@ export default async function DashboardPublishPage({
     redirect("/login");
   }
 
-  const [seo, site, packagesCount, imagesCount, contactProfile] = await Promise.all([
-    prisma.sEOSettings.findUnique({
-      where: { siteId: session.site.id }
-    }),
-    prisma.site.findUnique({
-      where: { id: session.site.id },
-      select: { status: true, isPublished: true },
-    }),
+  const [packagesCount, imagesCount, contactProfile, seo] = await Promise.all([
     prisma.package.count({ where: { siteId: session.site.id, deletedAt: null } }),
     prisma.galleryImage.count({
       where: {
@@ -49,45 +42,49 @@ export default async function DashboardPublishPage({
       where: { siteId: session.site.id },
       select: { phone: true, whatsapp: true, email: true },
     }),
+    prisma.sEOSettings.findUnique({
+      where: { siteId: session.site.id },
+      select: { title: true, description: true, ogAssetId: true },
+    }),
   ]);
 
-  let ogImageUrl: string | null = null;
-  if (seo?.ogAssetId) {
-    const asset = await prisma.mediaAsset.findUnique({
-      where: { id: seo.ogAssetId },
-      select: { url: true }
-    });
-    ogImageUrl = asset?.url ?? null;
-  }
+  const site = await prisma.site.findUnique({
+    where: { id: session.site.id },
+    select: { status: true, isPublished: true, publishedVersion: true },
+  });
 
-  const siteUrl = `${getPlatformBaseUrl()}/p/${session.site.slug}`;
   const hasContact = Boolean(contactProfile?.phone || contactProfile?.whatsapp || contactProfile?.email);
   const hasPortfolio = imagesCount > 0;
   const hasPackages = packagesCount > 0;
-  const hasSeo = Boolean(seo?.title && (seo.description || seo.ogAssetId));
-  const readinessItems = [
-    { id: "contact", label: "بيانات تواصل قابلة للحجز", done: hasContact, href: "/dashboard/site-info" },
-    { id: "portfolio", label: "معرض أعمال يحتوي صور", done: hasPortfolio, href: "/dashboard/gallery" },
-    { id: "packages", label: "باقة واحدة على الأقل", done: hasPackages, href: "/dashboard/services" },
-    { id: "seo", label: "عنوان ووصف أو صورة مشاركة", done: hasSeo, href: "/dashboard/publish" },
+  const canPublish = hasContact && hasPortfolio && hasPackages;
+
+  const features = [
+    { id: "contact", label: "المعلومات الشخصية", enabled: hasContact, href: "/dashboard/site-info" },
+    { id: "packages", label: "الأسعار والباقات", enabled: hasPackages, href: "/dashboard/services" },
+    { id: "social", label: "وسائل التواصل", enabled: Boolean(contactProfile?.whatsapp || contactProfile?.phone), href: "/dashboard/site-info" },
+    { id: "gallery", label: "معرض الصور", enabled: false, comingSoon: true, href: "/dashboard/gallery" },
+    { id: "invitations", label: "الدعسات الإلكترونية", enabled: false, comingSoon: true, href: "#" },
+    { id: "reviews", label: "تقييمات العملاء", enabled: false, comingSoon: true, href: "#" },
+    { id: "booking", label: "الحجز الإلكتروني", enabled: false, comingSoon: true, href: "#" },
+    { id: "blog", label: "المدونة", enabled: false, comingSoon: true, href: "#" },
+    { id: "store", label: "المتجر", enabled: false, comingSoon: true, href: "#" },
+    { id: "faq", label: "الأسئلة الشائعة", enabled: false, comingSoon: true, href: "#" },
   ];
-  const canPublish = readinessItems.every((item) => item.done);
+
+  const doneCount = features.filter((f) => f.enabled).length;
 
   return (
     <PublishClient
       siteTitle={session.site.title}
-      siteUrl={siteUrl}
-      seoTitle={seo?.title ?? null}
-      seoDescription={seo?.description ?? null}
-      ogImageUrl={ogImageUrl}
-      robotsIndex={seo?.robotsIndex ?? true}
-      canonicalUrl={seo?.canonicalUrl ?? null}
+      siteUrl={`${getPlatformBaseUrl()}/p/${session.site.slug}`}
       updated={updated}
       error={error}
       isPublished={site?.status === "PUBLISHED" || site?.isPublished === true}
-      publishedVersion={0}
-      readinessItems={readinessItems}
+      publishedVersion={site?.publishedVersion ?? 0}
+      features={features}
       canPublish={canPublish}
+      doneCount={doneCount}
+      totalCount={features.length}
     />
   );
 }

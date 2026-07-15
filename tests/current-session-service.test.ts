@@ -36,7 +36,8 @@ describe("current session service", () => {
             slug: "ali-ahmed",
             title: "Ali Ahmed",
             status: "PUBLISHED",
-            slugChangeUsed: false
+            slugChangeUsed: false,
+      templateChangeUsed: false
           },
           subscription: {
             id: "subscription_1",

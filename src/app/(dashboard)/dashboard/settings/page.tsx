@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { getCurrentRequestSession } from "@/modules/auth/request-session";
 import { getPlatformBaseUrl } from "@/lib/platform-url";
 import { SettingsClient } from "@/app/(dashboard)/dashboard/settings/settings-client";
+import { prisma } from "@/lib/prisma";
 
 export const metadata: Metadata = {
   title: "الإعدادات | FrameID"
@@ -11,12 +12,27 @@ export const metadata: Metadata = {
 
 export const dynamic = "force-dynamic";
 
-export default async function DashboardSettingsPage() {
+export default async function DashboardSettingsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
   const session = await getCurrentRequestSession();
 
   if (!session) {
     redirect("/login");
   }
+
+  const params = await searchParams;
+
+  const pendingDeletionRequest = await prisma.customerRequest.findFirst({
+    where: {
+      tenantId: session.tenant.id,
+      type: "ACCOUNT_DELETION",
+      status: { in: ["PENDING", "IN_REVIEW"] },
+    },
+    select: { id: true, status: true, createdAt: true },
+  });
 
   return (
     <SettingsClient
@@ -29,6 +45,10 @@ export default async function DashboardSettingsPage() {
       siteStatus={session.site.status}
       siteUrl={`${getPlatformBaseUrl()}/p/${session.site.slug}`}
       slugChangeUsed={session.site.slugChangeUsed}
+      templateChangeUsed={session.site.templateChangeUsed}
+      hasDeletionRequest={Boolean(pendingDeletionRequest)}
+      requestMessage={typeof params.request === "string" ? params.request : undefined}
+      errorMessage={typeof params.error === "string" ? params.error : undefined}
     />
   );
 }

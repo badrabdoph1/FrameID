@@ -26,11 +26,25 @@ export async function selectTemplateAction(formData: FormData) {
   }
 
   try {
+    const currentSite = await prisma.site.findUnique({
+      where: { id: session.site.id },
+      select: { templateChangeUsed: true },
+    });
+
+    if (currentSite?.templateChangeUsed) {
+      redirect("/dashboard/templates?error=تم استخدام فرصة تغيير القالب. تواصل مع الدعم الفني.");
+    }
+
     await createSiteThemeSelectionService({
       repository: createPrismaSiteThemeSelectionRepository(prisma),
     }).selectTemplate({
       session,
       templateCode,
+    });
+
+    await prisma.site.update({
+      where: { id: session.site.id },
+      data: { templateChangeUsed: true },
     });
   } catch (error) {
     const { userError } = await processError(error, {

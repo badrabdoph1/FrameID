@@ -29,7 +29,8 @@ function createSession(slugChangeUsed = false): CurrentSession {
       slug: "ali-ahmed",
       title: "Ali Ahmed",
       status: "PUBLISHED",
-      slugChangeUsed
+      slugChangeUsed,
+      templateChangeUsed: false,
     },
     subscription: {
       id: "subscription_1",

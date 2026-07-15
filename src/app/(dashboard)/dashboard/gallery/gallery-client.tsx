@@ -127,7 +127,6 @@ export function GalleryClient({ albums, selectedAlbumId: initialAlbumId, avatarU
   const selectedAlbum = currentAlbumId ? albums.find((album) => album.id === currentAlbumId) ?? null : null;
   const notice = getGalleryNotice(messages);
   const totalImages = albums.reduce((sum, album) => sum + album.images.length, 0);
-  const completion = Math.round(((avatarPreview ? 1 : 0) + (coverPreview ? 1 : 0) + (albums.length > 0 ? 1 : 0)) / 3 * 100);
 
   const selectAlbum = (id: string) => {
     setCurrentAlbumId(id);
@@ -211,14 +210,16 @@ export function GalleryClient({ albums, selectedAlbumId: initialAlbumId, avatarU
   }
 
   return (
-    <main className="mx-auto grid w-full max-w-5xl gap-3 pb-4">
-      <section className="rounded-[1.2rem] border border-white/10 bg-[radial-gradient(circle_at_top_right,rgba(243,207,115,0.1),transparent_38%),rgba(255,255,255,0.035)] p-3 sm:p-4">
+    <main className="mx-auto grid w-full max-w-6xl gap-4 pb-4">
+      <section className="rounded-[1.6rem] border border-white/10 bg-[radial-gradient(circle_at_top_right,rgba(243,207,115,0.12),transparent_36%),rgba(255,255,255,0.035)] p-4 sm:p-5">
         <div className="flex items-start gap-3">
-          <span className="grid size-10 shrink-0 place-items-center rounded-2xl bg-amber-300/10 text-[#f3cf73]"><Images className="size-5" /></span>
+          <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-amber-300/10 text-[#f3cf73]"><Images className="size-5" /></span>
           <div>
-            <p className="text-[0.72rem] font-black text-[#f3cf73]">المرحلة ٣</p>
-            <h1 className="mt-1 text-xl font-black text-[#fff7e8] sm:text-2xl">الصور</h1>
-            <p className="mt-1 text-sm font-bold leading-7 text-white/55">الصورة الشخصية، صورة الغلاف، وألبومات من أعمالك في مكان واحد.</p>
+            <p className="text-[0.72rem] font-black text-[#f3cf73]">الصور</p>
+            <h1 className="mt-1 text-2xl font-black text-[#fff7e8] sm:text-3xl">معرض الصور</h1>
+            <p className="mt-2 max-w-2xl text-sm font-bold leading-7 text-white/55">
+              الصورة الشخصية والغلاف وألبومات من أعمالك. كل صورة ليها مكان محدد في الموقع.
+            </p>
           </div>
         </div>
       </section>
@@ -242,28 +243,30 @@ export function GalleryClient({ albums, selectedAlbumId: initialAlbumId, avatarU
           handleRenameAlbum={handleRenameAlbum}
         />
       ) : (
-        <>
-          <section className="grid gap-3 lg:grid-cols-[0.75fr_1.25fr]">
-            <ImageStageCard
+        <div data-smart-tip="gallery-grid">
+          <section className="grid gap-4 lg:grid-cols-2">
+            <ImageCard
               title="صورة المصور الشخصية"
-              description="الصورة بتظهر مربعة زي صورة البروفايل. اختار صورة واضحة والقص هيكون مربع تلقائيًا."
+              description="تظهر مربعة في أعلى الموقع. اختار صورة واضحة."
               preview={avatarPreview}
               square
+              icon={UserSquare2}
               onUpload={(files) => uploadProfileImage("avatarAssetId", files)}
             />
-            <ImageStageCard
-              title="صورة الغلاف الأساسية"
-              description="صورة عريضة وكاملة تظهر في أول صفحة من موقعك."
+            <ImageCard
+              title="صورة الغلاف"
+              description="صورة عريضة تظهر في أول صفحة من موقعك."
               preview={coverPreview}
+              icon={Images}
               onUpload={(files) => uploadProfileImage("coverAssetId", files)}
             />
           </section>
 
-          <section className="grid gap-3 rounded-[1.2rem] border border-white/10 bg-white/[0.035] p-3" data-smart-tip="gallery-grid">
-            <div className="flex items-start justify-between gap-3">
+          <section className="overflow-hidden rounded-[1.35rem] border border-white/10 bg-white/[0.035]">
+            <div className="flex items-start justify-between gap-3 border-b border-white/8 p-4">
               <div>
                 <h2 className="text-base font-black text-[#fff7e8]">ألبومات الأعمال</h2>
-                <p className="mt-1 text-xs font-bold leading-5 text-white/45">دي صور من أعمالك تظهر للعميل. يفضل لو تسيبها بعد ما تتأكد إن كل حاجة شغالة تمام في موقعك.</p>
+                <p className="mt-1 text-xs font-bold leading-5 text-white/45">صور من أعمالك تظهر للعميل في قسم المعرض.</p>
               </div>
               <Button variant="luxury" className="min-h-10 rounded-2xl font-black" onClick={() => setShowCreateForm((value) => !value)}>
                 {showCreateForm ? <X className="size-4" /> : <Plus className="size-4" />}
@@ -271,56 +274,66 @@ export function GalleryClient({ albums, selectedAlbumId: initialAlbumId, avatarU
               </Button>
             </div>
 
-            {showCreateForm ? (
-              <form action={handleCreateAlbum} className="grid gap-3 rounded-2xl border border-amber-300/18 bg-amber-300/8 p-3" onSubmit={() => setShowCreateForm(false)}>
-                <label className="grid gap-1.5"><span className="text-xs font-black text-white/55">عنوان الألبوم</span><Input name="title" placeholder="مثلاً: جلسات زفاف" required autoFocus /></label>
-                <label className="grid gap-1.5"><span className="text-xs font-black text-white/55">وصف الألبوم</span><Input name="description" placeholder="وصف بسيط يظهر للعميل" /></label>
-                <div className="grid grid-cols-2 gap-2"><Button type="submit" variant="luxury" className="rounded-xl">إنشاء</Button><Button type="button" variant="ghost" className="rounded-xl" onClick={() => setShowCreateForm(false)}>إلغاء</Button></div>
-              </form>
-            ) : null}
+            <div className="p-4">
+              {showCreateForm ? (
+                <form action={handleCreateAlbum} className="grid gap-3 rounded-2xl border border-amber-300/18 bg-amber-300/8 p-3" onSubmit={() => setShowCreateForm(false)}>
+                  <label className="grid gap-1.5"><span className="text-xs font-black text-white/55">عنوان الألبوم</span><Input name="title" placeholder="مثلاً: جلسات زفاف" required autoFocus /></label>
+                  <label className="grid gap-1.5"><span className="text-xs font-black text-white/55">وصف الألبوم (اختياري)</span><Input name="description" placeholder="وصف بسيط يظهر للعميل" /></label>
+                  <div className="grid grid-cols-2 gap-2"><Button type="submit" variant="luxury" className="rounded-xl">إنشاء</Button><Button type="button" variant="ghost" className="rounded-xl" onClick={() => setShowCreateForm(false)}>إلغاء</Button></div>
+                </form>
+              ) : null}
 
-            {albums.length === 0 ? <EmptyGalleryState onCreate={() => setShowCreateForm(true)} /> : (
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {albums.map((album) => (
-                  <AlbumCard
-                    key={album.id}
-                    album={album}
-                    renaming={renamingAlbumId === album.id}
-                    confirmingDelete={confirmDelete === album.id}
-                    onOpen={() => selectAlbum(album.id)}
-                    onRename={() => setRenamingAlbumId(album.id)}
-                    onCancelRename={() => setRenamingAlbumId(null)}
-                    onDelete={() => setConfirmDelete(album.id)}
-                    onCancelDelete={() => setConfirmDelete(null)}
-                    onConfirmDelete={() => handleConfirmDelete(album.id)}
-                    handleRenameAlbum={handleRenameAlbum}
-                  />
-                ))}
-              </div>
-            )}
+              {albums.length === 0 ? <EmptyGalleryState onCreate={() => setShowCreateForm(true)} /> : (
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  {albums.map((album) => (
+                    <AlbumCard
+                      key={album.id}
+                      album={album}
+                      renaming={renamingAlbumId === album.id}
+                      confirmingDelete={confirmDelete === album.id}
+                      onOpen={() => selectAlbum(album.id)}
+                      onRename={() => setRenamingAlbumId(album.id)}
+                      onCancelRename={() => setRenamingAlbumId(null)}
+                      onDelete={() => setConfirmDelete(album.id)}
+                      onCancelDelete={() => setConfirmDelete(null)}
+                      onConfirmDelete={() => handleConfirmDelete(album.id)}
+                      handleRenameAlbum={handleRenameAlbum}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
           </section>
 
-          <NextFooter percent={completion} totalImages={totalImages} />
-        </>
+          <section className="rounded-[1.35rem] border border-white/10 bg-white/[0.035] p-4">
+            <p className="text-xs font-black text-white/38">ملخص الصور</p>
+            <div className="mt-2 flex items-center gap-3">
+              <span className="text-lg font-black text-[#fff7e8]">{totalImages} صورة</span>
+              <span className="text-xs font-bold text-white/45">· {albums.length} ألبوم</span>
+            </div>
+          </section>
+        </div>
       )}
     </main>
   );
 }
 
-function ImageStageCard({ title, description, preview, onUpload, square }: { title: string; description: string; preview: string | null; onUpload: (files: File[]) => void; square?: boolean }) {
+function ImageCard({ title, description, preview, onUpload, square, icon: Icon }: { title: string; description: string; preview: string | null; onUpload: (files: File[]) => void; square?: boolean; icon: typeof UserSquare2 }) {
   return (
-    <section className="grid gap-3 rounded-[1.2rem] border border-white/10 bg-white/[0.035] p-3">
-      <div className="flex items-start gap-3">
-        <span className="grid size-9 shrink-0 place-items-center rounded-2xl bg-amber-300/10 text-[#f3cf73]"><UserSquare2 className="size-4" /></span>
-        <div><h2 className="text-base font-black text-[#fff7e8]">{title}</h2><p className="mt-1 text-xs font-bold leading-5 text-white/45">{description}</p></div>
+    <section className="overflow-hidden rounded-[1.35rem] border border-white/10 bg-white/[0.035]">
+      <div className="flex items-start gap-3 border-b border-white/8 p-4">
+        <span className="grid size-9 shrink-0 place-items-center rounded-2xl bg-amber-300/10 text-[#f3cf73]"><Icon className="size-4" /></span>
+        <div><h2 className="text-sm font-black text-[#fff7e8]">{title}</h2><p className="mt-0.5 text-xs font-bold leading-5 text-white/45">{description}</p></div>
       </div>
-      <div className={square ? "relative mx-auto aspect-square w-full max-w-[220px] overflow-hidden rounded-3xl border border-white/10 bg-black/20" : "relative aspect-[16/7] w-full overflow-hidden rounded-3xl border border-white/10 bg-black/20"}>
-        {preview ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={preview} alt={title} className="size-full object-cover" />
-        ) : <div className="grid size-full place-items-center text-white/28"><ImagePlus className="size-10" /></div>}
+      <div className="p-4">
+        <div className={square ? "relative mx-auto aspect-square w-full max-w-[200px] overflow-hidden rounded-3xl border border-white/10 bg-black/20" : "relative aspect-[16/7] w-full overflow-hidden rounded-3xl border border-white/10 bg-black/20"}>
+          {preview ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={preview} alt={title} className="size-full object-cover" />
+          ) : <div className="grid size-full place-items-center text-white/28"><ImagePlus className="size-8" /></div>}
+        </div>
+        <div className="mt-3"><ImageUploader onUpload={onUpload} multiple={false} maxFiles={1} maxSizeMB={20} /></div>
       </div>
-      <ImageUploader onUpload={onUpload} multiple={false} maxFiles={1} maxSizeMB={20} />
     </section>
   );
 }
@@ -360,7 +373,7 @@ function AlbumWorkspace({
           <div>
             <button type="button" onClick={onBack} className="mb-2 inline-flex items-center gap-1 text-xs font-black text-[#f3cf73]"><ArrowLeft className="size-3.5" /> كل الألبومات</button>
             <h2 className="text-xl font-black text-[#fff7e8]">{album.title}</h2>
-            <p className="mt-1 text-sm font-bold text-white/45">{album.images.length}/5 صور حالياً · ارفع صورة الغلاف أو اختارها من الصور.</p>
+            <p className="mt-1 text-sm font-bold text-white/45">{album.images.length}/5 صور · ارفع صور من أعمالك.</p>
           </div>
           <Button variant="luxury" disabled={remaining === 0} className="min-h-11 rounded-2xl font-black disabled:opacity-45" onClick={() => setShowUpload((value) => !value)}>
             <ImagePlus className="size-4" />
@@ -421,16 +434,12 @@ function AlbumWorkspace({
 function AlbumCard({ album, renaming, confirmingDelete, onOpen, onRename, onCancelRename, onDelete, onCancelDelete, onConfirmDelete, handleRenameAlbum }: { album: AlbumWithImages; renaming: boolean; confirmingDelete: boolean; onOpen: () => void; onRename: () => void; onCancelRename: () => void; onDelete: () => void; onCancelDelete: () => void; onConfirmDelete: () => void; handleRenameAlbum: (formData: FormData) => void; }) {
   const coverUrl = getCoverUrl(album);
   if (renaming) return <form action={handleRenameAlbum} className="grid gap-2 rounded-2xl border border-amber-300/18 bg-amber-300/8 p-3"><input type="hidden" name="albumId" value={album.id} /><Input name="title" defaultValue={album.title} autoFocus required /><Input name="description" defaultValue={album.description ?? ""} placeholder="وصف الألبوم" /><div className="grid grid-cols-2 gap-2"><Button type="submit" variant="luxury" className="rounded-xl">حفظ</Button><Button type="button" variant="ghost" className="rounded-xl" onClick={onCancelRename}>إلغاء</Button></div></form>;
-  if (confirmingDelete) return <div className="grid gap-3 rounded-2xl border border-red-300/20 bg-red-500/10 p-3 text-center"><p className="text-sm font-black text-[#fff7e8]">تمسح “{album.title}”؟</p><p className="text-xs font-bold text-white/45">الصور المرتبطة بالألبوم مش هتظهر للعميل.</p><div className="grid grid-cols-2 gap-2"><Button size="sm" variant="luxury" onClick={onConfirmDelete}>حذف</Button><Button size="sm" variant="ghost" onClick={onCancelDelete}>إلغاء</Button></div></div>;
+  if (confirmingDelete) return <div className="grid gap-3 rounded-2xl border border-red-300/20 bg-red-500/10 p-3 text-center"><p className="text-sm font-black text-[#fff7e8]">تمسح "{album.title}"؟</p><p className="text-xs font-bold text-white/45">الصور المرتبطة بالألبوم مش هتظهر للعميل.</p><div className="grid grid-cols-2 gap-2"><Button size="sm" variant="luxury" onClick={onConfirmDelete}>حذف</Button><Button size="sm" variant="ghost" onClick={onCancelDelete}>إلغاء</Button></div></div>;
   return <article className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.035]"><button type="button" onClick={onOpen} className="block w-full text-start"><div className="relative aspect-[4/3] bg-black/20">{coverUrl ? <Image src={coverUrl} alt="" fill sizes="(min-width: 1024px) 25vw, 100vw" className="object-cover" aria-hidden /> : <div className="flex h-full items-center justify-center"><FolderOpen className="size-10 text-white/25" /></div>}</div><div className="p-3"><h3 className="truncate text-sm font-black text-[#fff7e8]">{album.title}</h3>{album.description ? <p className="mt-1 line-clamp-2 text-xs font-bold text-white/42">{album.description}</p> : null}<p className="mt-1 text-xs font-bold text-white/42">{album.images.length}/5 صور</p></div></button><div className="grid grid-cols-2 gap-2 border-t border-white/8 p-2"><button type="button" onClick={onRename} className="inline-flex min-h-9 items-center justify-center gap-1 rounded-xl bg-white/[0.04] text-xs font-black text-white/60"><Pencil className="size-3.5" />تعديل</button><button type="button" onClick={onDelete} className="inline-flex min-h-9 items-center justify-center gap-1 rounded-xl bg-red-500/10 text-xs font-black text-red-200"><Trash2 className="size-3.5" />حذف</button></div></article>;
 }
 
 function EmptyGalleryState({ onCreate }: { onCreate: () => void }) {
   return <div className="grid justify-items-center gap-3 rounded-2xl border border-dashed border-white/14 bg-black/15 p-8 text-center"><FolderOpen className="size-10 text-white/28" /><div><h3 className="text-base font-black text-[#fff7e8]">اعمل أول ألبوم</h3><p className="mt-1 max-w-sm text-sm font-bold leading-7 text-white/45">اكتب عنوان الألبوم وبعدها ارفع لحد 5 صور كبداية.</p></div><Button variant="luxury" className="rounded-2xl font-black" onClick={onCreate}><Plus className="size-4" />إنشاء ألبوم</Button></div>;
-}
-
-function NextFooter({ percent, totalImages }: { percent: number; totalImages: number }) {
-  return <section className="grid gap-3 rounded-[1.2rem] border border-white/10 bg-white/[0.035] p-3 sm:grid-cols-[1fr_auto_auto] sm:items-center"><div><p className="text-xs font-black text-white/38">اكتمال مرحلة الصور</p><p className="mt-1 text-lg font-black text-[#fff7e8]">{percent}% · {totalImages} صورة</p></div><Link href="/dashboard" className="inline-flex min-h-11 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] px-4 text-sm font-black text-white/70 no-underline">الرئيسية</Link><Link href="/dashboard/publish" className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-[#f3cf73] px-4 text-sm font-black text-[#17120a] no-underline">المرحلة التالية: النشر<ArrowLeft className="size-4" /></Link></section>;
 }
 
 function IconButton({ children, label, onClick, disabled, danger }: { children: React.ReactNode; label: string; onClick: () => void; disabled?: boolean; danger?: boolean }) {

@@ -34,6 +34,7 @@ export type CurrentSession = {
     title: string;
     status: "DRAFT" | "PUBLISHED" | "EXPIRED" | "SUSPENDED";
     slugChangeUsed: boolean;
+    templateChangeUsed: boolean;
   };
   subscription: {
     id: string;

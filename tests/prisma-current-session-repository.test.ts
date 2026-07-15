@@ -37,7 +37,8 @@ describe("prisma current session repository", () => {
                       slug: "ali-ahmed",
                       title: "Ali Ahmed",
                       status: "PUBLISHED",
-                      slugChangeUsed: false
+                      slugChangeUsed: false,
+      templateChangeUsed: false
                     }
                   ],
                   subscriptions: [
