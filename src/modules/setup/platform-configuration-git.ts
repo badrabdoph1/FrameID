@@ -37,11 +37,24 @@ export async function syncPlatformConfigurationToGitHub(input: {
   };
   mkdirSync(dirname(ABSOLUTE_PATH), { recursive: true });
   writeFileSync(ABSOLUTE_PATH, JSON.stringify(after, null, 2), "utf8");
-  const committed = await commitContentFilesToGitHub({
-    files: [{ path: RELATIVE_PATH, absolutePath: ABSOLUTE_PATH }],
-    message: `حفظ إعدادات المنصة: ${input.reason}`,
-  });
-  if (!committed.commitSha) throw new Error(committed.error ?? "فشل حفظ إعدادات المنصة في GitHub");
+  
+  let commitSha: string | null = null;
+  let gitError: string | null = null;
+  
+  try {
+    const committed = await commitContentFilesToGitHub({
+      files: [{ path: RELATIVE_PATH, absolutePath: ABSOLUTE_PATH }],
+      message: `حفظ إعدادات المنصة: ${input.reason}`,
+    });
+    commitSha = committed.commitSha ?? null;
+    if (!commitSha && committed.error) {
+      gitError = committed.error;
+      console.error("[platform-config-git] GitHub sync failed:", committed.error);
+    }
+  } catch (error) {
+    gitError = error instanceof Error ? error.message : "Unknown error";
+    console.error("[platform-config-git] GitHub sync exception:", error);
+  }
 
   await appendContentRevision({
     id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
@@ -52,10 +65,15 @@ export async function syncPlatformConfigurationToGitHub(input: {
     before,
     after,
     createdAt: after.updatedAt,
-    commitId: committed.commitSha,
-    gitStatus: "committed",
+    commitId: commitSha,
+    gitStatus: commitSha ? "committed" : "failed",
   });
-  return { commitId: committed.commitSha };
+  
+  if (!commitSha && gitError) {
+    console.warn(`[platform-config-git] Data saved locally but GitHub sync failed: ${gitError}`);
+  }
+  
+  return { commitId: commitSha, gitError };
 }
 
 export async function restorePlatformConfigurationToGitHub(input: {
@@ -66,11 +84,25 @@ export async function restorePlatformConfigurationToGitHub(input: {
   if (!input.value || typeof input.value !== "object" || Array.isArray(input.value)) throw new Error("الإصدار السابق لإعدادات المنصة غير صالح");
   mkdirSync(dirname(ABSOLUTE_PATH), { recursive: true });
   writeFileSync(ABSOLUTE_PATH, JSON.stringify(input.value, null, 2), "utf8");
-  const committed = await commitContentFilesToGitHub({
-    files: [{ path: RELATIVE_PATH, absolutePath: ABSOLUTE_PATH }],
-    message: `استعادة إصدار إعدادات المنصة: ${input.sourceRevisionId}`,
-  });
-  if (!committed.commitSha) throw new Error(committed.error ?? "فشل استعادة إعدادات المنصة في GitHub");
+  
+  let commitSha: string | null = null;
+  let gitError: string | null = null;
+  
+  try {
+    const committed = await commitContentFilesToGitHub({
+      files: [{ path: RELATIVE_PATH, absolutePath: ABSOLUTE_PATH }],
+      message: `استعادة إصدار إعدادات المنصة: ${input.sourceRevisionId}`,
+    });
+    commitSha = committed.commitSha ?? null;
+    if (!commitSha && committed.error) {
+      gitError = committed.error;
+      console.error("[platform-config-git] GitHub restore sync failed:", committed.error);
+    }
+  } catch (error) {
+    gitError = error instanceof Error ? error.message : "Unknown error";
+    console.error("[platform-config-git] GitHub restore sync exception:", error);
+  }
+  
   await appendContentRevision({
     id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     type: "platform/restore",
@@ -80,8 +112,13 @@ export async function restorePlatformConfigurationToGitHub(input: {
     before: null,
     after: input.value,
     createdAt: new Date().toISOString(),
-    commitId: committed.commitSha,
-    gitStatus: "committed",
+    commitId: commitSha,
+    gitStatus: commitSha ? "committed" : "failed",
   });
-  return { commitId: committed.commitSha };
+  
+  if (!commitSha && gitError) {
+    console.warn(`[platform-config-git] Restore saved locally but GitHub sync failed: ${gitError}`);
+  }
+  
+  return { commitId: commitSha, gitError };
 }

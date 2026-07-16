@@ -153,7 +153,7 @@ function CustomerSupportLink({ href, compact = false }: { href: string; compact?
   );
 }
 
-function CustomerIdentityBar({ supportHref }: { supportHref: string }) {
+function CustomerIdentityBar({ supportHref, photographerName }: { supportHref: string; photographerName?: string }) {
   return (
     <div className="customer-desktop-identity-bar hidden w-full grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-4 lg:grid">
       <div className="justify-self-start">
@@ -211,7 +211,7 @@ export function DashboardShell({ children, siteSlug, hasSubscription, photograph
     <div className="customer-desktop-shell min-h-dvh bg-[#0b0d12] text-[#f5ead6] color-scheme-dark" style={{ background: "#0b0d12", color: "#f5ead6" }}>
       <header className="sticky top-0 z-40 border-b border-white/8 bg-[#090b10]/92 px-2 py-2 backdrop-blur-xl lg:hidden">
         <div className="relative mx-auto grid max-w-6xl grid-cols-[minmax(4.45rem,1fr)_auto_minmax(6.2rem,1fr)] items-center gap-1.5 sm:grid-cols-[minmax(5.5rem,1fr)_auto_minmax(7.5rem,1fr)] sm:gap-2">
-          <IdentityBrand />
+          <IdentityBrand photographerName={photographerName} />
 
           <DashboardTitleBadge compact />
 
@@ -236,7 +236,7 @@ export function DashboardShell({ children, siteSlug, hasSubscription, photograph
           <Link href="/dashboard" className="customer-desktop-brand-card flex shrink-0 items-center gap-3 rounded-3xl border border-white/8 bg-white/[0.035] p-3 no-underline transition hover:border-amber-300/20 hover:bg-amber-300/8">
             <BrandMark large />
             <span>
-              <strong className="block text-lg font-black text-[#fff7e8]">FrameID</strong>
+              <strong className="block text-lg font-black text-[#fff7e8]">{photographerName || "FrameID"}</strong>
               <small className="block text-xs font-bold text-white/46">رحلة تجهيز موقعك</small>
             </span>
           </Link>

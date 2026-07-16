@@ -175,5 +175,4 @@ export function createPublicSiteViewModel({ site, platformBaseUrl, platformSocia
 function findSection(site: PublicSiteRecord, type: string) { return [...site.sections].sort((a, b) => a.sortOrder - b.sortOrder).find((section) => section.type === type); }
 function firstText(...values: unknown[]): string { for (const value of values) if (typeof value === "string" && value.trim()) return value.trim(); return ""; }
 function readString(value: unknown, fallback: string): string { return typeof value === "string" && value.trim() ? value.trim() : fallback; }
-function readNullableString(value: unknown): string | null { return typeof value === "string" && value.trim() ? value.trim() : null; }
 function readStringList(value: unknown): string[] { return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string" && Boolean(item.trim())) : []; }

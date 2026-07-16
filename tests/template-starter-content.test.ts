@@ -19,7 +19,6 @@ describe("template starter content", () => {
       expect(content.sections.contact).toBeDefined();
       expect(content.contact).toBeDefined();
       expect(content.contact.workLocation).toBe("فريلانسر");
-      expect(content.contact.tiktok).toBeTruthy();
       expect(content.sections.hero).toMatchObject({
         overlay: expect.any(String),
         position: expect.any(String),
@@ -41,38 +40,48 @@ describe("template starter content", () => {
       );
 
       expect(content.site.title).toBe("Kareem Magdy");
-      expect(content.contact.studioName).toBe("Photography");
       expect(content.site.description).toBe("Wedding Photographer\nمصور زفاف");
       expect(content.sections.hero.subheadline).toBe(OFFICIAL_TEMPLATE_STARTER_DEFAULTS.description);
     }
   });
 
-  it("personalizes only photographer identity fields", () => {
+  it("personalizes photographer identity and clears placeholder data", () => {
     const original = applyTemplateStarterSharedDefaults(
       parseTemplateStarterContent(templateDefinitions[0].starterContent),
     );
-    const personalized = personalizeTemplateStarterContent(original, "ليلى أحمد");
-    const expected = structuredClone(original);
+    const personalized = personalizeTemplateStarterContent(original, "ليلى أحمد", {
+      identifierKind: "phone",
+      phone: "+20123456789",
+    });
 
-    expected.site.title = "ليلى أحمد";
-    expected.sections.hero.headline = "ليلى أحمد";
-    expected.seo.title = "ليلى أحمد";
-    expected.seo.structuredData.name = "ليلى أحمد";
-
-    expect(personalized).toEqual(expected);
-    expect(personalized.contact.studioName).toBe("Photography");
-    expect(personalized.site.description).toBe("Wedding Photographer\nمصور زفاف");
+    expect(personalized.site.title).toBe("ليلى أحمد");
+    expect(personalized.sections.hero.headline).toBe("ليلى أحمد");
+    expect(personalized.seo.title).toBe("ليلى أحمد");
+    expect(personalized.seo.structuredData.name).toBe("ليلى أحمد");
+    expect(personalized.contact.studioName).toBe("ليلى أحمد");
+    expect(personalized.contact.phone).toBe("+20123456789");
+    expect(personalized.contact.whatsapp).toBe("+20123456789");
+    expect(personalized.contact.email).toBeNull();
+    expect(personalized.contact.instagram).toBeNull();
+    expect(personalized.contact.facebook).toBeNull();
+    expect(personalized.contact.tiktok).toBeNull();
+    expect(personalized.contact.bio).toBeNull();
+    expect(personalized.contact.longDescription).toBeNull();
     expect(original.site.title).toBe("Kareem Magdy");
   });
 
-  it("uses a template override only when explicitly provided", () => {
-    const content = applyTemplateStarterSharedDefaults(
+  it("uses email identity when phone is not provided", () => {
+    const original = applyTemplateStarterSharedDefaults(
       parseTemplateStarterContent(templateDefinitions[0].starterContent),
-      OFFICIAL_TEMPLATE_STARTER_DEFAULTS,
-      { studioName: "Editorial House" },
     );
+    const personalized = personalizeTemplateStarterContent(original, "محمد علي", {
+      identifierKind: "email",
+      email: "mohamed@example.com",
+    });
 
-    expect(content.contact.studioName).toBe("Editorial House");
-    expect(content.site.title).toBe("Kareem Magdy");
+    expect(personalized.contact.studioName).toBe("محمد علي");
+    expect(personalized.contact.email).toBe("mohamed@example.com");
+    expect(personalized.contact.phone).toBeNull();
+    expect(personalized.contact.whatsapp).toBeNull();
   });
 });
