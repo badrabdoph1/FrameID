@@ -7,16 +7,16 @@ import type { TabId } from "./customer-tabs"
 
 export function CustomerOverviewTab({ customer, onTabChange }: { customer: CustomerDetail; onTabChange: (tab: TabId) => void }) {
   return (
-    <div className="space-y-4">
-      <div className="rounded-xl border border-white/8 bg-white/3 p-4">
-        <div className="mb-3 flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-white/60">المواقع</h3>
-          <button onClick={() => onTabChange("website")} className="text-xs font-extrabold text-amber-500/70 transition hover:text-amber-400">عرض الكل</button>
+    <div className="grid gap-3 lg:grid-cols-[0.9fr_1.1fr]">
+      <section className="rounded-xl border border-white/8 bg-white/[0.02] p-3">
+        <div className="mb-2.5 flex items-center justify-between">
+          <h3 className="text-xs font-black text-white/55">المواقع</h3>
+          <button type="button" onClick={() => onTabChange("site")} className="min-h-11 rounded-lg px-2 text-xs font-extrabold text-amber-500/70 transition hover:bg-amber-300/[0.06] hover:text-amber-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300/50">عرض الكل</button>
         </div>
         {customer.sites.length > 0 ? (
           <div className="grid gap-2">
             {customer.sites.slice(0, 3).map((site) => (
-              <div key={site.id} className="flex items-center justify-between rounded-lg border border-white/6 bg-white/3 px-3.5 py-2.5">
+              <div key={site.id} className="flex items-center justify-between rounded-lg border border-white/6 bg-white/[0.02] px-3 py-2">
                 <div className="min-w-0">
                   <p className="truncate text-sm font-semibold text-white/80">{site.title}</p>
                   <p className="text-xs text-white/40" dir="ltr">{site.slug}.frameid.app {site.themeName && `· ${site.themeName}`}</p>
@@ -30,10 +30,10 @@ export function CustomerOverviewTab({ customer, onTabChange }: { customer: Custo
         ) : (
           <p className="text-sm text-white/35">لا توجد مواقع</p>
         )}
-      </div>
+      </section>
 
-      <div className="rounded-xl border border-white/8 bg-white/3 p-4">
-        <h3 className="mb-3 text-sm font-semibold text-white/60">آخر النشاطات</h3>
+      <section className="rounded-xl border border-white/8 bg-white/[0.02] p-3">
+        <h3 className="mb-2.5 text-xs font-black text-white/55">آخر النشاطات</h3>
         {customer.recentActivity.length > 0 ? (
           <AdminActivityTimeline events={customer.recentActivity.slice(0, 5).map((a) => ({
             id: a.id,
@@ -44,7 +44,7 @@ export function CustomerOverviewTab({ customer, onTabChange }: { customer: Custo
         ) : (
           <p className="text-sm text-white/35">لا يوجد نشاط</p>
         )}
-      </div>
+      </section>
     </div>
   )
 }

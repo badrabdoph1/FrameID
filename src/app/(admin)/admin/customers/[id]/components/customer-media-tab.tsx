@@ -24,13 +24,16 @@ export function CustomerMediaTab({ media, searchQuery, onSearchChange }: {
       </div>
 
       <div className="relative">
-        <Search size={16} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-white/30" />
+        <Search aria-hidden="true" size={16} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-white/30" />
         <input
           type="text"
+          aria-label="البحث في ملفات العميل"
+          name="customerMediaSearch"
+          autoComplete="off"
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
-          placeholder="ابحث في الوسائط..."
-          className="w-full rounded-xl border border-white/8 bg-white/3 py-2.5 pr-10 pl-4 text-sm text-white outline-none transition placeholder:text-white/30 focus:border-amber-500/50"
+          placeholder="ابحث في الوسائط…"
+          className="min-h-11 w-full rounded-xl border border-white/8 bg-white/3 py-2.5 pr-10 pl-4 text-sm text-white outline-none transition placeholder:text-white/30 focus-visible:border-amber-500/50 focus-visible:ring-2 focus-visible:ring-amber-300/30"
         />
       </div>
 
@@ -45,24 +48,28 @@ export function CustomerMediaTab({ media, searchQuery, onSearchChange }: {
                 </div>
               ) : (
                 <div className="flex aspect-square items-center justify-center bg-white/5">
-                  <FileText size={32} className="text-white/20" />
+                  <FileText aria-hidden="true" size={32} className="text-white/20" />
                 </div>
               )}
               <div className="p-2">
                 <p className="truncate text-xs text-white/60">{asset.alt ?? asset.mimeType}</p>
                 <p className="text-[10px] text-white/30">{bytesToMB(asset.sizeBytes)} MB</p>
               </div>
-              <div className="absolute inset-0 flex items-center justify-center gap-2 bg-black/60 opacity-0 transition group-hover:opacity-100">
-                <a href={asset.url} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center rounded-lg bg-white/10 p-2 text-white transition hover:bg-white/20">
-                  <Download size={16} />
-                </a>
-              </div>
+              <a
+                aria-label={`تنزيل ${asset.alt ?? "الملف"}`}
+                href={asset.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="absolute left-2 top-2 flex size-11 items-center justify-center rounded-xl border border-white/15 bg-black/75 text-white shadow-lg transition hover:bg-black/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300/70"
+              >
+                <Download aria-hidden="true" size={16} />
+              </a>
             </div>
           ))}
         </div>
       ) : (
-        <div className="flex flex-col items-center justify-center rounded-xl border border-white/8 bg-white/3 px-6 py-12 text-center">
-          <ImageIcon size={32} className="mb-3 text-white/20" />
+        <div className="flex flex-col items-center justify-center rounded-xl border border-white/8 bg-white/3 px-6 py-8 text-center">
+          <ImageIcon aria-hidden="true" size={32} className="mb-3 text-white/20" />
           <p className="text-sm text-white/40">لا توجد ملفات وسائط</p>
         </div>
       )}

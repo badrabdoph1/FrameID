@@ -31,10 +31,18 @@ export default async function AdminCustomerDetailPage({ params, searchParams }: 
     service.getCustomerAdminNotes(id),
     service.getAllSubscriptions(id),
   ]);
+  const statusLabel = {
+    ACTIVE: "نشط",
+    TRIAL: "تجريبي",
+    SUSPENDED: "موقوف",
+    EXPIRED: "منتهي",
+    TRIAL_EXPIRED: "انتهت التجربة",
+    ARCHIVED: "مؤرشف",
+  }[customer.status];
 
   return (
     <AdminPageShell
-      badge="إدارة العميل"
+      badge={`حالة الحساب: ${statusLabel}`}
       title={customer.displayName}
       description={`${customer.owner.email}`}
       backHref="/admin/customers"

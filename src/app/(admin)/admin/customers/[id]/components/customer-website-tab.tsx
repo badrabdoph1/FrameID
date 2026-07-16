@@ -16,11 +16,11 @@ export function CustomerWebsiteTab({ customer, onAction }: {
   return (
     <div className="space-y-4">
       {customer.sites.length > 0 ? customer.sites.map((site) => (
-        <div key={site.id} className="rounded-xl border border-white/8 bg-white/3 p-4">
-          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div key={site.id} className="rounded-xl border border-white/8 bg-white/3 p-3">
+          <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <div className="flex flex-wrap items-center gap-2">
-                <h4 className="text-base font-semibold text-white">{site.title}</h4>
+                <h3 className="text-base font-semibold text-white">{site.title}</h3>
                 <AdminStatusBadge tone={site.status === "PUBLISHED" ? "success" : "default"}>
                   {site.status === "PUBLISHED" ? "منشور" : site.status === "DRAFT" ? "مسودة" : site.status}
                 </AdminStatusBadge>
@@ -28,8 +28,8 @@ export function CustomerWebsiteTab({ customer, onAction }: {
               <p className="mt-1 text-sm text-white/40" dir="ltr">{site.slug}.frameid.app</p>
             </div>
             <div className="flex flex-wrap gap-2">
-              <a href={`https://${site.slug}.frameid.app`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 rounded-lg border border-white/8 px-2.5 py-1.5 text-xs font-extrabold text-white/50 no-underline transition hover:border-amber-500/30 hover:text-[#f3cf73]">
-                <ExternalLink size={13} /> فتح الموقع
+              <a href={`https://${site.slug}.frameid.app`} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-white/8 px-2.5 text-xs font-extrabold text-white/50 no-underline transition hover:border-amber-500/30 hover:text-[#f3cf73] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300/50">
+                <ExternalLink aria-hidden="true" size={13} /> فتح الموقع
               </a>
               <form action={async (fd) => {
                 fd.set("siteId", site.id); fd.set("tenantId", customer.id)
@@ -37,8 +37,8 @@ export function CustomerWebsiteTab({ customer, onAction }: {
                 onAction("publish-site", site.isPublished ? "إيقاف الموقع" : "نشر الموقع",
                   site.isPublished ? "سيتم إخفاء الموقع عن الزوار." : "سيتم نشر الموقع للزوار.", fd, site.isPublished)
               }}>
-                <button type="submit" className="inline-flex items-center gap-1.5 rounded-lg border border-white/8 px-2.5 py-1.5 text-xs font-extrabold text-white/50 transition hover:border-amber-500/30 hover:text-[#f3cf73]">
-                  {site.isPublished ? <XCircle size={13} /> : <PlayCircle size={13} />}
+                <button type="submit" className="inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-white/8 px-2.5 text-xs font-extrabold text-white/50 transition hover:border-amber-500/30 hover:text-[#f3cf73] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300/50">
+                  {site.isPublished ? <XCircle aria-hidden="true" size={13} /> : <PlayCircle aria-hidden="true" size={13} />}
                   {site.isPublished ? "إيقاف" : "نشر"}
                 </button>
               </form>
@@ -84,8 +84,8 @@ export function CustomerWebsiteTab({ customer, onAction }: {
           )}
         </div>
       )) : (
-        <div className="flex flex-col items-center justify-center rounded-xl border border-white/8 bg-white/3 px-6 py-12 text-center">
-          <Globe size={32} className="mb-3 text-white/20" />
+        <div className="flex flex-col items-center justify-center rounded-xl border border-white/8 bg-white/3 px-6 py-8 text-center">
+          <Globe aria-hidden="true" size={32} className="mb-3 text-white/20" />
           <p className="text-sm text-white/40">لا توجد مواقع لهذا العميل</p>
         </div>
       )}

@@ -11,8 +11,13 @@ export function CustomerPaymentsTab({ customer }: { customer: CustomerDetail }) 
     <div className="space-y-4">
       {customer.recentPayments.length > 0 ? (
         <>
-          <div className="overflow-hidden rounded-xl border border-white/8">
-            <table className="w-full text-sm">
+          <div
+            role="region"
+            aria-label="سجل المدفوعات القابل للتمرير"
+            tabIndex={0}
+            className="overflow-x-auto overscroll-x-contain rounded-xl border border-white/8 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300/60"
+          >
+            <table className="w-full min-w-[52rem] text-sm">
               <thead>
                 <tr className="border-b border-white/8 bg-white/3">
                   <th className="px-3 py-2.5 text-right text-xs font-extrabold text-white/40">التاريخ</th>

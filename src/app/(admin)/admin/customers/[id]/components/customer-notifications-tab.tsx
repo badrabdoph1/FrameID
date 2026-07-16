@@ -7,10 +7,21 @@ import { useState } from "react"
 
 export function CustomerNotificationsTab({ notifications, onSend }: {
   notifications: CustomerNotification[]
-  onSend: (type: string, title: string, body: string) => void
+  onSend: (type: string, title: string, body: string) => Promise<boolean>
 }) {
   const [form, setForm] = useState({ type: "info", title: "", body: "" })
+  const [isSending, setIsSending] = useState(false)
   const formatDateTime = (d: string) => new Date(d).toLocaleDateString("ar-EG", { year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })
+
+  const handleSend = async () => {
+    setIsSending(true)
+    try {
+      const sent = await onSend(form.type, form.title.trim(), form.body.trim())
+      if (sent) setForm({ type: "info", title: "", body: "" })
+    } finally {
+      setIsSending(false)
+    }
+  }
 
   return (
     <div className="grid gap-4 lg:grid-cols-2">
@@ -18,9 +29,11 @@ export function CustomerNotificationsTab({ notifications, onSend }: {
         <h3 className="mb-3 text-sm font-semibold text-white/60">إرسال إشعار جديد</h3>
         <div className="grid gap-3">
           <select
+            aria-label="نوع الإشعار"
+            name="notificationType"
             value={form.type}
-            onChange={(e) => setForm({ ...form, type: e.target.value })}
-            className="rounded-lg border border-white/8 bg-white/4 px-3 py-2 text-sm text-white outline-none transition focus:border-amber-500/50"
+            onChange={(event) => setForm((current) => ({ ...current, type: event.target.value }))}
+            className="min-h-11 rounded-lg border border-white/8 bg-[#171717] px-3 py-2 text-sm text-white outline-none transition focus-visible:border-amber-500/50 focus-visible:ring-2 focus-visible:ring-amber-300/30"
           >
             <option value="info">معلومات</option>
             <option value="warning">تنبيه</option>
@@ -29,25 +42,32 @@ export function CustomerNotificationsTab({ notifications, onSend }: {
           </select>
           <input
             type="text"
+            aria-label="عنوان الإشعار"
+            name="notificationTitle"
+            autoComplete="off"
             value={form.title}
-            onChange={(e) => setForm({ ...form, title: e.target.value })}
-            placeholder="عنوان الإشعار"
-            className="rounded-lg border border-white/8 bg-white/4 px-3 py-2 text-sm text-white outline-none transition placeholder:text-white/30 focus:border-amber-500/50"
+            onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))}
+            placeholder="مثال: موعد التجديد…"
+            className="min-h-11 rounded-lg border border-white/8 bg-white/4 px-3 py-2 text-sm text-white outline-none transition placeholder:text-white/30 focus-visible:border-amber-500/50 focus-visible:ring-2 focus-visible:ring-amber-300/30"
           />
           <textarea
+            aria-label="محتوى الإشعار"
+            name="notificationBody"
+            autoComplete="off"
             value={form.body}
-            onChange={(e) => setForm({ ...form, body: e.target.value })}
-            placeholder="محتوى الإشعار"
+            onChange={(event) => setForm((current) => ({ ...current, body: event.target.value }))}
+            placeholder="اكتب الرسالة التي ستصل للعميل…"
             rows={3}
-            className="rounded-lg border border-white/8 bg-white/4 px-3 py-2 text-sm text-white outline-none transition placeholder:text-white/30 focus:border-amber-500/50 resize-none"
+            className="min-h-24 resize-none rounded-lg border border-white/8 bg-white/4 px-3 py-2 text-sm text-white outline-none transition placeholder:text-white/30 focus-visible:border-amber-500/50 focus-visible:ring-2 focus-visible:ring-amber-300/30"
           />
           <button
-            onClick={() => { onSend(form.type, form.title, form.body); setForm({ type: "info", title: "", body: "" }) }}
-            disabled={!form.title || !form.body}
-            className="inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-to-br from-[#f3cf73] to-[#f3cf73]/80 px-4 py-2.5 text-sm font-extrabold text-[#17120a] transition hover:-translate-y-0.5 disabled:opacity-40 disabled:hover:translate-y-0"
+            type="button"
+            onClick={handleSend}
+            disabled={isSending || !form.title.trim() || !form.body.trim()}
+            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-gradient-to-br from-[#f3cf73] to-[#f3cf73]/80 px-4 py-2.5 text-sm font-extrabold text-[#17120a] transition hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-200 focus-visible:ring-offset-2 focus-visible:ring-offset-[#171717] disabled:opacity-40 disabled:hover:translate-y-0"
           >
-            <Send size={16} />
-            إرسال
+            {!isSending ? <Send aria-hidden="true" size={16} /> : null}
+            {isSending ? "جاري الإرسال…" : "إرسال"}
           </button>
         </div>
       </div>
@@ -57,9 +77,9 @@ export function CustomerNotificationsTab({ notifications, onSend }: {
         {notifications.length > 0 ? (
           <div className="grid gap-2">
             {notifications.map((n) => (
-              <div key={n.id} className="rounded-lg border border-white/6 bg-white/3 px-3.5 py-2.5">
+              <div key={n.id} className="min-w-0 rounded-lg border border-white/6 bg-white/3 px-3.5 py-2.5">
                 <div className="flex items-center justify-between gap-2">
-                  <p className="text-sm font-semibold text-white/80">{n.title}</p>
+                  <p className="min-w-0 break-words text-sm font-semibold text-white/80">{n.title}</p>
                   <div className="flex shrink-0 items-center gap-1.5">
                     <AdminStatusBadge tone={n.type === "error" ? "danger" : n.type === "warning" ? "warning" : n.type === "success" ? "success" : "info"} dot={false}>
                       {n.type}
@@ -67,14 +87,14 @@ export function CustomerNotificationsTab({ notifications, onSend }: {
                     {n.readAt && <span className="text-[10px] text-white/30">✓ مقروء</span>}
                   </div>
                 </div>
-                <p className="mt-0.5 text-xs text-white/50">{n.body}</p>
+                <p className="mt-0.5 break-words text-xs text-white/50">{n.body}</p>
                 <p className="mt-0.5 text-[10px] text-white/25">{formatDateTime(n.createdAt)}</p>
               </div>
             ))}
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center py-8 text-center">
-            <Bell size={24} className="mb-2 text-white/20" />
+            <Bell aria-hidden="true" size={24} className="mb-2 text-white/20" />
             <p className="text-sm text-white/35">لا توجد إشعارات</p>
           </div>
         )}

@@ -59,10 +59,10 @@ export function CustomerPasswordCard({
     (mode === "custom" && customPassword.length >= 6);
 
   return (
-    <div className="rounded-2xl border border-amber-300/15 bg-amber-300/[0.04] p-4">
+    <div className="rounded-xl border border-amber-300/15 bg-amber-300/[0.04] p-3">
       <div className="flex items-start gap-3">
         <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-amber-300/10 text-[#f3cf73]">
-          <KeyRound className="size-5" />
+          <KeyRound aria-hidden="true" className="size-5" />
         </span>
         <div className="min-w-0 flex-1">
           <h3 className="text-sm font-black text-[#fff7e8]">بيانات تسجيل الدخول</h3>
@@ -82,17 +82,17 @@ export function CustomerPasswordCard({
               <button
                 type="button"
                 onClick={handleGenerate}
-                className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-amber-300/25 bg-amber-300/10 px-3 text-xs font-black text-[#f3cf73] transition hover:bg-amber-300/15"
+                className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-amber-300/25 bg-amber-300/10 px-3 text-xs font-black text-[#f3cf73] transition hover:bg-amber-300/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300/50"
               >
-                <RefreshCw className="size-3.5" />
+                <RefreshCw aria-hidden="true" className="size-3.5" />
                 إنشاء باسورد جديد
               </button>
               <button
                 type="button"
                 onClick={handleCustomToggle}
-                className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3 text-xs font-black text-white/60 transition hover:border-white/20 hover:text-white"
+                className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3 text-xs font-black text-white/60 transition hover:border-white/20 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300/50"
               >
-                <KeyRound className="size-3.5" />
+                <KeyRound aria-hidden="true" className="size-3.5" />
                 كتابة باسورد مخصص
               </button>
             </div>
@@ -104,6 +104,9 @@ export function CustomerPasswordCard({
                 <div className="relative min-w-0 flex-1">
                   <input
                     type={showPassword ? "text" : "password"}
+                    aria-label="كلمة المرور الجديدة"
+                    name="newPassword"
+                    autoComplete="new-password"
                     readOnly={mode === "generated"}
                     value={passwordToShow || ""}
                     onChange={
@@ -111,31 +114,31 @@ export function CustomerPasswordCard({
                         ? (e) => setCustomPassword(e.target.value)
                         : undefined
                     }
-                    placeholder="اكتب الباسورد (6 أحرف على الأقل)"
-                    className="min-h-11 w-full rounded-xl border border-white/10 bg-black/20 px-3 pl-20 text-left font-mono text-sm font-bold text-[#fff7e8] outline-none transition focus:border-amber-300/45 focus:ring-4 focus:ring-amber-300/10"
+                    placeholder="اكتب الباسورد — 6 أحرف على الأقل…"
+                    className="min-h-11 w-full rounded-xl border border-white/10 bg-black/20 px-3 pl-24 text-left font-mono text-sm font-bold text-[#fff7e8] outline-none transition focus:border-amber-300/45 focus:ring-4 focus:ring-amber-300/10"
                     dir="ltr"
                   />
                   <div className="absolute left-1 top-1/2 flex -translate-y-1/2 gap-1">
                     <button
                       type="button"
                       onClick={() => setShowPassword((v) => !v)}
-                      className="grid size-9 place-items-center rounded-lg text-white/40 transition hover:bg-white/10 hover:text-white/70"
+                      className="grid size-11 place-items-center rounded-lg text-white/40 transition hover:bg-white/10 hover:text-white/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300/50"
                       aria-label={showPassword ? "إخفاء" : "إظهار"}
                     >
                       {showPassword ? (
-                        <EyeOff className="size-4" />
+                        <EyeOff aria-hidden="true" className="size-4" />
                       ) : (
-                        <Eye className="size-4" />
+                        <Eye aria-hidden="true" className="size-4" />
                       )}
                     </button>
                     {passwordToShow && (
                       <button
                         type="button"
                         onClick={() => onCopy(passwordToShow)}
-                        className="grid size-9 place-items-center rounded-lg text-white/40 transition hover:bg-white/10 hover:text-white/70"
+                        className="grid size-11 place-items-center rounded-lg text-white/40 transition hover:bg-white/10 hover:text-white/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300/50"
                         aria-label="نسخ"
                       >
-                        <Copy className="size-4" />
+                        <Copy aria-hidden="true" className="size-4" />
                       </button>
                     )}
                   </div>
@@ -153,9 +156,9 @@ export function CustomerPasswordCard({
                   type="button"
                   onClick={handleSave}
                   disabled={!canSave}
-                  className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-[#f3cf73] px-4 text-xs font-black text-[#17120a] transition hover:bg-[#f8da8a] disabled:cursor-not-allowed disabled:opacity-40"
+                  className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-[#f3cf73] px-4 text-xs font-black text-[#17120a] transition hover:bg-[#f8da8a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-200 focus-visible:ring-offset-2 focus-visible:ring-offset-[#171717] disabled:cursor-not-allowed disabled:opacity-40"
                 >
-                  <KeyRound className="size-3.5" />
+                  <KeyRound aria-hidden="true" className="size-3.5" />
                   حفظ الباسورد
                 </button>
                 <button
@@ -165,7 +168,7 @@ export function CustomerPasswordCard({
                     setNewPassword(null);
                     setCustomPassword("");
                   }}
-                  className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3 text-xs font-black text-white/50 transition hover:border-white/20 hover:text-white"
+                  className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3 text-xs font-black text-white/50 transition hover:border-white/20 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300/50"
                 >
                   إلغاء
                 </button>
