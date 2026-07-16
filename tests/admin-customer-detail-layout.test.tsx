@@ -16,6 +16,9 @@ const customerActions = vi.hoisted(() => ({
   extendCustomerTrialAction: vi.fn(async () => undefined),
   activateCustomerSubscriptionAction: vi.fn(async () => undefined),
   cancelCustomerSubscriptionAction: vi.fn(async () => undefined),
+  editCustomerSubscriptionAction: vi.fn(async (formData: FormData) => {
+    void formData;
+  }),
   publishSiteAction: vi.fn(async () => undefined),
   suspendSiteAction: vi.fn(async () => undefined),
   revokeSessionAction: vi.fn(async () => undefined),
@@ -42,7 +45,8 @@ vi.mock("next/link", () => ({
 vi.mock("next/navigation", () => ({ useRouter: () => router }));
 vi.mock("@/app/(admin)/admin/customers/actions", () => customerActions);
 
-const siteUrl = "https://ahmed-studio.frameid.app";
+const platformBaseUrl = "https://id.frameid.uk";
+const siteUrl = `${platformBaseUrl}/p/ahmed-studio`;
 
 const customer: CustomerDetail = {
   id: "customer-1",
@@ -108,10 +112,22 @@ const customer: CustomerDetail = {
 
 const detailProps = {
   customer,
+  platformBaseUrl,
   media: [],
   notifications: [],
   adminNotes: [],
   allSubscriptions: [],
+  plans: [
+    {
+      id: "plan-pro",
+      code: "pro",
+      name: "الباقة الاحترافية",
+      priceAmount: 1_200,
+      currency: "EGP",
+      billingInterval: "month",
+      isActive: true,
+    },
+  ],
 };
 
 describe("customer detail layout", () => {
@@ -211,7 +227,9 @@ describe("customer detail layout", () => {
     expect(screen.getByRole("textbox", { name: "البحث في ملفات العميل" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "تنزيل صورة تجريبية" })).toHaveAttribute("href", "https://example.com/preview.jpg");
     expect(screen.getByRole("link", { name: "تنزيل صورة تجريبية" })).toHaveClass("size-11");
+    expect(screen.getByRole("link", { name: "فتح الموقع" })).toHaveAttribute("href", siteUrl);
     expect(screen.getByRole("link", { name: "فتح الموقع" })).toHaveClass("min-h-11");
+    expect(screen.getByText(siteUrl)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "إيقاف" })).toHaveClass("min-h-11");
     site.unmount();
 
@@ -226,6 +244,59 @@ describe("customer detail layout", () => {
     expect(screen.getByRole("heading", { name: "الدخول والحماية" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "التواصل والمتابعة" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "بيانات تسجيل الدخول" })).toBeInTheDocument();
+  });
+
+  it("creates a paid subscription from the customer billing workspace", async () => {
+    render(<CustomerDetailClient initialTab="billing" {...detailProps} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "إنشاء اشتراك" }));
+    expect(screen.getByLabelText("الباقة")).toHaveValue("plan-pro");
+    expect(screen.getByLabelText("حالة الاشتراك")).toHaveValue("ACTIVE");
+
+    fireEvent.click(screen.getByRole("checkbox", { name: /تسجيل دفعة معتمدة/ }));
+    expect(screen.getByLabelText("حالة الاشتراك")).toHaveValue("ACTIVE");
+    expect(screen.getByLabelText("المبلغ (EGP)")).toHaveValue(1200);
+    fireEvent.change(screen.getByLabelText(/رقم المرجع/), { target: { value: "manual-42" } });
+    fireEvent.click(screen.getByRole("button", { name: "مراجعة وحفظ" }));
+
+    expect(screen.getByRole("dialog", { name: "إنشاء اشتراك للعميل" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "حفظ الاشتراك" }));
+
+    await waitFor(() => expect(customerActions.editCustomerSubscriptionAction).toHaveBeenCalledTimes(1));
+    const formData = customerActions.editCustomerSubscriptionAction.mock.calls[0]![0];
+    expect(formData.get("planId")).toBe("plan-pro");
+    expect(formData.get("status")).toBe("ACTIVE");
+    expect(formData.get("recordPayment")).toBe("true");
+    expect(formData.get("paymentAmount")).toBe("1200");
+    expect(formData.get("paymentReference")).toBe("manual-42");
+  });
+
+  it("switches a trial subscription to active when recording a real payment", () => {
+    const trialSubscription = {
+      id: "subscription-trial",
+      planId: null,
+      status: "TRIAL" as const,
+      planName: null,
+      planPrice: null,
+      planCode: null,
+      currentPeriodStart: "2026-07-01T10:00:00.000Z",
+      currentPeriodEnd: "2026-07-30T10:00:00.000Z",
+      expiresAt: "2026-07-30T10:00:00.000Z",
+      createdAt: "2026-07-01T10:00:00.000Z",
+    };
+    render(
+      <CustomerDetailClient
+        initialTab="billing"
+        {...detailProps}
+        customer={{ ...customer, subscription: trialSubscription, allSubscriptions: [trialSubscription] }}
+        allSubscriptions={[trialSubscription]}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "تعديل الاشتراك" }));
+    expect(screen.getByLabelText("حالة الاشتراك")).toHaveValue("TRIAL");
+    fireEvent.click(screen.getByRole("checkbox", { name: /تسجيل دفعة معتمدة/ }));
+    expect(screen.getByLabelText("حالة الاشتراك")).toHaveValue("ACTIVE");
   });
 
   it("lets workspace links own URL navigation without a duplicate router replacement", () => {

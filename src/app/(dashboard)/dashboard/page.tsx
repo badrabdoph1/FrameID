@@ -7,10 +7,7 @@ import { createDashboardViewModel } from "@/modules/dashboard/dashboard-view-mod
 import { DashboardHomeClient } from "./home-client";
 import { prisma } from "@/lib/prisma";
 import { hasMeaningfulContactInfo } from "@/modules/dashboard/contact-completion";
-import {
-  CUSTOMER_BROADCAST_CATEGORY,
-  validateMessageTone,
-} from "@/modules/messages/customer-message-config";
+import { validateMessageTone } from "@/modules/messages/customer-message-config";
 import {
   getSubscriptionExperienceDefaults,
   getTenantSubscriptionExperienceOverride,
@@ -81,15 +78,18 @@ export default async function DashboardPage({
       where: { siteId: session.site.id },
       select: { title: true, description: true, ogAssetId: true },
     }),
-    prisma.notificationLog.findMany({
+    prisma.customerMessageRecipient.findMany({
       where: {
         tenantId: session.tenant.id,
-        category: CUSTOMER_BROADCAST_CATEGORY,
-        deletedAt: null,
+        campaign: { status: "ACTIVE" },
       },
       orderBy: { createdAt: "desc" },
       take: 3,
-      select: { id: true, type: true, title: true, body: true, createdAt: true },
+      select: {
+        campaign: {
+          select: { id: true, tone: true, title: true, body: true, createdAt: true },
+        },
+      },
     }),
     getSubscriptionExperienceDefaults(prisma),
     getTenantSubscriptionExperienceOverride(prisma, session.tenant.id),
@@ -136,12 +136,12 @@ export default async function DashboardPage({
     pendingRequestStatus: ["SUBMITTED", "PENDING", "UNDER_REVIEW"].includes(latestPaymentRequest?.status ?? "") ? latestPaymentRequest?.status ?? null : null,
     latestPaymentRequestStatus: latestPaymentRequest?.status ?? null,
     hasSeoSettings,
-    customerMessages: customerMessages.map((message) => ({
-      id: message.id,
-      tone: validateMessageTone(message.type),
-      title: message.title,
-      body: message.body ?? "",
-      createdAt: message.createdAt.toISOString(),
+    customerMessages: customerMessages.map(({ campaign }) => ({
+      id: campaign.id,
+      tone: validateMessageTone(campaign.tone),
+      title: campaign.title,
+      body: campaign.body,
+      createdAt: campaign.createdAt.toISOString(),
     })),
     subscriptionExperience,
     heroImageUrl,

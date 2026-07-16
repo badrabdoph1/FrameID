@@ -33,6 +33,7 @@ describe("admin navigation contract", () => {
 
   it("resolves nested customer, site, issue and editor routes", () => {
     expect(getAdminRoute("/admin/communications")?.id).toBe("communications");
+    expect(getAdminRoute("/admin/messages/customer-outreach")?.id).toBe("customer-outreach");
     expect(getAdminRoute("/admin/customers/customer-1")?.id).toBe(
       "customer-details",
     );
@@ -70,5 +71,10 @@ describe("admin navigation contract", () => {
     expect(dailyHrefs.has("/admin/admin-users")).toBe(false);
     expect(getAdminRoute("/admin/feature-flags")?.visibility).toBe("advanced");
     expect(getAdminRoute("/admin/admin-users")?.visibility).toBe("advanced");
+  });
+
+  it("shows customer outreach as a visible communication destination", () => {
+    const communication = adminSections.find((section) => section.id === "communication");
+    expect(communication?.links.some((link) => link.href === "/admin/messages/customer-outreach")).toBe(true);
   });
 });

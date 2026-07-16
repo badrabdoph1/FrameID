@@ -211,6 +211,7 @@ model Tenant {
   impersonationSessions ImpersonationSession[]
   customerIssues        CustomerIssue[]
   customerRequests      CustomerRequest[]
+  customerMessageRecipients CustomerMessageRecipient[]
 
   @@index([ownerUserId, status])
 }
@@ -728,6 +729,43 @@ model NotificationLog {
   deletedAt DateTime?
 
   @@index([tenantId, category, createdAt])
+}
+
+model CustomerMessageCampaign {
+  id               String   @id @default(cuid())
+  title            String
+  body             String
+  tone             String   @default("info")
+  status           String   @default("ACTIVE")
+  audienceMode     String
+  audienceSnapshot Json?
+  createdByAdminId String
+  createdByName    String
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  pausedAt         DateTime?
+
+  recipients CustomerMessageRecipient[]
+
+  @@index([status, createdAt])
+  @@index([createdByAdminId, createdAt])
+}
+
+model CustomerMessageRecipient {
+  id         String   @id @default(cuid())
+  campaignId String
+  tenantId   String?
+  tenantName String
+  ownerName  String
+  ownerEmail String
+  createdAt  DateTime @default(now())
+
+  campaign CustomerMessageCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  tenant   Tenant?                 @relation(fields: [tenantId], references: [id], onDelete: SetNull)
+
+  @@unique([campaignId, tenantId])
+  @@index([tenantId, createdAt])
+  @@index([campaignId, createdAt])
 }
 
 model AdminUser {

@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { getCurrentRequestSession } from "@/modules/auth/request-session";
 import { prisma } from "@/lib/prisma";
 import { getPlatformBaseUrl } from "@/lib/platform-url";
+import { buildPublicSiteUrl } from "@/lib/public-site-url";
 import { PublishClient } from "@/app/(dashboard)/dashboard/publish/publish-client";
 
 export const metadata: Metadata = {
@@ -72,7 +73,7 @@ export default async function DashboardPublishPage({
   return (
     <PublishClient
       siteTitle={session.site.title}
-      siteUrl={`${getPlatformBaseUrl()}/p/${session.site.slug}`}
+      siteUrl={buildPublicSiteUrl(getPlatformBaseUrl(), session.site.slug)}
       updated={updated}
       error={error}
       isPublished={site?.status === "PUBLISHED" || site?.isPublished === true}

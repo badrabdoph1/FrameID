@@ -145,7 +145,7 @@ export function createCustomerAdminRepository(prisma: PrismaClient) {
           orderBy: { createdAt: "desc" },
         },
         subscriptions: {
-          include: { plan: { select: { name: true, priceAmount: true, code: true } } },
+          include: { plan: { select: { id: true, name: true, priceAmount: true, code: true } } },
           orderBy: { createdAt: "desc" },
         },
         payments: {
@@ -154,6 +154,12 @@ export function createCustomerAdminRepository(prisma: PrismaClient) {
           include: {
             proofAsset: { select: { url: true } },
             reviewer: { select: { name: true } },
+            logs: {
+              where: { action: "MANUAL_PAYMENT_APPROVED" },
+              orderBy: { createdAt: "desc" },
+              take: 1,
+              select: { actorName: true },
+            },
           },
         },
         supportCases: {
@@ -237,6 +243,7 @@ export function createCustomerAdminRepository(prisma: PrismaClient) {
       subscription: subscription ? mapSubscriptionInfo(subscription) : null,
       allSubscriptions: tenant.subscriptions.map((sub) => ({
         id: sub.id,
+        planId: sub.plan?.id ?? null,
         status: sub.status as CustomerSubscriptionInfo["status"],
         planName: sub.plan?.name ?? null,
         planPrice: sub.plan?.priceAmount ?? null,
@@ -322,7 +329,7 @@ export function createCustomerAdminRepository(prisma: PrismaClient) {
   function mapSubscriptionInfo(sub: {
     id: string;
     status: string;
-    plan: { name: string; priceAmount: number; code: string } | null;
+    plan: { id: string; name: string; priceAmount: number; code: string } | null;
     currentPeriodStart: Date | null;
     currentPeriodEnd: Date | null;
     expiresAt: Date | null;
@@ -330,6 +337,7 @@ export function createCustomerAdminRepository(prisma: PrismaClient) {
   }): CustomerSubscriptionInfo {
     return {
       id: sub.id,
+      planId: sub.plan?.id ?? null,
       status: sub.status as CustomerSubscriptionInfo["status"],
       planName: sub.plan?.name ?? null,
       planPrice: sub.plan?.priceAmount ?? null,
@@ -353,6 +361,7 @@ export function createCustomerAdminRepository(prisma: PrismaClient) {
     note: string | null;
     proofAsset: { url: string } | null;
     reviewer: { name: string } | null;
+    logs?: Array<{ actorName: string | null }>;
   }): CustomerPaymentInfo {
     return {
       id: p.id,
@@ -362,7 +371,7 @@ export function createCustomerAdminRepository(prisma: PrismaClient) {
       status: p.status,
       reference: p.reference,
       proofUrl: p.proofAsset?.url ?? null,
-      reviewedByName: p.reviewer?.name ?? null,
+      reviewedByName: p.reviewer?.name ?? p.logs?.[0]?.actorName ?? null,
       note: p.note,
       createdAt: p.createdAt.toISOString(),
       reviewedAt: p.reviewedAt?.toISOString() ?? null,
@@ -416,6 +425,12 @@ export function createCustomerAdminRepository(prisma: PrismaClient) {
       include: {
         proofAsset: { select: { url: true } },
         reviewer: { select: { name: true } },
+        logs: {
+          where: { action: "MANUAL_PAYMENT_APPROVED" },
+          orderBy: { createdAt: "desc" },
+          take: 1,
+          select: { actorName: true },
+        },
       },
     });
     return payments.map(mapPaymentInfo);
@@ -591,11 +606,12 @@ export function createCustomerAdminRepository(prisma: PrismaClient) {
     const subscriptions = await prisma.subscription.findMany({
       where: { tenantId },
       orderBy: { createdAt: "desc" },
-      include: { plan: { select: { name: true, priceAmount: true, code: true } } },
+      include: { plan: { select: { id: true, name: true, priceAmount: true, code: true } } },
     });
 
     return subscriptions.map((sub) => ({
       id: sub.id,
+      planId: sub.plan?.id ?? null,
       status: sub.status as CustomerSubscriptionInfo["status"],
       planName: sub.plan?.name ?? null,
       planPrice: sub.plan?.priceAmount ?? null,

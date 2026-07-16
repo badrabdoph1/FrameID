@@ -93,6 +93,7 @@ export type CustomerSiteInfo = {
 
 export type CustomerSubscriptionInfo = {
   id: string;
+  planId: string | null;
   status: CustomerSubscriptionStatus;
   planName: string | null;
   planPrice: number | null;

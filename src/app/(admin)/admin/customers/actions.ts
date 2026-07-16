@@ -8,9 +8,17 @@ import { prisma } from "@/lib/prisma";
 import { processError } from "@/lib/errors";
 import { createCustomerAdminRepository } from "@/modules/admin/customers/customer-admin-repository";
 import { createCustomerAdminService } from "@/modules/admin/customers/customer-admin-service";
+import {
+  createCustomerSubscriptionEditor,
+  type CustomerSubscriptionDurationMode,
+  type ManualPaymentMethod,
+} from "@/modules/admin/customers/customer-subscription-editor";
+import { createPrismaCustomerSubscriptionEditorRepository } from "@/modules/admin/customers/prisma-customer-subscription-editor-repository";
 import { getCurrentAdmin } from "@/modules/admin/admin-page-guards";
+import { requireAdminPermission } from "@/modules/admin/admin-permission-guards";
 import { readFormString } from "@/modules/auth/auth-action-utils";
 import { addDays, applySubscriptionTimerToTenants, applyTrialTimerToTenants, lifecycleDurationOptions, type LifecycleDurationPreset } from "@/modules/lifecycle/customer-lifecycle";
+import { createCustomerOutreachCampaign } from "@/modules/messages/customer-outreach-service";
 
 function readFormInt(formData: FormData, key: string): number {
   const val = parseInt(readFormString(formData, key), 10);
@@ -104,6 +112,53 @@ export async function cancelCustomerSubscriptionAction(formData: FormData) {
   return withErrorHandling("cancelCustomerSubscription", () => service.cancelSubscription(subscriptionId, tenantId, { id: admin.id, name: admin.name }), { userId: admin.id, tenantId });
 }
 
+export async function editCustomerSubscriptionAction(formData: FormData) {
+  const admin = await getCurrentAdmin();
+  if (!admin) throw new Error("Unauthorized");
+
+  const tenantId = readFormString(formData, "tenantId");
+  const subscriptionId = readFormString(formData, "subscriptionId") || undefined;
+  const planId = readFormString(formData, "planId");
+  const status = readFormString(formData, "status");
+  const durationMode = readFormString(formData, "durationMode");
+  const paymentMethod = readFormString(formData, "paymentMethod");
+  const allowedStatuses = ["TRIAL", "ACTIVE", "EXPIRED", "PAST_DUE", "CANCELLED", "SUSPENDED"] as const;
+  const allowedDurationModes: CustomerSubscriptionDurationMode[] = ["30", "90", "365", "forever", "custom-date", "adjust"];
+  const allowedPaymentMethods: ManualPaymentMethod[] = ["INSTAPAY", "VODAFONE_CASH", "STRIPE", "PAYPAL"];
+
+  if (!allowedStatuses.includes(status as (typeof allowedStatuses)[number])) throw new Error("حالة الاشتراك غير صحيحة");
+  if (!allowedDurationModes.includes(durationMode as CustomerSubscriptionDurationMode)) throw new Error("مدة الاشتراك غير صحيحة");
+  if (paymentMethod && !allowedPaymentMethods.includes(paymentMethod as ManualPaymentMethod)) throw new Error("طريقة الدفع غير صحيحة");
+
+  const paymentAmountValue = readFormString(formData, "paymentAmount");
+  const paymentAmount = paymentAmountValue ? Number(paymentAmountValue) : undefined;
+  const repository = createPrismaCustomerSubscriptionEditorRepository(prisma);
+  const editor = createCustomerSubscriptionEditor({ repository });
+
+  await withErrorHandling(
+    "editCustomerSubscription",
+    () => editor.edit({
+      tenantId,
+      subscriptionId,
+      planId,
+      status: status as (typeof allowedStatuses)[number],
+      durationMode: durationMode as CustomerSubscriptionDurationMode,
+      customEndDate: readFormString(formData, "customEndDate") || undefined,
+      adjustmentDays: Number(readFormString(formData, "adjustmentDays") || 0),
+      recordPayment: formData.get("recordPayment") === "true",
+      paymentAmount,
+      paymentMethod: paymentMethod ? paymentMethod as ManualPaymentMethod : undefined,
+      paymentReference: readFormString(formData, "paymentReference") || undefined,
+      note: readFormString(formData, "note") || undefined,
+      actor: { id: admin.id, name: admin.name },
+    }),
+    { userId: admin.id, tenantId },
+  );
+
+  revalidatePath(`/admin/customers/${tenantId}`);
+  revalidatePath("/admin/customers");
+}
+
 export async function publishSiteAction(formData: FormData) {
   const { admin, service } = await getService();
   const siteId = readFormString(formData, "siteId");
@@ -141,12 +196,22 @@ export async function deleteAdminNoteAction(formData: FormData) {
 }
 
 export async function sendNotificationAction(formData: FormData) {
-  const { admin, service } = await getService();
+  const admin = await requireAdminPermission("messages", "edit");
   const tenantId = readFormString(formData, "tenantId");
   const notificationType = readFormString(formData, "notificationType");
   const title = readFormString(formData, "title");
   const body = readFormString(formData, "body");
-  return withErrorHandling("sendNotification", () => service.sendNotification(tenantId, notificationType, title, body, { id: admin.id, name: admin.name }), { userId: admin.id, tenantId });
+  const tone = notificationType === "error" ? "danger" : notificationType;
+  await withErrorHandling("sendNotification", () => createCustomerOutreachCampaign(prisma, {
+    title,
+    body,
+    tone,
+    audienceMode: "EXPLICIT",
+    tenantIds: [tenantId],
+    filters: {},
+  }, admin), { userId: admin.id, tenantId });
+  revalidatePath("/admin/messages/customer-outreach");
+  revalidatePath("/dashboard");
 }
 
 export async function impersonateCustomerAction(formData: FormData) {
@@ -192,10 +257,12 @@ export async function impersonateCustomerAction(formData: FormData) {
 }
 
 export async function bulkCustomerLifecycleAction(formData: FormData) {
-  const admin = await getCurrentAdmin();
+  const action = readFormString(formData, "bulkAction");
+  const admin = action === "notify"
+    ? await requireAdminPermission("messages", "edit")
+    : await getCurrentAdmin();
   if (!admin) redirect(buildCustomersRedirect({ bulkError: "غير مصرح." }));
 
-  const action = readFormString(formData, "bulkAction");
   const tenantIds = formData.getAll("tenantIds").map(String).filter(Boolean);
   const days = parseDays(readFormString(formData, "days"), 30);
   const preset = parsePreset(readFormString(formData, "durationPreset"));
@@ -232,13 +299,19 @@ export async function bulkCustomerLifecycleAction(formData: FormData) {
       await prisma.site.updateMany({ where: { tenantId: { in: tenantIds }, deletedAt: null }, data: { status: "SUSPENDED", isPublished: false, deletedAt: now } });
       doneCount = tenantIds.length;
       await auditBulkAction(admin.id, { action: "CUSTOMERS_BULK_ARCHIVED", tenantIds });
-    } else if (action === "notify" || action === "email") {
+    } else if (action === "notify") {
       if (!body) redirect(buildCustomersRedirect({ bulkError: "اكتب نص الرسالة أولًا." }));
-      const tenants = await prisma.tenant.findMany({ where: { id: { in: tenantIds }, deletedAt: null }, select: { id: true, ownerUserId: true } });
-      await prisma.notification.createMany({ data: tenants.map((tenant) => ({ tenantId: tenant.id, type: "admin_bulk_message", title, body, priority: "high" })) });
-      await prisma.notificationLog.createMany({ data: tenants.map((tenant) => ({ tenantId: tenant.id, userId: tenant.ownerUserId, type: "info", title, body, category: "customer_lifecycle" })) });
-      doneCount = tenants.length;
-      await auditBulkAction(admin.id, { action: action === "email" ? "CUSTOMERS_BULK_EMAIL_REQUESTED" : "CUSTOMERS_BULK_NOTIFIED", tenantIds, metadata: { title, body, emailConfigured: false } as Prisma.InputJsonObject });
+      const result = await createCustomerOutreachCampaign(prisma, {
+        title,
+        body,
+        tone: "info",
+        audienceMode: "EXPLICIT",
+        tenantIds,
+        filters: {},
+      }, admin);
+      doneCount = result.recipientCount;
+    } else if (action === "email") {
+      throw new Error("إرسال البريد الجماعي غير مفعّل من هذه الشاشة. استخدم قسم تسليم البريد.");
     } else {
       redirect(buildCustomersRedirect({ bulkError: "اختر عملية صحيحة." }));
     }

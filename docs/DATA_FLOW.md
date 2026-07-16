@@ -70,7 +70,7 @@ Client components handle interaction and previews; they must not become authorit
 
 1. Readiness is computed from persisted contact, portfolio, package, and SEO data.
 2. Publishing updates `Site.status`, `isPublished`, version/timestamp fields, and revalidates the public route.
-3. Public URLs are built from the platform base URL plus `/p/{slug}`, or from verified domain records where supported.
+3. Shareable public URLs are built only through `buildPublicSiteUrl()` in `src/lib/public-site-url.ts`. The active strategy is the platform base URL plus `/p/{slug}`; future subdomain or verified custom-domain strategies must be introduced inside that resolver instead of being handwritten by callers.
 4. Unpublishing returns the site to a non-public editing state without deleting content.
 
 ## Admin mutation

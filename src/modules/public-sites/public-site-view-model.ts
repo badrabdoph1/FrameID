@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { buildPublicSiteUrl } from "@/lib/public-site-url";
 
 import {
   formatTemplatePrice,
@@ -118,7 +119,7 @@ function resolveContactValue(value: string | null | undefined, placeholders: Set
 }
 
 export function createPublicSiteViewModel({ site, platformBaseUrl, platformSocialImageUrl = "/social-preview-image.jpg" }: { site: PublicSiteRecord; platformBaseUrl: string; platformSocialImageUrl?: string }): PublicSiteViewModel {
-  const publicUrl = `${platformBaseUrl.replace(/\/$/u, "")}/p/${site.slug}`;
+  const publicUrl = buildPublicSiteUrl(platformBaseUrl, site.slug);
   const heroSection = findSection(site, "hero");
   const contactSection = findSection(site, "contact");
   const normalizedSections = normalizeTemplateSections(site.sections);

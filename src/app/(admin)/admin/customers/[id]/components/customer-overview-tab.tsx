@@ -2,10 +2,11 @@
 
 import { AdminActivityTimeline } from "@/components/layout/admin-activity-timeline"
 import { AdminStatusBadge } from "@/components/layout/admin-status-badge"
+import { buildPublicSiteUrl } from "@/lib/public-site-url"
 import type { CustomerDetail } from "./customer-types"
 import type { TabId } from "./customer-tabs"
 
-export function CustomerOverviewTab({ customer, onTabChange }: { customer: CustomerDetail; onTabChange: (tab: TabId) => void }) {
+export function CustomerOverviewTab({ customer, platformBaseUrl, onTabChange }: { customer: CustomerDetail; platformBaseUrl: string; onTabChange: (tab: TabId) => void }) {
   return (
     <div className="grid gap-3 lg:grid-cols-[0.9fr_1.1fr]">
       <section className="rounded-xl border border-white/8 bg-white/[0.02] p-3">
@@ -15,17 +16,19 @@ export function CustomerOverviewTab({ customer, onTabChange }: { customer: Custo
         </div>
         {customer.sites.length > 0 ? (
           <div className="grid gap-2">
-            {customer.sites.slice(0, 3).map((site) => (
-              <div key={site.id} className="flex items-center justify-between rounded-lg border border-white/6 bg-white/[0.02] px-3 py-2">
+            {customer.sites.slice(0, 3).map((site) => {
+              const siteUrl = buildPublicSiteUrl(platformBaseUrl, site.slug)
+
+              return <div key={site.id} className="flex items-center justify-between rounded-lg border border-white/6 bg-white/[0.02] px-3 py-2">
                 <div className="min-w-0">
                   <p className="truncate text-sm font-semibold text-white/80">{site.title}</p>
-                  <p className="text-xs text-white/40" dir="ltr">{site.slug}.frameid.app {site.themeName && `· ${site.themeName}`}</p>
+                  <p className="break-all text-xs text-white/40" dir="ltr">{siteUrl} {site.themeName && `· ${site.themeName}`}</p>
                 </div>
                 <AdminStatusBadge tone={site.status === "PUBLISHED" ? "success" : "default"}>
                   {site.status === "PUBLISHED" ? "منشور" : site.status}
                 </AdminStatusBadge>
               </div>
-            ))}
+            })}
           </div>
         ) : (
           <p className="text-sm text-white/35">لا توجد مواقع</p>

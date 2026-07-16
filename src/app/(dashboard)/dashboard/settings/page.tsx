@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 
 import { getCurrentRequestSession } from "@/modules/auth/request-session";
 import { getPlatformBaseUrl } from "@/lib/platform-url";
+import { buildPublicSiteUrl } from "@/lib/public-site-url";
 import { SettingsClient } from "@/app/(dashboard)/dashboard/settings/settings-client";
 import { prisma } from "@/lib/prisma";
 
@@ -50,7 +51,7 @@ export default async function DashboardSettingsPage({
       siteTitle={session.site.title}
       siteSlug={session.site.slug}
       siteStatus={session.site.status}
-      siteUrl={`${getPlatformBaseUrl()}/p/${session.site.slug}`}
+      siteUrl={buildPublicSiteUrl(getPlatformBaseUrl(), session.site.slug)}
       slugChangeUsed={session.site.slugChangeUsed}
       templateChangeUsed={session.site.templateChangeUsed}
       hasDeletionRequest={Boolean(pendingDeletionRequest)}

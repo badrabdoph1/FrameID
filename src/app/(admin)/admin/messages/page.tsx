@@ -1,4 +1,4 @@
-import { Bell, Layers3, MessageSquareText, Users } from "lucide-react";
+import { Bell, Layers3, MessageSquareText, Send, Users } from "lucide-react";
 
 import { AdminPageShell } from "@/components/layout/admin-page-shell";
 import { prisma } from "@/lib/prisma";
@@ -137,7 +137,10 @@ export default async function AdminMessagesPage({ searchParams }: Props) {
       title="رسائل الاشتراك والتفعيل"
       description="هذا القسم مسؤول فقط عن كل ما يظهر للعميل داخل لوحة التحكم بخصوص الاشتراك والتفعيل والفترة التجريبية."
       breadcrumbs={[{ label: "التواصل", href: "/admin/communications" }, { label: "رسائل الاشتراك والتفعيل" }]}
-      actions={[{ label: "سجل الإشعارات", href: "/admin/notifications", icon: Bell }]}
+      actions={[
+        { label: "مراسلة العميل", href: "/admin/messages/customer-outreach", icon: Send },
+        { label: "سجل الإشعارات", href: "/admin/notifications", icon: Bell },
+      ]}
     >
       <div className="grid gap-4">
         {banner ? (

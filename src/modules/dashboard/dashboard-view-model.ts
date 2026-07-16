@@ -1,4 +1,5 @@
 import type { CurrentSession } from "@/modules/auth/current-session-service";
+import { buildPublicSiteUrl } from "@/lib/public-site-url";
 import type { CustomerMessageTone } from "@/modules/messages/customer-message-config";
 import {
   calcLifecycleDaysRemaining,
@@ -231,7 +232,7 @@ export function createDashboardViewModel({ session, platformBaseUrl, now, packag
     photographerName: session.tenant.displayName,
     siteTitle: session.site.title,
     siteSlug: session.site.slug,
-    siteUrl: `${platformBaseUrl.replace(/\/$/u, "")}/p/${session.site.slug}`,
+    siteUrl: buildPublicSiteUrl(platformBaseUrl, session.site.slug),
     statusLabel: isPublished ? "منشور" : isReadyToPublish ? "جاهز للنشر" : "مسودة",
     percent,
     checklist: items,

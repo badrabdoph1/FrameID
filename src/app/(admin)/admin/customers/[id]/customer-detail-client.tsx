@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { Activity, Bell, CreditCard, Globe } from "lucide-react";
 import { AdminConfirmDialog } from "@/components/layout/admin-confirm-dialog";
+import { buildPublicSiteUrl } from "@/lib/public-site-url";
 import type {
   CustomerAdminNote,
   CustomerDetail,
@@ -11,6 +12,7 @@ import type {
   CustomerNotification,
   CustomerSubscriptionInfo,
 } from "@/modules/admin/customers/customer-types";
+import type { CustomerPlanOption } from "@/modules/admin/customers/customer-subscription-editor";
 
 import { CustomerInfoPanel } from "./components/customer-info-panel";
 import { CustomerQuickActions } from "./components/customer-quick-actions";
@@ -33,6 +35,7 @@ import {
   createAdminNoteAction,
   deleteAdminNoteAction,
   deleteCustomerAction,
+  editCustomerSubscriptionAction,
   extendCustomerTrialAction,
   publishSiteAction,
   resetCustomerPasswordAction,
@@ -45,10 +48,12 @@ import {
 type Props = {
   initialTab: CustomerWorkspaceId;
   customer: CustomerDetail;
+  platformBaseUrl: string;
   media: CustomerMediaAsset[];
   notifications: CustomerNotification[];
   adminNotes: CustomerAdminNote[];
   allSubscriptions: CustomerSubscriptionInfo[];
+  plans: CustomerPlanOption[];
 };
 
 type FeedbackMessage = { type: "success" | "error"; text: string };
@@ -64,6 +69,7 @@ const actionFeedback: Record<string, { success: string; error: string }> = {
   "extend-trial": { success: "تم تمديد فترة التجربة", error: "تعذر تمديد فترة التجربة. حاول مرة أخرى." },
   "activate-subscription": { success: "تم تفعيل الاشتراك", error: "تعذر تفعيل الاشتراك. حاول مرة أخرى." },
   "cancel-subscription": { success: "تم إلغاء الاشتراك", error: "تعذر إلغاء الاشتراك. حاول مرة أخرى." },
+  "edit-subscription": { success: "تم حفظ الاشتراك وتحديث حالة العميل", error: "تعذر حفظ الاشتراك. راجع الباقة والمدة وحاول مرة أخرى." },
   "publish-site": { success: "تم تحديث حالة نشر الموقع", error: "تعذر تحديث حالة الموقع. حاول مرة أخرى." },
   "suspend-site": { success: "تم تحديث حالة الموقع", error: "تعذر تحديث حالة الموقع. حاول مرة أخرى." },
   "revoke-session": { success: "تم إنهاء جلسة الدخول", error: "تعذر إنهاء جلسة الدخول. حاول مرة أخرى." },
@@ -92,6 +98,7 @@ const confirmLabels: Record<string, string> = {
   "extend-trial": "تمديد التجربة",
   "activate-subscription": "تفعيل الاشتراك",
   "cancel-subscription": "إلغاء الاشتراك",
+  "edit-subscription": "حفظ الاشتراك",
   "publish-site": "تحديث الموقع",
   "suspend-site": "تحديث الموقع",
   "revoke-session": "إنهاء الجلسة",
@@ -126,10 +133,12 @@ function customerStatusLabel(status: CustomerDetail["status"]) {
 export function CustomerDetailClient({
   initialTab,
   customer,
+  platformBaseUrl,
   media,
   notifications,
   adminNotes,
   allSubscriptions,
+  plans,
 }: Props) {
   const router = useRouter();
   const [activeWorkspace, setActiveWorkspace] = useState<CustomerWorkspaceId>(initialTab);
@@ -162,6 +171,7 @@ export function CustomerDetailClient({
         "extend-trial": extendCustomerTrialAction,
         "activate-subscription": activateCustomerSubscriptionAction,
         "cancel-subscription": cancelCustomerSubscriptionAction,
+        "edit-subscription": editCustomerSubscriptionAction,
         "publish-site": publishSiteAction,
         "suspend-site": suspendSiteAction,
         "revoke-session": revokeSessionAction,
@@ -246,7 +256,7 @@ export function CustomerDetailClient({
   }, [showConfirm]);
 
   const siteSlug = customer.sites[0]?.slug ?? "";
-  const siteUrl = siteSlug ? `https://${siteSlug}.frameid.app` : null;
+  const siteUrl = siteSlug ? buildPublicSiteUrl(platformBaseUrl, siteSlug) : null;
   const metrics = [
     { label: "الحساب", value: customerStatusLabel(customer.status), icon: Activity },
     { label: "التجربة", value: daysLeft(customer.trialEndsAt), icon: Bell },
@@ -298,14 +308,14 @@ export function CustomerDetailClient({
             onEmail={() => { window.location.href = `mailto:${customer.owner.email}`; }}
             onSecurity={() => changeWorkspace("support")}
           />
-          <CustomerOverviewTab customer={customer} onTabChange={changeWorkspace} />
+          <CustomerOverviewTab customer={customer} platformBaseUrl={platformBaseUrl} onTabChange={changeWorkspace} />
         </section>
       ) : null}
 
       {activeWorkspace === "site" ? (
         <section aria-label="مساحة الموقع والملفات" className="space-y-4">
           <WorkspaceSection title="إدارة الموقع والملفات" description="النشر والنطاقات ومحتوى الموقع في مكان واحد.">
-            <CustomerWebsiteTab customer={customer} onAction={showConfirm} />
+            <CustomerWebsiteTab customer={customer} platformBaseUrl={platformBaseUrl} onAction={showConfirm} />
           </WorkspaceSection>
           <WorkspaceSection title="الوسائط والملفات" description="ابحث في ملفات العميل وافتحها أو نزّلها.">
             <CustomerMediaTab media={media} searchQuery={searchQuery} onSearchChange={setSearchQuery} />
@@ -316,7 +326,7 @@ export function CustomerDetailClient({
       {activeWorkspace === "billing" ? (
         <section aria-label="مساحة الاشتراك والمدفوعات" className="space-y-4">
           <WorkspaceSection title="إدارة الاشتراك والمدفوعات" description="حالة الاشتراك والتجربة والمدة والسجل المالي معًا.">
-            <CustomerSubscriptionTab customer={customer} allSubscriptions={allSubscriptions} onAction={showConfirm} />
+            <CustomerSubscriptionTab customer={customer} allSubscriptions={allSubscriptions} plans={plans} onAction={showConfirm} />
           </WorkspaceSection>
           <WorkspaceSection title="سجل المدفوعات" description="الطلبات والمبالغ والإثباتات والمراجعات.">
             <CustomerPaymentsTab customer={customer} />

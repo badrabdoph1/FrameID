@@ -486,7 +486,7 @@ function CustomerMessageBanner({ message }: { message: DashboardViewModel["custo
       <span className={activationDotClass(message.tone)} aria-hidden />
       <span className="min-w-0">
         <strong className="block truncate text-xs font-black sm:text-sm">{message.title}</strong>
-        {message.body ? <small className="mt-0.5 block truncate text-[0.68rem] font-bold opacity-70">{message.body}</small> : null}
+        {message.body ? <small className="mt-0.5 block whitespace-pre-wrap text-[0.68rem] font-bold leading-5 opacity-70">{message.body}</small> : null}
       </span>
     </section>
   );

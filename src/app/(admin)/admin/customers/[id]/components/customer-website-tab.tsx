@@ -2,10 +2,12 @@
 
 import { Globe, ExternalLink, PlayCircle, XCircle } from "lucide-react"
 import { AdminStatusBadge } from "@/components/layout/admin-status-badge"
+import { buildPublicSiteUrl } from "@/lib/public-site-url"
 import type { CustomerDetail } from "./customer-types"
 
-export function CustomerWebsiteTab({ customer, onAction }: {
+export function CustomerWebsiteTab({ customer, platformBaseUrl, onAction }: {
   customer: CustomerDetail
+  platformBaseUrl: string
   onAction: (type: string, title: string, description: string, formData: FormData, danger?: boolean) => void
 }) {
   const formatDate = (d: string | null) => {
@@ -15,8 +17,10 @@ export function CustomerWebsiteTab({ customer, onAction }: {
 
   return (
     <div className="space-y-4">
-      {customer.sites.length > 0 ? customer.sites.map((site) => (
-        <div key={site.id} className="rounded-xl border border-white/8 bg-white/3 p-3">
+      {customer.sites.length > 0 ? customer.sites.map((site) => {
+        const siteUrl = buildPublicSiteUrl(platformBaseUrl, site.slug)
+
+        return <div key={site.id} className="rounded-xl border border-white/8 bg-white/3 p-3">
           <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <div className="flex flex-wrap items-center gap-2">
@@ -25,10 +29,10 @@ export function CustomerWebsiteTab({ customer, onAction }: {
                   {site.status === "PUBLISHED" ? "منشور" : site.status === "DRAFT" ? "مسودة" : site.status}
                 </AdminStatusBadge>
               </div>
-              <p className="mt-1 text-sm text-white/40" dir="ltr">{site.slug}.frameid.app</p>
+              <p className="mt-1 break-all text-sm text-white/40" dir="ltr">{siteUrl}</p>
             </div>
             <div className="flex flex-wrap gap-2">
-              <a href={`https://${site.slug}.frameid.app`} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-white/8 px-2.5 text-xs font-extrabold text-white/50 no-underline transition hover:border-amber-500/30 hover:text-[#f3cf73] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300/50">
+              <a href={siteUrl} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-white/8 px-2.5 text-xs font-extrabold text-white/50 no-underline transition hover:border-amber-500/30 hover:text-[#f3cf73] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300/50">
                 <ExternalLink aria-hidden="true" size={13} /> فتح الموقع
               </a>
               <form action={async (fd) => {
@@ -83,7 +87,7 @@ export function CustomerWebsiteTab({ customer, onAction }: {
             </div>
           )}
         </div>
-      )) : (
+      }) : (
         <div className="flex flex-col items-center justify-center rounded-xl border border-white/8 bg-white/3 px-6 py-8 text-center">
           <Globe aria-hidden="true" size={32} className="mb-3 text-white/20" />
           <p className="text-sm text-white/40">لا توجد مواقع لهذا العميل</p>
