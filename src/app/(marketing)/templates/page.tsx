@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import React from "react";
-import { ChevronDown, CreditCard, Eye, MessageCircle, Palette, Sparkles, Star, WandSparkles, Zap } from "lucide-react";
+import { ArrowLeft, ChevronDown, CreditCard, ExternalLink, MessageCircle, Palette, Sparkles, Star, Zap } from "lucide-react";
 
 import { MarketingFooter } from "@/components/layout/marketing-footer";
 import { MarketingNav } from "@/components/layout/marketing-nav";
@@ -197,20 +197,21 @@ export default function TemplatesPage() {
                       </div>
 
                       {/* Actions */}
-                      <div className="mt-5 flex flex-col gap-2.5 border-t border-border/30 pt-5 md:flex-row md:gap-3">
+                      <div className="mt-5 flex flex-col gap-3 border-t border-border/30 pt-5">
                         <Link
                           href={`/templates/${template.code}/preview`}
-                          className="inline-flex min-h-[2.75rem] items-center justify-center gap-2 rounded-xl bg-foreground px-5 text-[0.85rem] font-semibold text-background transition-all duration-300 hover:bg-foreground/85 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
+                          className="group/btn inline-flex min-h-[3.1rem] items-center justify-center gap-2.5 rounded-xl bg-ink px-5 text-sm font-bold text-white shadow-[0_4px_16px_-2px_rgba(10,10,10,0.25)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-ink/90 hover:shadow-[0_8px_24px_-4px_rgba(10,10,10,0.35)] active:translate-y-0 active:shadow-[0_2px_8px_-2px_rgba(10,10,10,0.3)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/40"
                         >
-                          <Eye className="size-4" aria-hidden />
-                          معاينة القالب
+                          <ExternalLink className="size-4 transition-transform duration-300 group-hover/btn:-rotate-12" aria-hidden />
+                          شوف شكل الموقع الحقيقي
+                          <ArrowLeft className="size-3.5 transition-transform duration-300 group-hover/btn:-translate-x-1" aria-hidden />
                         </Link>
                         <Link
                           href={`/signup?template=${template.code}`}
-                          className="inline-flex min-h-[2.75rem] items-center justify-center gap-2 rounded-xl border border-champagne/40 bg-champagne/[0.06] px-5 text-[0.85rem] font-semibold text-champagne-strong transition-all duration-300 hover:border-champagne/70 hover:bg-champagne/12 hover:shadow-sm"
+                          className="group/btn relative inline-flex min-h-[3.1rem] items-center justify-center gap-2.5 overflow-hidden rounded-xl border-2 border-champagne/50 bg-gradient-to-l from-champagne/[0.12] to-champagne/[0.04] px-5 text-sm font-bold text-champagne-strong transition-all duration-300 hover:-translate-y-0.5 hover:border-champagne/80 hover:from-champagne/[0.18] hover:to-champagne/[0.08] hover:shadow-[0_8px_24px_-8px_rgba(201,169,110,0.4)] active:translate-y-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-champagne/40"
                         >
-                          <WandSparkles className="size-4" aria-hidden />
-                          ابدأ بهذا القالب
+                          <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-champagne/15 to-transparent transition-transform duration-700 group-hover/btn:translate-x-full" />
+                          استخدم الموقع ده
                         </Link>
                       </div>
                     </div>

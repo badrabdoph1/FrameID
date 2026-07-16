@@ -13,13 +13,12 @@ const frameTone: Record<string, string> = {
 
 export function TemplateLivePreview({ template, compact = false }: TemplateLivePreviewProps) {
   const src = `/templates/${template.code}/preview?embed=1#hero`;
-  const desktopScale = compact ? 0.32 : 0.48;
 
   return (
     <div
       className={cn(
         "relative overflow-hidden rounded-2xl",
-        compact ? "h-[180px]" : "h-[300px] md:h-[340px]"
+        compact ? "h-[180px]" : "h-[280px] md:h-[360px]"
       )}
     >
       <div className={cn("absolute inset-0", frameTone[template.themeCode] ?? frameTone["noir-gold"])} />
@@ -31,18 +30,22 @@ export function TemplateLivePreview({ template, compact = false }: TemplateLiveP
           loading="lazy"
           tabIndex={-1}
           aria-hidden
-          className="pointer-events-none absolute right-0 top-0 origin-top-right border-0"
+          className={cn(
+            "pointer-events-none absolute right-0 top-0 origin-top-right border-0 transition-transform duration-700",
+            compact
+              ? "scale-[0.24] md:scale-[0.28]"
+              : "scale-[0.30] md:scale-[0.42]"
+          )}
           style={{
             width: 1180,
             height: 760,
-            transform: `scale(${desktopScale})`,
             touchAction: "none",
             overflow: "hidden"
           }}
         />
       </div>
 
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/20 to-transparent" />
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/25 via-black/10 to-transparent" />
     </div>
   );
 }
