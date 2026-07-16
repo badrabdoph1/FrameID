@@ -98,13 +98,13 @@ function formatRelativeTime(date: Date, now: Date): string {
 }
 
 const nextStepCopy: Record<string, { title: string; description: string }> = {
+  published: { title: "موقعك منشور", description: "موقعك شغال وجاهز لاستقبال العملاء." },
   package: { title: "ابدأ بالباقات", description: "اكتب الباقات والأسعار بنفسك." },
   contact: { title: "أكمل بيانات التواصل", description: "اسم المصور، الاستوديو، الهاتف، واتساب، وروابطك." },
   avatar: { title: "ارفع صورة المصور", description: "اختار صورة شخصية واضحة." },
   cover: { title: "ارفع صورة الغلاف", description: "صورة كبيرة تعطي أول انطباع عن شغلك." },
   album: { title: "أنشئ ألبوم أعمال", description: "ألبوم واحد كفاية كبداية." },
   seo: { title: "جهّز شكل المشاركة", description: "عنوان ووصف وصورة مشاركة للرابط." },
-  publish: { title: "انشر الموقع", description: "انشر الموقع وانسخ الرابط للعملاء." },
 };
 
 function buildSubscriptionInfo(
@@ -164,7 +164,7 @@ function buildPhases(items: ChecklistItem[]): DashboardWorkspacePhase[] {
     { id: "packages", title: "١. الباقات", description: "اكتب عروضك وأسعارك بوضوح.", href: "/dashboard/services", itemIds: ["package"] },
     { id: "contact", title: "٢. بيانات التواصل", description: "عرّف العميل عليك.", href: "/dashboard/site-info", itemIds: ["contact"] },
     { id: "photos", title: "٣. الصور", description: "الصورة الشخصية والغلاف والألبومات.", href: "/dashboard/gallery", itemIds: ["avatar", "cover", "album"] },
-    { id: "launch", title: "٤. النشر", description: "راجع الرابط وانشر.", href: "/dashboard/publish", itemIds: ["seo", "publish"] },
+    { id: "launch", title: "٤. النشر", description: "جهّز شكل المشاركة وراجع الموقع.", href: "/dashboard/publish", itemIds: ["seo"] },
   ];
   let previousDone = true;
   return phases.map((phase) => {
@@ -178,14 +178,15 @@ function buildPhases(items: ChecklistItem[]): DashboardWorkspacePhase[] {
   });
 }
 
-function buildOperatingAlerts({ isReadyToPublish, isPublished }: { isReadyToPublish: boolean; isPublished: boolean }): DashboardOperatingAlert[] {
+function buildOperatingAlerts({ isReadyToPublish, isPublished, siteSuspended }: { isReadyToPublish: boolean; isPublished: boolean; siteSuspended: boolean }): DashboardOperatingAlert[] {
   const alerts: DashboardOperatingAlert[] = [];
-  if (!isReadyToPublish) alerts.push({ tone: "info", title: "كمّل الخطوات بالترتيب", description: "ابدأ بالباقات، بعدها بيانات التواصل، بعدها الصور، ثم النشر.", href: "/dashboard/services", actionLabel: "ابدأ" });
-  else if (!isPublished) alerts.push({ tone: "success", title: "موقعك جاهز للنشر", description: "افتح صفحة النشر وراجع شكل الرابط قبل المشاركة.", href: "/dashboard/publish", actionLabel: "نشر" });
+  if (siteSuspended) alerts.push({ tone: "danger", title: "الموقع متوقف", description: "موقعك متوقف حاليًا. فعّل اشتراكك لاستعادة الموقع.", href: "/dashboard/billing", actionLabel: "تفعيل" });
+  else if (!isReadyToPublish) alerts.push({ tone: "info", title: "كمّل الخطوات بالترتيب", description: "ابدأ بالباقات، بعدها بيانات التواصل، بعدها الصور، ثم النشر.", href: "/dashboard/services", actionLabel: "ابدأ" });
+  else if (isPublished) alerts.push({ tone: "success", title: "موقعك شغال", description: "موقعك منشور وجاهز لاستقبال العملاء.", href: "/dashboard/publish", actionLabel: "عرض" });
   return alerts;
 }
 
-export function createDashboardViewModel({ session, platformBaseUrl, now, packagesCount, imagesCount, albumsCount, hasContactInfo, hasCoverImage, currentThemeName, lastModifiedAt, pendingRequestStatus, latestPaymentRequestStatus, hasSeoSettings, hasAvatarImage, customerMessages, subscriptionExperience, heroImageUrl = null }: {
+export function createDashboardViewModel({ session, platformBaseUrl, now, packagesCount, imagesCount, albumsCount, hasContactInfo, hasCoverImage, currentThemeName, lastModifiedAt, pendingRequestStatus, latestPaymentRequestStatus, hasSeoSettings, hasAvatarImage, customerMessages, subscriptionExperience, heroImageUrl = null, siteSuspended = false }: {
   session: CurrentSession;
   platformBaseUrl: string;
   now: Date;
@@ -203,27 +204,29 @@ export function createDashboardViewModel({ session, platformBaseUrl, now, packag
   customerMessages?: DashboardCustomerMessage[];
   subscriptionExperience?: ResolvedSubscriptionExperience | null;
   heroImageUrl?: string | null;
+  siteSuspended?: boolean;
 }): DashboardViewModel {
   const hasPackages = packagesCount > 0;
   const hasImages = imagesCount > 0;
   const hasAlbums = albumsCount > 0;
   const isPublished = session.site.status === "PUBLISHED";
+  const siteOk = isPublished && !siteSuspended;
   const items: ChecklistItem[] = [
+    { id: "published", label: "تم نشر موقعك", description: siteSuspended ? "الموقع متوقف حاليًا." : "موقعك شغال وجاهز لاستقبال العملاء.", done: siteOk, error: !siteOk, href: siteSuspended ? "/dashboard/billing" : "/dashboard/publish", workspace: "publish" },
     { id: "package", label: "أضف أول باقة بأسلوبك", description: "اسم وسعر ومميزات واضحة.", done: hasPackages, href: "/dashboard/services", workspace: "sales" },
     { id: "contact", label: "أكمل بيانات التواصل", description: "اسم المصور، واتساب، وروابطك.", done: hasContactInfo, href: "/dashboard/site-info", workspace: "studio" },
     { id: "avatar", label: "ارفع صورة المصور", description: "صورة شخصية واضحة.", done: Boolean(hasAvatarImage), href: "/dashboard/gallery", workspace: "photos" },
     { id: "cover", label: "ارفع صورة الغلاف", description: "صورة رئيسية كبيرة.", done: hasCoverImage, href: "/dashboard/gallery", workspace: "photos" },
     { id: "album", label: "أنشئ ألبوم أعمال", description: "صور من أعمالك تظهر للعميل.", done: hasImages && hasAlbums, href: "/dashboard/gallery", workspace: "photos" },
     { id: "seo", label: "جهّز شكل المشاركة", description: "عنوان ووصف أو صورة للرابط.", done: Boolean(hasSeoSettings), href: "/dashboard/publish", workspace: "publish" },
-    { id: "publish", label: "انشر الموقع", description: "حوّل الموقع لرابط جاهز للعملاء.", done: isPublished, href: "/dashboard/publish", workspace: "publish" },
   ];
   const doneCount = items.filter((item) => item.done).length;
   const percent = calcPercent(doneCount, items.length);
   const subscription = buildSubscriptionInfo(session, now, pendingRequestStatus ?? null, latestPaymentRequestStatus ?? null);
-  const requiredBeforePublish = items.filter((item) => item.id !== "publish");
-  const isReadyToPublish = requiredBeforePublish.every((item) => item.done);
-  const incomplete = items.find((item) => !item.done);
-  const activeStep = incomplete ?? items.find((item) => item.id === "publish") ?? items[0];
+  const setupItems = items.filter((item) => item.id !== "published");
+  const isReadyToPublish = setupItems.every((item) => item.done);
+  const incomplete = items.find((item) => !item.done && !item.error);
+  const activeStep = incomplete ?? items.find((item) => item.id === "published") ?? items[0];
   const activeCopy = nextStepCopy[activeStep.id] ?? { title: activeStep.label, description: "أكمل هذه الخطوة للانتقال للخطوة التالية." };
 
   return {
@@ -235,7 +238,7 @@ export function createDashboardViewModel({ session, platformBaseUrl, now, packag
     percent,
     checklist: items,
     phases: buildPhases(items),
-    operatingAlerts: buildOperatingAlerts({ isReadyToPublish, isPublished }),
+    operatingAlerts: buildOperatingAlerts({ isReadyToPublish, isPublished, siteSuspended }),
     stats: [
       { label: "الباقات", value: String(packagesCount), tone: hasPackages ? "success" : "warning" },
       { label: "التواصل", value: hasContactInfo ? "جاهز" : "ناقص", tone: hasContactInfo ? "success" : "warning" },
@@ -249,7 +252,7 @@ export function createDashboardViewModel({ session, platformBaseUrl, now, packag
     isPublished,
     isReadyToPublish,
     nextStepHref: activeStep.href,
-    nextStepLabel: incomplete ? incomplete.label : isPublished ? "افتح الموقع" : "نشر الموقع",
+    nextStepLabel: incomplete ? incomplete.label : siteOk ? "افتح الموقع" : "تفعيل الموقع",
     nextStepTitle: activeCopy.title,
     nextStepDescription: activeCopy.description,
     subscription,

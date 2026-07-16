@@ -52,9 +52,6 @@ export function applyTemplateStarterSharedDefaults(
   next.sections.hero.headline = resolved.photographerName;
   next.sections.hero.subheadline = resolved.description;
   if (resolved.heroImageUrl) next.sections.hero.imageUrl = resolved.heroImageUrl;
-  next.contact.studioName = resolved.studioName;
-  next.contact.bio = resolved.description;
-  next.contact.longDescription = resolved.description;
   next.seo.title = resolved.photographerName;
   next.seo.description = resolved.description;
   next.seo.structuredData.name = resolved.photographerName;

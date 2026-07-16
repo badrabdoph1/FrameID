@@ -53,15 +53,15 @@ export const templateStarterContentSchema = z.object({
     })
   }),
   contact: z.object({
-    studioName: z.string().trim().min(1).max(120),
-    bio: z.string().trim().min(1).max(320),
-    longDescription: z.string().trim().min(1).max(1200),
+    studioName: z.string().trim().min(1).max(120).nullable(),
+    bio: z.string().trim().min(1).max(320).nullable(),
+    longDescription: z.string().trim().min(1).max(1200).nullable(),
     phone: optionalContactText,
     whatsapp: optionalContactText,
     email: z.string().trim().email().nullable(),
-    instagram: z.string().trim().min(1).max(80),
-    facebook: z.string().trim().min(1).max(120),
-    tiktok: z.string().trim().min(1).max(120),
+    instagram: optionalContactText,
+    facebook: optionalContactText,
+    tiktok: optionalContactText,
     workLocation: z.string().trim().min(1).max(160).default("فريلانسر"),
   }),
   packages: z
@@ -144,12 +144,19 @@ export function personalizeTemplateStarterContent(
   const name = z.string().trim().min(1).max(120).parse(photographerName);
   const personalized = structuredClone(content);
 
-  // Only photographer identity changes during signup. Shared studio and description
-  // defaults remain untouched until the customer edits them from the dashboard.
   personalized.site.title = name;
   personalized.sections.hero.headline = name;
   personalized.seo.title = name;
   personalized.seo.structuredData.name = name;
+  personalized.contact.studioName = name;
+  personalized.contact.bio = null;
+  personalized.contact.longDescription = null;
+  personalized.contact.instagram = null;
+  personalized.contact.facebook = null;
+  personalized.contact.tiktok = null;
+  personalized.contact.phone = null;
+  personalized.contact.whatsapp = null;
+  personalized.contact.email = null;
 
   if (registrationIdentity?.identifierKind === "phone") {
     const phone = z.string().trim().min(1).max(40).parse(registrationIdentity.phone);

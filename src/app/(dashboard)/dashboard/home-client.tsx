@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
+  AlertCircle,
   ArrowLeft,
   CalendarDays,
   CheckCircle2,
@@ -26,8 +27,10 @@ type BannerTone = "success" | "warning" | "danger" | "info";
 
 const CHECKLIST_STORAGE_KEY = "frameid:onboarding-checklist";
 const ONBOARDING_COMPLETED_KEY = "frameid:onboarding-completed";
+const CHECKLIST_TOUCHED_KEY = "frameid:checklist-touched";
 
 const onboardingCopy: Record<string, { label: string; description: string }> = {
+  published: { label: "تم نشر موقعك", description: "موقعك شغال وجاهز للعملاء." },
   package: { label: "الباقات والأسعار", description: "اكتب أسماء الباقات والأسعار والمميزات." },
   contact: { label: "بيانات التواصل", description: "اسم الاستوديو، الهاتف، واتساب، وروابطك." },
   avatar: { label: "صورة المصور", description: "صورة شخصية واضحة تمثل هويتك." },
@@ -39,6 +42,7 @@ export function DashboardHomeClient({ siteUrl, statusLabel, checklist, lastModif
   const [copied, setCopied] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [checklistHidden, setChecklistHidden] = useState(false);
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
   const onboardingResolvedRef = useRef(false);
   const router = useRouter();
 
@@ -48,7 +52,10 @@ export function DashboardHomeClient({ siteUrl, statusLabel, checklist, lastModif
       .map((item) => ({ ...item, ...onboardingCopy[item.id] })),
     [checklist],
   );
-  const doneCount = onboardingItems.filter((item) => item.done).length;
+  const doneCount = onboardingItems.filter((item) => {
+    if (item.id === "published") return item.done;
+    return item.done && touched[item.id];
+  }).length;
   const incompleteItems = onboardingItems.filter((item) => !item.done);
   const nextIncomplete = incompleteItems[0];
 
@@ -61,6 +68,14 @@ export function DashboardHomeClient({ siteUrl, statusLabel, checklist, lastModif
       if (saved) {
         const preferences = JSON.parse(saved) as { hidden?: boolean };
         setChecklistHidden(Boolean(preferences.hidden));
+      }
+    } catch {
+    }
+
+    try {
+      const touchedData = window.localStorage.getItem(CHECKLIST_TOUCHED_KEY);
+      if (touchedData) {
+        setTouched(JSON.parse(touchedData) as Record<string, boolean>);
       }
     } catch {
     }
@@ -86,6 +101,18 @@ export function DashboardHomeClient({ siteUrl, statusLabel, checklist, lastModif
       window.localStorage.setItem(ONBOARDING_COMPLETED_KEY, "1");
     } catch {
     }
+  };
+
+  const markTouched = (id: string) => {
+    setTouched((prev) => {
+      if (prev[id]) return prev;
+      const next = { ...prev, [id]: true };
+      try {
+        window.localStorage.setItem(CHECKLIST_TOUCHED_KEY, JSON.stringify(next));
+      } catch {
+      }
+      return next;
+    });
   };
 
   const copySiteUrl = async () => {
@@ -130,6 +157,8 @@ export function DashboardHomeClient({ siteUrl, statusLabel, checklist, lastModif
           <ChecklistSection
             items={onboardingItems}
             doneCount={doneCount}
+            touched={touched}
+            onTouched={markTouched}
             onHide={() => {
               setChecklistHidden(true);
               try {
@@ -267,10 +296,14 @@ function SiteIdentityCard({
 function ChecklistSection({
   items,
   doneCount,
+  touched,
+  onTouched,
   onHide,
 }: {
-  items: Array<{ id: string; done: boolean; href: string; label: string; description: string }>;
+  items: Array<{ id: string; done: boolean; error?: boolean; href: string; label: string; description: string }>;
   doneCount: number;
+  touched: Record<string, boolean>;
+  onTouched: (id: string) => void;
   onHide: () => void;
 }) {
   return (
@@ -295,32 +328,61 @@ function ChecklistSection({
         </button>
       </header>
       <div className="grid gap-2 p-3 sm:grid-cols-2 sm:gap-3 lg:gap-3">
-        {items.map((item) => <ChecklistItem key={item.id} item={item} />)}
+        {items.map((item) => <ChecklistItem key={item.id} item={item} isTouched={Boolean(touched[item.id])} onTouched={() => onTouched(item.id)} />)}
       </div>
     </section>
   );
 }
 
-function ChecklistItem({ item }: { item: { id: string; done: boolean; href: string; label: string; description: string } }) {
+function ChecklistItem({ item, isTouched, onTouched }: { item: { id: string; done: boolean; error?: boolean; href: string; label: string; description: string }; isTouched: boolean; onTouched: () => void }) {
+  const isError = Boolean(item.error);
+  const isPublished = item.id === "published";
+  const visuallyDone = isError ? false : isPublished ? true : (item.done && isTouched);
+
+  const containerClass = isError
+    ? "group flex min-h-12 items-center gap-2.5 rounded-xl border border-red-300/20 bg-red-500/[0.06] px-2.5 py-2 no-underline transition hover:border-red-300/35 hover:bg-red-500/[0.10] sm:rounded-2xl sm:px-3 sm:py-2.5"
+    : visuallyDone
+      ? "group flex min-h-12 items-center gap-2.5 rounded-xl border border-emerald-300/16 bg-emerald-300/[0.055] px-2.5 py-2 no-underline transition hover:border-emerald-300/28 hover:bg-emerald-300/[0.09] sm:rounded-2xl sm:px-3 sm:py-2.5"
+      : "group flex min-h-12 items-center gap-2.5 rounded-xl border border-white/10 bg-[#151a24] px-2.5 py-2 no-underline transition hover:-translate-y-0.5 hover:border-amber-300/25 hover:bg-[#1a202b] sm:rounded-2xl sm:px-3 sm:py-2.5";
+
+  const iconContainerClass = isError
+    ? "grid size-8 shrink-0 place-items-center rounded-lg bg-red-400/12 text-red-400 sm:size-9 sm:rounded-xl"
+    : visuallyDone
+      ? "grid size-8 shrink-0 place-items-center rounded-lg bg-emerald-300/12 text-emerald-300 sm:size-9 sm:rounded-xl"
+      : "grid size-8 shrink-0 place-items-center rounded-lg bg-white/[0.055] text-white/42 group-hover:text-[#f3cf73] sm:size-9 sm:rounded-xl";
+
+  const titleClass = isError
+    ? "block truncate text-xs font-black text-red-100 drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)] sm:text-sm"
+    : visuallyDone
+      ? "block truncate text-xs font-black text-[#dffbea] drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)] sm:text-sm"
+      : "block truncate text-xs font-black text-[#fff7e8] drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)] sm:text-sm";
+
+  const descClass = isError
+    ? "mt-0.5 block truncate text-[0.62rem] font-bold text-red-200/50 sm:text-[0.7rem]"
+    : visuallyDone
+      ? "mt-0.5 block truncate text-[0.62rem] font-bold text-emerald-100/46 sm:text-[0.7rem]"
+      : "mt-0.5 block truncate text-[0.62rem] font-bold text-white/50 sm:text-[0.7rem]";
+
+  const chevronClass = isError
+    ? "size-3.5 text-red-300/40 transition group-hover:text-red-300 sm:size-4"
+    : visuallyDone
+      ? "size-3.5 text-emerald-200/35 transition group-hover:text-emerald-200 sm:size-4"
+      : "size-3.5 text-white/30 transition group-hover:text-[#f3cf73] sm:size-4";
+
   return (
     <Link
       href={item.href}
-      className={item.done
-        ? "group flex min-h-12 items-center gap-2.5 rounded-xl border border-emerald-300/16 bg-emerald-300/[0.055] px-2.5 py-2 no-underline transition hover:border-emerald-300/28 hover:bg-emerald-300/[0.09] sm:rounded-2xl sm:px-3 sm:py-2.5"
-        : "group flex min-h-12 items-center gap-2.5 rounded-xl border border-white/10 bg-[#151a24] px-2.5 py-2 no-underline transition hover:-translate-y-0.5 hover:border-amber-300/25 hover:bg-[#1a202b] sm:rounded-2xl sm:px-3 sm:py-2.5"
-      }
+      onClick={onTouched}
+      className={containerClass}
     >
-      <span className={item.done
-        ? "grid size-8 shrink-0 place-items-center rounded-lg bg-emerald-300/12 text-emerald-300 sm:size-9 sm:rounded-xl"
-        : "grid size-8 shrink-0 place-items-center rounded-lg bg-white/[0.055] text-white/42 group-hover:text-[#f3cf73] sm:size-9 sm:rounded-xl"
-      }>
-        {item.done ? <CheckCircle2 className="size-4 sm:size-5" aria-hidden /> : <Circle className="size-4 sm:size-5" aria-hidden />}
+      <span className={iconContainerClass}>
+        {isError ? <AlertCircle className="size-4 sm:size-5" aria-hidden /> : visuallyDone ? <CheckCircle2 className="size-4 sm:size-5" aria-hidden /> : <Circle className="size-4 sm:size-5" aria-hidden />}
       </span>
       <span className="min-w-0 flex-1">
-        <span className={item.done ? "block truncate text-xs font-black text-[#dffbea] drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)] sm:text-sm" : "block truncate text-xs font-black text-[#fff7e8] drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)] sm:text-sm"}>{item.label}</span>
-        <span className={item.done ? "mt-0.5 block truncate text-[0.62rem] font-bold text-emerald-100/46 sm:text-[0.7rem]" : "mt-0.5 block truncate text-[0.62rem] font-bold text-white/50 sm:text-[0.7rem]"}>{item.description}</span>
+        <span className={titleClass}>{item.label}</span>
+        <span className={descClass}>{item.description}</span>
       </span>
-      <ChevronLeft className={item.done ? "size-3.5 text-emerald-200/35 transition group-hover:text-emerald-200 sm:size-4" : "size-3.5 text-white/30 transition group-hover:text-[#f3cf73] sm:size-4"} aria-hidden />
+      <ChevronLeft className={chevronClass} aria-hidden />
     </Link>
   );
 }

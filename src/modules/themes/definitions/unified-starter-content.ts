@@ -51,15 +51,15 @@ export const unifiedTemplateStarterContent = parseTemplateStarterContent({
     }
   },
   contact: {
-    studioName: defaults.studioName,
-    bio: defaults.description,
-    longDescription: defaults.description,
-    phone: "+201000000001",
-    whatsapp: "+201000000001",
-    email: "hello@kareemmagdy.example",
-    instagram: "kareemmagdy.photo",
-    facebook: "kareemmagdy.photo",
-    tiktok: "@kareemmagdy.photo",
+    studioName: null,
+    bio: null,
+    longDescription: null,
+    phone: null,
+    whatsapp: null,
+    email: null,
+    instagram: null,
+    facebook: null,
+    tiktok: null,
     workLocation: "فريلانسر"
   },
   packages: [

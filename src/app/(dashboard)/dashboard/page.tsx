@@ -145,6 +145,7 @@ export default async function DashboardPage({
     })),
     subscriptionExperience,
     heroImageUrl,
+    siteSuspended: session.tenant.status === "SUSPENDED" || session.site.status === "SUSPENDED" || session.subscription?.status === "SUSPENDED",
   });
 
   return <DashboardHomeClient {...dashboard} showWelcome={showWelcome} />;
