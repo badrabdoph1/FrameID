@@ -18,7 +18,7 @@ export const unifiedTemplateStarterContent = parseTemplateStarterContent({
       overlay: "medium",
       position: "center",
       height: "screen",
-      cta: { label: "شاهد الباقات", target: "packages" },
+      cta: { label: "الأسعار والباكدج", target: "packages" },
       settings: { eyebrow: "Portraits · Stories · Light" }
     },
     gallery: {

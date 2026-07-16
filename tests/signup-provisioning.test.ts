@@ -86,7 +86,7 @@ describe("signup provisioning", () => {
     });
   });
 
-  it("uses signup email while keeping template phone and WhatsApp", async () => {
+  it("uses signup email while clearing all placeholder data", async () => {
     const repository = createRepository();
     const service = createSignupProvisioningService({ repository });
 
@@ -98,14 +98,16 @@ describe("signup provisioning", () => {
     });
 
     expect(repository.createdInput?.defaultContent.contact.email).toBe("ali@example.com");
-    expect(repository.createdInput?.defaultContent.contact.phone).toBe("+201000000001");
-    expect(repository.createdInput?.defaultContent.contact.whatsapp).toBe("+201000000001");
-    expect(repository.createdInput?.defaultContent.contact.studioName).toBe("Photography");
+    expect(repository.createdInput?.defaultContent.contact.phone).toBeNull();
+    expect(repository.createdInput?.defaultContent.contact.whatsapp).toBeNull();
+    expect(repository.createdInput?.defaultContent.contact.studioName).toBe("Ali Ahmed");
     expect(repository.createdInput?.defaultContent.contact.workLocation).toBe("فريلانسر");
-    expect(repository.createdInput?.defaultContent.contact.tiktok).toBe("@kareemmagdy.photo");
+    expect(repository.createdInput?.defaultContent.contact.tiktok).toBeNull();
+    expect(repository.createdInput?.defaultContent.contact.instagram).toBeNull();
+    expect(repository.createdInput?.defaultContent.contact.facebook).toBeNull();
   });
 
-  it("uses signup phone for phone and WhatsApp while keeping template email", async () => {
+  it("uses signup phone for phone and WhatsApp while clearing other placeholders", async () => {
     const repository = createRepository();
     const service = createSignupProvisioningService({ repository });
 
@@ -118,8 +120,8 @@ describe("signup provisioning", () => {
 
     expect(repository.createdInput?.defaultContent.contact.phone).toBe("+201012345678");
     expect(repository.createdInput?.defaultContent.contact.whatsapp).toBe("+201012345678");
-    expect(repository.createdInput?.defaultContent.contact.email).toBe("hello@kareemmagdy.example");
-    expect(repository.createdInput?.defaultContent.contact.studioName).toBe("Photography");
+    expect(repository.createdInput?.defaultContent.contact.email).toBeNull();
+    expect(repository.createdInput?.defaultContent.contact.studioName).toBe("Ali Ahmed");
   });
 
   it("stops before provisioning when the identifier is already used", async () => {
@@ -136,6 +138,7 @@ describe("signup provisioning", () => {
 
     expect(repository.calls).toEqual([
       "template:noir-gold",
+      "trash:used@example.com:none",
       "identifier:used@example.com:none"
     ]);
   });

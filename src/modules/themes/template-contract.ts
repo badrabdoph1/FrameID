@@ -50,7 +50,7 @@ const HERO_DEFAULTS: HeroSettings = {
   overlay: "medium",
   position: "center",
   height: "screen",
-  cta: { label: "شاهد الباقات", target: "packages" },
+  cta: { label: "الأسعار والباكدج", target: "packages" },
   eyebrow: "تصوير احترافي",
 };
 

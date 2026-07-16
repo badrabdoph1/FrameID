@@ -120,11 +120,11 @@ export function GalleryClient({ coverUrl, galleryVisible, slotImages, toggled, r
           </div>
         </header>
 
-        <div className="p-4 sm:p-5">
-          <div className="relative aspect-[16/6] w-full overflow-hidden rounded-2xl border border-white/8 bg-black/20 sm:aspect-[16/5]">
+        <div className="grid gap-4 p-4 sm:grid-cols-[minmax(12rem,18rem)_1fr] sm:items-center sm:p-5">
+          <div className="relative aspect-[4/3] w-full overflow-hidden rounded-2xl border border-white/8 bg-black/20">
             {(localCoverUrl || coverUrl) ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={localCoverUrl || coverUrl!} alt="صورة الغلاف" className="size-full object-cover" />
+              <img src={localCoverUrl || coverUrl!} alt="معاينة الغلاف الحالي" className="size-full object-cover" />
             ) : (
               <div className="grid size-full place-items-center gap-2 text-white/20">
                 <ImagePlus className="size-10" />
@@ -141,7 +141,9 @@ export function GalleryClient({ coverUrl, galleryVisible, slotImages, toggled, r
             ) : null}
           </div>
 
-          <div className="mt-4 flex justify-center">
+          <div>
+            <p className="text-xs font-black text-[#fff7e8]">الغلاف الحالي</p>
+            <p className="mt-1 text-[0.68rem] font-bold leading-5 text-white/45">راجع الصورة الموجودة حاليًا قبل اختيار صورة بديلة.</p>
             <input
               ref={coverInputRef}
               type="file"
@@ -152,7 +154,7 @@ export function GalleryClient({ coverUrl, galleryVisible, slotImages, toggled, r
             <Button
               type="button"
               variant="luxury"
-              className="min-h-10 rounded-2xl px-5 text-sm font-black"
+              className="mt-4 min-h-11 w-full rounded-2xl px-5 text-sm font-black"
               onClick={() => coverInputRef.current?.click()}
               disabled={coverUploading}
             >

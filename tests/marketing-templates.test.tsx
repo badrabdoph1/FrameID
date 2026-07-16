@@ -5,8 +5,8 @@ import { describe, expect, it } from "vitest";
 import TemplatesPage from "@/app/(marketing)/templates/page";
 
 describe("marketing templates page", () => {
-  it("keeps template selection direct and uncluttered", () => {
-    render(<TemplatesPage />);
+  it("keeps template selection direct and uncluttered", async () => {
+    render(await TemplatesPage({ searchParams: Promise.resolve({}) }));
 
     expect(
       screen.getByRole("heading", {

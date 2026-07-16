@@ -23,6 +23,7 @@ import { cn } from "@/lib/utils/cn";
 import {
   BookingAction,
   BookingFAB,
+  BookingSummaryCard,
   PackageSelectButton,
   TemplateBookingProvider,
   useBooking,
@@ -367,7 +368,12 @@ function LuxeStudioSiteInner({
                   </p>
                 ) : null}
               </div>
-              <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {showPackages ? (
+                <div className="mt-12">
+                  <BookingSummaryCard variant="luxe" />
+                </div>
+              ) : null}
+              <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {site.contact.phone ? (
                   <ContactCard
                     label="اتصال"

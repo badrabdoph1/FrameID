@@ -12,6 +12,7 @@ import {
 import {
   BookingAction,
   BookingFAB,
+  BookingSummaryCard,
   ExtraToggleButton,
   PackageSelectButton,
   TemplateBookingProvider,
@@ -183,6 +184,11 @@ function ContactSection({ section, site, variant }: { section: NormalizedTemplat
     <section id="contact" data-template-section="contact" className={cn("scroll-mt-16 py-14 md:py-24", dark ? "bg-[#050505]" : "bg-[#fff8f4]") }>
       <div className="container-page"><SectionHeading section={section} variant={variant} />
         <div className={cn("mx-auto mt-8 grid max-w-4xl gap-3", section.settings.layout === "stack" ? "grid-cols-1" : "sm:grid-cols-2") }>
+          {site.sections.packages.isVisible && site.packages.length ? (
+            <div className={cn(section.settings.layout === "stack" ? "" : "sm:col-span-2")}>
+              <BookingSummaryCard variant={variant} />
+            </div>
+          ) : null}
           {actions.map(({ label, value, href, icon: Icon }) => <a key={label} href={href} target={href.startsWith("http") ? "_blank" : undefined} rel={href.startsWith("http") ? "noreferrer" : undefined} className={cn("flex min-h-16 items-center gap-3 rounded-[1.35rem] border p-3 no-underline outline-none transition focus-visible:ring-2 focus-visible:ring-offset-2", dark ? "border-white/9 bg-white/[.045] text-white ring-[#e5c07b] ring-offset-black hover:border-[#e5c07b]/50" : "border-[#eaddd4] bg-white text-[#2c1810] ring-[#d48a9e] ring-offset-[#fff8f4] hover:border-[#d48a9e]") }><span className={cn("grid size-11 shrink-0 place-items-center rounded-full", dark ? "bg-[#e5c07b]/12 text-[#e5c07b]" : "bg-[#f5e4ea] text-[#d48a9e]")}><Icon className="size-5" aria-hidden /></span><span className="min-w-0"><strong className="block text-sm">{label}</strong><span className={cn("mt-1 block truncate text-xs", dark ? "text-white/45" : "text-[#8c7a74]")}>{value}</span></span></a>)}
           <div className={cn("flex min-h-16 items-center gap-3 rounded-[1.35rem] border p-3", dark ? "border-white/9 bg-white/[.045]" : "border-[#eaddd4] bg-white") }><span className={cn("grid size-11 shrink-0 place-items-center rounded-full", dark ? "bg-[#e5c07b]/12 text-[#e5c07b]" : "bg-[#e8f0e6] text-[#6d9a78]")}><MapPin className="size-5" aria-hidden /></span><span><strong className="block text-sm">مكان العمل</strong><span className={cn("mt-1 block text-xs", dark ? "text-white/48" : "text-[#8c7a74]")}>{site.contact.workLocation}</span></span></div>
         </div>

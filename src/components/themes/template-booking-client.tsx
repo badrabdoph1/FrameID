@@ -5,7 +5,7 @@ import { Check, MessageCircle } from "lucide-react";
 
 import { cn } from "@/lib/utils/cn";
 import { ThemeBookingFAB } from "@/components/themes/theme-booking-fab";
-import { createTemplateBookingHref } from "@/modules/themes/template-contract";
+import { createTemplateBookingHref, formatTemplatePrice } from "@/modules/themes/template-contract";
 
 type BookingPackage = {
   id: string;
@@ -129,6 +129,79 @@ export function BookingAction({
       <MessageCircle className="size-4" aria-hidden />
       {selected ? label : "اختر باقة للحجز"}
     </a>
+  );
+}
+
+export function BookingSummaryCard({ variant }: { variant: "noir" | "rose" | "luxe" }) {
+  const booking = useBooking();
+  const selectedPackage = booking.packages.find((item) => item.id === booking.selectedPackageId);
+  const selectedExtras = booking.extras.filter((item) => booking.selectedExtraIds.includes(item.id));
+  const total = selectedPackage
+    ? selectedPackage.priceAmount + selectedExtras.reduce((sum, item) => sum + item.priceAmount, 0)
+    : 0;
+
+  return (
+    <div className={cn(
+      "rounded-[1.35rem] border p-4 text-start",
+      variant === "noir"
+        ? "border-white/9 bg-white/[.045]"
+        : variant === "luxe"
+          ? "border-white/10 bg-white/[.055]"
+          : "border-[#eaddd4] bg-white",
+    )}>
+      <p className={cn(
+        "text-xs font-black",
+        variant === "noir" ? "text-[#e5c07b]" : variant === "luxe" ? "text-[#ff00ff]" : "text-[#d48a9e]",
+      )}>ملخص الحجز</p>
+      <h3 className={cn(
+        "mt-2 text-xl font-black",
+        variant === "rose" ? "text-[#2c1810]" : "text-white",
+      )}>تفاصيل الحجز</h3>
+
+      {selectedPackage ? (
+        <div className={cn(
+          "mt-4 space-y-3 rounded-[1.1rem] p-4",
+          variant === "noir" ? "bg-black/26" : variant === "luxe" ? "bg-black/20" : "bg-[#fff8f4]",
+        )}>
+          <div className={cn(
+            "flex items-start justify-between gap-4 border-b pb-3",
+            variant === "rose" ? "border-[#eaddd4]" : "border-white/10",
+          )}>
+            <span className={cn("text-sm font-bold", variant === "rose" ? "text-[#8c7a74]" : "text-white/55")}>الباقة</span>
+            <div className="text-left">
+              <strong className={cn("block", variant === "rose" ? "text-[#2c1810]" : "text-white")}>{selectedPackage.name}</strong>
+              <span className={cn("text-xs font-black", variant === "noir" ? "text-[#e5c07b]" : variant === "luxe" ? "text-[#00ffff]" : "text-[#d48a9e]")}>{selectedPackage.price}</span>
+            </div>
+          </div>
+          {selectedExtras.length ? (
+            <div className={cn(
+              "space-y-2 border-b pb-3",
+              variant === "rose" ? "border-[#eaddd4]" : "border-white/10",
+            )}>
+              {selectedExtras.map((extra) => (
+                <div key={extra.id} className="flex justify-between gap-4 text-sm">
+                  <span className={variant === "rose" ? "text-[#8c7a74]" : "text-white/58"}>{extra.name}</span>
+                  <span className={cn("font-bold", variant === "noir" ? "text-[#e5c07b]" : variant === "luxe" ? "text-[#00ffff]" : "text-[#d48a9e]")}>{extra.price}</span>
+                </div>
+              ))}
+            </div>
+          ) : null}
+          <div className="flex items-center justify-between gap-4">
+            <span className={cn("font-black", variant === "rose" ? "text-[#2c1810]" : "text-white")}>الإجمالي التقريبي</span>
+            <span className={cn("text-lg font-black", variant === "noir" ? "text-[#e5c07b]" : variant === "luxe" ? "text-[#00ffff]" : "text-[#d48a9e]")}>{formatTemplatePrice(total, selectedPackage.currency)}</span>
+          </div>
+        </div>
+      ) : (
+        <div className={cn(
+          "mt-4 rounded-[1.1rem] border border-dashed p-5 text-center text-sm font-bold leading-7",
+          variant === "rose"
+            ? "border-[#eaddd4] bg-[#fff8f4] text-[#8c7a74]"
+            : "border-white/14 bg-black/18 text-white/50",
+        )}>
+          اختر باقة من قسم الأسعار ليظهر ملخص الحجز هنا.
+        </div>
+      )}
+    </div>
   );
 }
 

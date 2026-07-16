@@ -278,7 +278,7 @@ export default async function TemplatesPage({ searchParams }: TemplatesPageProps
                 اتواصل معانا ع واتساب وهنعملك تصميم مخصوص ليك انت لوحدك
               </p>
               <a
-                href="https://wa.me/201038434472?text=مرحبًا،%20أحتاج%20دعم%20فني%20في%20FrameID."
+                href="https://wa.me/201038434472?text=مرحبًا،%20عايز%20تصميم%20موقع%20خاص%20بيا%20على%20FrameID."
                 target="_blank"
                 rel="noopener noreferrer"
                 className="mt-8 inline-flex items-center gap-2 rounded-full bg-[#25d366] px-8 py-4 text-sm font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#20bd5a] md:text-base"

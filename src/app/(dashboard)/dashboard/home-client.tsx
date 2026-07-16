@@ -268,20 +268,19 @@ function SiteIdentityCard({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-2 sm:flex sm:justify-end sm:gap-3">
+          <div className="grid gap-2 sm:gap-3 lg:w-72">
             <Link
               href={siteUrl}
               target="_blank"
-              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-gradient-to-br from-[#f3cf73] to-[#e8c15e] px-3.5 text-xs font-black text-[#17120a] no-underline shadow-lg shadow-amber-500/20 transition hover:-translate-y-0.5 hover:shadow-amber-500/30 sm:min-h-12 sm:px-5 sm:text-sm"
+              className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-br from-[#f3cf73] to-[#e8c15e] px-3.5 text-xs font-black text-[#17120a] no-underline shadow-lg shadow-amber-500/20 transition hover:-translate-y-0.5 hover:shadow-amber-500/30 sm:min-h-12 sm:px-5 sm:text-sm"
             >
               <Eye className="size-4" aria-hidden />
-              <span className="hidden sm:inline">شاهد موقعك كما يراه العميل</span>
-              <span className="sm:hidden">شاهد موقعك</span>
+              <span>شاهد موقعك</span>
             </Link>
             <button
               type="button"
               onClick={onCopy}
-              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-white/12 bg-white/[0.045] px-3.5 text-xs font-black text-white/78 transition hover:border-amber-300/24 hover:bg-white/[0.075] hover:text-white sm:min-h-12 sm:px-5 sm:text-sm"
+              className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-white/12 bg-white/[0.045] px-3.5 text-xs font-black text-white/78 transition hover:border-amber-300/24 hover:bg-white/[0.075] hover:text-white sm:min-h-12 sm:px-5 sm:text-sm"
             >
               {copied ? <CheckCircle2 className="size-4 text-emerald-300" aria-hidden /> : <Copy className="size-4" aria-hidden />}
               <span>{copied ? "اتنسخ" : "انسخ الرابط"}</span>

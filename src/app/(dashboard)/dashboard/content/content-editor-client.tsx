@@ -181,7 +181,7 @@ function HeroFields({ data, coverUrl }: { data: Record<string, unknown>; coverUr
         <SelectField label="ارتفاع الـ Hero" name="height" value={readString(data.height, "screen")} options={[["compact", "مدمج"], ["screen", "بطول الشاشة"], ["tall", "طويل"]]} />
       </div>
       <div className="grid gap-3 sm:grid-cols-2">
-        <Field label="نص زر الـ CTA"><Input name="ctaLabel" defaultValue={readString(cta.label, "شاهد الباقات")} /></Field>
+        <Field label="نص زر الـ CTA"><Input name="ctaLabel" defaultValue={readString(cta.label, "الأسعار والباكدج")} /></Field>
         <SelectField label="وجهة زر الـ CTA" name="ctaTarget" value={readString(cta.target, "packages")} options={[["packages", "الباقات"], ["gallery", "المعرض"], ["contact", "التواصل"], ["whatsapp", "واتساب"]]} />
       </div>
     </>

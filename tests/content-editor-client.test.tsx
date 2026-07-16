@@ -25,7 +25,7 @@ describe("content editor client", () => {
               overlay: "medium",
               position: "center",
               height: "screen",
-              cta: { label: "شاهد الباقات", target: "packages" },
+              cta: { label: "الأسعار والباكدج", target: "packages" },
               settings: { eyebrow: "تصوير احترافي" },
             },
           },
@@ -46,7 +46,7 @@ describe("content editor client", () => {
     expect(screen.getByLabelText("قوة الـ Overlay")).toHaveValue("medium");
     expect(screen.getByLabelText("موضع الصورة")).toHaveValue("center");
     expect(screen.getByLabelText("ارتفاع الـ Hero")).toHaveValue("screen");
-    expect(screen.getByLabelText("نص زر الـ CTA")).toHaveValue("شاهد الباقات");
+    expect(screen.getByLabelText("نص زر الـ CTA")).toHaveValue("الأسعار والباكدج");
     expect(screen.getByLabelText("وجهة زر الـ CTA")).toHaveValue("packages");
   });
 });

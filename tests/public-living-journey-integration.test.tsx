@@ -37,8 +37,8 @@ describe("public living journey page integration", () => {
     expect(container.querySelector('[data-journey-source="home-start"]')).toBeInTheDocument();
   });
 
-  it("lets the real templates grid generate its cascade", () => {
-    const { container } = render(<TemplatesPage />);
+  it("lets the real templates grid generate its cascade", async () => {
+    const { container } = render(await TemplatesPage({ searchParams: Promise.resolve({}) }));
 
     const grid = container.querySelector('[data-journey-source="templates-grid"]');
     expect(grid).toBeInTheDocument();

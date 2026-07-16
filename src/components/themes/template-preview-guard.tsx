@@ -8,7 +8,7 @@ function isPreviewOnlyLink(anchor: HTMLAnchorElement): boolean {
   const href = anchor.getAttribute("href") ?? "";
   const label = anchor.getAttribute("aria-label") ?? "";
 
-  if (href === "#packages") return true;
+  if (href.startsWith("#")) return false;
   if (/^(mailto:|tel:)/iu.test(href)) return true;
   if (/wa\.me|whatsapp|instagram\.com|facebook\.com/iu.test(href)) return true;
   if (/واتساب|انستجرام|إنستجرام|فيسبوك|حجز|تواصل/iu.test(label)) return true;

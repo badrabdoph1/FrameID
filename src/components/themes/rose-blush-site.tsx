@@ -300,7 +300,7 @@ function RoseBlushSiteInner({
             ) : null}
             <div className="p-5 md:p-8 lg:p-10">
               <p className="font-display text-xs tracking-[0.28em] text-[#6d9a78]">ملخص الحجز</p>
-              <h2 className="mt-3 text-3xl font-bold text-[#2c1810] md:text-5xl">تفاصيل طلبك</h2>
+              <h2 className="mt-3 text-3xl font-bold text-[#2c1810] md:text-5xl">تفاصيل الحجز</h2>
               {selectedPackage ? (
                 <div className="mt-6 space-y-4 rounded-[1.5rem] bg-[#fff8f4] p-5 text-start">
                   <div className="flex items-start justify-between gap-4 border-b border-[#eaddd4] pb-3"><span className="text-sm text-[#8c7a74]">الباقة</span><div className="text-left"><strong className="block text-[#2c1810]">{selectedPackage.name}</strong>{selectedPackage.subtitle ? <span className="text-xs text-[#6d9a78]">{selectedPackage.subtitle}</span> : null}</div></div>
