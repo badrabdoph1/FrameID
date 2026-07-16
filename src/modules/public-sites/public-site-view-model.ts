@@ -75,13 +75,55 @@ export type PublicSiteViewModel = {
 
 const FALLBACK_HERO_IMAGE = "https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1800&q=85";
 
+const PLACEHOLDER_STUDIO_NAMES = new Set([
+  "photography",
+  "studio",
+  "studio photography",
+  "photography studio",
+  "kareem magdy",
+]);
+
+const PLACEHOLDER_PHONES = new Set([
+  "+201000000001",
+  "+20100000000",
+  "0000000000",
+  "+201000000002",
+]);
+
+const PLACEHOLDER_EMAILS = new Set([
+  "hello@kareemmagdy.example",
+  "test@example.com",
+  "hello@example.com",
+]);
+
+const PLACEHOLDER_SOCIAL_HANDLES = new Set([
+  "kareemmagdy.photo",
+  "@kareemmagdy.photo",
+]);
+
+function resolveStudioName(value: string | null | undefined): string | null {
+  if (!value) return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  if (PLACEHOLDER_STUDIO_NAMES.has(trimmed.toLowerCase())) return null;
+  return trimmed;
+}
+
+function resolveContactValue(value: string | null | undefined, placeholders: Set<string>): string | null {
+  if (!value) return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  if (placeholders.has(trimmed.toLowerCase())) return null;
+  return trimmed;
+}
+
 export function createPublicSiteViewModel({ site, platformBaseUrl, platformSocialImageUrl = "/social-preview-image.jpg" }: { site: PublicSiteRecord; platformBaseUrl: string; platformSocialImageUrl?: string }): PublicSiteViewModel {
   const publicUrl = `${platformBaseUrl.replace(/\/$/u, "")}/p/${site.slug}`;
   const heroSection = findSection(site, "hero");
   const contactSection = findSection(site, "contact");
   const normalizedSections = normalizeTemplateSections(site.sections);
   const heroSettings = resolveHeroSettings(heroSection?.data ?? {});
-  const studioName = readNullableString(site.contactProfile?.studioName);
+  const studioName = resolveStudioName(site.contactProfile?.studioName);
   const photographerName = readString(site.title, site.tenant.displayName);
   const metadataTitle = studioName ?? photographerName;
   const metadataDescription = firstText(site.contactProfile?.bio, site.contactProfile?.longDescription, site.description, site.seoSettings?.description, `موقع ${photographerName} للتصوير.`);
@@ -112,16 +154,16 @@ export function createPublicSiteViewModel({ site, platformBaseUrl, platformSocia
       ...heroSettings,
     },
     contact: {
-      studioName: site.contactProfile?.studioName ?? null,
+      studioName: resolveStudioName(site.contactProfile?.studioName),
       bio: site.contactProfile?.bio ?? null,
       longDescription: site.contactProfile?.longDescription ?? null,
       callToAction: readString(contactSection?.data.callToAction, "احجز جلستك الآن"),
-      phone: site.contactProfile?.phone ?? null,
-      whatsapp: site.contactProfile?.whatsapp ?? null,
-      email: site.contactProfile?.email ?? null,
-      instagram: site.contactProfile?.instagram ?? null,
-      facebook: site.contactProfile?.facebook ?? null,
-      tiktok: site.contactProfile?.tiktok ?? null,
+      phone: resolveContactValue(site.contactProfile?.phone, PLACEHOLDER_PHONES),
+      whatsapp: resolveContactValue(site.contactProfile?.whatsapp, PLACEHOLDER_PHONES),
+      email: resolveContactValue(site.contactProfile?.email, PLACEHOLDER_EMAILS),
+      instagram: resolveContactValue(site.contactProfile?.instagram, PLACEHOLDER_SOCIAL_HANDLES),
+      facebook: resolveContactValue(site.contactProfile?.facebook, PLACEHOLDER_SOCIAL_HANDLES),
+      tiktok: resolveContactValue(site.contactProfile?.tiktok, PLACEHOLDER_SOCIAL_HANDLES),
       workLocation: readString(site.contactProfile?.workLocation, "فريلانسر"),
     },
     packages: site.packages.map((item) => ({ id: item.id, name: item.name, subtitle: item.subtitle, price: formatTemplatePrice(item.priceAmount, item.currency), priceAmount: item.priceAmount, currency: item.currency, features: readStringList(item.features), imageUrl: item.imageUrl, isHighlighted: item.isHighlighted })),

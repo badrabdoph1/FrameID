@@ -112,12 +112,12 @@ function DashboardTitleBadge({ compact = false }: { compact?: boolean }) {
   );
 }
 
-function IdentityBrand({ large = false }: { large?: boolean }) {
+function IdentityBrand({ large = false, photographerName }: { large?: boolean; photographerName?: string }) {
   return (
     <Link href="/dashboard" className={cn("flex min-w-0 items-center gap-2 rounded-2xl no-underline", large ? "p-2" : "p-1")}> 
       <BrandMark large={large} />
       <span className="min-w-0">
-        <strong className={cn("block truncate font-black text-[#fff7e8]", large ? "text-base" : "text-xs sm:text-sm")}>FrameID</strong>
+        <strong className={cn("block truncate font-black text-[#fff7e8]", large ? "text-base" : "text-xs sm:text-sm")}>{photographerName || "FrameID"}</strong>
         <small className={cn("block truncate font-bold text-white/42", large ? "text-xs" : "text-[0.6rem] sm:text-[0.68rem]")}>لوحة المصور</small>
       </span>
     </Link>
@@ -157,7 +157,7 @@ function CustomerIdentityBar({ supportHref }: { supportHref: string }) {
   return (
     <div className="customer-desktop-identity-bar hidden w-full grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-4 lg:grid">
       <div className="justify-self-start">
-        <IdentityBrand large />
+        <IdentityBrand large photographerName={photographerName} />
       </div>
       <DashboardTitleBadge />
       <div className="flex justify-end gap-3 justify-self-end">
@@ -167,7 +167,7 @@ function CustomerIdentityBar({ supportHref }: { supportHref: string }) {
   );
 }
 
-export function DashboardShell({ children, siteSlug, hasSubscription }: { children: ReactNode; siteSlug?: string; hasSubscription?: boolean }) {
+export function DashboardShell({ children, siteSlug, hasSubscription, photographerName }: { children: ReactNode; siteSlug?: string; hasSubscription?: boolean; photographerName?: string }) {
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [supportSettings, setSupportSettings] = useState(() => normalizeSupportResponse(null));

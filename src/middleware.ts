@@ -114,11 +114,20 @@ async function isTokenValid(rawToken: string | undefined, origin: string): Promi
   try {
     const res = await fetch(`${origin}/api/admin/validate-session`, {
       headers: { "x-admin-session-token": rawToken },
-      signal: AbortSignal.timeout(5000),
+      signal: AbortSignal.timeout(8000),
+      cache: "no-store"
     })
     return res.ok
   } catch {
-    return false
+    try {
+      const retryRes = await fetch(`${origin}/api/admin/validate-session`, {
+        headers: { "x-admin-session-token": rawToken },
+        signal: AbortSignal.timeout(5000)
+      })
+      return retryRes.ok
+    } catch {
+      return false
+    }
   }
 }
 
@@ -136,8 +145,21 @@ async function checkApiAccess(request: NextRequest): Promise<"ALLOW" | "DENY" | 
   try {
     const res = await fetch(
       `${request.nextUrl.origin}/api/internal/check-access?token=${encodeURIComponent(rawToken)}`,
-      { signal: AbortSignal.timeout(3000) }
+      { 
+        signal: AbortSignal.timeout(8000),
+        next: { revalidate: 0 }
+      }
     )
+    
+    if (!res.ok && res.status >= 500) {
+      const retryRes = await fetch(
+        `${request.nextUrl.origin}/api/internal/check-access?token=${encodeURIComponent(rawToken)}`,
+        { signal: AbortSignal.timeout(5000) }
+      )
+      const retryData = await retryRes.json()
+      return retryData.allowed === false ? "DENY" : "ALLOW"
+    }
+    
     const data = await res.json()
     if (data.allowed === false) {
       return "DENY"
@@ -156,8 +178,21 @@ async function checkSiteAccess(request: NextRequest): Promise<"ALLOW" | "DENY" |
   try {
     const res = await fetch(
       `${request.nextUrl.origin}/api/internal/check-access?slug=${encodeURIComponent(slug)}`,
-      { signal: AbortSignal.timeout(3000) }
+      { 
+        signal: AbortSignal.timeout(8000),
+        next: { revalidate: 0 }
+      }
     )
+    
+    if (!res.ok && res.status >= 500) {
+      const retryRes = await fetch(
+        `${request.nextUrl.origin}/api/internal/check-access?slug=${encodeURIComponent(slug)}`,
+        { signal: AbortSignal.timeout(5000) }
+      )
+      const retryData = await retryRes.json()
+      return retryData.allowed === false ? "DENY" : "ALLOW"
+    }
+    
     const data = await res.json()
     if (data.allowed === false) {
       return "DENY"

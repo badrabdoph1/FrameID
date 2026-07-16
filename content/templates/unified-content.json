@@ -1,8 +1,8 @@
 {
   "data": {
-    "photographerName": "Kareem Magdy",
-    "studioName": "Photography",
-    "description": "Wedding Photographer\nمصور زفاف",
+    "photographerName": "",
+    "studioName": "",
+    "description": "",
     "heroImageUrl": "https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1800&q=85",
     "heroEyebrow": "Portraits · Stories · Light",
     "heroCtaLabel": "شاهد الباقات",
@@ -118,12 +118,12 @@
         "isFeatured": false
       }
     ],
-    "contactPhone": "+201000000001",
-    "contactWhatsapp": "+201000000001",
-    "contactEmail": "hello@kareemmagdy.example",
-    "contactInstagram": "kareemmagdy.photo",
-    "contactFacebook": "kareemmagdy.photo",
-    "contactTiktok": "@kareemmagdy.photo",
+    "contactPhone": null,
+    "contactWhatsapp": null,
+    "contactEmail": null,
+    "contactInstagram": null,
+    "contactFacebook": null,
+    "contactTiktok": null,
     "workLocation": "فريلانسر"
   },
   "version": 1,

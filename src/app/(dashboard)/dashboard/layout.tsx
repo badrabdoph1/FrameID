@@ -81,7 +81,7 @@ export default async function DashboardLayout({
     <>
       <RenderingSafetyMode config={renderingConfig} userId={session.user.id} />
       <DashboardScrollReset />
-      <DashboardShell siteSlug={session.site.slug} hasSubscription={session.subscription?.status === "ACTIVE"}>{children}</DashboardShell>
+      <DashboardShell siteSlug={session.site.slug} hasSubscription={session.subscription?.status === "ACTIVE"} photographerName={session.user.name}>{children}</DashboardShell>
       <PwaInstallButton context="dashboard" />
     </>
   );
