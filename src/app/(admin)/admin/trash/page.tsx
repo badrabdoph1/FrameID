@@ -3,7 +3,8 @@ import { getCurrentAdmin } from "@/modules/admin/admin-page-guards";
 import { AdminPageShell } from "@/components/layout/admin-page-shell";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { restoreFromTrashAction, permanentDeleteAction, emptyTrashAction } from "@/app/(admin)/admin/trash/actions";
+import { EmptyTrashButton } from "@/app/(admin)/admin/trash/empty-trash-button";
+import { restoreFromTrashAction, permanentDeleteAction } from "@/app/(admin)/admin/trash/actions";
 
 export const dynamic = "force-dynamic";
 
@@ -186,21 +187,7 @@ export default async function AdminTrashPage({ searchParams }: Props) {
           )}
         </form>
 
-        {total > 0 && (
-          <form action={emptyTrashAction}>
-            <button
-              type="submit"
-              onClick={(e) => {
-                if (!confirm("⚠️ هل أنت متأكد من حذف جميع العملاء في السلة نهائيًا؟ لا يمكن التراجع عن هذا الإجراء.")) {
-                  e.preventDefault();
-                }
-              }}
-              className="min-h-11 inline-flex items-center gap-2 rounded-xl border border-red-500/25 bg-red-500/8 px-4 text-sm font-black text-red-400"
-            >
-              🗑️ إفراغ السلة بالكامل
-            </button>
-          </form>
-        )}
+        {total > 0 && <EmptyTrashButton />}
       </div>
 
       <div className="rounded-2xl border border-amber-500/12 bg-amber-500/[0.04] px-4 py-2.5">
