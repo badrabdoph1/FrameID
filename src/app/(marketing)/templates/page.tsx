@@ -7,6 +7,7 @@ import { MarketingFooter } from "@/components/layout/marketing-footer";
 import { MarketingNav } from "@/components/layout/marketing-nav";
 import { TemplateLivePreview } from "@/components/themes/template-live-preview";
 import { getContent } from "@/lib/content";
+import { cn } from "@/lib/utils/cn";
 import { getPublishedTemplates } from "@/modules/themes/theme-registry";
 
 export const metadata: Metadata = {
@@ -169,7 +170,12 @@ export default function TemplatesPage() {
                 return (
                   <article
                     key={template.code}
-                    className="group relative flex flex-col overflow-hidden rounded-3xl border border-border/40 bg-white shadow-sm ring-1 ring-black/[0.02] transition-all duration-500 hover:-translate-y-1 hover:border-champagne/30 hover:shadow-[0_32px_64px_-12px_rgb(10,10,10,0.1),0_0_0_1px_rgb(201,169,110,0.12)]"
+                    className={cn(
+                      "group relative flex flex-col overflow-hidden rounded-3xl shadow-sm transition-all duration-500 hover:-translate-y-1",
+                      template.themeCode === "noir-gold"
+                        ? "border border-amber-900/30 bg-[#0a0a0a] hover:border-champagne/40 hover:shadow-[0_32px_64px_-12px_rgb(10,10,10,0.4),0_0_0_1px_rgb(201,169,110,0.2)]"
+                        : "border border-champagne/25 bg-[#fdf9f6] hover:border-champagne/40 hover:shadow-[0_32px_64px_-12px_rgb(10,10,10,0.08),0_0_0_1px_rgb(201,169,110,0.12)]"
+                    )}
                   >
                     {/* Preview */}
                     <div className="relative">
@@ -186,21 +192,32 @@ export default function TemplatesPage() {
                     </div>
 
                     {/* Content */}
-                    <div className="flex flex-1 flex-col px-5 pt-3 pb-5 md:px-6 md:pt-4 md:pb-6">
+                    <div className={cn("flex flex-1 flex-col px-5 pt-2 pb-4 md:px-6 md:pt-3 md:pb-5",
+                      template.themeCode === "noir-gold" ? "bg-[#0c0c0c] text-white" : "bg-[#fdf9f6] text-foreground"
+                    )}>
                       <div className="flex-1">
-                        <h3 className="text-[1.05rem] font-semibold leading-snug tracking-tight text-foreground md:text-[1.1rem]">
+                        <h3 className="text-[1.05rem] font-semibold leading-snug tracking-tight md:text-[1.1rem]">
                           {template.name}
                         </h3>
-                        <p className="mt-1.5 text-[0.88rem] leading-[1.8] text-foreground/65 md:text-[0.9rem]">
+                        <p className={cn("mt-1.5 text-[0.88rem] leading-[1.8]",
+                          template.themeCode === "noir-gold" ? "text-white/60" : "text-foreground/65"
+                        )}>
                           {description}
                         </p>
                       </div>
 
                       {/* Actions */}
-                      <div className="mt-4 flex flex-col gap-2.5 border-t border-border/25 pt-4">
+                      <div className={cn("mt-3 flex flex-col gap-2.5 border-t pt-3",
+                        template.themeCode === "noir-gold" ? "border-white/15" : "border-border/25"
+                      )}>
                         <Link
                           href={`/templates/${template.code}/preview`}
-                          className="group/btn inline-flex min-h-[3.1rem] items-center justify-center gap-2.5 rounded-xl bg-ink px-5 text-sm font-bold text-white shadow-[0_4px_16px_-2px_rgba(10,10,10,0.25)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-ink/90 hover:shadow-[0_8px_24px_-4px_rgba(10,10,10,0.35)] active:translate-y-0 active:shadow-[0_2px_8px_-2px_rgba(10,10,10,0.3)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/40"
+                          className={cn(
+                            "group/btn inline-flex min-h-[3.1rem] items-center justify-center gap-2.5 rounded-xl px-5 text-sm font-bold transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 focus-visible:outline-none focus-visible:ring-2",
+                            template.themeCode === "noir-gold"
+                              ? "bg-champagne text-ink shadow-[0_4px_16px_-2px_rgba(201,169,110,0.3)] hover:bg-champagne/90 hover:shadow-[0_8px_24px_-4px_rgba(201,169,110,0.4)] active:shadow-[0_2px_8px_-2px_rgba(201,169,110,0.3)] focus-visible:ring-champagne/40"
+                              : "bg-ink text-white shadow-[0_4px_16px_-2px_rgba(10,10,10,0.25)] hover:bg-ink/90 hover:shadow-[0_8px_24px_-4px_rgba(10,10,10,0.35)] active:shadow-[0_2px_8px_-2px_rgba(10,10,10,0.3)] focus-visible:ring-ink/40"
+                          )}
                         >
                           <ExternalLink className="size-4 transition-transform duration-300 group-hover/btn:-rotate-12" aria-hidden />
                           شوف شكل الموقع الحقيقي
@@ -208,9 +225,17 @@ export default function TemplatesPage() {
                         </Link>
                         <Link
                           href={`/signup?template=${template.code}`}
-                          className="group/btn relative inline-flex min-h-[3.1rem] items-center justify-center gap-2.5 overflow-hidden rounded-xl border-2 border-champagne/50 bg-gradient-to-l from-champagne/[0.12] to-champagne/[0.04] px-5 text-sm font-bold text-champagne-strong transition-all duration-300 hover:-translate-y-0.5 hover:border-champagne/80 hover:from-champagne/[0.18] hover:to-champagne/[0.08] hover:shadow-[0_8px_24px_-8px_rgba(201,169,110,0.4)] active:translate-y-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-champagne/40"
+                          className={cn(
+                            "group/btn relative inline-flex min-h-[3.1rem] items-center justify-center gap-2.5 overflow-hidden rounded-xl px-5 text-sm font-bold transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 focus-visible:outline-none focus-visible:ring-2",
+                            template.themeCode === "noir-gold"
+                              ? "border-2 border-white/30 bg-gradient-to-l from-white/[0.12] to-white/[0.04] text-white hover:border-white/50 hover:from-white/[0.18] hover:to-white/[0.08] hover:shadow-[0_8px_24px_-8px_rgba(255,255,255,0.25)] focus-visible:ring-white/40"
+                              : "border-2 border-champagne/50 bg-gradient-to-l from-champagne/[0.12] to-champagne/[0.04] text-champagne-strong hover:border-champagne/80 hover:from-champagne/[0.18] hover:to-champagne/[0.08] hover:shadow-[0_8px_24px_-8px_rgba(201,169,110,0.4)] focus-visible:ring-champagne/40"
+                          )}
                         >
-                          <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-champagne/15 to-transparent transition-transform duration-700 group-hover/btn:translate-x-full" />
+                          <span className={cn(
+                            "absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent to-transparent transition-transform duration-700 group-hover/btn:translate-x-full",
+                            template.themeCode === "noir-gold" ? "via-white/15" : "via-champagne/15"
+                          )} />
                           استخدم الموقع ده
                         </Link>
                       </div>
