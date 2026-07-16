@@ -1,11 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { getCurrentAdmin } from "@/modules/admin/admin-page-guards";
-import { AdminPageShell } from "@/components/layout/admin-page-shell";
-import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Search, X } from "lucide-react";
-import { TrashTable } from "@/app/(admin)/admin/trash/trash-table";
-import { EmptyTrashButton } from "@/app/(admin)/admin/trash/empty-trash-button";
 
 export const dynamic = "force-dynamic";
 
@@ -20,17 +15,23 @@ type Props = {
   }>;
 };
 
-const PAGE_SIZE = 25;
-
 export default async function AdminTrashPage({ searchParams }: Props) {
-  const admin = await getCurrentAdmin();
-  if (!admin) redirect("/admin/login");
-
-  const sp = await searchParams;
-  const search = sp.search?.trim() || "";
-  const page = Math.max(1, Number(sp.page) || 1);
-
+  console.log("[TRASH] Page started");
+  
   try {
+    const admin = await getCurrentAdmin();
+    console.log("[TRASH] Admin check done", { hasAdmin: !!admin });
+    
+    if (!admin) redirect("/admin/login");
+
+    const sp = await searchParams;
+    console.log("[TRASH] SearchParams parsed");
+    
+    const search = sp.search?.trim() || "";
+    const page = Math.max(1, Number(sp.page) || 1);
+
+    console.log("[TRASH] Querying database...");
+    
     const where = {
       deletedAt: { not: null },
       ...(search
@@ -49,8 +50,8 @@ export default async function AdminTrashPage({ searchParams }: Props) {
       prisma.tenant.findMany({
         where,
         orderBy: { deletedAt: "desc" },
-        skip: (page - 1) * PAGE_SIZE,
-        take: PAGE_SIZE,
+        skip: (page - 1) * 25,
+        take: 25,
         select: {
           id: true,
           displayName: true,
@@ -68,6 +69,8 @@ export default async function AdminTrashPage({ searchParams }: Props) {
       prisma.tenant.count({ where }),
     ]);
 
+    console.log("[TRASH] Database query done", { total, count: tenants.length });
+
     const data = tenants.map((t) => ({
       id: t.id,
       displayName: t.displayName,
@@ -83,7 +86,7 @@ export default async function AdminTrashPage({ searchParams }: Props) {
       createdAt: t.createdAt.toISOString(),
     }));
 
-    const totalPages = Math.ceil(total / PAGE_SIZE);
+    const totalPages = Math.ceil(total / 25);
 
     const buildLink = (params: Record<string, string | undefined>) => {
       const url = new URLSearchParams();
@@ -106,6 +109,17 @@ export default async function AdminTrashPage({ searchParams }: Props) {
       : null;
 
     const hasItems = total > 0;
+
+    console.log("[TRASH] Rendering page...");
+
+    // Import components dynamically to isolate errors
+    const { AdminPageShell } = await import("@/components/layout/admin-page-shell");
+    const { Search, X } = await import("lucide-react");
+    const { default: Link } = await import("next/link");
+    const { TrashTable } = await import("@/app/(admin)/admin/trash/trash-table");
+    const { EmptyTrashButton } = await import("@/app/(admin)/admin/trash/empty-trash-button");
+
+    console.log("[TRASH] Components loaded");
 
     return (
       <AdminPageShell
@@ -195,13 +209,16 @@ export default async function AdminTrashPage({ searchParams }: Props) {
       </AdminPageShell>
     );
   } catch (error) {
-    console.error("Error loading trash page:", error);
+    console.error("[TRASH] Error:", error);
+    console.error("[TRASH] Error stack:", error instanceof Error ? error.stack : "No stack");
+    
     return (
-      <AdminPageShell badge="خطأ" title="حدث خطأ" description="حدث خطأ أثناء تحميل البيانات">
-        <div className="rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm font-black text-red-300">
-          {error instanceof Error ? error.message : "خطأ غير متوقع"}
-        </div>
-      </AdminPageShell>
+      <div className="p-8">
+        <h1 className="text-2xl font-bold text-red-500 mb-4">حدث خطأ في صفحة سلة المحذوفات</h1>
+        <pre className="bg-gray-900 text-white p-4 rounded overflow-auto text-sm">
+          {error instanceof Error ? `${error.message}\n\n${error.stack}` : JSON.stringify(error, null, 2)}
+        </pre>
+      </div>
     );
   }
 }
