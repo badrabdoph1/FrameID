@@ -41,6 +41,7 @@ export async function signupAction(formData: FormData) {
     | Awaited<ReturnType<typeof createSessionForUser>>["cookie"]
     | undefined;
   let redirectTo = "/dashboard";
+  let selectedTemplateCode: string | undefined;
 
   try {
     const cookieSecure = await shouldUseSecureSessionCookie();
@@ -49,12 +50,13 @@ export async function signupAction(formData: FormData) {
       repository: createPrismaSignupProvisioningRepository(prisma),
       trialDays: lifecycleSettings.trial.defaultDays,
     });
+    selectedTemplateCode =
+      readFormString(formData, "selectedTemplateCode") || undefined;
     const result = await provisioningService.provisionTrialSite({
       name: readFormString(formData, "name"),
       identifier: readFormString(formData, "identifier"),
       password: readFormString(formData, "password"),
-      selectedTemplateCode:
-        readFormString(formData, "selectedTemplateCode") || undefined,
+      selectedTemplateCode,
     });
     const session = await createSessionForUser({
       repository: createPrismaLoginRepository(prisma),
@@ -79,5 +81,7 @@ export async function signupAction(formData: FormData) {
     cookieStore.set(cookieToSet.name, cookieToSet.value, cookieToSet.options);
   }
 
-  redirect(`${redirectTo}?welcome=1`);
+  // If no template was selected, redirect to templates page to choose one
+  const finalRedirect = selectedTemplateCode ? `${redirectTo}?welcome=1` : "/templates?from=signup";
+  redirect(finalRedirect);
 }

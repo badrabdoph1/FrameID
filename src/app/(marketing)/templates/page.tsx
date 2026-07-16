@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import React from "react";
-import { ArrowLeft, ChevronDown, CreditCard, ExternalLink, MessageCircle, Palette, Sparkles, Star, Zap } from "lucide-react";
+import { ArrowLeft, ChevronDown, CheckCircle2, CreditCard, ExternalLink, MessageCircle, Palette, Sparkles, Star, Zap } from "lucide-react";
 
 import { MarketingFooter } from "@/components/layout/marketing-footer";
 import { MarketingNav } from "@/components/layout/marketing-nav";
@@ -29,9 +29,17 @@ export const metadata: Metadata = {
   }
 };
 
-export default function TemplatesPage() {
+type TemplatesPageProps = {
+  searchParams: Promise<{
+    from?: string;
+  }>;
+};
+
+export default async function TemplatesPage({ searchParams }: TemplatesPageProps) {
+  const { from } = await searchParams;
   const templates = getPublishedTemplates();
   const footer = getContent("marketing/footer");
+  const isNewUser = from === "signup";
 
   const templateHighlights: Record<string, { badge?: string; highlight?: string }> = {
     "noir-gold": {
@@ -117,6 +125,14 @@ export default function TemplatesPage() {
                 <br />
                 اختار القالب اللي يعبر عنك، وكل حاجة تتغير بعدين.
               </p>
+
+              {/* New User Welcome */}
+              {isNewUser && (
+                <div className="mx-auto mt-6 flex max-w-md items-center gap-2.5 rounded-full border border-success/30 bg-success/10 px-5 py-2.5 text-sm font-medium text-success backdrop-blur-sm">
+                  <CheckCircle2 className="size-4 shrink-0" aria-hidden />
+                  تم إنشاء حسابك بنجاح! اختر قالبك الآن.
+                </div>
+              )}
 
               {/* CTA */}
               <a

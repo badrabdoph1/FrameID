@@ -49,7 +49,14 @@ export default async function SignupPage({ searchParams }: SignupPageProps) {
             <p className="mt-0.5 truncate text-sm font-semibold text-foreground">{publishedTemplate.name}</p>
           </div>
         </div>
-      ) : null}
+      ) : (
+        <div className="mb-5 flex items-start gap-3 rounded-xl border border-champagne/30 bg-champagne/[0.06] p-3">
+          <div className="mt-0.5 text-champagne-strong">💡</div>
+          <p className="text-[0.82rem] leading-relaxed text-foreground/80">
+            بعد إنشاء الحساب، هنتوجهك تلقائيًا لصفحة القوالب عشان تختار الشكل المناسب لموقعك.
+          </p>
+        </div>
+      )}
 
       <SignupForm error={error} template={template} />
 
