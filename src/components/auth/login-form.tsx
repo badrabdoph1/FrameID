@@ -23,9 +23,10 @@ function SubmitButton() {
 type LoginFormProps = {
   error?: string;
   message?: string;
+  template?: string;
 };
 
-export function LoginForm({ error, message }: LoginFormProps) {
+export function LoginForm({ error, message, template }: LoginFormProps) {
   const [mode, setMode] = useState<"phone" | "email">("phone");
   const [phoneValue, setPhoneValue] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -86,6 +87,7 @@ export function LoginForm({ error, message }: LoginFormProps) {
 
       {/* Form */}
       <form action={loginAction} className="space-y-4">
+        {template && <input type="hidden" name="template" value={template} />}
         {mode === "phone" && (
           <input type="hidden" name="identifier" value={phoneValue} />
         )}

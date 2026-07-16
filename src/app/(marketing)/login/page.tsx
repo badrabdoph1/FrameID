@@ -17,18 +17,19 @@ type LoginPageProps = {
   searchParams: Promise<{
     error?: string;
     message?: string;
+    template?: string;
   }>;
 };
 
 export default async function LoginPage({ searchParams }: LoginPageProps) {
-  const { error, message } = await searchParams;
+  const { error, message, template } = await searchParams;
 
   return (
     <AuthShell
       title="مرحباً بعودتك"
       description="ادخل برقم الهاتف أو البريد عشان تدير موقعك، صورك، وباقاتك."
     >
-      <LoginForm error={error} message={message} />
+      <LoginForm error={error} message={message} template={template} />
 
       <div className="mt-6 flex flex-col items-center gap-4 sm:flex-row sm:justify-between">
         <Link

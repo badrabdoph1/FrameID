@@ -244,7 +244,7 @@ export default async function TemplatesPage({ searchParams }: TemplatesPageProps
                           <ArrowLeft className="relative z-10 size-3.5 transition-transform duration-300 group-hover/btn:-translate-x-1" aria-hidden />
                         </Link>
                         <Link
-                          href={`/signup?template=${template.code}`}
+                          href={isNewUser ? `/login?template=${template.code}` : `/signup?template=${template.code}`}
                           className={cn(
                             "group/btn relative inline-flex min-h-[3.1rem] items-center justify-center gap-2.5 overflow-hidden rounded-xl px-5 text-sm font-bold transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 focus-visible:outline-none focus-visible:ring-2",
                             template.themeCode === "noir-gold"
@@ -256,7 +256,7 @@ export default async function TemplatesPage({ searchParams }: TemplatesPageProps
                             "absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent to-transparent transition-transform duration-700 group-hover/btn:translate-x-full",
                             template.themeCode === "noir-gold" ? "via-white/15" : "via-champagne/15"
                           )} />
-                          استخدم الموقع ده
+                          {isNewUser ? "سجل دخول واستخدم" : "استخدم الموقع ده"}
                         </Link>
                       </div>
                     </div>

@@ -37,6 +37,7 @@ export async function loginAction(formData: FormData) {
     | Awaited<ReturnType<ReturnType<typeof createLoginService>["login"]>>["session"]["cookie"]
     | undefined;
   let redirectPath: ReturnType<typeof getPostLoginRedirectPath> = "/dashboard";
+  let selectedTemplateCode: string | undefined;
 
   try {
     const cookieSecure = await shouldUseSecureSessionCookie();
@@ -44,6 +45,7 @@ export async function loginAction(formData: FormData) {
       repository: createPrismaLoginRepository(prisma),
       cookieSecure,
     });
+    selectedTemplateCode = readFormString(formData, "template") || undefined;
     const result = await loginService.login({
       identifier: readFormString(formData, "identifier"),
       password: readFormString(formData, "password"),
@@ -66,5 +68,9 @@ export async function loginAction(formData: FormData) {
     cookieStore.set(cookieToSet.name, cookieToSet.value, cookieToSet.options);
   }
 
-  redirect(`${redirectPath}?welcome=1`);
+  // If template was selected, redirect to dashboard with template param
+  const finalRedirect = selectedTemplateCode
+    ? `${redirectPath}?welcome=1&template=${selectedTemplateCode}`
+    : `${redirectPath}?welcome=1`;
+  redirect(finalRedirect);
 }

@@ -10,6 +10,7 @@ type ChecklistItem = {
   id: string;
   label: string;
   done: boolean;
+  error?: boolean;
   href: string;
   description: string;
   workspace: "sales" | "studio" | "photos" | "publish" | "billing";
