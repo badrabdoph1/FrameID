@@ -142,10 +142,9 @@ model User {
   ownedTenants          Tenant[]
   // auditLogs removed: actorId stores plain ID, no FK to User
   adminNotes            AdminNote[]            @relation("AdminNoteAuthor")
-  reviewedPayments      PaymentRequest[]       @relation("PaymentReviewer")
+  // reviewedPayments: PaymentRequest FK removed — reviewedByUserId stores AdminUser or User ID (no FK — admins ≠ users)
   // backupJobs removed: triggeredById stores plain ID, no FK to User
   // backupRestores removed: same reason
-  impersonationSessions ImpersonationSession[] @relation("ImpersonationAdmin")
   sessions              Session[]
   passwordResetTokens   PasswordResetToken[]
   customerIssues        CustomerIssue[]        @relation("CustomerIssueReporter")
@@ -630,7 +629,7 @@ model PaymentRequest {
   plan           Plan?         @relation(fields: [planId], references: [id])
   paymentAccount PaymentAccount? @relation(fields: [paymentAccountId], references: [id])
   proofAsset     MediaAsset?   @relation("PaymentProof", fields: [proofAssetId], references: [id])
-  reviewer       User?         @relation("PaymentReviewer", fields: [reviewedByUserId], references: [id])
+  // reviewer FK removed — reviewedByUserId stores AdminUser or User ID (no FK — admins ≠ users)
   logs           PaymentRequestLog[]
 
   @@index([tenantId, status])
@@ -820,7 +819,7 @@ model ImpersonationSession {
   expiresAt DateTime
   revokedAt DateTime?
 
-  admin  User   @relation("ImpersonationAdmin", fields: [adminId], references: [id])
+  // adminId stores AdminUser or User ID (no FK — admins ≠ users)
   tenant Tenant @relation(fields: [tenantId], references: [id])
 
   @@index([adminId, createdAt])
