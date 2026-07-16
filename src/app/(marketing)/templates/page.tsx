@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import React from "react";
-import { ChevronDown, CreditCard, Eye, MessageCircle, Palette, Sparkles, Star, Zap } from "lucide-react";
+import { ChevronDown, CreditCard, Eye, MessageCircle, Palette, Sparkles, Star, WandSparkles, Zap } from "lucide-react";
 
 import { MarketingFooter } from "@/components/layout/marketing-footer";
 import { MarketingNav } from "@/components/layout/marketing-nav";
@@ -162,70 +162,55 @@ export default function TemplatesPage() {
             </div>
           ) : (
             <div className="grid gap-8 md:grid-cols-2 md:gap-10">
-              {templates.map((template, index) => {
+              {templates.map((template) => {
                 const meta = templateHighlights[template.code] ?? {};
                 const description = meta.highlight ?? template.description;
 
                 return (
                   <article
                     key={template.code}
-                    className="group relative flex flex-col overflow-hidden rounded-3xl border border-border/40 bg-white/80 shadow-sm ring-1 ring-black/[0.02] backdrop-blur-sm transition-all duration-500 hover:-translate-y-1.5 hover:border-champagne/30 hover:shadow-[0_32px_64px_-12px_rgb(10,10,10,0.08),0_0_0_1px_rgb(201,169,110,0.15)]"
-                    style={{ animationDelay: `${index * 100}ms` }}
+                    className="group relative flex flex-col overflow-hidden rounded-3xl border border-border/40 bg-white shadow-sm ring-1 ring-black/[0.02] transition-all duration-500 hover:-translate-y-1 hover:border-champagne/30 hover:shadow-[0_32px_64px_-12px_rgb(10,10,10,0.1),0_0_0_1px_rgb(201,169,110,0.12)]"
                   >
-                    {/* Preview Container */}
-                    <div className="relative overflow-hidden bg-gradient-to-br from-muted/30 via-muted/10 to-transparent px-4 pt-5 pb-4">
-                      <div className="relative overflow-hidden rounded-2xl shadow-[0_8px_32px_-4px_rgb(0,0,0,0.08)] ring-1 ring-black/[0.04] transition-all duration-500 group-hover:shadow-[0_12px_40px_-4px_rgb(0,0,0,0.12)]">
-                        <Link href={`/templates/${template.code}/preview`} className="block">
-                          <TemplateLivePreview template={template} />
-                        </Link>
-                      </div>
+                    {/* Preview */}
+                    <div className="relative">
+                      <Link href={`/templates/${template.code}/preview`}>
+                        <TemplateLivePreview template={template} />
+                      </Link>
 
-                      {/* Badge */}
                       {meta.badge && (
-                        <span className="absolute right-7 top-8 z-10 inline-flex items-center gap-1.5 rounded-full bg-ink/85 px-3.5 py-1.5 text-[0.65rem] font-bold tracking-wide text-champagne shadow-lg backdrop-blur-md">
+                        <span className="absolute end-3 top-3 z-10 inline-flex items-center gap-1.5 rounded-full bg-ink/90 px-3 py-1.5 text-[0.65rem] font-bold tracking-wide text-champagne shadow-lg backdrop-blur-md">
                           <Star className="size-3 fill-champagne" aria-hidden />
                           {meta.badge}
                         </span>
                       )}
-
-                      {/* Hover Overlay */}
-                      <div className="pointer-events-none absolute inset-0 flex items-center justify-center opacity-0 transition-all duration-500 group-hover:opacity-100">
-                        <Link
-                          href={`/templates/${template.code}/preview`}
-                          className="pointer-events-auto flex items-center gap-2 rounded-full bg-white/95 px-5 py-2.5 text-sm font-semibold text-ink shadow-xl backdrop-blur-sm transition-all duration-300 hover:bg-white hover:shadow-2xl"
-                        >
-                          <Eye className="size-4" />
-                          معاينة مباشرة
-                        </Link>
-                      </div>
                     </div>
 
                     {/* Content */}
-                    <div className="flex flex-1 flex-col px-6 pt-2 pb-6">
-                      {/* Title & Description */}
+                    <div className="flex flex-1 flex-col p-5 md:p-6">
                       <div className="flex-1">
-                        <h3 className="text-[1.05rem] font-semibold leading-[1.35] tracking-tight text-foreground md:text-[1.1rem]">
+                        <h3 className="text-[1.05rem] font-semibold leading-snug tracking-tight text-foreground md:text-[1.1rem]">
                           {template.name}
                         </h3>
-                        <p className="mt-2 text-[0.82rem] leading-[1.75] text-muted-foreground md:text-sm">
+                        <p className="mt-2 text-[0.82rem] leading-relaxed text-muted-foreground md:text-sm">
                           {description}
                         </p>
                       </div>
 
                       {/* Actions */}
-                      <div className="mt-5 flex items-center gap-3 border-t border-border/30 pt-5">
+                      <div className="mt-5 flex flex-col gap-2.5 border-t border-border/30 pt-5 md:flex-row md:gap-3">
                         <Link
                           href={`/templates/${template.code}/preview`}
-                          className="inline-flex min-h-[2.6rem] items-center justify-center gap-2 rounded-full bg-foreground px-6 text-[0.82rem] font-semibold text-background transition-all duration-300 hover:bg-foreground/85 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
+                          className="inline-flex min-h-[2.75rem] items-center justify-center gap-2 rounded-xl bg-foreground px-5 text-[0.85rem] font-semibold text-background transition-all duration-300 hover:bg-foreground/85 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
                         >
-                          <Eye className="size-3.5" aria-hidden />
-                          شوف القالب
+                          <Eye className="size-4" aria-hidden />
+                          معاينة القالب
                         </Link>
                         <Link
                           href={`/signup?template=${template.code}`}
-                          className="inline-flex min-h-[2.6rem] items-center justify-center gap-2 rounded-full border border-champagne/40 bg-champagne/[0.04] px-6 text-[0.82rem] font-semibold text-champagne-strong transition-all duration-300 hover:border-champagne/70 hover:bg-champagne/10 hover:shadow-sm"
+                          className="inline-flex min-h-[2.75rem] items-center justify-center gap-2 rounded-xl border border-champagne/40 bg-champagne/[0.06] px-5 text-[0.85rem] font-semibold text-champagne-strong transition-all duration-300 hover:border-champagne/70 hover:bg-champagne/12 hover:shadow-sm"
                         >
-                          استخدمه لموقعي
+                          <WandSparkles className="size-4" aria-hidden />
+                          ابدأ بهذا القالب
                         </Link>
                       </div>
                     </div>
