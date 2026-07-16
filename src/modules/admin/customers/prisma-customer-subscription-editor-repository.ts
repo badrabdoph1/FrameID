@@ -172,7 +172,7 @@ export function createPrismaCustomerSubscriptionEditorRepository(
               reference: command.payment.reference,
               submittedAt: command.periodStart,
               adminNote: command.note ?? "دفعة سجلها المشرف من ملف العميل",
-              reviewedByUserId: null,
+              reviewedByUserId: command.actor.id,
               reviewedAt: command.periodStart,
               updatedAt: command.periodStart,
             },

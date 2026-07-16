@@ -66,24 +66,24 @@ export function createPrismaBillingActivationRepository(prisma: PrismaBillingAct
       })) as { id: string; status: string; method: string; amount: number; currency: string; reference: string | null; proofAssetId: string | null; paymentAccountId: string | null; planId: string | null; submittedAt: Date | null; rejectionReason: string | null } | null;
     },
 
-    async approvePayment(paymentRequestId, _reviewerId, adminNote, reviewedAt) {
+    async approvePayment(paymentRequestId, reviewerId, adminNote, reviewedAt) {
       return (await prisma.paymentRequest.update({
         where: { id: paymentRequestId },
-        data: { status: "APPROVED", reviewedById: null, adminNote, reviewedAt: reviewedAt ?? new Date() },
+        data: { status: "APPROVED", reviewedByUserId: reviewerId, adminNote, reviewedAt: reviewedAt ?? new Date() },
         select: { tenantId: true, subscriptionId: true, planId: true },
       })) as PaymentRequestUpdateResult;
     },
 
-    async rejectPayment(paymentRequestId, _reviewerId, reason, reviewedAt, adminNote) {
+    async rejectPayment(paymentRequestId, reviewerId, reason, reviewedAt, adminNote) {
       return (await prisma.paymentRequest.update({
         where: { id: paymentRequestId },
-        data: { status: "REJECTED", reviewedById: null, rejectionReason: reason, adminNote: adminNote ?? null, reviewedAt: reviewedAt ?? new Date() },
+        data: { status: "REJECTED", reviewedByUserId: reviewerId, rejectionReason: reason, adminNote: adminNote ?? null, reviewedAt: reviewedAt ?? new Date() },
         select: { tenantId: true },
       })) as { tenantId: string };
     },
 
     async requestReupload(paymentRequestId, _reviewerId, _note) {
-      await prisma.paymentRequest.update({ where: { id: paymentRequestId }, data: { status: "DRAFT", proofAssetId: null, reviewedById: null, reviewedAt: null } });
+      await prisma.paymentRequest.update({ where: { id: paymentRequestId }, data: { status: "DRAFT", proofAssetId: null, reviewedByUserId: null, reviewedAt: null } });
     },
 
     async getPlan(planId: string) {

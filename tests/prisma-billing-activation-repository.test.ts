@@ -5,6 +5,7 @@ import { createPrismaBillingActivationRepository } from "@/modules/billing/prism
 describe("prisma billing activation repository", () => {
   it("creates draft payment requests, submits, approves and activates subscription state", async () => {
     const calls: string[] = [];
+    const paymentUpdates: Array<Record<string, unknown>> = [];
     const prisma = {
       paymentRequest: {
         async create(args: { data: Record<string, unknown>; select: Record<string, unknown> }) {
@@ -12,6 +13,7 @@ describe("prisma billing activation repository", () => {
           return { id: "payment_1", status: "DRAFT" };
         },
         async update(args: { where: { id: string }; data: Record<string, unknown>; select?: Record<string, unknown> }) {
+          paymentUpdates.push(args.data);
           if (args.data.status === "APPROVED" || args.data.status === "REJECTED" || args.data.status === "SUBMITTED") {
             calls.push(`${args.data.status}:${args.where.id}`);
           } else if (args.data.reference) {
@@ -134,5 +136,13 @@ describe("prisma billing activation repository", () => {
       "audit:PAYMENT_APPROVED:payment_1",
       "change:subscription_1"
     ]);
+    expect(paymentUpdates.find((update) => update.status === "APPROVED")).toMatchObject({
+      reviewedByUserId: "admin_1",
+      reviewedAt: new Date("2026-07-06T12:00:00.000Z"),
+    });
+    expect(paymentUpdates.find((update) => update.status === "APPROVED")).not.toHaveProperty("reviewedById");
+    expect(paymentUpdates.find((update) => update.status === "REJECTED")).toMatchObject({
+      reviewedByUserId: "admin_1",
+    });
   });
 });

@@ -16,4 +16,11 @@ describe("production deployment safety", () => {
     );
     expect(deployScript).not.toContain("--force-reset");
   });
+
+  it("keeps the payment reviewer Prisma field mapped to the production column", () => {
+    const schema = readFileSync(`${process.cwd()}/prisma/schema.prisma`, "utf8");
+
+    expect(schema).toContain('reviewedByUserId  String?       @map("reviewedById")');
+    expect(schema).toContain("@@index([reviewedByUserId])");
+  });
 });
