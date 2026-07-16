@@ -2,12 +2,14 @@
 
 import type { Prisma } from "@prisma/client";
 import { revalidatePath } from "next/cache";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { prisma } from "@/lib/prisma";
 import { processError } from "@/lib/errors";
 import { createCustomerAdminRepository } from "@/modules/admin/customers/customer-admin-repository";
 import { createCustomerAdminService } from "@/modules/admin/customers/customer-admin-service";
+import { createCustomerDashboardImpersonation } from "@/modules/admin/customers/customer-impersonation";
 import {
   createCustomerSubscriptionEditor,
   type CustomerSubscriptionDurationMode,
@@ -17,6 +19,9 @@ import { createPrismaCustomerSubscriptionEditorRepository } from "@/modules/admi
 import { getCurrentAdmin } from "@/modules/admin/admin-page-guards";
 import { requireAdminPermission } from "@/modules/admin/admin-permission-guards";
 import { readFormString } from "@/modules/auth/auth-action-utils";
+import { createPrismaLoginRepository } from "@/modules/auth/prisma-login-repository";
+import { shouldUseSecureSessionCookie } from "@/modules/auth/request-cookie-security";
+import { createSessionForUser } from "@/modules/auth/session-service";
 import { addDays, applySubscriptionTimerToTenants, applyTrialTimerToTenants, lifecycleDurationOptions, type LifecycleDurationPreset } from "@/modules/lifecycle/customer-lifecycle";
 import { createCustomerOutreachCampaign } from "@/modules/messages/customer-outreach-service";
 
@@ -215,45 +220,71 @@ export async function sendNotificationAction(formData: FormData) {
 }
 
 export async function impersonateCustomerAction(formData: FormData) {
-  const { admin } = await getService();
+  const admin = await requireAdminPermission("customers", "edit");
   const tenantId = readFormString(formData, "tenantId");
   if (!tenantId) redirect("/admin/customers?error=missing-tenant");
 
+  let result: Awaited<ReturnType<typeof createCustomerDashboardImpersonation>>;
   try {
-    const tenant = await prisma.tenant.findUnique({
-      where: { id: tenantId, deletedAt: null },
-      select: {
-        id: true,
-        sites: {
-          where: { deletedAt: null },
-          select: { slug: true },
-          take: 1,
+    const cookieSecure = await shouldUseSecureSessionCookie();
+    const sessionRepository = createPrismaLoginRepository(prisma);
+    const auditRepository = createCustomerAdminRepository(prisma);
+
+    result = await createCustomerDashboardImpersonation({
+      tenantId,
+      actor: { id: admin.id, name: admin.name },
+      createSession: ({ userId }) => createSessionForUser({
+        repository: sessionRepository,
+        userId,
+        cookieSecure,
+      }),
+      repository: {
+        async findTenantForDashboardImpersonation(id) {
+          const tenant = await prisma.tenant.findUnique({
+            where: { id, deletedAt: null },
+            select: {
+              id: true,
+              displayName: true,
+              ownerUserId: true,
+              sites: {
+                where: { deletedAt: null },
+                orderBy: { createdAt: "asc" },
+                select: { id: true },
+                take: 1,
+              },
+            },
+          });
+
+          if (!tenant) return null;
+          return {
+            id: tenant.id,
+            displayName: tenant.displayName,
+            ownerUserId: tenant.ownerUserId,
+            firstSiteId: tenant.sites[0]?.id ?? null,
+          };
+        },
+        async createImpersonationSession(input) {
+          await prisma.impersonationSession.create({
+            data: {
+              adminId: input.adminId,
+              tenantId: input.tenantId,
+              expiresAt: input.expiresAt,
+            },
+          });
+        },
+        async createAuditLog(actorId, id, action, entityType, entityId, metadata) {
+          await auditRepository.createAuditLog(actorId, id, action, entityType, entityId, metadata);
         },
       },
     });
-
-    if (!tenant) redirect("/admin/customers?error=tenant-not-found");
-
-    await prisma.impersonationSession.create({
-      data: {
-        adminId: admin.id,
-        tenantId,
-        expiresAt: new Date(Date.now() + 1000 * 60 * 60),
-      },
-    });
-
-    const repo = createCustomerAdminRepository(prisma);
-    await repo.createAuditLog(admin.id, tenantId, "ADMIN_IMPERSONATED", "Tenant", tenantId, { adminName: admin.name });
-
-    const siteSlug = tenant.sites[0]?.slug;
-    if (siteSlug) {
-      redirect(`/p/${siteSlug}`);
-    }
-    redirect("/admin/customers?impersonated=1");
   } catch (error) {
     const { userError } = await processError(error, { userId: admin.id, tenantId, metadata: { action: "impersonateCustomer" } });
     redirect(`/admin/customers?error=${encodeURIComponent(userError.message)}`);
   }
+
+  const cookieStore = await cookies();
+  cookieStore.set(result.cookie.name, result.cookie.value, result.cookie.options);
+  redirect(result.redirectTo);
 }
 
 export async function bulkCustomerLifecycleAction(formData: FormData) {

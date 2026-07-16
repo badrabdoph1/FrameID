@@ -7,6 +7,7 @@ import {
   Copy,
   ExternalLink,
   KeyRound,
+  LayoutDashboard,
   Mail,
   MessageSquare,
   PauseCircle,
@@ -26,6 +27,7 @@ type QuickActionsProps = {
   onNotify: () => void;
   onEmail: () => void;
   onSecurity: () => void;
+  impersonateAction: (formData: FormData) => void | Promise<void>;
 };
 
 export function CustomerQuickActions({
@@ -36,6 +38,7 @@ export function CustomerQuickActions({
   onNotify,
   onEmail,
   onSecurity,
+  impersonateAction,
 }: QuickActionsProps) {
   const primarySite = customer.sites[0] ?? null;
 
@@ -83,6 +86,11 @@ export function CustomerQuickActions({
           )}
 
           <ActionButton type="button" onClick={onSecurity}><KeyRound aria-hidden="true" size={14} />إعادة كلمة المرور</ActionButton>
+
+          <form action={impersonateAction}>
+            <input type="hidden" name="tenantId" value={customer.id} />
+            <ActionButton type="submit"><LayoutDashboard aria-hidden="true" size={14} />دخول لوحة تحكم العميل</ActionButton>
+          </form>
         </ActionGroup>
 
         <ActionGroup label="الموقع">

@@ -19,6 +19,9 @@ const customerActions = vi.hoisted(() => ({
   editCustomerSubscriptionAction: vi.fn(async (formData: FormData) => {
     void formData;
   }),
+  impersonateCustomerAction: vi.fn(async (formData: FormData) => {
+    void formData;
+  }),
   publishSiteAction: vi.fn(async () => undefined),
   suspendSiteAction: vi.fn(async () => undefined),
   revokeSessionAction: vi.fn(async () => undefined),
@@ -135,7 +138,7 @@ describe("customer detail layout", () => {
     vi.clearAllMocks();
   });
 
-  it("groups every existing customer action without mixing safe and sensitive actions", () => {
+  it("groups every existing customer action without mixing safe and sensitive actions", async () => {
     const onCopy = vi.fn();
     const onSecurity = vi.fn();
 
@@ -148,6 +151,7 @@ describe("customer detail layout", () => {
         onNotify={vi.fn()}
         onEmail={vi.fn()}
         onSecurity={onSecurity}
+        impersonateAction={customerActions.impersonateCustomerAction}
       />,
     );
 
@@ -161,6 +165,7 @@ describe("customer detail layout", () => {
     expect(within(center).getByRole("button", { name: "تفعيل" })).toBeInTheDocument();
     expect(within(center).getByRole("button", { name: "إيقاف" })).toBeInTheDocument();
     expect(within(center).getByRole("button", { name: "إعادة كلمة المرور" })).toBeInTheDocument();
+    expect(within(center).getByRole("button", { name: "دخول لوحة تحكم العميل" })).toBeInTheDocument();
     expect(within(center).getByRole("button", { name: "إيقاف الموقع" })).toBeInTheDocument();
     expect(within(center).getByRole("button", { name: "إرسال إشعار" })).toBeInTheDocument();
     expect(within(center).getByRole("button", { name: "إرسال بريد" })).toBeInTheDocument();
@@ -175,6 +180,10 @@ describe("customer detail layout", () => {
 
     fireEvent.click(within(center).getByRole("button", { name: "إعادة كلمة المرور" }));
     expect(onSecurity).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(within(center).getByRole("button", { name: "دخول لوحة تحكم العميل" }));
+    await waitFor(() => expect(customerActions.impersonateCustomerAction).toHaveBeenCalledTimes(1));
+    expect(customerActions.impersonateCustomerAction.mock.calls[0]![0].get("tenantId")).toBe("customer-1");
   });
 
   it("shows only one activation action for a suspended customer", () => {
@@ -187,6 +196,7 @@ describe("customer detail layout", () => {
         onNotify={vi.fn()}
         onEmail={vi.fn()}
         onSecurity={vi.fn()}
+        impersonateAction={customerActions.impersonateCustomerAction}
       />,
     );
 

@@ -37,6 +37,7 @@ import {
   deleteCustomerAction,
   editCustomerSubscriptionAction,
   extendCustomerTrialAction,
+  impersonateCustomerAction,
   publishSiteAction,
   resetCustomerPasswordAction,
   revokeSessionAction,
@@ -307,6 +308,7 @@ export function CustomerDetailClient({
             onNotify={() => changeWorkspace("support")}
             onEmail={() => { window.location.href = `mailto:${customer.owner.email}`; }}
             onSecurity={() => changeWorkspace("support")}
+            impersonateAction={impersonateCustomerAction}
           />
           <CustomerOverviewTab customer={customer} platformBaseUrl={platformBaseUrl} onTabChange={changeWorkspace} />
         </section>
