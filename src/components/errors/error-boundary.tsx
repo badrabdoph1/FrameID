@@ -2,7 +2,7 @@
 
 import { Component, type ErrorInfo, type ReactNode } from "react";
 
-import { ErrorExperience } from "@/components/errors/error-experience";
+import { PlatformErrorExperience } from "@/components/errors/platform-error-experience";
 
 type Props = {
   children: ReactNode;
@@ -35,7 +35,7 @@ export class ErrorBoundary extends Component<Props, State> {
         return this.props.fallback;
       }
 
-      return <ErrorExperience variant="generic" error={this.state.error} />;
+      return <PlatformErrorExperience error={this.state.error} />;
     }
 
     return this.props.children;

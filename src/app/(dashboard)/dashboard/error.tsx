@@ -1,6 +1,6 @@
 "use client"
 
-import { ErrorExperience } from "@/components/errors/error-experience"
+import { DashboardErrorExperience } from "@/components/errors/dashboard-error-experience"
 
 export default function DashboardError({
   error,
@@ -8,5 +8,5 @@ export default function DashboardError({
   error: Error & { digest?: string }
   reset: () => void
 }) {
-  return <ErrorExperience variant="dashboard" error={error} homeHref="/dashboard" />
+  return <DashboardErrorExperience error={error} homeHref="/dashboard" />
 }

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import { ErrorExperience } from "@/components/errors/error-experience";
+import { ForbiddenErrorExperience } from "@/components/errors/forbidden-error-experience";
 
 export const metadata: Metadata = {
   title: "الوصول غير متاح",
@@ -8,5 +8,5 @@ export const metadata: Metadata = {
 };
 
 export default function ForbiddenPage() {
-  return <ErrorExperience variant="forbidden" />;
+  return <ForbiddenErrorExperience />;
 }

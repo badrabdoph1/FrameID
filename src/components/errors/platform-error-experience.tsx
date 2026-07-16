@@ -1,33 +1,18 @@
 "use client";
 
-import { Check, Home, MessageSquareMore, RefreshCw, Sparkles } from "lucide-react";
+import { AlertCircle, Check, Home, MessageSquareMore, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
 import { captureClientError, reportCapturedError } from "@/lib/client/error-reporting";
 
-export type ErrorExperienceVariant = "generic" | "marketing" | "dashboard" | "admin" | "not-found" | "unauthorized" | "forbidden" | "session-expired";
-
-const COPY: Record<ErrorExperienceVariant, { eyebrow: string; title: string; message: string }> = {
-  generic: { eyebrow: "تحديث بسيط", title: "بنجهّز لك تجربة أحسن", message: "في تحديث دلوقتي في الموقع، بنضيف لكم مميزات جديدة وبنطوّر الخدمات. جرّب تاني بعد لحظات." },
-  marketing: { eyebrow: "تحديث بسيط", title: "بنجهّز لك تجربة أحسن", message: "في تحديث دلوقتي في الموقع، بنضيف لكم مميزات جديدة وبنطوّر الخدمات. جرّب تاني بعد لحظات." },
-  dashboard: { eyebrow: "حفظنا مكانك", title: "لوحة التحكم هترجع خلال لحظات", message: "في تحديث دلوقتي في الموقع، بنضيف لكم مميزات جديدة وبنطوّر الخدمات. جرّب تاني بعد لحظات." },
-  admin: { eyebrow: "متابعة داخلية", title: "مساحة الإدارة بتتحدّث", message: "في تحديث دلوقتي في الموقع، بنضيف لكم مميزات جديدة وبنطوّر الخدمات. جرّب تاني بعد لحظات." },
-  "not-found": { eyebrow: "الرابط اتغيّر", title: "الصفحة دي مش متاحة دلوقتي", message: "تأكد من الرابط أو جرّب ترجع للصفحة الرئيسية." },
-  unauthorized: { eyebrow: "حسابك آمن", title: "سجّل دخولك عشان تكمّل", message: "تحتاج تسجيل دخولك عشان تكمّل. سجّل دخولك وارجع تاني." },
-  forbidden: { eyebrow: "صلاحيات الوصول", title: "الصفحة دي متاحة لصلاحيات معينة", message: "الصفحة دي مش متاحة لحسابك. تقدر ترجع للرئيسية وتكمّل بشكل طبيعي." },
-  "session-expired": { eyebrow: "حسابك آمن", title: "جلسة الدخول انتهت", message: "جلسة الدخول انتهت. سجّل دخولك تاني وكمّل بشكل طبيعي." },
-};
-
 type Props = {
-  variant: ErrorExperienceVariant;
   error?: unknown;
   homeHref?: string;
   onRetry?: () => void;
 };
 
-export function ErrorExperience({ variant, error, homeHref = "/", onRetry }: Props) {
-  const copy = COPY[variant];
+export function PlatformErrorExperience({ error, homeHref = "/", onRetry }: Props) {
   const capturePromise = useRef<Promise<string | null> | null>(null);
   const [showNote, setShowNote] = useState(false);
   const [note, setNote] = useState("");
@@ -62,16 +47,16 @@ export function ErrorExperience({ variant, error, homeHref = "/", onRetry }: Pro
   return (
     <main className="relative grid min-h-[70dvh] place-items-center overflow-hidden bg-background px-4 py-12 text-foreground">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_20%,rgba(216,180,106,0.18),transparent_34%),radial-gradient(circle_at_82%_82%,rgba(47,107,255,0.08),transparent_28%)]" />
-      <section className="relative w-full max-w-xl overflow-hidden rounded-[2rem] border border-border/80 bg-card/95 p-6 text-center shadow-[0_28px_90px_rgba(16,16,16,0.11)] sm:p-9" aria-labelledby="error-experience-title">
+      <section className="relative w-full max-w-xl overflow-hidden rounded-[2rem] border border-border/80 bg-card/95 p-6 text-center shadow-[0_28px_90px_rgba(16,16,16,0.11)] sm:p-9" aria-labelledby="platform-error-title">
         <div className="mx-auto grid size-20 place-items-center rounded-full border border-champagne/35 bg-champagne-soft/75 shadow-[0_0_0_10px_rgba(216,180,106,0.08)]">
-          <Sparkles className="size-8 text-champagne-strong" aria-hidden />
+          <AlertCircle className="size-8 text-champagne-strong" aria-hidden />
         </div>
-        <p className="mt-7 text-xs font-bold tracking-[0.18em] text-champagne-strong">{copy.eyebrow}</p>
-        <h1 id="error-experience-title" className="mt-3 text-balance text-3xl font-bold leading-tight sm:text-4xl">{copy.title}</h1>
-        <p className="mx-auto mt-4 max-w-md text-balance text-sm font-medium leading-7 text-muted-foreground sm:text-base">{copy.message}</p>
+        <p className="mt-7 text-xs font-bold tracking-[0.18em] text-champagne-strong">حدث خلل مؤقت</p>
+        <h1 id="platform-error-title" className="mt-3 text-balance text-3xl font-bold leading-tight sm:text-4xl">نعمل على حل المشكلة</h1>
+        <p className="mx-auto mt-4 max-w-md text-balance text-sm font-medium leading-7 text-muted-foreground sm:text-base">واجهتنا مشكلة غير متوقعة. فريقنا يعمل على حلها. جرّب إعادة المحاولة بعد لحظات.</p>
 
         <div className="mt-8 grid gap-3 sm:grid-cols-2">
-          <button type="button" onClick={retry} data-error-action="retry-error-page" className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-foreground px-5 text-sm font-bold text-background transition hover:-translate-y-0.5 hover:bg-foreground/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+          <button type="button" onClick={retry} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-foreground px-5 text-sm font-bold text-background transition hover:-translate-y-0.5 hover:bg-foreground/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
             <RefreshCw className="size-4" aria-hidden />
             إعادة المحاولة
           </button>
@@ -79,7 +64,7 @@ export function ErrorExperience({ variant, error, homeHref = "/", onRetry }: Pro
             <Home className="size-4" aria-hidden />
             الصفحة الرئيسية
           </Link>
-          <button type="button" onClick={() => void report()} disabled={status === "sending" || status === "sent"} data-error-action="report-customer-issue" className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-champagne/40 bg-champagne-soft px-5 text-sm font-bold text-champagne-strong transition hover:-translate-y-0.5 hover:bg-champagne-soft/70 disabled:cursor-default disabled:translate-y-0 disabled:opacity-75 sm:col-span-2">
+          <button type="button" onClick={() => void report()} disabled={status === "sending" || status === "sent"} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-champagne/40 bg-champagne-soft px-5 text-sm font-bold text-champagne-strong transition hover:-translate-y-0.5 hover:bg-champagne-soft/70 disabled:cursor-default disabled:translate-y-0 disabled:opacity-75 sm:col-span-2">
             {status === "sent" ? <Check className="size-4" aria-hidden /> : <MessageSquareMore className="size-4" aria-hidden />}
             {status === "sending" ? "جاري إرسال البلاغ…" : status === "sent" ? "تم إبلاغ الإدارة" : "إبلاغ الإدارة بالمشكلة"}
           </button>

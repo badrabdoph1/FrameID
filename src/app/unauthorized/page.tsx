@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import { ErrorExperience } from "@/components/errors/error-experience";
+import { UnauthorizedErrorExperience } from "@/components/errors/unauthorized-error-experience";
 
 export const metadata: Metadata = {
   title: "تسجيل الدخول مطلوب",
@@ -8,5 +8,5 @@ export const metadata: Metadata = {
 };
 
 export default function UnauthorizedPage() {
-  return <ErrorExperience variant="unauthorized" homeHref="/login" />;
+  return <UnauthorizedErrorExperience homeHref="/" loginHref="/login" />;
 }

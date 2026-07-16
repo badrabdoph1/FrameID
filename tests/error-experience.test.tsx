@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { ErrorExperience } from "@/components/errors/error-experience";
+import { PlatformErrorExperience } from "@/components/errors/platform-error-experience";
 import { GlobalErrorExperience } from "@/components/errors/global-error-experience";
 
 afterEach(() => {
@@ -22,7 +22,7 @@ function mockReportingApi() {
   return { fetchMock, requests };
 }
 
-describe("unified error experience", () => {
+describe("platform error experience", () => {
   it("keeps the same calm recovery actions when the root layout fails", () => {
     mockReportingApi();
     render(<GlobalErrorExperience error={Object.assign(new Error("private"), { digest: "hidden" })} onRetry={() => undefined} />);
@@ -36,10 +36,10 @@ describe("unified error experience", () => {
 
   it("shows calm copy and the three required actions without technical details", async () => {
     mockReportingApi();
-    render(<ErrorExperience variant="generic" error={Object.assign(new Error("Internal Server Error"), { digest: "secret-digest" })} />);
+    render(<PlatformErrorExperience error={Object.assign(new Error("Internal Server Error"), { digest: "secret-digest" })} />);
 
-    expect(screen.getByRole("heading", { name: "بنجهّز لك تجربة أحسن" })).toBeInTheDocument();
-    expect(screen.getByText(/في تحديث دلوقتي في الموقع، بنضيف لكم مميزات جديدة وبنطوّر الخدمات/)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "نعمل على حل المشكلة" })).toBeInTheDocument();
+    expect(screen.getByText(/واجهتنا مشكلة غير متوقعة/)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "إعادة المحاولة" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "الصفحة الرئيسية" })).toHaveAttribute("href", "/");
     expect(screen.getByRole("button", { name: "إبلاغ الإدارة بالمشكلة" })).toBeInTheDocument();
@@ -51,7 +51,7 @@ describe("unified error experience", () => {
   it("performs the supplied full-refresh action", () => {
     mockReportingApi();
     const retry = vi.fn();
-    render(<ErrorExperience variant="generic" error={new Error("failed")} onRetry={retry} />);
+    render(<PlatformErrorExperience error={new Error("failed")} onRetry={retry} />);
 
     fireEvent.click(screen.getByRole("button", { name: "إعادة المحاولة" }));
 
@@ -60,7 +60,7 @@ describe("unified error experience", () => {
 
   it("reports with one click and does not require a customer note", async () => {
     const { requests } = mockReportingApi();
-    render(<ErrorExperience variant="dashboard" error={new Error("failed")} homeHref="/dashboard" />);
+    render(<PlatformErrorExperience error={new Error("failed")} homeHref="/dashboard" />);
     await waitFor(() => expect(requests.some((request) => request.url.endsWith("/capture"))).toBe(true));
 
     fireEvent.click(screen.getByRole("button", { name: "إبلاغ الإدارة بالمشكلة" }));
@@ -72,7 +72,7 @@ describe("unified error experience", () => {
 
   it("sends an optional note only when the customer chooses to add it", async () => {
     const { requests } = mockReportingApi();
-    render(<ErrorExperience variant="generic" error={new Error("failed")} />);
+    render(<PlatformErrorExperience error={new Error("failed")} />);
     await waitFor(() => expect(requests.some((request) => request.url.endsWith("/capture"))).toBe(true));
 
     fireEvent.click(screen.getByRole("button", { name: "إضافة ملاحظة اختيارية" }));

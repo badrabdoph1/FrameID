@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import { ErrorExperience } from "@/components/errors/error-experience";
+import { SessionExpiredExperience } from "@/components/errors/session-expired-experience";
 
 export const metadata: Metadata = {
   title: "انتهت الجلسة",
@@ -8,5 +8,5 @@ export const metadata: Metadata = {
 };
 
 export default function SessionExpiredPage() {
-  return <ErrorExperience variant="session-expired" homeHref="/login" />;
+  return <SessionExpiredExperience homeHref="/" loginHref="/login" />;
 }

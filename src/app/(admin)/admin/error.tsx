@@ -1,6 +1,6 @@
 "use client"
 
-import { ErrorExperience } from "@/components/errors/error-experience"
+import { AdminErrorExperience } from "@/components/errors/admin-error-experience"
 
 export default function AdminError({
   error,
@@ -8,5 +8,5 @@ export default function AdminError({
   error: Error & { digest?: string }
   reset: () => void
 }) {
-  return <ErrorExperience variant="admin" error={error} homeHref="/admin" />
+  return <AdminErrorExperience error={error} homeHref="/admin" />
 }

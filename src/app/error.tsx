@@ -1,6 +1,6 @@
 "use client";
 
-import { ErrorExperience } from "@/components/errors/error-experience";
+import { PlatformErrorExperience } from "@/components/errors/platform-error-experience";
 
 export default function ErrorPage({
   error,
@@ -8,5 +8,5 @@ export default function ErrorPage({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
-  return <ErrorExperience variant="generic" error={error} />;
+  return <PlatformErrorExperience error={error} />;
 }

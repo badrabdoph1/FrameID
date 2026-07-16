@@ -1,12 +1,12 @@
-"use client"
+"use client";
 
-import { ErrorExperience } from "@/components/errors/error-experience"
+import { MarketingErrorExperience } from "@/components/errors/marketing-error-experience";
 
 export default function MarketingError({
   error,
 }: {
-  error: Error & { digest?: string }
-  reset: () => void
+  error: Error & { digest?: string };
+  reset: () => void;
 }) {
-  return <ErrorExperience variant="marketing" error={error} />
+  return <MarketingErrorExperience error={error} />;
 }

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import { ErrorExperience } from "@/components/errors/error-experience";
+import { NotFoundErrorExperience } from "@/components/errors/not-found-error-experience";
 
 export const metadata: Metadata = {
   title: "الصفحة غير موجودة",
@@ -9,5 +9,5 @@ export const metadata: Metadata = {
 };
 
 export default function NotFound() {
-  return <ErrorExperience variant="not-found" />;
+  return <NotFoundErrorExperience />;
 }
