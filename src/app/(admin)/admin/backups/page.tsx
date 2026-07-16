@@ -25,6 +25,7 @@ import { BackupRestoreSection } from "./components/BackupRestoreSection";
 import { BackupListSection } from "./components/BackupListSection";
 import { BackupSettingsSection } from "./components/BackupSettingsSection";
 import { BackupLogsSection } from "./components/BackupLogsSection";
+import { HealthBanner } from "./components/HealthBanner";
 
 export const dynamic = "force-dynamic";
 
@@ -100,6 +101,41 @@ export default async function AdminBackupsPage({ searchParams }: Props) {
   const latestBackupDate = jobs[0] ? formatDate(jobs[0].createdAt) : null;
   const latestRestoreDate = restores[0] ? formatDate(restores[0].createdAt) : null;
 
+  const latestAuto = jobs.find((j) => j.trigger === "AUTO" && j.status === "COMPLETED");
+  const latestManual = jobs.find((j) => j.trigger === "MANUAL" && j.status === "COMPLETED");
+  const latestFull = jobs.find((j) => j.type === "FULL" && j.status === "COMPLETED");
+  const latestDatabase = jobs.find((j) => j.type === "DATABASE" && j.status === "COMPLETED");
+  const latestUploads = jobs.find((j) => j.type === "UPLOADS" && j.status === "COMPLETED");
+
+  const successRate = completed + failed > 0 ? Math.round((completed / (completed + failed)) * 100) : null;
+  const latestRestore = restores[0] ?? null;
+
+  const now = Date.now();
+  const twentyFourHoursMs = 24 * 60 * 60 * 1000;
+  const latestCompletedTime = latestCompleted ? new Date(latestCompleted.createdAt).getTime() : 0;
+  const isBackupStale = !latestCompleted || (now - latestCompletedTime > twentyFourHoursMs);
+  const staleHours = latestCompleted ? Math.round((now - latestCompletedTime) / (60 * 60 * 1000)) : null;
+
+  const recentFailure = jobs.find((j) => {
+    if (j.status !== "FAILED") return false;
+    const age = now - new Date(j.createdAt).getTime();
+    return age < twentyFourHoursMs;
+  });
+
+  const completedDurations = jobs
+    .filter((j) => j.status === "COMPLETED" && j.completedAt)
+    .map((j) => new Date(j.completedAt!).getTime() - new Date(j.createdAt).getTime())
+    .filter((ms) => ms > 0);
+  const avgDurationMs = completedDurations.length > 0
+    ? Math.round(completedDurations.reduce((a, b) => a + b, 0) / completedDurations.length)
+    : null;
+
+  const latestPerType: Record<string, string | null> = {};
+  for (const type of SUPPORTED_BACKUP_TYPES) {
+    const latest = jobs.find((j) => j.type === type && j.status === "COMPLETED");
+    latestPerType[type] = latest ? formatDate(latest.createdAt) : null;
+  }
+
   const auditLogs = await prisma.auditLog.findMany({
     where: {
       OR: [
@@ -118,6 +154,13 @@ export default async function AdminBackupsPage({ searchParams }: Props) {
       <Feedback params={params} job={justCompleted} />
       <GitHubStatusBanner />
       <RebuildBanner />
+      <HealthBanner
+        isBackupStale={isBackupStale}
+        staleHours={staleHours}
+        recentFailure={recentFailure ? { type: recentFailure.type, errorMessage: recentFailure.errorMessage, createdAt: recentFailure.createdAt } : null}
+      />
+
+      <BackupCreationSection onCreateBackup={handleCreateBackup} latestPerType={latestPerType} />
 
       <BackupMetricsSection
         completed={completed}
@@ -125,9 +168,15 @@ export default async function AdminBackupsPage({ searchParams }: Props) {
         storageUsed={storageUsed}
         latestBackupDate={latestBackupDate}
         latestRestoreDate={latestRestoreDate}
+        latestAuto={latestAuto ? formatDate(latestAuto.createdAt) : null}
+        latestManual={latestManual ? formatDate(latestManual.createdAt) : null}
+        latestFull={latestFull ? formatDate(latestFull.createdAt) : null}
+        latestDatabase={latestDatabase ? formatDate(latestDatabase.createdAt) : null}
+        latestUploads={latestUploads ? formatDate(latestUploads.createdAt) : null}
+        successRate={successRate}
+        latestRestore={latestRestore}
+        avgDurationMs={avgDurationMs}
       />
-
-      <BackupCreationSection onCreateBackup={handleCreateBackup} />
 
       <BackupRestoreSection
         latestCompleted={latestCompleted}

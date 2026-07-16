@@ -7,7 +7,7 @@ export function Metric({
 }: {
   label: string;
   value: string | number;
-  tone?: "success" | "warning" | "danger" | "default";
+  tone?: "success" | "warning" | "danger" | "default" | "info" | "champagne";
 }) {
   const cls =
     tone === "success"
@@ -16,6 +16,10 @@ export function Metric({
       ? "border-amber-500/10 bg-amber-500/5 text-amber-300"
       : tone === "danger"
       ? "border-red-500/10 bg-red-500/5 text-red-300"
+      : tone === "info"
+      ? "border-sky-500/10 bg-sky-500/5 text-sky-300"
+      : tone === "champagne"
+      ? "border-[#f3cf73]/10 bg-[#f3cf73]/5 text-[#f3cf73]"
       : "border-white/[0.06] bg-white/[0.02] text-white";
   return (
     <div className={`rounded-xl border p-4 ${cls}`}>

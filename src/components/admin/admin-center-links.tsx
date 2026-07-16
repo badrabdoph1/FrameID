@@ -2,12 +2,19 @@ import React from "react";
 import Link from "next/link";
 import {
   Activity,
+  Command,
   CreditCard,
   DatabaseBackup,
   ShieldCheck
 } from "lucide-react";
 
 const adminCenters = [
+  {
+    label: "مركز القيادة",
+    description: "حالة المنصة بالكامل",
+    href: "/admin/platform",
+    icon: Command
+  },
   {
     label: "مركز الأمان",
     description: "سجل العمليات والوصول",

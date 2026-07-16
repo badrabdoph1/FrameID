@@ -4,6 +4,7 @@ import {
   Bell,
   BriefcaseBusiness,
   ClipboardList,
+  Command,
   CreditCard,
   DatabaseBackup,
   Edit,
@@ -114,6 +115,7 @@ export const adminRoutes: AdminRouteDefinition[] = [
   defineRoute({ id: "email", href: "/admin/email", labelAr: "تسليم البريد", descriptionAr: "تشخيص إرسال البريد ونتائج التسليم", sectionId: "communication", visibility: "daily", keywords: ["بريد", "تسليم", "إرسال"], icon: Mail, parentHref: "/admin/communications" }),
 
   defineRoute({ id: "system", href: "/admin/system", labelAr: "حالة النظام", descriptionAr: "صحة المنصة والأدوات الإدارية", sectionId: "system", visibility: "daily", keywords: ["نظام", "صحة", "حالة"], icon: ShieldCheck, parentHref: "/admin" }),
+  defineRoute({ id: "platform", href: "/admin/platform", labelAr: "مركز القيادة", descriptionAr: "حالة المنصة بالكامل — فحص ومراقبة واستعادة", sectionId: "system", visibility: "daily", keywords: ["منصة", "قيادة", "فحص", "مراقبة", "استعادة", "نقل", "حالة"], icon: Command, parentHref: "/admin/system" }),
   defineRoute({ id: "operations", href: "/admin/operations", labelAr: "مركز التشغيل", descriptionAr: "الطوابير والعمليات التي تحتاج تدخلًا", sectionId: "system", visibility: "daily", keywords: ["تشغيل", "عمليات", "طوابير"], icon: Activity, parentHref: "/admin/system" }),
   defineRoute({ id: "errors", href: "/admin/errors", labelAr: "مشاكل العملاء", descriptionAr: "البلاغات والأخطاء التي أرسلها العملاء", sectionId: "system", visibility: "daily", keywords: ["مشاكل", "أخطاء", "بلاغات"], icon: Activity, parentHref: "/admin/system" }),
   defineRoute({ id: "issue-details", href: "/admin/errors/[id]", labelAr: "تفاصيل المشكلة", descriptionAr: "السياق الكامل للمشكلة وخطوات معالجتها", sectionId: "system", visibility: "contextual", keywords: ["مشكلة", "تفاصيل", "حل"], icon: Activity, parentHref: "/admin/errors" }),
@@ -146,7 +148,7 @@ const sectionDefinitions: Array<Omit<AdminSection, "links"> & { routeIds: string
   { id: "billing", title: "المالية", shortDescription: "المدفوعات والاشتراكات", description: "التحصيل والتجديد والباقات ووسائل الدفع", accent: "blue", icon: CreditCard, routeIds: ["billing", "payments", "subscriptions", "plans", "payment-settings"] },
   { id: "content", title: "المحتوى", shortDescription: "الصفحات والقوالب والوسائط", description: "كل أدوات تحرير ونشر المحتوى", accent: "rose", icon: Palette, routeIds: ["content", "templates", "onboarding-cards", "themes", "media", "social-preview"] },
   { id: "communication", title: "التواصل", shortDescription: "الرسائل والدعم", description: "تجربة العميل والإشعارات والدعم والبريد", accent: "violet", icon: MessageSquareText, routeIds: ["deactivation-control", "communications", "messages", "notifications", "support", "email"] },
-  { id: "system", title: "النظام", shortDescription: "الصحة والتشغيل والطوارئ", description: "الأخطاء والنسخ والإعدادات والأدوات المتقدمة", accent: "slate", icon: ShieldCheck, routeIds: ["system", "operations", "errors", "trash", "backups", "settings"] },
+  { id: "system", title: "النظام", shortDescription: "الصحة والتشغيل والطوارئ", description: "الأخطاء والنسخ والإعدادات والأدوات المتقدمة", accent: "slate", icon: ShieldCheck, routeIds: ["system", "platform", "operations", "errors", "trash", "backups", "settings"] },
 ];
 
 export const adminSections: AdminSection[] = sectionDefinitions.map(

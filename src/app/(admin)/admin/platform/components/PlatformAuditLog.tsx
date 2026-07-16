@@ -3,8 +3,8 @@
 import { useState } from "react";
 import type { Prisma } from "@prisma/client";
 
-interface BackupLogsSectionProps {
-  auditLogs: {
+interface PlatformAuditLogProps {
+  logs: {
     id: string;
     action: string;
     entityId: string | null;
@@ -15,25 +15,27 @@ interface BackupLogsSectionProps {
 
 const ACTION_FILTERS = [
   { value: "", label: "الكل" },
+  { value: "PLATFORM", label: "تغيير" },
+  { value: "GIT", label: "مزامنة" },
   { value: "BACKUP", label: "نسخ" },
   { value: "RESTORE", label: "استعادة" },
-  { value: "SCHEDULER", label: "جدولة" },
+  { value: "VERIFY", label: "تحقق" },
 ];
 
-export function BackupLogsSection({ auditLogs }: BackupLogsSectionProps) {
+export function PlatformAuditLog({ logs }: PlatformAuditLogProps) {
   const [actionFilter, setActionFilter] = useState("");
 
   const filtered = actionFilter
-    ? auditLogs.filter((log) => log.action.includes(actionFilter))
-    : auditLogs;
+    ? logs.filter((log) => log.action.includes(actionFilter))
+    : logs;
 
   return (
     <section className="rounded-2xl border border-white/[0.07] bg-white/[0.02] p-5">
       <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="text-base font-black text-[#fff7e8]">سجل النسخ الاحتياطي</h2>
+          <h2 className="text-base font-black text-[#fff7e8]">سجل عمليات المنصة</h2>
           <p className="mt-1 text-xs font-bold text-white/40">
-            آخر 20 عملية نسخ واستعادة وجدولة مسجلة.
+            آخر العمليات المسجلة على المنصة
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -49,6 +51,7 @@ export function BackupLogsSection({ auditLogs }: BackupLogsSectionProps) {
           ))}
         </div>
       </div>
+
       <div className="space-y-2">
         {filtered.length === 0 ? (
           <p className="text-xs font-bold text-white/35">
@@ -56,12 +59,22 @@ export function BackupLogsSection({ auditLogs }: BackupLogsSectionProps) {
           </p>
         ) : (
           filtered.map((log) => {
-            const meta = log.metadata && typeof log.metadata === "object" && !Array.isArray(log.metadata)
-              ? log.metadata as Record<string, unknown>
-              : {};
-            const isSuccess = log.action.includes("COMPLETED") || log.action.includes("VERIFIED") || log.action.includes("REINDEXED");
-            const isError = log.action.includes("FAILED") || log.action.includes("REJECTED");
-            const isRunning = log.action.includes("STARTED") || log.action.includes("SCHEDULER_RUN");
+            const meta =
+              log.metadata && typeof log.metadata === "object" && !Array.isArray(log.metadata)
+                ? (log.metadata as Record<string, unknown>)
+                : {};
+            const isSuccess =
+              log.action.includes("COMPLETED") ||
+              log.action.includes("VERIFIED") ||
+              log.action.includes("SUCCESS");
+            const isError =
+              log.action.includes("FAILED") ||
+              log.action.includes("REJECTED") ||
+              log.action.includes("ERROR");
+            const isRunning =
+              log.action.includes("STARTED") ||
+              log.action.includes("RUNNING") ||
+              log.action.includes("PENDING");
             return (
               <div
                 key={log.id}
@@ -75,16 +88,12 @@ export function BackupLogsSection({ auditLogs }: BackupLogsSectionProps) {
                     {translateAuditAction(log.action)}
                   </p>
                   <p className="mt-0.5 text-[10px] font-bold text-white/35">
-                    {formatDate(log.createdAt instanceof Date ? log.createdAt.toISOString() : String(log.createdAt))} · {log.entityId}
+                    {formatDate(log.createdAt instanceof Date ? log.createdAt.toISOString() : String(log.createdAt))}
+                    {log.entityId ? ` · ${log.entityId}` : ""}
                   </p>
                   {meta.error ? (
                     <p className="mt-1 text-[10px] font-bold text-red-400">
                       {String(meta.error)}
-                    </p>
-                  ) : null}
-                  {meta.backupId ? (
-                    <p className="mt-0.5 text-[10px] font-bold text-white/25">
-                      {String(meta.backupId)}
                     </p>
                   ) : null}
                   {meta.durationMs ? (
@@ -109,16 +118,23 @@ function formatDate(value: string) {
 
 function translateAuditAction(action: string): string {
   const map: Record<string, string> = {
+    "PLATFORM_CONFIG_UPDATED": "تحديث إعدادات المنصة",
+    "PLATFORM_SYNC_STARTED": "بدء مزامنة المنصة",
+    "PLATFORM_SYNC_COMPLETED": "اكتملت مزامنة المنصة",
+    "PLATFORM_SYNC_FAILED": "فشلت مزامنة المنصة",
+    "GIT_SYNC_STARTED": "بدء المزامنة مع Git",
+    "GIT_SYNC_COMPLETED": "اكتملت المزامنة مع Git",
+    "GIT_SYNC_FAILED": "فشلت المزامنة مع Git",
+    "GIT_PUSH_COMPLETED": "تم الرفع إلى Git",
+    "GIT_PUSH_FAILED": "فشل الرفع إلى Git",
+    "GIT_PULL_COMPLETED": "تم السحب من Git",
+    "GIT_PULL_FAILED": "فشل السحب من Git",
+    "VERIFY_STARTED": "بدء التحقق",
+    "VERIFY_COMPLETED": "اكتمل التحقق",
+    "VERIFY_FAILED": "فشل التحقق",
     "BACKUP_STARTED": "بدء النسخ الاحتياطي",
-    "BACKUP_LOCAL_VERIFIED": "تحقق محلي من النسخة",
-    "BACKUP_GITHUB_VERIFIED": "تحقق من الرفع على GitHub",
     "BACKUP_COMPLETED": "اكتمل النسخ الاحتياطي",
     "BACKUP_FAILED": "فشل النسخ الاحتياطي",
-    "BACKUP_DELETED": "حذف نسخة احتياطية",
-    "BACKUP_VERIFIED": "النسخة سليمة",
-    "BACKUP_VERIFICATION_FAILED": "فشل التحقق من النسخة",
-    "BACKUP_SCHEDULER_RUN": "تشغيل الجدولة التلقائية",
-    "BACKUP_REINDEXED_FROM_GITHUB": "إعادة فهرسة نسخة من GitHub",
     "RESTORE_STARTED": "بدء الاستعادة",
     "RESTORE_COMPLETED": "اكتملت الاستعادة",
     "RESTORE_FAILED": "فشلت الاستعادة",

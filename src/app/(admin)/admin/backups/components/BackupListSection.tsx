@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { PendingForm, PendingButton } from "@/components/admin/pending-button";
 import { AdminStatusBadge } from "@/components/layout/admin-status-badge";
 import { getBackupTypeLabel } from "@/modules/backups/backup-policy";
@@ -13,6 +14,29 @@ interface BackupListSectionProps {
   onDeleteWorkspaceBackup: (backupJobId: string) => Promise<void>;
 }
 
+const TYPE_OPTIONS = [
+  { value: "", label: "الكل" },
+  { value: "FULL", label: "نسخ كامل" },
+  { value: "DATABASE", label: "داتا فقط" },
+  { value: "UPLOADS", label: "ملفات" },
+];
+
+const STATUS_OPTIONS = [
+  { value: "", label: "الكل" },
+  { value: "COMPLETED", label: "مكتملة" },
+  { value: "FAILED", label: "فشلت" },
+  { value: "RUNNING", label: "قيد التشغيل" },
+  { value: "PENDING", label: "معلقة" },
+];
+
+const TRIGGER_OPTIONS = [
+  { value: "", label: "الكل" },
+  { value: "AUTO", label: "تلقائي" },
+  { value: "MANUAL", label: "يدوي" },
+  { value: "MIGRATION", label: "هجرة" },
+  { value: "GITHUB_ACTIONS", label: "GitHub Actions" },
+];
+
 export function BackupListSection({
   jobs,
   latestCompleted,
@@ -20,17 +44,48 @@ export function BackupListSection({
   onVerifyWorkspaceBackup,
   onDeleteWorkspaceBackup,
 }: BackupListSectionProps) {
+  const [typeFilter, setTypeFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const [triggerFilter, setTriggerFilter] = useState("");
+
+  const filtered = jobs.filter((job) => {
+    if (typeFilter && job.type !== typeFilter) return false;
+    if (statusFilter && job.status !== statusFilter) return false;
+    if (triggerFilter && job.trigger !== triggerFilter) return false;
+    return true;
+  });
+
+  const hasFilters = Boolean(typeFilter || statusFilter || triggerFilter);
+
   return (
     <section className="rounded-2xl border border-white/[0.07] bg-white/[0.02] p-5">
       <div className="mb-4">
         <h2 className="text-base font-black text-[#fff7e8]">النسخ الاحتياطية</h2>
         <p className="mt-1 text-xs font-bold text-white/40">كل نسخة لها إجراءات واضحة.</p>
       </div>
+
+      <div className="mb-4 flex flex-wrap items-center gap-3">
+        <FilterSelect label="النوع" value={typeFilter} onChange={setTypeFilter} options={TYPE_OPTIONS} />
+        <FilterSelect label="الحالة" value={statusFilter} onChange={setStatusFilter} options={STATUS_OPTIONS} />
+        <FilterSelect label="المصدر" value={triggerFilter} onChange={setTriggerFilter} options={TRIGGER_OPTIONS} />
+        {hasFilters ? (
+          <button
+            onClick={() => { setTypeFilter(""); setStatusFilter(""); setTriggerFilter(""); }}
+            className="rounded-lg border border-white/10 px-3 py-1.5 text-xs font-bold text-white/50 transition hover:border-red-500/30 hover:text-red-300"
+          >
+            مسح الفلاتر
+          </button>
+        ) : null}
+        <span className="me-auto text-[10px] font-bold text-white/25">
+          {filtered.length} من {jobs.length}
+        </span>
+      </div>
+
       <div className="space-y-3">
-        {jobs.length === 0 ? (
-          <EmptyState />
+        {filtered.length === 0 ? (
+          <EmptyState hasFilters={hasFilters} />
         ) : (
-          jobs.map((job) => {
+          filtered.map((job) => {
             const artifactId = job.localPath ? basename(job.localPath) : null;
             const ready = job.status === "COMPLETED" && Boolean(artifactId);
             const isLatest = job.id === latestCompleted?.id;
@@ -140,11 +195,32 @@ export function BackupListSection({
   );
 }
 
-function EmptyState() {
+function FilterSelect({ label, value, onChange, options }: { label: string; value: string; onChange: (v: string) => void; options: { value: string; label: string }[] }) {
+  return (
+    <label className="flex items-center gap-1.5">
+      <span className="text-[10px] font-black text-white/30">{label}</span>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="rounded-lg border border-white/[0.08] bg-black/30 px-2 py-1.5 text-[11px] font-bold text-white/70 outline-none focus:border-amber-300/30"
+      >
+        {options.map((opt) => (
+          <option key={opt.value} value={opt.value}>{opt.label}</option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
+function EmptyState({ hasFilters }: { hasFilters: boolean }) {
   return (
     <div className="rounded-2xl border border-dashed border-white/12 p-8 text-center">
-      <p className="text-sm font-black text-white/60">لا توجد نسخ احتياطية بعد</p>
-      <p className="mt-1 text-xs font-bold text-white/35">أنشئ أول نسخة من القسم الموجود بالأعلى.</p>
+      <p className="text-sm font-black text-white/60">
+        {hasFilters ? "لا نتائج مطابقة للفلاتر" : "لا توجد نسخ احتياطية بعد"}
+      </p>
+      <p className="mt-1 text-xs font-bold text-white/35">
+        {hasFilters ? "جرّب تغيير أو مسح الفلاتر." : "أنشئ أول نسخة من القسم الموجود بالأعلى."}
+      </p>
     </div>
   );
 }

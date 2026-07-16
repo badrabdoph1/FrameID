@@ -36,6 +36,7 @@ export const ROLES: Record<string, RoleDefinition> = {
       { center: "notifications", actions: ALL_ACTIONS },
       { center: "messages", actions: ALL_ACTIONS },
       { center: "backups", actions: ALL_ACTIONS },
+      { center: "platform", actions: ALL_ACTIONS },
       { center: "analytics", actions: ALL_ACTIONS },
       { center: "security", actions: ALL_ACTIONS },
       { center: "feature-flags", actions: ALL_ACTIONS },

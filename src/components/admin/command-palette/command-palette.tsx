@@ -31,6 +31,7 @@ const adminPages: SearchResult[] = [
   { id: "media", label: "الوسائط", description: "مدير الملفات والصور", href: "/admin/media", group: "المحتوى" },
   { id: "themes", label: "السمات", description: "إدارة السمات", href: "/admin/themes", group: "المحتوى" },
   { id: "backups", label: "النسخ الاحتياطي", description: "مركز النسخ الاحتياطي", href: "/admin/backups", group: "التشغيل" },
+  { id: "platform", label: "مركز القيادة", description: "حالة المنصة والفحص والمراقبة", href: "/admin/platform", group: "التشغيل" },
   { id: "analytics", label: "التحليلات", description: "إحصائيات المنصة", href: "/admin/analytics", group: "التشغيل" },
   { id: "audit", label: "سجل التدقيق", description: "سجل أحداث المنصة", href: "/admin/audit", group: "التشغيل" },
   { id: "notifications", label: "الإشعارات", description: "إدارة الإشعارات", href: "/admin/notifications", group: "النظام" },

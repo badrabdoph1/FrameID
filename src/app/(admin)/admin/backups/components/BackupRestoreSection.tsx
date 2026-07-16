@@ -63,13 +63,18 @@ export function BackupRestoreSection({
       </div>
       {latestCompleted ? (
         <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-5">
-          <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <p className="text-sm font-black text-emerald-300">
                 آخر نسخة مكتملة: {getBackupTypeLabel(latestCompleted.type)}
               </p>
               <p className="mt-1 text-xs font-bold text-white/45">
-                {formatDate(latestCompleted.createdAt)} · {latestCompleted.sizeBytes ? formatBytes(latestCompleted.sizeBytes) : "—"}
+                {formatDate(latestCompleted.createdAt)} · {translateTrigger(latestCompleted.trigger)} · {latestCompleted.sizeBytes ? formatBytes(latestCompleted.sizeBytes) : "—"}
+              </p>
+              <p className="mt-2 text-[11px] font-bold text-white/25">
+                {latestCompleted.githubBranch ? `الفرع: ${latestCompleted.githubBranch}` : null}
+                {latestCompleted.githubBranch && latestCompleted.githubCommitSha ? " · " : null}
+                {latestCompleted.githubCommitSha ? `Commit: ${latestCompleted.githubCommitSha.slice(0, 12)}` : null}
               </p>
             </div>
             <PendingForm action={async () => await onRestoreWorkspaceBackup(latestCompleted.id)} className="flex gap-2">
@@ -81,6 +86,11 @@ export function BackupRestoreSection({
               </PendingButton>
             </PendingForm>
           </div>
+          <div className="mt-3 rounded-lg border border-red-500/15 bg-red-500/5 px-3 py-2">
+            <p className="text-[11px] font-black text-red-300/80">
+              تنبيه: الاستعادة تستبدل البيانات الحالية بالكامل. تأكد قبل المتابعة.
+            </p>
+          </div>
         </div>
       ) : (
         <div className="rounded-2xl border border-dashed border-white/12 p-8 text-center">
@@ -90,6 +100,15 @@ export function BackupRestoreSection({
       )}
     </section>
   );
+}
+
+function translateTrigger(trigger: string) {
+  if (trigger === "MANUAL") return "يدوي";
+  if (trigger === "AUTO") return "تلقائي";
+  if (trigger === "MIGRATION") return "هجرة";
+  if (trigger === "CLI") return "CLI";
+  if (trigger === "GITHUB_ACTIONS") return "GitHub Actions";
+  return "غير محدد";
 }
 
 function formatDate(value: string) {
