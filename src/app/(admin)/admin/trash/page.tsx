@@ -4,7 +4,7 @@ import { AdminPageShell } from "@/components/layout/admin-page-shell";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { EmptyTrashButton } from "@/app/(admin)/admin/trash/empty-trash-button";
-import { restoreFromTrashAction, permanentDeleteAction } from "@/app/(admin)/admin/trash/actions";
+import { TrashActionButtons, TrashActionButtonsMobile } from "@/app/(admin)/admin/trash/trash-action-buttons";
 
 export const dynamic = "force-dynamic";
 
@@ -259,33 +259,7 @@ export default async function AdminTrashPage({ searchParams }: Props) {
                         {t._count.sites === 0 && t._count.payments === 0 && t._count.mediaAssets === 0 && "—"}
                       </td>
                       <td className="px-4 py-3">
-                        <div className="flex items-center gap-1.5">
-                          <form action={restoreFromTrashAction}>
-                            <input type="hidden" name="customerId" value={t.id} />
-                            <button
-                              type="submit"
-                              title="استعادة العميل وجميع بياناته"
-                              className="inline-flex items-center gap-1 rounded-lg border border-emerald-500/25 bg-emerald-500/10 px-2.5 py-1.5 text-[11px] font-black text-emerald-400 transition hover:bg-emerald-500/20"
-                            >
-                              ️ استعادة
-                            </button>
-                          </form>
-                          <form action={permanentDeleteAction}>
-                            <input type="hidden" name="customerId" value={t.id} />
-                            <button
-                              type="submit"
-                              onClick={(e) => {
-                                if (!confirm(`⚠️ هل تريد حذف "${t.displayName}" نهائيًا؟ سيتم حذف جميع بياناته ومواقعه وملفاته بشكل دائم ولا يمكن التراجع!`)) {
-                                  e.preventDefault();
-                                }
-                              }}
-                              title="حذف نهائي وجميع البيانات"
-                              className="inline-flex items-center gap-1 rounded-lg border border-red-500/20 bg-red-500/8 px-2.5 py-1.5 text-[11px] font-black text-red-400 transition hover:bg-red-500/15"
-                            >
-                              ️ حذف نهائي
-                            </button>
-                          </form>
-                        </div>
+                        <TrashActionButtons tenantId={t.id} displayName={t.displayName} />
                       </td>
                     </tr>
                   );
@@ -317,28 +291,7 @@ export default async function AdminTrashPage({ searchParams }: Props) {
                     <InfoCell label="مواقع" value={`${t._count.sites}`} />
                     <InfoCell label="مدفوعات" value={`${t._count.payments}`} />
                   </dl>
-                  <div className="mt-3 flex gap-2">
-                    <form action={restoreFromTrashAction} className="flex-1">
-                      <input type="hidden" name="customerId" value={t.id} />
-                      <button type="submit" className="flex w-full items-center justify-center gap-1 rounded-xl border border-emerald-500/25 bg-emerald-500/10 py-2 text-xs font-black text-emerald-400">
-                        ♻️ استعادة
-                      </button>
-                    </form>
-                    <form action={permanentDeleteAction} className="flex-1">
-                      <input type="hidden" name="customerId" value={t.id} />
-                      <button
-                        type="submit"
-                        onClick={(e) => {
-                          if (!confirm(`⚠️ حذف "${t.displayName}" نهائيًا؟ لا يمكن التراجع!`)) {
-                            e.preventDefault();
-                          }
-                        }}
-                        className="flex w-full items-center justify-center gap-1 rounded-xl border border-red-500/20 bg-red-500/8 py-2 text-xs font-black text-red-400"
-                      >
-                        🗑️ حذف نهائي
-                      </button>
-                    </form>
-                  </div>
+                  <TrashActionButtonsMobile tenantId={t.id} displayName={t.displayName} />
                 </article>
               );
             })}
