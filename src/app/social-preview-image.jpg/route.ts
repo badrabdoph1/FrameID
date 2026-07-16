@@ -32,9 +32,9 @@ export async function GET(request: Request) {
     });
   } catch (error) {
     console.error("[social-preview-image.jpg] GET failed", error);
-    return new Response("Social preview image unavailable", {
-      status: 503,
-      headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-store" },
+    return new Response(null, {
+      status: 307,
+      headers: { Location: "/opengraph-image" },
     });
   }
 }
@@ -53,7 +53,10 @@ export async function HEAD(request: Request) {
     });
   } catch (error) {
     console.error("[social-preview-image.jpg] HEAD failed", error);
-    return new Response(null, { status: 503, headers: { "Cache-Control": "no-store" } });
+    return new Response(null, {
+      status: 307,
+      headers: { Location: "/opengraph-image" },
+    });
   }
 }
 

@@ -75,7 +75,7 @@ export async function loadPlatformSocialPreview(): Promise<PlatformSocialPreview
 }
 
 export function resolvePlatformSocialImage(settings: PlatformSocialPreviewSettings): string {
-  return settings.enabled && settings.imageUrl ? settings.imageUrl : "/opengraph-image";
+  return settings.imageUrl || "/social-preview-image.jpg";
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

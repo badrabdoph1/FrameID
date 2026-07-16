@@ -25,7 +25,13 @@ export function SocialPreviewForm({ settings, defaultTitle, defaultDescription, 
   const [mode, setMode] = useState<PreviewMode>(settings.enabled ? "custom" : "default");
   const [title, setTitle] = useState(settings.title ?? "");
   const [description, setDescription] = useState(settings.description ?? "");
-  const [customImageUrl, setCustomImageUrl] = useState(settings.imageData ? `/social-preview-image?mode=custom&v=${initialVersion}` : "");
+  const [customImageUrl, setCustomImageUrl] = useState(
+    settings.imageData
+      ? `/social-preview-image.jpg?mode=custom&v=${initialVersion}`
+      : settings.imageUrl && settings.enabled
+        ? `${settings.imageUrl}${settings.imageUrl.includes("?") ? "&" : "?"}v=${initialVersion}`
+        : ""
+  );
   const [defaultUrl, setDefaultUrl] = useState(`${defaultImageUrl}${defaultImageUrl.includes("?") ? "&" : "?"}boot=${initialVersion}`);
   const [cropSource, setCropSource] = useState<CropSource | null>(null);
   const [zoom, setZoom] = useState(1);

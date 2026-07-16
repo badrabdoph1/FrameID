@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-export const PLATFORM_DEFAULT_SOCIAL_IMAGE = "/opengraph-image";
+export const PLATFORM_DEFAULT_SOCIAL_IMAGE = "/social-preview-image.jpg";
 export const PLATFORM_CUSTOM_SOCIAL_IMAGE = "/social-preview-image.jpg";
 export const PHOTOGRAPHER_PLACEHOLDER_IMAGE = "/photographer-placeholder";
 

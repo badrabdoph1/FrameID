@@ -34,7 +34,7 @@ export async function PATCH(request: Request) {
       enabled: mode === "custom",
       title: cleanText(payload.title, 120),
       description: cleanText(payload.description, 240),
-      imageUrl: deleteImage
+      imageUrl: mode === "default" || deleteImage
         ? null
         : current.imageData
           ? PLATFORM_CUSTOM_SOCIAL_IMAGE

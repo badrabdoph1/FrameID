@@ -25,7 +25,7 @@ describe("platform social preview", () => {
     expect(normalizePlatformSocialPreview({})).toEqual(DEFAULT_PLATFORM_SOCIAL_PREVIEW);
   });
 
-  it("uses custom image only while enabled", () => {
+  it("uses imageUrl when present, falls back to default image", () => {
     expect(resolvePlatformSocialImage({
       ...DEFAULT_PLATFORM_SOCIAL_PREVIEW,
       enabled: true,
@@ -34,8 +34,14 @@ describe("platform social preview", () => {
 
     expect(resolvePlatformSocialImage({
       ...DEFAULT_PLATFORM_SOCIAL_PREVIEW,
+      enabled: true,
+      imageUrl: null,
+    })).toBe("/social-preview-image.jpg");
+
+    expect(resolvePlatformSocialImage({
+      ...DEFAULT_PLATFORM_SOCIAL_PREVIEW,
       enabled: false,
-      imageUrl: "https://example.com/social.jpg",
-    })).toBe("/opengraph-image");
+      imageUrl: null,
+    })).toBe("/social-preview-image.jpg");
   });
 });

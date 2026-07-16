@@ -20,7 +20,7 @@ export default async function AdminSocialPreviewPage({ searchParams }: Props) {
   const defaultTitle = `${hero.headline} ${hero.headlineHighlight}`.trim();
   const defaultDescription = hero.subheadline;
   const heroVersion = encodeURIComponent(home.versionTag);
-  const defaultImageUrl = `${PLATFORM_DEFAULT_SOCIAL_IMAGE}&content=${heroVersion}`;
+  const defaultImageUrl = `${PLATFORM_DEFAULT_SOCIAL_IMAGE}?content=${heroVersion}`;
 
   return (
     <AdminPageShell

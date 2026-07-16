@@ -75,7 +75,7 @@ export type PublicSiteViewModel = {
 
 const FALLBACK_HERO_IMAGE = "https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1800&q=85";
 
-export function createPublicSiteViewModel({ site, platformBaseUrl, platformSocialImageUrl = "/opengraph-image" }: { site: PublicSiteRecord; platformBaseUrl: string; platformSocialImageUrl?: string }): PublicSiteViewModel {
+export function createPublicSiteViewModel({ site, platformBaseUrl, platformSocialImageUrl = "/social-preview-image.jpg" }: { site: PublicSiteRecord; platformBaseUrl: string; platformSocialImageUrl?: string }): PublicSiteViewModel {
   const publicUrl = `${platformBaseUrl.replace(/\/$/u, "")}/p/${site.slug}`;
   const heroSection = findSection(site, "hero");
   const contactSection = findSection(site, "contact");
