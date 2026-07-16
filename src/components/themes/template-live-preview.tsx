@@ -18,7 +18,7 @@ export function TemplateLivePreview({ template, compact = false }: TemplateLiveP
     <div
       className={cn(
         "relative overflow-hidden rounded-2xl",
-        compact ? "h-[180px]" : "h-[280px] md:h-[360px]"
+        compact ? "h-[160px]" : "h-[240px] md:h-[300px]"
       )}
     >
       <div className={cn("absolute inset-0", frameTone[template.themeCode] ?? frameTone["noir-gold"])} />
@@ -33,8 +33,8 @@ export function TemplateLivePreview({ template, compact = false }: TemplateLiveP
           className={cn(
             "pointer-events-none absolute right-0 top-0 origin-top-right border-0 transition-transform duration-700",
             compact
-              ? "scale-[0.24] md:scale-[0.28]"
-              : "scale-[0.30] md:scale-[0.42]"
+              ? "scale-[0.26] md:scale-[0.30]"
+              : "scale-[0.33] md:scale-[0.42]"
           )}
           style={{
             width: 1180,
@@ -45,7 +45,7 @@ export function TemplateLivePreview({ template, compact = false }: TemplateLiveP
         />
       </div>
 
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/25 via-black/10 to-transparent" />
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-black/10 to-transparent" />
     </div>
   );
 }

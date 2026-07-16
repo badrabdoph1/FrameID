@@ -186,18 +186,18 @@ export default function TemplatesPage() {
                     </div>
 
                     {/* Content */}
-                    <div className="flex flex-1 flex-col p-5 md:p-6">
+                    <div className="flex flex-1 flex-col px-5 pt-3 pb-5 md:px-6 md:pt-4 md:pb-6">
                       <div className="flex-1">
                         <h3 className="text-[1.05rem] font-semibold leading-snug tracking-tight text-foreground md:text-[1.1rem]">
                           {template.name}
                         </h3>
-                        <p className="mt-2 text-[0.82rem] leading-relaxed text-muted-foreground md:text-sm">
+                        <p className="mt-1.5 text-[0.88rem] leading-[1.8] text-foreground/65 md:text-[0.9rem]">
                           {description}
                         </p>
                       </div>
 
                       {/* Actions */}
-                      <div className="mt-5 flex flex-col gap-3 border-t border-border/30 pt-5">
+                      <div className="mt-4 flex flex-col gap-2.5 border-t border-border/25 pt-4">
                         <Link
                           href={`/templates/${template.code}/preview`}
                           className="group/btn inline-flex min-h-[3.1rem] items-center justify-center gap-2.5 rounded-xl bg-ink px-5 text-sm font-bold text-white shadow-[0_4px_16px_-2px_rgba(10,10,10,0.25)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-ink/90 hover:shadow-[0_8px_24px_-4px_rgba(10,10,10,0.35)] active:translate-y-0 active:shadow-[0_2px_8px_-2px_rgba(10,10,10,0.3)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/40"
