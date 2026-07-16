@@ -70,6 +70,7 @@ describe("signup provisioning", () => {
 
     expect(repository.calls).toEqual([
       "template:noir-gold",
+      "trash:ali@example.com:none",
       "identifier:ali@example.com:none",
       "slugs",
       "transaction",

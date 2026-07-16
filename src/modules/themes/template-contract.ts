@@ -50,7 +50,7 @@ const HERO_DEFAULTS: HeroSettings = {
   overlay: "medium",
   position: "center",
   height: "screen",
-  cta: { label: "الأسعار والباكدج", target: "packages" },
+  cta: { label: "شاهد الباقات", target: "packages" },
   eyebrow: "تصوير احترافي",
 };
 
@@ -128,8 +128,8 @@ export function resolveHeroCtaHref(settings: HeroSettings, contact: { whatsapp: 
   return `#${settings.cta.target === "whatsapp" ? "contact" : settings.cta.target}`;
 }
 
-export function createTemplateBookingHref({ siteName, whatsapp, email, selectedPackage, selectedExtras }: {
-  siteName: string;
+export function createTemplateBookingHref({ whatsapp, email, selectedPackage, selectedExtras }: {
+  siteName?: string;
   whatsapp: string | null;
   email: string | null;
   selectedPackage: { name: string; price: string; priceAmount: number; currency: string } | undefined;
@@ -138,7 +138,7 @@ export function createTemplateBookingHref({ siteName, whatsapp, email, selectedP
   if (!selectedPackage) return "#packages";
   const total = selectedPackage.priceAmount + selectedExtras.reduce((sum, item) => sum + item.priceAmount, 0);
   const message = [
-    `مرحبًا، أريد حجز ${selectedPackage.name} مع ${siteName}.`,
+    `مرحبًا، أريد حجز باقة تصوير.`,
     `الباقة: ${selectedPackage.name} (${selectedPackage.price})`,
     selectedExtras.length ? `الإضافات: ${selectedExtras.map((item) => `${item.name} (${item.price})`).join("، ")}` : "الإضافات: لا يوجد",
     `الإجمالي التقريبي: ${formatTemplatePrice(total, selectedPackage.currency)}`,

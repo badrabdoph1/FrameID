@@ -82,8 +82,8 @@ function createSite(): PublicSiteViewModel {
 }
 
 describe("template booking flow", () => {
-  it("uses the new packages CTA label by default", () => {
-    expect(resolveHeroSettings({}).cta.label).toBe("الأسعار والباكدج");
+  it("keeps the shared CTA fallback stable for legacy public sites", () => {
+    expect(resolveHeroSettings({}).cta.label).toBe("شاهد الباقات");
   });
 
   it("shows booking details above contact actions in the classic template", () => {

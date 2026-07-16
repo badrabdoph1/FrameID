@@ -22,7 +22,7 @@ describe("unified template contract", () => {
   });
 
   it("provides safe Hero defaults and accepts dashboard overrides", () => {
-    expect(resolveHeroSettings({})).toEqual({ overlay: "medium", position: "center", height: "screen", cta: { label: "الأسعار والباكدج", target: "packages" }, eyebrow: "تصوير احترافي" });
+    expect(resolveHeroSettings({})).toEqual({ overlay: "medium", position: "center", height: "screen", cta: { label: "شاهد الباقات", target: "packages" }, eyebrow: "تصوير احترافي" });
     expect(resolveHeroSettings({ overlay: "strong", position: "top", height: "tall", cta: { label: "تواصل", target: "contact" }, settings: { eyebrow: "قصص" } })).toEqual({ overlay: "strong", position: "top", height: "tall", cta: { label: "تواصل", target: "contact" }, eyebrow: "قصص" });
   });
 

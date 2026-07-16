@@ -29,7 +29,7 @@ describe("template content source", () => {
         source!.content.packages.map((item) => item.name),
       );
       expect(payload.site.title).toBe("محمود سامي");
-      expect(payload.contact.studioName).toBe("Photography");
+      expect(payload.contact.studioName).toBe("محمود سامي");
       expect(preview.contact.workLocation).toBe("فريلانسر");
       expect(preview.contact.tiktok).toBe(source!.content.contact.tiktok);
       expect(preview.hero).toMatchObject({
@@ -78,5 +78,16 @@ describe("template content source", () => {
         ownerName: source.content.site.title,
       }).gallery,
     );
+  });
+
+  it("keeps updated ready-template copy in the provisioned snapshot for new sites", () => {
+    const source = getTemplateContentSource("noir-gold")!;
+    const payload = createTemplateProvisioningPayload(source, {
+      ownerName: "محمود سامي",
+    });
+
+    expect(payload.sections.find((section) => section.type === "hero")?.data).toMatchObject({
+      cta: { label: "الأسعار والباكدج", target: "packages" },
+    });
   });
 });

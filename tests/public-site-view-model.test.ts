@@ -186,4 +186,20 @@ describe("public site view model", () => {
 
     expect(viewModel.metadata.title).toBe("Ali Ahmed");
   });
+
+  it("keeps legacy public-site copy when old saved content is missing a hero CTA", () => {
+    const site = createRecord();
+    const hero = site.sections.find((section) => section.type === "hero");
+    if (hero) delete hero.data.cta;
+
+    const viewModel = createPublicSiteViewModel({
+      site,
+      platformBaseUrl: "https://frameid.app",
+    });
+
+    expect(viewModel.hero.cta).toEqual({
+      label: "شاهد الباقات",
+      target: "packages",
+    });
+  });
 });

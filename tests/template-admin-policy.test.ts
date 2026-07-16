@@ -37,7 +37,11 @@ describe("template admin policy", () => {
         packages: [],
         extras: [],
       },
-      settings: { palette: "gold" },
+      settings: { 
+        palette: "gold",
+        contentSource: "starter-content-defaults",
+        version: "1.0.0",
+      },
     });
     expect(defaults.previewData).not.toHaveProperty("hero");
     expect(defaults.previewData).not.toHaveProperty("starterContentOverride");
