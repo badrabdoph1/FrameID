@@ -213,16 +213,19 @@ export default function TemplatesPage() {
                         <Link
                           href={`/templates/${template.code}/preview`}
                           className={cn(
-                            "group/btn inline-flex min-h-[3.1rem] items-center justify-center gap-2.5 rounded-xl px-5 text-sm font-bold transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 focus-visible:outline-none focus-visible:ring-2",
+                            "group/btn relative inline-flex min-h-[3.1rem] items-center justify-center gap-2.5 overflow-hidden rounded-xl px-5 text-sm font-bold transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 focus-visible:outline-none focus-visible:ring-2",
                             template.themeCode === "noir-gold"
                               ? "bg-champagne text-ink shadow-[0_4px_16px_-2px_rgba(201,169,110,0.3)] hover:bg-champagne/90 hover:shadow-[0_8px_24px_-4px_rgba(201,169,110,0.4)] active:shadow-[0_2px_8px_-2px_rgba(201,169,110,0.3)] focus-visible:ring-champagne/40"
-                              : "bg-ink text-white shadow-[0_4px_16px_-2px_rgba(10,10,10,0.25)] hover:bg-ink/90 hover:shadow-[0_8px_24px_-4px_rgba(10,10,10,0.35)] active:shadow-[0_2px_8px_-2px_rgba(10,10,10,0.3)] focus-visible:ring-ink/40"
+                              : "bg-gradient-to-br from-ink via-[#1a1a1a] to-[#2a2a2a] text-white border border-white/10 shadow-[0_4px_20px_-2px_rgba(10,10,10,0.4)] hover:shadow-[0_8px_28px_-4px_rgba(10,10,10,0.5)] active:shadow-[0_2px_12px_-2px_rgba(10,10,10,0.4)] focus-visible:ring-ink/40"
                           )}
                         >
-                          <ExternalLink className="size-4 transition-transform duration-300 group-hover/btn:-rotate-12" aria-hidden />
-                          <span className="md:hidden">شوف شكل الموقع ع الفون</span>
-                          <span className="hidden md:inline">شوف شكل الموقع الحقيقي</span>
-                          <ArrowLeft className="size-3.5 transition-transform duration-300 group-hover/btn:-translate-x-1" aria-hidden />
+                          {template.themeCode !== "noir-gold" && (
+                            <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/10 to-transparent transition-transform duration-700 group-hover/btn:translate-x-full" />
+                          )}
+                          <ExternalLink className="relative z-10 size-4 transition-transform duration-300 group-hover/btn:-rotate-12" aria-hidden />
+                          <span className="relative z-10 md:hidden">شوف شكل الموقع ع الفون</span>
+                          <span className="relative z-10 hidden md:inline">شوف شكل الموقع الحقيقي</span>
+                          <ArrowLeft className="relative z-10 size-3.5 transition-transform duration-300 group-hover/btn:-translate-x-1" aria-hidden />
                         </Link>
                         <Link
                           href={`/signup?template=${template.code}`}
