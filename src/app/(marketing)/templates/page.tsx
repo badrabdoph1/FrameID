@@ -220,7 +220,8 @@ export default function TemplatesPage() {
                           )}
                         >
                           <ExternalLink className="size-4 transition-transform duration-300 group-hover/btn:-rotate-12" aria-hidden />
-                          شوف شكل الموقع الحقيقي
+                          <span className="md:hidden">شوف شكل الموقع ع الفون</span>
+                          <span className="hidden md:inline">شوف شكل الموقع الحقيقي</span>
                           <ArrowLeft className="size-3.5 transition-transform duration-300 group-hover/btn:-translate-x-1" aria-hidden />
                         </Link>
                         <Link
