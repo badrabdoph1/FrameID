@@ -28,30 +28,30 @@ export function BackupLogsSection({ auditLogs }: BackupLogsSectionProps) {
     : auditLogs;
 
   return (
-    <section className="rounded-2xl border border-white/[0.07] bg-white/[0.02] p-5">
-      <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+    <section className="rounded-2xl border border-white/[0.07] bg-white/[0.02] p-4">
+      <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="text-base font-black text-[#fff7e8]">سجل النسخ الاحتياطي</h2>
-          <p className="mt-1 text-xs font-bold text-white/40">
-            آخر 20 عملية نسخ واستعادة وجدولة مسجلة.
+          <h2 className="text-sm font-black text-[#fff7e8]">سجل النسخ الاحتياطي</h2>
+          <p className="mt-0.5 text-[11px] font-bold text-white/35">
+            آخر 20 عملية نسخ واستعادة وجدولة.
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="text-[10px] font-black text-white/30">فلتر:</span>
+        <div className="flex items-center gap-1.5">
+          <span className="text-[10px] font-black text-white/25">فلتر:</span>
           {ACTION_FILTERS.map((f) => (
             <button
               key={f.value}
               onClick={() => setActionFilter(f.value)}
-              className={`rounded-lg px-2.5 py-1 text-[11px] font-black transition ${actionFilter === f.value ? "border border-amber-300/30 bg-amber-300/10 text-[#f3cf73]" : "border border-white/[0.06] text-white/40 hover:text-white/60"}`}
+              className={`rounded-md px-2 py-0.5 text-[10px] font-black transition ${actionFilter === f.value ? "border border-amber-300/25 bg-amber-300/10 text-[#f3cf73]" : "border border-white/[0.05] text-white/35 hover:text-white/55"}`}
             >
               {f.label}
             </button>
           ))}
         </div>
       </div>
-      <div className="space-y-2">
+      <div className="space-y-1">
         {filtered.length === 0 ? (
-          <p className="text-xs font-bold text-white/35">
+          <p className="text-[11px] font-bold text-white/30">
             {actionFilter ? "لا سجلات مطابقة للفلتر." : "لا توجد سجلات بعد."}
           </p>
         ) : (
@@ -65,30 +65,30 @@ export function BackupLogsSection({ auditLogs }: BackupLogsSectionProps) {
             return (
               <div
                 key={log.id}
-                className="flex items-start gap-3 rounded-xl border border-white/[0.05] bg-black/10 px-3 py-2"
+                className="flex items-start gap-2.5 rounded-lg border border-white/[0.04] bg-black/10 px-2.5 py-1.5"
               >
                 <span
-                  className={`mt-0.5 inline-block h-2 w-2 shrink-0 rounded-full ${isSuccess ? "bg-emerald-400" : isError ? "bg-red-400" : isRunning ? "bg-amber-400" : "bg-white/20"}`}
+                  className={`mt-0.5 inline-block h-1.5 w-1.5 shrink-0 rounded-full ${isSuccess ? "bg-emerald-400" : isError ? "bg-red-400" : isRunning ? "bg-amber-400" : "bg-white/20"}`}
                 />
                 <div className="min-w-0 flex-1">
-                  <p className="text-xs font-black text-white/80">
+                  <p className="text-[11px] font-black text-white/70">
                     {translateAuditAction(log.action)}
                   </p>
-                  <p className="mt-0.5 text-[10px] font-bold text-white/35">
+                  <p className="text-[10px] font-bold text-white/25">
                     {formatDate(log.createdAt instanceof Date ? log.createdAt.toISOString() : String(log.createdAt))} · {log.entityId}
                   </p>
                   {meta.error ? (
-                    <p className="mt-1 text-[10px] font-bold text-red-400">
+                    <p className="mt-0.5 text-[10px] font-bold text-red-400">
                       {String(meta.error)}
                     </p>
                   ) : null}
                   {meta.backupId ? (
-                    <p className="mt-0.5 text-[10px] font-bold text-white/25">
+                    <p className="text-[9px] font-bold text-white/15">
                       {String(meta.backupId)}
                     </p>
                   ) : null}
                   {meta.durationMs ? (
-                    <p className="mt-0.5 text-[10px] font-bold text-white/25">
+                    <p className="text-[9px] font-bold text-white/15">
                       {Number(meta.durationMs)}ms
                     </p>
                   ) : null}

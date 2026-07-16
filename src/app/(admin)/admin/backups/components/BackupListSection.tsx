@@ -58,13 +58,13 @@ export function BackupListSection({
   const hasFilters = Boolean(typeFilter || statusFilter || triggerFilter);
 
   return (
-    <section className="rounded-2xl border border-white/[0.07] bg-white/[0.02] p-5">
-      <div className="mb-4">
-        <h2 className="text-base font-black text-[#fff7e8]">النسخ الاحتياطية</h2>
-        <p className="mt-1 text-xs font-bold text-white/40">كل نسخة لها إجراءات واضحة.</p>
+    <section className="rounded-2xl border border-white/[0.07] bg-white/[0.02] p-4">
+      <div className="mb-3">
+        <h2 className="text-sm font-black text-[#fff7e8]">النسخ الاحتياطية</h2>
+        <p className="mt-0.5 text-[11px] font-bold text-white/35">كل نسخة لها إجراءات واضحة.</p>
       </div>
 
-      <div className="mb-4 flex flex-wrap items-center gap-3">
+      <div className="mb-3 flex flex-wrap items-center gap-2.5">
         <FilterSelect label="النوع" value={typeFilter} onChange={setTypeFilter} options={TYPE_OPTIONS} />
         <FilterSelect label="الحالة" value={statusFilter} onChange={setStatusFilter} options={STATUS_OPTIONS} />
         <FilterSelect label="المصدر" value={triggerFilter} onChange={setTriggerFilter} options={TRIGGER_OPTIONS} />
@@ -81,7 +81,7 @@ export function BackupListSection({
         </span>
       </div>
 
-      <div className="space-y-3">
+      <div className="space-y-2">
         {filtered.length === 0 ? (
           <EmptyState hasFilters={hasFilters} />
         ) : (
@@ -92,21 +92,21 @@ export function BackupListSection({
             return (
               <article
                 key={job.id}
-                className={`rounded-2xl border p-4 ${isLatest ? "border-emerald-500/20 bg-emerald-500/5" : "border-white/[0.07] bg-black/20"}`}
+                className={`rounded-xl border p-3 ${isLatest ? "border-emerald-500/15 bg-emerald-500/[0.03]" : "border-white/[0.06] bg-black/15"}`}
               >
-                <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="flex flex-wrap items-start justify-between gap-2">
                   <div>
-                    <div className="flex items-center gap-2">
-                      <h3 className="text-sm font-black text-white">
+                    <div className="flex items-center gap-1.5">
+                      <h3 className="text-xs font-black text-white">
                         {getBackupTypeLabel(job.type)}
                       </h3>
                       {isLatest ? (
-                        <span className="rounded-md bg-emerald-500/20 px-2 py-0.5 text-[10px] font-black text-emerald-300">
+                        <span className="rounded bg-emerald-500/15 px-1.5 py-0.5 text-[9px] font-black text-emerald-300">
                           الأحدث
                         </span>
                       ) : null}
                     </div>
-                    <p className="mt-1 text-xs font-bold text-white/35">
+                    <p className="mt-0.5 text-[11px] font-bold text-white/30">
                       {formatDate(job.createdAt)} · {translateTrigger(job.trigger)}
                     </p>
                   </div>
@@ -114,17 +114,17 @@ export function BackupListSection({
                     {translateStatus(job.status)}
                   </AdminStatusBadge>
                 </div>
-                <div className="mt-4 grid grid-cols-2 gap-3 text-xs md:grid-cols-4">
+                <div className="mt-2.5 grid grid-cols-2 gap-2 text-[11px] md:grid-cols-4">
                   <Info label="الحجم" value={job.sizeBytes ? formatBytes(job.sizeBytes) : "—"} />
                   <Info label="المدة" value={formatDuration(job.createdAt, job.completedAt)} />
                   <Info label="الملف" value={artifactId ?? "غير متاح"} />
                   <Info label="التحقق" value={job.checksumSha256 ? "Checksum مسجل" : "غير مسجل"} />
                 </div>
                 {job.status === "COMPLETED" ? (
-                  <div className="mt-3 rounded-xl border border-emerald-500/15 bg-emerald-500/5 p-3">
-                    <div className="grid gap-2 text-[11px] font-bold text-white/55 sm:grid-cols-3">
+                  <div className="mt-2 rounded-lg border border-emerald-500/10 bg-emerald-500/[0.03] p-2">
+                    <div className="grid gap-1.5 text-[10px] font-bold text-white/45 sm:grid-cols-3">
                       <Info label="فرع GitHub" value={job.githubBranch ?? "غير مسجل"} />
-                      <Info label="Commit النسخة" value={job.githubCommitSha?.slice(0, 12) ?? "نسخة قديمة"} />
+                      <Info label="Commit" value={job.githubCommitSha?.slice(0, 12) ?? "قديم"} />
                       <Info label="المراحل" value={formatPipelineStages(job)} />
                     </div>
                     {job.githubPath ? (
@@ -132,26 +132,26 @@ export function BackupListSection({
                         href={job.githubPath}
                         target="_blank"
                         rel="noreferrer"
-                        className="mt-3 inline-flex rounded-lg border border-emerald-400/25 px-3 py-2 text-[11px] font-black text-emerald-300 transition hover:bg-emerald-400/10"
+                        className="mt-2 inline-flex rounded-md border border-emerald-400/20 px-2.5 py-1 text-[10px] font-black text-emerald-300 transition hover:bg-emerald-400/10"
                       >
-                        فتح النسخة الفعلية على GitHub
+                        فتح على GitHub
                       </a>
                     ) : null}
                   </div>
                 ) : null}
                 {job.errorMessage ? (
-                  <p className="mt-3 rounded-xl border border-red-500/20 bg-red-500/10 p-3 text-xs font-bold text-red-300">
+                  <p className="mt-2 rounded-lg border border-red-500/15 bg-red-500/5 p-2 text-[11px] font-bold text-red-300">
                     {job.errorMessage}
                   </p>
                 ) : null}
 
-                <div className="mt-4 flex flex-wrap gap-2">
+                <div className="mt-2.5 flex flex-wrap gap-1.5">
                   {ready ? (
                     <PendingForm action={async () => await onRestoreWorkspaceBackup(job.id)}>
                       <input type="hidden" name="backupJobId" value={job.id} />
                       <PendingButton
                         pendingText="..."
-                        className="rounded-xl bg-emerald-500 px-4 py-2 text-xs font-black text-white transition hover:bg-emerald-400"
+                        className="rounded-lg bg-emerald-500 px-3 py-1.5 text-[11px] font-black text-white transition hover:bg-emerald-400"
                       >
                         استعادة
                       </PendingButton>
@@ -159,7 +159,7 @@ export function BackupListSection({
                   ) : (
                     <button
                       disabled
-                      className="rounded-xl border border-white/10 px-4 py-2 text-xs font-bold text-white/35 disabled:cursor-not-allowed disabled:opacity-35"
+                      className="rounded-lg border border-white/8 px-3 py-1.5 text-[11px] font-bold text-white/25 disabled:cursor-not-allowed disabled:opacity-35"
                     >
                       استعادة
                     </button>
@@ -169,7 +169,7 @@ export function BackupListSection({
                       <input type="hidden" name="backupJobId" value={job.id} />
                       <PendingButton
                         pendingText="..."
-                        className="rounded-xl border border-white/10 px-4 py-2 text-xs font-black text-white/70 transition hover:border-amber-300/30 hover:text-white"
+                        className="rounded-lg border border-white/8 px-3 py-1.5 text-[11px] font-black text-white/60 transition hover:border-amber-300/25 hover:text-white"
                       >
                         تحقق
                       </PendingButton>
@@ -180,7 +180,7 @@ export function BackupListSection({
                     <PendingButton
                       pendingText="..."
                       disabled={!artifactId && !ready}
-                      className="rounded-xl border border-red-500/30 px-4 py-2 text-xs font-bold text-red-300 transition hover:border-red-500/50 hover:text-red-200 disabled:cursor-not-allowed disabled:opacity-35"
+                      className="rounded-lg border border-red-500/25 px-3 py-1.5 text-[11px] font-bold text-red-300/70 transition hover:border-red-500/40 hover:text-red-200 disabled:cursor-not-allowed disabled:opacity-35"
                     >
                       حذف
                     </PendingButton>

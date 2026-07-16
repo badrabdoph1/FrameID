@@ -162,6 +162,12 @@ export default async function AdminBackupsPage({ searchParams }: Props) {
 
       <BackupCreationSection onCreateBackup={handleCreateBackup} latestPerType={latestPerType} />
 
+      <BackupSettingsSection
+        settings={settings}
+        onUpdateBackupSettings={handleUpdateBackupSettings}
+        onVerifyAllBackups={handleVerifyAllBackups}
+      />
+
       <BackupMetricsSection
         completed={completed}
         failed={failed}
@@ -192,12 +198,6 @@ export default async function AdminBackupsPage({ searchParams }: Props) {
         onRestoreWorkspaceBackup={handleRestoreWorkspaceBackup}
         onVerifyWorkspaceBackup={handleVerifyWorkspaceBackup}
         onDeleteWorkspaceBackup={handleDeleteWorkspaceBackup}
-      />
-
-      <BackupSettingsSection
-        settings={settings}
-        onUpdateBackupSettings={handleUpdateBackupSettings}
-        onVerifyAllBackups={handleVerifyAllBackups}
       />
 
       <BackupLogsSection auditLogs={auditLogs} />

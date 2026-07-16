@@ -20,41 +20,41 @@ export function BackupRestoreSection({
   onRestoreWorkspaceBackup,
 }: BackupRestoreSectionProps) {
   return (
-    <section className="rounded-2xl border border-white/[0.07] bg-white/[0.02] p-5">
-      <div className="mb-4">
-        <h2 className="text-base font-black text-[#fff7e8]">الذهاب والعودة</h2>
-        <p className="mt-1 text-xs font-bold text-white/40">
-          ذهاب ينشئ FULL عبر Pipeline الرسمية وينتظر رفعها والتحقق منها، وعودة تستعيد أحدث FULL من GitHub.
+    <section className="rounded-2xl border border-white/[0.07] bg-white/[0.02] p-4">
+      <div className="mb-3">
+        <h2 className="text-sm font-black text-[#fff7e8]">الذهاب والعودة</h2>
+        <p className="mt-0.5 text-[11px] font-bold text-white/35">
+          ذهاب ينشئ FULL عبر Pipeline الرسمية، وعودة تستعيد أحدث FULL من GitHub.
         </p>
       </div>
-      <div className="mb-3 grid gap-3 md:grid-cols-2">
-        <PendingForm action={onPrepareMigrationBackup} className="rounded-2xl border border-sky-300/20 bg-sky-300/5 p-5">
-          <div className="flex h-full flex-wrap items-center justify-between gap-4">
+      <div className="mb-2.5 grid gap-2.5 md:grid-cols-2">
+        <PendingForm action={onPrepareMigrationBackup} className="rounded-xl border border-sky-300/15 bg-sky-300/[0.03] p-3.5">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <p className="text-sm font-black text-sky-300">{migrationActionLabel}</p>
-              <p className="mt-1 text-xs font-bold text-white/45">
-                إنشاء FULL كاملة، ولا يسمح بالانتقال إلا بعد Remote Verify.
+              <p className="text-xs font-black text-sky-300">{migrationActionLabel}</p>
+              <p className="mt-0.5 text-[11px] font-bold text-white/35">
+                FULL كاملة مع Remote Verify قبل الانتقال.
               </p>
             </div>
             <PendingButton
               pendingText="جاري تجهيز الذهاب..."
-              className="rounded-xl bg-sky-300 px-6 py-3 text-sm font-black text-[#101820]"
+              className="rounded-lg bg-sky-300 px-4 py-2 text-xs font-black text-[#101820]"
             >
               ذهاب
             </PendingButton>
           </div>
         </PendingForm>
-        <PendingForm action={onRestoreLatestGitHubBackup} className="rounded-2xl border border-amber-300/20 bg-amber-300/5 p-5">
-          <div className="flex h-full flex-wrap items-center justify-between gap-4">
+        <PendingForm action={onRestoreLatestGitHubBackup} className="rounded-xl border border-amber-300/15 bg-amber-300/[0.03] p-3.5">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <p className="text-sm font-black text-[#f3cf73]">عودة طوارئ من GitHub</p>
-              <p className="mt-1 text-xs font-bold text-white/45">
-                استعادة أحدث FULL تحتوي بيانات العملاء، مع مطابقة الأعداد والملفات بعد العودة.
+              <p className="text-xs font-black text-[#f3cf73]">عودة طوارئ من GitHub</p>
+              <p className="mt-0.5 text-[11px] font-bold text-white/35">
+                استعادة أحدث FULL مع مطابقة الأعداد والملفات.
               </p>
             </div>
             <PendingButton
               pendingText="جاري العودة..."
-              className="rounded-xl bg-[#f3cf73] px-6 py-3 text-sm font-black text-[#17120a]"
+              className="rounded-lg bg-[#f3cf73] px-4 py-2 text-xs font-black text-[#17120a]"
             >
               عودة
             </PendingButton>
@@ -62,40 +62,39 @@ export function BackupRestoreSection({
         </PendingForm>
       </div>
       {latestCompleted ? (
-        <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-5">
-          <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="rounded-xl border border-emerald-500/15 bg-emerald-500/[0.03] p-3.5">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <p className="text-sm font-black text-emerald-300">
+              <p className="text-xs font-black text-emerald-300">
                 آخر نسخة مكتملة: {getBackupTypeLabel(latestCompleted.type)}
               </p>
-              <p className="mt-1 text-xs font-bold text-white/45">
+              <p className="mt-0.5 text-[11px] font-bold text-white/35">
                 {formatDate(latestCompleted.createdAt)} · {translateTrigger(latestCompleted.trigger)} · {latestCompleted.sizeBytes ? formatBytes(latestCompleted.sizeBytes) : "—"}
               </p>
-              <p className="mt-2 text-[11px] font-bold text-white/25">
+              <p className="mt-1 text-[10px] font-bold text-white/20">
                 {latestCompleted.githubBranch ? `الفرع: ${latestCompleted.githubBranch}` : null}
                 {latestCompleted.githubBranch && latestCompleted.githubCommitSha ? " · " : null}
                 {latestCompleted.githubCommitSha ? `Commit: ${latestCompleted.githubCommitSha.slice(0, 12)}` : null}
               </p>
             </div>
-            <PendingForm action={async () => await onRestoreWorkspaceBackup(latestCompleted.id)} className="flex gap-2">
-              <PendingButton
-                pendingText="جاري الاستعادة..."
-                className="rounded-xl bg-emerald-500 px-6 py-3 text-sm font-black text-white transition hover:bg-emerald-400"
-              >
-                استعادة هذه النسخة
-              </PendingButton>
-            </PendingForm>
-          </div>
-          <div className="mt-3 rounded-lg border border-red-500/15 bg-red-500/5 px-3 py-2">
-            <p className="text-[11px] font-black text-red-300/80">
-              تنبيه: الاستعادة تستبدل البيانات الحالية بالكامل. تأكد قبل المتابعة.
-            </p>
+            <div className="flex flex-col items-end gap-2">
+              <PendingForm action={async () => await onRestoreWorkspaceBackup(latestCompleted.id)}>
+                <PendingButton
+                  pendingText="جاري الاستعادة..."
+                  className="rounded-lg bg-emerald-500 px-4 py-2 text-xs font-black text-white transition hover:bg-emerald-400"
+                >
+                  استعادة
+                </PendingButton>
+              </PendingForm>
+              <p className="text-[10px] font-black text-red-300/60">
+                تحذير: تستبدل البيانات الحالية بالكامل
+              </p>
+            </div>
           </div>
         </div>
       ) : (
-        <div className="rounded-2xl border border-dashed border-white/12 p-8 text-center">
-          <p className="text-sm font-black text-white/60">لا توجد نسخ مكتملة للاستعادة منها.</p>
-          <p className="mt-1 text-xs font-bold text-white/35">أنشئ نسخة أولاً من القسم الموجود بالأعلى.</p>
+        <div className="rounded-xl border border-dashed border-white/10 p-6 text-center">
+          <p className="text-xs font-black text-white/50">لا توجد نسخ مكتملة للاستعادة منها.</p>
         </div>
       )}
     </section>
