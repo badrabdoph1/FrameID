@@ -153,7 +153,6 @@ export function createCustomerAdminRepository(prisma: PrismaClient) {
           take: 10,
           include: {
             proofAsset: { select: { url: true } },
-            reviewer: { select: { name: true } },
             logs: {
               where: { action: "MANUAL_PAYMENT_APPROVED" },
               orderBy: { createdAt: "desc" },
@@ -360,7 +359,6 @@ export function createCustomerAdminRepository(prisma: PrismaClient) {
     reviewedAt: Date | null;
     note: string | null;
     proofAsset: { url: string } | null;
-    reviewer: { name: string } | null;
     logs?: Array<{ actorName: string | null }>;
   }): CustomerPaymentInfo {
     return {
@@ -371,7 +369,7 @@ export function createCustomerAdminRepository(prisma: PrismaClient) {
       status: p.status,
       reference: p.reference,
       proofUrl: p.proofAsset?.url ?? null,
-      reviewedByName: p.reviewer?.name ?? p.logs?.[0]?.actorName ?? null,
+      reviewedByName: p.logs?.[0]?.actorName ?? null,
       note: p.note,
       createdAt: p.createdAt.toISOString(),
       reviewedAt: p.reviewedAt?.toISOString() ?? null,
@@ -424,7 +422,6 @@ export function createCustomerAdminRepository(prisma: PrismaClient) {
       orderBy: { createdAt: "desc" },
       include: {
         proofAsset: { select: { url: true } },
-        reviewer: { select: { name: true } },
         logs: {
           where: { action: "MANUAL_PAYMENT_APPROVED" },
           orderBy: { createdAt: "desc" },

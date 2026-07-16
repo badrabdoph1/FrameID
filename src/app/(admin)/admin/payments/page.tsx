@@ -41,7 +41,6 @@ export type PaymentRequestFull = {
     height: number | null;
     sizeBytes: number;
   } | null;
-  reviewedBy: { name: string } | null;
   logs: {
     id: string;
     action: string;
@@ -86,7 +85,6 @@ export default async function AdminPaymentsPage({ searchParams }: Props) {
             sizeBytes: true,
           },
         },
-        reviewer: { select: { name: true } },
         logs: {
           orderBy: { createdAt: "desc" },
           select: {
