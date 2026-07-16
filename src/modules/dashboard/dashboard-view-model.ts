@@ -101,8 +101,7 @@ const nextStepCopy: Record<string, { title: string; description: string }> = {
   published: { title: "موقعك منشور", description: "موقعك شغال وجاهز لاستقبال العملاء." },
   package: { title: "ابدأ بالباقات", description: "اكتب الباقات والأسعار بنفسك." },
   contact: { title: "أكمل بيانات التواصل", description: "اسم المصور، الاستوديو، الهاتف، واتساب، وروابطك." },
-  avatar: { title: "ارفع صورة المصور", description: "اختار صورة شخصية واضحة." },
-  cover: { title: "ارفع صورة الغلاف", description: "صورة كبيرة تعطي أول انطباع عن شغلك." },
+  profileImages: { title: "ارفع صور المصور والغلاف", description: "اختار الصورة الشخصية وصورة الغلاف من نفس المكان." },
   album: { title: "أنشئ ألبوم أعمال", description: "ألبوم واحد كفاية كبداية." },
   seo: { title: "جهّز شكل المشاركة", description: "عنوان ووصف وصورة مشاركة للرابط." },
 };
@@ -163,7 +162,7 @@ function buildPhases(items: ChecklistItem[]): DashboardWorkspacePhase[] {
   const phases: Array<Omit<DashboardWorkspacePhase, "done" | "total" | "state"> & { itemIds: string[] }> = [
     { id: "packages", title: "١. الباقات", description: "اكتب عروضك وأسعارك بوضوح.", href: "/dashboard/services", itemIds: ["package"] },
     { id: "contact", title: "٢. بيانات التواصل", description: "عرّف العميل عليك.", href: "/dashboard/site-info", itemIds: ["contact"] },
-    { id: "photos", title: "٣. الصور", description: "الصورة الشخصية والغلاف والألبومات.", href: "/dashboard/gallery", itemIds: ["avatar", "cover", "album"] },
+    { id: "photos", title: "٣. الصور", description: "صورة المصور والغلاف والألبومات.", href: "/dashboard/gallery", itemIds: ["profileImages", "album"] },
     { id: "launch", title: "٤. النشر", description: "جهّز شكل المشاركة وراجع الموقع.", href: "/dashboard/publish", itemIds: ["seo"] },
   ];
   let previousDone = true;
@@ -215,8 +214,7 @@ export function createDashboardViewModel({ session, platformBaseUrl, now, packag
     { id: "published", label: "تم نشر موقعك", description: siteSuspended ? "الموقع متوقف حاليًا." : "موقعك شغال وجاهز لاستقبال العملاء.", done: siteOk, error: !siteOk, href: siteSuspended ? "/dashboard/billing" : "/dashboard/publish", workspace: "publish" },
     { id: "package", label: "أضف أول باقة بأسلوبك", description: "اسم وسعر ومميزات واضحة.", done: hasPackages, href: "/dashboard/services", workspace: "sales" },
     { id: "contact", label: "أكمل بيانات التواصل", description: "اسم المصور، واتساب، وروابطك.", done: hasContactInfo, href: "/dashboard/site-info", workspace: "studio" },
-    { id: "avatar", label: "ارفع صورة المصور", description: "صورة شخصية واضحة.", done: Boolean(hasAvatarImage), href: "/dashboard/gallery", workspace: "photos" },
-    { id: "cover", label: "ارفع صورة الغلاف", description: "صورة رئيسية كبيرة.", done: hasCoverImage, href: "/dashboard/gallery", workspace: "photos" },
+    { id: "profileImages", label: "ارفع صورة المصور والغلاف", description: "الصورة الشخصية وصورة الغلاف.", done: Boolean(hasAvatarImage) && hasCoverImage, href: "/dashboard/gallery", workspace: "photos" },
     { id: "album", label: "أنشئ ألبوم أعمال", description: "صور من أعمالك تظهر للعميل.", done: hasImages && hasAlbums, href: "/dashboard/gallery", workspace: "photos" },
     { id: "seo", label: "جهّز شكل المشاركة", description: "عنوان ووصف أو صورة للرابط.", done: Boolean(hasSeoSettings), href: "/dashboard/publish", workspace: "publish" },
   ];

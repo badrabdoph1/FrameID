@@ -33,8 +33,7 @@ const onboardingCopy: Record<string, { label: string; description: string }> = {
   published: { label: "تم نشر موقعك", description: "موقعك شغال وجاهز للعملاء." },
   package: { label: "الباقات والأسعار", description: "اكتب أسماء الباقات والأسعار والمميزات." },
   contact: { label: "بيانات التواصل", description: "اسم الاستوديو، الهاتف، واتساب، وروابطك." },
-  avatar: { label: "صورة المصور", description: "صورة شخصية واضحة تمثل هويتك." },
-  cover: { label: "صورة الغلاف", description: "صورة رئيسية قوية لموقعك." },
+  profileImages: { label: "صورة المصور والغلاف", description: "ارفع الصورتين من نفس صفحة الصور." },
   album: { label: "معرض الصور", description: "أضف أعمالك الحقيقية داخل الألبومات." },
 };
 

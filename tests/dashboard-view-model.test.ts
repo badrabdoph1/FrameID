@@ -63,7 +63,10 @@ describe("dashboard view model", () => {
     expect(viewModel.statusLabel).toBe("منشور");
     expect(viewModel.photographerName).toBe("Ali Ahmed Studio");
     expect(viewModel.percent).toBe(100);
-    expect(viewModel.checklist).toHaveLength(7);
+    expect(viewModel.checklist).toHaveLength(6);
+    expect(viewModel.checklist.map((item) => item.id)).toContain("profileImages");
+    expect(viewModel.checklist.map((item) => item.id)).not.toContain("avatar");
+    expect(viewModel.checklist.map((item) => item.id)).not.toContain("cover");
     expect(viewModel.stats).toEqual([
       { label: "الباقات", value: "3", tone: "success" },
       { label: "التواصل", value: "جاهز", tone: "success" },
@@ -75,8 +78,8 @@ describe("dashboard view model", () => {
     expect(viewModel.currentTheme).toBe("Rose Blush");
     expect(viewModel.isPublished).toBe(true);
     expect(viewModel.nextStepLabel).toBe("افتح الموقع");
-    expect(viewModel.nextStepTitle).toBe("انشر الموقع");
-    expect(viewModel.nextStepDescription).toBe("انشر الموقع وانسخ الرابط للعملاء.");
+    expect(viewModel.nextStepTitle).toBe("موقعك منشور");
+    expect(viewModel.nextStepDescription).toBe("موقعك شغال وجاهز لاستقبال العملاء.");
   });
 
   it("shows empty state for new sites", () => {
@@ -104,7 +107,7 @@ describe("dashboard view model", () => {
   it("calculates completion correctly", () => {
     const session = createSession("DRAFT");
 
-    // 3 out of 7 items done
+    // 2 out of 6 items done
     const viewModel = createDashboardViewModel({
       session,
       platformBaseUrl: "https://frameid.app",
@@ -118,7 +121,7 @@ describe("dashboard view model", () => {
       lastModifiedAt: new Date(),
     });
 
-    expect(viewModel.percent).toBe(43);
-    expect(viewModel.checklist.filter((i) => i.done)).toHaveLength(3);
+    expect(viewModel.percent).toBe(33);
+    expect(viewModel.checklist.filter((i) => i.done)).toHaveLength(2);
   });
 });

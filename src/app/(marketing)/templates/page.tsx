@@ -9,6 +9,7 @@ import { TemplateLivePreview } from "@/components/themes/template-live-preview";
 import { getContent } from "@/lib/content";
 import { cn } from "@/lib/utils/cn";
 import { getPublishedTemplates } from "@/modules/themes/theme-registry";
+import { TemplatesScrollReset } from "./templates-scroll-reset";
 
 export const metadata: Metadata = {
   title: "قوالب مواقع المصورين الجاهزة",
@@ -88,6 +89,7 @@ export default async function TemplatesPage({ searchParams }: TemplatesPageProps
 
   return (
     <>
+      <TemplatesScrollReset />
       <MarketingNav />
       <main id="main-content" className="min-h-screen bg-background">
         {/* Hero Section */}
