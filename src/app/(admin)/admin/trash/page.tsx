@@ -4,7 +4,7 @@ import { AdminPageShell } from "@/components/layout/admin-page-shell";
 import Link from "next/link";
 import { TrashTable } from "@/app/(admin)/admin/trash/trash-table";
 import { Search, X } from "lucide-react";
-import { restoreFromTrashAction, permanentDeleteAction, emptyTrashAction } from "@/app/(admin)/admin/trash/actions";
+import { emptyTrashAction } from "@/app/(admin)/admin/trash/actions";
 
 export const dynamic = "force-dynamic";
 
