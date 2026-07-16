@@ -1,13 +1,13 @@
 {
   "$schema": "marketing/navigation",
-  "version": 3,
-  "updatedAt": "2026-07-15T00:00:00.000Z",
+  "version": 4,
+  "updatedAt": "2026-07-16T00:00:00.000Z",
   "data": {
     "links": [
       { "label": "القوالب", "href": "/templates" },
-      { "label": "تسجيل دخول", "href": "/login" },
-      { "label": "إنشاء حساب", "href": "/signup" }
+      { "label": "الدعم", "href": "/support" },
+      { "label": "تسجيل دخول", "href": "/login" }
     ],
-    "cta": { "label": "جرب مجاناً", "href": "/signup" }
+    "cta": { "label": "تسجيل دخول", "href": "/login" }
   }
 }
