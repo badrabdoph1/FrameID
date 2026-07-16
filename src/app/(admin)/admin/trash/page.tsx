@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { getCurrentAdmin } from "@/modules/admin/admin-page-guards";
+import { AdminPageShell } from "@/components/layout/admin-page-shell";
 import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
@@ -8,7 +9,6 @@ export default async function AdminTrashPage() {
   const admin = await getCurrentAdmin();
   if (!admin) redirect("/admin/login");
 
-  // Test database query
   const where = { deletedAt: { not: null } };
   
   const [tenants, total] = await Promise.all([
@@ -34,16 +34,20 @@ export default async function AdminTrashPage() {
   ]);
 
   return (
-    <div style={{ padding: "2rem", color: "white", backgroundColor: "#1a1a1a" }}>
-      <h1>Trash Test Page - Step 3</h1>
-      <p>✅ prisma import OK</p>
-      <p>✅ getCurrentAdmin import OK</p>
-      <p>✅ Database query OK</p>
-      <p>Logged in as: {admin.name}</p>
-      <p>Total deleted tenants: {total}</p>
-      <pre style={{ fontSize: "12px", marginTop: "1rem" }}>
-        {JSON.stringify(tenants.map(t => ({ id: t.id, name: t.displayName, owner: t.owner.name })), null, 2)}
-      </pre>
-    </div>
+    <AdminPageShell
+      badge="سلة المحذوفات"
+      title="سلة المحذوفات"
+      description={`${total.toLocaleString("ar-EG")} عميل في سلة المحذوفات`}
+    >
+      <div style={{ padding: "1rem", color: "white" }}>
+        <p>✅ AdminPageShell import OK</p>
+        <p>Total deleted tenants: {total}</p>
+        <ul style={{ listStyle: "disc", marginTop: "1rem" }}>
+          {tenants.map(t => (
+            <li key={t.id}>{t.displayName} - {t.owner.name}</li>
+          ))}
+        </ul>
+      </div>
+    </AdminPageShell>
   );
 }
