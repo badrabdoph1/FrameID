@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useFormStatus } from "react-dom";
 import { Eye, EyeOff, Lock, Mail, Phone, User } from "lucide-react";
 
 import { signupAction } from "@/app/(marketing)/signup/actions";
@@ -8,6 +9,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PhoneInput } from "@/components/ui/phone-input";
+
+function SubmitButton() {
+  const { pending } = useFormStatus();
+  return (
+    <Button type="submit" variant="luxury" className="w-full" size="lg" disabled={pending} aria-busy={pending}>
+      {pending ? "جاري إنشاء الحساب..." : "إنشاء موقعي"}
+    </Button>
+  );
+}
 
 type SignupFormProps = {
   template?: string;
@@ -26,7 +36,7 @@ export function SignupForm({ template, error }: SignupFormProps) {
     <>
       {/* Error Message */}
       {error ? (
-        <div className="mb-5 flex items-start gap-3 rounded-xl border border-danger/20 bg-danger-soft/50 p-4">
+        <div role="alert" className="mb-5 flex items-start gap-3 rounded-xl border border-danger/20 bg-danger-soft/50 p-4">
           <div className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-danger/20">
             <svg className="size-3 text-danger" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -178,14 +188,7 @@ export function SignupForm({ template, error }: SignupFormProps) {
         </div>
 
         {/* Submit Button */}
-        <Button
-          type="submit"
-          variant="luxury"
-          className="w-full"
-          size="lg"
-        >
-          إنشاء موقعي
-        </Button>
+        <SubmitButton />
       </form>
     </>
   );

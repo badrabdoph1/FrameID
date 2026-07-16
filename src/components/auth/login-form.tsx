@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { useFormStatus } from "react-dom";
 import { Eye, EyeOff, Lock, Mail, Phone } from "lucide-react";
 
 import { loginAction } from "@/app/(marketing)/login/actions";
@@ -9,6 +10,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PhoneInput } from "@/components/ui/phone-input";
+
+function SubmitButton() {
+  const { pending } = useFormStatus();
+  return (
+    <Button type="submit" className="w-full" size="lg" disabled={pending} aria-busy={pending}>
+      {pending ? "جاري تسجيل الدخول..." : "تسجيل الدخول"}
+    </Button>
+  );
+}
 
 type LoginFormProps = {
   error?: string;
@@ -24,7 +34,7 @@ export function LoginForm({ error, message }: LoginFormProps) {
     <>
       {/* Success Message */}
       {message ? (
-        <div className="mb-5 flex items-start gap-3 rounded-xl border border-success/20 bg-success-soft/50 p-4">
+        <div role="status" className="mb-5 flex items-start gap-3 rounded-xl border border-success/20 bg-success-soft/50 p-4">
           <div className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-success/20">
             <svg className="size-3 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
               <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
@@ -36,7 +46,7 @@ export function LoginForm({ error, message }: LoginFormProps) {
 
       {/* Error Message */}
       {error ? (
-        <div className="mb-5 flex items-start gap-3 rounded-xl border border-danger/20 bg-danger-soft/50 p-4">
+        <div role="alert" className="mb-5 flex items-start gap-3 rounded-xl border border-danger/20 bg-danger-soft/50 p-4">
           <div className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-danger/20">
             <svg className="size-3 text-danger" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -139,9 +149,7 @@ export function LoginForm({ error, message }: LoginFormProps) {
           </div>
         </div>
 
-        <Button type="submit" className="w-full" size="lg">
-          تسجيل الدخول
-        </Button>
+        <SubmitButton />
       </form>
     </>
   );

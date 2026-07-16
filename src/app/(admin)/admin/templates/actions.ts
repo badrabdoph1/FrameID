@@ -116,10 +116,17 @@ export async function toggleTemplateAction(formData: FormData) {
   const id = readString(formData, "id");
   const current = await prisma.template.findFirst({ where: { id, deletedAt: null, code: { not: TEMPLATE_STARTER_DEFAULTS_CODE } } });
   if (!current) redirect("/admin/templates?error=template-not-found");
-  const nextStatus = current.status === "PUBLISHED" ? "DRAFT" : "PUBLISHED";
-  const updated = await prisma.template.update({ where: { id }, data: { status: nextStatus } });
-  await auditTemplate({ adminId: admin.id, adminEmail: admin.email, action: nextStatus === "PUBLISHED" ? "TEMPLATE_PUBLISHED" : "TEMPLATE_UNPUBLISHED", templateId: updated.id, code: updated.code, metadata: { status: nextStatus } });
-  await syncPlatformConfigurationToGitHub({ actor: admin, reason: nextStatus === "PUBLISHED" ? "نشر قالب" : "إلغاء نشر قالب" });
+
+  try {
+    const nextStatus = current.status === "PUBLISHED" ? "DRAFT" : "PUBLISHED";
+    const updated = await prisma.template.update({ where: { id }, data: { status: nextStatus } });
+    await auditTemplate({ adminId: admin.id, adminEmail: admin.email, action: nextStatus === "PUBLISHED" ? "TEMPLATE_PUBLISHED" : "TEMPLATE_UNPUBLISHED", templateId: updated.id, code: updated.code, metadata: { status: nextStatus } });
+    await syncPlatformConfigurationToGitHub({ actor: admin, reason: nextStatus === "PUBLISHED" ? "نشر قالب" : "إلغاء نشر قالب" });
+  } catch (error) {
+    const { userError } = await processError(error, { metadata: { action: "toggleTemplate", id } });
+    redirect(`/admin/templates?error=${encodeURIComponent(userError.message)}`);
+  }
+
   revalidatePath("/admin/templates");
   revalidatePath("/templates");
   redirect("/admin/templates?toggled=1");

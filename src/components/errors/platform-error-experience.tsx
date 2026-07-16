@@ -1,10 +1,12 @@
 "use client";
 
-import { AlertCircle, Check, Home, MessageSquareMore, RefreshCw } from "lucide-react";
+import { AlertCircle, Check, ClipboardCopy, Home, MessageSquareMore, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
-import { captureClientError, reportCapturedError } from "@/lib/client/error-reporting";
+import { captureClientError, collectClientErrorContext, reportCapturedError } from "@/lib/client/error-reporting";
+import { formatErrorForClipboard } from "@/lib/errors/format-error";
+import type { ErrorDetail } from "@/lib/errors/types";
 
 type Props = {
   error?: unknown;
@@ -18,11 +20,37 @@ export function PlatformErrorExperience({ error, homeHref = "/", onRetry }: Prop
   const [note, setNote] = useState("");
   const [status, setStatus] = useState<"idle" | "sending" | "sent" | "failed">("idle");
   const [issueNumber, setIssueNumber] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     if (!error || capturePromise.current) return;
     capturePromise.current = captureClientError(error);
   }, [error]);
+
+  const copyErrorDetails = async () => {
+    const ctx = collectClientErrorContext();
+    const err = error instanceof Error ? error : undefined;
+    const detail: ErrorDetail = {
+      code: "CLIENT_ERROR",
+      message: err?.message ?? "Unknown error",
+      requestId: "client-side",
+      timestamp: new Date().toISOString(),
+      stack: err?.stack,
+      browser: ctx.browser,
+      platform: ctx.device,
+      userAgent: ctx.metadata.userAgent as string | undefined,
+      cause: err?.cause ? String(err.cause) : undefined,
+      metadata: { ...ctx.metadata, connectionStatus: ctx.connectionStatus, language: ctx.language, timezone: ctx.timezone, screenSize: ctx.screenSize, referrer: ctx.referrer, lastAction: ctx.lastAction, os: ctx.os },
+    };
+    const text = formatErrorForClipboard(detail);
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // clipboard access denied
+    }
+  };
 
   const retry = () => {
     if (onRetry) onRetry();
@@ -67,6 +95,10 @@ export function PlatformErrorExperience({ error, homeHref = "/", onRetry }: Prop
           <button type="button" onClick={() => void report()} disabled={status === "sending" || status === "sent"} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-champagne/40 bg-champagne-soft px-5 text-sm font-bold text-champagne-strong transition hover:-translate-y-0.5 hover:bg-champagne-soft/70 disabled:cursor-default disabled:translate-y-0 disabled:opacity-75 sm:col-span-2">
             {status === "sent" ? <Check className="size-4" aria-hidden /> : <MessageSquareMore className="size-4" aria-hidden />}
             {status === "sending" ? "جاري إرسال البلاغ…" : status === "sent" ? "تم إبلاغ الإدارة" : "إبلاغ الإدارة بالمشكلة"}
+          </button>
+          <button type="button" onClick={() => void copyErrorDetails()} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-champagne/40 bg-champagne-soft/75 px-5 text-sm font-bold text-champagne-strong transition hover:-translate-y-0.5 hover:bg-champagne-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-champagne/40 sm:col-span-2">
+            {copied ? <Check className="size-4" aria-hidden /> : <ClipboardCopy className="size-4" aria-hidden />}
+            {copied ? "تم النسخ ✓" : "نسخ تفاصيل الخطأ"}
           </button>
         </div>
 

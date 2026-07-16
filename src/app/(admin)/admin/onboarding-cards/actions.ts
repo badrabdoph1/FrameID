@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { z } from "zod";
 
+import { processError } from "@/lib/errors";
 import { prisma } from "@/lib/prisma";
 import { requireAdminPermission } from "@/modules/admin/admin-permission-guards";
 import { syncPlatformConfigurationToGitHub } from "@/modules/setup/platform-configuration-git";
@@ -30,27 +31,33 @@ export async function saveCardOverride(formData: FormData) {
   const { cardId, title, description } = parsed.data;
   const flagKey = `onboarding-card:${cardId}`;
 
-  const existing = await prisma.featureFlag.findFirst({
-    where: { key: flagKey, scope: "PLATFORM", tenantId: null, siteId: null },
-  });
+  try {
+    const existing = await prisma.featureFlag.findFirst({
+      where: { key: flagKey, scope: "PLATFORM", tenantId: null, siteId: null },
+    });
 
-  if (existing) {
-    await prisma.featureFlag.update({
-      where: { id: existing.id },
-      data: { value: { title, description }, enabled: true },
-    });
-  } else {
-    await prisma.featureFlag.create({
-      data: {
-        key: flagKey,
-        scope: "PLATFORM",
-        value: { title, description },
-        enabled: true,
-      },
-    });
+    if (existing) {
+      await prisma.featureFlag.update({
+        where: { id: existing.id },
+        data: { value: { title, description }, enabled: true },
+      });
+    } else {
+      await prisma.featureFlag.create({
+        data: {
+          key: flagKey,
+          scope: "PLATFORM",
+          value: { title, description },
+          enabled: true,
+        },
+      });
+    }
+
+    await syncPlatformConfigurationToGitHub({ actor: admin, reason: "تحديث كروت الإعداد" });
+  } catch (error) {
+    const { userError } = await processError(error, { metadata: { action: "saveCardOverride", cardId } });
+    redirect(`/admin/onboarding-cards?error=${encodeURIComponent(userError.message)}`);
   }
 
-  await syncPlatformConfigurationToGitHub({ actor: admin, reason: "تحديث كروت الإعداد" });
   redirect("/admin/onboarding-cards?saved=1");
   return;
 }
@@ -65,17 +72,23 @@ export async function resetCardOverride(formData: FormData) {
 
   const flagKey = `onboarding-card:${cardId}`;
 
-  await prisma.featureFlag.updateMany({
-    where: {
-      key: flagKey,
-      scope: "PLATFORM",
-      tenantId: null,
-      siteId: null,
-    },
-    data: { enabled: false },
-  });
+  try {
+    await prisma.featureFlag.updateMany({
+      where: {
+        key: flagKey,
+        scope: "PLATFORM",
+        tenantId: null,
+        siteId: null,
+      },
+      data: { enabled: false },
+    });
 
-  await syncPlatformConfigurationToGitHub({ actor: admin, reason: `إعادة تعيين كارت ${cardId}` });
+    await syncPlatformConfigurationToGitHub({ actor: admin, reason: `إعادة تعيين كارت ${cardId}` });
+  } catch (error) {
+    const { userError } = await processError(error, { metadata: { action: "resetCardOverride", cardId } });
+    redirect(`/admin/onboarding-cards?error=${encodeURIComponent(userError.message)}`);
+  }
+
   redirect("/admin/onboarding-cards?reset=1");
   return;
 }

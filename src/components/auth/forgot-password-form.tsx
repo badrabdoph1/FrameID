@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { useFormStatus } from "react-dom";
+import { CheckCircle2 } from "lucide-react";
 
 import { requestPasswordResetAction } from "@/app/(marketing)/forgot-password/actions";
 import { PasswordRecoverySupportCard } from "@/components/auth/password-recovery-support-card";
@@ -8,6 +10,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PhoneInput } from "@/components/ui/phone-input";
+
+function SubmitButton() {
+  const { pending } = useFormStatus();
+  return (
+    <Button type="submit" className="w-full" disabled={pending} aria-busy={pending}>
+      {pending ? "جاري الإرسال..." : "أرسل رابط الاستعادة"}
+    </Button>
+  );
+}
 
 type ForgotPasswordFormProps = {
   sent?: string;
@@ -21,8 +32,9 @@ export function ForgotPasswordForm({ sent, error }: ForgotPasswordFormProps) {
   return (
     <>
       {sent ? (
-        <div className="mb-4 rounded-[var(--radius-panel)] border border-success/20 bg-success-soft px-4 py-3 text-sm text-success">
-          لو الحساب مسجل ببريد إلكتروني، هنرسل لك رابط استعادة على البريد.
+        <div className="mb-4 flex items-center gap-2 rounded-[var(--radius-panel)] border border-success/20 bg-success-soft px-4 py-3 text-sm text-success">
+          <CheckCircle2 className="size-4 shrink-0" />
+          <span>لو الحساب مسجل ببريد إلكتروني، هنرسل لك رابط استعادة على البريد.</span>
         </div>
       ) : null}
       {error ? <PasswordRecoverySupportCard /> : null}
@@ -83,9 +95,7 @@ export function ForgotPasswordForm({ sent, error }: ForgotPasswordFormProps) {
           </div>
         )}
 
-        <Button type="submit" className="w-full">
-          أرسل رابط الاستعادة
-        </Button>
+        <SubmitButton />
       </form>
     </>
   );

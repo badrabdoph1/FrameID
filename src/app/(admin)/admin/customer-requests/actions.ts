@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 
+import { processError } from "@/lib/errors";
 import { prisma } from "@/lib/prisma";
 import { requireSuperAdminSession } from "@/modules/admin/admin-page-guards";
 
@@ -44,13 +45,18 @@ export async function reviewCustomerRequestAction(formData: FormData) {
     updateData.completedAt = new Date();
   }
 
-  await prisma.customerRequest.update({
-    where: { id: requestId },
-    data: updateData,
-  });
+  try {
+    await prisma.customerRequest.update({
+      where: { id: requestId },
+      data: updateData,
+    });
 
-  revalidatePath("/admin/customer-requests");
-  redirect("/admin/customer-requests?updated=1");
+    revalidatePath("/admin/customer-requests");
+    redirect("/admin/customer-requests?updated=1");
+  } catch (error) {
+    const { userError } = await processError(error, { metadata: { action: "reviewCustomerRequest", requestId } });
+    redirect(`/admin/customer-requests?error=${encodeURIComponent(userError.message)}`);
+  }
 }
 
 function readString(formData: FormData, key: string): string {

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import { processError } from "@/lib/errors";
 import { requireAdminPermission } from "@/modules/admin/admin-permission-guards";
 import { commitContentFilesToGitHub } from "@/lib/content/git-sync";
 import { readFile, writeFile } from "node:fs/promises";
@@ -72,8 +73,8 @@ export async function updatePaymentAccountAction(formData: FormData) {
       message: "تحديث حسابات الدفع",
     });
   } catch (error) {
-    console.error("[payment] failed to save:", error);
-    redirect("/admin/settings/payment?error=فشل حفظ التغيير");
+    const { userError } = await processError(error, { metadata: { action: "updatePaymentAccount", accountId } });
+    redirect(`/admin/settings/payment?error=${encodeURIComponent(userError.message)}`);
   }
 
   revalidatePath("/admin/settings/payment");

@@ -35,20 +35,24 @@ export function GalleryClient({ coverUrl, galleryVisible, slotImages, toggled, r
   const [localSlots, setLocalSlots] = useState<SlotImage[]>(slotImages);
   const [localVisible, setLocalVisible] = useState(galleryVisible);
   const coverInputRef = useRef<HTMLInputElement>(null);
+  const [caughtError, setCaughtError] = useState<string | null>(null);
 
-  const notice = toggled
-    ? { tone: "success" as const, text: localVisible ? "تم إظهار قسم المعرض" : "تم إخفاء قسم المعرض" }
-    : replaced
-      ? { tone: "success" as const, text: "تم استبدال الصورة بنجاح" }
-      : coverReplaced
-        ? { tone: "success" as const, text: "تم استبدال صورة الغلاف بنجاح" }
-        : error
-          ? { tone: "error" as const, text: error === "no-image" ? "الرجاء اختيار صورة" : error === "invalid-slot" ? "بيانات غير صالحة" : "حدث خطأ، حاول مرة أخرى" }
-          : null;
+  const notice = caughtError
+    ? { tone: "error" as const, text: caughtError }
+    : toggled
+      ? { tone: "success" as const, text: localVisible ? "تم إظهار قسم المعرض" : "تم إخفاء قسم المعرض" }
+      : replaced
+        ? { tone: "success" as const, text: "تم استبدال الصورة بنجاح" }
+        : coverReplaced
+          ? { tone: "success" as const, text: "تم استبدال صورة الغلاف بنجاح" }
+          : error
+            ? { tone: "error" as const, text: error === "no-image" ? "الرجاء اختيار صورة" : error === "invalid-slot" ? "بيانات غير صالحة" : "حدث خطأ، حاول مرة أخرى" }
+            : null;
 
   async function handleCoverUpload() {
     const file = coverInputRef.current?.files?.[0];
     if (!file) return;
+    setCaughtError(null);
     setCoverUploading(true);
     setLocalCoverUrl(URL.createObjectURL(file));
     try {
@@ -59,10 +63,12 @@ export function GalleryClient({ coverUrl, galleryVisible, slotImages, toggled, r
     } catch {
       setCoverUploading(false);
       setLocalCoverUrl(null);
+      setCaughtError("فشل رفع صورة الغلاف، حاول مرة أخرى");
     }
   }
 
   async function handleSlotUpload(slotIndex: number, file: File) {
+    setCaughtError(null);
     setSlotUploading(slotIndex);
     setLocalSlots((prev) => prev.map((s) => s.slot === slotIndex ? { ...s, url: URL.createObjectURL(file) } : s));
     try {
@@ -72,16 +78,19 @@ export function GalleryClient({ coverUrl, galleryVisible, slotImages, toggled, r
       await replaceGallerySlotAction(fd);
     } catch {
       setSlotUploading(null);
+      setCaughtError("فشل استبدال الصورة، حاول مرة أخرى");
     }
   }
 
   async function handleToggle() {
+    setCaughtError(null);
     const next = !localVisible;
     setLocalVisible(next);
     try {
       await toggleGallerySectionAction();
     } catch {
       setLocalVisible(!next);
+      setCaughtError("فشل تحديث حالة المعرض، حاول مرة أخرى");
     }
   }
 

@@ -154,36 +154,41 @@ export async function impersonateCustomerAction(formData: FormData) {
   const tenantId = readFormString(formData, "tenantId");
   if (!tenantId) redirect("/admin/customers?error=missing-tenant");
 
-  const tenant = await prisma.tenant.findUnique({
-    where: { id: tenantId, deletedAt: null },
-    select: {
-      id: true,
-      sites: {
-        where: { deletedAt: null },
-        select: { slug: true },
-        take: 1,
+  try {
+    const tenant = await prisma.tenant.findUnique({
+      where: { id: tenantId, deletedAt: null },
+      select: {
+        id: true,
+        sites: {
+          where: { deletedAt: null },
+          select: { slug: true },
+          take: 1,
+        },
       },
-    },
-  });
+    });
 
-  if (!tenant) redirect("/admin/customers?error=tenant-not-found");
+    if (!tenant) redirect("/admin/customers?error=tenant-not-found");
 
-  await prisma.impersonationSession.create({
-    data: {
-      adminId: admin.id,
-      tenantId,
-      expiresAt: new Date(Date.now() + 1000 * 60 * 60),
-    },
-  });
+    await prisma.impersonationSession.create({
+      data: {
+        adminId: admin.id,
+        tenantId,
+        expiresAt: new Date(Date.now() + 1000 * 60 * 60),
+      },
+    });
 
-  const repo = createCustomerAdminRepository(prisma);
-  await repo.createAuditLog(admin.id, tenantId, "ADMIN_IMPERSONATED", "Tenant", tenantId, { adminName: admin.name });
+    const repo = createCustomerAdminRepository(prisma);
+    await repo.createAuditLog(admin.id, tenantId, "ADMIN_IMPERSONATED", "Tenant", tenantId, { adminName: admin.name });
 
-  const siteSlug = tenant.sites[0]?.slug;
-  if (siteSlug) {
-    redirect(`/p/${siteSlug}`);
+    const siteSlug = tenant.sites[0]?.slug;
+    if (siteSlug) {
+      redirect(`/p/${siteSlug}`);
+    }
+    redirect("/admin/customers?impersonated=1");
+  } catch (error) {
+    const { userError } = await processError(error, { userId: admin.id, tenantId, metadata: { action: "impersonateCustomer" } });
+    redirect(`/admin/customers?error=${encodeURIComponent(userError.message)}`);
   }
-  redirect("/admin/customers?impersonated=1");
 }
 
 export async function bulkCustomerLifecycleAction(formData: FormData) {

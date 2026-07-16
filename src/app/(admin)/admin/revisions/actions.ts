@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 
 import { saveContent, ContentSchemas, type ContentSchemaKey } from "@/lib/content";
 import { getContentRevisionById } from "@/lib/content/revisions";
+import { processError } from "@/lib/errors";
 import { requireAdminPermission } from "@/modules/admin/admin-permission-guards";
 import { restorePlatformConfigurationToGitHub } from "@/modules/setup/platform-configuration-git";
 
@@ -24,7 +25,8 @@ export async function restoreRevisionAction(formData: FormData) {
       throw new Error("نوع هذا الإصدار لم يعد مدعومًا");
     }
   } catch (error) {
-    redirect(`/admin/revisions?error=${encodeURIComponent(error instanceof Error ? error.message : "فشل استعادة الإصدار")}`);
+    const { userError } = await processError(error, { metadata: { action: "restoreRevision", revisionId } });
+    redirect(`/admin/revisions?error=${encodeURIComponent(userError.message)}`);
   }
   revalidatePath("/admin/revisions");
   revalidatePath("/", "layout");

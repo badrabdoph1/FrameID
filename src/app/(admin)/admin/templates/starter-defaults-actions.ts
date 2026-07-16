@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { prisma } from "@/lib/prisma";
+import { processError } from "@/lib/errors";
 import { requireAdminPermission } from "@/modules/admin/admin-permission-guards";
 import {
   normalizeTemplateStarterSharedDefaults,
@@ -35,37 +36,42 @@ export async function saveStarterDefaultsAction(formData: FormData) {
 
   if (!theme) redirect("/admin/templates?error=لا يوجد ثيم متاح لحفظ بيانات البداية.");
 
-  const saved = await prisma.template.upsert({
-    where: { code: TEMPLATE_STARTER_DEFAULTS_CODE },
-    create: {
-      themeId: theme.id,
-      code: TEMPLATE_STARTER_DEFAULTS_CODE,
-      name: "Starter Content Defaults",
-      status: "ARCHIVED",
-      showroomOrder: -1,
-      previewData: serializeTemplateStarterDefaults(defaults) as Prisma.InputJsonValue,
-      settings: { internal: true, source: "template-content-source" } as Prisma.InputJsonValue,
-    },
-    update: {
-      previewData: serializeTemplateStarterDefaults(defaults) as Prisma.InputJsonValue,
-      settings: { internal: true, source: "template-content-source" } as Prisma.InputJsonValue,
-      deletedAt: null,
-    },
-  });
-
-  await prisma.auditLog.create({
-    data: {
-      action: "TEMPLATE_STARTER_DEFAULTS_UPDATED",
-      entityType: "TemplateContentSource",
-      entityId: saved.id,
-      metadata: {
-        adminId: admin.id,
-        adminEmail: admin.email,
+  try {
+    const saved = await prisma.template.upsert({
+      where: { code: TEMPLATE_STARTER_DEFAULTS_CODE },
+      create: {
+        themeId: theme.id,
         code: TEMPLATE_STARTER_DEFAULTS_CODE,
-      } as Prisma.InputJsonObject,
-    },
-  });
-  await syncPlatformConfigurationToGitHub({ actor: admin, reason: "تعديل بيانات بداية القوالب" });
+        name: "Starter Content Defaults",
+        status: "ARCHIVED",
+        showroomOrder: -1,
+        previewData: serializeTemplateStarterDefaults(defaults) as Prisma.InputJsonValue,
+        settings: { internal: true, source: "template-content-source" } as Prisma.InputJsonValue,
+      },
+      update: {
+        previewData: serializeTemplateStarterDefaults(defaults) as Prisma.InputJsonValue,
+        settings: { internal: true, source: "template-content-source" } as Prisma.InputJsonValue,
+        deletedAt: null,
+      },
+    });
+
+    await prisma.auditLog.create({
+      data: {
+        action: "TEMPLATE_STARTER_DEFAULTS_UPDATED",
+        entityType: "TemplateContentSource",
+        entityId: saved.id,
+        metadata: {
+          adminId: admin.id,
+          adminEmail: admin.email,
+          code: TEMPLATE_STARTER_DEFAULTS_CODE,
+        } as Prisma.InputJsonObject,
+      },
+    });
+    await syncPlatformConfigurationToGitHub({ actor: admin, reason: "تعديل بيانات بداية القوالب" });
+  } catch (error) {
+    const { userError } = await processError(error, { metadata: { action: "saveStarterDefaults" } });
+    redirect(`/admin/templates?error=${encodeURIComponent(userError.message)}`);
+  }
 
   revalidatePath("/admin/templates");
   revalidatePath("/templates");

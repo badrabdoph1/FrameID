@@ -1,7 +1,9 @@
 "use client";
 
-import { ArrowLeft, Globe, RefreshCw } from "lucide-react";
+import { ArrowLeft, Globe, MessageCircle, RefreshCw } from "lucide-react";
 import Link from "next/link";
+
+import { DEFAULT_SUPPORT_WHATSAPP_NUMBER, toWhatsappHref } from "@/modules/support/support-utils";
 
 type Props = {
   isOwner?: boolean;
@@ -17,6 +19,7 @@ export function SiteUnavailableExperience({
   loginHref = "/login",
 }: Props) {
   const retry = () => window.location.reload();
+  const supportHref = toWhatsappHref(DEFAULT_SUPPORT_WHATSAPP_NUMBER, "مرحبًا، أحتاج دعم فني بخصوص الموقع.");
 
   return (
     <main className="relative grid min-h-[70dvh] place-items-center overflow-hidden bg-background px-4 py-12 text-foreground">
@@ -83,6 +86,18 @@ export function SiteUnavailableExperience({
             لإدارة موقعك.
           </p>
         )}
+
+        <div className="mt-6 border-t border-border/50 pt-5">
+          <a
+            href={supportHref}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-2 text-xs font-bold text-muted-foreground no-underline transition hover:text-emerald-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <MessageCircle className="size-4" aria-hidden />
+            للدعم الفني
+          </a>
+        </div>
       </section>
     </main>
   );

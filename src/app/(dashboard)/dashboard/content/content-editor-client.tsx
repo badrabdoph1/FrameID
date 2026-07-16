@@ -2,7 +2,7 @@
 
 import { useState, useTransition, type FormEvent, type ReactNode } from "react";
 import Image from "next/image";
-import { CheckCircle2, Eye, EyeOff, ImagePlus, Loader2, Save, SlidersHorizontal } from "lucide-react";
+import { AlertCircle, CheckCircle2, Eye, EyeOff, ImagePlus, Loader2, Save, SlidersHorizontal } from "lucide-react";
 
 import {
   updateSectionAction,
@@ -89,8 +89,17 @@ function SectionEditor({ section, coverUrl }: { section: EditorSection; coverUrl
       ) : null}
 
       <div className="flex min-h-11 flex-wrap items-center justify-between gap-3 border-t border-white/8 pt-3">
-        <p aria-live="polite" className="inline-flex items-center gap-2 text-xs font-black text-white/45">
-          {pending ? <Loader2 className="size-4 animate-spin text-[#f3cf73]" aria-hidden /> : state?.ok ? <CheckCircle2 className="size-4 text-emerald-300" aria-hidden /> : <Save className="size-4" aria-hidden />}
+        <p
+          aria-live="polite"
+          className={
+            state?.ok === false
+              ? "inline-flex items-center gap-2 rounded-xl border border-red-400/30 bg-red-500/10 px-3 py-1.5 text-xs font-black text-red-200"
+              : state?.ok === true
+                ? "inline-flex items-center gap-2 rounded-xl border border-emerald-300/20 bg-emerald-400/10 px-3 py-1.5 text-xs font-black text-emerald-200"
+                : "inline-flex items-center gap-2 text-xs font-black text-white/45"
+          }
+        >
+          {pending ? <Loader2 className="size-4 animate-spin text-[#f3cf73]" aria-hidden /> : state?.ok === true ? <CheckCircle2 className="size-4 text-emerald-300" aria-hidden /> : state?.ok === false ? <AlertCircle className="size-4 text-red-300" aria-hidden /> : <Save className="size-4" aria-hidden />}
           {pending ? "جاري الحفظ..." : state?.message ?? "التغييرات تُحفظ لهذا القسم فقط"}
         </p>
         <Button className="min-h-11 w-full sm:w-auto" type="submit" disabled={pending}>حفظ القسم</Button>
