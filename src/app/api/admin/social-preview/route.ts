@@ -79,7 +79,11 @@ export async function PATCH(request: Request) {
         enabled: next.enabled,
         title: next.title,
         description: next.description,
-        imageUrl: next.imageUrl ? `${next.imageUrl}${next.imageUrl.includes("?") ? "&" : "?"}v=${Date.now()}` : null,
+        imageUrl: next.imageUrl && next.imageData
+          ? `${PLATFORM_CUSTOM_SOCIAL_IMAGE}?mode=custom&v=${Date.now()}`
+          : next.imageUrl
+            ? `${next.imageUrl}${next.imageUrl.includes("?") ? "&" : "?"}v=${Date.now()}`
+            : null,
         hasImage: Boolean(next.imageUrl || next.imageData),
       },
     });

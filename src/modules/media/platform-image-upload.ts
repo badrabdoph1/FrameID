@@ -1,3 +1,7 @@
+import "server-only";
+import { writeFile, mkdir } from "node:fs/promises";
+import { join } from "node:path";
+
 import { commitPlatformAssetToGitHub } from "@/lib/content/git-sync";
 import { processImageFromBuffer } from "@/modules/media/image-processing-service";
 
@@ -30,5 +34,14 @@ async function uploadPlatformImage(file: File, directory: string, options: Uploa
     message: `حفظ صورة منصة: ${directory}`,
   });
   if (!result.commitSha) throw new Error(result.error ?? "لم يتم حفظ صورة المنصة في GitHub");
+
+  try {
+    const localPath = join(process.cwd(), "public", "platform", directory, `${id}-${safeName}.webp`);
+    await mkdir(join(process.cwd(), "public", "platform", directory), { recursive: true });
+    await writeFile(localPath, Buffer.from(processed.buffer));
+  } catch {
+    // Silent fail in read-only environments (e.g. Vercel production)
+  }
+
   return { url: path.replace(/^public/, ""), storageKey: path, commitId: result.commitSha };
 }

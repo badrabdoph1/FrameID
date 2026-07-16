@@ -12,6 +12,7 @@ import {
   PLATFORM_SOCIAL_PREVIEW_CACHE_TAG,
   savePlatformSocialPreviewSettings,
 } from "@/modules/social-preview/platform-social-preview-settings";
+import { PLATFORM_CUSTOM_SOCIAL_IMAGE } from "@/modules/social-preview/social-preview";
 import { syncPlatformConfigurationToGitHub } from "@/modules/setup/platform-configuration-git";
 
 const PAGE_PATH = "/admin/social-preview";
@@ -38,12 +39,16 @@ export async function uploadSocialPreviewImageAction(
   try {
     const uploaded = await uploadPlatformSocialPreviewImage(image);
 
+    const imageData = Buffer.from(await image.arrayBuffer()).toString("base64");
+
     const current = await getPlatformSocialPreviewSettings();
     await savePlatformSocialPreviewSettings({
       ...current,
       enabled: true,
-      imageUrl: uploaded.url,
+      imageUrl: PLATFORM_CUSTOM_SOCIAL_IMAGE,
       storageKey: uploaded.storageKey,
+      imageData,
+      imageMimeType: image.type,
     });
     await syncPlatformConfigurationToGitHub({ actor: session.user, reason: "رفع صورة معاينة المنصة" });
 
@@ -55,7 +60,7 @@ export async function uploadSocialPreviewImageAction(
     return {
       ok: true,
       message: "تم رفع الصورة وتثبيتها بنجاح.",
-      imageUrl: uploaded.url,
+      imageUrl: `${PLATFORM_CUSTOM_SOCIAL_IMAGE}?mode=custom&v=${Date.now()}`,
       bytes: image.size,
     };
   } catch (error) {
