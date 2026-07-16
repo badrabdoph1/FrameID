@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-07-15T22:50:29.093Z",
+  "updatedAt": "2026-07-16T11:41:13.324Z",
   "themes": [
     {
       "code": "noir-gold",
@@ -206,7 +206,7 @@
           "instructions": "حوّل على رقم إنستا باي، ثم ارفع صورة إثبات الدفع من نفس الصفحة.",
           "notes": null,
           "isActive": true,
-          "sortOrder": 140
+          "sortOrder": 150
         }
       ]
     },
@@ -235,7 +235,7 @@
           "instructions": "حوّل على رقم فودافون كاش، ثم ارفع صورة إثبات الدفع من نفس الصفحة.",
           "notes": null,
           "isActive": true,
-          "sortOrder": 270
+          "sortOrder": 290
         }
       ]
     },
@@ -292,12 +292,15 @@
     },
     {
       "key": "platform.social-preview",
-      "enabled": false,
+      "enabled": true,
       "value": {
         "title": null,
-        "imageUrl": "/social-preview-image.jpg",
-        "storageKey": null,
-        "description": null
+        "imageUrl": "/platform/social-preview/0c98988d-cd90-4d73-bf7a-93fbe6716261-social-preview-1784202067597.webp",
+        "imageData": null,
+        "storageKey": "public/platform/social-preview/0c98988d-cd90-4d73-bf7a-93fbe6716261-social-preview-1784202067597.webp",
+        "description": null,
+        "imageVersion": null,
+        "imageMimeType": null
       }
     },
     {
@@ -381,5 +384,164 @@
       }
     }
   ],
-  "platformMessages": []
+  "platformMessages": [],
+  "platformPages": [
+    {
+      "key": "home",
+      "route": "/",
+      "kind": "EDITORIAL",
+      "document": {
+        "pageKey": "home",
+        "sections": [
+          {
+            "id": "home-hero",
+            "type": "home.hero",
+            "status": "visible",
+            "content": {
+              "cta": {
+                "href": "/templates",
+                "label": "ابدأ مجانًا"
+              },
+              "badge": "منصة مواقع المصورين",
+              "headline": "كل شغلك",
+              "heroImage": "https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?auto=format&fit=crop&w=1800&q=85",
+              "subheadline": "موقع احترافي يعرض صورك وباقاتك وأسعارك بشكل يليق بشغلك.",
+              "trustPoints": [
+                {
+                  "text": "تجربة مجانية"
+                },
+                {
+                  "text": "بدون كود"
+                },
+                {
+                  "text": "لينك واحد يكفي"
+                }
+              ],
+              "secondaryCta": {
+                "href": "/templates",
+                "label": "شوف القوالب"
+              },
+              "headlineHighlight": "في رابط واحد"
+            }
+          },
+          {
+            "id": "home-templates",
+            "type": "home.templates",
+            "status": "hidden",
+            "content": {
+              "badge": "القوالب",
+              "title": "شوف القوالب بنفسك",
+              "subtitle": "تصميمات احترافية جاهزة للمصورين."
+            }
+          },
+          {
+            "id": "home-benefits",
+            "type": "home.benefits",
+            "status": "visible",
+            "content": {
+              "items": [
+                {
+                  "body": "العميل يشوف الباقات والأسعار بنفسه من غير ما يسألك.",
+                  "title": "أسعارك واضحة"
+                },
+                {
+                  "body": "بدل PDF وصور متفرقة، موقع يليق بشغلك.",
+                  "title": "شكلك احترافي"
+                },
+                {
+                  "body": "غيّر الصور والباقات والأسعار من أي مكان.",
+                  "title": "تعديل فوري"
+                },
+                {
+                  "body": "كل صفحاتك وبياناتك وصورك في رابط واحد تشاركه.",
+                  "title": "لينك واحد يكفي"
+                }
+              ],
+              "title": "كل التفاصيل في مكانها",
+              "subtitle": "معلومات واضحة لعميلك، ووقت أقل في تكرار نفس الإجابات."
+            }
+          },
+          {
+            "id": "home-journey",
+            "type": "home.journey",
+            "status": "visible",
+            "content": {
+              "items": [
+                {
+                  "body": "تصفّح القوالب واختار اللي يناسب شغلك.",
+                  "href": "/templates",
+                  "step": 1,
+                  "title": "اختار تصميمك"
+                },
+                {
+                  "body": "أضف صورك وباقاتك وأسعارك بسهولة.",
+                  "href": "/signup",
+                  "step": 2,
+                  "title": "خصّص موقعك"
+                },
+                {
+                  "body": "ابعت لينك موقعك لعملاءك وابدأ.",
+                  "href": "/dashboard",
+                  "step": 3,
+                  "title": "شارك رابطك"
+                }
+              ],
+              "title": "ابدأ بخطوات واضحة",
+              "subtitle": "اختر تصميمك، أضف تفاصيلك، ثم شارك رابطك."
+            }
+          },
+          {
+            "id": "home-faq",
+            "type": "home.faq",
+            "status": "visible",
+            "content": {
+              "badge": "الأسئلة الشائعة",
+              "items": [
+                {
+                  "answer": "أيوه، تقدر تغيّر أي حاجة في أي وقت من لوحة التحكم.",
+                  "question": "هل أقدر أعدل موقعي بعد ما أنشره؟"
+                },
+                {
+                  "answer": "أيوه، متوافق مع كل الأجهزة بشكل كامل.",
+                  "question": "الموقع بيشتغل على الموبايل؟"
+                },
+                {
+                  "answer": "لأ، كل التعديلات بتعملها بنفسك بدون أي خبرة برمجية.",
+                  "question": "هحتاج مبرمج؟"
+                },
+                {
+                  "answer": "أيوه، نفس الرابط يفضل معاك حتى لو عدّلت المحتوى.",
+                  "question": "الرابط هيفضل ثابت؟"
+                }
+              ],
+              "title": "أسئلة شائعة",
+              "message": "",
+              "sectionTitle": "أسئلة شائعة"
+            }
+          },
+          {
+            "id": "home-final-cta",
+            "type": "home.final-cta",
+            "status": "visible",
+            "content": {
+              "cta": {
+                "href": "/templates",
+                "label": "ابدأ مجانًا"
+              },
+              "title": "جهّز موقعك دلوقتي",
+              "mobile": {
+                "href": "/templates",
+                "label": "ابدأ مجانًا",
+                "buttonText": "ابدأ"
+              },
+              "subtext": "ابدأ مجانًا في دقايق."
+            }
+          }
+        ],
+        "schemaVersion": 1
+      },
+      "version": 1,
+      "schemaVersion": 1
+    }
+  ]
 }
