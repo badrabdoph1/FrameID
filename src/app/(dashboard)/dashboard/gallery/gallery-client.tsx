@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Eye, EyeOff, ImagePlus, Images, RefreshCw } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -29,6 +30,7 @@ const SLOT_LABELS: Record<number, string> = {
 };
 
 export function GalleryClient({ coverUrl, galleryVisible, slotImages, toggled, replaced, coverReplaced, error }: GalleryClientProps) {
+  const router = useRouter();
   const [coverUploading, setCoverUploading] = useState(false);
   const [slotUploading, setSlotUploading] = useState<number | null>(null);
   const [localCoverUrl, setLocalCoverUrl] = useState<string | null>(null);
@@ -60,6 +62,8 @@ export function GalleryClient({ coverUrl, galleryVisible, slotImages, toggled, r
       fd.append("image", file);
       fd.append("field", "coverAssetId");
       await uploadSiteImageAction(fd);
+      setCoverUploading(false);
+      router.refresh();
     } catch {
       setCoverUploading(false);
       setLocalCoverUrl(null);
@@ -76,6 +80,8 @@ export function GalleryClient({ coverUrl, galleryVisible, slotImages, toggled, r
       fd.append("image", file);
       fd.append("slot", String(slotIndex));
       await replaceGallerySlotAction(fd);
+      setSlotUploading(null);
+      router.refresh();
     } catch {
       setSlotUploading(null);
       setCaughtError("فشل استبدال الصورة، حاول مرة أخرى");

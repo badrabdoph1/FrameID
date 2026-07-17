@@ -529,5 +529,4 @@ export async function replaceGallerySlotAction(formData: FormData) {
   }
 
   revalidateGallery(session.site.slug);
-  redirect(`/dashboard/gallery?replaced=${slotIndex}`);
 }
