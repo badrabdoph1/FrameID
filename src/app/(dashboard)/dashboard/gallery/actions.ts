@@ -340,10 +340,17 @@ export async function setCoverImageAction(formData: FormData) {
       redirect("/dashboard/gallery?error=image-not-found");
     }
 
-    await prisma.galleryAlbum.update({
-      where: { id: albumId, siteId: session.site.id },
-      data: { coverAssetId: image.assetId },
-    });
+    await prisma.$transaction([
+      prisma.galleryAlbum.update({
+        where: { id: albumId, siteId: session.site.id },
+        data: { coverAssetId: image.assetId },
+      }),
+      prisma.contactProfile.upsert({
+        where: { siteId: session.site.id },
+        update: { coverAssetId: image.assetId },
+        create: { siteId: session.site.id, coverAssetId: image.assetId },
+      }),
+    ]);
   } catch (error) {
     const { userError } = await processError(error, {
       userId: session.user.id,
