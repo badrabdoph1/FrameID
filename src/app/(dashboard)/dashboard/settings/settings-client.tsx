@@ -124,12 +124,25 @@ export function SettingsClient({ userName, userEmail, userPhone, userRole, siteT
                   </button>
                 </form>
               ) : (
-                <div className="mt-1.5 flex items-center gap-2">
-                  <h3 className="truncate text-xl font-black text-[#fff7e8] sm:text-2xl">{siteTitle}</h3>
-                  <button type="button" onClick={startEditingTitle} className="grid size-8 shrink-0 place-items-center rounded-xl border border-white/10 bg-white/[0.04] text-white/50 transition hover:bg-amber-300/10 hover:text-[#f3cf73]" title="تعديل اسم الموقع">
-                    <Pencil className="size-3.5" />
-                  </button>
-                </div>
+                <>
+                  <div className="mt-1.5 flex items-center gap-2">
+                    <h3 className="truncate text-xl font-black text-[#fff7e8] sm:text-2xl">{siteTitle}</h3>
+                    <button type="button" onClick={startEditingTitle} className="grid size-8 shrink-0 place-items-center rounded-xl border border-white/10 bg-white/[0.04] text-white/50 transition hover:bg-amber-300/10 hover:text-[#f3cf73]" title="تعديل اسم الموقع">
+                      <Pencil className="size-3.5" />
+                    </button>
+                  </div>
+                  <div className="mt-1.5 flex items-center gap-2" dir="ltr">
+                    <span className="truncate text-xs font-bold text-amber-300/70">{siteUrl}</span>
+                    <button
+                      type="button"
+                      onClick={copyUrl}
+                      className="grid size-6 shrink-0 place-items-center rounded-lg border border-amber-300/20 bg-amber-400/10 text-amber-200/80 transition hover:bg-amber-400/20"
+                      title="نسخ الرابط"
+                    >
+                      {copied ? <CheckCircle2 className="size-3" /> : <Copy className="size-3" />}
+                    </button>
+                  </div>
+                </>
               )}
             </div>
           </div>
@@ -144,7 +157,11 @@ export function SettingsClient({ userName, userEmail, userPhone, userRole, siteT
             </div>
 
             <div className="grid gap-2">
-              <InfoRow label="الرابط" value={siteUrl} dir="ltr" highlight />
+              <div className="rounded-2xl border border-amber-300/20 bg-amber-300/[0.06] p-3">
+                <p className="text-xs font-black leading-6 text-amber-200">
+                  دا الرابط بتاع موقعك — انسخه وابعته لعميلك
+                </p>
+              </div>
               <div className="flex items-center justify-between gap-3 rounded-2xl border border-white/8 bg-black/15 p-3">
                 <span className="shrink-0 text-xs font-black text-white/40">الحالة</span>
                 <span className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-black" style={{ color: badge.color, background: badge.bg }}>
