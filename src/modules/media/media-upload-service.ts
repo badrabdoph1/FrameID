@@ -54,7 +54,8 @@ export function createMediaUploadService({
           maxSizeBytes,
         });
 
-        const storageKey = generateStorageKey(input.tenantId, input.file.name, createId);
+        const baseKey = generateStorageKey(input.tenantId, input.file.name, createId);
+        const storageKey = baseKey.replace(/\.[^.]+$/, `.${processed.format}`);
 
         const stored = await storage.save({
           storageKey,
