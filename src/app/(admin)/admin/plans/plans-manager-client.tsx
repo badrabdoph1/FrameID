@@ -107,7 +107,7 @@ function normalizeFeatures(value: unknown): VisualFeatures {
 function intervalLabel(value: string) {
   if (value === "yearly") return "سنوي";
   if (value === "lifetime") return "مدى الحياة";
-  if (value === "unknown") return "";
+  if (value === "unspecified" || value === "unknown") return "";
   return "شهري";
 }
 
@@ -276,7 +276,7 @@ function PlanEditor({ plan, submitLabel }: { plan?: PlanRow; submitLabel: string
       </div>
       <div className="grid gap-3 sm:grid-cols-3">
         <Field label="العملة"><select name="currency" defaultValue={plan?.currency ?? "EGP"} className={inputClass}><option value="EGP">EGP</option><option value="USD">USD</option><option value="EUR">EUR</option></select></Field>
-        <Field label="مدة الدفع"><select name="billingInterval" defaultValue={plan?.billingInterval ?? "monthly"} className={inputClass}><option value="monthly">شهري</option><option value="yearly">سنوي</option><option value="lifetime">مدى الحياة</option></select></Field>
+        <Field label="مدة الدفع"><select name="billingInterval" defaultValue={plan?.billingInterval ?? "monthly"} className={inputClass}><option value="monthly">شهري</option><option value="yearly">سنوي</option><option value="lifetime">مدى الحياة</option><option value="unspecified">غير محدد</option></select></Field>
         <Field label="نص الزر"><input name="ctaLabel" defaultValue={visual.ctaLabel} className={inputClass} /></Field>
       </div>
       <Field label="وصف مختصر"><textarea name="description" rows={3} defaultValue={visual.description} className={`${inputClass} py-3`} /></Field>
