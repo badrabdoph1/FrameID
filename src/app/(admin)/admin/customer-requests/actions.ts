@@ -50,13 +50,13 @@ export async function reviewCustomerRequestAction(formData: FormData) {
       where: { id: requestId },
       data: updateData,
     });
-
-    revalidatePath("/admin/customer-requests");
-    redirect("/admin/customer-requests?updated=1");
   } catch (error) {
     const { userError } = await processError(error, { metadata: { action: "reviewCustomerRequest", requestId } });
     redirect(`/admin/customer-requests?error=${encodeURIComponent(userError.message)}`);
   }
+
+  revalidatePath("/admin/customer-requests");
+  redirect("/admin/customer-requests?updated=1");
 }
 
 function readString(formData: FormData, key: string): string {
