@@ -148,10 +148,9 @@ function HeroFields({ data, coverUrl }: { data: Record<string, unknown>; coverUr
     formData.set("image", file);
     startUpload(async () => {
       const result = await uploadHeroImageAction(formData);
-      if (result.ok && result.assetId) {
-        const assetUrl = `/api/media/${result.assetId}`;
-        setImageUrl(assetUrl);
-        setPreview(assetUrl);
+      if (result.ok && result.url) {
+        setImageUrl(result.url);
+        setPreview(result.url);
       }
     });
   }

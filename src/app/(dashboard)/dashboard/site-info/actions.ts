@@ -135,7 +135,7 @@ export async function updateSiteInfoAction(
 
 export async function uploadSiteImageAction(
   formData: FormData,
-): Promise<{ ok: boolean; message: string; assetId?: string }> {
+): Promise<{ ok: boolean; message: string; assetId?: string; url?: string }> {
   const session = await getCurrentRequestSession();
 
   if (!session) {
@@ -177,6 +177,7 @@ export async function uploadSiteImageAction(
       ok: true,
       message: "تم رفع الصورة",
       assetId: asset.id,
+      url: asset.url,
     };
   } catch (error) {
     const { userError } = await processError(error, {
