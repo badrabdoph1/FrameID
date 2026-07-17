@@ -1,7 +1,28 @@
 {
   "version": 1,
-  "updatedAt": "2026-07-16T12:37:14.058Z",
+  "updatedAt": "2026-07-17T14:48:14.944Z",
   "themes": [
+    {
+      "code": "luxe-studio",
+      "name": "استوديو فاخر",
+      "status": "PUBLISHED",
+      "version": "1.0.0",
+      "category": "photography",
+      "defaultConfig": {
+        "motion": "refined",
+        "colorPreset": "charcoal",
+        "layoutDensity": "editorial"
+      },
+      "contentSchema": {
+        "supportedSections": [
+          "hero",
+          "gallery",
+          "packages",
+          "extras",
+          "contact"
+        ]
+      }
+    },
     {
       "code": "noir-gold",
       "name": "كلاسك",
@@ -93,13 +114,27 @@
         "layoutDensity": "spacious"
       },
       "themeCode": "rose-blush"
+    },
+    {
+      "code": "luxe-studio",
+      "name": "استوديو فاخر",
+      "status": "PUBLISHED",
+      "version": "1.0.0",
+      "showroomOrder": 3,
+      "previewData": null,
+      "settings": {
+        "motion": "refined",
+        "colorPreset": "charcoal",
+        "layoutDensity": "editorial"
+      },
+      "themeCode": "luxe-studio"
     }
   ],
   "plans": [
     {
       "code": "basic",
-      "name": "الباقة الأساسية",
-      "priceAmount": 59900,
+      "name": "Pro Vip",
+      "priceAmount": 250,
       "currency": "EGP",
       "billingInterval": "monthly",
       "features": {
@@ -115,9 +150,10 @@
           "نموذج تواصل أساسي",
           "تفعيل يدوي بعد مراجعة الدفع"
         ],
-        "storageLabel": "1 GB مساحة تخزين",
+        "isComingSoon": false,
+        "storageLabel": "100 GB مساحة تخزين",
         "highlightText": "",
-        "photoLimitLabel": "100 صورة"
+        "photoLimitLabel": "100,000 صورة"
       },
       "isActive": true
     },
@@ -206,7 +242,7 @@
           "instructions": "حوّل على رقم إنستا باي، ثم ارفع صورة إثبات الدفع من نفس الصفحة.",
           "notes": null,
           "isActive": true,
-          "sortOrder": 160
+          "sortOrder": 170
         }
       ]
     },
@@ -235,7 +271,7 @@
           "instructions": "حوّل على رقم فودافون كاش، ثم ارفع صورة إثبات الدفع من نفس الصفحة.",
           "notes": null,
           "isActive": true,
-          "sortOrder": 310
+          "sortOrder": 330
         }
       ]
     },
@@ -265,6 +301,15 @@
     }
   ],
   "featureFlags": [
+    {
+      "key": "deactivation.pause.trial",
+      "enabled": true,
+      "value": {
+        "pausedAt": "2026-07-16T21:31:19.269Z",
+        "pausedBy": "FrameID Admin",
+        "pausedByEmail": "badrabdoph@gmail.com"
+      }
+    },
     {
       "key": "platform.lifecycle.timers",
       "enabled": true,
