@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-07-17T15:16:15.063Z",
+  "updatedAt": "2026-07-17T15:16:27.930Z",
   "themes": [
     {
       "code": "luxe-studio",
@@ -136,7 +136,7 @@
       "name": "Pro Vip",
       "priceAmount": 250,
       "currency": "EGP",
-      "billingInterval": "monthly",
+      "billingInterval": "unspecified",
       "features": {
         "ctaLabel": "اختيار الباقة",
         "isPopular": false,
