@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-07-17T14:48:14.944Z",
+  "updatedAt": "2026-07-17T15:16:15.063Z",
   "themes": [
     {
       "code": "luxe-studio",
@@ -191,7 +191,7 @@
       "name": "الباقة الاحترافية",
       "priceAmount": 100,
       "currency": "EGP",
-      "billingInterval": "monthly",
+      "billingInterval": "unspecified",
       "features": {
         "ctaLabel": "اختيار الباقة",
         "isPopular": true,
@@ -209,6 +209,7 @@
           "دعم أولوية عبر الواتساب",
           "تفعيل يدوي بعد مراجعة الدفع"
         ],
+        "isComingSoon": false,
         "storageLabel": "5 GB مساحة تخزين",
         "highlightText": "",
         "photoLimitLabel": "500 صورة"
@@ -242,7 +243,7 @@
           "instructions": "حوّل على رقم إنستا باي، ثم ارفع صورة إثبات الدفع من نفس الصفحة.",
           "notes": null,
           "isActive": true,
-          "sortOrder": 170
+          "sortOrder": 180
         }
       ]
     },
@@ -271,7 +272,7 @@
           "instructions": "حوّل على رقم فودافون كاش، ثم ارفع صورة إثبات الدفع من نفس الصفحة.",
           "notes": null,
           "isActive": true,
-          "sortOrder": 330
+          "sortOrder": 350
         }
       ]
     },
