@@ -521,10 +521,17 @@ export async function replaceGallerySlotAction(formData: FormData) {
       select: { coverAssetId: true },
     });
     if (!hasCover?.coverAssetId) {
-      await prisma.galleryAlbum.update({
-        where: { id: album.id },
-        data: { coverAssetId: asset.id },
-      });
+      await prisma.$transaction([
+        prisma.galleryAlbum.update({
+          where: { id: album.id },
+          data: { coverAssetId: asset.id },
+        }),
+        prisma.contactProfile.upsert({
+          where: { siteId: session.site.id },
+          update: { coverAssetId: asset.id },
+          create: { siteId: session.site.id, coverAssetId: asset.id },
+        }),
+      ]);
     }
   } catch (error) {
     const { userError } = await processError(error, {
