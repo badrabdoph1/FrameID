@@ -9,6 +9,7 @@ type PrismaLoginClient = {
       name: string;
       role: string;
       passwordHash: string | null;
+      deletedAt: Date | null;
     } | null>;
   };
   session: {
@@ -27,7 +28,6 @@ export function createPrismaLoginRepository(
     async findUserByIdentifier({ email, phone }) {
       return prisma.user.findFirst({
         where: {
-          deletedAt: null,
           OR: [
             { email: email.trim().toLowerCase() },
             ...(phone ? [{ phone }] : [])
@@ -39,8 +39,9 @@ export function createPrismaLoginRepository(
           phone: true,
           name: true,
           role: true,
-          passwordHash: true
-        }
+          passwordHash: true,
+          deletedAt: true,
+        },
       });
     },
     async createSession(input) {

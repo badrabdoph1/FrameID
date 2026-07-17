@@ -18,6 +18,7 @@ export type LoginRepository = {
   findUserByIdentifier(input: { email: string; phone: string | null }): Promise<
     | (AuthenticatedUser & {
         passwordHash: string | null;
+        deletedAt: Date | null;
       })
     | null
   >;
@@ -51,7 +52,15 @@ export function createLoginService({
         phone: credentials.phone
       });
 
-      if (!user?.passwordHash) {
+      if (!user) {
+        throw new Error("Invalid phone/email or password");
+      }
+
+      if (user.deletedAt) {
+        throw new Error("Account deleted");
+      }
+
+      if (!user.passwordHash) {
         throw new Error("Invalid phone/email or password");
       }
 

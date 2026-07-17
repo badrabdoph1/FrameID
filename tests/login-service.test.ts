@@ -24,7 +24,8 @@ function createRepository(passwordHash: string): LoginRepository & {
         phone,
         name: "Ali Ahmed",
         passwordHash,
-        role: "USER"
+        role: "USER",
+        deletedAt: null,
       };
     },
     async createSession(input) {

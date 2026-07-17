@@ -18,7 +18,8 @@ describe("prisma login repository", () => {
             phone,
             name: "Ali Ahmed",
             role: "USER",
-            passwordHash: "hash"
+            passwordHash: "hash",
+            deletedAt: null,
           };
         }
       },
@@ -54,7 +55,8 @@ describe("prisma login repository", () => {
       phone: null,
       name: "Ali Ahmed",
       role: "USER",
-      passwordHash: "hash"
+      passwordHash: "hash",
+      deletedAt: null,
     });
     await expect(
       repository.createSession({

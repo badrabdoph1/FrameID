@@ -27,6 +27,7 @@ function getLoginErrorMessage(error: unknown) {
     if (error.message === "رقم الهاتف غلط.") return "رقم الهاتف غلط. ادخل رقم زي 01000000000 أو بريد إلكتروني صحيح.";
     if (error.message === "Invalid phone/email or password") return "البريد أو كلمة المرور غلط. لو مش فاكر، جرّب تسيب كلمة المرور.";
     if (error.message === "Invalid email or password") return "البريد أو كلمة المرور غلط. لو مش فاكر، جرّب تسيب كلمة المرور.";
+    if (error.message === "Account deleted") return "تم حذف الحساب بناءً على طلبك. للاستفسار، تواصل مع الدعم.";
   }
 
   return null;

@@ -26,14 +26,16 @@ export default async function DashboardSettingsPage({
 
   const params = await searchParams;
 
-  const pendingDeletionRequest = await prisma.customerRequest.findFirst({
+  const deletionRequest = await prisma.customerRequest.findFirst({
     where: {
       tenantId: session.tenant.id,
       type: "ACCOUNT_DELETION",
-      status: { in: ["PENDING", "IN_REVIEW"] },
     },
-    select: { id: true, status: true, createdAt: true },
+    orderBy: { createdAt: "desc" },
+    select: { id: true, status: true, createdAt: true, adminNote: true },
   });
+
+  const deletionStatus = deletionRequest?.status ?? null;
 
   let requestMessage: string | undefined;
   if (typeof params.request === "string") {
@@ -54,7 +56,7 @@ export default async function DashboardSettingsPage({
       siteUrl={buildPublicSiteUrl(getPlatformBaseUrl(), session.site.slug)}
       slugChangeUsed={session.site.slugChangeUsed}
       templateChangeUsed={session.site.templateChangeUsed}
-      hasDeletionRequest={Boolean(pendingDeletionRequest)}
+      deletionStatus={deletionStatus}
       requestMessage={requestMessage}
       errorMessage={typeof params.error === "string" ? params.error : undefined}
     />

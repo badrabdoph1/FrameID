@@ -20,7 +20,7 @@ type SettingsClientProps = {
   siteUrl: string;
   slugChangeUsed: boolean;
   templateChangeUsed: boolean;
-  hasDeletionRequest: boolean;
+  deletionStatus: string | null;
   requestMessage?: string;
   errorMessage?: string;
 };
@@ -38,7 +38,7 @@ const roleLabel: Record<string, string> = {
   SUPER_ADMIN: "مدير عام",
 };
 
-export function SettingsClient({ userName, userEmail, userPhone, userRole, siteTitle: initialSiteTitle, siteSlug, siteStatus, siteUrl, slugChangeUsed, templateChangeUsed: _templateChangeUsed, hasDeletionRequest, requestMessage, errorMessage }: SettingsClientProps) {
+export function SettingsClient({ userName, userEmail, userPhone, userRole, siteTitle: initialSiteTitle, siteSlug, siteStatus, siteUrl, slugChangeUsed, templateChangeUsed: _templateChangeUsed, deletionStatus, requestMessage, errorMessage }: SettingsClientProps) {
   const [copied, setCopied] = useState(false);
   const [editingTitle, setEditingTitle] = useState(false);
   const [siteTitle, setSiteTitle] = useState(initialSiteTitle);
@@ -69,6 +69,12 @@ export function SettingsClient({ userName, userEmail, userPhone, userRole, siteT
       ) : null}
       {requestMessage === "pending" ? (
         <NoticeCard tone="warning" title="لديك طلب حذف قيد المراجعة" description="لا يمكن إرسال طلب جديد حتى يتم الرد على الطلب السابق." />
+      ) : null}
+      {deletionStatus === "APPROVED" ? (
+        <NoticeCard tone="error" title="تم حذف الحساب" description="تم حذف حسابك وموقعك بناءً على طلبك. سيتم إيقاف الموقع نهائيًا. للاستفسار، تواصل مع الدعم." />
+      ) : null}
+      {deletionStatus === "REJECTED" ? (
+        <NoticeCard tone="warning" title="تم رفض طلب حذف الحساب" description="لم يتم الموافقة على طلب حذف الحساب. للاستفسار، تواصل مع الدعم." />
       ) : null}
       {errorMessage ? (
         <NoticeCard tone="error" title="حدث خطأ" description={errorMessage} />
@@ -178,18 +184,24 @@ export function SettingsClient({ userName, userEmail, userPhone, userRole, siteT
             <div>
               <h2 className="text-sm font-black text-red-100">حذف الحساب</h2>
               <p className="mt-0.5 text-xs font-bold leading-6 text-white/45">
-                {hasDeletionRequest ? "لديك طلب حذف قيد المراجعة حاليًا." : "سيتم إرسال طلب للفريق لمراجعة الحذف والتواصل معك."}
+                {deletionStatus === "PENDING" || deletionStatus === "IN_REVIEW"
+                  ? "لديك طلب حذف قيد المراجعة حاليًا."
+                  : deletionStatus === "APPROVED"
+                    ? "تمت الموافقة على حذف الحساب."
+                    : deletionStatus === "REJECTED"
+                      ? "تم رفض طلب حذف الحساب."
+                      : "سيتم إرسال طلب للفريق لمراجعة الحذف والتواصل معك."}
               </p>
             </div>
           </div>
           <button
             type="button"
             onClick={() => setShowDeletionModal(true)}
-            disabled={hasDeletionRequest}
+            disabled={deletionStatus !== null && deletionStatus !== "REJECTED"}
             className="inline-flex min-h-9 items-center gap-2 rounded-xl border border-red-300/20 bg-red-500/10 px-3 text-xs font-black text-red-200 transition hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-45"
           >
             <Trash2 className="size-3.5" />
-            {hasDeletionRequest ? "طلب مُرسل" : "طلب الحذف"}
+            {deletionStatus === "PENDING" || deletionStatus === "IN_REVIEW" ? "طلب مُرسل" : "طلب الحذف"}
           </button>
         </div>
       </section>
