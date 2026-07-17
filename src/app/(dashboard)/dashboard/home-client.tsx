@@ -267,9 +267,11 @@ function SiteIdentityCard({
                 </span>
                 <span className="text-[0.6rem] font-bold text-white/40 sm:text-xs">آخر تعديل {lastModified}</span>
               </div>
-              <p className="mt-1.5 text-[0.62rem] font-bold leading-5 text-white/55 sm:text-xs">
-                دا الرابط ال هتبعته لعميلك — انسخه وخليه معاك
-              </p>
+              <div className="mt-1.5 rounded-lg border border-amber-300/20 bg-amber-300/[0.06] px-2.5 py-1.5">
+                <p className="text-xs font-black leading-5 text-[#f3cf73]">
+                  دا الرابط ال هتبعته لعميلك — انسخه وخليه معاك
+                </p>
+              </div>
             </div>
           </div>
 
