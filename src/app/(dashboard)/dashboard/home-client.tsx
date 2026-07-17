@@ -255,7 +255,11 @@ function SiteIdentityCard({
               </div>
             )}
             <div className="min-w-0 flex-1">
-              <h1 className="truncate text-sm font-black text-[#fff7e8] drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)] sm:text-xl lg:text-2xl">{photographerName}</h1>
+              <div className="flex items-center gap-2">
+                <h1 className="truncate text-sm font-black text-[#fff7e8] drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)] sm:text-xl lg:text-2xl">{photographerName}</h1>
+                <span dir="ltr" className="hidden truncate text-[0.6rem] font-black text-[#f3cf73]/60 sm:inline lg:text-xs">ـ {siteUrl}</span>
+                <span dir="ltr" className="truncate text-[0.6rem] font-black text-[#f3cf73]/60 sm:hidden">ـ {siteUrl}</span>
+              </div>
               <div className="mt-1 flex flex-wrap items-center gap-1.5 sm:gap-2">
                 <span className={isPublished ? "inline-flex items-center gap-1 rounded-full bg-emerald-300/12 px-2 py-0.5 text-[0.62rem] font-black text-emerald-300 sm:px-2.5" : "inline-flex items-center gap-1 rounded-full bg-amber-300/12 px-2 py-0.5 text-[0.62rem] font-black text-[#f3cf73] sm:px-2.5"}>
                   <span className={isPublished ? "size-1.5 rounded-full bg-emerald-300" : "size-1.5 rounded-full bg-[#f3cf73]"} />
@@ -263,7 +267,9 @@ function SiteIdentityCard({
                 </span>
                 <span className="text-[0.6rem] font-bold text-white/40 sm:text-xs">آخر تعديل {lastModified}</span>
               </div>
-              <p dir="ltr" className="mt-1.5 truncate text-[0.65rem] font-black text-[#f3cf73]/70 sm:text-sm lg:text-base">{siteUrl}</p>
+              <p className="mt-1.5 text-[0.62rem] font-bold leading-5 text-white/55 sm:text-xs">
+                دا الرابط ال هتبعته لعميلك — انسخه وخليه معاك
+              </p>
             </div>
           </div>
 
