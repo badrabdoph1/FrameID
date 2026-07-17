@@ -44,11 +44,27 @@ export async function updateSiteTitleAction(formData: FormData) {
   redirect("/dashboard/settings?updated=title");
 }
 
-export async function requestAccountDeletionAction() {
+const DELETION_REASONS = [
+  "لم أعد بحاجة للموقع",
+  "السعر مرتفع جداً",
+  "أستخدم منصة منافسة",
+  "سبب آخر",
+] as const;
+
+export async function requestAccountDeletionAction(formData: FormData) {
   const session = await getCurrentRequestSession();
 
   if (!session) {
     redirect("/login");
+  }
+
+  const reason = readString(formData, "deletionReason");
+  const otherReason = readString(formData, "otherReason");
+
+  const finalReason = reason === "سبب آخر" && otherReason ? otherReason : reason;
+
+  if (!finalReason || !DELETION_REASONS.some((r) => r === reason)) {
+    redirect("/dashboard/settings?error=invalid-reason");
   }
 
   try {
@@ -70,7 +86,7 @@ export async function requestAccountDeletionAction() {
         siteId: session.site.id,
         type: "ACCOUNT_DELETION",
         title: "طلب حذف الحساب",
-        description: `طلب حذف الحساب من ${session.user.name} (${session.user.email})`,
+        description: `طلب حذف الحساب من ${session.user.name} (${session.user.email})\nالسبب: ${finalReason}`,
       },
     });
   } catch (error) {
