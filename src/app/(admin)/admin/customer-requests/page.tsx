@@ -37,7 +37,6 @@ type CustomerRequestRow = {
   reviewedAt: Date | null;
   completedAt: Date | null;
   tenant: { displayName: string };
-  reviewer: { name: string } | null;
 };
 
 const typeLabels: Record<string, string> = {
@@ -72,7 +71,6 @@ export default async function CustomerRequestsPage({ searchParams }: CustomerReq
     take: 100,
     include: {
       tenant: { select: { displayName: true } },
-      reviewer: { select: { name: true } },
     },
   };
 
@@ -186,12 +184,6 @@ function RequestRow({ request }: { request: CustomerRequestRow }) {
           </Link>
           <span>·</span>
           <span>{new Date(request.createdAt).toLocaleDateString("ar-EG")}</span>
-          {request.reviewer ? (
-            <>
-              <span>·</span>
-              <span>راجعه: {request.reviewer.name}</span>
-            </>
-          ) : null}
         </div>
       </div>
 

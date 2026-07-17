@@ -783,7 +783,7 @@ model AdminUser {
   assignedCustomerIssues CustomerIssue[]      @relation("CustomerIssueAssignee")
   resolvedCustomerIssues CustomerIssue[]      @relation("CustomerIssueResolver")
   customerIssueEvents    CustomerIssueEvent[] @relation("CustomerIssueEventActor")
-  reviewedCustomerRequests CustomerRequest[]  @relation("CustomerRequestReviewer")
+  // reviewedCustomerRequests removed: same reason as ImpersonationSession — no FK.
 }
 
 model AdminSession {
@@ -1154,7 +1154,8 @@ model CustomerRequest {
 
   tenant     Tenant     @relation(fields: [tenantId], references: [id])
   site       Site       @relation(fields: [siteId], references: [id])
-  reviewer   AdminUser? @relation("CustomerRequestReviewer", fields: [reviewedBy], references: [id], onDelete: SetNull)
+  // reviewer FK removed: AdminUser synthetic IDs (env-based login) don't exist in AdminUser table.
+  // Same pattern as ImpersonationSession — no FK, just a plain string ID.
 
   @@index([status, createdAt])
   @@index([tenantId, status])
