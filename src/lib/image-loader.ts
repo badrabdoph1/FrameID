@@ -11,7 +11,7 @@ export default function imageLoader({
     const params = new URLSearchParams();
     params.set("w", width.toString());
     if (quality) params.set("q", quality.toString());
-    return `/_next/image?url=${encodeURIComponent(src)}&${params.toString()}`;
+    return `${src}?${params.toString()}`;
   }
 
   const params = new URLSearchParams();
