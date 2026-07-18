@@ -20,6 +20,7 @@ import { CustomerTabBar, type CustomerWorkspaceId } from "./components/customer-
 import { CustomerOverviewTab } from "./components/customer-overview-tab";
 import { CustomerWebsiteTab } from "./components/customer-website-tab";
 import { CustomerSubscriptionTab } from "./components/customer-subscription-tab";
+import type { CustomerSubscriptionVisibilityRow } from "./components/customer-subscription-visibility-card";
 import { CustomerPaymentsTab } from "./components/customer-payments-tab";
 import { CustomerMediaTab } from "./components/customer-media-tab";
 import { CustomerSessionsTab } from "./components/customer-sessions-tab";
@@ -44,6 +45,8 @@ import {
   sendNotificationAction,
   suspendCustomerAction,
   suspendSiteAction,
+  updateCustomerSubscriptionCardVisibilityAction,
+  clearCustomerSubscriptionExperienceOverridesAction,
 } from "@/app/(admin)/admin/customers/actions";
 
 type Props = {
@@ -55,6 +58,8 @@ type Props = {
   adminNotes: CustomerAdminNote[];
   allSubscriptions: CustomerSubscriptionInfo[];
   plans: CustomerPlanOption[];
+  subscriptionVisibilityStates?: CustomerSubscriptionVisibilityRow[];
+  hasSubscriptionExperienceOverride?: boolean;
 };
 
 type FeedbackMessage = { type: "success" | "error"; text: string };
@@ -71,6 +76,8 @@ const actionFeedback: Record<string, { success: string; error: string }> = {
   "activate-subscription": { success: "تم تفعيل الاشتراك", error: "تعذر تفعيل الاشتراك. حاول مرة أخرى." },
   "cancel-subscription": { success: "تم إلغاء الاشتراك", error: "تعذر إلغاء الاشتراك. حاول مرة أخرى." },
   "edit-subscription": { success: "تم حفظ الاشتراك وتحديث حالة العميل", error: "تعذر حفظ الاشتراك. راجع الباقة والمدة وحاول مرة أخرى." },
+  "subscription-card-visibility": { success: "تم حفظ ظهور كارت الاشتراك لهذه الحالة", error: "تعذر حفظ إعداد ظهور الكارت. حاول مرة أخرى." },
+  "clear-subscription-card-overrides": { success: "عادت جميع حالات الاشتراك للإعداد العام", error: "تعذر إزالة استثناءات العميل. حاول مرة أخرى." },
   "publish-site": { success: "تم تحديث حالة نشر الموقع", error: "تعذر تحديث حالة الموقع. حاول مرة أخرى." },
   "suspend-site": { success: "تم تحديث حالة الموقع", error: "تعذر تحديث حالة الموقع. حاول مرة أخرى." },
   "revoke-session": { success: "تم إنهاء جلسة الدخول", error: "تعذر إنهاء جلسة الدخول. حاول مرة أخرى." },
@@ -100,6 +107,8 @@ const confirmLabels: Record<string, string> = {
   "activate-subscription": "تفعيل الاشتراك",
   "cancel-subscription": "إلغاء الاشتراك",
   "edit-subscription": "حفظ الاشتراك",
+  "subscription-card-visibility": "حفظ الحالة",
+  "clear-subscription-card-overrides": "إرجاع الحالات",
   "publish-site": "تحديث الموقع",
   "suspend-site": "تحديث الموقع",
   "revoke-session": "إنهاء الجلسة",
@@ -140,6 +149,8 @@ export function CustomerDetailClient({
   adminNotes,
   allSubscriptions,
   plans,
+  subscriptionVisibilityStates = [],
+  hasSubscriptionExperienceOverride = false,
 }: Props) {
   const router = useRouter();
   const [activeWorkspace, setActiveWorkspace] = useState<CustomerWorkspaceId>(initialTab);
@@ -173,6 +184,8 @@ export function CustomerDetailClient({
         "activate-subscription": activateCustomerSubscriptionAction,
         "cancel-subscription": cancelCustomerSubscriptionAction,
         "edit-subscription": editCustomerSubscriptionAction,
+        "subscription-card-visibility": updateCustomerSubscriptionCardVisibilityAction,
+        "clear-subscription-card-overrides": clearCustomerSubscriptionExperienceOverridesAction,
         "publish-site": publishSiteAction,
         "suspend-site": suspendSiteAction,
         "revoke-session": revokeSessionAction,
@@ -328,7 +341,14 @@ export function CustomerDetailClient({
       {activeWorkspace === "billing" ? (
         <section aria-label="مساحة الاشتراك والمدفوعات" className="space-y-4">
           <WorkspaceSection title="إدارة الاشتراك والمدفوعات" description="حالة الاشتراك والتجربة والمدة والسجل المالي معًا.">
-            <CustomerSubscriptionTab customer={customer} allSubscriptions={allSubscriptions} plans={plans} onAction={showConfirm} />
+            <CustomerSubscriptionTab
+              customer={customer}
+              allSubscriptions={allSubscriptions}
+              plans={plans}
+              subscriptionVisibilityStates={subscriptionVisibilityStates}
+              hasSubscriptionExperienceOverride={hasSubscriptionExperienceOverride}
+              onAction={showConfirm}
+            />
           </WorkspaceSection>
           <WorkspaceSection title="سجل المدفوعات" description="الطلبات والمبالغ والإثباتات والمراجعات.">
             <CustomerPaymentsTab customer={customer} />

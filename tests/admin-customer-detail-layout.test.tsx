@@ -30,6 +30,8 @@ const customerActions = vi.hoisted(() => ({
   sendNotificationAction: vi.fn(async (formData: FormData) => {
     void formData;
   }),
+  updateCustomerSubscriptionCardVisibilityAction: vi.fn(async () => undefined),
+  clearCustomerSubscriptionExperienceOverridesAction: vi.fn(async () => undefined),
 }));
 
 vi.mock("next/link", () => ({

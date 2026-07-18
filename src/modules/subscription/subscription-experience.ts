@@ -68,6 +68,25 @@ export type SubscriptionExperienceStateConfig = {
   timer?: SubscriptionExperienceTimerConfig;
 };
 
+export type SubscriptionCardVisibilityPreference = "inherit" | "show" | "hide";
+export type SubscriptionCardVisibilityEffective = "visible" | "hidden";
+export type SubscriptionCardVisibilitySource =
+  | "customer-override"
+  | "global-default"
+  | "system-fallback";
+
+export type SubscriptionCardVisibilityDecision = {
+  preference: SubscriptionCardVisibilityPreference;
+  effective: SubscriptionCardVisibilityEffective;
+  source: SubscriptionCardVisibilitySource;
+};
+
+export type SubscriptionExperienceOverrideMetadata = {
+  updatedAt: string;
+  updatedByAdminId: string;
+  updatedByAdminName: string;
+};
+
 export type SubscriptionExperienceDefaults = Record<
   SubscriptionExperienceBucket,
   SubscriptionExperienceStateConfig
@@ -81,6 +100,7 @@ export type SubscriptionExperienceStateOverride = {
   message?: Partial<SubscriptionExperienceMessage>;
   action?: Partial<SubscriptionExperienceActionConfig>;
   timer?: Partial<SubscriptionExperienceTimerConfig>;
+  metadata?: SubscriptionExperienceOverrideMetadata;
 };
 
 export type SubscriptionExperienceOverride = Partial<
@@ -100,6 +120,7 @@ export type ResolvedSubscriptionExperience = {
   state: SubscriptionExperienceState;
   bucket: SubscriptionExperienceBucket;
   source: "override" | "default" | "fallback";
+  visibility: SubscriptionCardVisibilityDecision;
   message: SubscriptionExperienceMessage;
   timer: {
     enabled: boolean;
@@ -309,65 +330,135 @@ export function normalizeSubscriptionExperienceOverride(
     bucket: SubscriptionExperienceStateOverride | undefined,
   ): SubscriptionExperienceStateOverride | undefined => {
     if (!bucket || typeof bucket !== "object") return undefined;
-    const hasMessage = Boolean(bucket.message && Object.keys(bucket.message).length);
-    const hasAction = Boolean(bucket.action && Object.keys(bucket.action).length);
-    const hasTimer = Boolean(bucket.timer && Object.keys(bucket.timer).length);
+    const message: Partial<SubscriptionExperienceMessage> = {};
+    if (typeof bucket.message?.enabled === "boolean") message.enabled = bucket.message.enabled;
+    if (typeof bucket.message?.title === "string" && bucket.message.title.trim()) {
+      message.title = bucket.message.title.trim();
+    }
+    if (
+      typeof bucket.message?.description === "string" &&
+      bucket.message.description.trim()
+    ) {
+      message.description = bucket.message.description.trim();
+    }
+    if (typeof bucket.message?.tone === "string") {
+      message.tone = validateMessageTone(bucket.message.tone);
+    }
+
+    const action: Partial<SubscriptionExperienceActionConfig> = {};
+    if (typeof bucket.action?.kind === "string") {
+      action.kind = normalizeActionKind(bucket.action.kind, "hidden");
+    }
+    if (typeof bucket.action?.label === "string" && bucket.action.label.trim()) {
+      action.label = bucket.action.label.trim();
+    }
+    if (typeof bucket.action?.href === "string") {
+      action.href = bucket.action.href.trim() || null;
+    }
+
+    const timer: Partial<SubscriptionExperienceTimerConfig> = {};
+    if (typeof bucket.timer?.enabled === "boolean") timer.enabled = bucket.timer.enabled;
+
+    const hasMessage = Object.keys(message).length > 0;
+    const hasAction = Object.keys(action).length > 0;
+    const hasTimer = Object.keys(timer).length > 0;
     if (!hasMessage && !hasAction && !hasTimer) return undefined;
+
+    const metadata = bucket.metadata;
+    const normalizedMetadata =
+      metadata &&
+      typeof metadata.updatedAt === "string" &&
+      !Number.isNaN(Date.parse(metadata.updatedAt)) &&
+      typeof metadata.updatedByAdminId === "string" &&
+      metadata.updatedByAdminId.trim() &&
+      typeof metadata.updatedByAdminName === "string" &&
+      metadata.updatedByAdminName.trim()
+        ? {
+            updatedAt: new Date(metadata.updatedAt).toISOString(),
+            updatedByAdminId: metadata.updatedByAdminId.trim(),
+            updatedByAdminName: metadata.updatedByAdminName.trim(),
+          }
+        : undefined;
+
     return {
-      message: hasMessage
-        ? {
-            enabled:
-              typeof bucket.message?.enabled === "boolean"
-                ? bucket.message.enabled
-                : undefined,
-            title:
-              typeof bucket.message?.title === "string"
-                ? bucket.message.title.trim() || undefined
-                : undefined,
-            description:
-              typeof bucket.message?.description === "string"
-                ? bucket.message.description.trim() || undefined
-                : undefined,
-            tone:
-              typeof bucket.message?.tone === "string"
-                ? validateMessageTone(bucket.message.tone)
-                : undefined,
-          }
-        : undefined,
-      action: hasAction
-        ? {
-            kind:
-              typeof bucket.action?.kind === "string"
-                ? normalizeActionKind(bucket.action.kind, "hidden")
-                : undefined,
-            label:
-              typeof bucket.action?.label === "string"
-                ? bucket.action.label.trim() || undefined
-                : undefined,
-            href:
-              typeof bucket.action?.href === "string"
-                ? bucket.action.href.trim() || null
-                : undefined,
-          }
-        : undefined,
-      timer: hasTimer
-        ? {
-            enabled:
-              typeof bucket.timer?.enabled === "boolean"
-                ? bucket.timer.enabled
-                : undefined,
-          }
-        : undefined,
+      message: hasMessage ? message : undefined,
+      action: hasAction ? action : undefined,
+      timer: hasTimer ? timer : undefined,
+      metadata: normalizedMetadata,
     };
   };
 
+  const normalized: SubscriptionExperienceOverride = {};
+  for (const bucket of subscriptionExperienceBucketDefinitions) {
+    const value = normalizeBucket(input[bucket.value]);
+    if (value) normalized[bucket.value] = value;
+  }
+  return normalized;
+}
+
+export function getSubscriptionCardVisibilityPreference(
+  bucketOverride?: SubscriptionExperienceStateOverride,
+): SubscriptionCardVisibilityPreference {
+  if (bucketOverride?.message?.enabled === true) return "show";
+  if (bucketOverride?.message?.enabled === false) return "hide";
+  return "inherit";
+}
+
+export function resolveSubscriptionCardVisibility(input: {
+  defaultEnabled: boolean;
+  preference: SubscriptionCardVisibilityPreference;
+  sourceFallbackUsed?: boolean;
+}): SubscriptionCardVisibilityDecision {
+  if (input.preference === "show") {
+    return { preference: "show", effective: "visible", source: "customer-override" };
+  }
+  if (input.preference === "hide") {
+    return { preference: "hide", effective: "hidden", source: "customer-override" };
+  }
   return {
-    trial: normalizeBucket(input.trial),
-    active: normalizeBucket(input.active),
-    pendingReview: normalizeBucket(input.pendingReview),
-    rejected: normalizeBucket(input.rejected),
-    expired: normalizeBucket(input.expired),
+    preference: "inherit",
+    effective: input.defaultEnabled ? "visible" : "hidden",
+    source: input.sourceFallbackUsed ? "system-fallback" : "global-default",
   };
+}
+
+export function setSubscriptionCardVisibilityPreference(input: {
+  override?: SubscriptionExperienceOverride | null;
+  bucket: SubscriptionExperienceBucket;
+  preference: SubscriptionCardVisibilityPreference;
+  actor: { id: string; name: string };
+  now?: Date;
+}): SubscriptionExperienceOverride {
+  const current = normalizeSubscriptionExperienceOverride(input.override);
+  const bucketOverride = current[input.bucket] ?? {};
+  const message = { ...(bucketOverride.message ?? {}) };
+
+  if (input.preference === "inherit") delete message.enabled;
+  else message.enabled = input.preference === "show";
+
+  const nextBucket: SubscriptionExperienceStateOverride = {
+    ...bucketOverride,
+    message: Object.keys(message).length ? message : undefined,
+  };
+  const hasConfig = Boolean(
+    nextBucket.message || nextBucket.action || nextBucket.timer,
+  );
+  const next = { ...current };
+
+  if (!hasConfig) {
+    delete next[input.bucket];
+    return normalizeSubscriptionExperienceOverride(next);
+  }
+
+  next[input.bucket] = {
+    ...nextBucket,
+    metadata: {
+      updatedAt: (input.now ?? new Date()).toISOString(),
+      updatedByAdminId: input.actor.id,
+      updatedByAdminName: input.actor.name,
+    },
+  };
+  return normalizeSubscriptionExperienceOverride(next);
 }
 
 function mergeStateConfig(
@@ -547,6 +638,50 @@ function resolveAction(
   };
 }
 
+export function resolveSubscriptionExperienceForBucket(input: {
+  defaults: SubscriptionExperienceDefaults;
+  override?: SubscriptionExperienceOverride | null;
+  bucket: SubscriptionExperienceBucket;
+  state: SubscriptionExperienceState;
+  daysRemaining: number | null;
+  supportWhatsappNumber?: string | null;
+  sourceFallbackUsed?: boolean;
+}): ResolvedSubscriptionExperience {
+  const defaultsConfig = input.defaults[input.bucket];
+  const bucketOverride = input.override?.[input.bucket];
+  const merged = mergeStateConfig(defaultsConfig, bucketOverride);
+  const visibility = resolveSubscriptionCardVisibility({
+    defaultEnabled: defaultsConfig.message.enabled,
+    preference: getSubscriptionCardVisibilityPreference(bucketOverride),
+    sourceFallbackUsed: input.sourceFallbackUsed,
+  });
+  const source = bucketOverride
+    ? "override"
+    : input.sourceFallbackUsed
+      ? "fallback"
+      : "default";
+
+  return {
+    state: input.state,
+    bucket: input.bucket,
+    source,
+    visibility,
+    message: {
+      ...merged.config.message,
+      enabled: visibility.effective === "visible",
+    },
+    timer: {
+      enabled: merged.config.timer?.enabled ?? false,
+      daysRemaining:
+        merged.config.timer?.enabled ? input.daysRemaining : null,
+    },
+    action: resolveAction(
+      merged.config.action,
+      input.supportWhatsappNumber,
+    ),
+  };
+}
+
 export function resolveSubscriptionExperience(input: {
   defaults: SubscriptionExperienceDefaults;
   override?: SubscriptionExperienceOverride | null;
@@ -556,28 +691,15 @@ export function resolveSubscriptionExperience(input: {
 }): ResolvedSubscriptionExperience {
   const now = input.now ?? new Date();
   const derived = deriveSubscriptionExperienceState(input.context, now);
-  const defaultsConfig = input.defaults[derived.bucket];
-  const merged = mergeStateConfig(defaultsConfig, input.override?.[derived.bucket]);
-  const source = input.override?.[derived.bucket]
-    ? "override"
-    : input.sourceFallbackUsed
-      ? "fallback"
-      : "default";
-
-  return {
-    state: derived.state,
+  return resolveSubscriptionExperienceForBucket({
+    defaults: input.defaults,
+    override: input.override,
     bucket: derived.bucket,
-    source,
-    message: merged.config.message,
-    timer: {
-      enabled: merged.config.timer?.enabled ?? false,
-      daysRemaining: merged.config.timer?.enabled ? derived.daysRemaining : null,
-    },
-    action: resolveAction(
-      merged.config.action,
-      input.context.supportWhatsappNumber,
-    ),
-  };
+    state: derived.state,
+    daysRemaining: derived.daysRemaining,
+    supportWhatsappNumber: input.context.supportWhatsappNumber,
+    sourceFallbackUsed: input.sourceFallbackUsed,
+  });
 }
 
 function getLegacyDefinitionDefaults(key: string) {
@@ -670,12 +792,24 @@ async function findPlatformDefaultsRow(prisma: FeatureFlagClient) {
 }
 
 export async function getSubscriptionExperienceDefaults(prisma: FeatureFlagClient) {
+  return (await getSubscriptionExperienceDefaultsRecord(prisma)).defaults;
+}
+
+export async function getSubscriptionExperienceDefaultsRecord(
+  prisma: FeatureFlagClient,
+) {
   const row = await findPlatformDefaultsRow(prisma);
   if (row?.value) {
-    return normalizeSubscriptionExperienceDefaults(row.value);
+    return {
+      defaults: normalizeSubscriptionExperienceDefaults(row.value),
+      sourceFallbackUsed: false,
+    };
   }
 
-  return buildLegacySubscriptionExperienceDefaults(prisma);
+  return {
+    defaults: await buildLegacySubscriptionExperienceDefaults(prisma),
+    sourceFallbackUsed: true,
+  };
 }
 
 export async function saveSubscriptionExperienceDefaults(
@@ -706,6 +840,17 @@ export async function getTenantSubscriptionExperienceOverride(
   prisma: FeatureFlagClient,
   tenantId: string,
 ) {
+  const record = await getTenantSubscriptionExperienceOverrideRecord(
+    prisma,
+    tenantId,
+  );
+  return record?.override ?? null;
+}
+
+export async function getTenantSubscriptionExperienceOverrideRecord(
+  prisma: FeatureFlagClient,
+  tenantId: string,
+) {
   const row = await prisma.featureFlag.findFirst({
     where: {
       key: SUBSCRIPTION_EXPERIENCE_OVERRIDE_KEY,
@@ -713,12 +858,14 @@ export async function getTenantSubscriptionExperienceOverride(
       tenantId,
       siteId: null,
     },
-    select: { value: true },
+    select: { value: true, updatedAt: true },
   });
 
-  return row?.value
-    ? normalizeSubscriptionExperienceOverride(row.value)
-    : null;
+  if (!row?.value) return null;
+  return {
+    override: normalizeSubscriptionExperienceOverride(row.value),
+    updatedAt: row.updatedAt,
+  };
 }
 
 export async function saveTenantSubscriptionExperienceOverride(

@@ -558,7 +558,7 @@ function TrialNotice({ daysRemaining, submitted, status }: { daysRemaining: numb
   return <Alert tone="warning" title="الفترة التجريبية" text={daysRemaining > 0 ? `متبقي ${daysRemaining} يوم.` : "التجربة انتهت. فعّل الاشتراك للاستمرار."} />;
 }
 
-function SubscriptionExperienceAlert({
+export function SubscriptionExperienceAlert({
   experience,
   fallbackDaysRemaining,
   submitted,
@@ -569,6 +569,8 @@ function SubscriptionExperienceAlert({
   submitted: boolean;
   status: string | null;
 }) {
+  if (experience.visibility.effective === "hidden") return null;
+
   if (submitted || status === "SUBMITTED" || status === "PENDING" || status === "UNDER_REVIEW") {
     return <Alert tone="success" title="طلب التفعيل" text={`الحالة: ${REQUEST_STATUS_LABELS[status ?? "SUBMITTED"] ?? status ?? "تم الإرسال"}`} />;
   }

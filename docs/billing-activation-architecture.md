@@ -70,6 +70,8 @@ Resolution order is:
 
 This lets admin control activation and subscription communication from one place without duplicating rules between lifecycle cards, billing alerts, and manual exception handling.
 
+Visibility is resolved per lifecycle bucket by the shared subscription-experience resolver. Each customer bucket may inherit the global visibility, force the card visible, or force it hidden. Dashboard, billing, customer-file status rows, and previews all consume the resolver's final decision and source. Overrides remain stored across lifecycle transitions, and explicit customer decisions carry the last admin identity and timestamp for auditability.
+
 ## Service architecture
 
 ### BillingActivationService

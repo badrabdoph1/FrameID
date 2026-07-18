@@ -9,7 +9,7 @@ import { createPaymentSettingsService } from "@/modules/billing/payment-settings
 import { createPrismaPaymentSettingsRepository } from "@/modules/billing/prisma-payment-settings-repository";
 import { getSupportSettings } from "@/modules/support/support-settings";
 import {
-  getSubscriptionExperienceDefaults,
+  getSubscriptionExperienceDefaultsRecord,
   getTenantSubscriptionExperienceOverride,
   resolveSubscriptionExperience,
 } from "@/modules/subscription/subscription-experience";
@@ -41,7 +41,7 @@ export default async function BillingPage({
 
   // Allow null subscription — the billing page handles it by showing the activation flow
 
-  const [plans, paymentRequest, paymentMethods, defaults, override, supportSettings] = await Promise.all([
+  const [plans, paymentRequest, paymentMethods, defaultsRecord, override, supportSettings] = await Promise.all([
     prisma.plan.findMany({
       where: { isActive: true },
       orderBy: [{ sortOrder: "asc" }, { priceAmount: "asc" }],
@@ -52,7 +52,7 @@ export default async function BillingPage({
     createPaymentSettingsService(
       createPrismaPaymentSettingsRepository(prisma as never),
     ).getActivePaymentMethods(),
-    getSubscriptionExperienceDefaults(prisma),
+    getSubscriptionExperienceDefaultsRecord(prisma),
     getTenantSubscriptionExperienceOverride(prisma, session.tenant.id),
     getSupportSettings(),
   ]);
@@ -89,7 +89,7 @@ export default async function BillingPage({
   }
 
   const subscriptionExperience = resolveSubscriptionExperience({
-    defaults,
+    defaults: defaultsRecord.defaults,
     override,
     context: {
       tenantStatus: session.tenant.status,
@@ -103,6 +103,7 @@ export default async function BillingPage({
       supportWhatsappNumber: supportSettings.phone,
     },
     now: new Date(),
+    sourceFallbackUsed: defaultsRecord.sourceFallbackUsed,
   });
 
   return (

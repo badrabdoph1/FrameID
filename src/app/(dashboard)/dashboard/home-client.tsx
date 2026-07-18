@@ -408,7 +408,7 @@ function LifecycleStatusCard({
   subscription: NonNullable<DashboardViewModel["subscription"]>;
   experience: NonNullable<DashboardViewModel["subscriptionExperience"]>;
 }) {
-  if (!experience.message.enabled) {
+  if (experience.visibility.effective === "hidden") {
     return null;
   }
   const hasTimer = experience.timer.enabled && experience.timer.daysRemaining !== null;

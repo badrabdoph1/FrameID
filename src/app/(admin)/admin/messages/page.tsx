@@ -4,7 +4,10 @@ import { AdminPageShell } from "@/components/layout/admin-page-shell";
 import { prisma } from "@/lib/prisma";
 import { requireAdminPermission } from "@/modules/admin/admin-permission-guards";
 import { getSupportSettings } from "@/modules/support/support-settings";
-import { getSubscriptionExperienceDefaults } from "@/modules/subscription/subscription-experience";
+import {
+  getSubscriptionExperienceDefaultsRecord,
+  normalizeSubscriptionExperienceOverride,
+} from "@/modules/subscription/subscription-experience";
 import { SubscriptionExperienceDefaultsCard } from "@/app/(admin)/admin/messages/subscription-experience-defaults-card";
 import { SubscriptionExperienceOverridesCard } from "@/app/(admin)/admin/messages/subscription-experience-overrides-card";
 
@@ -60,14 +63,14 @@ export default async function AdminMessagesPage({ searchParams }: Props) {
   const params = await searchParams;
 
   const [
-    defaults,
+    defaultsRecord,
     supportSettings,
     trialTenants,
     activeTenants,
     otherTenants,
     overrideRows,
   ] = await Promise.all([
-    getSubscriptionExperienceDefaults(prisma),
+    getSubscriptionExperienceDefaultsRecord(prisma),
     getSupportSettings(),
     prisma.tenant.findMany({
       where: { deletedAt: null, status: "TRIAL" },
@@ -114,12 +117,23 @@ export default async function AdminMessagesPage({ searchParams }: Props) {
         key: "platform.subscription.experience.override",
         scope: "TENANT",
       },
-      select: { tenantId: true },
+      select: { tenantId: true, value: true, updatedAt: true },
     }),
   ]);
 
   const overrideIds = new Set(
     overrideRows.map((row) => row.tenantId).filter(Boolean) as string[],
+  );
+  const overrideByTenant = new Map(
+    overrideRows
+      .filter((row) => row.tenantId)
+      .map((row) => [
+        row.tenantId as string,
+        {
+          override: normalizeSubscriptionExperienceOverride(row.value),
+          updatedAt: row.updatedAt.toISOString(),
+        },
+      ]),
   );
   const toTenantOption = <
     T extends { id: string; displayName: string; status: string; owner: { email: string; name: string } },
@@ -128,6 +142,8 @@ export default async function AdminMessagesPage({ searchParams }: Props) {
   ) => ({
     ...tenant,
     hasOverride: overrideIds.has(tenant.id),
+    override: overrideByTenant.get(tenant.id)?.override ?? null,
+    overrideUpdatedAt: overrideByTenant.get(tenant.id)?.updatedAt ?? null,
   });
   const banner = bannerText(params);
 
@@ -163,12 +179,13 @@ export default async function AdminMessagesPage({ searchParams }: Props) {
         </section>
 
         <SubscriptionExperienceDefaultsCard
-          defaults={defaults}
+          defaults={defaultsRecord.defaults}
           supportWhatsapp={supportSettings.phone}
         />
 
         <SubscriptionExperienceOverridesCard
-          defaults={defaults}
+          defaults={defaultsRecord.defaults}
+          sourceFallbackUsed={defaultsRecord.sourceFallbackUsed}
           trialTenants={trialTenants.map(toTenantOption)}
           activeTenants={activeTenants.map(toTenantOption)}
           otherTenants={otherTenants.map(toTenantOption)}

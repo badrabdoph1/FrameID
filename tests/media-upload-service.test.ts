@@ -36,7 +36,7 @@ function createAdapters(): {
       created,
       async createAsset(input) {
         created.push(`${input.tenantId}:${input.storageKey}:${input.mimeType}`);
-        return { id: "asset_1", url: input.url };
+        return { id: "asset_1", url: input.url, width: input.width, height: input.height };
       },
     },
   };
@@ -50,12 +50,14 @@ describe("media upload service", () => {
 
     await expect(service.uploadImage({ tenantId: "tenant_1", file, alt: "Hero" })).resolves.toEqual({
       id: "asset_1",
-      url: "/uploads/tenant_1/asset-key-hero.jpg",
+      url: "/uploads/tenant_1/asset-key-hero.webp",
+      width: 100,
+      height: 100,
     });
     expect(storage.saved.length).toBe(1);
-    expect(storage.saved[0]).toContain("tenant_1/asset-key-hero.jpg");
+    expect(storage.saved[0]).toContain("tenant_1/asset-key-hero.webp");
     expect(storage.saved[0]).toContain("image/webp");
-    expect(repository.created).toContain("tenant_1:tenant_1/asset-key-hero.jpg:image/webp");
+    expect(repository.created).toContain("tenant_1:tenant_1/asset-key-hero.webp:image/webp");
   });
 
   it("rejects unsupported file types", async () => {
@@ -82,6 +84,8 @@ describe("media upload service", () => {
     await expect(service.uploadImage({ tenantId: "tenant_1", file })).resolves.toEqual({
       id: "asset_1",
       url: "/uploads/tenant_1/large-key-processed.webp",
+      width: 1920,
+      height: 1440,
     });
   });
 

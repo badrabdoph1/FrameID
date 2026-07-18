@@ -48,6 +48,16 @@ The admin messaging system for subscription and activation is modeled as one sha
 
 This keeps subscription messaging, timer visibility, and action-button behavior in one source of truth instead of duplicating logic across multiple services or UI routes.
 
+### Per-customer card visibility
+
+Card visibility is resolved independently for `trial`, `active`, `pendingReview`, `rejected`, and `expired`. A tenant can choose one of three preferences for every state: inherit the global setting, force show, or force hide. `suspended` uses the `expired` bucket.
+
+`resolveSubscriptionExperienceForBucket()` is the only authority that produces the final visible/hidden decision and its source. Admin previews, the customer dashboard, and billing must consume that resolved decision instead of rebuilding precedence rules locally.
+
+Customer overrides are retained when the lifecycle state changes and become effective again only when the customer returns to the matching state. Every explicit override stores the last admin id, admin display name, and modification time. Clearing all customer overrides removes the tenant override record and returns every state to the global configuration.
+
+Override mutations and their audit records are atomic. Bulk changes in Subscription Messages default to visibility-only so each customer's existing copy, action, and timer remain intact; a full bulk content replacement remains available only as an explicit scope.
+
 ## Trial Policy Rules
 
 - Default trial duration is configured separately from message content.

@@ -1,6 +1,6 @@
 "use server";
 
-import type { Prisma } from "@prisma/client";
+import { Prisma, type PrismaClient } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
@@ -16,6 +16,7 @@ import {
   type ManualPaymentMethod,
 } from "@/modules/admin/customers/customer-subscription-editor";
 import { createPrismaCustomerSubscriptionEditorRepository } from "@/modules/admin/customers/prisma-customer-subscription-editor-repository";
+import { createCustomerSubscriptionVisibilityService } from "@/modules/admin/customers/customer-subscription-visibility";
 import { getCurrentAdmin } from "@/modules/admin/admin-page-guards";
 import { requireAdminPermission } from "@/modules/admin/admin-permission-guards";
 import { readFormString } from "@/modules/auth/auth-action-utils";
@@ -24,6 +25,15 @@ import { shouldUseSecureSessionCookie } from "@/modules/auth/request-cookie-secu
 import { createSessionForUser } from "@/modules/auth/session-service";
 import { addDays, applySubscriptionTimerToTenants, applyTrialTimerToTenants, lifecycleDurationOptions, type LifecycleDurationPreset } from "@/modules/lifecycle/customer-lifecycle";
 import { createCustomerOutreachCampaign } from "@/modules/messages/customer-outreach-service";
+import {
+  clearTenantSubscriptionExperienceOverride,
+  getSubscriptionExperienceDefaultsRecord,
+  getTenantSubscriptionExperienceOverride,
+  saveTenantSubscriptionExperienceOverride,
+  subscriptionExperienceBucketDefinitions,
+  type SubscriptionCardVisibilityPreference,
+  type SubscriptionExperienceBucket,
+} from "@/modules/subscription/subscription-experience";
 
 function readFormInt(formData: FormData, key: string): number {
   const val = parseInt(readFormString(formData, key), 10);
@@ -162,6 +172,103 @@ export async function editCustomerSubscriptionAction(formData: FormData) {
 
   revalidatePath(`/admin/customers/${tenantId}`);
   revalidatePath("/admin/customers");
+}
+
+function createSubscriptionVisibilityActionService(
+  client: PrismaClient | Prisma.TransactionClient,
+) {
+  return createCustomerSubscriptionVisibilityService({
+    getDefaults: () => getSubscriptionExperienceDefaultsRecord(client),
+    getOverride: (tenantId) =>
+      getTenantSubscriptionExperienceOverride(client, tenantId),
+    async persist(input) {
+      if (input.override) {
+        await saveTenantSubscriptionExperienceOverride(
+          client,
+          input.tenantId,
+          input.override,
+        );
+      } else {
+        await clearTenantSubscriptionExperienceOverride(
+          client,
+          input.tenantId,
+        );
+      }
+      await client.auditLog.create({
+        data: {
+          actorId: input.audit.actorId,
+          action: input.audit.action,
+          entityType: "FeatureFlag",
+          entityId: "platform.subscription.experience.override",
+          metadata: input.audit.metadata as Prisma.InputJsonObject,
+        },
+      });
+    },
+  });
+}
+
+function revalidateSubscriptionVisibilityPaths(tenantId: string) {
+  revalidatePath(`/admin/customers/${tenantId}`);
+  revalidatePath("/admin/messages");
+  revalidatePath("/dashboard");
+  revalidatePath("/dashboard/billing");
+}
+
+export async function updateCustomerSubscriptionCardVisibilityAction(
+  formData: FormData,
+) {
+  const admin = await requireAdminPermission("customers", "edit");
+  const tenantId = readFormString(formData, "tenantId");
+  const bucket = readFormString(formData, "bucket") as SubscriptionExperienceBucket;
+  const preference = readFormString(
+    formData,
+    "preference",
+  ) as SubscriptionCardVisibilityPreference;
+  const validBucket = subscriptionExperienceBucketDefinitions.some(
+    (item) => item.value === bucket,
+  );
+  if (!tenantId || !validBucket) throw new Error("حالة كارت الاشتراك غير صحيحة");
+  if (!["inherit", "show", "hide"].includes(preference)) {
+    throw new Error("اختيار ظهور الكارت غير صحيح");
+  }
+
+  await withErrorHandling(
+    "updateCustomerSubscriptionCardVisibility",
+    () => prisma.$transaction(
+      (transaction) =>
+        createSubscriptionVisibilityActionService(transaction).updateVisibility({
+          tenantId,
+          bucket,
+          preference,
+          actor: { id: admin.id, name: admin.name },
+        }),
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+    ),
+    { userId: admin.id, tenantId },
+  );
+  revalidateSubscriptionVisibilityPaths(tenantId);
+}
+
+export async function clearCustomerSubscriptionExperienceOverridesAction(
+  formData: FormData,
+) {
+  const admin = await requireAdminPermission("customers", "edit");
+  const tenantId = readFormString(formData, "tenantId");
+  if (!tenantId) throw new Error("العميل غير محدد");
+
+  await withErrorHandling(
+    "clearCustomerSubscriptionExperienceOverrides",
+    () => prisma.$transaction(
+      (transaction) =>
+        createSubscriptionVisibilityActionService(transaction).clearAll({
+          tenantId,
+          actor: { id: admin.id, name: admin.name },
+        }),
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+    ),
+    { userId: admin.id, tenantId },
+  );
+  revalidateSubscriptionVisibilityPaths(tenantId);
 }
 
 export async function publishSiteAction(formData: FormData) {

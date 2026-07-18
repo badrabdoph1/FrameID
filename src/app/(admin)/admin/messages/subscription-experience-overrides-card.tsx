@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Filter,
   RotateCcw,
@@ -13,11 +13,15 @@ import {
 
 import {
   resolveSubscriptionExperience,
+  getSubscriptionCardVisibilityPreference,
   subscriptionExperienceActionDefinitions,
   subscriptionExperienceBucketDefinitions,
   type SubscriptionExperienceActionKind,
   type SubscriptionExperienceBucket,
   type SubscriptionExperienceDefaults,
+  type SubscriptionExperienceOverride,
+  type SubscriptionExperienceStateOverride,
+  type SubscriptionCardVisibilityPreference,
 } from "@/modules/subscription/subscription-experience";
 import {
   clearSubscriptionExperienceOverrideAction,
@@ -31,16 +35,19 @@ const inputClass =
 const checkboxLabelClass =
   "flex min-h-11 cursor-pointer items-center gap-2.5 rounded-2xl border border-white/10 bg-white/[0.035] px-3.5 text-xs font-black text-white/60 transition hover:border-amber-300/20 hover:text-[#f3cf73]";
 
-type TenantOption = {
+export type TenantOption = {
   id: string;
   displayName: string;
   owner: { email: string; name: string };
   status: string;
   hasOverride: boolean;
+  override?: SubscriptionExperienceOverride | null;
+  overrideUpdatedAt?: string | null;
 };
 
 type Props = {
   defaults: SubscriptionExperienceDefaults;
+  sourceFallbackUsed?: boolean;
   trialTenants: TenantOption[];
   activeTenants: TenantOption[];
   otherTenants: TenantOption[];
@@ -48,6 +55,7 @@ type Props = {
 
 export function SubscriptionExperienceOverridesCard({
   defaults,
+  sourceFallbackUsed = false,
   trialTenants,
   activeTenants,
   otherTenants,
@@ -59,6 +67,8 @@ export function SubscriptionExperienceOverridesCard({
   const [messageEnabled, setMessageEnabled] = useState(
     defaults.trial.message.enabled,
   );
+  const [visibilityPreference, setVisibilityPreference] =
+    useState<SubscriptionCardVisibilityPreference>("inherit");
   const [messageTitle, setMessageTitle] = useState(
     defaults.trial.message.title,
   );
@@ -74,6 +84,9 @@ export function SubscriptionExperienceOverridesCard({
   const [actionLabel, setActionLabel] = useState(defaults.trial.action.label);
   const [actionHref, setActionHref] = useState(
     defaults.trial.action.href ?? "",
+  );
+  const [bulkApplyScope, setBulkApplyScope] = useState<"visibility" | "full">(
+    "visibility",
   );
 
   const currentTenants = useMemo(() => {
@@ -92,6 +105,18 @@ export function SubscriptionExperienceOverridesCard({
         .includes(q),
     );
   }, [activeTenants, otherTenants, query, tab, trialTenants]);
+  const allTenants = useMemo(
+    () => [...trialTenants, ...activeTenants, ...otherTenants],
+    [activeTenants, otherTenants, trialTenants],
+  );
+  const selectedTenant = useMemo(() => {
+    if (selected.size !== 1) return null;
+    return allTenants.find((tenant) => selected.has(tenant.id)) ?? null;
+  }, [allTenants, selected]);
+  const selectedKey = useMemo(
+    () => Array.from(selected).sort().join(","),
+    [selected],
+  );
 
   const allSelected =
     currentTenants.length > 0 &&
@@ -130,6 +155,7 @@ export function SubscriptionExperienceOverridesCard({
     setBucket(value);
     const preset = defaults[value];
     setMessageEnabled(preset.message.enabled);
+    setVisibilityPreference("inherit");
     setMessageTitle(preset.message.title);
     setMessageDescription(preset.message.description);
     setMessageTone(preset.message.tone);
@@ -138,6 +164,44 @@ export function SubscriptionExperienceOverridesCard({
     setActionLabel(preset.action.label);
     setActionHref(preset.action.href ?? "");
   };
+
+  useEffect(() => {
+    const preset = defaults[bucket];
+    if (!selectedTenant) {
+      if (selected.size > 1) {
+        setBulkApplyScope("visibility");
+        setVisibilityPreference("inherit");
+        setMessageEnabled(preset.message.enabled);
+        setMessageTitle(preset.message.title);
+        setMessageDescription(preset.message.description);
+        setMessageTone(preset.message.tone);
+        setTimerEnabled(preset.timer?.enabled ?? false);
+        setActionKind(preset.action.kind);
+        setActionLabel(preset.action.label);
+        setActionHref(preset.action.href ?? "");
+      }
+      return;
+    }
+    const bucketOverride = selectedTenant.override?.[bucket];
+    const preference = getSubscriptionCardVisibilityPreference(bucketOverride);
+    setVisibilityPreference(preference);
+    setMessageEnabled(
+      preference === "show"
+        ? true
+        : preference === "hide"
+          ? false
+          : preset.message.enabled,
+    );
+    setMessageTitle(bucketOverride?.message?.title ?? preset.message.title);
+    setMessageDescription(
+      bucketOverride?.message?.description ?? preset.message.description,
+    );
+    setMessageTone(bucketOverride?.message?.tone ?? preset.message.tone);
+    setTimerEnabled(bucketOverride?.timer?.enabled ?? preset.timer?.enabled ?? false);
+    setActionKind(bucketOverride?.action?.kind ?? preset.action.kind);
+    setActionLabel(bucketOverride?.action?.label ?? preset.action.label);
+    setActionHref(bucketOverride?.action?.href ?? preset.action.href ?? "");
+  }, [bucket, defaults, selected.size, selectedKey, selectedTenant]);
 
   const formIsValid = useMemo(() => {
     if (selected.size === 0) return false;
@@ -149,11 +213,13 @@ export function SubscriptionExperienceOverridesCard({
     return true;
   }, [selected, messageEnabled, messageTitle, messageDescription, actionKind, actionHref]);
 
-  const overrideConfig = useMemo(() => {
+  const overrideConfig = useMemo<SubscriptionExperienceStateOverride>(() => {
     const bucketConfig = defaults[bucket];
     return {
       message: {
-        enabled: messageEnabled,
+        ...(visibilityPreference === "inherit"
+          ? {}
+          : { enabled: visibilityPreference === "show" }),
         title: messageEnabled ? messageTitle : bucketConfig.message.title,
         description: messageEnabled ? messageDescription : bucketConfig.message.description,
         tone: messageTone,
@@ -170,10 +236,10 @@ export function SubscriptionExperienceOverridesCard({
             ? bucketConfig.timer
             : undefined,
     };
-  }, [bucket, messageEnabled, messageTitle, messageDescription, messageTone, actionKind, actionLabel, actionHref, timerEnabled, defaults]);
+  }, [bucket, messageEnabled, messageTitle, messageDescription, messageTone, actionKind, actionLabel, actionHref, timerEnabled, defaults, visibilityPreference]);
 
-  const previewTrialEnd = new Date(Date.now() + 14 * 86400000);
   const previewContext = useMemo(() => {
+    const previewTrialEnd = new Date(Date.now() + 14 * 86400000);
     if (bucket === "trial") {
       return {
         tenantStatus: "TRIAL",
@@ -219,15 +285,14 @@ export function SubscriptionExperienceOverridesCard({
       subscriptionEndsAt: new Date(Date.now() - 3 * 86400000),
       supportWhatsappNumber: "",
     };
-  }, [bucket, previewTrialEnd]);
+  }, [bucket]);
 
   const preview = resolveSubscriptionExperience({
-    defaults: {
-      ...defaults,
-      [bucket]: { ...defaults[bucket], ...overrideConfig } as typeof defaults[typeof bucket],
-    },
+    defaults,
+    override: { [bucket]: overrideConfig },
     context: previewContext,
     now: new Date(),
+    sourceFallbackUsed,
   });
 
   return (
@@ -438,6 +503,12 @@ export function SubscriptionExperienceOverridesCard({
               />
             ))}
             <input type="hidden" name="bucket" value={bucket} />
+            <input type="hidden" name="messageEnabled" value={messageEnabled ? "true" : "false"} />
+            <input
+              type="hidden"
+              name="applyScope"
+              value={selected.size > 1 ? bulkApplyScope : "full"}
+            />
 
             <label className="grid gap-1.5">
               <span className="text-xs font-black text-white/42">
@@ -461,17 +532,29 @@ export function SubscriptionExperienceOverridesCard({
             </label>
 
             <div className="grid gap-3 lg:grid-cols-2">
-              <label className={checkboxLabelClass}>
-                <input
-                  name="messageEnabled"
-                  type="checkbox"
-                  checked={messageEnabled}
-                  onChange={(event) =>
-                    setMessageEnabled(event.target.checked)
-                  }
-                  className="accent-amber-400"
-                />
-                <span>تشغيل الرسالة لهذا الاستثناء</span>
+              <label className="grid gap-1.5">
+                <span className="text-xs font-black text-white/42">قرار ظهور الكارت</span>
+                <select
+                  aria-label="قرار ظهور الكارت"
+                  name="visibilityPreference"
+                  value={visibilityPreference}
+                  onChange={(event) => {
+                    const preference = event.target.value as SubscriptionCardVisibilityPreference;
+                    setVisibilityPreference(preference);
+                    setMessageEnabled(
+                      preference === "show"
+                        ? true
+                        : preference === "hide"
+                          ? false
+                          : defaults[bucket].message.enabled,
+                    );
+                  }}
+                  className={inputClass}
+                >
+                  <option value="inherit">يتبع الإعداد العام</option>
+                  <option value="show">إظهار لهذا العميل</option>
+                  <option value="hide">إخفاء لهذا العميل</option>
+                </select>
               </label>
 
               {bucket === "trial" ? (
@@ -491,6 +574,32 @@ export function SubscriptionExperienceOverridesCard({
                 <input type="hidden" name="timerEnabled" value="false" />
               )}
             </div>
+
+            {selected.size > 1 ? (
+              <label className="grid gap-1.5">
+                <span className="text-xs font-black text-white/42">نطاق التطبيق الجماعي</span>
+                <select
+                  aria-label="نطاق التطبيق الجماعي"
+                  value={bulkApplyScope}
+                  onChange={(event) =>
+                    setBulkApplyScope(event.target.value as "visibility" | "full")
+                  }
+                  className={inputClass}
+                >
+                  <option value="visibility">تطبيق قرار الظهور فقط — يحافظ على محتوى كل عميل</option>
+                  <option value="full">تطبيق الرسالة والزر والظهور كاملًا على الجميع</option>
+                </select>
+              </label>
+            ) : null}
+
+            {selectedTenant?.override?.[bucket] ? (
+              <p className="text-[0.68rem] font-bold text-white/38">
+                آخر تعديل بواسطة {selectedTenant.override[bucket]?.metadata?.updatedByAdminName ?? "تعديل سابق"}
+                {selectedTenant.override[bucket]?.metadata?.updatedAt || selectedTenant.overrideUpdatedAt
+                  ? ` · ${new Date(selectedTenant.override[bucket]?.metadata?.updatedAt ?? selectedTenant.overrideUpdatedAt ?? "").toLocaleString("ar-EG")}`
+                  : ""}
+              </p>
+            ) : null}
 
             {messageEnabled ? (
               <>
@@ -523,9 +632,13 @@ export function SubscriptionExperienceOverridesCard({
                 </label>
               </>
             ) : (
-              <div className="rounded-2xl border border-dashed border-white/10 px-4 py-3 text-center text-xs font-bold text-white/35">
-                الرسالة معطلة — لن يظهر عنوان ولا وصف للعميل.
-              </div>
+              <>
+                <input type="hidden" name="messageTitle" value={messageTitle} />
+                <input type="hidden" name="messageDescription" value={messageDescription} />
+                <div className="rounded-2xl border border-dashed border-white/10 px-4 py-3 text-center text-xs font-bold text-white/35">
+                  الرسالة معطلة — لن يظهر عنوان ولا وصف للعميل، لكن محتواهما سيظل محفوظًا.
+                </div>
+              </>
             )}
 
             <div className="grid gap-3 lg:grid-cols-2">
@@ -610,6 +723,9 @@ export function SubscriptionExperienceOverridesCard({
                   معاينة سريعة
                 </span>
               </div>
+              <p className="mb-2 text-[0.68rem] font-black text-white/48">
+                النتيجة: {preview.visibility.effective === "visible" ? "ظاهر" : "مخفي"} · المصدر: {preview.visibility.source === "customer-override" ? "استثناء العميل" : preview.visibility.source === "system-fallback" ? "إعداد النظام الاحتياطي" : "الإعداد العام"}
+              </p>
               <InlineOverridePreview preview={preview} />
             </div>
 

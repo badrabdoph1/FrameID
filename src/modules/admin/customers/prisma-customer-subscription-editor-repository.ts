@@ -131,17 +131,6 @@ export function createPrismaCustomerSubscriptionEditorRepository(
           data: siteStateFor(command.status),
         });
 
-        if (command.status === "ACTIVE") {
-          await tx.featureFlag.deleteMany({
-            where: {
-              key: "platform.subscription.experience.override",
-              scope: "TENANT",
-              tenantId: command.tenantId,
-              siteId: null,
-            },
-          });
-        }
-
         await tx.subscriptionChange.create({
           data: {
             tenantId: command.tenantId,

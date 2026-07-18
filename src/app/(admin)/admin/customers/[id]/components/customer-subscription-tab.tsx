@@ -7,11 +7,17 @@ import { AdminStatusBadge } from "@/components/layout/admin-status-badge";
 import type { CustomerPlanOption } from "@/modules/admin/customers/customer-subscription-editor";
 import type { CustomerSubscriptionStatus } from "@/modules/admin/customers/customer-types";
 import type { CustomerDetail, CustomerSubscriptionInfo } from "./customer-types";
+import {
+  CustomerSubscriptionVisibilityCard,
+  type CustomerSubscriptionVisibilityRow,
+} from "./customer-subscription-visibility-card";
 
 type Props = {
   customer: CustomerDetail;
   allSubscriptions: CustomerSubscriptionInfo[];
   plans: CustomerPlanOption[];
+  subscriptionVisibilityStates: CustomerSubscriptionVisibilityRow[];
+  hasSubscriptionExperienceOverride: boolean;
   onAction: (type: string, title: string, description: string, formData: FormData, danger?: boolean) => void;
 };
 
@@ -46,7 +52,14 @@ function addDays(value: Date, days: number) {
   return result;
 }
 
-export function CustomerSubscriptionTab({ customer, allSubscriptions, plans, onAction }: Props) {
+export function CustomerSubscriptionTab({
+  customer,
+  allSubscriptions,
+  plans,
+  subscriptionVisibilityStates,
+  hasSubscriptionExperienceOverride,
+  onAction,
+}: Props) {
   const current = customer.subscription;
   const [editorOpen, setEditorOpen] = useState(false);
   const [planId, setPlanId] = useState(current?.planId ?? plans[0]?.id ?? "");
@@ -227,6 +240,13 @@ export function CustomerSubscriptionTab({ customer, allSubscriptions, plans, onA
           </form>
         ) : null}
       </section>
+
+      <CustomerSubscriptionVisibilityCard
+        tenantId={customer.id}
+        rows={subscriptionVisibilityStates}
+        hasAnyOverride={hasSubscriptionExperienceOverride}
+        onAction={onAction}
+      />
 
       {current ? (
         <div className="grid gap-3 lg:grid-cols-2">

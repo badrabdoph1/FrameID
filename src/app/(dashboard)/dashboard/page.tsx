@@ -9,7 +9,7 @@ import { prisma } from "@/lib/prisma";
 import { hasMeaningfulContactInfo } from "@/modules/dashboard/contact-completion";
 import { validateMessageTone } from "@/modules/messages/customer-message-config";
 import {
-  getSubscriptionExperienceDefaults,
+  getSubscriptionExperienceDefaultsRecord,
   getTenantSubscriptionExperienceOverride,
   resolveSubscriptionExperience,
 } from "@/modules/subscription/subscription-experience";
@@ -45,7 +45,7 @@ export default async function DashboardPage({
     latestPaymentRequest,
     seoSettings,
     customerMessages,
-    subscriptionExperienceDefaults,
+    subscriptionExperienceDefaultsRecord,
     subscriptionExperienceOverride,
     supportSettings,
   ] = await Promise.all([
@@ -91,7 +91,7 @@ export default async function DashboardPage({
         },
       },
     }),
-    getSubscriptionExperienceDefaults(prisma),
+    getSubscriptionExperienceDefaultsRecord(prisma),
     getTenantSubscriptionExperienceOverride(prisma, session.tenant.id),
     getSupportSettings(),
   ]);
@@ -107,7 +107,7 @@ export default async function DashboardPage({
   const subscriptionExperience =
     session.subscription || session.tenant.status !== "ACTIVE"
       ? resolveSubscriptionExperience({
-          defaults: subscriptionExperienceDefaults,
+          defaults: subscriptionExperienceDefaultsRecord.defaults,
           override: subscriptionExperienceOverride,
           context: {
             tenantStatus: session.tenant.status,
@@ -118,6 +118,8 @@ export default async function DashboardPage({
             supportWhatsappNumber: supportSettings.phone,
           },
           now: new Date(),
+          sourceFallbackUsed:
+            subscriptionExperienceDefaultsRecord.sourceFallbackUsed,
         })
       : null;
 

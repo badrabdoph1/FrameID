@@ -81,6 +81,16 @@ Client components handle interaction and previews; they must not become authorit
 4. Sensitive actions create audit log records with actor and target metadata.
 5. Admin, public, and customer surfaces are revalidated as needed.
 
+## Subscription card visibility
+
+1. Global subscription-message settings define the default card configuration for every lifecycle bucket.
+2. A customer file may store an independent `inherit`, `show`, or `hide` preference for each bucket without deleting preferences for other buckets.
+3. The shared subscription-experience resolver combines the customer bucket override, global default, and system fallback into one final decision containing visibility and decision source.
+4. Admin previews, dashboard cards, and billing alerts consume that resolved decision; callers must not reproduce the precedence logic.
+5. Explicit customer overrides store the modifying admin id, display name, and timestamp. Resetting all states deletes the tenant override record and restores global inheritance.
+6. Lifecycle transitions do not clear overrides. Only the override matching the currently resolved bucket is applied; suspended customers resolve through the expired bucket.
+7. Override read-modify-write and its audit entry run in one serializable database transaction. Multi-customer edits default to changing visibility only; applying message/action content to everyone requires an explicit full-apply choice.
+
 ## Change requirement
 
 Any modification to one of these flows must update this file and the corresponding domain document in the same commit.
