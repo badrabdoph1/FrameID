@@ -7,7 +7,7 @@ import { prisma } from "@/lib/prisma";
 import { processError } from "@/lib/errors";
 import { getCurrentRequestSession } from "@/modules/auth/request-session";
 import { createMediaUploadService } from "@/modules/media/media-upload-service";
-import { createLocalMediaStorage } from "@/modules/media/local-media-storage";
+import { createGitHubMediaStorage } from "@/modules/media/github-media-storage";
 import { createPrismaMediaUploadRepository } from "@/modules/media/prisma-media-upload-repository";
 
 function createSlug(title: string): string {
@@ -161,7 +161,7 @@ export async function uploadToAlbumAction(formData: FormData) {
   }
 
   const uploadService = createMediaUploadService({
-    storage: createLocalMediaStorage(),
+    storage: createGitHubMediaStorage(),
     repository: createPrismaMediaUploadRepository(prisma),
   });
 
@@ -468,7 +468,7 @@ export async function replaceGallerySlotAction(formData: FormData) {
 
   try {
     const uploadService = createMediaUploadService({
-      storage: createLocalMediaStorage(),
+      storage: createGitHubMediaStorage(),
       repository: createPrismaMediaUploadRepository(prisma),
     });
 

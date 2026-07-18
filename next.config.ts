@@ -19,7 +19,7 @@ const securityHeaders = [
       `default-src 'self'`,
       `script-src 'self' 'unsafe-eval' 'unsafe-inline'`,
       `style-src 'self' 'unsafe-inline'`,
-      `img-src 'self' data: blob: https://images.unsplash.com https://i.ibb.co`,
+      `img-src 'self' data: blob: https://images.unsplash.com https://i.ibb.co https://raw.githubusercontent.com`,
       `font-src 'self'`,
       `connect-src 'self'`,
       `frame-ancestors 'self'`,

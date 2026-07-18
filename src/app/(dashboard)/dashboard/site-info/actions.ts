@@ -8,7 +8,7 @@ import { processError } from "@/lib/errors";
 import { getCurrentRequestSession } from "@/modules/auth/request-session";
 import { createMediaUploadService } from "@/modules/media/media-upload-service";
 import { createPrismaMediaUploadRepository } from "@/modules/media/prisma-media-upload-repository";
-import { createLocalMediaStorage } from "@/modules/media/local-media-storage";
+import { createGitHubMediaStorage } from "@/modules/media/github-media-storage";
 
 export type AutosaveState = { ok: boolean; message: string };
 
@@ -155,7 +155,7 @@ export async function uploadSiteImageAction(
 
   try {
     const uploadService = createMediaUploadService({
-      storage: createLocalMediaStorage(),
+      storage: createGitHubMediaStorage(),
       repository: createPrismaMediaUploadRepository(prisma),
     });
 
