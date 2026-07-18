@@ -14,15 +14,11 @@ export async function getCurrentAdmin() {
 
   const signedPayload = verifySignedAdminSessionToken(rawToken);
   if (signedPayload) {
-    return {
-      id: signedPayload.id,
-      email: signedPayload.email,
-      name: signedPayload.name,
-      role: signedPayload.role,
-      createdAt: new Date(signedPayload.exp),
-      updatedAt: new Date(signedPayload.exp),
-      passwordHash: null,
-    };
+    const admin = await prisma.adminUser.findUnique({
+      where: { id: signedPayload.id },
+      select: { id: true, email: true, name: true, role: true, createdAt: true, updatedAt: true },
+    });
+    if (admin) return admin;
   }
 
   const tokenHash = hashAdminSessionToken(rawToken);
@@ -38,7 +34,12 @@ export async function getCurrentAdmin() {
 
   if (!session?.user) return null;
 
-  return session.user;
+  const admin = await prisma.adminUser.findUnique({
+    where: { email: session.user.email },
+    select: { id: true, email: true, name: true, role: true, createdAt: true, updatedAt: true },
+  });
+
+  return admin;
 }
 
 export async function requireSuperAdminSession() {
