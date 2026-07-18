@@ -27,7 +27,7 @@ export type MediaUploadRepository = {
     width: number;
     height: number;
     alt?: string;
-  }): Promise<{ id: string; url: string }>;
+  }): Promise<{ id: string; url: string; width: number; height: number }>;
 };
 
 export { sanitizeFilename, generateStorageKey, matchesImageSignature, ALLOWED_MIME_TYPES, MAX_UPLOAD_BYTES, ImageProcessingError };
@@ -48,7 +48,7 @@ export function createMediaUploadService({
       tenantId: string;
       file: File;
       alt?: string;
-    }): Promise<{ id: string; url: string }> {
+    }): Promise<{ id: string; url: string; width: number; height: number }> {
       try {
         const processed = await processImageFromFile(input.file, {
           maxSizeBytes,
@@ -80,10 +80,10 @@ export function createMediaUploadService({
         if (error instanceof UploadError) {
           throw error;
         }
-        console.error("[media-upload] unexpected error:", error);
         throw new UploadError(
           "FID-UPLOAD-999",
-          "حدث خطأ غير متوقع أثناء رفع الصورة. جرب مرة أخرى."
+          "حدث خطأ غير متوقع أثناء رفع الصورة. جرب مرة أخرى.",
+          error instanceof Error ? { cause: error } : undefined,
         );
       }
     },

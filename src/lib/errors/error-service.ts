@@ -46,8 +46,8 @@ export class AuthError extends AppError {
 }
 
 export class UploadError extends AppError {
-  constructor(code: string, message?: string) {
-    super(code, message, { metadata: { category: "UPLOAD" } });
+  constructor(code: string, message?: string, options?: { cause?: Error }) {
+    super(code, message, { metadata: { category: "UPLOAD" }, cause: options?.cause });
     this.name = "UploadError";
   }
 }

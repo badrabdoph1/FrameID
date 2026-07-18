@@ -2,7 +2,7 @@ import type { MediaUploadRepository } from "@/modules/media/media-upload-service
 
 type PrismaMediaUploadClient = {
   mediaAsset: {
-    create(input: unknown): Promise<{ id: string; url: string }>;
+    create(input: unknown): Promise<{ id: string; url: string; width: number | null; height: number | null }>;
   };
 };
 
@@ -11,20 +11,30 @@ export function createPrismaMediaUploadRepository(
 ): MediaUploadRepository {
   return {
     async createAsset(input) {
-      return prisma.mediaAsset.create({
+      const asset = await prisma.mediaAsset.create({
         data: {
           tenantId: input.tenantId,
           storageKey: input.storageKey,
           url: input.url,
           mimeType: input.mimeType,
           sizeBytes: input.sizeBytes,
-          alt: input.alt
+          width: input.width,
+          height: input.height,
+          alt: input.alt,
         },
         select: {
           id: true,
-          url: true
-        }
+          url: true,
+          width: true,
+          height: true,
+        },
       });
+      return {
+        id: asset.id,
+        url: asset.url,
+        width: asset.width ?? input.width,
+        height: asset.height ?? input.height,
+      };
     }
   };
 }
