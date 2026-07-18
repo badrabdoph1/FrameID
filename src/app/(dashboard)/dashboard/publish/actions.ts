@@ -6,7 +6,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { processError } from "@/lib/errors";
 import { getCurrentRequestSession } from "@/modules/auth/request-session";
-import { createLocalMediaStorage } from "@/modules/media/local-media-storage";
+import { createGitHubMediaStorage } from "@/modules/media/github-media-storage";
 import { createMediaUploadService } from "@/modules/media/media-upload-service";
 import { createPrismaMediaUploadRepository } from "@/modules/media/prisma-media-upload-repository";
 
@@ -182,7 +182,7 @@ export async function uploadShareImageAction(
 
   try {
     const uploadService = createMediaUploadService({
-      storage: createLocalMediaStorage(),
+      storage: createGitHubMediaStorage(),
       repository: createPrismaMediaUploadRepository(prisma),
     });
 

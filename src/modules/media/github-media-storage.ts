@@ -34,7 +34,7 @@ export function createGitHubMediaStorage({
         });
         if (result.commitSha) {
           return {
-            url: `${GITHUB_RAW_BASE}/${config.repository}/${config.branch}/${relativePath.replaceAll("\\", "/")}`,
+            url: `${GITHUB_RAW_BASE}/${config.repository}/${config.branch}/public/${relativePath.replaceAll("\\", "/")}`,
           };
         }
       }

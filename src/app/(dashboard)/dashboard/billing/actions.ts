@@ -8,7 +8,7 @@ import { processError } from "@/lib/errors";
 import { getCurrentRequestSession } from "@/modules/auth/request-session";
 import { createBillingActivationService } from "@/modules/billing/billing-activation-service";
 import { createPrismaBillingActivationRepository } from "@/modules/billing/prisma-billing-activation-repository";
-import { createLocalMediaStorage } from "@/modules/media/local-media-storage";
+import { createGitHubMediaStorage } from "@/modules/media/github-media-storage";
 import { createMediaUploadService } from "@/modules/media/media-upload-service";
 import { createPrismaMediaUploadRepository } from "@/modules/media/prisma-media-upload-repository";
 
@@ -189,7 +189,7 @@ export async function uploadProofAction(formData: FormData): Promise<ActionResul
     validateProofFile(proof);
 
     const assetId = await createMediaUploadService({
-      storage: createLocalMediaStorage(),
+      storage: createGitHubMediaStorage(),
       repository: createPrismaMediaUploadRepository(prisma),
     }).uploadImage({ tenantId: session.tenant.id, file: proof, alt: "إثبات دفع" }).then((asset) => asset.id);
 
