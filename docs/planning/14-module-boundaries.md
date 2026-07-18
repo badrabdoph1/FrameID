@@ -228,20 +228,46 @@
 
 ### Owns
 
-- in-app notifications.
-- email/whatsapp-ready message events later.
-- templates.
-- read state.
+- delivery policy للقنوات الخارجية.
+- email/push/whatsapp adapters مستقبلًا.
+- channel templates والتفضيلات والتجميع.
+- delivery attempts وretry/dead-letter processing.
 
 ### Does Not Own
 
 - business event decisions.
+- محتوى Inbox أو نص الرسائل.
+- حالة قراءة المحادثات.
+- Timeline أو WorkItem.
 
 ### Collaborates With
 
-- Billing for trial ending.
-- Payment for review result.
-- Admin for broadcasts.
+- Communication Core عبر Transactional Outbox.
+- Billing وPayment وSecurity لتصنيف urgency/category، لا لنسخ المحتوى.
+
+## Communication Module
+
+### Owns
+
+- conversations وentries كمصدر الرسائل الوحيد.
+- audiences وread cursors وInbox truth.
+- work items المشتركة وأحداث انتقالها.
+- generic context references بلا Product FKs.
+- campaigns كتعريف جمهور ونشر فقط.
+- transactional outbox envelopes.
+
+### Does Not Own
+
+- منطق الخدمات أو الدفع أو الاشتراك أو المواقع أو الدعوات.
+- pricing, eligibility, fulfillment, entitlements.
+- تخزين المرفقات وفحصها أو تنفيذ القنوات الخارجية.
+- authorization الخاصة بكيان Product.
+
+### Collaborates With
+
+- كل Product Module عبر Public Commands وContext References.
+- Notification/Delivery عبر Outbox versioned events.
+- Admin وCustomer Dashboard عبر services/actions، لا Prisma writes مباشرة.
 
 ## Audit Module
 
@@ -279,3 +305,5 @@ Admin UI cannot bypass module services.
 - Media must not know Dashboard.
 - Admin must not implement business rules inline.
 - Site slug validation must live in one place only.
+- Product modules must not write Communication tables or Outbox rows directly.
+- Communication Core must not import Product modules or interpret their entity IDs.

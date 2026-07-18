@@ -212,6 +212,99 @@ enum MediaFindingStatus {
   IGNORED
 }
 
+enum CommunicationConversationMode {
+  DIRECT
+  BROADCAST
+}
+
+enum CommunicationLifecycleState {
+  ACTIVE
+  ARCHIVED
+  WITHDRAWN
+}
+
+enum CommunicationReplyMode {
+  ENABLED
+  DISABLED
+  PRIVATE_BRANCH
+}
+
+enum CommunicationActorType {
+  CUSTOMER
+  ADMIN
+  SYSTEM
+}
+
+enum CommunicationEntryKind {
+  MESSAGE
+  INTERNAL_NOTE
+  STATE_CHANGE
+  ASSIGNMENT
+  SYSTEM_EVENT
+  CORRECTION
+}
+
+enum CommunicationVisibility {
+  CUSTOMER_AND_ADMIN
+  ADMIN_ONLY
+}
+
+enum CommunicationWorkItemStatus {
+  NEW
+  IN_PROGRESS
+  WAITING_CUSTOMER
+  WAITING_INTERNAL
+  RESOLVED
+  CLOSED
+}
+
+enum CommunicationPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+enum CommunicationWorkItemEventType {
+  CREATED
+  STATUS_CHANGED
+  PRIORITY_CHANGED
+  ASSIGNED
+  QUEUE_CHANGED
+}
+
+enum CommunicationAttachmentScanStatus {
+  PENDING
+  PROCESSING
+  CLEAN
+  REJECTED
+  DELETED
+}
+
+enum CommunicationCampaignStatus {
+  DRAFT
+  SCHEDULED
+  PUBLISHING
+  PUBLISHED
+  WITHDRAWN
+  CANCELLED
+}
+
+enum CommunicationOutboxStatus {
+  PENDING
+  PROCESSING
+  PROCESSED
+  DEAD_LETTER
+}
+
+enum CommunicationDeliveryStatus {
+  PENDING
+  PROCESSING
+  DELIVERED
+  FAILED
+  CANCELLED
+}
+
 model User {
   id              String    @id @default(cuid())
   email           String    @unique
@@ -224,30 +317,35 @@ model User {
   updatedAt       DateTime  @updatedAt
   deletedAt       DateTime?
 
-  ownedTenants          Tenant[]
+  ownedTenants                      Tenant[]
   // auditLogs removed: actorId stores plain ID, no FK to User
-  adminNotes            AdminNote[]            @relation("AdminNoteAuthor")
+  adminNotes                        AdminNote[]                  @relation("AdminNoteAuthor")
   // reviewedPayments: PaymentRequest FK removed — reviewedByUserId stores AdminUser or User ID (no FK — admins ≠ users)
   // backupJobs removed: triggeredById stores plain ID, no FK to User
   // backupRestores removed: same reason
-  sessions              Session[]
-  passwordResetTokens   PasswordResetToken[]
-  customerIssues        CustomerIssue[]        @relation("CustomerIssueReporter")
+  sessions                          Session[]
+  passwordResetTokens               PasswordResetToken[]
+  customerIssues                    CustomerIssue[]              @relation("CustomerIssueReporter")
+  communicationConversationsCreated CommunicationConversation[]  @relation("CommunicationConversationCustomerCreator")
+  communicationEntries              CommunicationEntry[]         @relation("CommunicationEntryCustomerAuthor")
+  communicationReadCursors          CommunicationReadCursor[]    @relation("CommunicationReadCursorCustomer")
+  communicationAttachmentsUploaded  CommunicationAttachment[]    @relation("CommunicationAttachmentCustomerUploader")
+  communicationWorkItemEvents       CommunicationWorkItemEvent[] @relation("CommunicationWorkItemEventCustomerActor")
 
   @@index([role, deletedAt])
 }
 
 model Session {
-  id          String    @id @default(cuid())
-  userId      String
-  tokenHash   String    @unique
-  expiresAt   DateTime
-  revokedAt   DateTime?
-  lastSeenAt  DateTime?
-  ipAddress   String?
-  userAgent   String?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id         String    @id @default(cuid())
+  userId     String
+  tokenHash  String    @unique
+  expiresAt  DateTime
+  revokedAt  DateTime?
+  lastSeenAt DateTime?
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
 
   user User @relation(fields: [userId], references: [id])
 
@@ -281,21 +379,23 @@ model Tenant {
   updatedAt         DateTime     @updatedAt
   deletedAt         DateTime?
 
-  owner                 User                   @relation(fields: [ownerUserId], references: [id])
-  sites                 Site[]
-  mediaAssets           MediaAsset[]
-  subscriptions         Subscription[]
-  payments              PaymentRequest[]
-  notifications         Notification[]
-  auditLogs             AuditLog[]
-  adminNotes            AdminNote[]
-  supportCases          SupportCase[]
-  lifecycleEvents       LifecycleEvent[]
-  featureFlags          FeatureFlag[]
-  impersonationSessions ImpersonationSession[]
-  customerIssues        CustomerIssue[]
-  customerRequests      CustomerRequest[]
-  customerMessageRecipients CustomerMessageRecipient[]
+  owner                      User                        @relation(fields: [ownerUserId], references: [id])
+  sites                      Site[]
+  mediaAssets                MediaAsset[]
+  subscriptions              Subscription[]
+  payments                   PaymentRequest[]
+  notifications              Notification[]
+  auditLogs                  AuditLog[]
+  adminNotes                 AdminNote[]
+  supportCases               SupportCase[]
+  lifecycleEvents            LifecycleEvent[]
+  featureFlags               FeatureFlag[]
+  impersonationSessions      ImpersonationSession[]
+  customerIssues             CustomerIssue[]
+  customerRequests           CustomerRequest[]
+  customerMessageRecipients  CustomerMessageRecipient[]
+  communicationConversations CommunicationConversation[]
+  communicationAudiences     CommunicationAudience[]
 
   @@index([ownerUserId, status])
 }
@@ -318,26 +418,26 @@ enum CustomerRequestType {
 }
 
 model Site {
-  id                   String     @id @default(cuid())
-  tenantId             String
-  themeId              String
-  slug                 String
-  slugChangeUsed       Boolean    @default(false)
-  templateChangeUsed   Boolean    @default(false)
-  title           String
-  description     String?
-  templateCode    String?
-  templateVersion String?
-  status          SiteStatus @default(DRAFT)
-  isPublished     Boolean    @default(false)
-  publishedVersion Int       @default(1)
-  publishedAt     DateTime?
-  createdAt       DateTime   @default(now())
-  updatedAt       DateTime   @updatedAt
-  deletedAt       DateTime?
+  id                 String     @id @default(cuid())
+  tenantId           String
+  themeId            String
+  slug               String
+  slugChangeUsed     Boolean    @default(false)
+  templateChangeUsed Boolean    @default(false)
+  title              String
+  description        String?
+  templateCode       String?
+  templateVersion    String?
+  status             SiteStatus @default(DRAFT)
+  isPublished        Boolean    @default(false)
+  publishedVersion   Int        @default(1)
+  publishedAt        DateTime?
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @updatedAt
+  deletedAt          DateTime?
 
-  tenant           Tenant            @relation(fields: [tenantId], references: [id])
-  theme            Theme             @relation(fields: [themeId], references: [id])
+  tenant           Tenant                @relation(fields: [tenantId], references: [id])
+  theme            Theme                 @relation(fields: [themeId], references: [id])
   domains          Domain[]
   themeConfigs     SiteThemeConfig[]
   sections         SiteSection[]
@@ -352,10 +452,10 @@ model Site {
   customerIssues   CustomerIssue[]
   customerRequests CustomerRequest[]
 
+  @@unique([slug, deletedAt])
   @@index([tenantId, status])
   @@index([themeId])
   @@index([templateCode, templateVersion])
-  @@unique([slug, deletedAt])
 }
 
 model Theme {
@@ -426,12 +526,12 @@ model SiteThemeConfig {
 }
 
 model Domain {
-  id        String       @id @default(cuid())
-  siteId    String
-  hostname  String       @unique
-  status    DomainStatus @default(PENDING)
+  id         String       @id @default(cuid())
+  siteId     String
+  hostname   String       @unique
+  status     DomainStatus @default(PENDING)
   verifiedAt DateTime?
-  createdAt DateTime     @default(now())
+  createdAt  DateTime     @default(now())
 
   site Site @relation(fields: [siteId], references: [id])
 
@@ -455,19 +555,19 @@ model SiteSection {
 }
 
 model GalleryAlbum {
-  id            String    @id @default(cuid())
-  siteId        String
-  title         String
-  slug          String    @default("")
-  description   String?
-  coverAssetId  String?
-  isVisible     Boolean   @default(true)
-  sortOrder     Int       @default(0)
-  createdAt     DateTime  @default(now())
-  deletedAt     DateTime?
+  id           String    @id @default(cuid())
+  siteId       String
+  title        String
+  slug         String    @default("")
+  description  String?
+  coverAssetId String?
+  isVisible    Boolean   @default(true)
+  sortOrder    Int       @default(0)
+  createdAt    DateTime  @default(now())
+  deletedAt    DateTime?
 
-  site   Site        @relation(fields: [siteId], references: [id])
-  cover  MediaAsset? @relation("AlbumCover", fields: [coverAssetId], references: [id])
+  site   Site           @relation(fields: [siteId], references: [id])
+  cover  MediaAsset?    @relation("AlbumCover", fields: [coverAssetId], references: [id])
   images GalleryImage[]
 
   @@index([siteId, sortOrder])
@@ -507,15 +607,15 @@ model MediaAsset {
   createdAt      DateTime  @default(now())
   deletedAt      DateTime?
 
-  tenant         Tenant            @relation(fields: [tenantId], references: [id])
-  paymentProofs  PaymentRequest[]  @relation("PaymentProof")
-  galleryImages  GalleryImage[]
-  albumCovers    GalleryAlbum[]    @relation("AlbumCover")
-  contactAvatars ContactProfile[]  @relation("ContactAvatar")
-  contactCovers  ContactProfile[]  @relation("ContactCover")
-  seoOgImages    SEOSettings[]     @relation("SEOOgImage")
-  paymentQRCodes      PaymentAccount[]  @relation("PaymentQRCode")
-  paymentSettingsQR   PaymentSettings[] @relation("PaymentQRCodeSettings")
+  tenant            Tenant            @relation(fields: [tenantId], references: [id])
+  paymentProofs     PaymentRequest[]  @relation("PaymentProof")
+  galleryImages     GalleryImage[]
+  albumCovers       GalleryAlbum[]    @relation("AlbumCover")
+  contactAvatars    ContactProfile[]  @relation("ContactAvatar")
+  contactCovers     ContactProfile[]  @relation("ContactCover")
+  seoOgImages       SEOSettings[]     @relation("SEOOgImage")
+  paymentQRCodes    PaymentAccount[]  @relation("PaymentQRCode")
+  paymentSettingsQR PaymentSettings[] @relation("PaymentQRCodeSettings")
 
   @@index([tenantId, kind, createdAt])
 }
@@ -580,17 +680,17 @@ model SEOSettings {
 }
 
 model Package {
-  id            String   @id @default(cuid())
+  id            String    @id @default(cuid())
   siteId        String
   name          String
   subtitle      String?
   priceAmount   Int
-  currency      String   @default("EGP")
+  currency      String    @default("EGP")
   features      Json
   imageUrl      String?
-  isHighlighted Boolean  @default(false)
-  isActive      Boolean  @default(true)
-  sortOrder     Int      @default(0)
+  isHighlighted Boolean   @default(false)
+  isActive      Boolean   @default(true)
+  sortOrder     Int       @default(0)
   deletedAt     DateTime?
 
   site Site @relation(fields: [siteId], references: [id])
@@ -599,15 +699,15 @@ model Package {
 }
 
 model ExtraService {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   siteId      String
   name        String
   description String?
   priceAmount Int
-  currency    String   @default("EGP")
+  currency    String    @default("EGP")
   iconKey     String?
-  isActive    Boolean  @default(true)
-  sortOrder   Int      @default(0)
+  isActive    Boolean   @default(true)
+  sortOrder   Int       @default(0)
   deletedAt   DateTime?
 
   site Site @relation(fields: [siteId], references: [id])
@@ -631,15 +731,15 @@ model LifecycleEvent {
 }
 
 model Plan {
-  id              String   @id @default(cuid())
-  code            String   @unique
+  id              String               @id @default(cuid())
+  code            String               @unique
   name            String
   priceAmount     Int
-  currency        String   @default("EGP")
+  currency        String               @default("EGP")
   billingInterval String
   features        Json
-  isActive        Boolean  @default(true)
-  sortOrder       Int      @default(0)
+  isActive        Boolean              @default(true)
+  sortOrder       Int                  @default(0)
   subscriptions   Subscription[]
   paymentRequests PaymentRequest[]
   changesFrom     SubscriptionChange[] @relation("FromPlan")
@@ -662,8 +762,8 @@ model Subscription {
   createdAt          DateTime           @default(now())
   updatedAt          DateTime           @updatedAt
 
-  tenant         Tenant           @relation(fields: [tenantId], references: [id])
-  plan           Plan?            @relation(fields: [planId], references: [id])
+  tenant          Tenant           @relation(fields: [tenantId], references: [id])
+  plan            Plan?            @relation(fields: [planId], references: [id])
   paymentRequests PaymentRequest[]
 
   @@index([tenantId, status])
@@ -671,7 +771,7 @@ model Subscription {
 }
 
 model SubscriptionChange {
-  id             String    @id @default(cuid())
+  id             String   @id @default(cuid())
   tenantId       String
   subscriptionId String?
   fromPlanId     String?
@@ -681,39 +781,39 @@ model SubscriptionChange {
   changeType     String?
   initiatedById  String?
   reason         String?
-  createdAt      DateTime  @default(now())
+  createdAt      DateTime @default(now())
 
   fromPlan Plan? @relation("FromPlan", fields: [fromPlanId], references: [id])
   toPlan   Plan? @relation("ToPlan", fields: [toPlanId], references: [id])
 }
 
 model PaymentRequest {
-  id                String        @id @default(cuid())
-  tenantId          String
-  subscriptionId    String?
-  planId            String?
-  paymentAccountId  String?
-  amount            Int
-  currency          String        @default("EGP")
-  method            PaymentMethod
-  status            PaymentStatus @default(DRAFT)
-  reference         String?
-  submittedAt       DateTime?
-  note              String?
-  adminNote         String?
-  rejectionReason   String?
-  proofAssetId      String?
+  id               String        @id @default(cuid())
+  tenantId         String
+  subscriptionId   String?
+  planId           String?
+  paymentAccountId String?
+  amount           Int
+  currency         String        @default("EGP")
+  method           PaymentMethod
+  status           PaymentStatus @default(DRAFT)
+  reference        String?
+  submittedAt      DateTime?
+  note             String?
+  adminNote        String?
+  rejectionReason  String?
+  proofAssetId     String?
   reviewedByUserId  String?       @map("reviewedById")
-  reviewedAt        DateTime?
-  createdAt         DateTime      @default(now())
-  updatedAt         DateTime      @default(now())
-  deletedAt         DateTime?
+  reviewedAt       DateTime?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @default(now())
+  deletedAt        DateTime?
 
-  tenant         Tenant        @relation(fields: [tenantId], references: [id])
-  subscription   Subscription? @relation(fields: [subscriptionId], references: [id])
-  plan           Plan?         @relation(fields: [planId], references: [id])
-  paymentAccount PaymentAccount? @relation(fields: [paymentAccountId], references: [id])
-  proofAsset     MediaAsset?   @relation("PaymentProof", fields: [proofAssetId], references: [id])
+  tenant         Tenant              @relation(fields: [tenantId], references: [id])
+  subscription   Subscription?       @relation(fields: [subscriptionId], references: [id])
+  plan           Plan?               @relation(fields: [planId], references: [id])
+  paymentAccount PaymentAccount?     @relation(fields: [paymentAccountId], references: [id])
+  proofAsset     MediaAsset?         @relation("PaymentProof", fields: [proofAssetId], references: [id])
   // reviewer FK removed — reviewedByUserId stores AdminUser or User ID (no FK — admins ≠ users)
   logs           PaymentRequestLog[]
 
@@ -778,7 +878,7 @@ model AuditLog {
   metadata   Json?
   createdAt  DateTime @default(now())
 
-  tenant  Tenant? @relation(fields: [tenantId], references: [id])
+  tenant   Tenant? @relation(fields: [tenantId], references: [id])
   tenantId String?
   // actorId stores AdminUser or User ID (no FK — admins ≠ users)
 
@@ -817,17 +917,17 @@ model NotificationLog {
 }
 
 model CustomerMessageCampaign {
-  id               String   @id @default(cuid())
+  id               String    @id @default(cuid())
   title            String
   body             String
-  tone             String   @default("info")
-  status           String   @default("ACTIVE")
+  tone             String    @default("info")
+  status           String    @default("ACTIVE")
   audienceMode     String
   audienceSnapshot Json?
   createdByAdminId String
   createdByName    String
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
   pausedAt         DateTime?
 
   recipients CustomerMessageRecipient[]
@@ -864,10 +964,17 @@ model AdminUser {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  sessions               AdminSession[]
-  assignedCustomerIssues CustomerIssue[]      @relation("CustomerIssueAssignee")
-  resolvedCustomerIssues CustomerIssue[]      @relation("CustomerIssueResolver")
-  customerIssueEvents    CustomerIssueEvent[] @relation("CustomerIssueEventActor")
+  sessions                          AdminSession[]
+  assignedCustomerIssues            CustomerIssue[]              @relation("CustomerIssueAssignee")
+  resolvedCustomerIssues            CustomerIssue[]              @relation("CustomerIssueResolver")
+  customerIssueEvents               CustomerIssueEvent[]         @relation("CustomerIssueEventActor")
+  communicationConversationsCreated CommunicationConversation[]  @relation("CommunicationConversationAdminCreator")
+  communicationEntries              CommunicationEntry[]         @relation("CommunicationEntryAdminAuthor")
+  communicationReadCursors          CommunicationReadCursor[]    @relation("CommunicationReadCursorAdmin")
+  communicationWorkItemsAssigned    CommunicationWorkItem[]      @relation("CommunicationWorkItemAssignee")
+  communicationWorkItemEvents       CommunicationWorkItemEvent[] @relation("CommunicationWorkItemEventAdminActor")
+  communicationAttachmentsUploaded  CommunicationAttachment[]    @relation("CommunicationAttachmentAdminUploader")
+  communicationCampaignsCreated     CommunicationCampaign[]      @relation("CommunicationCampaignCreator")
   // reviewedCustomerRequests removed: same reason as ImpersonationSession — no FK.
 }
 
@@ -897,10 +1004,10 @@ model AdminNote {
 }
 
 model ImpersonationSession {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   adminId   String
   tenantId  String
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
   expiresAt DateTime
   revokedAt DateTime?
 
@@ -944,17 +1051,17 @@ model FeatureFlag {
 }
 
 model BackupJob {
-  id               String       @id @default(cuid())
-  type             BackupType
-  status           BackupStatus @default(PENDING)
-  triggeredById    String?
-  filePath         String?
-  sizeBytes        Int?
-  checksumSha256   String?
-  errorMessage     String?
-  metadata         Json?
-  createdAt        DateTime     @default(now())
-  completedAt      DateTime?
+  id             String       @id @default(cuid())
+  type           BackupType
+  status         BackupStatus @default(PENDING)
+  triggeredById  String?
+  filePath       String?
+  sizeBytes      Int?
+  checksumSha256 String?
+  errorMessage   String?
+  metadata       Json?
+  createdAt      DateTime     @default(now())
+  completedAt    DateTime?
 
   // triggeredById stores the AdminUser or User ID that initiated the backup (no FK — admins ≠ users)
 
@@ -962,43 +1069,43 @@ model BackupJob {
 }
 
 model PaymentSettings {
-  id              String        @id @default(cuid())
-  paymentMethod   PaymentMethod @unique
-  isActive        Boolean       @default(true)
-  label           String?
-  description     String?
-  config          Json          @default("{}")
-  qrCodeAssetId   String?
-  sortOrder       Int           @default(0)
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
+  id            String        @id @default(cuid())
+  paymentMethod PaymentMethod @unique
+  isActive      Boolean       @default(true)
+  label         String?
+  description   String?
+  config        Json          @default("{}")
+  qrCodeAssetId String?
+  sortOrder     Int           @default(0)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
 
-  accounts PaymentAccount[]
-  qrCodeAsset MediaAsset? @relation("PaymentQRCodeSettings", fields: [qrCodeAssetId], references: [id])
+  accounts    PaymentAccount[]
+  qrCodeAsset MediaAsset?      @relation("PaymentQRCodeSettings", fields: [qrCodeAssetId], references: [id])
 
   @@index([isActive, sortOrder])
 }
 
 model BackupSettings {
-  type            String   @id
-  enabled         Boolean  @default(true)
-  schedule        String   @default("0 2 * * *")
-  retentionCount  Int      @default(7)
-  lastRunAt       DateTime?
-  nextRunAt       DateTime?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  type           String    @id
+  enabled        Boolean   @default(true)
+  schedule       String    @default("0 2 * * *")
+  retentionCount Int       @default(7)
+  lastRunAt      DateTime?
+  nextRunAt      DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 }
 
 model RestoreJob {
-  id              String       @id @default(cuid())
-  backupJobId     String
-  status          BackupStatus @default(PENDING)
-  triggeredById   String?
-  targetDatabase  String?
-  errorMessage    String?
-  createdAt       DateTime     @default(now())
-  completedAt     DateTime?
+  id             String       @id @default(cuid())
+  backupJobId    String
+  status         BackupStatus @default(PENDING)
+  triggeredById  String?
+  targetDatabase String?
+  errorMessage   String?
+  createdAt      DateTime     @default(now())
+  completedAt    DateTime?
 
   // triggeredById stores the AdminUser or User ID that initiated the restore (no FK — admins ≠ users)
 
@@ -1064,37 +1171,37 @@ model ErrorLog {
 }
 
 model CustomerIssue {
-  id                      String                @id @default(cuid())
-  number                  Int                   @unique @default(autoincrement())
-  status                  CustomerIssueStatus   @default(NEW)
-  priority                CustomerIssuePriority @default(MEDIUM)
-  source                  CustomerIssueSource   @default(CUSTOMER_REPORT)
-  title                   String
-  fingerprint             String
-  customerNote            String?
-  resolutionNote          String?
-  userId                  String?
-  tenantId                String?
-  siteId                  String?
-  sessionId               String?
-  assigneeAdminUserId     String?
-  resolvedByAdminUserId   String?
-  occurrenceCount         Int                   @default(1)
-  lastSeenAt              DateTime              @default(now())
-  reviewStartedAt         DateTime?
-  resolvedAt              DateTime?
-  closedAt                DateTime?
-  customerNotifiedAt      DateTime?
-  createdAt               DateTime              @default(now())
-  updatedAt               DateTime              @updatedAt
+  id                    String                @id @default(cuid())
+  number                Int                   @unique @default(autoincrement())
+  status                CustomerIssueStatus   @default(NEW)
+  priority              CustomerIssuePriority @default(MEDIUM)
+  source                CustomerIssueSource   @default(CUSTOMER_REPORT)
+  title                 String
+  fingerprint           String
+  customerNote          String?
+  resolutionNote        String?
+  userId                String?
+  tenantId              String?
+  siteId                String?
+  sessionId             String?
+  assigneeAdminUserId   String?
+  resolvedByAdminUserId String?
+  occurrenceCount       Int                   @default(1)
+  lastSeenAt            DateTime              @default(now())
+  reviewStartedAt       DateTime?
+  resolvedAt            DateTime?
+  closedAt              DateTime?
+  customerNotifiedAt    DateTime?
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
 
-  reporter       User?                @relation("CustomerIssueReporter", fields: [userId], references: [id], onDelete: SetNull)
-  tenant         Tenant?              @relation(fields: [tenantId], references: [id], onDelete: SetNull)
-  site           Site?                @relation(fields: [siteId], references: [id], onDelete: SetNull)
-  assignee       AdminUser?           @relation("CustomerIssueAssignee", fields: [assigneeAdminUserId], references: [id], onDelete: SetNull)
-  resolvedBy     AdminUser?           @relation("CustomerIssueResolver", fields: [resolvedByAdminUserId], references: [id], onDelete: SetNull)
-  occurrences    ErrorLog[]
-  events         CustomerIssueEvent[]
+  reporter    User?                @relation("CustomerIssueReporter", fields: [userId], references: [id], onDelete: SetNull)
+  tenant      Tenant?              @relation(fields: [tenantId], references: [id], onDelete: SetNull)
+  site        Site?                @relation(fields: [siteId], references: [id], onDelete: SetNull)
+  assignee    AdminUser?           @relation("CustomerIssueAssignee", fields: [assigneeAdminUserId], references: [id], onDelete: SetNull)
+  resolvedBy  AdminUser?           @relation("CustomerIssueResolver", fields: [resolvedByAdminUserId], references: [id], onDelete: SetNull)
+  occurrences ErrorLog[]
+  events      CustomerIssueEvent[]
 
   @@index([status, priority, createdAt])
   @@index([fingerprint, status, updatedAt])
@@ -1122,17 +1229,17 @@ model CustomerIssueEvent {
 }
 
 model ContentRevision {
-  id        String   @id @default(cuid())
-  type      String
-  actorId   String?
-  actorName String?
+  id         String   @id @default(cuid())
+  type       String
+  actorId    String?
+  actorName  String?
   actorEmail String?
-  before    Json?
-  after     Json?
-  commitId  String?
-  gitStatus String   @default("not-configured")
-  gitError  String?
-  createdAt DateTime @default(now())
+  before     Json?
+  after      Json?
+  commitId   String?
+  gitStatus  String   @default("not-configured")
+  gitError   String?
+  createdAt  DateTime @default(now())
 
   @@index([type, createdAt])
   @@index([createdAt])
@@ -1165,12 +1272,12 @@ model PlatformPageRevision {
   version                Int
   document               Json
   schemaVersion          Int      @default(1)
-  actorId                 String?
-  actorName               String?
-  actorEmail              String?
-  changeSummary           String?
-  restoredFromRevisionId  String?
-  createdAt               DateTime @default(now())
+  actorId                String?
+  actorName              String?
+  actorEmail             String?
+  changeSummary          String?
+  restoredFromRevisionId String?
+  createdAt              DateTime @default(now())
 
   page PlatformPage @relation(fields: [pageId], references: [id], onDelete: Cascade)
 
@@ -1279,35 +1386,35 @@ model MediaSettings {
 }
 
 model MediaCatalogEntry {
-  id                 String               @id @default(cuid())
-  sourceKind         MediaCatalogSource
-  sourceId           String?
-  tenantId           String?
-  siteId             String?
-  providerId         String               @default("unknown")
-  storageKey         String
-  url                String?
-  kind               String               @default("image")
-  mimeType           String?
-  sizeBytes          Int?
-  width              Int?
-  height             Int?
-  checksumSha256     String?
-  originalName       String?
-  metadata           Json?
-  lifecycleStatus    MediaLifecycleStatus @default(ACTIVE)
-  usageStatus        MediaUsageStatus     @default(UNKNOWN)
-  discoveredAt       DateTime             @default(now())
-  lastVerifiedAt     DateTime?
-  lastUsedAt         DateTime?
-  trashedAt          DateTime?
-  purgeEligibleAt    DateTime?
-  purgedAt           DateTime?
-  trashReason        String?
-  trashActorId       String?
-  trashOperationId   String?
-  createdAt          DateTime             @default(now())
-  updatedAt          DateTime             @updatedAt
+  id               String               @id @default(cuid())
+  sourceKind       MediaCatalogSource
+  sourceId         String?
+  tenantId         String?
+  siteId           String?
+  providerId       String               @default("unknown")
+  storageKey       String
+  url              String?
+  kind             String               @default("image")
+  mimeType         String?
+  sizeBytes        Int?
+  width            Int?
+  height           Int?
+  checksumSha256   String?
+  originalName     String?
+  metadata         Json?
+  lifecycleStatus  MediaLifecycleStatus @default(ACTIVE)
+  usageStatus      MediaUsageStatus     @default(UNKNOWN)
+  discoveredAt     DateTime             @default(now())
+  lastVerifiedAt   DateTime?
+  lastUsedAt       DateTime?
+  trashedAt        DateTime?
+  purgeEligibleAt  DateTime?
+  purgedAt         DateTime?
+  trashReason      String?
+  trashActorId     String?
+  trashOperationId String?
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
 
   references      MediaReference[]
   findings        MediaFinding[]
@@ -1383,19 +1490,19 @@ model MediaLifecycleEvent {
 }
 
 model CustomerDataChange {
-  id           String   @id @default(cuid())
-  entityType   String
-  entityId     String
-  tenantId     String?
-  siteId       String?
-  userId       String?
-  action       String
-  before       Json?
-  after        Json?
-  changedBy    String?
+  id            String   @id @default(cuid())
+  entityType    String
+  entityId      String
+  tenantId      String?
+  siteId        String?
+  userId        String?
+  action        String
+  before        Json?
+  after         Json?
+  changedBy     String?
   changedByName String?
-  source       String   @default("customer")
-  createdAt    DateTime @default(now())
+  source        String   @default("customer")
+  createdAt     DateTime @default(now())
 
   @@index([entityType, entityId, createdAt])
   @@index([tenantId, createdAt])
@@ -1404,23 +1511,23 @@ model CustomerDataChange {
 }
 
 model CustomerRequest {
-  id              String                 @id @default(cuid())
-  number          Int                    @unique @default(autoincrement())
-  tenantId        String
-  siteId          String
-  type            CustomerRequestType
-  status          CustomerRequestStatus  @default(PENDING)
-  title           String
-  description     String?
-  adminNote       String?
-  reviewedBy      String?
-  reviewedAt      DateTime?
-  completedAt     DateTime?
-  createdAt       DateTime               @default(now())
-  updatedAt       DateTime               @updatedAt
+  id          String                @id @default(cuid())
+  number      Int                   @unique @default(autoincrement())
+  tenantId    String
+  siteId      String
+  type        CustomerRequestType
+  status      CustomerRequestStatus @default(PENDING)
+  title       String
+  description String?
+  adminNote   String?
+  reviewedBy  String?
+  reviewedAt  DateTime?
+  completedAt DateTime?
+  createdAt   DateTime              @default(now())
+  updatedAt   DateTime              @updatedAt
 
-  tenant     Tenant     @relation(fields: [tenantId], references: [id])
-  site       Site       @relation(fields: [siteId], references: [id])
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  site   Site   @relation(fields: [siteId], references: [id])
   // reviewer FK removed: AdminUser synthetic IDs (env-based login) don't exist in AdminUser table.
   // Same pattern as ImpersonationSession — no FK, just a plain string ID.
 
@@ -1428,4 +1535,310 @@ model CustomerRequest {
   @@index([tenantId, status])
   @@index([siteId, status])
   @@index([type, status])
+}
+
+model CommunicationConversation {
+  id                          String                        @id @default(cuid())
+  number                      Int                           @unique @default(autoincrement())
+  mode                        CommunicationConversationMode
+  tenantId                    String?
+  parentConversationId        String?
+  sourceModule                String
+  typeKey                     String
+  subject                     String
+  lifecycleState              CommunicationLifecycleState   @default(ACTIVE)
+  replyMode                   CommunicationReplyMode        @default(ENABLED)
+  createdByType               CommunicationActorType
+  createdByUserId             String?
+  createdByAdminUserId        String?
+  createdBySystemKey          String?
+  idempotencyKey              String
+  lastActivityAt              DateTime                      @default(now())
+  lastSequence                Int                           @default(0)
+  lastCustomerVisibleSequence Int                           @default(0)
+  version                     Int                           @default(0)
+  createdAt                   DateTime                      @default(now())
+  updatedAt                   DateTime                      @updatedAt
+
+  tenant             Tenant?                         @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  parentConversation CommunicationConversation?      @relation("CommunicationConversationParent", fields: [parentConversationId], references: [id], onDelete: SetNull)
+  childConversations CommunicationConversation[]     @relation("CommunicationConversationParent")
+  createdByUser      User?                           @relation("CommunicationConversationCustomerCreator", fields: [createdByUserId], references: [id], onDelete: Restrict)
+  createdByAdmin     AdminUser?                      @relation("CommunicationConversationAdminCreator", fields: [createdByAdminUserId], references: [id], onDelete: Restrict)
+  entries            CommunicationEntry[]
+  audiences          CommunicationAudience[]
+  readCursors        CommunicationReadCursor[]
+  workItem           CommunicationWorkItem?
+  contextReferences  CommunicationContextReference[]
+  campaign           CommunicationCampaign?
+
+  @@unique([sourceModule, idempotencyKey])
+  @@index([tenantId, lifecycleState, lastActivityAt])
+  @@index([mode, lifecycleState, lastActivityAt])
+  @@index([typeKey, lastActivityAt])
+  @@index([parentConversationId])
+}
+
+model CommunicationEntry {
+  id                  String                  @id @default(cuid())
+  conversationId      String
+  sequence            Int
+  kind                CommunicationEntryKind  @default(MESSAGE)
+  visibility          CommunicationVisibility @default(CUSTOMER_AND_ADMIN)
+  authorType          CommunicationActorType
+  authorUserId        String?
+  authorAdminUserId   String?
+  authorSystemKey     String?
+  body                String?
+  eventName           String?
+  metadata            Json?
+  correctionOfEntryId String?
+  idempotencyKey      String
+  createdAt           DateTime                @default(now())
+  redactedAt          DateTime?
+
+  conversation      CommunicationConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  authorUser        User?                     @relation("CommunicationEntryCustomerAuthor", fields: [authorUserId], references: [id], onDelete: Restrict)
+  authorAdmin       AdminUser?                @relation("CommunicationEntryAdminAuthor", fields: [authorAdminUserId], references: [id], onDelete: Restrict)
+  correctionOfEntry CommunicationEntry?       @relation("CommunicationEntryCorrection", fields: [correctionOfEntryId], references: [id], onDelete: SetNull)
+  corrections       CommunicationEntry[]      @relation("CommunicationEntryCorrection")
+  attachments       CommunicationAttachment[]
+
+  @@unique([conversationId, sequence])
+  @@unique([conversationId, idempotencyKey])
+  @@index([conversationId, visibility, sequence])
+  @@index([authorUserId, createdAt])
+  @@index([authorAdminUserId, createdAt])
+  @@index([correctionOfEntryId])
+}
+
+model CommunicationAudience {
+  id                          String    @id @default(cuid())
+  conversationId              String
+  tenantId                    String
+  reasonCode                  String?
+  audienceVersion             Int       @default(1)
+  lastCustomerVisibleSequence Int       @default(0)
+  deliveredAt                 DateTime?
+  archivedAt                  DateTime?
+  withdrawnAt                 DateTime?
+  createdAt                   DateTime  @default(now())
+  updatedAt                   DateTime  @updatedAt
+
+  conversation CommunicationConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  tenant       Tenant                    @relation(fields: [tenantId], references: [id])
+
+  @@unique([conversationId, tenantId])
+  @@index([tenantId, archivedAt, deliveredAt])
+  @@index([conversationId, deliveredAt])
+}
+
+model CommunicationReadCursor {
+  id               String                 @id @default(cuid())
+  conversationId   String
+  readerType       CommunicationActorType
+  userId           String?
+  adminUserId      String?
+  lastReadSequence Int                    @default(0)
+  readAt           DateTime               @default(now())
+  createdAt        DateTime               @default(now())
+  updatedAt        DateTime               @updatedAt
+
+  conversation CommunicationConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user         User?                     @relation("CommunicationReadCursorCustomer", fields: [userId], references: [id], onDelete: Restrict)
+  adminUser    AdminUser?                @relation("CommunicationReadCursorAdmin", fields: [adminUserId], references: [id], onDelete: Restrict)
+
+  @@unique([conversationId, userId])
+  @@unique([conversationId, adminUserId])
+  @@index([userId, readAt])
+  @@index([adminUserId, readAt])
+}
+
+model CommunicationWorkItem {
+  id                    String                      @id @default(cuid())
+  conversationId        String                      @unique
+  status                CommunicationWorkItemStatus @default(NEW)
+  priority              CommunicationPriority       @default(NORMAL)
+  queueKey              String
+  assigneeAdminUserId   String?
+  slaPolicyKey          String?
+  firstResponseDueAt    DateTime?
+  resolutionDueAt       DateTime?
+  firstResponseAt       DateTime?
+  resolvedAt            DateTime?
+  closedAt              DateTime?
+  lastCustomerMessageAt DateTime?
+  lastAdminReplyAt      DateTime?
+  waitingSince          DateTime?
+  version               Int                         @default(0)
+  createdAt             DateTime                    @default(now())
+  updatedAt             DateTime                    @updatedAt
+
+  conversation CommunicationConversation    @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  assignee     AdminUser?                   @relation("CommunicationWorkItemAssignee", fields: [assigneeAdminUserId], references: [id], onDelete: SetNull)
+  events       CommunicationWorkItemEvent[]
+
+  @@index([status, priority, waitingSince])
+  @@index([queueKey, status, priority, updatedAt])
+  @@index([assigneeAdminUserId, status, updatedAt])
+  @@index([firstResponseDueAt])
+  @@index([resolutionDueAt])
+}
+
+model CommunicationWorkItemEvent {
+  id               String                         @id @default(cuid())
+  workItemId       String
+  type             CommunicationWorkItemEventType
+  actorType        CommunicationActorType
+  actorUserId      String?
+  actorAdminUserId String?
+  actorSystemKey   String?
+  fromStatus       CommunicationWorkItemStatus?
+  toStatus         CommunicationWorkItemStatus?
+  fromPriority     CommunicationPriority?
+  toPriority       CommunicationPriority?
+  fromQueueKey     String?
+  toQueueKey       String?
+  fromAssigneeId   String?
+  toAssigneeId     String?
+  reason           String?
+  idempotencyKey   String
+  correlationId    String?
+  occurredAt       DateTime                       @default(now())
+
+  workItem   CommunicationWorkItem @relation(fields: [workItemId], references: [id], onDelete: Cascade)
+  actorUser  User?                 @relation("CommunicationWorkItemEventCustomerActor", fields: [actorUserId], references: [id], onDelete: Restrict)
+  actorAdmin AdminUser?            @relation("CommunicationWorkItemEventAdminActor", fields: [actorAdminUserId], references: [id], onDelete: Restrict)
+
+  @@unique([workItemId, idempotencyKey])
+  @@index([workItemId, occurredAt])
+  @@index([type, occurredAt])
+  @@index([actorAdminUserId, occurredAt])
+}
+
+model CommunicationContextReference {
+  id             String   @id @default(cuid())
+  conversationId String
+  namespace      String
+  entityType     String
+  entityId       String
+  relationKey    String
+  sourceModule   String
+  createdAt      DateTime @default(now())
+
+  conversation CommunicationConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@unique([conversationId, namespace, entityType, entityId, relationKey], map: "CommunicationContextReference_context_key")
+  @@index([namespace, entityType, entityId])
+  @@index([conversationId, relationKey])
+}
+
+model CommunicationAttachment {
+  id                    String                            @id @default(cuid())
+  entryId               String
+  storageProvider       String
+  storageKey            String                            @unique
+  originalName          String
+  mimeType              String
+  sizeBytes             Int
+  checksumSha256        String
+  width                 Int?
+  height                Int?
+  scanStatus            CommunicationAttachmentScanStatus @default(PENDING)
+  uploadedByType        CommunicationActorType
+  uploadedByUserId      String?
+  uploadedByAdminUserId String?
+  uploadedBySystemKey   String?
+  createdAt             DateTime                          @default(now())
+  scannedAt             DateTime?
+  deletedAt             DateTime?
+
+  entry           CommunicationEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  uploadedByUser  User?              @relation("CommunicationAttachmentCustomerUploader", fields: [uploadedByUserId], references: [id], onDelete: Restrict)
+  uploadedByAdmin AdminUser?         @relation("CommunicationAttachmentAdminUploader", fields: [uploadedByAdminUserId], references: [id], onDelete: Restrict)
+
+  @@index([entryId, createdAt])
+  @@index([scanStatus, createdAt])
+  @@index([checksumSha256])
+}
+
+model CommunicationCampaign {
+  id                        String                      @id @default(cuid())
+  conversationId            String                      @unique
+  status                    CommunicationCampaignStatus @default(DRAFT)
+  audienceDefinition        Json
+  audienceDefinitionVersion Int                         @default(1)
+  audienceCheckpoint        Json?
+  recipientCount            Int                         @default(0)
+  createdByAdminUserId      String
+  scheduledAt               DateTime?
+  publishingStartedAt       DateTime?
+  publishedAt               DateTime?
+  withdrawnAt               DateTime?
+  withdrawnReason           String?
+  createdAt                 DateTime                    @default(now())
+  updatedAt                 DateTime                    @updatedAt
+
+  conversation CommunicationConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  createdBy    AdminUser                 @relation("CommunicationCampaignCreator", fields: [createdByAdminUserId], references: [id])
+
+  @@index([status, scheduledAt])
+  @@index([createdByAdminUserId, createdAt])
+}
+
+model CommunicationOutboxEvent {
+  id               String                    @id @default(cuid())
+  aggregateType    String
+  aggregateId      String
+  eventName        String
+  eventVersion     Int                       @default(1)
+  payload          Json
+  categoryKey      String
+  groupKey         String?
+  deduplicationKey String                    @unique
+  correlationId    String?
+  causationId      String?
+  status           CommunicationOutboxStatus @default(PENDING)
+  attempts         Int                       @default(0)
+  availableAt      DateTime                  @default(now())
+  leaseOwner       String?
+  leaseExpiresAt   DateTime?
+  processedAt      DateTime?
+  lastError        String?
+  createdAt        DateTime                  @default(now())
+  updatedAt        DateTime                  @updatedAt
+
+  deliveryAttempts CommunicationDeliveryAttempt[]
+
+  @@index([status, availableAt, leaseExpiresAt])
+  @@index([aggregateType, aggregateId, createdAt])
+  @@index([correlationId, createdAt])
+  @@index([categoryKey, createdAt])
+}
+
+model CommunicationDeliveryAttempt {
+  id                String                      @id @default(cuid())
+  outboxEventId     String
+  tenantId          String?
+  channelKey        String
+  recipientKey      String
+  idempotencyKey    String                      @unique
+  status            CommunicationDeliveryStatus @default(PENDING)
+  attempts          Int                         @default(0)
+  providerMessageId String?
+  availableAt       DateTime                    @default(now())
+  leaseOwner        String?
+  leaseExpiresAt    DateTime?
+  deliveredAt       DateTime?
+  failedAt          DateTime?
+  lastErrorCode     String?
+  lastError         String?
+  createdAt         DateTime                    @default(now())
+  updatedAt         DateTime                    @updatedAt
+
+  outboxEvent CommunicationOutboxEvent @relation(fields: [outboxEventId], references: [id], onDelete: Cascade)
+
+  @@index([status, availableAt, leaseExpiresAt])
+  @@index([outboxEventId, channelKey])
+  @@index([tenantId, channelKey, createdAt])
 }
