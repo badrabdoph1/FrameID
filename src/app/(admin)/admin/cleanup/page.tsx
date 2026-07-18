@@ -11,6 +11,7 @@ import {
 import { AdminPageShell } from "@/components/layout/admin-page-shell";
 import { prisma } from "@/lib/prisma";
 import { requireAdminPermission } from "@/modules/admin/admin-permission-guards";
+import type { TenantStatus } from "@prisma/client";
 import { CleanupFiltersClient } from "./cleanup-filters-client";
 
 export const dynamic = "force-dynamic";
@@ -29,11 +30,11 @@ type CleanupTenantRow = {
   gracePeriodEndsAt: Date | null;
   createdAt: Date;
   owner: { email: string; name: string | null } | null;
-  subscription: {
+  subscriptions: {
     status: string;
     expiresAt: Date | null;
     cancelledAt: Date | null;
-  } | null;
+  }[] | [];
   _count: { mediaAssets: number };
   totalSizeBytes: number;
 };
@@ -70,9 +71,9 @@ export default async function AdminCleanupPage() {
 
   if (process.env.DATABASE_URL) {
     try {
-      const expiredStatuses = ["EXPIRED", "TRIAL_EXPIRED", "SUSPENDED"];
+      const expiredStatuses: TenantStatus[] = ["EXPIRED", "TRIAL_EXPIRED", "SUSPENDED"];
 
-      tenantsWithMedia = await prisma.tenant.findMany({
+      const rawTenants = await prisma.tenant.findMany({
         where: {
           deletedAt: null,
           status: { in: expiredStatuses },
@@ -90,20 +91,20 @@ export default async function AdminCleanupPage() {
           owner: {
             select: { email: true, name: true },
           },
-          subscription: {
+          subscriptions: {
             select: {
               status: true,
               expiresAt: true,
               cancelledAt: true,
             },
             take: 1,
-            orderBy: { createdAt: "desc" },
           },
           _count: {
             select: { mediaAssets: true },
           },
         },
       });
+      tenantsWithMedia = rawTenants as unknown as CleanupTenantRow[];
 
       const tenantIds = tenantsWithMedia.map((t) => t.id);
 
@@ -199,9 +200,9 @@ export default async function AdminCleanupPage() {
     status: tenant.status,
     ownerEmail: tenant.owner?.email ?? "—",
     ownerName: tenant.owner?.name ?? "—",
-    subscriptionStatus: tenant.subscription?.status ?? "بدون اشتراك",
-    subscriptionExpiresAt: tenant.subscription?.expiresAt?.toISOString() ?? null,
-    cancelledAt: tenant.subscription?.cancelledAt?.toISOString() ?? null,
+    subscriptionStatus: tenant.subscriptions[0]?.status ?? "بدون اشتراك",
+    subscriptionExpiresAt: tenant.subscriptions[0]?.expiresAt?.toISOString() ?? null,
+    cancelledAt: tenant.subscriptions[0]?.cancelledAt?.toISOString() ?? null,
     trialEndsAt: tenant.trialEndsAt?.toISOString() ?? null,
     gracePeriodEndsAt: tenant.gracePeriodEndsAt?.toISOString() ?? null,
     mediaCount: tenant._count.mediaAssets,

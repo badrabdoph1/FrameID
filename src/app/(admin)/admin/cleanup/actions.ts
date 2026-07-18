@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { prisma } from "@/lib/prisma";
 import { requireAdminPermission } from "@/modules/admin/admin-permission-guards";
+import type { TenantStatus } from "@prisma/client";
 import { computePurgeEligibleAt } from "@/modules/media/media-lifecycle";
 
 type AdminActor = Awaited<ReturnType<typeof requireAdminPermission>>;
@@ -228,7 +229,7 @@ export async function moveExpiredTenantAssetsToTrashAction(formData: FormData) {
 export async function moveAllExpiredAssetsToTrashAction() {
   const admin = await requireAdminPermission("cleanup", "edit");
 
-  const expiredStatuses = ["EXPIRED", "TRIAL_EXPIRED", "SUSPENDED"];
+  const expiredStatuses: TenantStatus[] = ["EXPIRED", "TRIAL_EXPIRED", "SUSPENDED"];
   const startedAt = new Date();
 
   const tenants = await prisma.tenant.findMany({

@@ -210,7 +210,7 @@ export function CleanupFiltersClient({
 
     startTransition(async () => {
       const result = await moveExpiredTenantAssetsToTrashAction(formData);
-      setActionResult(result.message);
+      setActionResult(result.message ?? null);
       setSelectedIds(new Set());
     });
   }, [selectedIds, assets, tenants]);
@@ -218,7 +218,7 @@ export function CleanupFiltersClient({
   const handleTrashAll = useCallback(() => {
     startTransition(async () => {
       const result = await moveAllExpiredAssetsToTrashAction();
-      setActionResult(result.message);
+      setActionResult(result.message ?? null);
       setSelectedIds(new Set());
     });
   }, []);
