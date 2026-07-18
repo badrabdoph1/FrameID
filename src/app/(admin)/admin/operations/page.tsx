@@ -81,7 +81,7 @@ export default async function AdminOperationsPage() {
       select: { id: true, type: true, status: true, createdAt: true, completedAt: true, metadata: true },
     }),
     prisma.restoreJob.findMany({
-      where: { status: { in: ["FAILED", "VERIFICATION_FAILED", "UPLOAD_FAILED"] } } as never,
+      where: { status: { in: ["FAILED", "VALIDATION_FAILED", "POST_VALIDATION_FAILED"] } } as never,
       orderBy: { createdAt: "desc" },
       take: 5,
       select: { id: true, status: true, errorMessage: true, createdAt: true },
@@ -93,7 +93,7 @@ export default async function AdminOperationsPage() {
       select: { id: true, code: true, message: true, level: true, category: true, route: true, createdAt: true },
     }),
     prisma.supportCase.findMany({
-      where: { status: { in: ["OPEN", "PENDING_CUSTOMER"] } } as never,
+      where: { deletedAt: null, status: { in: ["OPEN", "PENDING_CUSTOMER"] } } as never,
       orderBy: { createdAt: "asc" },
       take: 8,
       select: { id: true, subject: true, status: true, createdAt: true, tenant: { select: { id: true, displayName: true } } },
