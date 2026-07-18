@@ -1,0 +1,115 @@
+{
+  "version": 2,
+  "schemaVersion": 2,
+  "backupJobId": "cmrqidahb004xoi7mqk0bfp2c",
+  "backupType": "FULL",
+  "appVersion": "0.1.0",
+  "gitCommitSha": "d6dce002cc462fefc9c02ab476dc4433bd4eeb20",
+  "databaseVersion": "unknown",
+  "usersCount": 24,
+  "tenantsCount": 23,
+  "sitesCount": 23,
+  "mediaFilesCount": 109,
+  "customerDataCounts": {
+    "usersCount": 24,
+    "sessionsCount": 54,
+    "passwordResetTokensCount": 0,
+    "tenantsCount": 23,
+    "sitesCount": 23,
+    "siteContentSnapshotsCount": 0,
+    "siteThemeConfigsCount": 23,
+    "domainsCount": 0,
+    "siteSectionsCount": 115,
+    "galleryAlbumsCount": 23,
+    "galleryImagesCount": 84,
+    "mediaFilesCount": 109,
+    "contactProfilesCount": 23,
+    "seoSettingsCount": 23,
+    "packagesCount": 77,
+    "extraServicesCount": 75,
+    "lifecycleEventsCount": 0,
+    "subscriptionsCount": 22,
+    "subscriptionChangesCount": 4,
+    "paymentRequestsCount": 2,
+    "paymentRequestLogsCount": 2,
+    "notificationsCount": 2,
+    "customerNotificationLogsCount": 0,
+    "adminNotesCount": 0,
+    "supportCasesCount": 0,
+    "customerFeatureFlagsCount": 0,
+    "customerIssuesCount": 0,
+    "customerIssueEventsCount": 0,
+    "customerErrorLogsCount": 199
+  },
+  "uploadsInventory": [
+    {
+      "path": "cmrnjibd60006ms6fgu1qxqrq/4465e4f9-c482-4b1c-af06-37b1e009ae89-3ac48f21-1d3d-4ffc-814c-29277d83dbc5.webp",
+      "sizeBytes": 39242,
+      "sha256": "642d3f3e83ef670e528cc028b5eb9dd00e35b28b140b0f12feaf68f7c48795bd"
+    },
+    {
+      "path": "cmrnjibd60006ms6fgu1qxqrq/82e92a32-5674-4baf-b7c1-721f3522b9f5-231a549a-7d57-487e-977b-b50b3d3eb9f3.webp",
+      "sizeBytes": 53794,
+      "sha256": "a39213612d15a04dd1e30300a90fd46c9647f7a5d15ea641a041cf498f78f042"
+    },
+    {
+      "path": "cmrnjibd60006ms6fgu1qxqrq/ae12a3d6-8bb7-4224-b4b7-a927a4c30a69-525b5371-3e29-4202-888d-e70370595a6d.webp",
+      "sizeBytes": 144514,
+      "sha256": "31292f190d34b94bbe916df7e6c5faedf7b5038952ce258f7b85a379adb88a07"
+    },
+    {
+      "path": "cmrnjibd60006ms6fgu1qxqrq/c2cdeea2-e6f2-4b4b-a122-98249c7051ee-525b5371-3e29-4202-888d-e70370595a6d.webp",
+      "sizeBytes": 144514,
+      "sha256": "31292f190d34b94bbe916df7e6c5faedf7b5038952ce258f7b85a379adb88a07"
+    },
+    {
+      "path": "cmrpfxdqh002nl77mvrrflwol/b76dfc2b-addb-4bfd-b700-3bb0a4d5bba8-525b5371-3e29-4202-888d-e70370595a6d.webp",
+      "sizeBytes": 144514,
+      "sha256": "31292f190d34b94bbe916df7e6c5faedf7b5038952ce258f7b85a379adb88a07"
+    },
+    {
+      "path": "cmrq2wf590030ry7lxmrod6ss/3c76dab9-3edd-4417-a6b3-cfd82c72402b-089a0515-copy.webp",
+      "sizeBytes": 141178,
+      "sha256": "dad1c3c899bb0e8db9eba31ce3ec59787e3f814b6f74de77a7e83f744d1e9c60"
+    },
+    {
+      "path": "cmrq2wf590030ry7lxmrod6ss/4a1522d6-e808-4a0d-bb0b-796bcee8826a-089a0531.webp",
+      "sizeBytes": 63532,
+      "sha256": "cd2a05c6d0061a7c197a73b3f2c9ba92907af232a0c6c37b08c5596f882d3649"
+    },
+    {
+      "path": "cmrq2wf590030ry7lxmrod6ss/4d598554-24eb-470f-9726-63020ca36bd5-089a1311-copy.jpg1111.webp",
+      "sizeBytes": 287672,
+      "sha256": "f4c17dee864c1cf284f5c5fed5fb981f6e855ec2ee061454a3b03733e6caef9e"
+    },
+    {
+      "path": "cmrq2wf590030ry7lxmrod6ss/552bb3af-645c-4030-8aba-d8daf236bbab-089a1544-copy.webp",
+      "sizeBytes": 111862,
+      "sha256": "2f3cb8f0b8e407658c8b86e7e141c523030a994e10b710e5add6a3e5db77e4a7"
+    },
+    {
+      "path": "cmrq2wf590030ry7lxmrod6ss/5602cfd2-e3bf-4aa4-9416-85f87fcfee6a-089a0531.webp",
+      "sizeBytes": 63532,
+      "sha256": "cd2a05c6d0061a7c197a73b3f2c9ba92907af232a0c6c37b08c5596f882d3649"
+    }
+  ],
+  "databaseSizeBytes": 1499092,
+  "uploadsSizeBytes": 1196033,
+  "contentSizeBytes": 0,
+  "compressionAlgorithm": "gzip",
+  "encryptionEnabled": false,
+  "artifactChecksums": {
+    "database": "032e0e71b06a706fc94fcb74636ab930c43ba4fa99ac316d8b6d593147b2a24e",
+    "uploads": "5a3fde7c5c1ddea22d75d94b7117fc42315ffd73103be157267a81cc34f89b0d"
+  },
+  "createdAt": "2026-07-18T15:15:06.997Z",
+  "totalSizeBytes": 2695125,
+  "files": {
+    "database": "database.sql.gz",
+    "uploads": "uploads.tar.gz",
+    "content": null,
+    "manifest": "manifest.json",
+    "checksum": "checksum.sha256"
+  },
+  "checksum": "10592340c330e71cbfd4fdadac22434788b48d8d7611977037b07ca6b435ad6c"
+}
