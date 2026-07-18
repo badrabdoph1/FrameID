@@ -64,6 +64,31 @@ describe("customer outreach service", () => {
     expect(fake.calls.map((call) => call.name)).toContain("auditLog.create");
   });
 
+  it("publishes the committed legacy campaign through an injected communication adapter", async () => {
+    const fake = createFakePrisma();
+    const published: unknown[] = [];
+
+    await createCustomerOutreachCampaign(fake.prisma, {
+      title: "تحديث المنصة",
+      body: "أصبح التحديث متاحًا.",
+      tone: "success",
+      audienceMode: "EXPLICIT",
+      tenantIds: ["tenant-1", "tenant-2"],
+      filters: {},
+    }, actor, {
+      async publishCampaign(input) {
+        published.push(input);
+      },
+    });
+
+    expect(published).toEqual([expect.objectContaining({
+      campaignId: "campaign-1",
+      tenantIds: ["tenant-1", "tenant-2"],
+      title: "تحديث المنصة",
+      tone: "success",
+    })]);
+  });
+
   it("fails atomically when the resolved audience is empty", async () => {
     const fake = createFakePrisma();
     fake.tx.tenant.findMany.mockResolvedValueOnce([]);

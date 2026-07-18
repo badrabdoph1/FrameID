@@ -7,8 +7,10 @@ import type {
   CommunicationActor,
   CommunicationEntryInput,
   MarkReadInput,
+  ManageWorkItemInput,
   OpenConversationInput,
   PublishCampaignInput,
+  WithdrawCampaignInput,
   TransitionWorkItemInput,
 } from "./types";
 import {
@@ -169,6 +171,37 @@ export function createCommunicationCore(
       });
     },
 
+    async manageWorkItem(input: ManageWorkItemInput) {
+      const workItemId = normalizeRequiredText(input.workItemId, "workItemId", 200);
+      if (input.actor.type !== "ADMIN") throw new Error("إدارة عنصر العمل متاحة للأدمن فقط.");
+      const current = await repository.getWorkItemState(workItemId);
+      if (!current) throw new Error("عنصر العمل غير موجود.");
+
+      const change = input.change.type === "PRIORITY"
+        ? { type: "PRIORITY" as const, fromPriority: current.priority, toPriority: input.change.priority }
+        : input.change.type === "ASSIGNEE"
+          ? {
+              type: "ASSIGNEE" as const,
+              fromAssigneeAdminUserId: current.assigneeAdminUserId,
+              toAssigneeAdminUserId: normalizeOptionalIdentifier(input.change.assigneeAdminUserId, "assigneeAdminUserId"),
+            }
+          : {
+              type: "QUEUE" as const,
+              fromQueueKey: current.queueKey,
+              toQueueKey: normalizeStableKey(input.change.queueKey, "queueKey"),
+            };
+
+      return repository.manageWorkItem({
+        workItemId,
+        actor: normalizeActor(input.actor) as ManageWorkItemInput["actor"],
+        expectedVersion: current.version,
+        change,
+        reason: input.reason == null ? null : normalizeRequiredText(input.reason, "سبب التغيير", 2_000),
+        idempotencyKey: normalizeRequiredText(input.idempotencyKey, "idempotencyKey", 200),
+        ...trace(input, now),
+      });
+    },
+
     async publishCampaign(input: PublishCampaignInput) {
       if (input.actor.type !== "ADMIN") throw new Error("نشر الحملات متاح للأدمن فقط.");
       const actor = normalizeActor(input.actor) as PublishCampaignInput["actor"];
@@ -189,6 +222,17 @@ export function createCommunicationCore(
         audienceDefinitionVersion: input.audienceDefinitionVersion,
         scheduledAt: input.scheduledAt ?? null,
         entry: normalizeEntry({ body: input.body, idempotencyKey: `${idempotencyKey}:entry` }, actor),
+        ...trace(input, now),
+      });
+    },
+
+    async withdrawCampaign(input: WithdrawCampaignInput) {
+      if (input.actor.type !== "ADMIN") throw new Error("سحب الحملات متاح للأدمن فقط.");
+      return repository.withdrawCampaign({
+        campaignId: normalizeRequiredText(input.campaignId, "campaignId", 200),
+        actor: normalizeActor(input.actor) as WithdrawCampaignInput["actor"],
+        reason: normalizeRequiredText(input.reason, "سبب السحب", 2_000),
+        idempotencyKey: normalizeRequiredText(input.idempotencyKey, "idempotencyKey", 200),
         ...trace(input, now),
       });
     },

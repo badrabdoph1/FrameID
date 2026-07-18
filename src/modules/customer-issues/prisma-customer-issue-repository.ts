@@ -97,7 +97,17 @@ function transitionData(input: Parameters<CustomerIssueRepository["transitionWit
   return data;
 }
 
-export function createPrismaCustomerIssueRepository(prisma: PrismaClient): CustomerIssueRepository {
+export function createPrismaCustomerIssueRepository(
+  prisma: PrismaClient,
+  options: {
+    publishResolutionCommunication?: (input: {
+      issueId: string;
+      tenantId: string;
+      title: string;
+      body: string;
+    }) => Promise<void>;
+  } = {},
+): CustomerIssueRepository {
   return {
     async createOccurrence(input) {
       const row = await prisma.errorLog.create({
@@ -231,6 +241,12 @@ export function createPrismaCustomerIssueRepository(prisma: PrismaClient): Custo
           },
         });
       });
+      await options.publishResolutionCommunication?.({
+        issueId: input.issueId,
+        tenantId: input.tenantId,
+        title: input.title,
+        body: input.body,
+      }).catch(() => undefined);
     },
   };
 }

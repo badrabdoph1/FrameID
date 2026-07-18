@@ -134,6 +134,21 @@ export type TransitionWorkItemInput = {
   causationId?: string | null;
 };
 
+export type CommunicationWorkItemChangeInput =
+  | { type: "PRIORITY"; priority: CommunicationPriority }
+  | { type: "ASSIGNEE"; assigneeAdminUserId: string | null }
+  | { type: "QUEUE"; queueKey: string };
+
+export type ManageWorkItemInput = {
+  workItemId: string;
+  actor: Extract<CommunicationActor, { type: "ADMIN" }>;
+  change: CommunicationWorkItemChangeInput;
+  reason?: string | null;
+  idempotencyKey: string;
+  correlationId?: string | null;
+  causationId?: string | null;
+};
+
 export type PublishCampaignInput = {
   sourceModule: string;
   idempotencyKey: string;
@@ -145,6 +160,15 @@ export type PublishCampaignInput = {
   audienceDefinition: Record<string, unknown>;
   audienceDefinitionVersion: number;
   scheduledAt?: Date | null;
+  correlationId?: string | null;
+  causationId?: string | null;
+};
+
+export type WithdrawCampaignInput = {
+  campaignId: string;
+  actor: Extract<CommunicationActor, { type: "ADMIN" }>;
+  reason: string;
+  idempotencyKey: string;
   correlationId?: string | null;
   causationId?: string | null;
 };

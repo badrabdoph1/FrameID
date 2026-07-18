@@ -37,7 +37,9 @@
 - `attachContext(input)`
 - `markRead(input)`
 - `transitionWorkItem(input)`
+- `manageWorkItem(input)`
 - `publishCampaign(input)`
+- `withdrawCampaign(input)`
 
 لا يجوز للصفحات أو Product Modules الكتابة المباشرة في جداول Communication.
 
@@ -101,13 +103,41 @@ relationKey=primary
 
 يحمل payload معرفات وsequence/status فقط. لا يحمل subject/body أو بيانات دفع/منتج.
 
+## واجهات الاستخدام المنفذة
+
+- Inbox العميل: `/dashboard/communication` مع البحث البصري، عداد غير المقروء، إنشاء طلب، Timeline، ردود وصور خاصة.
+- Inbox الأدمن: `/admin/communications` مع البحث والفلاتر والترتيب والحالة والأولوية والتعيين والملاحظات الداخلية.
+- الإعلانات: `/admin/communications/broadcasts` و`/admin/communications/broadcasts/new` لجماهير الكل، التجريبي، المشترك، المنتهي أو قائمة صريحة.
+- تنزيل المرفقات يمر حصريًا عبر `/api/communication/attachments/:id` بعد التحقق من الجلسة والجمهور والظهور وحالة الفحص.
+
 ## Delivery boundary
 
-Core يكتب Transactional Outbox ويجهز `status`, `availableAt`, `leaseOwner`, `leaseExpiresAt`, `attempts`, وdead-letter state. `communication-delivery` اللاحق يملك claim بـ`FOR UPDATE SKIP LOCKED` أو آلية مكافئة، retry policy، channel adapters، preferences، والتشغيل/المراقبة. Product Modules تستهلك الأحداث أو تستدعي Commands؛ لا تنشئ Outbox rows اعتباطيًا.
+Core يكتب Transactional Outbox ويجهز `status`, `availableAt`, `leaseOwner`, `leaseExpiresAt`, `attempts`, وdead-letter state. `communication-delivery` يملك lease claim شرطيًا، retry/backoff، idempotent delivery attempts، وdead-letter state. الـIn-App adapter يعلّم Audience بالتسليم ولا ينسخ نص الرسالة. Product Modules تستهلك الأحداث أو تستدعي Commands؛ لا تنشئ Outbox rows اعتباطيًا.
 
-## حدود الإصدار الحالي
+التشغيل المجدول:
 
-- لا توجد واجهات Inbox للعميل أو الأدمن في هذه المرحلة.
-- لا يوجد Worker قنوات أو uploader خاص في هذه المرحلة.
-- `publishCampaign` يقبل Audience محلولًا ويكتب صفوفه في دفعات خفيفة داخل العملية. الحملات الضخمة القابلة للاستكمال تستخدم `audienceCheckpoint` وWorker في مرحلة Audience/Delivery قبل تشغيل نشر جماعي واسع.
-- الجداول القديمة لم تُحذف ولم تتغير كتاباتها؛ ترحيلها ووقف الكتابة المزدوجة مرحلة مستقلة.
+- `POST /api/cron/communication-delivery` لمعالجة دفعة Outbox.
+- `POST /api/cron/communication-backfill` لترحيل دفعة من المصادر القديمة.
+- `GET /api/cron/communication-reconciliation` لفحص الانحرافات التشغيلية؛ يعيد `503` عند وجود حالة متدهورة.
+- كل المسارات تتطلب `Authorization: Bearer $CRON_SECRET` في الإنتاج.
+
+## المرفقات
+
+- الإصدار الحالي يقبل صورًا فقط، بحد أقصى 5 صور و5MB للصورة.
+- الملف يُفك ترميزه للتحقق من أنه صورة حقيقية، ويعاد ترميزه WebP بأبعاد محدودة قبل وضعه في تخزين خاص.
+- metadata فقط تدخل معاملة Core، ثم تتحول الحالة إلى `CLEAN` بعد نجاح المعاملة؛ وتُنظف الملفات تلقائيًا عند فشل الكتابة.
+- `COMMUNICATION_ATTACHMENT_ROOT` يحدد جذر التخزين الخاص. الافتراضي `.data/communication-attachments` مناسب لعقدة ذات قرص دائم، وليس لتشغيل متعدد العقد بلا volume مشترك.
+
+## الربط والترحيل
+
+- `communication-center/legacy-bridge` هو Adapter انتقالي idempotent للإشعارات وطلبات العملاء وحالات الدعم وحملات الرسائل القديمة.
+- الدفع، حل مشكلات العملاء، حذف الحساب، والرسائل المباشرة/الجماعية الحالية تستخدم النواة عند نقاط التركيب مع إبقاء الكتابة القديمة مؤقتًا للتوافق. الرسالة الفردية من ملف العميل أصبحت `DIRECT Conversation` قابلة للرد، والجماعية فقط هي Campaign.
+- `npm run communication:backfill` يرحل التاريخ القديم على دفعات، مستخدمًا Context أو مفاتيح المصدر لمنع التكرار.
+- لا تحذف الجداول القديمة قبل اكتمال backfill، نجاح reconciliation، ومرور فترة مراقبة متفق عليها.
+
+## حدود الإنتاج الحالية
+
+- قناة In-App مكتملة. البريد وPush وSMS ليست مفعلة؛ إضافتها تتم كـDelivery Adapters من دون تغيير Core.
+- `publishCampaign` يحل الجمهور قبل الكتابة ويناسبه عشرات الآلاف ضمن حدود الإصدار الحالي. الحملات بمئات الآلاف تحتاج audience expansion worker/checkpoint قبل تفعيلها.
+- التخزين المحلي الخاص يحتاج persistent volume وعقدة مشاركة واحدة. عند التوسع الأفقي يجب إضافة S3-compatible adapter ونقل المفاتيح، من دون تغيير جداول Core.
+- البحث الحالي يعتمد PostgreSQL واستعلامات مفهرسة للعناوين والعملاء وأرقام المحادثات. البحث الكامل داخل ملايين الرسائل مؤجل لمحرك Projection/Search مستقل.

@@ -23,7 +23,6 @@ import {
 
 import { logoutAction } from "@/app/_actions/logout";
 import { cn } from "@/lib/utils/cn";
-import { DEFAULT_SUPPORT_WHATSAPP_NUMBER, toWhatsappHref } from "@/modules/support/support-utils";
 import "@/app/admin.css";
 import "@/app/customer-dashboard.css";
 
@@ -36,11 +35,6 @@ type NavItem = {
   priority: "primary" | "secondary";
 };
 
-type SupportSettingsResponse = {
-  phone?: string;
-  whatsappHref?: string;
-};
-
 const navItems: NavItem[] = [
   { href: "/dashboard", label: "الرئيسية", shortLabel: "الرئيسية", description: "الرابط، التفعيل، وخطة اليوم.", icon: LayoutDashboard, priority: "primary" },
   { href: "/dashboard/services", label: "الباقات", shortLabel: "الباقات", description: "أول خطوة: أسعارك وعروضك.", icon: Package, priority: "primary" },
@@ -49,6 +43,7 @@ const navItems: NavItem[] = [
   { href: "/dashboard/publish", label: "النشر", shortLabel: "النشر", description: "انسخ الرابط وانشر الموقع.", icon: Globe2, priority: "primary" },
   { href: "/dashboard/templates", label: "شكل الموقع", shortLabel: "الشكل", description: "اختيار القالب والهوية البصرية.", icon: Palette, priority: "secondary" },
   { href: "/dashboard/billing", label: "الفواتير والاشتراك", shortLabel: "التفعيل", description: "التجربة المجانية، الاشتراك، وإثبات الدفع.", icon: CreditCard, priority: "secondary" },
+  { href: "/dashboard/communication", label: "مركز التواصل", shortLabel: "الرسائل", description: "طلباتك، ردود الفريق، والإعلانات.", icon: MessageCircle, priority: "secondary" },
   { href: "/dashboard/settings", label: "الإعدادات", shortLabel: "إعدادات", description: "إعدادات الحساب والموقع.", icon: Settings, priority: "secondary" },
 ];
 
@@ -57,15 +52,7 @@ function isActivePath(pathname: string | null, href: string): boolean {
   return pathname?.startsWith(href) ?? false;
 }
 
-function normalizeSupportResponse(input: SupportSettingsResponse | null) {
-  const phone = input?.phone || DEFAULT_SUPPORT_WHATSAPP_NUMBER;
-  return {
-    phone,
-    whatsappHref: input?.whatsappHref || toWhatsappHref(phone),
-  };
-}
-
-function NavLink({ item, active, compact = false, onClick }: { item: NavItem; active: boolean; compact?: boolean; onClick?: () => void }) {
+function NavLink({ item, active, compact = false, onClick, unreadCount = 0 }: { item: NavItem; active: boolean; compact?: boolean; onClick?: () => void; unreadCount?: number }) {
   const Icon = item.icon;
   return (
     <div className="relative">
@@ -88,6 +75,7 @@ function NavLink({ item, active, compact = false, onClick }: { item: NavItem; ac
           {!compact ? <small className="mt-0.5 block truncate text-[0.7rem] font-bold text-white/38">{item.description}</small> : null}
         </span>
         <ChevronLeft className="size-4 text-white/25 transition group-hover:text-[#f3cf73]" aria-hidden />
+        {unreadCount > 0 ? <span className="grid min-w-5 place-items-center rounded-full bg-amber-300 px-1.5 py-0.5 text-[0.62rem] font-black text-[#17130a]" aria-label={`${unreadCount} رسائل غير مقروءة`}>{unreadCount > 99 ? "99+" : unreadCount}</span> : null}
       </Link>
     </div>
   );
@@ -124,36 +112,34 @@ function IdentityBrand({ large = false, photographerName }: { large?: boolean; p
   );
 }
 
-function CustomerSupportLink({ href, compact = false }: { href: string; compact?: boolean }) {
+function CustomerSupportLink({ compact = false, unreadCount = 0 }: { compact?: boolean; unreadCount?: number }) {
   if (compact) {
     return (
       <Link
-        href={href}
-        target="_blank"
-        rel="noreferrer"
+        href="/dashboard/communication"
         className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-2xl border border-emerald-300/20 bg-emerald-400/10 px-2.5 text-[0.68rem] font-black text-emerald-200 no-underline transition hover:bg-emerald-400/16 hover:text-white sm:px-3 sm:text-xs"
-        aria-label="الدعم الفني"
+        aria-label={unreadCount > 0 ? `مركز التواصل، ${unreadCount} غير مقروءة` : "مركز التواصل"}
       >
         <MessageCircle className="size-3.5 shrink-0" aria-hidden />
-        <span>الدعم</span>
+        <span>الرسائل</span>
+        {unreadCount > 0 ? <span className="grid min-w-5 place-items-center rounded-full bg-amber-300 px-1 text-[0.58rem] text-[#17130a]">{unreadCount > 99 ? "99+" : unreadCount}</span> : null}
       </Link>
     );
   }
 
   return (
     <Link
-      href={href}
-      target="_blank"
-      rel="noreferrer"
+      href="/dashboard/communication"
       className="inline-flex min-h-11 items-center justify-center gap-2.5 rounded-2xl border border-emerald-300/22 bg-emerald-400/10 px-4 text-sm font-black text-emerald-200 no-underline transition hover:bg-emerald-400/16 hover:text-white lg:min-h-12 lg:px-5"
     >
       <MessageCircle className="size-4 shrink-0" aria-hidden />
-      الدعم
+      الرسائل
+      {unreadCount > 0 ? <span className="grid min-w-5 place-items-center rounded-full bg-amber-300 px-1.5 py-0.5 text-[0.62rem] text-[#17130a]">{unreadCount > 99 ? "99+" : unreadCount}</span> : null}
     </Link>
   );
 }
 
-function CustomerIdentityBar({ supportHref, photographerName }: { supportHref: string; photographerName?: string }) {
+function CustomerIdentityBar({ photographerName, unreadCommunicationCount = 0 }: { photographerName?: string; unreadCommunicationCount?: number }) {
   return (
     <div className="customer-desktop-identity-bar hidden w-full grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-4 lg:grid">
       <div className="justify-self-start">
@@ -161,16 +147,15 @@ function CustomerIdentityBar({ supportHref, photographerName }: { supportHref: s
       </div>
       <DashboardTitleBadge />
       <div className="flex justify-end gap-3 justify-self-end">
-        <CustomerSupportLink href={supportHref} />
+        <CustomerSupportLink unreadCount={unreadCommunicationCount} />
       </div>
     </div>
   );
 }
 
-export function DashboardShell({ children, siteSlug, hasSubscription, photographerName }: { children: ReactNode; siteSlug?: string; hasSubscription?: boolean; photographerName?: string }) {
+export function DashboardShell({ children, siteSlug, hasSubscription, photographerName, unreadCommunicationCount = 0 }: { children: ReactNode; siteSlug?: string; hasSubscription?: boolean; photographerName?: string; unreadCommunicationCount?: number }) {
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [supportSettings, setSupportSettings] = useState(() => normalizeSupportResponse(null));
   const visibleNavItems = navItems.filter((item) => {
     if (item.href === "/dashboard/billing" && !hasSubscription) return false;
     return true;
@@ -181,15 +166,6 @@ export function DashboardShell({ children, siteSlug, hasSubscription, photograph
   useEffect(() => {
     setMobileMenuOpen(false);
   }, [pathname]);
-
-  useEffect(() => {
-    const controller = new AbortController();
-    fetch("/api/support-settings", { signal: controller.signal, cache: "no-store" })
-      .then((response) => response.ok ? response.json() as Promise<SupportSettingsResponse> : null)
-      .then((data) => setSupportSettings(normalizeSupportResponse(data)))
-      .catch(() => setSupportSettings(normalizeSupportResponse(null)));
-    return () => controller.abort();
-  }, []);
 
   useEffect(() => {
     if (!mobileMenuOpen) return;
@@ -216,7 +192,7 @@ export function DashboardShell({ children, siteSlug, hasSubscription, photograph
           <DashboardTitleBadge compact />
 
           <div className="flex items-center justify-end gap-1.5 sm:gap-2">
-            <CustomerSupportLink href={supportSettings.whatsappHref} compact />
+            <CustomerSupportLink compact unreadCount={unreadCommunicationCount} />
             <button
               type="button"
               onClick={() => setMobileMenuOpen(true)}
@@ -244,12 +220,12 @@ export function DashboardShell({ children, siteSlug, hasSubscription, photograph
           <nav className="customer-desktop-sidebar-nav mt-4 flex flex-1 flex-col gap-2 overflow-y-auto overflow-x-hidden pb-4 pr-0.5 admin-scrollbar">
             <p className="shrink-0 px-2 text-[0.68rem] font-black uppercase tracking-wider text-white/28">خطوات العمل</p>
             {primaryNav.map((item) => (
-              <NavLink key={item.href} item={item} active={isActivePath(pathname, item.href)} />
+              <NavLink key={item.href} item={item} active={isActivePath(pathname, item.href)} unreadCount={item.href === "/dashboard/communication" ? unreadCommunicationCount : 0} />
             ))}
 
             <p className="mt-3 shrink-0 px-2 text-[0.68rem] font-black uppercase tracking-wider text-white/28">أدوات إضافية</p>
             {secondaryNav.map((item) => (
-              <NavLink key={item.href} item={item} active={isActivePath(pathname, item.href)} compact />
+              <NavLink key={item.href} item={item} active={isActivePath(pathname, item.href)} compact unreadCount={item.href === "/dashboard/communication" ? unreadCommunicationCount : 0} />
             ))}
           </nav>
 
@@ -271,7 +247,7 @@ export function DashboardShell({ children, siteSlug, hasSubscription, photograph
 
         <main className="customer-desktop-main min-w-0 flex-1 overflow-x-hidden bg-[radial-gradient(circle_at_top_right,rgba(243,207,115,0.08),transparent_30%),#090b10] px-3 py-4 pb-[calc(6.5rem+env(safe-area-inset-bottom))] sm:px-4 lg:px-7 lg:py-7 lg:pb-8 xl:px-9">
           <div className="mx-auto hidden w-full max-w-6xl lg:block">
-            <CustomerIdentityBar supportHref={supportSettings.whatsappHref} />
+            <CustomerIdentityBar photographerName={photographerName} unreadCommunicationCount={unreadCommunicationCount} />
           </div>
           <div className="mx-auto w-full max-w-[1120px] lg:mt-5" style={{ width: "min(100%, 1120px)", marginInline: "auto" }}>{children}</div>
         </main>
@@ -332,6 +308,7 @@ export function DashboardShell({ children, siteSlug, hasSubscription, photograph
                   item={item}
                   active={isActivePath(pathname, item.href)}
                   onClick={() => setMobileMenuOpen(false)}
+                  unreadCount={item.href === "/dashboard/communication" ? unreadCommunicationCount : 0}
                 />
               ))}
             </div>

@@ -81,6 +81,20 @@ export type TransitionWorkItemCommand = CommandTrace & {
   idempotencyKey: string;
 };
 
+export type ManageWorkItemChange =
+  | { type: "PRIORITY"; fromPriority: CommunicationPriority; toPriority: CommunicationPriority }
+  | { type: "ASSIGNEE"; fromAssigneeAdminUserId: string | null; toAssigneeAdminUserId: string | null }
+  | { type: "QUEUE"; fromQueueKey: string; toQueueKey: string };
+
+export type ManageWorkItemCommand = CommandTrace & {
+  workItemId: string;
+  actor: Extract<CommunicationActor, { type: "ADMIN" }>;
+  expectedVersion: number;
+  change: ManageWorkItemChange;
+  reason: string | null;
+  idempotencyKey: string;
+};
+
 export type PublishCampaignCommand = CommandTrace & {
   sourceModule: string;
   idempotencyKey: string;
@@ -92,6 +106,13 @@ export type PublishCampaignCommand = CommandTrace & {
   audienceDefinitionVersion: number;
   scheduledAt: Date | null;
   entry: NormalizedEntryDraft;
+};
+
+export type WithdrawCampaignCommand = CommandTrace & {
+  campaignId: string;
+  actor: Extract<CommunicationActor, { type: "ADMIN" }>;
+  reason: string;
+  idempotencyKey: string;
 };
 
 export type OpenConversationResult = {
@@ -126,6 +147,9 @@ export type ReadCursorRecord = {
 export type WorkItemState = {
   id: string;
   status: CommunicationWorkItemStatus;
+  priority: CommunicationPriority;
+  queueKey: string;
+  assigneeAdminUserId: string | null;
   version: number;
 };
 
@@ -136,6 +160,8 @@ export type PublishCampaignResult = {
   recipientCount: number;
 };
 
+export type WithdrawCampaignResult = { campaignId: string; conversationId: string; withdrawnAt: Date };
+
 export interface CommunicationRepository {
   openConversation(command: OpenConversationCommand): Promise<OpenConversationResult>;
   appendEntry(command: AppendEntryCommand): Promise<AppendEntryResult>;
@@ -143,5 +169,7 @@ export interface CommunicationRepository {
   markRead(command: MarkReadCommand): Promise<ReadCursorRecord>;
   getWorkItemState(workItemId: string): Promise<WorkItemState | null>;
   transitionWorkItem(command: TransitionWorkItemCommand): Promise<WorkItemState>;
+  manageWorkItem(command: ManageWorkItemCommand): Promise<WorkItemState>;
   publishCampaign(command: PublishCampaignCommand): Promise<PublishCampaignResult>;
+  withdrawCampaign(command: WithdrawCampaignCommand): Promise<WithdrawCampaignResult>;
 }

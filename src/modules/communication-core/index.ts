@@ -9,7 +9,9 @@ export type {
   AppendSystemEventInput,
   AttachContextInput,
   MarkReadInput,
+  ManageWorkItemInput,
   OpenConversationInput,
   PublishCampaignInput,
   TransitionWorkItemInput,
+  WithdrawCampaignInput,
 } from "./types";

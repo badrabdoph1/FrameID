@@ -8,6 +8,7 @@ import {
 import type {
   AppendEntryCommand,
   MarkReadCommand,
+  ManageWorkItemCommand,
   OpenConversationCommand,
   PublishCampaignCommand,
   TransitionWorkItemCommand,
@@ -76,6 +77,9 @@ describe("prisma communication repository", () => {
       communicationAudience: {
         create: async (args: Record<string, unknown>) => { calls.push({ name: "audience", args }); return { id: "audience-1" }; },
       },
+      communicationReadCursor: {
+        upsert: async (args: Record<string, unknown>) => { calls.push({ name: "creator-cursor", args }); return { id: "cursor-1" }; },
+      },
       communicationWorkItem: {
         create: async (args: Record<string, unknown>) => { calls.push({ name: "work-item", args }); return { id: "work-1" }; },
       },
@@ -110,6 +114,7 @@ describe("prisma communication repository", () => {
       "conversation",
       "entry",
       "audience",
+      "creator-cursor",
       "work-item",
       "work-event",
       "contexts",
@@ -120,10 +125,15 @@ describe("prisma communication repository", () => {
     const outboxData = (calls.find((call) => call.name === "outbox")?.args.data ?? {}) as Record<string, unknown>;
     expect(outboxData).not.toHaveProperty("body");
     expect(outboxData).toMatchObject({ eventName: "communication.conversation.opened.v1", correlationId: "corr-1" });
+    expect(calls.find((call) => call.name === "creator-cursor")?.args).toMatchObject({
+      update: { lastReadSequence: 1 },
+      create: { readerType: "CUSTOMER", userId: "user-1", lastReadSequence: 1 },
+    });
   });
 
   it("allocates an entry sequence with a guarded increment instead of max(sequence)", async () => {
     let updateArgs: Record<string, unknown> | null = null;
+    const calls: Array<Record<string, unknown>> = [];
     const tx = {
       communicationEntry: {
         findUnique: async () => null,
@@ -135,6 +145,7 @@ describe("prisma communication repository", () => {
       },
       communicationWorkItem: { findUnique: async () => null },
       communicationAudience: { updateMany: async () => ({ count: 1 }) },
+      communicationReadCursor: { upsert: async (args: Record<string, unknown>) => { calls.push(args); return { id: "cursor-2" }; } },
       communicationAttachment: { createMany: async () => ({ count: 0 }) },
       communicationOutboxEvent: { create: async () => ({ id: "event-2" }) },
     };
@@ -166,6 +177,10 @@ describe("prisma communication repository", () => {
       data: { lastSequence: { increment: 1 }, version: { increment: 1 } },
     });
     expect(JSON.stringify(updateArgs)).not.toContain("max");
+    expect(calls).toContainEqual(expect.objectContaining({
+      update: { lastReadSequence: 2, readAt: NOW },
+      create: expect.objectContaining({ readerType: "ADMIN", adminUserId: "admin-1", lastReadSequence: 2 }),
+    }));
   });
 
   it("throws a stable conflict when the guarded conversation update loses the race", async () => {
@@ -283,6 +298,51 @@ describe("prisma communication repository", () => {
     expect(eventWhere).toMatchObject({ idempotencyKey: "review-1", fromStatus: "NEW", toStatus: "IN_PROGRESS" });
   });
 
+  it("updates assignment atomically with an internal timeline fact and outbox event", async () => {
+    const calls: Array<{ name: string; args: Record<string, unknown> }> = [];
+    const tx = {
+      communicationWorkItemEvent: {
+        findUnique: async () => null,
+        create: async (args: Record<string, unknown>) => { calls.push({ name: "work-event", args }); return { id: "event-1" }; },
+      },
+      communicationWorkItem: {
+        findUnique: async () => ({ id: "work-1", conversationId: "conversation-1", status: "IN_PROGRESS", priority: "NORMAL", queueKey: "support", assigneeAdminUserId: null, version: 3 }),
+        updateMany: async (args: Record<string, unknown>) => { calls.push({ name: "work-update", args }); return { count: 1 }; },
+        findUniqueOrThrow: async () => ({ id: "work-1", status: "IN_PROGRESS", priority: "NORMAL", queueKey: "support", assigneeAdminUserId: "admin-2", version: 4 }),
+      },
+      communicationConversation: {
+        update: async () => ({ lastSequence: 6, version: 7 }),
+      },
+      communicationEntry: {
+        create: async (args: Record<string, unknown>) => { calls.push({ name: "entry", args }); return { id: "entry-6" }; },
+      },
+      communicationOutboxEvent: {
+        create: async (args: Record<string, unknown>) => { calls.push({ name: "outbox", args }); return { id: "outbox-1" }; },
+      },
+    };
+    const prisma = { $transaction: async <T>(work: (client: typeof tx) => Promise<T>) => work(tx) };
+    const repository = createPrismaCommunicationRepository(prisma as unknown as PrismaClient);
+    const command: ManageWorkItemCommand = {
+      workItemId: "work-1",
+      actor: ADMIN,
+      expectedVersion: 3,
+      change: { type: "ASSIGNEE", fromAssigneeAdminUserId: null, toAssigneeAdminUserId: "admin-2" },
+      reason: null,
+      idempotencyKey: "assign-1",
+      correlationId: null,
+      causationId: null,
+      occurredAt: NOW,
+    };
+
+    const result = await repository.manageWorkItem(command);
+
+    expect(result).toMatchObject({ assigneeAdminUserId: "admin-2", version: 4 });
+    expect(calls.map((call) => call.name)).toEqual(["work-update", "entry", "work-event", "outbox"]);
+    expect(calls.find((call) => call.name === "entry")?.args).toMatchObject({
+      data: { kind: "ASSIGNMENT", visibility: "ADMIN_ONLY" },
+    });
+  });
+
   it("publishes campaign content once and fans out only lightweight audience rows", async () => {
     let entryData: Record<string, unknown> = {};
     let campaignData: Record<string, unknown> = {};
@@ -333,5 +393,34 @@ describe("prisma communication repository", () => {
     expect(campaignData).not.toHaveProperty("body");
     expect(audienceData.every((row) => !("body" in row))).toBe(true);
     expect(outboxData).not.toHaveProperty("body");
+  });
+
+  it("withdraws a campaign, its audience, and emits one audited outbox event atomically", async () => {
+    const calls: Array<{ name: string; args: Record<string, unknown> }> = [];
+    const tx = {
+      communicationCampaign: {
+        findUnique: async () => ({ id: "campaign-1", conversationId: "conversation-2", status: "PUBLISHED", withdrawnAt: null }),
+        update: async (args: Record<string, unknown>) => { calls.push({ name: "campaign", args }); return {}; },
+      },
+      communicationAudience: { updateMany: async (args: Record<string, unknown>) => { calls.push({ name: "audience", args }); return { count: 2 }; } },
+      communicationConversation: { update: async (args: Record<string, unknown>) => { calls.push({ name: "conversation", args }); return {}; } },
+      communicationOutboxEvent: { create: async (args: Record<string, unknown>) => { calls.push({ name: "outbox", args }); return {}; } },
+    };
+    const prisma = { $transaction: async <T>(work: (client: typeof tx) => Promise<T>) => work(tx) };
+    const repository = createPrismaCommunicationRepository(prisma as unknown as PrismaClient);
+
+    await repository.withdrawCampaign({
+      campaignId: "campaign-1",
+      actor: ADMIN,
+      reason: "محتوى غير دقيق",
+      idempotencyKey: "withdraw-1",
+      correlationId: null,
+      causationId: null,
+      occurredAt: NOW,
+    });
+
+    expect(calls.map((call) => call.name)).toEqual(["campaign", "audience", "conversation", "outbox"]);
+    expect(calls.find((call) => call.name === "conversation")?.args).toMatchObject({ data: { lifecycleState: "WITHDRAWN" } });
+    expect(calls.find((call) => call.name === "outbox")?.args).toMatchObject({ data: { eventName: "communication.campaign.withdrawn.v1" } });
   });
 });

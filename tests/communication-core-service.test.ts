@@ -6,9 +6,12 @@ import type {
   AttachContextCommand,
   CommunicationRepository,
   MarkReadCommand,
+  ManageWorkItemCommand,
   OpenConversationCommand,
   PublishCampaignCommand,
+  WithdrawCampaignCommand,
   TransitionWorkItemCommand,
+  WorkItemState,
 } from "@/modules/communication-core/repository";
 import type { CommunicationWorkItemStatus } from "@/modules/communication-core/types";
 
@@ -20,8 +23,10 @@ class RecordingCommunicationRepository implements CommunicationRepository {
   contextCommands: AttachContextCommand[] = [];
   readCommands: MarkReadCommand[] = [];
   transitionCommands: TransitionWorkItemCommand[] = [];
+  manageCommands: ManageWorkItemCommand[] = [];
   campaignCommands: PublishCampaignCommand[] = [];
-  currentWorkItem = { id: "work-1", status: "NEW" as CommunicationWorkItemStatus, version: 2 };
+  withdrawalCommands: WithdrawCampaignCommand[] = [];
+  currentWorkItem: WorkItemState = { id: "work-1", status: "NEW" as CommunicationWorkItemStatus, priority: "NORMAL", queueKey: "support", assigneeAdminUserId: null, version: 2 };
 
   async openConversation(command: OpenConversationCommand) {
     this.openCommands.push(command);
@@ -49,13 +54,30 @@ class RecordingCommunicationRepository implements CommunicationRepository {
 
   async transitionWorkItem(command: TransitionWorkItemCommand) {
     this.transitionCommands.push(command);
-    this.currentWorkItem = { id: command.workItemId, status: command.toStatus, version: command.expectedVersion + 1 };
+    this.currentWorkItem = { ...this.currentWorkItem, id: command.workItemId, status: command.toStatus, version: command.expectedVersion + 1 };
+    return this.currentWorkItem;
+  }
+
+  async manageWorkItem(command: ManageWorkItemCommand) {
+    this.manageCommands.push(command);
+    this.currentWorkItem = {
+      ...this.currentWorkItem,
+      ...(command.change.type === "PRIORITY" ? { priority: command.change.toPriority } : {}),
+      ...(command.change.type === "ASSIGNEE" ? { assigneeAdminUserId: command.change.toAssigneeAdminUserId } : {}),
+      ...(command.change.type === "QUEUE" ? { queueKey: command.change.toQueueKey } : {}),
+      version: command.expectedVersion + 1,
+    };
     return this.currentWorkItem;
   }
 
   async publishCampaign(command: PublishCampaignCommand) {
     this.campaignCommands.push(command);
     return { campaignId: "campaign-1", conversationId: "conversation-2", number: 102, recipientCount: command.tenantIds.length };
+  }
+
+  async withdrawCampaign(command: WithdrawCampaignCommand) {
+    this.withdrawalCommands.push(command);
+    return { campaignId: command.campaignId, conversationId: "conversation-2", withdrawnAt: command.occurredAt };
   }
 }
 
@@ -198,6 +220,35 @@ describe("communication core service", () => {
     });
   });
 
+  it("manages priority and assignment through a product-neutral guarded command", async () => {
+    const { repository, core } = createFixture();
+
+    await core.manageWorkItem({
+      workItemId: "work-1",
+      actor: { type: "ADMIN", adminUserId: "admin-1" },
+      change: { type: "PRIORITY", priority: "HIGH" },
+      reason: "أثر مباشر على النشر",
+      idempotencyKey: "priority-1",
+    });
+
+    expect(repository.manageCommands[0]).toMatchObject({
+      expectedVersion: 2,
+      change: { type: "PRIORITY", fromPriority: "NORMAL", toPriority: "HIGH" },
+    });
+
+    await core.manageWorkItem({
+      workItemId: "work-1",
+      actor: { type: "ADMIN", adminUserId: "admin-1" },
+      change: { type: "ASSIGNEE", assigneeAdminUserId: "admin-2" },
+      idempotencyKey: "assign-1",
+    });
+
+    expect(repository.manageCommands[1]).toMatchObject({
+      expectedVersion: 3,
+      change: { type: "ASSIGNEE", fromAssigneeAdminUserId: null, toAssigneeAdminUserId: "admin-2" },
+    });
+  });
+
   it("attaches opaque context without interpreting the owning entity", async () => {
     const { repository, core } = createFixture();
 
@@ -259,5 +310,11 @@ describe("communication core service", () => {
       entry: { body: "ستتوقف الخدمة لمدة عشر دقائق.", kind: "MESSAGE", visibility: "CUSTOMER_AND_ADMIN" },
     });
     expect(repository.campaignCommands[0]).not.toHaveProperty("body");
+  });
+
+  it("withdraws a campaign only through an audited admin command", async () => {
+    const { repository, core } = createFixture();
+    await core.withdrawCampaign({ campaignId: "campaign-1", actor: { type: "ADMIN", adminUserId: "admin-1" }, reason: "معلومة غير دقيقة", idempotencyKey: "withdraw-1" });
+    expect(repository.withdrawalCommands[0]).toMatchObject({ campaignId: "campaign-1", reason: "معلومة غير دقيقة", occurredAt: NOW });
   });
 });

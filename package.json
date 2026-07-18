@@ -29,6 +29,7 @@
     "restore": "tsx src/scripts/backup-restore.ts",
     "backup:db": "tsx src/scripts/backup-run.ts DATABASE",
     "backup:full": "tsx src/scripts/backup-run.ts FULL",
+    "communication:backfill": "tsx src/scripts/communication-backfill.ts",
     "check": "npm run validate:env && npm run typecheck && npm run lint && npm run test && npm run build"
   },
   "dependencies": {

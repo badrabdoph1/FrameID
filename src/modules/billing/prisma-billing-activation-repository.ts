@@ -16,13 +16,26 @@ type PrismaBillingActivationClient = {
 
 type PaymentRequestUpdateResult = { tenantId: string; subscriptionId: string; planId: string | null };
 
+type BillingCommunicationPublisher = {
+  publishNotification(input: {
+    sourceId: string;
+    tenantId: string;
+    type: string;
+    title: string;
+    body: string;
+  }): Promise<unknown>;
+};
+
 function addDays(date: Date, days: number): Date {
   const copy = new Date(date);
   copy.setDate(copy.getDate() + days);
   return copy;
 }
 
-export function createPrismaBillingActivationRepository(prisma: PrismaBillingActivationClient): BillingActivationRepository {
+export function createPrismaBillingActivationRepository(
+  prisma: PrismaBillingActivationClient,
+  communication?: BillingCommunicationPublisher,
+): BillingActivationRepository {
   return {
     async createDraftPaymentRequest(input) {
       return (await prisma.paymentRequest.create({
@@ -122,7 +135,13 @@ export function createPrismaBillingActivationRepository(prisma: PrismaBillingAct
 
     async addLog(paymentRequestId, action, actorUserId, actorName, note, metadata) { await prisma.paymentRequestLog.create({ data: { paymentRequestId, action, actorUserId, actorName, note, metadata } }); },
     async getLogs(paymentRequestId) { return (await prisma.paymentRequestLog.findMany({ where: { paymentRequestId }, orderBy: { createdAt: "asc" }, select: { id: true, action: true, actorName: true, note: true, createdAt: true } })) as Array<{ id: string; action: string; actorName: string | null; note: string | null; createdAt: Date }>; },
-    async createNotification(tenantId, type, title, body, priority) { await prisma.notification.create({ data: { tenantId, type, title, body, priority: priority ?? "info" } }); },
+    async createNotification(tenantId, type, title, body, priority) {
+      const notification = await prisma.notification.create({
+        data: { tenantId, type, title, body, priority: priority ?? "info" },
+        select: { id: true },
+      }) as { id: string };
+      await communication?.publishNotification({ sourceId: notification.id, tenantId, type, title, body }).catch(() => undefined);
+    },
     async createNotificationLog(type, title, body, category, userId, tenantId) { await prisma.notificationLog.create({ data: { type, title, body, category, userId, tenantId } }); },
     async recordAudit(actorUserId, tenantId, action, entityType, entityId, metadata) { await prisma.auditLog.create({ data: { actorId: null, tenantId, action: action ?? "UNKNOWN", entityType: entityType ?? "Unknown", entityId, metadata: { ...(metadata ?? {}), adminActorId: actorUserId ?? null } } }); },
     async recordSubscriptionChange(subscriptionId, fromPlanId, toPlanId, fromStatus, toStatus, changeType, initiatedById, reason) { await prisma.subscriptionChange.create({ data: { subscriptionId, fromPlanId, toPlanId, fromStatus, toStatus, changeType, initiatedById, reason } }); },

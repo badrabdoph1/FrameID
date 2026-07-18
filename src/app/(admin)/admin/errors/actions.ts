@@ -9,8 +9,21 @@ import { requireAdminPermission } from "@/modules/admin/admin-permission-guards"
 import { createCustomerIssueAdminWorkflow } from "@/modules/customer-issues/admin-actions";
 import { createCustomerIssueService } from "@/modules/customer-issues/customer-issue-service";
 import { createPrismaCustomerIssueRepository } from "@/modules/customer-issues/prisma-customer-issue-repository";
+import { communicationLegacyBridge } from "@/modules/communication-center/runtime";
 
-const service = createCustomerIssueService(createPrismaCustomerIssueRepository(prisma));
+const service = createCustomerIssueService(createPrismaCustomerIssueRepository(prisma, {
+  publishResolutionCommunication: async (input) => {
+    await communicationLegacyBridge.publishNotification({
+      sourceModule: "customer-issues",
+      sourceId: `${input.issueId}:resolved`,
+      tenantId: input.tenantId,
+      type: "customer_issue_resolved",
+      title: input.title,
+      body: input.body,
+      context: { namespace: "customer-issues", entityType: "customer_issue", entityId: input.issueId, relationKey: "source" },
+    });
+  },
+}));
 
 const workflow = createCustomerIssueAdminWorkflow({
   service,

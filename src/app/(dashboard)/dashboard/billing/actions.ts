@@ -8,6 +8,7 @@ import { processError } from "@/lib/errors";
 import { getCurrentRequestSession } from "@/modules/auth/request-session";
 import { createBillingActivationService } from "@/modules/billing/billing-activation-service";
 import { createPrismaBillingActivationRepository } from "@/modules/billing/prisma-billing-activation-repository";
+import { communicationLegacyBridge } from "@/modules/communication-center/runtime";
 import { createGitHubMediaStorage } from "@/modules/media/github-media-storage";
 import { createMediaUploadService } from "@/modules/media/media-upload-service";
 import { createPrismaMediaUploadRepository } from "@/modules/media/prisma-media-upload-repository";
@@ -23,7 +24,15 @@ const ALLOWED_PROOF_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const FALLBACK_CURRENCY = "EGP";
 
 function getService() {
-  return createBillingActivationService({ repository: createPrismaBillingActivationRepository(prisma) });
+  return createBillingActivationService({
+    repository: createPrismaBillingActivationRepository(prisma, {
+      publishNotification: (input) => communicationLegacyBridge.publishNotification({
+        ...input,
+        sourceModule: "billing",
+        context: { namespace: "legacy", entityType: "notification", entityId: input.sourceId, relationKey: "source" },
+      }),
+    }),
+  });
 }
 
 type ActionResult = { success: true; draftId?: string } | { success: false; error: string };

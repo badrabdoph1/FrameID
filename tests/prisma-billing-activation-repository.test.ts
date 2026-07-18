@@ -3,6 +3,32 @@ import { describe, expect, it } from "vitest";
 import { createPrismaBillingActivationRepository } from "@/modules/billing/prisma-billing-activation-repository";
 
 describe("prisma billing activation repository", () => {
+  it("dual-writes billing notifications through an injected communication publisher", async () => {
+    const published: Array<Record<string, string>> = [];
+    const prisma = {
+      notification: {
+        async create() {
+          return { id: "notification_1" };
+        },
+      },
+    };
+    const repository = createPrismaBillingActivationRepository(prisma as never, {
+      async publishNotification(input) {
+        published.push(input);
+      },
+    });
+
+    await repository.createNotification("tenant_1", "payment_approved", "تم القبول", "تم تفعيل الاشتراك", "high");
+
+    expect(published).toEqual([{
+      sourceId: "notification_1",
+      tenantId: "tenant_1",
+      type: "payment_approved",
+      title: "تم القبول",
+      body: "تم تفعيل الاشتراك",
+    }]);
+  });
+
   it("creates draft payment requests, submits, approves and activates subscription state", async () => {
     const calls: string[] = [];
     const paymentUpdates: Array<Record<string, unknown>> = [];

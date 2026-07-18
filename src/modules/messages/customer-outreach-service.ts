@@ -45,11 +45,23 @@ export async function createCustomerOutreachCampaign(
   prisma: unknown,
   input: CustomerOutreachInput,
   actor: AdminActor,
+  communication?: {
+    publishCampaign(input: {
+      campaignId: string;
+      tenantIds: string[];
+      title: string;
+      body: string;
+      tone: string;
+      audienceMode: string;
+      filters: Record<string, unknown>;
+      actor: AdminActor;
+    }): Promise<unknown>;
+  },
 ): Promise<{ campaignId: string; recipientCount: number }> {
   const normalized = normalizeCustomerOutreachInput(input);
   const client = prisma as OutreachPrisma;
 
-  return client.$transaction(async (transaction) => {
+  const committed = await client.$transaction(async (transaction) => {
     const audienceWhere = normalized.audienceMode === "EXPLICIT"
       ? { deletedAt: null, id: { in: normalized.tenantIds } }
       : buildCustomerOutreachAudienceWhere(normalized.filters);
@@ -130,8 +142,19 @@ export async function createCustomerOutreachCampaign(
       },
     });
 
-    return { campaignId: campaign.id, recipientCount: tenants.length };
+    return { campaignId: campaign.id, recipientCount: tenants.length, tenantIds: tenants.map((tenant) => tenant.id) };
   });
+  await communication?.publishCampaign({
+    campaignId: committed.campaignId,
+    tenantIds: committed.tenantIds,
+    title: normalized.title,
+    body: normalized.body,
+    tone: normalized.tone,
+    audienceMode: normalized.audienceMode,
+    filters: normalized.filters,
+    actor,
+  }).catch(() => undefined);
+  return { campaignId: committed.campaignId, recipientCount: committed.recipientCount };
 }
 
 export async function setCustomerOutreachCampaignStatus(

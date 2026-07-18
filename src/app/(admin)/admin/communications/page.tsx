@@ -1,82 +1,69 @@
+import { Filter, Megaphone, Search } from "lucide-react";
 import Link from "next/link";
-import {
-  ArrowLeft,
-  Bell,
-  CheckCircle2,
-  Headphones,
-  Mail,
-  MessageSquareText,
-  TriangleAlert,
-  type LucideIcon,
-} from "lucide-react";
 
+import { AdminInboxView } from "@/components/communication/admin-inbox-view";
 import { AdminPageShell } from "@/components/layout/admin-page-shell";
-import { prisma } from "@/lib/prisma";
 import { requireAdminPermission } from "@/modules/admin/admin-permission-guards";
+import { communicationCenterQueries } from "@/modules/communication-center/runtime";
+import type { CommunicationPriority, CommunicationWorkItemStatus } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminCommunicationsPage() {
-  await requireAdminPermission("messages", "view");
+const statuses = new Set<CommunicationWorkItemStatus>(["NEW", "IN_PROGRESS", "WAITING_CUSTOMER", "WAITING_INTERNAL", "RESOLVED", "CLOSED"]);
+const priorities = new Set<CommunicationPriority>(["LOW", "NORMAL", "HIGH", "URGENT"]);
 
-  const [openSupportCases, unreadNotifications, messageOverrides] = await Promise.all([
-    prisma.supportCase.count({ where: { status: { in: ["OPEN", "PENDING_CUSTOMER"] } } }),
-    prisma.notification.count({ where: { deletedAt: null, readAt: null } }),
-    prisma.featureFlag.count({ where: { key: "platform.subscription.experience.override", scope: "TENANT" } }),
-  ]);
-  const emailReady = Boolean(
-    process.env.SMTP_HOST?.trim()
-      && process.env.SMTP_USERNAME?.trim()
-      && process.env.SMTP_PASSWORD?.trim()
-      && process.env.SMTP_FROM_EMAIL?.trim(),
-  );
+function single(value: string | string[] | undefined): string | undefined {
+  return typeof value === "string" ? value : undefined;
+}
+
+export default async function AdminCommunicationsPage({
+  searchParams,
+}: {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const admin = await requireAdminPermission("support", "view");
+  const params = await searchParams;
+  const statusValue = single(params?.status) as CommunicationWorkItemStatus | undefined;
+  const priorityValue = single(params?.priority) as CommunicationPriority | undefined;
+  const filters = {
+    search: single(params?.search),
+    status: statusValue && statuses.has(statusValue) ? statusValue : undefined,
+    priority: priorityValue && priorities.has(priorityValue) ? priorityValue : undefined,
+    queueKey: single(params?.queue),
+    assigneeAdminUserId: single(params?.assignee),
+    typeKey: single(params?.type),
+    cursor: single(params?.cursor),
+    adminUserId: admin.id,
+  };
+  const inbox = await communicationCenterQueries.listAdminInbox(filters);
 
   return (
     <AdminPageShell
-      badge="التواصل"
+      badge="Communication Inbox"
       title="مركز التواصل"
-      description="مكان واحد لرسائل العملاء والإشعارات وحالات الدعم وجاهزية البريد. اختر المهمة التي تريدها دون البحث بين صفحات متفرقة."
+      description="صندوق العمل الموحد لطلبات العملاء والرسائل والملاحظات والتصعيد، مرتب حسب آخر نشاط."
       breadcrumbs={[{ label: "القيادة", href: "/admin" }, { label: "التواصل" }]}
+      actions={[{ label: "إعلان جديد", href: "/admin/communications/broadcasts/new", icon: Megaphone, variant: "primary" }]}
     >
-      <div className="grid gap-4">
-        <section aria-label="ملخص التواصل" className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <Metric label="حالات دعم تحتاج متابعة" value={openSupportCases} icon={Headphones} tone={openSupportCases ? "warning" : "success"} />
-          <Metric label="إشعارات غير مقروءة" value={unreadNotifications} icon={Bell} tone={unreadNotifications ? "warning" : "success"} />
-          <Metric label="رسائل مخصصة للعملاء" value={messageOverrides} icon={MessageSquareText} tone="neutral" />
-          <Metric label="خدمة البريد" value={emailReady ? "جاهزة" : "تحتاج إعدادًا"} icon={emailReady ? CheckCircle2 : TriangleAlert} tone={emailReady ? "success" : "warning"} />
-        </section>
+      <form className="grid gap-3 rounded-2xl border border-white/10 bg-white/[0.035] p-4 lg:grid-cols-[minmax(15rem,1fr)_repeat(3,minmax(9rem,auto))_auto]" method="get">
+        <label className="relative">
+          <Search className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-white/30" />
+          <input name="search" defaultValue={filters.search} placeholder="رقم الطلب، العنوان، العميل أو البريد" className="min-h-11 w-full rounded-xl border border-white/10 bg-black/15 pr-10 pl-3 text-sm font-bold text-white outline-none focus:border-violet-300/35" />
+        </label>
+        <select name="status" defaultValue={filters.status ?? ""} className="min-h-11 rounded-xl border border-white/10 bg-[#11141b] px-3 text-xs font-black text-white">
+          <option value="">كل الحالات</option><option value="NEW">جديد</option><option value="IN_PROGRESS">قيد العمل</option><option value="WAITING_CUSTOMER">بانتظار العميل</option><option value="WAITING_INTERNAL">بانتظار داخلي</option><option value="RESOLVED">تم الحل</option><option value="CLOSED">مغلق</option>
+        </select>
+        <select name="priority" defaultValue={filters.priority ?? ""} className="min-h-11 rounded-xl border border-white/10 bg-[#11141b] px-3 text-xs font-black text-white">
+          <option value="">كل الأولويات</option><option value="URGENT">عاجلة</option><option value="HIGH">مرتفعة</option><option value="NORMAL">عادية</option><option value="LOW">منخفضة</option>
+        </select>
+        <input name="queue" defaultValue={filters.queueKey} placeholder="الطابور" className="min-h-11 rounded-xl border border-white/10 bg-black/15 px-3 text-xs font-black text-white outline-none" />
+        <button type="submit" className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-violet-300 px-4 text-xs font-black text-[#17111f]"><Filter className="size-4" /> تطبيق</button>
+      </form>
 
-        <nav aria-label="أدوات التواصل" className="grid gap-3 md:grid-cols-2">
-          <ToolLink href="/admin/messages" icon={MessageSquareText} title="رسائل الاشتراك والتفعيل" description="عدّل النصوص العامة والاستثناءات التي تظهر للعملاء حسب حالة الاشتراك." />
-          <ToolLink href="/admin/notifications" icon={Bell} title="سجل الإشعارات" description="راجع الإشعارات ونتائجها وابحث في السجل من مكان واحد." />
-          <ToolLink href="/admin/support" icon={Headphones} title="حالات الدعم" description="تابع الطلبات المفتوحة وانتقل مباشرة إلى ملف العميل المرتبط." />
-          <ToolLink href="/admin/email" icon={Mail} title="تسليم البريد" description="تحقق من جاهزية SMTP واعرف حدود سجل التسليم الحالي بوضوح." />
-        </nav>
-      </div>
+      <AdminInboxView items={inbox.items} total={inbox.total} />
+      {inbox.nextCursor ? (
+        <Link href={`/admin/communications?cursor=${encodeURIComponent(inbox.nextCursor)}`} className="mx-auto rounded-xl border border-white/10 px-4 py-2 text-xs font-black text-white/55 no-underline hover:bg-white/[0.05]">عرض الأقدم</Link>
+      ) : null}
     </AdminPageShell>
-  );
-}
-
-function Metric({ label, value, icon: Icon, tone }: { label: string; value: number | string; icon: LucideIcon; tone: "success" | "warning" | "neutral" }) {
-  const color = tone === "success" ? "text-emerald-300" : tone === "warning" ? "text-amber-300" : "text-[#fff7e8]";
-  return (
-    <article className="rounded-2xl border border-white/10 bg-white/[0.035] p-4">
-      <Icon aria-hidden className={`size-5 ${color}`} />
-      <p className="mt-3 text-xs font-black text-white/45">{label}</p>
-      <p className={`mt-1 text-xl font-black ${color}`}>{typeof value === "number" ? value.toLocaleString("ar-EG") : value}</p>
-    </article>
-  );
-}
-
-function ToolLink({ href, icon: Icon, title, description }: { href: string; icon: LucideIcon; title: string; description: string }) {
-  return (
-    <Link href={href} className="group flex min-h-32 items-start gap-4 rounded-2xl border border-white/10 bg-white/[0.035] p-4 text-white no-underline transition hover:border-violet-300/30 hover:bg-violet-300/8 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300/70">
-      <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-violet-300/10 text-violet-200"><Icon aria-hidden className="size-5" /></span>
-      <span className="min-w-0 flex-1">
-        <strong className="block text-base font-black text-[#fff7e8]">{title}</strong>
-        <span className="mt-1 block text-sm font-bold leading-6 text-white/48">{description}</span>
-      </span>
-      <ArrowLeft aria-hidden className="mt-1 size-4 shrink-0 text-white/30 transition group-hover:-translate-x-1 group-hover:text-violet-200" />
-    </Link>
   );
 }

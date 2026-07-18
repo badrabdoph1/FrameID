@@ -7,6 +7,7 @@ import { processError } from "@/lib/errors";
 import { requireSuperAdminSession } from "@/modules/admin/admin-page-guards";
 import { createBillingActivationService } from "@/modules/billing/billing-activation-service";
 import { createPrismaBillingActivationRepository } from "@/modules/billing/prisma-billing-activation-repository";
+import { communicationLegacyBridge } from "@/modules/communication-center/runtime";
 import { lifecycleDurationOptions, type LifecycleDurationPreset } from "@/modules/lifecycle/customer-lifecycle";
 
 export type PaymentActionResult = {
@@ -15,7 +16,15 @@ export type PaymentActionResult = {
 };
 
 function getService() {
-  return createBillingActivationService({ repository: createPrismaBillingActivationRepository(prisma) });
+  return createBillingActivationService({
+    repository: createPrismaBillingActivationRepository(prisma, {
+      publishNotification: (input) => communicationLegacyBridge.publishNotification({
+        ...input,
+        sourceModule: "billing",
+        context: { namespace: "legacy", entityType: "notification", entityId: input.sourceId, relationKey: "source" },
+      }),
+    }),
+  });
 }
 
 function parseDuration(formData: FormData) {

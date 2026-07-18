@@ -1,5 +1,6 @@
 "use server";
 
+import { randomUUID } from "node:crypto";
 import { Prisma, type PrismaClient } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
@@ -25,6 +26,7 @@ import { shouldUseSecureSessionCookie } from "@/modules/auth/request-cookie-secu
 import { createSessionForUser } from "@/modules/auth/session-service";
 import { addDays, applySubscriptionTimerToTenants, applyTrialTimerToTenants, lifecycleDurationOptions, type LifecycleDurationPreset } from "@/modules/lifecycle/customer-lifecycle";
 import { createCustomerOutreachCampaign } from "@/modules/messages/customer-outreach-service";
+import { communicationCore, communicationLegacyBridge } from "@/modules/communication-center/runtime";
 import {
   clearTenantSubscriptionExperienceOverride,
   getSubscriptionExperienceDefaultsRecord,
@@ -313,16 +315,21 @@ export async function sendNotificationAction(formData: FormData) {
   const notificationType = readFormString(formData, "notificationType");
   const title = readFormString(formData, "title");
   const body = readFormString(formData, "body");
-  const tone = notificationType === "error" ? "danger" : notificationType;
-  await withErrorHandling("sendNotification", () => createCustomerOutreachCampaign(prisma, {
-    title,
-    body,
-    tone,
-    audienceMode: "EXPLICIT",
-    tenantIds: [tenantId],
-    filters: {},
-  }, admin), { userId: admin.id, tenantId });
-  revalidatePath("/admin/messages/customer-outreach");
+  const idempotencyKey = `direct-message:${admin.id}:${randomUUID()}`;
+  await withErrorHandling("sendNotification", () => communicationCore.openConversation({
+    sourceModule: "admin-customers",
+    idempotencyKey,
+    mode: "DIRECT",
+    tenantId,
+    typeKey: `direct.${notificationType.toLowerCase().replace(/[^a-z0-9._-]+/g, "-") || "notice"}`,
+    subject: title,
+    replyMode: "ENABLED",
+    actor: { type: "ADMIN", adminUserId: admin.id },
+    firstEntry: { body, idempotencyKey: `${idempotencyKey}:entry` },
+    contexts: [{ namespace: "customers", entityType: "tenant", entityId: tenantId, relationKey: "recipient" }],
+  }), { userId: admin.id, tenantId });
+  revalidatePath("/admin/communications");
+  revalidatePath("/dashboard/communication");
   revalidatePath("/dashboard");
 }
 
@@ -446,7 +453,7 @@ export async function bulkCustomerLifecycleAction(formData: FormData) {
         audienceMode: "EXPLICIT",
         tenantIds,
         filters: {},
-      }, admin);
+      }, admin, communicationLegacyBridge);
       doneCount = result.recipientCount;
     } else if (action === "email") {
       throw new Error("إرسال البريد الجماعي غير مفعّل من هذه الشاشة. استخدم قسم تسليم البريد.");

@@ -7,6 +7,7 @@ import { processError } from "@/lib/errors";
 import { prisma } from "@/lib/prisma";
 import { requireAdminPermission } from "@/modules/admin/admin-permission-guards";
 import { readFormString } from "@/modules/auth/auth-action-utils";
+import { communicationLegacyBridge } from "@/modules/communication-center/runtime";
 import {
   createCustomerOutreachCampaign,
   setCustomerOutreachCampaignStatus,
@@ -34,7 +35,7 @@ export async function createCustomerOutreachCampaignAction(formData: FormData) {
         subscriptionStatus: readFormString(formData, "subscriptionStatus"),
         planId: readFormString(formData, "planId"),
       },
-    }, admin);
+    }, admin, communicationLegacyBridge);
 
     revalidatePath("/admin/messages/customer-outreach");
     revalidatePath("/admin/customers");

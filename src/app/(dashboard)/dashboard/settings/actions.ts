@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { processError } from "@/lib/errors";
 import { getCurrentRequestSession } from "@/modules/auth/request-session";
+import { communicationLegacyBridge } from "@/modules/communication-center/runtime";
 
 export async function updateSiteTitleAction(formData: FormData) {
   const session = await getCurrentRequestSession();
@@ -80,7 +81,7 @@ export async function requestAccountDeletionAction(formData: FormData) {
       redirect("/dashboard/settings?request=pending");
     }
 
-    await prisma.customerRequest.create({
+    const request = await prisma.customerRequest.create({
       data: {
         tenantId: session.tenant.id,
         siteId: session.site.id,
@@ -89,6 +90,14 @@ export async function requestAccountDeletionAction(formData: FormData) {
         description: `طلب حذف الحساب من ${session.user.name} (${session.user.email})\nالسبب: ${finalReason}`,
       },
     });
+    await communicationLegacyBridge.publishCustomerRequest({
+      requestId: request.id,
+      tenantId: request.tenantId,
+      siteId: request.siteId,
+      type: request.type,
+      title: request.title,
+      description: request.description,
+    }).catch(() => undefined);
   } catch (error) {
     const { userError } = await processError(error, {
       userId: session.user.id,

@@ -19,6 +19,7 @@ import {
   MessageSquareText,
   Palette,
   PauseCircle,
+  ScanSearch,
   Search,
   Settings,
   Share2,
@@ -109,6 +110,8 @@ export const adminRoutes: AdminRouteDefinition[] = [
   defineRoute({ id: "social-preview-settings", href: "/admin/settings/social-preview", labelAr: "إعدادات المشاركة", descriptionAr: "الإعدادات المتقدمة لمعاينة الروابط", sectionId: "content", visibility: "advanced", keywords: ["مشاركة", "إعدادات", "صورة"], icon: Share2, parentHref: "/admin/settings" }),
 
   defineRoute({ id: "communications", href: "/admin/communications", labelAr: "مركز التواصل", descriptionAr: "الرسائل والإشعارات والدعم والبريد", sectionId: "communication", visibility: "daily", keywords: ["تواصل", "رسائل", "دعم"], icon: MessageSquareText, parentHref: "/admin" }),
+  defineRoute({ id: "communication-details", href: "/admin/communications/[id]", labelAr: "المحادثة", descriptionAr: "Timeline المحادثة وإدارة الطلب", sectionId: "communication", visibility: "contextual", keywords: ["محادثة", "طلب", "رد"], icon: MessageSquareText, parentHref: "/admin/communications" }),
+  defineRoute({ id: "communication-broadcasts", href: "/admin/communications/broadcasts", labelAr: "الإعلانات", descriptionAr: "رسائل Inbox الجماعية وجدولتها", sectionId: "communication", visibility: "daily", keywords: ["إعلانات", "رسائل جماعية", "حملات"], icon: Bell, parentHref: "/admin/communications" }),
   defineRoute({ id: "messages", href: "/admin/messages", labelAr: "رسائل الاشتراك", descriptionAr: "النصوص التي تظهر للعملاء حسب حالتهم", sectionId: "communication", visibility: "daily", keywords: ["رسائل", "اشتراك", "تفعيل"], icon: MessageSquareText, parentHref: "/admin/communications" }),
   defineRoute({ id: "customer-outreach", href: "/admin/messages/customer-outreach", labelAr: "مراسلة العميل", descriptionAr: "إرسال رسائل مخصصة ومتابعة حملاتها ومستلميها", sectionId: "communication", visibility: "daily", keywords: ["مراسلة", "عملاء", "حملة", "إرسال"], icon: Mail, parentHref: "/admin/messages" }),
   defineRoute({ id: "notifications", href: "/admin/notifications", labelAr: "سجل الإشعارات", descriptionAr: "متابعة ما أرسل للعملاء ونتيجته", sectionId: "communication", visibility: "daily", keywords: ["إشعارات", "إرسال", "سجل"], icon: Bell, parentHref: "/admin/communications" }),
@@ -121,6 +124,7 @@ export const adminRoutes: AdminRouteDefinition[] = [
   defineRoute({ id: "errors", href: "/admin/errors", labelAr: "مشاكل العملاء", descriptionAr: "البلاغات والأخطاء التي أرسلها العملاء", sectionId: "system", visibility: "daily", keywords: ["مشاكل", "أخطاء", "بلاغات"], icon: Activity, parentHref: "/admin/system" }),
   defineRoute({ id: "issue-details", href: "/admin/errors/[id]", labelAr: "تفاصيل المشكلة", descriptionAr: "السياق الكامل للمشكلة وخطوات معالجتها", sectionId: "system", visibility: "contextual", keywords: ["مشكلة", "تفاصيل", "حل"], icon: Activity, parentHref: "/admin/errors" }),
   defineRoute({ id: "trash", href: "/admin/trash", labelAr: "سلة المحذوفات", descriptionAr: "استعادة أو حذف نهائي للعملاء المحذوفين", sectionId: "system", visibility: "daily", keywords: ["سلة", "محذوفات", "استعادة", "حذف نهائي"], icon: Trash2, parentHref: "/admin/system" }),
+  defineRoute({ id: "cleanup", href: "/admin/cleanup", labelAr: "نظام التنظيف", descriptionAr: " تنظيف بقايا الوسائط من الحسابات المنتهية والغير نشطة", sectionId: "system", visibility: "daily", keywords: ["تنظيف", "بقايا", "وسائط", "حسابات منتهية", "انتهاء", "اشتراك"], icon: ScanSearch, parentHref: "/admin/system" }),
   defineRoute({ id: "backups", href: "/admin/backups", labelAr: "النسخ الاحتياطي", descriptionAr: "إنشاء النسخ والتحقق والاستعادة", sectionId: "system", visibility: "daily", keywords: ["نسخ", "استعادة", "طوارئ"], icon: DatabaseBackup, parentHref: "/admin/system" }),
   defineRoute({ id: "audit", href: "/admin/audit", labelAr: "سجل التدقيق", descriptionAr: "تتبع الإجراءات الحساسة ومن نفذها", sectionId: "system", visibility: "advanced", keywords: ["تدقيق", "سجل", "إجراء"], icon: ClipboardList, parentHref: "/admin/system" }),
   defineRoute({ id: "security", href: "/admin/security", labelAr: "الأمان", descriptionAr: "الجلسات والمخاطر وسياسات الوصول", sectionId: "system", visibility: "advanced", keywords: ["أمان", "جلسات", "وصول"], icon: ShieldCheck, parentHref: "/admin/system" }),
@@ -148,8 +152,8 @@ const sectionDefinitions: Array<Omit<AdminSection, "links"> & { routeIds: string
   { id: "customers", title: "العملاء", shortDescription: "العملاء والمواقع", description: "العملاء ومواقعهم وحالة حساباتهم", accent: "green", icon: Users, routeIds: ["customers", "customer-requests", "sites"] },
   { id: "billing", title: "المالية", shortDescription: "المدفوعات والاشتراكات", description: "التحصيل والتجديد والباقات ووسائل الدفع", accent: "blue", icon: CreditCard, routeIds: ["billing", "payments", "subscriptions", "plans", "payment-settings"] },
   { id: "content", title: "المحتوى", shortDescription: "الصفحات والقوالب والوسائط", description: "كل أدوات تحرير ونشر المحتوى", accent: "rose", icon: Palette, routeIds: ["content", "templates", "onboarding-cards", "themes", "media", "social-preview"] },
-  { id: "communication", title: "التواصل", shortDescription: "الرسائل والدعم", description: "تجربة العميل والإشعارات والدعم والبريد", accent: "violet", icon: MessageSquareText, routeIds: ["deactivation-control", "communications", "messages", "customer-outreach", "notifications", "support", "email"] },
-  { id: "system", title: "النظام", shortDescription: "الصحة والتشغيل والطوارئ", description: "الأخطاء والنسخ والإعدادات والأدوات المتقدمة", accent: "slate", icon: ShieldCheck, routeIds: ["system", "platform", "operations", "errors", "trash", "backups", "settings"] },
+  { id: "communication", title: "التواصل", shortDescription: "الرسائل والدعم", description: "تجربة العميل والإشعارات والدعم والبريد", accent: "violet", icon: MessageSquareText, routeIds: ["communications", "communication-broadcasts", "deactivation-control", "messages", "customer-outreach", "notifications", "support", "email"] },
+  { id: "system", title: "النظام", shortDescription: "الصحة والتشغيل والطوارئ", description: "الأخطاء والنسخ والإعدادات والأدوات المتقدمة", accent: "slate", icon: ShieldCheck, routeIds: ["system", "platform", "operations", "errors", "trash", "cleanup", "backups", "settings"] },
 ];
 
 export const adminSections: AdminSection[] = sectionDefinitions.map(

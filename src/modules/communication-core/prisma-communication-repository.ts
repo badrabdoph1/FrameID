@@ -7,10 +7,12 @@ import type {
   AttachContextCommand,
   CommunicationRepository,
   MarkReadCommand,
+  ManageWorkItemCommand,
   NormalizedEntryDraft,
   OpenConversationCommand,
   PublishCampaignCommand,
   TransitionWorkItemCommand,
+  WithdrawCampaignCommand,
 } from "./repository";
 import type { CommunicationActor, CommunicationReader } from "./types";
 
@@ -118,6 +120,32 @@ function splitIntoBatches<T>(items: T[], size: number): T[][] {
   return batches;
 }
 
+async function markActorRead(
+  transaction: Prisma.TransactionClient,
+  conversationId: string,
+  actor: CommunicationActor,
+  sequence: number,
+  occurredAt: Date,
+) {
+  if (actor.type === "SYSTEM") return;
+  const customer = actor.type === "CUSTOMER";
+  await transaction.communicationReadCursor.upsert({
+    where: customer
+      ? { conversationId_userId: { conversationId, userId: actor.userId } }
+      : { conversationId_adminUserId: { conversationId, adminUserId: actor.adminUserId } },
+    update: { lastReadSequence: sequence, readAt: occurredAt },
+    create: {
+      conversationId,
+      readerType: actor.type,
+      userId: customer ? actor.userId : null,
+      adminUserId: customer ? null : actor.adminUserId,
+      lastReadSequence: sequence,
+      readAt: occurredAt,
+      createdAt: occurredAt,
+    },
+  });
+}
+
 export function createPrismaCommunicationRepository(prisma: PrismaClient): CommunicationRepository {
   return {
     async openConversation(command: OpenConversationCommand) {
@@ -195,6 +223,7 @@ export function createPrismaCommunicationRepository(prisma: PrismaClient): Commu
             },
           });
         }
+        await markActorRead(transaction, conversation.id, command.actor, 1, command.occurredAt);
 
         let workItemId: string | null = null;
         if (command.workItem) {
@@ -248,7 +277,6 @@ export function createPrismaCommunicationRepository(prisma: PrismaClient): Commu
         if (attachments.length > 0) {
           await transaction.communicationAttachment.createMany({ data: attachments });
         }
-
         await transaction.communicationOutboxEvent.create({
           data: outboxData({
             aggregateType: "CommunicationConversation",
@@ -321,6 +349,7 @@ export function createPrismaCommunicationRepository(prisma: PrismaClient): Commu
         if (attachments.length > 0) {
           await transaction.communicationAttachment.createMany({ data: attachments });
         }
+        await markActorRead(transaction, command.conversationId, command.actor, sequence, command.occurredAt);
 
         const workItem = await transaction.communicationWorkItem.findUnique({
           where: { conversationId: command.conversationId },
@@ -494,7 +523,7 @@ export function createPrismaCommunicationRepository(prisma: PrismaClient): Commu
     async getWorkItemState(workItemId: string) {
       return prisma.communicationWorkItem.findUnique({
         where: { id: workItemId },
-        select: { id: true, status: true, version: true },
+        select: { id: true, status: true, priority: true, queueKey: true, assigneeAdminUserId: true, version: true },
       });
     },
 
@@ -512,13 +541,13 @@ export function createPrismaCommunicationRepository(prisma: PrismaClient): Commu
         if (existingEvent) {
           const current = await transaction.communicationWorkItem.findUniqueOrThrow({
             where: { id: command.workItemId },
-            select: { id: true, status: true, version: true },
+            select: { id: true, status: true, priority: true, queueKey: true, assigneeAdminUserId: true, version: true },
           });
           return current;
         }
         const current = await transaction.communicationWorkItem.findUnique({
           where: { id: command.workItemId },
-          select: { id: true, conversationId: true, status: true, version: true },
+          select: { id: true, conversationId: true, status: true, priority: true, queueKey: true, assigneeAdminUserId: true, version: true },
         });
         if (!current) throw new Error("عنصر العمل غير موجود.");
         if (current.status !== command.fromStatus || current.version !== command.expectedVersion) {
@@ -615,7 +644,119 @@ export function createPrismaCommunicationRepository(prisma: PrismaClient): Commu
             occurredAt: command.occurredAt,
           }),
         });
-        return { id: current.id, status: command.toStatus, version: command.expectedVersion + 1 };
+        return {
+          id: current.id,
+          status: command.toStatus,
+          priority: current.priority,
+          queueKey: current.queueKey,
+          assigneeAdminUserId: current.assigneeAdminUserId,
+          version: command.expectedVersion + 1,
+        };
+      });
+    },
+
+    async manageWorkItem(command: ManageWorkItemCommand) {
+      return prisma.$transaction(async (transaction) => {
+        const existingEvent = await transaction.communicationWorkItemEvent.findUnique({
+          where: { workItemId_idempotencyKey: { workItemId: command.workItemId, idempotencyKey: command.idempotencyKey } },
+          select: { id: true },
+        });
+        if (existingEvent) {
+          return transaction.communicationWorkItem.findUniqueOrThrow({
+            where: { id: command.workItemId },
+            select: { id: true, status: true, priority: true, queueKey: true, assigneeAdminUserId: true, version: true },
+          });
+        }
+
+        const current = await transaction.communicationWorkItem.findUnique({
+          where: { id: command.workItemId },
+          select: { id: true, conversationId: true, status: true, priority: true, queueKey: true, assigneeAdminUserId: true, version: true },
+        });
+        if (!current) throw new Error("عنصر العمل غير موجود.");
+        if (current.version !== command.expectedVersion) {
+          throw new CommunicationConflictError("تغير عنصر العمل منذ فتحه. حدّثه قبل إعادة المحاولة.");
+        }
+
+        const changeMatches = command.change.type === "PRIORITY"
+          ? current.priority === command.change.fromPriority
+          : command.change.type === "ASSIGNEE"
+            ? current.assigneeAdminUserId === command.change.fromAssigneeAdminUserId
+            : current.queueKey === command.change.fromQueueKey;
+        if (!changeMatches) throw new CommunicationConflictError("تغيرت قيمة عنصر العمل قبل حفظ التعديل.");
+
+        const updateData = command.change.type === "PRIORITY"
+          ? { priority: command.change.toPriority, version: { increment: 1 } }
+          : command.change.type === "ASSIGNEE"
+            ? { assigneeAdminUserId: command.change.toAssigneeAdminUserId, version: { increment: 1 } }
+            : { queueKey: command.change.toQueueKey, version: { increment: 1 } };
+        const updated = await transaction.communicationWorkItem.updateMany({
+          where: { id: current.id, version: command.expectedVersion },
+          data: updateData,
+        });
+        if (updated.count !== 1) throw new CommunicationConflictError("تغير عنصر العمل أثناء الحفظ.");
+
+        const conversation = await transaction.communicationConversation.update({
+          where: { id: current.conversationId },
+          data: { lastSequence: { increment: 1 }, version: { increment: 1 }, lastActivityAt: command.occurredAt },
+          select: { lastSequence: true, version: true },
+        });
+        const metadata = command.change.type === "PRIORITY"
+          ? { fromPriority: command.change.fromPriority, toPriority: command.change.toPriority }
+          : command.change.type === "ASSIGNEE"
+            ? { fromAssigneeId: command.change.fromAssigneeAdminUserId, toAssigneeId: command.change.toAssigneeAdminUserId }
+            : { fromQueueKey: command.change.fromQueueKey, toQueueKey: command.change.toQueueKey };
+        const entry = await transaction.communicationEntry.create({
+          data: {
+            conversationId: current.conversationId,
+            sequence: conversation.lastSequence,
+            kind: command.change.type === "ASSIGNEE" ? "ASSIGNMENT" : "STATE_CHANGE",
+            visibility: "ADMIN_ONLY",
+            authorType: "ADMIN",
+            authorAdminUserId: command.actor.adminUserId,
+            body: command.reason,
+            eventName: communicationEventNames.workItemManaged,
+            metadata,
+            idempotencyKey: `work-item:${current.id}:manage:${command.idempotencyKey}`,
+            createdAt: command.occurredAt,
+          },
+          select: { id: true },
+        });
+        await transaction.communicationWorkItemEvent.create({
+          data: {
+            workItemId: current.id,
+            type: command.change.type === "PRIORITY" ? "PRIORITY_CHANGED" : command.change.type === "ASSIGNEE" ? "ASSIGNED" : "QUEUE_CHANGED",
+            actorType: "ADMIN",
+            actorAdminUserId: command.actor.adminUserId,
+            fromPriority: command.change.type === "PRIORITY" ? command.change.fromPriority : null,
+            toPriority: command.change.type === "PRIORITY" ? command.change.toPriority : null,
+            fromAssigneeId: command.change.type === "ASSIGNEE" ? command.change.fromAssigneeAdminUserId : null,
+            toAssigneeId: command.change.type === "ASSIGNEE" ? command.change.toAssigneeAdminUserId : null,
+            fromQueueKey: command.change.type === "QUEUE" ? command.change.fromQueueKey : null,
+            toQueueKey: command.change.type === "QUEUE" ? command.change.toQueueKey : null,
+            reason: command.reason,
+            idempotencyKey: command.idempotencyKey,
+            correlationId: command.correlationId,
+            occurredAt: command.occurredAt,
+          },
+        });
+        await transaction.communicationOutboxEvent.create({
+          data: outboxData({
+            aggregateType: "CommunicationWorkItem",
+            aggregateId: current.id,
+            eventName: communicationEventNames.workItemManaged,
+            payload: { workItemId: current.id, conversationId: current.conversationId, timelineEntryId: entry.id, changeType: command.change.type },
+            categoryKey: communicationCategoryKeys.workflow,
+            groupKey: `conversation:${current.conversationId}`,
+            deduplicationKey: `work-item:${current.id}:managed:${command.idempotencyKey}`,
+            correlationId: command.correlationId,
+            causationId: command.causationId,
+            occurredAt: command.occurredAt,
+          }),
+        });
+        return transaction.communicationWorkItem.findUniqueOrThrow({
+          where: { id: current.id },
+          select: { id: true, status: true, priority: true, queueKey: true, assigneeAdminUserId: true, version: true },
+        });
       });
     },
 
@@ -723,6 +864,47 @@ export function createPrismaCommunicationRepository(prisma: PrismaClient): Commu
           number: conversation.number,
           recipientCount: command.tenantIds.length,
         };
+      });
+    },
+
+    async withdrawCampaign(command: WithdrawCampaignCommand) {
+      return prisma.$transaction(async (transaction) => {
+        const campaign = await transaction.communicationCampaign.findUnique({
+          where: { id: command.campaignId },
+          select: { id: true, conversationId: true, status: true, withdrawnAt: true },
+        });
+        if (!campaign) throw new Error("الحملة غير موجودة.");
+        if (campaign.status === "WITHDRAWN" && campaign.withdrawnAt) {
+          return { campaignId: campaign.id, conversationId: campaign.conversationId, withdrawnAt: campaign.withdrawnAt };
+        }
+        if (campaign.status === "CANCELLED") throw new Error("لا يمكن سحب حملة ملغاة.");
+        await transaction.communicationCampaign.update({
+          where: { id: campaign.id },
+          data: { status: "WITHDRAWN", withdrawnAt: command.occurredAt, withdrawnReason: command.reason },
+        });
+        await transaction.communicationAudience.updateMany({
+          where: { conversationId: campaign.conversationId, withdrawnAt: null },
+          data: { withdrawnAt: command.occurredAt },
+        });
+        await transaction.communicationConversation.update({
+          where: { id: campaign.conversationId },
+          data: { lifecycleState: "WITHDRAWN", version: { increment: 1 }, lastActivityAt: command.occurredAt },
+        });
+        await transaction.communicationOutboxEvent.create({
+          data: outboxData({
+            aggregateType: "CommunicationCampaign",
+            aggregateId: campaign.id,
+            eventName: communicationEventNames.campaignWithdrawn,
+            payload: { campaignId: campaign.id, conversationId: campaign.conversationId },
+            categoryKey: communicationCategoryKeys.campaign,
+            groupKey: `campaign:${campaign.id}`,
+            deduplicationKey: `campaign:${campaign.id}:withdrawn:${command.idempotencyKey}`,
+            correlationId: command.correlationId,
+            causationId: command.causationId,
+            occurredAt: command.occurredAt,
+          }),
+        });
+        return { campaignId: campaign.id, conversationId: campaign.conversationId, withdrawnAt: command.occurredAt };
       });
     },
   };
