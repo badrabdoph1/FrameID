@@ -82,6 +82,14 @@ async function auditPlan(input: { adminId: string; adminEmail?: string; action: 
   });
 }
 
+async function syncPlanConfiguration(input: { actor: { id: string; name?: string | null; email?: string | null }; reason: string }) {
+  try {
+    await syncPlatformConfigurationToGitHub(input);
+  } catch (error) {
+    console.warn("[admin-plans] Plan saved but platform configuration sync failed:", error);
+  }
+}
+
 export async function savePlanAction(formData: FormData) {
   const admin = await requireAdminPermission("plans", "edit");
   const id = readFormString(formData, "id");
@@ -127,7 +135,7 @@ export async function savePlanAction(formData: FormData) {
         sortOrder,
       },
     });
-    await syncPlatformConfigurationToGitHub({ actor: admin, reason: existing ? "تعديل باقة" : "إنشاء باقة" });
+    await syncPlanConfiguration({ actor: admin, reason: existing ? "تعديل باقة" : "إنشاء باقة" });
   } catch (error) {
     const { userError } = await processError(error, { metadata: { action: "savePlan", name } });
     redirect(`/admin/plans?error=${encodeURIComponent(userError.message)}`);
@@ -155,7 +163,7 @@ export async function togglePlanAction(formData: FormData) {
       code: updated.code,
       metadata: { isActive: updated.isActive },
     });
-    await syncPlatformConfigurationToGitHub({ actor: admin, reason: updated.isActive ? "تفعيل باقة" : "تعطيل باقة" });
+    await syncPlanConfiguration({ actor: admin, reason: updated.isActive ? "تفعيل باقة" : "تعطيل باقة" });
   } catch (error) {
     const { userError } = await processError(error, { metadata: { action: "togglePlan", id } });
     redirect(`/admin/plans?error=${encodeURIComponent(userError.message)}`);
@@ -182,7 +190,7 @@ export async function archivePlanAction(formData: FormData) {
       planId: archived.id,
       code: archived.code,
     });
-    await syncPlatformConfigurationToGitHub({ actor: admin, reason: "أرشفة باقة" });
+    await syncPlanConfiguration({ actor: admin, reason: "أرشفة باقة" });
   } catch (error) {
     const { userError } = await processError(error, { metadata: { action: "archivePlan", id } });
     redirect(`/admin/plans?error=${encodeURIComponent(userError.message)}`);
