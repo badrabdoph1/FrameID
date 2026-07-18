@@ -68,8 +68,49 @@ const prismaMock = vi.hoisted(() => ({
         totalItems: 2,
         createdAt: new Date("2026-07-18T12:00:00.000Z"),
         finishedAt: new Date("2026-07-18T12:01:00.000Z"),
+        result: {
+          report: {
+            generatedAt: "2026-07-18T12:00:00.000Z",
+            summary: {
+              totalAssets: 2,
+              usedAssets: 1,
+              unusedAssets: 1,
+              duplicateAssets: 2,
+              missingLocalAssets: 0,
+              githubAssets: 1,
+              localAssets: 1,
+              reclaimableBytes: 120,
+            },
+            unusedAssets: [
+              {
+                id: "asset-2",
+                fileName: "b.webp",
+                storageKey: "tenant/b.webp",
+                url: "/uploads/tenant/b.webp",
+                tenantName: "Ramy Wedding Photography",
+                sizeBytes: 120,
+                checksumSha256: "same",
+                reasons: ["لا توجد مراجع مباشرة مسجلة لهذا الوسيط"],
+              },
+            ],
+            duplicateGroups: [
+              {
+                checksumSha256: "same",
+                count: 2,
+                reclaimableBytes: 100,
+                assets: [],
+              },
+            ],
+            missingAssets: [],
+            githubAssets: [],
+            localAssets: [],
+          },
+        },
       },
     ]),
+  },
+  mediaCatalogEntry: {
+    count: vi.fn().mockResolvedValueOnce(1).mockResolvedValueOnce(1),
   },
 }));
 
@@ -108,6 +149,14 @@ describe("admin media management page", () => {
     expect(screen.getByText("التكرارات")).toBeInTheDocument();
     expect(screen.getByText("سلامة البيانات")).toBeInTheDocument();
     expect(screen.getByText("العمليات الطويلة")).toBeInTheDocument();
+    expect(screen.getByText("تقرير آخر فحص")).toBeInTheDocument();
+    expect(screen.getByText("نقل غير المستخدم للسلة")).toBeInTheDocument();
+    expect(screen.getByText("تنظيف المكرر غير المستخدم")).toBeInTheDocument();
+    expect(screen.getByText("استعادة عناصر السلة")).toBeInTheDocument();
+    expect(screen.getByText("حذف نهائي للمؤهل")).toBeInTheDocument();
+    expect(screen.getByText("غير مستخدمة في آخر فحص")).toBeInTheDocument();
+    expect(screen.getByText("مجموعات التكرار")).toBeInTheDocument();
+    expect(screen.getByText("ملفات مفقودة")).toBeInTheDocument();
 
     expect(screen.getByText("الصور المستخدمة")).toBeInTheDocument();
     expect(screen.getByText("الصور غير المستخدمة")).toBeInTheDocument();

@@ -16,8 +16,15 @@ import { AdminEmptyState } from "@/components/admin/admin-workspace-primitives";
 import { AdminPageShell } from "@/components/layout/admin-page-shell";
 import { prisma } from "@/lib/prisma";
 import { requireAdminPermission } from "@/modules/admin/admin-permission-guards";
+import { selectDuplicateCleanupCandidates, type MediaScanReport } from "@/modules/media/media-scan-report";
 import { MediaTableClient } from "./media-table-client";
-import { startMediaScanOperationAction } from "./actions";
+import {
+  moveDuplicateMediaToTrashAction,
+  moveUnusedMediaToTrashAction,
+  purgeEligibleMediaAction,
+  restoreTrashedMediaAction,
+  startMediaScanOperationAction,
+} from "./actions";
 
 export const dynamic = "force-dynamic";
 
@@ -71,7 +78,22 @@ type OperationRow = {
   totalItems: number;
   createdAt: Date;
   finishedAt: Date | null;
+  result: unknown;
 };
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function scanReportFromOperation(operation: OperationRow | undefined): MediaScanReport | null {
+  if (!operation || !isRecord(operation.result)) return null;
+  const report = operation.result.report;
+  if (!isRecord(report) || !isRecord(report.summary)) return null;
+  if (!Array.isArray(report.unusedAssets) || !Array.isArray(report.duplicateGroups) || !Array.isArray(report.missingAssets)) {
+    return null;
+  }
+  return report as MediaScanReport;
+}
 
 export default async function AdminMediaPage() {
   await requireAdminPermission("media", "view");
@@ -80,10 +102,12 @@ export default async function AdminMediaPage() {
   let templates: Array<{ id: string; name: string; previewData: unknown }> = [];
   let paymentSettings: Array<{ id: string; paymentMethod: string; qrCodeAssetId: string | null }> = [];
   let operations: OperationRow[] = [];
+  let trashCount = 0;
+  let eligiblePurgeCount = 0;
 
   if (process.env.DATABASE_URL) {
     try {
-      [assets, templates, paymentSettings, operations] = await Promise.all([
+      [assets, templates, paymentSettings, operations, trashCount, eligiblePurgeCount] = await Promise.all([
         prisma.mediaAsset.findMany({
           where: { deletedAt: null },
           orderBy: { createdAt: "desc" },
@@ -142,6 +166,16 @@ export default async function AdminMediaPage() {
             totalItems: true,
             createdAt: true,
             finishedAt: true,
+            result: true,
+          },
+        }),
+        prisma.mediaCatalogEntry.count({
+          where: { lifecycleStatus: "IN_TRASH" },
+        }),
+        prisma.mediaCatalogEntry.count({
+          where: {
+            lifecycleStatus: "IN_TRASH",
+            purgeEligibleAt: { lte: new Date() },
           },
         }),
       ]);
@@ -226,6 +260,10 @@ export default async function AdminMediaPage() {
   const completedOperations = operations.filter((operation) =>
     ["SUCCEEDED", "PARTIAL", "FAILED", "CANCELLED"].includes(operation.status),
   );
+  const lastScanReport = scanReportFromOperation(lastScan);
+  const reportSummary = lastScanReport?.summary;
+  const duplicateCleanupCount = lastScanReport ? selectDuplicateCleanupCandidates(lastScanReport).length : 0;
+  const missingLocalAssetsLabel = reportSummary ? reportSummary.missingLocalAssets.toLocaleString("ar-EG") : "—";
 
   return (
     <AdminPageShell
@@ -243,9 +281,10 @@ export default async function AdminMediaPage() {
         <MetricCard label="الصور غير المستخدمة" value={unusedCount.toLocaleString("ar-EG")} hint="مرشحة للمراجعة فقط" />
         <MetricCard label="الصور المكررة" value={duplicateCount.toLocaleString("ar-EG")} hint="حسب Hash المتاح" />
         <MetricCard label="GitHub" value={githubCount.toLocaleString("ar-EG")} hint="Provider حالي" />
-        <MetricCard label="الصور التالفة" value="—" hint="تحتاج فحص ملفات" muted />
-        <MetricCard label="الصور المفقودة" value="—" hint="تحتاج مقارنة التخزين" muted />
+        <MetricCard label="الصور التالفة" value="—" hint="تحتاج فحص ملفات عميق" muted />
+        <MetricCard label="الصور المفقودة" value={missingLocalAssetsLabel} hint="من آخر فحص" muted={!reportSummary} />
         <MetricCard label="النسخ الاحتياطية" value="—" hint="من manifests الفحص" muted />
+        <MetricCard label="في سلة الوسائط" value={trashCount.toLocaleString("ar-EG")} hint="حذف منطقي فقط" />
         <MetricCard label="آخر فحص" value={formatDate(lastScan?.finishedAt ?? lastScan?.createdAt)} hint={lastScan?.status ?? "لا توجد عملية"} wide />
         <MetricCard label="آخر تنظيف" value={formatDate(lastCleanup?.finishedAt ?? lastCleanup?.createdAt)} hint={lastCleanup?.status ?? "لم يحدث تنظيف"} wide />
       </section>
@@ -267,11 +306,82 @@ export default async function AdminMediaPage() {
             </form>
           </div>
 
+          {lastScanReport ? (
+            <section className="mt-4 rounded-2xl border border-amber-300/18 bg-amber-300/[0.055] p-4">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <h3 className="text-sm font-black text-amber-100">تقرير آخر فحص</h3>
+                  <p className="mt-1 text-xs font-bold leading-6 text-white/45">
+                    وجد الفحص {lastScanReport.summary.unusedAssets.toLocaleString("ar-EG")} غير مستخدم،
+                    {" "}{lastScanReport.summary.duplicateAssets.toLocaleString("ar-EG")} مكرر،
+                    و {lastScanReport.summary.missingLocalAssets.toLocaleString("ar-EG")} مفقود محليًا.
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <form action={moveUnusedMediaToTrashAction}>
+                    <button
+                      className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-white/12 bg-black/24 px-4 text-xs font-black text-white/72 transition hover:border-amber-300/35 hover:text-amber-100 disabled:cursor-not-allowed disabled:opacity-40"
+                      disabled={lastScanReport.summary.unusedAssets === 0}
+                      type="submit"
+                    >
+                      <Trash2 className="size-4" />
+                      نقل غير المستخدم للسلة
+                    </button>
+                  </form>
+                  <form action={moveDuplicateMediaToTrashAction}>
+                    <button
+                      className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-white/12 bg-black/24 px-4 text-xs font-black text-white/72 transition hover:border-amber-300/35 hover:text-amber-100 disabled:cursor-not-allowed disabled:opacity-40"
+                      disabled={duplicateCleanupCount === 0}
+                      type="submit"
+                    >
+                      <Copy className="size-4" />
+                      تنظيف المكرر غير المستخدم
+                    </button>
+                  </form>
+                  <form action={restoreTrashedMediaAction}>
+                    <button
+                      className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-white/12 bg-black/24 px-4 text-xs font-black text-white/72 transition hover:border-amber-300/35 hover:text-amber-100 disabled:cursor-not-allowed disabled:opacity-40"
+                      disabled={trashCount === 0}
+                      type="submit"
+                    >
+                      <ArchiveRestore className="size-4" />
+                      استعادة عناصر السلة
+                    </button>
+                  </form>
+                  <form action={purgeEligibleMediaAction}>
+                    <button
+                      className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-red-300/20 bg-red-500/10 px-4 text-xs font-black text-red-100/80 transition hover:border-red-300/40 hover:bg-red-500/15 disabled:cursor-not-allowed disabled:opacity-40"
+                      disabled={eligiblePurgeCount === 0}
+                      type="submit"
+                    >
+                      <Trash2 className="size-4" />
+                      حذف نهائي للمؤهل
+                    </button>
+                  </form>
+                </div>
+              </div>
+
+              <div className="mt-4 grid gap-3 lg:grid-cols-3">
+                <ReportList title="غير مستخدمة في آخر فحص" items={lastScanReport.unusedAssets.map((asset) => `${asset.fileName} · ${formatSize(asset.sizeBytes)}`)} />
+                <ReportList title="مجموعات التكرار" items={lastScanReport.duplicateGroups.map((group) => `${group.count.toLocaleString("ar-EG")} عناصر · وفر ${formatSize(group.reclaimableBytes)}`)} />
+                <ReportList title="ملفات مفقودة" items={lastScanReport.missingAssets.map((asset) => asset.fileName)} />
+              </div>
+            </section>
+          ) : (
+            <section className="mt-4 rounded-2xl border border-white/8 bg-black/14 p-4">
+              <h3 className="text-sm font-black text-[#fff7e8]">لا يوجد تقرير فحص بعد</h3>
+              <p className="mt-1 text-xs font-bold leading-6 text-white/40">
+                اضغط “بدء فحص الوسائط” ليظهر هنا تقرير فعلي قابل للتصرف بدل الأرقام العامة.
+              </p>
+            </section>
+          )}
+
           <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
             <ManagementTile icon={Sparkles} title="التنظيف الذكي" text="ينقل غير المستخدم إلى السلة بعد فحص المراجع." status="محمي" />
-            <ManagementTile icon={Trash2} title="سلة الوسائط" text="احتفاظ افتراضي 30 يومًا، استعادة، وحذف نهائي بتأكيد." status="جاهزة معماريًا" />
-            <ManagementTile icon={Copy} title="التكرارات" text="تجميع حسب Hash مع تقدير المساحة قبل أي دمج." status={`${duplicateCount.toLocaleString("ar-EG")} عنصر`} />
-            <ManagementTile icon={ShieldCheck} title="سلامة البيانات" text="مقارنة DB و uploads و Provider والنسخ الاحتياطية." status="يتطلب فحص" />
+            <ManagementTile icon={Trash2} title="سلة الوسائط" text="احتفاظ افتراضي 30 يومًا، استعادة، وحذف نهائي بتأكيد." status={`${trashCount.toLocaleString("ar-EG")} عنصر`} />
+            <ManagementTile icon={FileWarning} title="مؤهل للحذف النهائي" text="لا يُحذف إلا بزر صريح وبعد إعادة فحص الاستخدام." status={`${eligiblePurgeCount.toLocaleString("ar-EG")} عنصر`} />
+            <ManagementTile icon={Copy} title="التكرارات" text="تجميع حسب Hash مع تقدير المساحة قبل أي دمج." status={`${(reportSummary?.duplicateAssets ?? duplicateCount).toLocaleString("ar-EG")} عنصر`} />
+            <ManagementTile icon={ShieldCheck} title="سلامة البيانات" text="مقارنة DB و uploads و Provider والنسخ الاحتياطية." status={reportSummary ? "لديه تقرير" : "يتطلب فحص"} />
             <ManagementTile icon={ArchiveRestore} title="الاستعادة" text="إرجاع الوسائط من السلة قبل أي حذف نهائي." status="ضمن دورة الحياة" />
             <ManagementTile icon={DatabaseBackup} title="النسخ الاحتياطية" text="تظهر الفروقات كتنبيهات لا كحذف تلقائي." status="بدون تغيير السلوك" />
           </div>
@@ -326,6 +436,29 @@ export default async function AdminMediaPage() {
       )}
       </section>
     </AdminPageShell>
+  );
+}
+
+function ReportList({ title, items }: { title: string; items: string[] }) {
+  const visible = items.slice(0, 4);
+  return (
+    <div className="rounded-xl border border-white/8 bg-black/18 p-3">
+      <h4 className="text-xs font-black text-white/58">{title}</h4>
+      {visible.length === 0 ? (
+        <p className="mt-3 text-xs font-bold text-white/32">لا توجد عناصر في هذا القسم.</p>
+      ) : (
+        <ul className="mt-3 grid gap-2">
+          {visible.map((item) => (
+            <li key={item} className="truncate text-xs font-bold text-white/45">{item}</li>
+          ))}
+        </ul>
+      )}
+      {items.length > visible.length ? (
+        <p className="mt-2 text-[0.68rem] font-black text-amber-200/70">
+          +{(items.length - visible.length).toLocaleString("ar-EG")} عناصر أخرى
+        </p>
+      ) : null}
+    </div>
   );
 }
 
