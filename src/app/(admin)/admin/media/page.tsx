@@ -1,10 +1,23 @@
-import { Image as ImageIcon } from "lucide-react";
+import {
+  Activity,
+  ArchiveRestore,
+  Copy,
+  DatabaseBackup,
+  FileWarning,
+  Image as ImageIcon,
+  Play,
+  RefreshCw,
+  ShieldCheck,
+  Sparkles,
+  Trash2,
+} from "lucide-react";
 
 import { AdminEmptyState } from "@/components/admin/admin-workspace-primitives";
 import { AdminPageShell } from "@/components/layout/admin-page-shell";
 import { prisma } from "@/lib/prisma";
 import { requireAdminPermission } from "@/modules/admin/admin-permission-guards";
 import { MediaTableClient } from "./media-table-client";
+import { startMediaScanOperationAction } from "./actions";
 
 export const dynamic = "force-dynamic";
 
@@ -14,19 +27,63 @@ function formatSize(bytes: number) {
     : `${(bytes / 1024 / 1024).toLocaleString("ar-EG", { maximumFractionDigits: 1 })} م.ب`;
 }
 
+function formatDate(value: Date | null | undefined) {
+  if (!value) return "لم يتم بعد";
+  return value.toLocaleString("ar-EG", {
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+type MediaAssetRow = {
+  id: string;
+  url: string;
+  storageKey: string;
+  kind: string;
+  mimeType: string;
+  sizeBytes: number;
+  width: number | null;
+  height: number | null;
+  alt: string | null;
+  checksumSha256: string | null;
+  createdAt: Date;
+  tenant: { id: string; displayName: string } | null;
+  _count?: {
+    galleryImages: number;
+    albumCovers: number;
+    contactAvatars: number;
+    contactCovers: number;
+    seoOgImages: number;
+    paymentProofs: number;
+    paymentQRCodes: number;
+    paymentSettingsQR: number;
+  };
+};
+
+type OperationRow = {
+  id: string;
+  type: string;
+  status: string;
+  progress: number;
+  processedItems: number;
+  totalItems: number;
+  createdAt: Date;
+  finishedAt: Date | null;
+};
+
 export default async function AdminMediaPage() {
   await requireAdminPermission("media", "view");
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let assets: any[] = [];
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let templates: any[] = [];
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let paymentSettings: any[] = [];
+  let assets: MediaAssetRow[] = [];
+  let templates: Array<{ id: string; name: string; previewData: unknown }> = [];
+  let paymentSettings: Array<{ id: string; paymentMethod: string; qrCodeAssetId: string | null }> = [];
+  let operations: OperationRow[] = [];
 
   if (process.env.DATABASE_URL) {
     try {
-      [assets, templates, paymentSettings] = await Promise.all([
+      [assets, templates, paymentSettings, operations] = await Promise.all([
         prisma.mediaAsset.findMany({
           where: { deletedAt: null },
           orderBy: { createdAt: "desc" },
@@ -41,9 +98,22 @@ export default async function AdminMediaPage() {
             width: true,
             height: true,
             alt: true,
+            checksumSha256: true,
             createdAt: true,
             tenant: {
               select: { id: true, displayName: true },
+            },
+            _count: {
+              select: {
+                galleryImages: true,
+                albumCovers: true,
+                contactAvatars: true,
+                contactCovers: true,
+                seoOgImages: true,
+                paymentProofs: true,
+                paymentQRCodes: true,
+                paymentSettingsQR: true,
+              },
             },
           },
         }),
@@ -54,6 +124,25 @@ export default async function AdminMediaPage() {
         prisma.paymentSettings.findMany({
           where: { qrCodeAssetId: { not: null } },
           select: { id: true, paymentMethod: true, qrCodeAssetId: true },
+        }),
+        prisma.operation.findMany({
+          where: {
+            type: {
+              in: ["MEDIA_SCAN", "MEDIA_CLEANUP", "MEDIA_PURGE", "MEDIA_RESTORE", "MEDIA_RESYNC", "MEDIA_REPAIR"],
+            },
+          },
+          orderBy: { createdAt: "desc" },
+          take: 6,
+          select: {
+            id: true,
+            type: true,
+            status: true,
+            progress: true,
+            processedItems: true,
+            totalItems: true,
+            createdAt: true,
+            finishedAt: true,
+          },
         }),
       ]);
     } catch {
@@ -73,10 +162,30 @@ export default async function AdminMediaPage() {
   }
 
   const qrCodeAssetIds = new Set(paymentSettings.map((ps) => ps.qrCodeAssetId));
+  const checksumCounts = new Map<string, number>();
+
+  for (const asset of assets) {
+    if (!asset.checksumSha256) continue;
+    checksumCounts.set(asset.checksumSha256, (checksumCounts.get(asset.checksumSha256) ?? 0) + 1);
+  }
 
   const rows = assets.map((asset) => {
     const usages: string[] = [];
-    if (asset.tenant) usages.push(`عميل: ${asset.tenant.displayName}`);
+    const relationCounts = asset._count
+      ? [
+          ["معرض", asset._count.galleryImages],
+          ["غلاف ألبوم", asset._count.albumCovers],
+          ["صورة بروفايل", asset._count.contactAvatars],
+          ["غلاف موقع", asset._count.contactCovers],
+          ["SEO", asset._count.seoOgImages],
+          ["إثبات دفع", asset._count.paymentProofs],
+          ["QR دفع", asset._count.paymentQRCodes + asset._count.paymentSettingsQR],
+        ] as const
+      : [];
+
+    for (const [label, count] of relationCounts) {
+      if (count > 0) usages.push(`${label}: ${count.toLocaleString("ar-EG")}`);
+    }
     if (templateCoverUrls.has(asset.url)) usages.push("غلاف قالب");
     if (templatePreviewUrls.has(asset.url)) usages.push("معاينة قالب");
     if (qrCodeAssetIds.has(asset.id)) usages.push("QR Code دفع");
@@ -103,37 +212,108 @@ export default async function AdminMediaPage() {
 
   const totalCount = assets.length;
   const totalSize = assets.reduce((acc, a) => acc + a.sizeBytes, 0);
+  const usedCount = rows.filter((row) => row.usages !== "غير مستخدم").length;
+  const unusedCount = Math.max(0, totalCount - usedCount);
+  const duplicateCount = assets.filter(
+    (asset) => asset.checksumSha256 && (checksumCounts.get(asset.checksumSha256) ?? 0) > 1,
+  ).length;
+  const githubCount = assets.filter((asset) => asset.url.includes("raw.githubusercontent.com")).length;
+  const lastScan = operations.find((operation) => operation.type === "MEDIA_SCAN");
+  const lastCleanup = operations.find((operation) => operation.type === "MEDIA_CLEANUP" || operation.type === "MEDIA_PURGE");
+  const runningOperations = operations.filter((operation) =>
+    ["PENDING", "RUNNING", "PAUSE_REQUESTED", "CANCEL_REQUESTED"].includes(operation.status),
+  );
+  const completedOperations = operations.filter((operation) =>
+    ["SUCCEEDED", "PARTIAL", "FAILED", "CANCELLED"].includes(operation.status),
+  );
 
   return (
     <AdminPageShell
       badge="المحتوى"
       title="إدارة الوسائط"
-      description="مركز صيانة ومراقبة الصور والملفات. المرحلة الحالية تعرض الجرد القائم، والعمليات والفحص الشامل أصبحت جاهزة كأساس معماري."
+      description="مركز إدارة وصيانة ومراقبة الوسائط: فحص، تنظيف آمن، سلة محذوفات، تكرارات، سلامة بيانات، وعمليات طويلة التنفيذ."
       breadcrumbs={[
         { label: "المحتوى", href: "/admin/content" },
         { label: "إدارة الوسائط" },
       ]}
     >
-      <section className="mb-4 grid gap-3 sm:grid-cols-3">
-        <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-          <p className="text-xs font-black text-white/42">إجمالي الملفات</p>
-          <p className="mt-1 text-2xl font-black text-[#fff7e8]">
-            {totalCount.toLocaleString("ar-EG")}
-          </p>
+      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+        <MetricCard label="إجمالي الصور" value={totalCount.toLocaleString("ar-EG")} hint={formatSize(totalSize)} />
+        <MetricCard label="الصور المستخدمة" value={usedCount.toLocaleString("ar-EG")} hint="مرتبطة بعناصر حالية" />
+        <MetricCard label="الصور غير المستخدمة" value={unusedCount.toLocaleString("ar-EG")} hint="مرشحة للمراجعة فقط" />
+        <MetricCard label="الصور المكررة" value={duplicateCount.toLocaleString("ar-EG")} hint="حسب Hash المتاح" />
+        <MetricCard label="GitHub" value={githubCount.toLocaleString("ar-EG")} hint="Provider حالي" />
+        <MetricCard label="الصور التالفة" value="—" hint="تحتاج فحص ملفات" muted />
+        <MetricCard label="الصور المفقودة" value="—" hint="تحتاج مقارنة التخزين" muted />
+        <MetricCard label="النسخ الاحتياطية" value="—" hint="من manifests الفحص" muted />
+        <MetricCard label="آخر فحص" value={formatDate(lastScan?.finishedAt ?? lastScan?.createdAt)} hint={lastScan?.status ?? "لا توجد عملية"} wide />
+        <MetricCard label="آخر تنظيف" value={formatDate(lastCleanup?.finishedAt ?? lastCleanup?.createdAt)} hint={lastCleanup?.status ?? "لم يحدث تنظيف"} wide />
+      </section>
+
+      <section className="grid gap-3 xl:grid-cols-[1.2fr_0.8fr]">
+        <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-4">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h2 className="text-base font-black text-[#fff7e8]">فحص الوسائط</h2>
+              <p className="mt-1 max-w-2xl text-xs font-bold leading-6 text-white/42">
+                يسجل عملية دائمة ويحلل الجرد الحالي بدون حذف. نتائج الفحص تظهر في سجل العمليات وتفتح الطريق للتنظيف الآمن.
+              </p>
+            </div>
+            <form action={startMediaScanOperationAction}>
+              <button className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-amber-300/30 bg-amber-300/14 px-4 text-xs font-black text-amber-100 transition hover:bg-amber-300/20" type="submit">
+                <Play className="size-4" />
+                بدء فحص الوسائط
+              </button>
+            </form>
+          </div>
+
+          <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+            <ManagementTile icon={Sparkles} title="التنظيف الذكي" text="ينقل غير المستخدم إلى السلة بعد فحص المراجع." status="محمي" />
+            <ManagementTile icon={Trash2} title="سلة الوسائط" text="احتفاظ افتراضي 30 يومًا، استعادة، وحذف نهائي بتأكيد." status="جاهزة معماريًا" />
+            <ManagementTile icon={Copy} title="التكرارات" text="تجميع حسب Hash مع تقدير المساحة قبل أي دمج." status={`${duplicateCount.toLocaleString("ar-EG")} عنصر`} />
+            <ManagementTile icon={ShieldCheck} title="سلامة البيانات" text="مقارنة DB و uploads و Provider والنسخ الاحتياطية." status="يتطلب فحص" />
+            <ManagementTile icon={ArchiveRestore} title="الاستعادة" text="إرجاع الوسائط من السلة قبل أي حذف نهائي." status="ضمن دورة الحياة" />
+            <ManagementTile icon={DatabaseBackup} title="النسخ الاحتياطية" text="تظهر الفروقات كتنبيهات لا كحذف تلقائي." status="بدون تغيير السلوك" />
+          </div>
         </div>
-        <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-          <p className="text-xs font-black text-white/42">الحجم الإجمالي</p>
-          <p className="mt-1 text-2xl font-black text-[#fff7e8]">
-            {formatSize(totalSize)}
-          </p>
-        </div>
-        <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-          <p className="text-xs font-black text-white/42">في القوالب</p>
-          <p className="mt-1 text-2xl font-black text-[#fff7e8]">
-            {templateCoverUrls.size.toLocaleString("ar-EG")}
-          </p>
+
+        <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-4">
+          <div className="flex items-center gap-2">
+            <Activity className="size-4 text-amber-300" />
+            <h2 className="text-base font-black text-[#fff7e8]">العمليات الطويلة</h2>
+          </div>
+          <div className="mt-4 grid gap-3">
+            <MetricCard label="عمليات جارية" value={runningOperations.length.toLocaleString("ar-EG")} hint="Persistent Operations" compact />
+            <MetricCard label="عمليات منتهية" value={completedOperations.length.toLocaleString("ar-EG")} hint="آخر 6 عمليات وسائط" compact />
+            <div className="rounded-xl border border-white/8 bg-black/14 p-3">
+              <p className="text-xs font-black text-white/45">آخر عملية</p>
+              <p className="mt-1 text-sm font-black text-[#fff7e8]">
+                {operations[0] ? `${operationLabel(operations[0].type)} · ${operations[0].status}` : "لا توجد عمليات مسجلة"}
+              </p>
+              <p className="mt-1 text-xs font-bold text-white/35">
+                {operations[0]
+                  ? `${operations[0].processedItems.toLocaleString("ar-EG")} / ${operations[0].totalItems.toLocaleString("ar-EG")}`
+                  : "ابدأ فحص الوسائط لإنشاء أول سجل."}
+              </p>
+            </div>
+            <a href="/admin/operations" className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.045] px-4 text-xs font-black text-white/62 no-underline transition hover:border-amber-300/24 hover:text-amber-100">
+              <RefreshCw className="size-4" />
+              فتح مركز العمليات
+            </a>
+          </div>
         </div>
       </section>
+
+      <section className="rounded-2xl border border-white/10 bg-white/[0.025] p-4">
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <div>
+            <h2 className="text-base font-black text-[#fff7e8]">الجرد الحالي</h2>
+            <p className="mt-1 text-xs font-bold text-white/38">
+              هذا الجدول يعرض الوسائط الحالية، بينما قرارات الحذف والتنظيف تعتمد على الفحص وسجل العمليات.
+            </p>
+          </div>
+          <FileWarning className="hidden size-5 text-white/24 sm:block" />
+        </div>
 
       {rows.length === 0 ? (
         <AdminEmptyState
@@ -144,6 +324,70 @@ export default async function AdminMediaPage() {
       ) : (
         <MediaTableClient rows={rows} />
       )}
+      </section>
     </AdminPageShell>
+  );
+}
+
+function operationLabel(type: string) {
+  const labels: Record<string, string> = {
+    MEDIA_SCAN: "فحص الوسائط",
+    MEDIA_CLEANUP: "تنظيف الوسائط",
+    MEDIA_PURGE: "حذف نهائي",
+    MEDIA_RESTORE: "استعادة",
+    MEDIA_RESYNC: "إعادة مزامنة",
+    MEDIA_REPAIR: "إصلاح",
+  };
+  return labels[type] ?? type;
+}
+
+function MetricCard({
+  label,
+  value,
+  hint,
+  muted,
+  wide,
+  compact,
+}: {
+  label: string;
+  value: string;
+  hint: string;
+  muted?: boolean;
+  wide?: boolean;
+  compact?: boolean;
+}) {
+  return (
+    <div className={`rounded-2xl border border-white/10 bg-white/[0.035] ${compact ? "p-3" : "p-4"} ${wide ? "xl:col-span-2" : ""}`}>
+      <p className="text-xs font-black text-white/42">{label}</p>
+      <p className={`mt-1 truncate ${compact ? "text-xl" : "text-2xl"} font-black ${muted ? "text-white/42" : "text-[#fff7e8]"}`}>
+        {value}
+      </p>
+      <p className="mt-1 truncate text-[0.68rem] font-bold text-white/30">{hint}</p>
+    </div>
+  );
+}
+
+function ManagementTile({
+  icon: Icon,
+  title,
+  text,
+  status,
+}: {
+  icon: typeof Sparkles;
+  title: string;
+  text: string;
+  status: string;
+}) {
+  return (
+    <article className="rounded-xl border border-white/8 bg-black/14 p-3">
+      <div className="flex items-center justify-between gap-3">
+        <Icon className="size-4 text-amber-300" />
+        <span className="rounded-full border border-white/10 bg-white/[0.045] px-2 py-0.5 text-[0.62rem] font-black text-white/42">
+          {status}
+        </span>
+      </div>
+      <h3 className="mt-3 text-sm font-black text-[#fff7e8]">{title}</h3>
+      <p className="mt-1 text-xs font-bold leading-5 text-white/38">{text}</p>
+    </article>
   );
 }

@@ -54,3 +54,59 @@ export async function replaceMediaAction(formData: FormData) {
     throw new Error("فشل استبدال الملف");
   }
 }
+
+export async function startMediaScanOperationAction() {
+  const admin = await requireAdminPermission("media", "edit");
+
+  const startedAt = new Date();
+  const totalItems = await prisma.mediaAsset.count({
+    where: { deletedAt: null },
+  });
+  const finishedAt = new Date();
+
+  const operation = await prisma.operation.create({
+    data: {
+      type: "MEDIA_SCAN",
+      status: "SUCCEEDED",
+      title: "فحص الوسائط",
+      progress: 1,
+      totalItems,
+      processedItems: totalItems,
+      startedAt,
+      finishedAt,
+      lastHeartbeatAt: finishedAt,
+      requestedByAdminId: admin.id,
+      requestedByName: admin.name,
+      cancellable: false,
+      resumable: true,
+      checkpoint: {
+        scope: "legacy-media-assets",
+        processedItems: totalItems,
+      },
+      input: {
+        mode: "read-only",
+        source: "admin-media-page",
+      },
+      result: {
+        totalItems,
+        note: "تم تسجيل فحص قراءة للجرد الحالي بدون حذف أو نقل. الفحص العميق بالدفعات يستخدم نفس إطار العمليات.",
+      },
+    },
+  });
+
+  await prisma.operationEvent.create({
+    data: {
+      operationId: operation.id,
+      level: "INFO",
+      code: "MEDIA_SCAN_RECORDED",
+      message: "تم تسجيل فحص الوسائط الحالي بدون أي حذف.",
+      data: {
+        totalItems,
+        source: "admin-media-page",
+      },
+    },
+  });
+
+  revalidatePath("/admin/media");
+  revalidatePath("/admin/operations");
+}
