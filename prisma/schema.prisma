@@ -127,6 +127,91 @@ enum PlatformPageKind {
   FUNCTIONAL
 }
 
+enum OperationType {
+  MEDIA_SCAN
+  MEDIA_CLEANUP
+  MEDIA_PURGE
+  MEDIA_RESTORE
+  MEDIA_RESYNC
+  MEDIA_REPAIR
+  MEDIA_THUMBNAIL_REBUILD
+  MEDIA_COMPRESSION
+  BACKUP_INTEGRITY_CHECK
+}
+
+enum OperationStatus {
+  PENDING
+  RUNNING
+  PAUSE_REQUESTED
+  PAUSED
+  CANCEL_REQUESTED
+  CANCELLED
+  SUCCEEDED
+  PARTIAL
+  FAILED
+}
+
+enum OperationItemStatus {
+  PENDING
+  RUNNING
+  SKIPPED
+  SUCCEEDED
+  FAILED
+  CANCELLED
+}
+
+enum OperationEventLevel {
+  DEBUG
+  INFO
+  WARNING
+  ERROR
+}
+
+enum MediaLifecycleStatus {
+  ACTIVE
+  IN_TRASH
+  PURGED
+}
+
+enum MediaUsageStatus {
+  USED
+  UNUSED
+  UNKNOWN
+}
+
+enum MediaCatalogSource {
+  CUSTOMER_MEDIA
+  PLATFORM_MEDIA
+  STATIC_FILE
+  STORAGE_OBJECT
+  BACKUP_OBJECT
+}
+
+enum MediaFindingType {
+  UNUSED_MEDIA
+  DUPLICATE_MEDIA
+  CORRUPT_MEDIA
+  MISSING_OBJECT
+  MISSING_DATABASE_RECORD
+  DATABASE_REFERENCE_MISSING_OBJECT
+  OVERSIZED_MEDIA
+  INVALID_DIMENSIONS
+  STORAGE_BACKUP_MISMATCH
+}
+
+enum MediaFindingSeverity {
+  INFO
+  WARNING
+  ERROR
+  CRITICAL
+}
+
+enum MediaFindingStatus {
+  OPEN
+  RESOLVED
+  IGNORED
+}
+
 model User {
   id              String    @id @default(cuid())
   email           String    @unique
@@ -1113,6 +1198,188 @@ model PlatformMediaAsset {
 
   @@index([deletedAt, createdAt])
   @@index([createdById, createdAt])
+}
+
+model Operation {
+  id                 String          @id @default(cuid())
+  type               OperationType
+  status             OperationStatus @default(PENDING)
+  title              String?
+  progress           Float           @default(0)
+  totalItems         Int             @default(0)
+  processedItems     Int             @default(0)
+  startedAt          DateTime?
+  finishedAt         DateTime?
+  lastHeartbeatAt    DateTime?
+  requestedByAdminId String?
+  requestedByName    String?
+  cancellable        Boolean         @default(true)
+  resumable          Boolean         @default(true)
+  checkpoint         Json?
+  input              Json?
+  result             Json?
+  errorSummary       String?
+  leaseOwner         String?
+  leaseExpiresAt     DateTime?
+  retryOfOperationId String?
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+
+  events OperationEvent[]
+  items  OperationItem[]
+
+  @@index([type, status, createdAt])
+  @@index([status, leaseExpiresAt])
+  @@index([requestedByAdminId, createdAt])
+}
+
+model OperationEvent {
+  id          String              @id @default(cuid())
+  operationId String
+  level       OperationEventLevel @default(INFO)
+  code        String?
+  message     String
+  data        Json?
+  createdAt   DateTime            @default(now())
+
+  operation Operation @relation(fields: [operationId], references: [id], onDelete: Cascade)
+
+  @@index([operationId, createdAt])
+  @@index([level, createdAt])
+}
+
+model OperationItem {
+  id          String              @id @default(cuid())
+  operationId String
+  itemKey     String
+  itemType    String?
+  status      OperationItemStatus @default(PENDING)
+  attempts    Int                 @default(0)
+  checkpoint  Json?
+  result      Json?
+  error       String?
+  startedAt   DateTime?
+  finishedAt  DateTime?
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  operation Operation @relation(fields: [operationId], references: [id], onDelete: Cascade)
+
+  @@unique([operationId, itemKey])
+  @@index([operationId, status])
+}
+
+model MediaSettings {
+  key                String   @id @default("default")
+  trashRetentionDays Int      @default(30)
+  autoPurgeEnabled   Boolean  @default(false)
+  updatedByAdminId   String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+
+model MediaCatalogEntry {
+  id                 String               @id @default(cuid())
+  sourceKind         MediaCatalogSource
+  sourceId           String?
+  tenantId           String?
+  siteId             String?
+  providerId         String               @default("unknown")
+  storageKey         String
+  url                String?
+  kind               String               @default("image")
+  mimeType           String?
+  sizeBytes          Int?
+  width              Int?
+  height             Int?
+  checksumSha256     String?
+  originalName       String?
+  metadata           Json?
+  lifecycleStatus    MediaLifecycleStatus @default(ACTIVE)
+  usageStatus        MediaUsageStatus     @default(UNKNOWN)
+  discoveredAt       DateTime             @default(now())
+  lastVerifiedAt     DateTime?
+  lastUsedAt         DateTime?
+  trashedAt          DateTime?
+  purgeEligibleAt    DateTime?
+  purgedAt           DateTime?
+  trashReason        String?
+  trashActorId       String?
+  trashOperationId   String?
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+
+  references      MediaReference[]
+  findings        MediaFinding[]
+  lifecycleEvents MediaLifecycleEvent[]
+
+  @@unique([sourceKind, sourceId])
+  @@unique([providerId, storageKey])
+  @@index([tenantId, lifecycleStatus, usageStatus])
+  @@index([siteId, lifecycleStatus])
+  @@index([checksumSha256])
+  @@index([lifecycleStatus, purgeEligibleAt])
+  @@index([lastVerifiedAt])
+}
+
+model MediaReference {
+  id                      String   @id @default(cuid())
+  mediaId                 String
+  sourceType              String
+  sourceId                String
+  fieldPath               String
+  label                   String?
+  url                     String?
+  active                  Boolean  @default(true)
+  firstSeenAt             DateTime @default(now())
+  lastSeenAt              DateTime @default(now())
+  lastVerifiedOperationId String?
+  metadata                Json?
+
+  media MediaCatalogEntry @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+
+  @@unique([mediaId, sourceType, sourceId, fieldPath])
+  @@index([sourceType, sourceId])
+  @@index([active, lastSeenAt])
+}
+
+model MediaFinding {
+  id          String               @id @default(cuid())
+  mediaId     String?
+  operationId String?
+  type        MediaFindingType
+  severity    MediaFindingSeverity @default(INFO)
+  status      MediaFindingStatus   @default(OPEN)
+  message     String
+  evidence    Json?
+  createdAt   DateTime             @default(now())
+  resolvedAt  DateTime?
+
+  media MediaCatalogEntry? @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+
+  @@index([mediaId, status, createdAt])
+  @@index([operationId, createdAt])
+  @@index([type, status])
+}
+
+model MediaLifecycleEvent {
+  id                  String                @id @default(cuid())
+  mediaId             String
+  operationId         String?
+  actorAdminId        String?
+  fromLifecycleStatus MediaLifecycleStatus?
+  toLifecycleStatus   MediaLifecycleStatus?
+  fromUsageStatus     MediaUsageStatus?
+  toUsageStatus       MediaUsageStatus?
+  reason              String
+  metadata            Json?
+  createdAt           DateTime              @default(now())
+
+  media MediaCatalogEntry @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+
+  @@index([mediaId, createdAt])
+  @@index([operationId, createdAt])
+  @@index([actorAdminId, createdAt])
 }
 
 model CustomerDataChange {

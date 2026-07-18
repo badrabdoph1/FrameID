@@ -77,4 +77,13 @@ describe("admin navigation contract", () => {
     const communication = adminSections.find((section) => section.id === "communication");
     expect(communication?.links.some((link) => link.href === "/admin/messages/customer-outreach")).toBe(true);
   });
+
+  it("registers media management as the official admin media destination", () => {
+    const mediaRoute = getAdminRoute("/admin/media");
+    const content = adminSections.find((section) => section.id === "content");
+
+    expect(mediaRoute?.labelAr).toBe("إدارة الوسائط");
+    expect(mediaRoute?.descriptionAr).toContain("صيانة");
+    expect(content?.links.some((link) => link.href === "/admin/media" && link.label === "إدارة الوسائط")).toBe(true);
+  });
 });

@@ -40,6 +40,7 @@ describe("admin content workspace", () => {
     expect(hrefs.filter((href) => href === "/admin/templates")).toHaveLength(1);
     expect(hrefs.filter((href) => href === "/admin/themes")).toHaveLength(1);
     expect(hrefs.filter((href) => href === "/admin/media")).toHaveLength(1);
+    expect(screen.getByRole("link", { name: /إدارة الوسائط/ })).toHaveAttribute("href", "/admin/media");
     expect(screen.queryByText("سجل القوالب")).not.toBeInTheDocument();
   });
 
@@ -60,6 +61,6 @@ describe("admin content workspace", () => {
     );
     expect(document.querySelector('a[href="/admin/page-studio"]')).not.toBeInTheDocument();
     expect(document.querySelector('a[href="/admin/content/marketing/homepage"]')).not.toBeInTheDocument();
-    expect(screen.getByText("متاحة للتحرير")).toBeInTheDocument();
+    expect(screen.getAllByText("متاحة للتحرير").length).toBeGreaterThan(0);
   });
 });

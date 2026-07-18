@@ -107,11 +107,11 @@ export default async function AdminMediaPage() {
   return (
     <AdminPageShell
       badge="المحتوى"
-      title="مكتبة الوسائط"
-      description="كل الصور والملفات في المنصة. اعرف مكان كل ملف واستخدمته، واستبدله عند الحاجة."
+      title="إدارة الوسائط"
+      description="مركز صيانة ومراقبة الصور والملفات. المرحلة الحالية تعرض الجرد القائم، والعمليات والفحص الشامل أصبحت جاهزة كأساس معماري."
       breadcrumbs={[
         { label: "المحتوى", href: "/admin/content" },
-        { label: "الوسائط" },
+        { label: "إدارة الوسائط" },
       ]}
     >
       <section className="mb-4 grid gap-3 sm:grid-cols-3">

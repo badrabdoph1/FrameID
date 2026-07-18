@@ -87,7 +87,7 @@ export default async function AdminContentPage() {
         <nav aria-label="أقسام المحتوى" className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
           <ToolLink href="/admin/templates" label="إدارة القوالب" />
           <ToolLink href="/admin/themes" label="إعدادات الثيمات" />
-          <ToolLink href="/admin/media" label="مكتبة الوسائط" />
+          <ToolLink href="/admin/media" label="إدارة الوسائط" />
           <ToolLink href="/admin/marketing" label="أدوات التسويق" />
           <ToolLink href="/admin/social-preview" label="معاينة المشاركة" />
           <ToolLink href="/admin/revisions" label="سجل التعديلات السابق" />
