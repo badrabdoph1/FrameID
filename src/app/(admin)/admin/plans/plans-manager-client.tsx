@@ -315,7 +315,11 @@ function PlanEditor({ plan, submitLabel }: { plan?: PlanRow; submitLabel: string
         </div>
         <div className="mt-3 grid gap-2">
           {lines.map((line, index) => (
-            <div key={index} className="grid grid-cols-[1fr_auto] gap-2">
+            <div key={index} className="grid grid-cols-[auto_1fr_auto_auto] items-center gap-1.5">
+              <div className="flex flex-col">
+                <button type="button" disabled={index === 0} onClick={() => setLines((items) => { const arr = [...items]; [arr[index - 1], arr[index]] = [arr[index], arr[index - 1]]; return arr; })} className="grid size-5.5 place-items-center rounded text-white/35 hover:text-white/70 disabled:opacity-20 disabled:pointer-events-none" aria-label="إضافة للأعلى"><ChevronUp className="size-3.5" /></button>
+                <button type="button" disabled={index === lines.length - 1} onClick={() => setLines((items) => { const arr = [...items]; [arr[index], arr[index + 1]] = [arr[index + 1], arr[index]]; return arr; })} className="grid size-5.5 place-items-center rounded text-white/35 hover:text-white/70 disabled:opacity-20 disabled:pointer-events-none" aria-label="إضافة للأسفل"><ChevronDown className="size-3.5" /></button>
+              </div>
               <input name="featureLines" value={line} onChange={(event) => setLines((items) => items.map((item, itemIndex) => itemIndex === index ? event.target.value : item))} className={inputClass} />
               <button type="button" onClick={() => setLines((items) => items.length <= 1 ? [""] : items.filter((_, itemIndex) => itemIndex !== index))} className="grid size-11 place-items-center rounded-xl border border-red-500/20 bg-red-500/10 text-red-300"><Trash2 className="size-4" /></button>
             </div>
