@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-07-18T17:42:26.288Z",
+  "updatedAt": "2026-07-19T13:13:36.492Z",
   "themes": [
     {
       "code": "luxe-studio",
@@ -134,7 +134,7 @@
     {
       "code": "basic",
       "name": "Pro Vip",
-      "priceAmount": 250,
+      "priceAmount": 550,
       "currency": "EGP",
       "billingInterval": "unspecified",
       "features": {
@@ -243,7 +243,7 @@
           "instructions": "حوّل على رقم إنستا باي، ثم ارفع صورة إثبات الدفع من نفس الصفحة.",
           "notes": null,
           "isActive": true,
-          "sortOrder": 210
+          "sortOrder": 220
         }
       ]
     },
@@ -272,7 +272,7 @@
           "instructions": "حوّل على رقم فودافون كاش، ثم ارفع صورة إثبات الدفع من نفس الصفحة.",
           "notes": null,
           "isActive": true,
-          "sortOrder": 410
+          "sortOrder": 430
         }
       ]
     },
