@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-07-17T20:27:16.190Z",
+  "updatedAt": "2026-07-18T17:42:26.288Z",
   "themes": [
     {
       "code": "luxe-studio",
@@ -188,15 +188,15 @@
     },
     {
       "code": "professional",
-      "name": "الباقة الاحترافية",
-      "priceAmount": 100,
+      "name": "بيزك",
+      "priceAmount": 45,
       "currency": "EGP",
-      "billingInterval": "unspecified",
+      "billingInterval": "monthly",
       "features": {
-        "ctaLabel": "اختيار الباقة",
+        "ctaLabel": "اختار الباقة",
         "isPopular": true,
         "badgeLabel": "الأكثر طلبًا",
-        "description": "كل ما تحتاجه لإدارة موقع تصوير متكامل",
+        "description": "موقع يحتوي ع اسمك،بياناتك،اسعارك،صور من شغلك، روابط صفحاتك ع السوشيال مديا",
         "featureLines": [
           "موقع تصوير احترافي كامل",
           "جميع القوالب المتاحة",
@@ -243,7 +243,7 @@
           "instructions": "حوّل على رقم إنستا باي، ثم ارفع صورة إثبات الدفع من نفس الصفحة.",
           "notes": null,
           "isActive": true,
-          "sortOrder": 190
+          "sortOrder": 210
         }
       ]
     },
@@ -272,7 +272,7 @@
           "instructions": "حوّل على رقم فودافون كاش، ثم ارفع صورة إثبات الدفع من نفس الصفحة.",
           "notes": null,
           "isActive": true,
-          "sortOrder": 370
+          "sortOrder": 410
         }
       ]
     },
@@ -412,7 +412,7 @@
           }
         },
         "trialPolicy": {
-          "defaultDays": 14
+          "defaultDays": 40
         },
         "pendingReview": {
           "action": {
