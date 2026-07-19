@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-07-19T19:12:23.571Z",
+  "updatedAt": "2026-07-19T19:17:11.531Z",
   "themes": [
     {
       "code": "luxe-studio",
@@ -136,24 +136,24 @@
       "name": "بيزك سنوي",
       "priceAmount": 550,
       "currency": "EGP",
-      "billingInterval": "unspecified",
+      "billingInterval": "yearly",
       "features": {
         "ctaLabel": "اختيار الباقة",
         "isPopular": false,
         "badgeLabel": "",
-        "description": "باقة مثالية لبدء موقع تصوير احترافي",
+        "description": "باقه التوفير",
         "featureLines": [
           "موقع تصوير احترافي جاهز",
-          "لوحة تحكم سهلة للعميل",
-          "معرض صور يتسع لـ 100 صورة",
-          "باقة خدمات واحدة",
+          "لوحة تحكم خاصه بيك تعدل اي حاجه فاي وقت",
+          "معرض صور يتسع لـ 000،0 صوره",
+          "اضافه باقات بعدد غير محدد",
           "نموذج تواصل أساسي",
           "تفعيل يدوي بعد مراجعة الدفع"
         ],
         "isComingSoon": false,
         "storageLabel": "0,500 GB مساحة تخزين",
         "highlightText": "",
-        "photoLimitLabel": "100,000 صورة"
+        "photoLimitLabel": "0،10،0100"
       },
       "isActive": true
     },
@@ -241,7 +241,7 @@
           "instructions": "حوّل على رقم إنستا باي، ثم ارفع صورة إثبات الدفع من نفس الصفحة.",
           "notes": null,
           "isActive": true,
-          "sortOrder": 240
+          "sortOrder": 250
         }
       ]
     },
@@ -270,7 +270,7 @@
           "instructions": "حوّل على رقم فودافون كاش، ثم ارفع صورة إثبات الدفع من نفس الصفحة.",
           "notes": null,
           "isActive": true,
-          "sortOrder": 470
+          "sortOrder": 490
         }
       ]
     },
