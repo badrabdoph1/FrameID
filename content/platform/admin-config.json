@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-07-19T13:13:36.492Z",
+  "updatedAt": "2026-07-19T14:06:23.211Z",
   "themes": [
     {
       "code": "luxe-studio",
@@ -133,7 +133,7 @@
   "plans": [
     {
       "code": "basic",
-      "name": "Pro Vip",
+      "name": "بيزك سنوي",
       "priceAmount": 550,
       "currency": "EGP",
       "billingInterval": "unspecified",
@@ -151,7 +151,7 @@
           "تفعيل يدوي بعد مراجعة الدفع"
         ],
         "isComingSoon": false,
-        "storageLabel": "100 GB مساحة تخزين",
+        "storageLabel": "0,500 GB مساحة تخزين",
         "highlightText": "",
         "photoLimitLabel": "100,000 صورة"
       },
@@ -243,7 +243,7 @@
           "instructions": "حوّل على رقم إنستا باي، ثم ارفع صورة إثبات الدفع من نفس الصفحة.",
           "notes": null,
           "isActive": true,
-          "sortOrder": 220
+          "sortOrder": 230
         }
       ]
     },
@@ -272,7 +272,7 @@
           "instructions": "حوّل على رقم فودافون كاش، ثم ارفع صورة إثبات الدفع من نفس الصفحة.",
           "notes": null,
           "isActive": true,
-          "sortOrder": 430
+          "sortOrder": 450
         }
       ]
     },
