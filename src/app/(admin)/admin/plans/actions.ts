@@ -26,17 +26,13 @@ function slugifyPlanCode(value: string): string {
 }
 
 function readAmount(formData: FormData): number {
-  const amount = Number(readFormString(formData, "priceAmount"));
+  const raw = readFormString(formData, "priceAmount").replace(/,/g, "");
+  const amount = Number(raw);
   if (!Number.isFinite(amount) || amount < 0) redirectPlanError("invalid-price");
   return Math.round(amount);
 }
 
 function readPlanFeatures(formData: FormData): Prisma.InputJsonObject {
-  const legacyJson = readFormString(formData, "features").trim();
-  if (legacyJson) {
-    return JSON.parse(legacyJson) as Prisma.InputJsonObject;
-  }
-
   const featureLines = formData
     .getAll("featureLines")
     .map((value) => String(value).trim())
@@ -45,7 +41,8 @@ function readPlanFeatures(formData: FormData): Prisma.InputJsonObject {
   return {
     description: readFormString(formData, "description").trim(),
     badgeLabel: readFormString(formData, "badgeLabel").trim(),
-    isPopular: formData.get("isPopular") === "on" || formData.get("isPopular") === "true",
+    isPopular: formData.get("isPopular") === "on",
+    isComingSoon: formData.get("isComingSoon") === "on",
     storageLabel: readFormString(formData, "storageLabel").trim(),
     photoLimitLabel: readFormString(formData, "photoLimitLabel").trim(),
     ctaLabel: readFormString(formData, "ctaLabel").trim() || "اختيار الباقة",
@@ -90,6 +87,13 @@ async function syncPlanConfiguration(input: { actor: { id: string; name?: string
   }
 }
 
+function revalidatePlanPaths() {
+  revalidatePath("/admin/plans");
+  revalidatePath("/admin/billing");
+  revalidatePath("/admin/search");
+  revalidatePath("/", "layout");
+}
+
 export async function savePlanAction(formData: FormData) {
   const admin = await requireAdminPermission("plans", "edit");
   const id = readFormString(formData, "id");
@@ -98,7 +102,7 @@ export async function savePlanAction(formData: FormData) {
   const billingInterval = readFormString(formData, "billingInterval").trim() || "monthly";
   const isActive = formData.get("isActive") === "on" || formData.get("isActive") === "true";
   const priceAmount = readAmount(formData);
-  const sortOrder = Number.parseInt(readFormString(formData, "sortOrder"), 10) || 0;
+  const sortOrder = Math.max(0, Number.parseInt(readFormString(formData, "sortOrder"), 10) || 0);
 
   if (!name || name.length < 2) redirectPlanError("invalid-name");
 
@@ -107,16 +111,15 @@ export async function savePlanAction(formData: FormData) {
     if (!code || code.length < 2) redirectPlanError("invalid-code");
 
     const features = readPlanFeatures(formData);
-    (features as Record<string, unknown>).isComingSoon = formData.get("isComingSoon") === "on";
 
-    const existing = id ? await prisma.plan.findUnique({ where: { id } }) : await prisma.plan.findUnique({ where: { code } });
+    const existing = id ? await prisma.plan.findUnique({ where: { id }, select: { id: true, code: true } }) : null;
     const saved = existing
       ? await prisma.plan.update({
           where: { id: existing.id },
-          data: { code, name, priceAmount, currency, billingInterval, features, isActive, sortOrder } as never,
+          data: { code, name, priceAmount, currency, billingInterval, features: features as Prisma.InputJsonValue, isActive, sortOrder },
         })
       : await prisma.plan.create({
-          data: { code, name, priceAmount, currency, billingInterval, features, isActive, sortOrder } as never,
+          data: { code, name, priceAmount, currency, billingInterval, features: features as Prisma.InputJsonValue, isActive, sortOrder },
         });
 
     await auditPlan({
@@ -141,9 +144,7 @@ export async function savePlanAction(formData: FormData) {
     redirect(`/admin/plans?error=${encodeURIComponent(userError.message)}`);
   }
 
-  revalidatePath("/admin/plans");
-  revalidatePath("/admin/billing");
-  revalidatePath("/admin/search");
+  revalidatePlanPaths();
   redirect("/admin/plans?saved=1");
 }
 
@@ -169,9 +170,7 @@ export async function togglePlanAction(formData: FormData) {
     redirect(`/admin/plans?error=${encodeURIComponent(userError.message)}`);
   }
 
-  revalidatePath("/admin/plans");
-  revalidatePath("/admin/billing");
-  revalidatePath("/admin/search");
+  revalidatePlanPaths();
   redirect("/admin/plans?toggled=1");
 }
 
@@ -196,8 +195,53 @@ export async function archivePlanAction(formData: FormData) {
     redirect(`/admin/plans?error=${encodeURIComponent(userError.message)}`);
   }
 
-  revalidatePath("/admin/plans");
-  revalidatePath("/admin/billing");
-  revalidatePath("/admin/search");
+  revalidatePlanPaths();
   redirect("/admin/plans?archived=1");
+}
+
+export async function reorderPlanAction(formData: FormData) {
+  const admin = await requireAdminPermission("plans", "edit");
+  const id = readFormString(formData, "id");
+  const direction = readFormString(formData, "direction");
+
+  if (!id) redirectPlanError("missing-id");
+  if (direction !== "up" && direction !== "down") redirectPlanError("invalid-direction");
+
+  try {
+    const current = await prisma.plan.findUnique({ where: { id } });
+    if (!current) redirectPlanError("plan-not-found");
+
+    const neighbor = await prisma.plan.findFirst({
+      where: {
+        id: { not: id },
+        isActive: current.isActive,
+        sortOrder: direction === "up" ? { lt: current.sortOrder } : { gt: current.sortOrder },
+      },
+      orderBy: direction === "up" ? { sortOrder: "desc" } : { sortOrder: "asc" },
+      select: { id: true, sortOrder: true },
+    });
+
+    if (!neighbor) redirectPlanError("already-at-edge");
+
+    await prisma.$transaction([
+      prisma.plan.update({ where: { id: current.id }, data: { sortOrder: neighbor.sortOrder } }),
+      prisma.plan.update({ where: { id: neighbor.id }, data: { sortOrder: current.sortOrder } }),
+    ]);
+
+    await auditPlan({
+      adminId: admin.id,
+      adminEmail: admin.email,
+      action: "PLAN_REORDERED",
+      planId: current.id,
+      code: current.code,
+      metadata: { from: current.sortOrder, to: neighbor.sortOrder, direction },
+    });
+  } catch (error) {
+    if (error instanceof Error && error.message.startsWith("NEXT_REDIRECT")) throw error;
+    const { userError } = await processError(error, { metadata: { action: "reorderPlan", id, direction } });
+    redirect(`/admin/plans?error=${encodeURIComponent(userError.message)}`);
+  }
+
+  revalidatePlanPaths();
+  redirect("/admin/plans?reordered=1");
 }

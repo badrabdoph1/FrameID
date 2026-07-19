@@ -1,9 +1,9 @@
 "use client";
 
 import { useMemo, useState, type ReactNode } from "react";
-import { Archive, BadgeCheck, Check, Eye, EyeOff, Pencil, Plus, Save, Trash2, X } from "lucide-react";
+import { Archive, BadgeCheck, Check, ChevronDown, ChevronUp, Eye, EyeOff, Pencil, Plus, Save, Trash2, X } from "lucide-react";
 
-import { archivePlanAction, savePlanAction, togglePlanAction } from "@/app/(admin)/admin/plans/actions";
+import { archivePlanAction, reorderPlanAction, savePlanAction, togglePlanAction } from "@/app/(admin)/admin/plans/actions";
 import {
   AdminActionMenu,
   AdminBanner,
@@ -165,6 +165,8 @@ export function PlansManagerClient({ plans, metrics, banner }: Props) {
                 key={plan.id}
                 plan={plan}
                 order={index + 1}
+                isFirst={index === 0}
+                isLast={index === sortedPlans.length - 1}
                 selected={editor === plan.id}
                 onEdit={() => setEditor(plan.id)}
               />
@@ -199,7 +201,7 @@ export function PlansManagerClient({ plans, metrics, banner }: Props) {
   );
 }
 
-function PlanCard({ plan, order, selected, onEdit }: { plan: PlanRow; order: number; selected: boolean; onEdit: () => void }) {
+function PlanCard({ plan, order, isFirst, isLast, selected, onEdit }: { plan: PlanRow; order: number; isFirst: boolean; isLast: boolean; selected: boolean; onEdit: () => void }) {
   const visual = normalizeFeatures(plan.features);
   const badge = visual.isPopular ? visual.badgeLabel || "الأكثر طلبًا" : visual.badgeLabel;
   const isComingSoon = visual.isComingSoon;
@@ -221,7 +223,7 @@ function PlanCard({ plan, order, selected, onEdit }: { plan: PlanRow; order: num
             ) : (
               <strong className="text-base font-black text-[#f3cf73]">{formatMoney(plan.priceAmount, plan.currency)}{intervalLabel(plan.billingInterval) ? ` / ${intervalLabel(plan.billingInterval)}` : ""}</strong>
             )}
-            <span>الترتيب: {plan.sortOrder.toLocaleString("ar-EG")}</span>
+            <span>الترتيب: {order}</span>
             <span>{plan._count.subscriptions.toLocaleString("ar-EG")} مشترك</span>
             <span>{plan._count.paymentRequests.toLocaleString("ar-EG")} طلب دفع</span>
           </div>
@@ -235,6 +237,22 @@ function PlanCard({ plan, order, selected, onEdit }: { plan: PlanRow; order: num
         </div>
 
         <div className="flex items-center gap-2">
+          <div className="flex flex-col gap-1">
+            <form action={reorderPlanAction}>
+              <input type="hidden" name="id" value={plan.id} />
+              <input type="hidden" name="direction" value="up" />
+              <button disabled={isFirst} aria-label={`نقل ${plan.name} لأعلى`} className="grid size-9 place-items-center rounded-lg border border-white/10 bg-white/[0.04] text-white/55 hover:bg-white/[0.08] hover:text-white disabled:opacity-25 disabled:pointer-events-none">
+                <ChevronUp className="size-4" />
+              </button>
+            </form>
+            <form action={reorderPlanAction}>
+              <input type="hidden" name="id" value={plan.id} />
+              <input type="hidden" name="direction" value="down" />
+              <button disabled={isLast} aria-label={`نقل ${plan.name} لأسفل`} className="grid size-9 place-items-center rounded-lg border border-white/10 bg-white/[0.04] text-white/55 hover:bg-white/[0.08] hover:text-white disabled:opacity-25 disabled:pointer-events-none">
+                <ChevronDown className="size-4" />
+              </button>
+            </form>
+          </div>
           <button type="button" aria-label={`تعديل ${plan.name}`} onClick={onEdit} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[#f3cf73] px-4 text-sm font-black text-[#17120a] hover:bg-[#f8da8a]">
             <Pencil className="size-4" /> تعديل
           </button>
@@ -262,17 +280,18 @@ function PlanCard({ plan, order, selected, onEdit }: { plan: PlanRow; order: num
 function PlanEditor({ plan, submitLabel }: { plan?: PlanRow; submitLabel: string }) {
   const visual = normalizeFeatures(plan?.features);
   const [lines, setLines] = useState<string[]>(visual.featureLines.length > 0 ? visual.featureLines : [""]);
+  const [isActive, setIsActive] = useState(plan?.isActive ?? true);
 
   return (
     <form action={savePlanAction} className="grid gap-3">
       {plan ? <input type="hidden" name="id" value={plan.id} /> : null}
       {plan ? <input type="hidden" name="code" value={plan.code} /> : null}
-      <input type="hidden" name="isActive" value={String(plan?.isActive ?? true)} />
+      <input type="hidden" name="isActive" value={String(isActive)} />
 
       <div className="grid gap-3 sm:grid-cols-3">
         <Field label="اسم الباقة"><input name="name" required defaultValue={plan?.name ?? ""} className={inputClass} /></Field>
-        <Field label="السعر"><input name="priceAmount" required type="number" min="0" defaultValue={plan?.priceAmount ?? 0} className={inputClass} /></Field>
-        <Field label="ترتيب الظهور"><input name="sortOrder" type="number" min="0" defaultValue={plan?.sortOrder ?? 0} className={inputClass} /></Field>
+        <Field label="السعر"><input name="priceAmount" required type="number" min="0" step="1" defaultValue={plan?.priceAmount ?? 0} className={inputClass} /></Field>
+        <Field label="ترتيب الظهور"><input name="sortOrder" type="number" min="0" step="1" defaultValue={plan?.sortOrder ?? 0} className={inputClass} /></Field>
       </div>
       <div className="grid gap-3 sm:grid-cols-3">
         <Field label="العملة"><select name="currency" defaultValue={plan?.currency ?? "EGP"} className={inputClass}><option value="EGP">EGP</option><option value="USD">USD</option><option value="EUR">EUR</option></select></Field>
@@ -310,6 +329,9 @@ function PlanEditor({ plan, submitLabel }: { plan?: PlanRow; submitLabel: string
         </label>
         <label className="flex min-h-11 items-center gap-3 rounded-2xl border border-amber-300/15 bg-amber-300/[0.04] px-3 text-sm font-bold text-amber-200/80">
           <input name="isComingSoon" type="checkbox" defaultChecked={visual.isComingSoon} /> الباقة قريبًا (غير قابلة للشراء)
+        </label>
+        <label className="flex min-h-11 items-center gap-3 rounded-2xl border border-white/10 bg-black/18 px-3 text-sm font-bold text-white/68">
+          <input type="checkbox" checked={isActive} onChange={(event) => setIsActive(event.target.checked)} /> الباقة ظاهرة للمستخدمين
         </label>
       </div>
 

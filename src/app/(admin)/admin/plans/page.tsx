@@ -6,7 +6,7 @@ import { PlansManagerClient } from "@/app/(admin)/admin/plans/plans-manager-clie
 export const dynamic = "force-dynamic";
 
 type Props = {
-  searchParams: Promise<{ q?: string; state?: string; saved?: string; toggled?: string; archived?: string; error?: string }>;
+  searchParams: Promise<{ q?: string; state?: string; saved?: string; toggled?: string; archived?: string; reordered?: string; error?: string }>;
 };
 
 export default async function AdminPlansPage({ searchParams }: Props) {
@@ -43,7 +43,9 @@ export default async function AdminPlansPage({ searchParams }: Props) {
         ? { tone: "success" as const, text: "تم تغيير ظهور الباقة." }
         : params.archived
           ? { tone: "success" as const, text: "تم أرشفة الباقة." }
-          : null;
+          : params.reordered
+            ? { tone: "success" as const, text: "تم تغيير ترتيب الباقة." }
+            : null;
 
   return (
     <AdminPageShell

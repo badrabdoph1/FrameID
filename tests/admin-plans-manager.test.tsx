@@ -5,7 +5,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 vi.mock("@/app/(admin)/admin/plans/actions", () => ({
   archivePlanAction: vi.fn(),
   savePlanAction: vi.fn(),
-  togglePlanAction: vi.fn()
+  togglePlanAction: vi.fn(),
+  reorderPlanAction: vi.fn()
 }));
 
 import { PlansManagerClient } from "@/app/(admin)/admin/plans/plans-manager-client";
