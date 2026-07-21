@@ -29,6 +29,7 @@ const filters = [
   { id: "unpublished", label: "لم ينشروا الموقع" },
   { id: "noPayments", label: "بدون طلبات دفع" },
   { id: "pendingPayment", label: "لديهم طلب قيد المراجعة" },
+  { id: "deleted", label: "المحذوفين" },
 ];
 
 function addDays(date: Date, days: number) {
@@ -80,7 +81,11 @@ export default async function AdminCustomersPage({ searchParams }: Props) {
   }
 
   if (statusFilter && ["TRIAL", "ACTIVE", "EXPIRED", "TRIAL_EXPIRED", "SUSPENDED"].includes(statusFilter)) conditions.push({ status: statusFilter });
-  const where: Record<string, unknown> = { deletedAt: null, AND: conditions };
+  const deletedFilter = lifecycleFilter === "deleted";
+  const where: Record<string, unknown> = {
+    deletedAt: deletedFilter ? { not: null } : null,
+    AND: conditions,
+  };
 
   const [customers, total, counts] = await Promise.all([
     prisma.tenant.findMany({
@@ -102,7 +107,10 @@ export default async function AdminCustomersPage({ searchParams }: Props) {
       },
     }),
     prisma.tenant.count({ where: where as never }),
-    Promise.all(filters.map(async (filter) => ({ id: filter.id, count: await prisma.tenant.count({ where: { deletedAt: null, ...buildLifecycleWhere(filter.id, now) } as never }) }))),
+    Promise.all(filters.map(async (filter) => {
+      const isDeleted = filter.id === "deleted";
+      return { id: filter.id, count: await prisma.tenant.count({ where: { deletedAt: isDeleted ? { not: null } : null, ...buildLifecycleWhere(filter.id, now) } as never }) };
+    })),
   ]);
 
   const countMap = new Map(counts.map((item) => [item.id, item.count]));

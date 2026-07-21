@@ -14,6 +14,20 @@ type UnifiedContent = z.infer<typeof UnifiedTemplateContentSchema>;
 
 const CONTENT_FILE = join(process.cwd(), "content", "templates", "unified-content.json");
 
+function readString(formData: FormData, key: string): string {
+  const value = formData.get(key);
+  return typeof value === "string" ? value : "";
+}
+
+function readInt(formData: FormData, key: string, fallback = 0): number {
+  const value = Number.parseInt(readString(formData, key), 10);
+  return Number.isFinite(value) ? value : fallback;
+}
+
+function readBool(formData: FormData, key: string): boolean {
+  return formData.get(key) === "on";
+}
+
 export async function saveUnifiedContentAction(formData: FormData) {
   const admin = await requireAdminPermission("templates", "edit");
 
@@ -21,51 +35,60 @@ export async function saveUnifiedContentAction(formData: FormData) {
     const currentContent = JSON.parse(fsReadFileSync(CONTENT_FILE, "utf-8"));
     const data = currentContent.data as UnifiedContent;
 
-    data.photographerName = formData.get("photographerName") as string;
-    data.studioName = formData.get("studioName") as string;
-    data.description = formData.get("description") as string;
-    data.heroImageUrl = formData.get("heroImageUrl") as string;
-    data.heroEyebrow = formData.get("heroEyebrow") as string;
-    data.heroCtaLabel = formData.get("heroCtaLabel") as string;
+    data.photographerName = readString(formData, "photographerName");
+    data.studioName = readString(formData, "studioName");
+    data.description = readString(formData, "description");
+    data.heroImageUrl = readString(formData, "heroImageUrl");
+    data.heroEyebrow = readString(formData, "heroEyebrow");
+    data.heroCtaLabel = readString(formData, "heroCtaLabel");
+    data.workLocation = readString(formData, "workLocation");
 
-    data.packagesTitle = formData.get("packagesTitle") as string;
-    data.packagesDescription = formData.get("packagesDescription") as string;
+    data.packagesTitle = readString(formData, "packagesTitle");
+    data.packagesDescription = readString(formData, "packagesDescription");
     data.packages = data.packages.map((pkg, index) => ({
       ...pkg,
-      name: formData.get(`package_${index}_name`) as string,
-      subtitle: formData.get(`package_${index}_subtitle`) as string,
-      priceAmount: parseInt(formData.get(`package_${index}_price`) as string, 10),
-      currency: formData.get(`package_${index}_currency`) as string,
-      features: (formData.get(`package_${index}_features`) as string).split("\n").filter(f => f.trim()),
-      isHighlighted: formData.get(`package_${index}_highlighted`) === "on",
+      name: readString(formData, `package_${index}_name`) || pkg.name,
+      subtitle: readString(formData, `package_${index}_subtitle`),
+      priceAmount: readInt(formData, `package_${index}_price`, pkg.priceAmount),
+      currency: readString(formData, `package_${index}_currency`) || pkg.currency,
+      imageUrl: readString(formData, `package_${index}_imageUrl`) || pkg.imageUrl,
+      features: readString(formData, `package_${index}_features`)
+        .split("\n")
+        .map((f) => f.trim())
+        .filter(Boolean),
+      isHighlighted: readBool(formData, `package_${index}_highlighted`),
+      sortOrder: readInt(formData, `package_${index}_sortOrder`, pkg.sortOrder),
     }));
 
-    data.extrasTitle = formData.get("extrasTitle") as string;
-    data.extrasDescription = formData.get("extrasDescription") as string;
+    data.extrasTitle = readString(formData, "extrasTitle");
+    data.extrasDescription = readString(formData, "extrasDescription");
     data.extras = data.extras.map((extra, index) => ({
       ...extra,
-      name: formData.get(`extra_${index}_name`) as string,
-      description: formData.get(`extra_${index}_description`) as string,
-      priceAmount: parseInt(formData.get(`extra_${index}_price`) as string, 10),
-      currency: formData.get(`extra_${index}_currency`) as string,
+      name: readString(formData, `extra_${index}_name`) || extra.name,
+      description: readString(formData, `extra_${index}_description`),
+      priceAmount: readInt(formData, `extra_${index}_price`, extra.priceAmount),
+      currency: readString(formData, `extra_${index}_currency`) || extra.currency,
+      iconKey: readString(formData, `extra_${index}_iconKey`) || extra.iconKey,
+      sortOrder: readInt(formData, `extra_${index}_sortOrder`, extra.sortOrder),
     }));
 
-    data.galleryTitle = formData.get("galleryTitle") as string;
-    data.galleryDescription = formData.get("galleryDescription") as string;
+    data.galleryTitle = readString(formData, "galleryTitle");
+    data.galleryDescription = readString(formData, "galleryDescription");
     data.gallery = data.gallery.map((image, index) => ({
       ...image,
-      url: formData.get(`gallery_${index}_url`) as string,
-      alt: formData.get(`gallery_${index}_alt`) as string,
-      caption: formData.get(`gallery_${index}_caption`) as string,
+      url: readString(formData, `gallery_${index}_url`) || image.url,
+      alt: readString(formData, `gallery_${index}_alt`),
+      caption: readString(formData, `gallery_${index}_caption`),
+      sortOrder: readInt(formData, `gallery_${index}_sortOrder`, image.sortOrder),
+      isFeatured: readBool(formData, `gallery_${index}_isFeatured`),
     }));
 
-    data.contactPhone = formData.get("contactPhone") as string;
-    data.contactWhatsapp = formData.get("contactWhatsapp") as string;
-    data.contactEmail = formData.get("contactEmail") as string;
-    data.contactInstagram = formData.get("contactInstagram") as string;
-    data.contactFacebook = formData.get("contactFacebook") as string;
-    data.contactTiktok = formData.get("contactTiktok") as string;
-    data.workLocation = formData.get("workLocation") as string;
+    data.contactPhone = readString(formData, "contactPhone") || null;
+    data.contactWhatsapp = readString(formData, "contactWhatsapp") || null;
+    data.contactEmail = readString(formData, "contactEmail") || null;
+    data.contactInstagram = readString(formData, "contactInstagram") || null;
+    data.contactFacebook = readString(formData, "contactFacebook") || null;
+    data.contactTiktok = readString(formData, "contactTiktok") || null;
 
     currentContent.version += 1;
     currentContent.updatedAt = new Date().toISOString();

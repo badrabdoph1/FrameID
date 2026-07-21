@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { CheckCircle2, Clock, FileText, XCircle } from "lucide-react";
 
 import { prisma } from "@/lib/prisma";
@@ -59,6 +60,10 @@ const statusLabels: Record<string, { label: string; tone: "success" | "warning" 
 export default async function CustomerRequestsPage({ searchParams }: CustomerRequestPageProps) {
   await requireSuperAdminSession();
   const params = await searchParams;
+
+  if (!params.status && !params.type) {
+    redirect("/admin/customer-requests?status=PENDING");
+  }
 
   const statusFilter = params.status && params.status !== "all" ? params.status : undefined;
   const typeFilter = params.type && params.type !== "all" ? params.type : undefined;
@@ -130,7 +135,6 @@ export default async function CustomerRequestsPage({ searchParams }: CustomerReq
 
       <section className="overflow-hidden rounded-[1.35rem] border border-white/10 bg-white/[0.035]">
         <div className="flex flex-wrap items-center gap-2 border-b border-white/8 p-4">
-          <FilterLink href="/admin/customer-requests" active={!statusFilter && !typeFilter}>الكل</FilterLink>
           <FilterLink href="/admin/customer-requests?status=PENDING" active={statusFilter === "PENDING"}>جديد</FilterLink>
           <FilterLink href="/admin/customer-requests?status=IN_REVIEW" active={statusFilter === "IN_REVIEW"}>قيد المراجعة</FilterLink>
           <FilterLink href="/admin/customer-requests?status=APPROVED" active={statusFilter === "APPROVED"}>موافق عليه</FilterLink>
@@ -140,6 +144,8 @@ export default async function CustomerRequestsPage({ searchParams }: CustomerReq
           <FilterLink href="/admin/customer-requests?type=ACCOUNT_DELETION" active={typeFilter === "ACCOUNT_DELETION"}>حذف حساب</FilterLink>
           <FilterLink href="/admin/customer-requests?type=FEATURE_ACTIVATION" active={typeFilter === "FEATURE_ACTIVATION"}>تفعيل ميزة</FilterLink>
           <FilterLink href="/admin/customer-requests?type=UPGRADE" active={typeFilter === "UPGRADE"}>ترقية</FilterLink>
+          <span className="mx-2 h-5 w-px bg-white/10" />
+          <FilterLink href="/admin/customer-requests?status=all" active={params.status === "all" && !typeFilter}>الكل</FilterLink>
         </div>
 
         {requests.length === 0 ? (

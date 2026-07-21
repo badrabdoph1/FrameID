@@ -61,12 +61,12 @@ export const UnifiedTemplateContentSchema = z.object({
   galleryTitle: z.string(),
   galleryDescription: z.string(),
   gallery: z.array(GalleryImageSchema),
-  contactPhone: z.string(),
-  contactWhatsapp: z.string(),
-  contactEmail: z.string().email(),
-  contactInstagram: z.string(),
-  contactFacebook: z.string(),
-  contactTiktok: z.string(),
+  contactPhone: z.string().nullable(),
+  contactWhatsapp: z.string().nullable(),
+  contactEmail: z.string().email().nullable(),
+  contactInstagram: z.string().nullable(),
+  contactFacebook: z.string().nullable(),
+  contactTiktok: z.string().nullable(),
   workLocation: z.string(),
 }).passthrough()
 
