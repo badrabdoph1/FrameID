@@ -60,6 +60,7 @@ type RawPublicSiteRecord = Omit<
 
 export type PublicSiteRepository = {
   findBySlug(slug: string): Promise<PublicSiteRecord | null>;
+  isDeletedBySlug(slug: string): Promise<boolean>;
 };
 
 export function createPrismaPublicSiteRepository(
@@ -212,6 +213,15 @@ export function createPrismaPublicSiteRepository(
             }
           : null,
       };
+    },
+    async isDeletedBySlug(slug) {
+      const site = (await prisma.site.findFirst({
+        where: { slug },
+        select: { deletedAt: true },
+      })) as { deletedAt: Date | null } | null;
+
+      if (!site) return false;
+      return site.deletedAt !== null;
     },
   };
 }

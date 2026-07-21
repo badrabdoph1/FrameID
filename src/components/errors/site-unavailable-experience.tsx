@@ -44,7 +44,7 @@ export function SiteUnavailableExperience({
         </h1>
 
         <p className="mx-auto mt-5 max-w-md text-balance text-sm font-medium leading-7 text-muted-foreground sm:text-base">
-          الموقع غير متاح مؤقتًا. يُرجى المحاولة مرة أخرى لاحقًا.
+          الموقع غير متاح مؤقتًا. ربما يكون صاحبه بيعمل تحديث أو الاشتراك انتهى. جرّب مرة أخرى لاحقًا.
         </p>
 
         <div className="mt-10 grid gap-3 sm:grid-cols-2">
@@ -83,7 +83,7 @@ export function SiteUnavailableExperience({
             >
               تسجيل الدخول
             </Link>{" "}
-            لإدارة موقعك.
+            لإدارة موقعك والتحقق من حالته.
           </p>
         )}
 

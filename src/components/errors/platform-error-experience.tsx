@@ -81,7 +81,9 @@ export function PlatformErrorExperience({ error, homeHref = "/", onRetry }: Prop
         </div>
         <p className="mt-7 text-xs font-bold tracking-[0.18em] text-champagne-strong">حدث خلل مؤقت</p>
         <h1 id="platform-error-title" className="mt-3 text-balance text-3xl font-bold leading-tight sm:text-4xl">نعمل على حل المشكلة</h1>
-        <p className="mx-auto mt-4 max-w-md text-balance text-sm font-medium leading-7 text-muted-foreground sm:text-base">واجهتنا مشكلة غير متوقعة. فريقنا يعمل على حلها. جرّب إعادة المحاولة بعد لحظات.</p>
+        <p className="mx-auto mt-4 max-w-md text-balance text-sm font-medium leading-7 text-muted-foreground sm:text-base">
+          واجهتنا مشكلة غير متوقعة في المنصة. فريقنا وصلته البلاغات وبيشتغل على حلها دلوقتي. جرّب إعادة المحاولة بعد لحظات، ولو المشكلة فضلت بلّغنا.
+        </p>
 
         <div className="mt-8 grid gap-3 sm:grid-cols-2">
           <button type="button" onClick={retry} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-foreground px-5 text-sm font-bold text-background transition hover:-translate-y-0.5 hover:bg-foreground/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">

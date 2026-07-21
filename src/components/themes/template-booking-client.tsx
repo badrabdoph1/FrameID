@@ -63,7 +63,7 @@ export function TemplateBookingProvider({
   );
 }
 
-export function PackageSelectButton({ id, variant }: { id: string; variant: "noir" | "rose" | "luxe" }) {
+export function PackageSelectButton({ id, variant }: { id: string; variant: "noir" | "rose" | "luxe" | "prestige" }) {
   const booking = useBooking();
   const selected = booking.selectedPackageId === id;
   return (
@@ -77,7 +77,9 @@ export function PackageSelectButton({ id, variant }: { id: string; variant: "noi
           ? selected ? "border-[#e5c07b] bg-[#e5c07b] text-black ring-offset-[#111]" : "border-white/14 bg-white/[0.05] text-white hover:border-[#e5c07b] ring-[#e5c07b] ring-offset-[#111]"
           : variant === "luxe"
             ? selected ? "border-[#ff00ff] bg-gradient-to-r from-[#ff00ff] to-[#00ffff] text-white ring-offset-[#0a0a0f]" : "border-[#ff00ff]/30 bg-white/[0.05] text-white hover:border-[#ff00ff] ring-[#ff00ff] ring-offset-[#0a0a0f]"
-            : selected ? "border-[#d48a9e] bg-[#d48a9e] text-white ring-offset-white" : "border-[#eaddd4] bg-white text-[#2c1810] hover:border-[#d48a9e] ring-[#d48a9e] ring-offset-white",
+            : variant === "prestige"
+              ? selected ? "border-[#d4a574] bg-gradient-to-r from-[#d4a574] to-[#e8c4a0] text-black ring-offset-[#0a0a0a]" : "border-[#d4a574]/30 bg-white/[0.05] text-white hover:border-[#d4a574] ring-[#d4a574] ring-offset-[#0a0a0a]"
+              : selected ? "border-[#d48a9e] bg-[#d48a9e] text-white ring-offset-white" : "border-[#eaddd4] bg-white text-[#2c1810] hover:border-[#d48a9e] ring-[#d48a9e] ring-offset-white",
       )}
     >
       {selected ? "تم اختيار الباقة" : "اختر الباقة"}
@@ -112,7 +114,7 @@ export function BookingAction({
   sticky = false,
 }: {
   label: string;
-  variant: "noir" | "rose" | "luxe";
+  variant: "noir" | "rose" | "luxe" | "prestige";
   sticky?: boolean;
 }) {
   const booking = useBooking();
@@ -123,7 +125,7 @@ export function BookingAction({
       className={cn(
         "inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl px-5 text-sm font-black outline-none transition focus-visible:ring-2 focus-visible:ring-offset-2",
         sticky ? "w-full shadow-[0_15px_50px_rgba(0,0,0,.25)]" : "w-full",
-        variant === "noir" ? "bg-[#e5c07b] text-black ring-[#e5c07b] ring-offset-black" : variant === "luxe" ? "bg-gradient-to-r from-[#ff00ff] to-[#00ffff] text-white shadow-[0_0_30px_rgba(255,0,255,0.3)] ring-[#ff00ff] ring-offset-[#0a0a0f]" : "bg-[#d48a9e] text-white ring-[#d48a9e] ring-offset-[#fff8f4]",
+        variant === "noir" ? "bg-[#e5c07b] text-black ring-[#e5c07b] ring-offset-black" : variant === "luxe" ? "bg-gradient-to-r from-[#ff00ff] to-[#00ffff] text-white shadow-[0_0_30px_rgba(255,0,255,0.3)] ring-[#ff00ff] ring-offset-[#0a0a0f]" : variant === "prestige" ? "bg-gradient-to-r from-[#d4a574] to-[#e8c4a0] text-black shadow-[0_0_30px_rgba(212,165,116,0.3)] ring-[#d4a574] ring-offset-[#0a0a0a]" : "bg-[#d48a9e] text-white ring-[#d48a9e] ring-offset-[#fff8f4]",
       )}
     >
       <MessageCircle className="size-4" aria-hidden />
@@ -132,7 +134,7 @@ export function BookingAction({
   );
 }
 
-export function BookingSummaryCard({ variant }: { variant: "noir" | "rose" | "luxe" }) {
+export function BookingSummaryCard({ variant }: { variant: "noir" | "rose" | "luxe" | "prestige" }) {
   const booking = useBooking();
   const selectedPackage = booking.packages.find((item) => item.id === booking.selectedPackageId);
   const selectedExtras = booking.extras.filter((item) => booking.selectedExtraIds.includes(item.id));
@@ -147,11 +149,13 @@ export function BookingSummaryCard({ variant }: { variant: "noir" | "rose" | "lu
         ? "border-white/9 bg-white/[.045]"
         : variant === "luxe"
           ? "border-white/10 bg-white/[.055]"
-          : "border-[#eaddd4] bg-white",
+          : variant === "prestige"
+            ? "border-white/10 bg-white/[.055]"
+            : "border-[#eaddd4] bg-white",
     )}>
       <p className={cn(
         "text-xs font-black",
-        variant === "noir" ? "text-[#e5c07b]" : variant === "luxe" ? "text-[#ff00ff]" : "text-[#d48a9e]",
+        variant === "noir" ? "text-[#e5c07b]" : variant === "luxe" ? "text-[#ff00ff]" : variant === "prestige" ? "text-[#d4a574]" : "text-[#d48a9e]",
       )}>ملخص الحجز</p>
       <h3 className={cn(
         "mt-2 text-xl font-black",
@@ -161,7 +165,7 @@ export function BookingSummaryCard({ variant }: { variant: "noir" | "rose" | "lu
       {selectedPackage ? (
         <div className={cn(
           "mt-4 space-y-3 rounded-[1.1rem] p-4",
-          variant === "noir" ? "bg-black/26" : variant === "luxe" ? "bg-black/20" : "bg-[#fff8f4]",
+          variant === "noir" ? "bg-black/26" : variant === "luxe" ? "bg-black/20" : variant === "prestige" ? "bg-black/20" : "bg-[#fff8f4]",
         )}>
           <div className={cn(
             "flex items-start justify-between gap-4 border-b pb-3",
@@ -170,7 +174,7 @@ export function BookingSummaryCard({ variant }: { variant: "noir" | "rose" | "lu
             <span className={cn("text-sm font-bold", variant === "rose" ? "text-[#8c7a74]" : "text-white/55")}>الباقة</span>
             <div className="text-left">
               <strong className={cn("block", variant === "rose" ? "text-[#2c1810]" : "text-white")}>{selectedPackage.name}</strong>
-              <span className={cn("text-xs font-black", variant === "noir" ? "text-[#e5c07b]" : variant === "luxe" ? "text-[#00ffff]" : "text-[#d48a9e]")}>{selectedPackage.price}</span>
+              <span className={cn("text-xs font-black", variant === "noir" ? "text-[#e5c07b]" : variant === "luxe" ? "text-[#00ffff]" : variant === "prestige" ? "text-[#d4a574]" : "text-[#d48a9e]")}>{selectedPackage.price}</span>
             </div>
           </div>
           {selectedExtras.length ? (
@@ -181,14 +185,14 @@ export function BookingSummaryCard({ variant }: { variant: "noir" | "rose" | "lu
               {selectedExtras.map((extra) => (
                 <div key={extra.id} className="flex justify-between gap-4 text-sm">
                   <span className={variant === "rose" ? "text-[#8c7a74]" : "text-white/58"}>{extra.name}</span>
-                  <span className={cn("font-bold", variant === "noir" ? "text-[#e5c07b]" : variant === "luxe" ? "text-[#00ffff]" : "text-[#d48a9e]")}>{extra.price}</span>
+                  <span className={cn("font-bold", variant === "noir" ? "text-[#e5c07b]" : variant === "luxe" ? "text-[#00ffff]" : variant === "prestige" ? "text-[#d4a574]" : "text-[#d48a9e]")}>{extra.price}</span>
                 </div>
               ))}
             </div>
           ) : null}
           <div className="flex items-center justify-between gap-4">
             <span className={cn("font-black", variant === "rose" ? "text-[#2c1810]" : "text-white")}>الإجمالي التقريبي</span>
-            <span className={cn("text-lg font-black", variant === "noir" ? "text-[#e5c07b]" : variant === "luxe" ? "text-[#00ffff]" : "text-[#d48a9e]")}>{formatTemplatePrice(total, selectedPackage.currency)}</span>
+            <span className={cn("text-lg font-black", variant === "noir" ? "text-[#e5c07b]" : variant === "luxe" ? "text-[#00ffff]" : variant === "prestige" ? "text-[#d4a574]" : "text-[#d48a9e]")}>{formatTemplatePrice(total, selectedPackage.currency)}</span>
           </div>
         </div>
       ) : (
@@ -205,7 +209,7 @@ export function BookingSummaryCard({ variant }: { variant: "noir" | "rose" | "lu
   );
 }
 
-export function BookingFAB({ variant }: { variant: "noir" | "rose" | "luxe" }) {
+export function BookingFAB({ variant }: { variant: "noir" | "rose" | "luxe" | "prestige" }) {
   const booking = useBooking();
   const hasSelection = Boolean(booking.selectedPackageId) || booking.selectedExtraIds.length > 0;
 

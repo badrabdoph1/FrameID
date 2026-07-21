@@ -18,7 +18,9 @@ export function SessionExpiredExperience({ homeHref = "/", loginHref = "/login" 
         </div>
         <p className="mt-8 text-xs font-bold tracking-[0.18em] text-champagne-strong">انتهت الجلسة</p>
         <h1 id="session-expired-title" className="mt-3 text-balance text-3xl font-bold leading-tight sm:text-4xl">جلسة الدخول انتهت</h1>
-        <p className="mx-auto mt-5 max-w-md text-balance text-sm font-medium leading-7 text-muted-foreground sm:text-base">جلسة الدخول انتهت بسبب عدم النشاط. بياناتك محفوظة، سجّل دخولك تاني وكمّل بشكل طبيعي.</p>
+        <p className="mx-auto mt-5 max-w-md text-balance text-sm font-medium leading-7 text-muted-foreground sm:text-base">
+          بياناتك محفوظة ومفيش حاجة ضاعت. بس بسبب عدم النشاط، خلصت الجلسة. سجّل دخولك تاني وكمّل من حيث وقفت.
+        </p>
 
         <div className="mt-10 grid gap-3 sm:grid-cols-2">
           <Link href={loginHref} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-foreground px-5 text-sm font-bold text-background no-underline transition hover:-translate-y-0.5 hover:bg-foreground/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">

@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 
 import { getThemeSiteComponent } from "@/components/themes/theme-components";
 import { MissingContactGuard } from "@/components/themes/missing-contact-guard";
+import { SiteDeletedExperience } from "@/components/errors/site-deleted-experience";
 import { prisma } from "@/lib/prisma";
 import { getPlatformBaseUrl } from "@/lib/platform-url";
 import { getCurrentRequestSession } from "@/modules/auth/request-session";
@@ -19,41 +20,55 @@ type Props = {
   params: Promise<{ slug: string }>;
 };
 
-async function getPublicSite(slug: string) {
+type SiteResult =
+  | { status: "found"; site: NonNullable<ReturnType<typeof createPublicSiteViewModel>> }
+  | { status: "deleted" }
+  | { status: "not_found" };
+
+async function getPublicSite(slug: string): Promise<SiteResult> {
   const repository = createPrismaPublicSiteRepository(prisma);
-  const [site, platformSocialPreview] = await Promise.all([
+  const [site, platformSocialPreview, isDeleted] = await Promise.all([
     repository.findBySlug(slug),
     loadPlatformSocialPreview(),
+    repository.isDeletedBySlug(slug),
   ]);
 
-  if (!site || site.status !== "PUBLISHED") return null;
+  if (!site && isDeleted) return { status: "deleted" };
+  if (!site || site.status !== "PUBLISHED") return { status: "not_found" };
 
-  return createPublicSiteViewModel({
-    site,
-    platformBaseUrl: getPlatformBaseUrl(),
-    platformSocialImageUrl: resolvePlatformSocialImage(platformSocialPreview),
-  });
+  return {
+    status: "found",
+    site: createPublicSiteViewModel({
+      site,
+      platformBaseUrl: getPlatformBaseUrl(),
+      platformSocialImageUrl: resolvePlatformSocialImage(platformSocialPreview),
+    }),
+  };
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const site = await getPublicSite(slug);
+  const result = await getPublicSite(slug);
 
-  if (!site) {
-    return {
-      title: "الموقع غير موجود",
-      robots: { index: false, follow: false },
-    };
+  if (result.status === "found") {
+    return result.site.metadata;
   }
 
-  return site.metadata;
+  return {
+    title: result.status === "deleted" ? "تم حذف الموقع" : "الموقع غير موجود",
+    robots: { index: false, follow: false },
+  };
 }
 
 export default async function PublicSitePage({ params }: Props) {
   const { slug } = await params;
-  const site = await getPublicSite(slug);
+  const result = await getPublicSite(slug);
 
-  if (!site) notFound();
+  if (result.status === "deleted") {
+    return <SiteDeletedExperience />;
+  }
+
+  if (result.status === "not_found") notFound();
 
   const { result: access } = await checkSiteAccessBySlug(slug);
   if (!access.allowed) {
@@ -62,16 +77,16 @@ export default async function PublicSitePage({ params }: Props) {
     return <SiteExpiredPage isOwner={isOwner} />;
   }
 
-  const ThemeSiteComponent = getThemeSiteComponent(site.themeCode);
+  const ThemeSiteComponent = getThemeSiteComponent(result.site.themeCode);
 
   return (
     <>
       <script
         type="application/ld+json"
         suppressHydrationWarning
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(site.structuredData) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(result.site.structuredData) }}
       />
-      <ThemeSiteComponent site={site} />
+      <ThemeSiteComponent site={result.site} />
       <MissingContactGuard />
     </>
   );
