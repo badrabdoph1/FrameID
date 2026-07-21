@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-07-21T01:08:17.656Z",
+  "updatedAt": "2026-07-21T02:02:07.933Z",
   "themes": [
     {
       "code": "luxe-studio",
@@ -241,7 +241,7 @@
           "instructions": "حوّل على رقم إنستا باي، ثم ارفع صورة إثبات الدفع من نفس الصفحة.",
           "notes": null,
           "isActive": true,
-          "sortOrder": 270
+          "sortOrder": 280
         }
       ]
     },
@@ -270,7 +270,7 @@
           "instructions": "حوّل على رقم فودافون كاش، ثم ارفع صورة إثبات الدفع من نفس الصفحة.",
           "notes": null,
           "isActive": true,
-          "sortOrder": 530
+          "sortOrder": 550
         }
       ]
     },
@@ -449,7 +449,7 @@
               "badge": "منصة مواقع المصورين",
               "headline": "كل شغلك",
               "heroImage": "https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?auto=format&fit=crop&w=1800&q=85",
-              "subheadline": "موقع احترافي يعرض صورك وباقاتك وأسعارك بشكل يليق بشغلك.",
+              "subheadline": "اسمك،هويتك،اسعارك،جزء من شغلك ، كل روابط السوشيال مديا ، الحجز اونلاين، بكسل،وهتظهر فنتايج جوجل",
               "trustPoints": [
                 {
                   "text": "تجربة مجانية"
@@ -584,7 +584,7 @@
         ],
         "schemaVersion": 1
       },
-      "version": 1,
+      "version": 2,
       "schemaVersion": 1
     }
   ]
