@@ -154,10 +154,6 @@ export async function getPublishedTemplatesFromDb(): Promise<TemplateSummary[]> 
     templateDefinitions.map((t) => [t.code, t])
   );
 
-  // Read all non-deleted templates from DB
-  // We use status: { in: ["PUBLISHED", "DRAFT", "ARCHIVED", "HIDDEN", "COMING_SOON"] }
-  // but we only return PUBLISHED ones for the public page
-  // Actually, let's just read all and filter
   let dbTemplates: Array<{
     code: string;
     name: string;
@@ -190,6 +186,23 @@ export async function getPublishedTemplatesFromDb(): Promise<TemplateSummary[]> 
 
   // Filter to only PUBLISHED templates for public page
   const publishedDb = dbTemplates.filter((t) => t.status === "PUBLISHED");
+
+  // If no DB results, use static definitions as fallback
+  if (publishedDb.length === 0) {
+    return templateDefinitions
+      .filter((t) => t.status === "published")
+      .map((t) => {
+        const description =
+          (typeof unifiedContent?.description === "string" && (unifiedContent.description as string)) ||
+          t.description ||
+          "";
+        return {
+          ...t,
+          description,
+        };
+      })
+      .sort((a, b) => a.showroomOrder - b.showroomOrder);
+  }
 
   // Build the result by merging DB metadata with unified content
   return publishedDb.map((dbTemplate) => {
