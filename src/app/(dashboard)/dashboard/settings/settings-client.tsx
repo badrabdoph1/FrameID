@@ -307,39 +307,42 @@ function DeletionModal({ onClose }: { onClose: () => void }) {
 
   if (showFeedback) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-md io-overlay-enter">
-        <div className="w-full max-w-md animate-[ioCardIn_0.4s_cubic-bezier(0.16,1,0.3,1)_both]">
-          <div
-            className="relative overflow-hidden rounded-[1.5rem] border border-white/[0.12] p-6 sm:rounded-[1.75rem] sm:p-7"
-            style={{
-              background: `linear-gradient(145deg, rgba(17,23,32,0.92) 0%, rgba(12,16,22,0.96) 100%)`,
-              boxShadow: `0 24px 48px rgba(0,0,0,0.45), 0 0 48px rgba(243,207,115,0.15), inset 0 1px 0 rgba(255,255,255,0.08)`,
-            }}
-          >
-            <span className="pointer-events-none absolute inset-x-6 top-0 h-px bg-gradient-to-l from-transparent via-white/20 to-transparent" />
-            <div className="pointer-events-none absolute inset-0 opacity-25" style={{ background: `radial-gradient(ellipse at 50% 0%, rgba(243,207,115,0.15) 0%, transparent 50%)` }} />
-            
-            <div className="relative flex flex-col items-center py-2 text-center">
-              <div className="io-stagger io-icon-entrance mb-4 relative">
-                <div className="absolute inset-0 rounded-full bg-[#f3cf73]/20 io-glow-pulse" />
-                <div className="relative grid size-16 place-items-center rounded-2xl bg-gradient-to-br from-[#f3cf73]/20 to-[#f3cf73]/5 shadow-[0_0_24px_rgba(243,207,115,0.25)] sm:size-20 sm:rounded-3xl">
-                  <XCircle className="size-8 text-[#f3cf73] sm:size-9" aria-hidden />
+      <form action={requestAccountDeletionAction}>
+        <input type="hidden" name="deletionReason" value={selected} />
+        {selected === "سبب آخر" && <input type="hidden" name="otherReason" value={otherText} />}
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-md io-overlay-enter">
+          <div className="w-full max-w-md animate-[ioCardIn_0.4s_cubic-bezier(0.16,1,0.3,1)_both]">
+            <div
+              className="relative overflow-hidden rounded-[1.5rem] border border-white/[0.12] p-6 sm:rounded-[1.75rem] sm:p-7"
+              style={{
+                background: `linear-gradient(145deg, rgba(17,23,32,0.92) 0%, rgba(12,16,22,0.96) 100%)`,
+                boxShadow: `0 24px 48px rgba(0,0,0,0.45), 0 0 48px rgba(243,207,115,0.15), inset 0 1px 0 rgba(255,255,255,0.08)`,
+              }}
+            >
+              <span className="pointer-events-none absolute inset-x-6 top-0 h-px bg-gradient-to-l from-transparent via-white/20 to-transparent" />
+              <div className="pointer-events-none absolute inset-0 opacity-25" style={{ background: `radial-gradient(ellipse at 50% 0%, rgba(243,207,115,0.15) 0%, transparent 50%)` }} />
+              
+              <div className="relative flex flex-col items-center py-2 text-center">
+                <div className="io-stagger io-icon-entrance mb-4 relative">
+                  <div className="absolute inset-0 rounded-full bg-[#f3cf73]/20 io-glow-pulse" />
+                  <div className="relative grid size-16 place-items-center rounded-2xl bg-gradient-to-br from-[#f3cf73]/20 to-[#f3cf73]/5 shadow-[0_0_24px_rgba(243,207,115,0.25)] sm:size-20 sm:rounded-3xl">
+                    <XCircle className="size-8 text-[#f3cf73] sm:size-9" aria-hidden />
+                  </div>
                 </div>
+                <p className="io-stagger max-w-sm text-sm leading-7 font-bold text-white/85 sm:text-base">
+                  {feedbackMessage}
+                </p>
+                <button
+                  type="submit"
+                  className="io-stagger mt-6 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-br from-[#f3cf73] to-[#e8c15e] py-3 text-sm font-black text-[#17120a] shadow-lg shadow-amber-500/25 transition hover:-translate-y-0.5 hover:shadow-amber-500/35 sm:py-3.5 sm:text-base"
+                >
+                  انتهى
+                </button>
               </div>
-              <p className="io-stagger max-w-sm text-sm leading-7 font-bold text-white/85 sm:text-base">
-                {feedbackMessage}
-              </p>
-              <button
-                type="button"
-                onClick={onClose}
-                className="io-stagger mt-6 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-br from-[#f3cf73] to-[#e8c15e] py-3 text-sm font-black text-[#17120a] shadow-lg shadow-amber-500/25 transition hover:-translate-y-0.5 hover:shadow-amber-500/35 sm:py-3.5 sm:text-base"
-              >
-                انتهى
-              </button>
             </div>
           </div>
         </div>
-      </div>
+      </form>
     );
   }
 
