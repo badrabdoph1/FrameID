@@ -10,6 +10,7 @@ type Props = {
 };
 
 export function MarketingErrorExperience({ error: _error, homeHref = "/", onRetry }: Props) {
+  void _error;
   const retry = () => {
     if (onRetry) onRetry();
     else window.location.reload();

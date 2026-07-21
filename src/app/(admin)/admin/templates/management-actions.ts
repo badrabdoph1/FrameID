@@ -220,7 +220,7 @@ export async function archiveTemplateAction(formData: FormData) {
 
     await prisma.template.update({
       where: { id: current.id },
-      data: { status: "ARCHIVED", deletedAt: new Date() },
+      data: { status: "ARCHIVED" },
     });
 
     await audit({
