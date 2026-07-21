@@ -123,7 +123,7 @@ function PrestigeHero({ section, site }: { section: NormalizedTemplateSection; s
   const videoRef = useRef<HTMLDivElement>(null);
 
   return (
-    <section id="hero" className="relative min-h-[100svh] overflow-hidden">
+    <section id="hero" data-template-section="hero" className="relative min-h-[100svh] scroll-mt-20 overflow-hidden">
       {/* Background Image with Parallax */}
       <div ref={videoRef} className="absolute inset-0">
         {site.hero.imageUrl ? (
@@ -225,10 +225,11 @@ function PrestigeHero({ section, site }: { section: NormalizedTemplateSection; s
 
 function PrestigeGallery({ section, site }: { section: NormalizedTemplateSection; site: PublicSiteViewModel }) {
   const limit = typeof section.settings.limit === "number" ? section.settings.limit : 6;
+  const layout = section.settings.layout === "grid" ? "grid" : "snap";
   const images = site.gallery.slice(0, limit);
 
   return (
-    <section id="gallery" className="relative py-20 sm:py-32">
+    <section id="gallery" data-template-section="gallery" className="relative scroll-mt-20 py-20 sm:py-32">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
         <div className="mb-16 text-center">
@@ -248,13 +249,17 @@ function PrestigeGallery({ section, site }: { section: NormalizedTemplateSection
         </div>
 
         {/* Gallery Grid */}
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className={cn(
+          "gap-4",
+          layout === "grid" ? "grid sm:grid-cols-2 lg:grid-cols-3" : "flex snap-x overflow-x-auto pb-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        )}>
           {images.map((image, index) => (
             <div
               key={image.id}
               className={cn(
                 "group relative aspect-[4/5] overflow-hidden rounded-2xl bg-white/5",
-                index === 0 && "sm:col-span-2 sm:row-span-2 sm:aspect-square"
+                layout === "grid" && index === 0 && "sm:col-span-2 sm:row-span-2 sm:aspect-square",
+                layout === "snap" && "w-[80vw] shrink-0 snap-center sm:w-[40vw] lg:w-[30vw]"
               )}
             >
               <Image
@@ -281,7 +286,7 @@ function PrestigeGallery({ section, site }: { section: NormalizedTemplateSection
 
 function PrestigePackages({ section, site }: { section: NormalizedTemplateSection; site: PublicSiteViewModel }) {
   return (
-    <section id="packages" className="relative py-20 sm:py-32">
+    <section id="packages" data-template-section="packages" className="relative scroll-mt-20 py-20 sm:py-32">
       {/* Background Gradient */}
       <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#d4a574]/5 to-transparent" />
 
@@ -381,7 +386,7 @@ function PrestigePackages({ section, site }: { section: NormalizedTemplateSectio
 
 function PrestigeExtras({ section, site }: { section: NormalizedTemplateSection; site: PublicSiteViewModel }) {
   return (
-    <section id="extras" className="relative py-20 sm:py-32">
+    <section id="extras" data-template-section="extras" className="relative scroll-mt-20 py-20 sm:py-32">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
         <div className="mb-16 text-center">
@@ -445,7 +450,7 @@ function PrestigeContact({ section, site }: { section: NormalizedTemplateSection
   ].filter(Boolean) as Array<{ icon: typeof Phone; label: string; value: string; href: string }>;
 
   return (
-    <section id="contact" className="relative py-20 sm:py-32">
+    <section id="contact" data-template-section="contact" className="relative scroll-mt-20 py-20 sm:py-32">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
         <div className="mb-16 text-center">
