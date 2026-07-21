@@ -221,15 +221,6 @@ export async function saveSubscriptionExperienceDefaultsAction(formData: FormDat
 
     await saveSubscriptionExperienceDefaults(prisma, defaults);
 
-    let appliedCount = 0;
-    if (parseBool(readFormString(formData, "applyTrialDefaultsToCurrent"))) {
-      appliedCount = await applyDefaultTrialDurationFromRegistration(
-        prisma,
-        defaults.trialPolicy.defaultDays,
-      );
-      await syncCustomerLifecycle(prisma);
-    }
-
     await prisma.auditLog.create({
       data: {
         actorId: admin.id,
@@ -238,7 +229,6 @@ export async function saveSubscriptionExperienceDefaultsAction(formData: FormDat
         entityId: "platform.subscription.experience.defaults",
         metadata: {
           defaults,
-          appliedCount,
           ...adminActorMetadata(admin),
         } as Prisma.InputJsonObject,
       },
@@ -506,4 +496,70 @@ export async function grantFreshTrialFromMessagesAction(formData: FormData) {
     });
     redirectWithMessage({ error: userError.message });
   }
+}
+
+export async function saveTrialPolicyAction(formData: FormData) {
+  const admin = await requireAdminPermission("messages", "edit");
+
+  try {
+    const current = await getSubscriptionExperienceDefaults(prisma);
+    const newDays = parseDays(
+      readFormString(formData, "trialPolicyDefaultDays"),
+      current.trialPolicy.defaultDays,
+    );
+
+    const defaults: SubscriptionExperienceDefaults = {
+      ...current,
+      trialPolicy: { defaultDays: newDays },
+    };
+
+    await saveSubscriptionExperienceDefaults(prisma, defaults);
+
+    const applyToTrial = parseBool(readFormString(formData, "applyTrialToTrial"));
+    const applyToExpired = parseBool(readFormString(formData, "applyTrialToExpired"));
+    const statuses: Array<"ACTIVE" | "TRIAL" | "TRIAL_EXPIRED" | "EXPIRED" | "SUSPENDED"> = [];
+    if (applyToTrial) statuses.push("TRIAL");
+    if (applyToExpired) statuses.push("TRIAL_EXPIRED");
+
+    let appliedCount = 0;
+    if (statuses.length > 0) {
+      appliedCount = await applyDefaultTrialDurationFromRegistration(prisma, newDays, statuses);
+      await syncCustomerLifecycle(prisma);
+    }
+
+    await prisma.auditLog.create({
+      data: {
+        actorId: admin.id,
+        action: "TRIAL_POLICY_UPDATED",
+        entityType: "FeatureFlag",
+        entityId: "platform.subscription.experience.defaults",
+        metadata: {
+          defaultDays: newDays,
+          statuses,
+          appliedCount,
+          ...adminActorMetadata(admin),
+        } as Prisma.InputJsonObject,
+      },
+    });
+
+    await syncPlatformConfigurationToGitHub({
+      actor: admin,
+      reason: "تحديث سياسة الفترة التجريبية",
+    });
+
+    revalidatePath("/admin/messages");
+    revalidatePath("/admin/customers");
+    revalidatePath("/dashboard");
+    revalidatePath("/dashboard/billing");
+  } catch (error) {
+    const { userError } = await processError(error, {
+      metadata: {
+        action: "saveTrialPolicy",
+        ...adminActorMetadata(admin),
+      },
+    });
+    redirectWithMessage({ error: userError.message });
+  }
+
+  redirectWithMessage({ defaultsSaved: 1 });
 }

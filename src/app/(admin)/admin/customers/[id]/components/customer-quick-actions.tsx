@@ -87,7 +87,7 @@ export function CustomerQuickActions({
 
           <ActionButton type="button" onClick={onSecurity}><KeyRound aria-hidden="true" size={14} />إعادة كلمة المرور</ActionButton>
 
-          <form action={impersonateAction}>
+          <form action={impersonateAction} target="_blank" rel="noopener noreferrer">
             <input type="hidden" name="tenantId" value={customer.id} />
             <ActionButton type="submit"><LayoutDashboard aria-hidden="true" size={14} />دخول لوحة تحكم العميل</ActionButton>
           </form>

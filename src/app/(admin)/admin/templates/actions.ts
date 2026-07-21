@@ -77,6 +77,79 @@ export async function saveTemplateAction(formData: FormData) {
       if (!themeExists) throw new Error("الثيم المحدد غير متاح.");
     }
 
+    const description = readString(formData, "description");
+    const studioName = readString(formData, "studioName");
+    const photographerName = readString(formData, "photographerName");
+    const workLocation = readString(formData, "workLocation");
+
+    if (description) basePreview.description = description;
+    if (studioName) basePreview.studioName = studioName;
+    if (photographerName) basePreview.photographerName = photographerName;
+    if (workLocation) basePreview.workLocation = workLocation;
+
+    const heroImageUrl = readString(formData, "heroImageUrl");
+    const heroEyebrow = readString(formData, "heroEyebrow");
+    const heroCtaLabel = readString(formData, "heroCtaLabel");
+    if (heroImageUrl) basePreview.heroImageUrl = heroImageUrl;
+    if (heroEyebrow) basePreview.heroEyebrow = heroEyebrow;
+    if (heroCtaLabel) basePreview.heroCtaLabel = heroCtaLabel;
+
+    const packagesTitle = readString(formData, "packagesTitle");
+    const packagesDescription = readString(formData, "packagesDescription");
+    if (packagesTitle) basePreview.packagesTitle = packagesTitle;
+    if (packagesDescription) basePreview.packagesDescription = packagesDescription;
+
+    const packagesJson = readString(formData, "packages");
+    if (packagesJson) {
+      try {
+        basePreview.packages = JSON.parse(packagesJson);
+      } catch {
+        // ignore invalid JSON
+      }
+    }
+
+    const extrasTitle = readString(formData, "extrasTitle");
+    const extrasDescription = readString(formData, "extrasDescription");
+    if (extrasTitle) basePreview.extrasTitle = extrasTitle;
+    if (extrasDescription) basePreview.extrasDescription = extrasDescription;
+
+    const extrasJson = readString(formData, "extras");
+    if (extrasJson) {
+      try {
+        basePreview.extras = JSON.parse(extrasJson);
+      } catch {
+        // ignore invalid JSON
+      }
+    }
+
+    const galleryTitle = readString(formData, "galleryTitle");
+    const galleryDescription = readString(formData, "galleryDescription");
+    if (galleryTitle) basePreview.galleryTitle = galleryTitle;
+    if (galleryDescription) basePreview.galleryDescription = galleryDescription;
+
+    const galleryJson = readString(formData, "gallery");
+    if (galleryJson) {
+      try {
+        basePreview.gallery = JSON.parse(galleryJson);
+      } catch {
+        // ignore invalid JSON
+      }
+    }
+
+    const contactPhone = readString(formData, "contactPhone");
+    const contactWhatsapp = readString(formData, "contactWhatsapp");
+    const contactEmail = readString(formData, "contactEmail");
+    const contactInstagram = readString(formData, "contactInstagram");
+    const contactFacebook = readString(formData, "contactFacebook");
+    const contactTiktok = readString(formData, "contactTiktok");
+
+    if (contactPhone) basePreview.contactPhone = contactPhone;
+    if (contactWhatsapp) basePreview.contactWhatsapp = contactWhatsapp;
+    if (contactEmail) basePreview.contactEmail = contactEmail;
+    if (contactInstagram) basePreview.contactInstagram = contactInstagram;
+    if (contactFacebook) basePreview.contactFacebook = contactFacebook;
+    if (contactTiktok) basePreview.contactTiktok = contactTiktok;
+
     await prisma.template.update({
       where: { id },
       data: {

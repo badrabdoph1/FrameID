@@ -1,9 +1,11 @@
 import { LayoutTemplate, Palette, Settings } from "lucide-react";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 
 import { AdminPageShell } from "@/components/layout/admin-page-shell";
 import { prisma } from "@/lib/prisma";
 import { requireAdminPermission } from "@/modules/admin/admin-permission-guards";
-import { TemplateReorderList } from "@/app/(admin)/admin/templates/template-reorder-list";
+import { TemplatesManager } from "@/app/(admin)/admin/templates/templates-manager";
 import { UnifiedContentSection } from "@/app/(admin)/admin/templates/unified-content-section";
 import { TEMPLATE_STARTER_DEFAULTS_CODE } from "@/modules/themes/template-starter-defaults";
 
@@ -15,14 +17,20 @@ type Props = {
     toggled?: string;
     error?: string;
     unifiedContentSaved?: string;
+    created?: string;
+    duplicated?: string;
+    archived?: string;
   }>;
 };
 
 function getMessage(params: Awaited<Props["searchParams"]>) {
   if (params.error) return { tone: "danger" as const, text: decodeURIComponent(params.error) };
   if (params.unifiedContentSaved) return { tone: "success" as const, text: "تم حفظ المحتوى الموحد لكل القوالب." };
-  if (params.saved) return { tone: "success" as const, text: "تم حفظ ترتيب القوالب." };
-  if (params.toggled) return { tone: "success" as const, text: "تم تحديث حالة نشر القالب." };
+  if (params.created) return { tone: "success" as const, text: "تم إنشاء القالب كمسودة." };
+  if (params.duplicated) return { tone: "success" as const, text: "تم إنشاء نسخة من القالب." };
+  if (params.archived) return { tone: "success" as const, text: "تمت أرشفة القالب." };
+  if (params.saved) return { tone: "success" as const, text: "تم حفظ التعديلات." };
+  if (params.toggled) return { tone: "success" as const, text: "تم تحديث حالة النشر." };
   return null;
 }
 
@@ -39,12 +47,13 @@ export default async function AdminTemplatesPage({ searchParams }: Props) {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let templates: any[] = [];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let themes: any[] = [];
   let publishedTemplates = 0;
-  let themesCount = 0;
 
   if (process.env.DATABASE_URL) {
     try {
-      [templates, publishedTemplates, themesCount] = await Promise.all([
+      [templates, themes, publishedTemplates] = await Promise.all([
         prisma.template.findMany({
           where: { deletedAt: null, code: { not: TEMPLATE_STARTER_DEFAULTS_CODE } },
           orderBy: [{ showroomOrder: "asc" }, { updatedAt: "desc" }],
@@ -55,12 +64,18 @@ export default async function AdminTemplatesPage({ searchParams }: Props) {
             status: true,
             showroomOrder: true,
             previewData: true,
+            settings: true,
+            theme: { select: { id: true, name: true, code: true } },
           },
+        }),
+        prisma.theme.findMany({
+          where: { deletedAt: null },
+          orderBy: [{ status: "desc" }, { name: "asc" }],
+          select: { id: true, name: true, code: true },
         }),
         prisma.template.count({
           where: { deletedAt: null, status: "PUBLISHED", code: { not: TEMPLATE_STARTER_DEFAULTS_CODE } },
         }),
-        prisma.theme.count({ where: { deletedAt: null } }),
       ]);
     } catch {
       // Database unavailable — show empty state
@@ -69,11 +84,20 @@ export default async function AdminTemplatesPage({ searchParams }: Props) {
 
   const message = getMessage(params);
 
+  let unifiedContent: Record<string, unknown> = {};
+  try {
+    const raw = readFileSync(join(process.cwd(), "content", "templates", "unified-content.json"), "utf-8");
+    const parsed = JSON.parse(raw);
+    unifiedContent = parsed.data ?? {};
+  } catch {
+    // file not available
+  }
+
   return (
     <AdminPageShell
       badge="المحتوى"
-      title="إدارة المحتوى الموحد للقوالب"
-      description="عدّل المحتوى مرة واحدة — يطبّق على كل القوالب الجاهزة تلقائيًا، ولا يمس مواقع العملاء المنشأة."
+      title="إدارة المحتوى والقوالب"
+      description="عدّل المحتوى الموحد لكل القوالب، وعدّل تفاصيل كل قالب بشكل منفصل."
       breadcrumbs={[{ label: "المحتوى", href: "/admin/content" }, { label: "القوالب" }]}
       actions={[
         { label: "الثيمات", href: "/admin/themes", icon: Palette },
@@ -95,12 +119,12 @@ export default async function AdminTemplatesPage({ searchParams }: Props) {
       <section className="grid gap-3 sm:grid-cols-3">
         <Metric label="كل القوالب" value={templates.length} icon={LayoutTemplate} />
         <Metric label="قوالب منشورة" value={publishedTemplates} accent icon={LayoutTemplate} />
-        <Metric label="الثيمات المتاحة" value={themesCount} icon={Palette} />
+        <Metric label="الثيمات المتاحة" value={themes.length} icon={Palette} />
       </section>
 
       <UnifiedContentSection />
 
-      <TemplateReorderList
+      <TemplatesManager
         templates={templates.map((template) => ({
           id: template.id,
           name: template.name,
@@ -108,7 +132,21 @@ export default async function AdminTemplatesPage({ searchParams }: Props) {
           status: String(template.status),
           showroomOrder: template.showroomOrder,
           previewImage: pickImage(template.previewData),
+          description: isRecord(template.previewData) ? (template.previewData as Record<string, unknown>).description as string ?? "" : "",
+          previewData: isRecord(template.previewData) ? (template.previewData as Record<string, unknown>) : {},
+          settings: isRecord(template.settings) ? (template.settings as Record<string, unknown>) : {},
+          theme: {
+            id: template.theme.id,
+            name: template.theme.name,
+            code: template.theme.code,
+          },
         }))}
+        themes={themes.map((theme) => ({
+          id: theme.id,
+          name: theme.name,
+          code: theme.code,
+        }))}
+        unifiedDefaults={unifiedContent}
       />
     </AdminPageShell>
   );
@@ -121,4 +159,8 @@ function Metric({ label, value, accent, icon: Icon }: { label: string; value: nu
       <span><strong className={accent ? "block text-2xl font-black text-amber-200" : "block text-2xl font-black text-[#fff7e8]"}>{value.toLocaleString("ar-EG")}</strong><small className="mt-1 block text-xs font-black text-white/38">{label}</small></span>
     </div>
   );
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }

@@ -10,6 +10,7 @@ import {
 } from "@/modules/subscription/subscription-experience";
 import { SubscriptionExperienceDefaultsCard } from "@/app/(admin)/admin/messages/subscription-experience-defaults-card";
 import { SubscriptionExperienceOverridesCard } from "@/app/(admin)/admin/messages/subscription-experience-overrides-card";
+import { TrialPolicyCard } from "@/app/(admin)/admin/messages/trial-policy-card";
 
 export const dynamic = "force-dynamic";
 
@@ -177,6 +178,8 @@ export default async function AdminMessagesPage({ searchParams }: Props) {
           <MetricCard label="إعدادات خاصة" value={overrideIds.size} icon={Layers3} />
           <MetricCard label="حالات أخرى" value={otherTenants.length} icon={MessageSquareText} />
         </section>
+
+        <TrialPolicyCard defaultDays={defaultsRecord.defaults.trialPolicy.defaultDays} />
 
         <SubscriptionExperienceDefaultsCard
           defaults={defaultsRecord.defaults}

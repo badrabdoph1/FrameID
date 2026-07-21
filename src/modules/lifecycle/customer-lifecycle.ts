@@ -125,10 +125,10 @@ export async function saveLifecycleTimerSettings(prisma: LifecyclePrismaClient, 
   else await prisma.featureFlag.create({ data });
 }
 
-export async function applyDefaultTrialDurationFromRegistration(prisma: LifecyclePrismaClient, defaultDays: number) {
+export async function applyDefaultTrialDurationFromRegistration(prisma: LifecyclePrismaClient, defaultDays: number, statuses: Array<"ACTIVE" | "TRIAL" | "TRIAL_EXPIRED" | "EXPIRED" | "SUSPENDED"> = ["TRIAL"]) {
   const days = normalizeNumber(defaultDays, defaultLifecycleTimerSettings.trial.defaultDays);
   const tenants = await prisma.tenant.findMany({
-    where: { deletedAt: null, status: "TRIAL" },
+    where: { deletedAt: null, status: { in: statuses } },
     select: { id: true, createdAt: true },
   });
 

@@ -2,13 +2,11 @@
 
 import { useMemo, useState, useRef } from "react";
 import {
-  CalendarDays,
   Eye,
   MessageSquareText,
   Navigation,
   Timer,
   ToggleLeft,
-  Users,
 } from "lucide-react";
 
 import {
@@ -339,55 +337,6 @@ export function SubscriptionExperienceDefaultsCard({
               </section>
             ) : null}
 
-            {activeBucket === "trial" ? (
-              <section className={sectionCardClass}>
-                <div className="mb-3 flex items-center gap-2">
-                  <CalendarDays className="size-4 text-[#f3cf73]" />
-                  <h4 className="text-sm font-black text-[#fff7e8]">
-                    سياسة الفترة التجريبية
-                  </h4>
-                </div>
-                <p className="mb-4 text-xs font-bold leading-6 text-white/42">
-                  تُحسب من تاريخ إنشاء الحساب للعملاء الجدد. لن تؤثر على العملاء
-                  الحاليين إلا إذا اخترت ذلك صراحة.
-                </p>
-                <div className="grid gap-3 lg:grid-cols-[1fr_auto] lg:items-end">
-                  <label className="grid gap-1.5">
-                    <span className="text-xs font-black text-white/42">
-                      عدد أيام الفترة التجريبية
-                    </span>
-                    <input
-                      name="trialPolicyDefaultDays"
-                      type="number"
-                      min={1}
-                      max={3650}
-                      value={draft.trialPolicy.defaultDays}
-                      onChange={(event) =>
-                        setDraft((current) => ({
-                          ...current,
-                          trialPolicy: {
-                            defaultDays: Number(
-                              event.target.value ||
-                                current.trialPolicy.defaultDays,
-                            ),
-                          },
-                        }))
-                      }
-                      className={inputClass}
-                    />
-                  </label>
-                  <label className={checkboxLabelClass}>
-                    <input
-                      name="applyTrialDefaultsToCurrent"
-                      type="checkbox"
-                      className="accent-amber-400"
-                    />
-                    <span>تطبيق المدة الجديدة على العملاء التجريبيين الحاليين</span>
-                  </label>
-                </div>
-              </section>
-            ) : null}
-
             <section className={sectionCardClass}>
               <div className="mb-3 flex items-center gap-2">
                 <Navigation className="size-4 text-[#f3cf73]" />
@@ -484,7 +433,7 @@ export function SubscriptionExperienceDefaultsCard({
                   معاينة مباشرة
                 </h4>
               </div>
-              <InlinePreview preview={preview} bucket={activeBucket} />
+              <InlinePreview preview={preview} />
             </section>
 
             <button
@@ -560,10 +509,8 @@ export function SubscriptionExperienceDefaultsCard({
 
 function InlinePreview({
   preview,
-  bucket,
 }: {
   preview: ReturnType<typeof resolveSubscriptionExperience>;
-  bucket: SubscriptionExperienceBucket;
 }) {
   const toneClass =
     preview.message.tone === "success"
