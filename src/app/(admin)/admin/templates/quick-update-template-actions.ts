@@ -40,6 +40,7 @@ export async function quickUpdateTemplateAction(formData: FormData) {
       where: { id },
       data: {
         ...(name ? { name } : {}),
+        ...(description ? { description } : {}),
         previewData: basePreview as Prisma.InputJsonValue,
       },
     });

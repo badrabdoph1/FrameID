@@ -8,7 +8,7 @@ import { MarketingNav } from "@/components/layout/marketing-nav";
 import { TemplateLivePreview } from "@/components/themes/template-live-preview";
 import { getContent } from "@/lib/content";
 import { cn } from "@/lib/utils/cn";
-import { getPublishedTemplates } from "@/modules/themes/theme-registry";
+import { getPublishedTemplatesFromDb } from "@/modules/themes/theme-registry";
 import { TemplatesScrollReset } from "./templates-scroll-reset";
 
 export const metadata: Metadata = {
@@ -38,7 +38,7 @@ type TemplatesPageProps = {
 
 export default async function TemplatesPage({ searchParams }: TemplatesPageProps) {
   const { from } = await searchParams;
-  const templates = getPublishedTemplates();
+  const templates = await getPublishedTemplatesFromDb();
   const footer = getContent("marketing/footer");
   const isNewUser = from === "signup";
 

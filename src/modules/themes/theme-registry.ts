@@ -7,6 +7,8 @@ import {
   PLATFORM_TEMPLATE_SECTION_TYPES,
   type TemplateSectionType,
 } from "@/modules/themes/template-contract";
+import { prisma } from "@/lib/prisma";
+import { TEMPLATE_STARTER_DEFAULTS_CODE } from "@/modules/themes/template-starter-defaults";
 
 export type TemplateStatus = "draft" | "published" | "archived";
 
@@ -127,4 +129,46 @@ export function getPublishedTemplates(): TemplateSummary[] {
 
 export function getTemplateByCode(code: string): TemplateSummary | undefined {
   return themeRegistry.getTemplate(code);
+}
+
+export async function getPublishedTemplatesFromDb(): Promise<TemplateSummary[]> {
+  try {
+    const templates = await prisma.template.findMany({
+      where: {
+        deletedAt: null,
+        status: "PUBLISHED",
+        code: { not: TEMPLATE_STARTER_DEFAULTS_CODE },
+      },
+      orderBy: { showroomOrder: "asc" },
+      select: {
+        code: true,
+        name: true,
+        showroomOrder: true,
+        previewData: true,
+        theme: { select: { code: true } },
+      },
+    });
+
+    const templateMap = new Map(
+      templateDefinitions.map((t) => [t.code, t])
+    );
+
+    return templates.map((dbTemplate) => {
+      const definition = templateMap.get(dbTemplate.code);
+      const previewData = dbTemplate.previewData as Record<string, unknown> | null;
+      const description = (typeof previewData?.description === "string" && previewData.description) || definition?.description || "";
+
+      return {
+        code: dbTemplate.code,
+        themeCode: dbTemplate.theme?.code || definition?.themeCode || "",
+        name: dbTemplate.name || definition?.name || "",
+        status: "published" as TemplateStatus,
+        showroomOrder: dbTemplate.showroomOrder,
+        description,
+        starterContent: definition?.starterContent || ({} as TemplateStarterContent),
+      };
+    });
+  } catch {
+    return [];
+  }
 }
