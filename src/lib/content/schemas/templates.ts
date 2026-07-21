@@ -46,10 +46,10 @@ export const GalleryImageSchema = z.object({
 })
 
 export const UnifiedTemplateContentSchema = z.object({
-  photographerName: z.string().min(1),
-  studioName: z.string().min(1),
+  photographerName: z.string(),
+  studioName: z.string(),
   description: z.string(),
-  heroImageUrl: z.string().url(),
+  heroImageUrl: z.string(),
   heroEyebrow: z.string(),
   heroCtaLabel: z.string(),
   packagesTitle: z.string(),
@@ -63,7 +63,7 @@ export const UnifiedTemplateContentSchema = z.object({
   gallery: z.array(GalleryImageSchema),
   contactPhone: z.string().nullable(),
   contactWhatsapp: z.string().nullable(),
-  contactEmail: z.string().email().nullable(),
+  contactEmail: z.string().nullable(),
   contactInstagram: z.string().nullable(),
   contactFacebook: z.string().nullable(),
   contactTiktok: z.string().nullable(),

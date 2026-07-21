@@ -2,11 +2,8 @@
 
 import { useState, type ReactNode } from "react";
 import {
-  Archive,
-  ArchiveRestore,
   ArrowDown,
   ArrowUp,
-  Check,
   Copy,
   Eye,
   EyeOff,
@@ -46,39 +43,43 @@ export type TemplateItem = {
 
 export type ThemeOption = { id: string; name: string; code: string };
 
-const inputClass = "min-h-10 w-full rounded-xl border border-white/10 bg-black/18 px-3 text-sm font-bold text-[#fff8ea]/90 outline-none transition placeholder:text-white/25 focus:border-amber-300/55 focus:ring-2 focus:ring-amber-300/10";
-const textareaClass = "w-full rounded-xl border border-white/10 bg-black/18 px-3 py-2 text-xs font-bold text-[#fff8ea]/90 outline-none transition placeholder:text-white/25 focus:border-amber-300/55 focus:ring-2 focus:ring-amber-300/10";
+const inputClass = "min-h-9 w-full rounded-lg border border-white/10 bg-black/18 px-2.5 text-xs font-bold text-[#fff8ea]/90 outline-none transition placeholder:text-white/25 focus:border-amber-300/55 focus:ring-2 focus:ring-amber-300/10";
+const textareaClass = "w-full rounded-lg border border-white/10 bg-black/18 px-2.5 py-2 text-xs font-bold text-[#fff8ea]/90 outline-none transition placeholder:text-white/25 focus:border-amber-300/55 focus:ring-2 focus:ring-amber-300/10 font-mono";
 
-type TemplateStatus = "PUBLISHED" | "DRAFT" | "ARCHIVED" | "COMING_SOON" | "HIDDEN";
-
-function statusLabel(status: string) {
-  if (status === "PUBLISHED") return "منشور";
-  if (status === "ARCHIVED") return "مؤرشف";
-  if (status === "COMING_SOON") return "قريباً";
-  if (status === "HIDDEN") return "مخفي";
+function statusLabel(s: string) {
+  if (s === "PUBLISHED") return "منشور";
+  if (s === "ARCHIVED") return "مؤرشف";
+  if (s === "COMING_SOON") return "قريباً";
+  if (s === "HIDDEN") return "مخفي";
   return "مسودة";
 }
 
-function statusTone(status: string) {
-  if (status === "PUBLISHED") return "bg-emerald-500/15 text-emerald-300 border-emerald-500/20";
-  if (status === "ARCHIVED") return "bg-white/5 text-white/40 border-white/10";
-  if (status === "COMING_SOON") return "bg-violet-500/15 text-violet-300 border-violet-500/20";
-  if (status === "HIDDEN") return "bg-orange-500/15 text-orange-300 border-orange-500/20";
+function statusTone(s: string) {
+  if (s === "PUBLISHED") return "bg-emerald-500/15 text-emerald-300 border-emerald-500/20";
+  if (s === "ARCHIVED") return "bg-white/5 text-white/40 border-white/10";
+  if (s === "COMING_SOON") return "bg-violet-500/15 text-violet-300 border-violet-500/20";
+  if (s === "HIDDEN") return "bg-orange-500/15 text-orange-300 border-orange-500/20";
   return "bg-amber-500/15 text-amber-200 border-amber-500/20";
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
+function isRec(v: unknown): v is Record<string, unknown> {
+  return typeof v === "object" && v !== null && !Array.isArray(v);
 }
 
-function stringFrom(value: unknown, fallback = "") {
-  return typeof value === "string" ? value : value == null ? fallback : String(value);
+function str(v: unknown, fb = "") {
+  return typeof v === "string" ? v : fb;
 }
 
-function pickFromPreview(previewData: Record<string, unknown> | undefined, key: string, fallback = ""): string {
-  if (!previewData) return fallback;
-  const val = previewData[key];
-  return typeof val === "string" ? val : fallback;
+function pv(previewData: Record<string, unknown> | undefined, key: string, fb = ""): string {
+  if (!previewData) return fb;
+  const v = previewData[key];
+  return typeof v === "string" ? v : fb;
+}
+
+function getArr(previewData: Record<string, unknown> | undefined, key: string, defaults: Record<string, unknown>): unknown[] {
+  if (previewData && Array.isArray(previewData[key])) return previewData[key] as unknown[];
+  if (Array.isArray(defaults[key])) return defaults[key] as unknown[];
+  return [];
 }
 
 export function TemplatesManager({
@@ -98,68 +99,79 @@ export function TemplatesManager({
 
   const editing = editingId ? items.find((t) => t.id === editingId) ?? null : null;
 
-  const move = async (id: string, direction: "up" | "down") => {
-    const currentIndex = items.findIndex((t) => t.id === id);
-    if (currentIndex === -1) return;
-    const targetIndex = direction === "up" ? currentIndex - 1 : currentIndex + 1;
-    if (targetIndex < 0 || targetIndex >= items.length) return;
-
+  const move = async (id: string, dir: "up" | "down") => {
+    const idx = items.findIndex((t) => t.id === id);
+    if (idx === -1) return;
+    const tgt = dir === "up" ? idx - 1 : idx + 1;
+    if (tgt < 0 || tgt >= items.length) return;
     const next = [...items];
-    [next[currentIndex], next[targetIndex]] = [next[targetIndex], next[currentIndex]];
+    [next[idx], next[tgt]] = [next[tgt], next[idx]];
     setItems(next);
+    const fd = new FormData();
+    fd.append("id", id);
+    fd.append("direction", dir);
+    await moveTemplateAction(fd);
+  };
 
-    const formData = new FormData();
-    formData.append("id", id);
-    formData.append("direction", direction);
-    await moveTemplateAction(formData);
+  const quickUpdate = async (id: string, name: string, desc: string) => {
+    const fd = new FormData();
+    fd.append("id", id);
+    fd.append("name", name);
+    fd.append("description", desc);
+    await quickUpdateTemplateAction(fd);
   };
 
   return (
     <section className="rounded-3xl border border-white/10 bg-white/[0.02] p-4">
-      <div className="mb-4 flex items-center justify-between">
+      <div className="mb-3 flex items-center justify-between">
         <div>
-          <h2 className="text-base font-black text-[#fff7e8]">لوحة تحكم القوالب</h2>
-          <p className="mt-0.5 text-xs font-bold text-white/40">إدارة كاملة: الترتيب، التعديل، الأرشفة، الإخفاء، والحالة</p>
+          <h2 className="text-sm font-black text-[#fff7e8]">القوالب</h2>
+          <p className="text-[0.65rem] font-bold text-white/35">{items.length} قالب — اضغط على أي قالب للتعديل</p>
         </div>
         <button
           type="button"
           onClick={() => { setShowCreate(!showCreate); setEditingId(null); }}
-          className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-[#f3cf73] px-3 text-xs font-black text-[#17120a]"
+          className="inline-flex h-8 items-center gap-1 rounded-lg bg-[#f3cf73] px-2.5 text-[0.7rem] font-black text-[#17120a]"
         >
-          <Plus className="size-3.5" /> قالب جديد
+          <Plus className="size-3" /> قالب جديد
         </button>
       </div>
 
       {showCreate && <CreateForm themes={themes} onClose={() => setShowCreate(false)} />}
 
       {items.length === 0 ? (
-        <div className="grid place-items-center rounded-2xl border border-dashed border-white/10 bg-white/[0.015] py-10 text-center">
-          <LayoutTemplate className="size-8 text-white/15" />
-          <p className="mt-2 text-sm font-black text-white/50">لا توجد قوالب</p>
+        <div className="grid place-items-center rounded-xl border border-dashed border-white/10 bg-white/[0.015] py-8 text-center">
+          <LayoutTemplate className="size-6 text-white/12" />
+          <p className="mt-1.5 text-xs font-black text-white/40">لا توجد قوالب</p>
         </div>
       ) : (
-        <div className="grid gap-1.5">
-          {items.map((template, index) => (
-            <TemplateRow
-              key={template.id}
-              template={template}
-              index={index}
-              total={items.length}
-              onMove={move}
-              onEdit={() => { setEditingId(template.id); setShowCreate(false); }}
-              isEditing={editingId === template.id}
-            />
-          ))}
+        <div className="grid gap-1">
+          {items.map((t, i) => {
+            const isEdit = editingId === t.id;
+            return (
+              <div key={t.id}>
+                <TemplateRow
+                  template={t}
+                  index={i}
+                  total={items.length}
+                  onMove={move}
+                  onQuickUpdate={quickUpdate}
+                  isEditing={isEdit}
+                  onClick={() => setEditingId(isEdit ? null : t.id)}
+                  onEditToggle={() => setEditingId(isEdit ? null : t.id)}
+                />
+                {isEdit && (
+                  <TemplateEditor
+                    template={editing ?? t}
+                    themes={themes}
+                    unifiedDefaults={unifiedDefaults}
+                    onClose={() => setEditingId(null)}
+                  />
+                )}
+              </div>
+            );
+          })}
         </div>
-      )}
-
-      {editing && (
-        <TemplateEditor
-          template={editing}
-          themes={themes}
-          unifiedDefaults={unifiedDefaults}
-          onClose={() => setEditingId(null)}
-        />
       )}
     </section>
   );
@@ -170,205 +182,119 @@ function TemplateRow({
   index,
   total,
   onMove,
-  onEdit,
+  onQuickUpdate,
   isEditing,
+  onClick,
+  onEditToggle,
 }: {
   template: TemplateItem;
   index: number;
   total: number;
-  onMove: (id: string, direction: "up" | "down") => void;
-  onEdit: () => void;
+  onMove: (id: string, dir: "up" | "down") => void;
+  onQuickUpdate: (id: string, name: string, desc: string) => void;
   isEditing: boolean;
+  onClick: () => void;
+  onEditToggle: () => void;
 }) {
-  const [inlineEditing, setInlineEditing] = useState(false);
-  const [nameValue, setNameValue] = useState(template.name);
-  const [descValue, setDescValue] = useState(template.description ?? "");
-
-  const handleSave = async () => {
-    const formData = new FormData();
-    formData.append("id", template.id);
-    formData.append("name", nameValue);
-    formData.append("description", descValue);
-    await quickUpdateTemplateAction(formData);
-    setInlineEditing(false);
-  };
-
-  const handleStatusChange = async (newStatus: string) => {
-    const formData = new FormData();
-    formData.append("id", template.id);
-    formData.append("status", newStatus);
-    await saveTemplateAction(formData);
-  };
+  const [inl, setInl] = useState(false);
+  const [nm, setNm] = useState(template.name);
+  const [ds, setDs] = useState(template.description ?? "");
 
   return (
     <div
       className={cn(
-        "rounded-xl border px-3 py-2 transition",
+        "group flex items-center gap-2 rounded-lg border px-2.5 py-1.5 transition cursor-pointer",
         isEditing
           ? "border-amber-300/30 bg-amber-300/[0.06]"
-          : "border-white/8 bg-black/10 hover:border-white/12 hover:bg-black/15",
+          : "border-white/6 bg-transparent hover:border-white/10 hover:bg-white/[0.02]",
       )}
+      onClick={inl ? undefined : onClick}
     >
-      <div className="grid grid-cols-[auto_1fr_auto] items-center gap-3">
-        <div className="flex items-center gap-2">
-          <span className="grid size-7 place-items-center rounded-lg bg-white/[0.04] text-[0.68rem] font-black text-white/40">
-            {index + 1}
-          </span>
-          <span className="relative grid size-10 overflow-hidden rounded-lg bg-black/20">
-            {template.previewImage ? (
-              <img src={template.previewImage} alt="" className="size-full object-cover" />
-            ) : (
-              <ImageIcon className="m-auto size-4 text-white/20" />
-            )}
-          </span>
-        </div>
+      <span className="grid size-5 place-items-center rounded-md bg-white/[0.04] text-[0.6rem] font-black text-white/35 shrink-0">
+        {index + 1}
+      </span>
+      <span className="relative grid size-7 overflow-hidden rounded-md bg-black/15 shrink-0">
+        {template.previewImage ? (
+          <img src={template.previewImage} alt="" className="size-full object-cover" />
+        ) : (
+          <ImageIcon className="m-auto size-3 text-white/15" />
+        )}
+      </span>
 
-        <div className="min-w-0">
-          {inlineEditing ? (
-            <div className="grid gap-1.5">
-              <input
-                type="text"
-                value={nameValue}
-                onChange={(e) => setNameValue(e.target.value)}
-                className="h-8 w-full rounded-lg border border-amber-300/30 bg-black/25 px-2 text-sm font-black text-[#fff7e8] outline-none focus:border-amber-300/50"
-                placeholder="اسم القالب"
-              />
-              <input
-                type="text"
-                value={descValue}
-                onChange={(e) => setDescValue(e.target.value)}
-                className="h-8 w-full rounded-lg border border-white/10 bg-black/20 px-2 text-xs font-bold text-white/70 outline-none focus:border-amber-300/40"
-                placeholder="وصف القالب (يظهر في صفحة القوالب)"
-              />
+      <div className="min-w-0 flex-1">
+        {inl ? (
+          <div className="grid gap-1" onClick={(e) => e.stopPropagation()}>
+            <input
+              value={nm}
+              onChange={(e) => setNm(e.target.value)}
+              className="h-7 w-full rounded-md border border-amber-300/30 bg-black/25 px-2 text-xs font-bold text-[#fff7e8] outline-none focus:border-amber-300/50"
+              placeholder="اسم القالب"
+            />
+            <input
+              value={ds}
+              onChange={(e) => setDs(e.target.value)}
+              className="h-7 w-full rounded-md border border-white/10 bg-black/15 px-2 text-[0.65rem] font-bold text-white/60 outline-none focus:border-amber-300/40"
+              placeholder="وصف القالب (يظهر في صفحة القوالب العامة)"
+            />
+            <div className="flex gap-1">
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); onQuickUpdate(template.id, nm, ds); setInl(false); }}
+                className="inline-flex h-6 items-center gap-1 rounded-md bg-emerald-500/15 px-2 text-[0.6rem] font-bold text-emerald-300"
+              >
+                <Save className="size-2.5" /> حفظ
+              </button>
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); setInl(false); setNm(template.name); setDs(template.description ?? ""); }}
+                className="inline-flex h-6 items-center gap-1 rounded-md border border-white/10 px-2 text-[0.6rem] font-bold text-white/45"
+              >
+                <X className="size-2.5" /> إلغاء
+              </button>
             </div>
-          ) : (
-            <>
-              <div className="flex flex-wrap items-center gap-2">
-                <strong className="truncate text-sm font-black text-[#fff7e8]">{template.name}</strong>
-                <span className={cn("rounded-md border px-1.5 py-0.5 text-[0.62rem] font-black", statusTone(template.status))}>
-                  {statusLabel(template.status)}
-                </span>
-              </div>
-              {template.description && (
-                <small className="mt-0.5 block truncate text-[0.65rem] font-bold text-white/35">{template.description}</small>
-              )}
-              <small className="mt-0.5 block truncate font-mono text-[0.6rem] font-bold text-white/25">{template.code}</small>
-            </>
-          )}
-        </div>
+          </div>
+        ) : (
+          <>
+            <div className="flex items-center gap-1.5">
+              <strong className="truncate text-[0.75rem] font-black text-[#fff7e8]">{template.name}</strong>
+              <span className={cn("rounded border px-1 py-px text-[0.55rem] font-bold shrink-0", statusTone(template.status))}>
+                {statusLabel(template.status)}
+              </span>
+            </div>
+            {template.description && (
+              <small className="mt-px block truncate text-[0.6rem] font-bold text-white/30">{template.description}</small>
+            )}
+          </>
+        )}
+      </div>
 
-        <div className="flex flex-wrap items-center gap-1">
-          {inlineEditing ? (
-            <>
-              <button
-                type="button"
-                onClick={handleSave}
-                className="inline-flex size-7 items-center justify-center rounded-lg border border-emerald-400/30 bg-emerald-500/10 text-emerald-300 transition hover:bg-emerald-500/20"
-                title="حفظ"
-              >
-                <Check className="size-3.5" />
-              </button>
-              <button
-                type="button"
-                onClick={() => { setInlineEditing(false); setNameValue(template.name); setDescValue(template.description ?? ""); }}
-                className="inline-flex size-7 items-center justify-center rounded-lg border border-white/10 bg-white/[0.04] text-white/50 transition hover:bg-white/[0.08]"
-                title="إلغاء"
-              >
-                <X className="size-3.5" />
-              </button>
-            </>
-          ) : (
-            <>
-              <button
-                type="button"
-                onClick={() => onMove(template.id, "up")}
-                disabled={index === 0}
-                className="inline-flex size-7 items-center justify-center rounded-lg border border-white/8 bg-white/[0.03] text-white/50 transition hover:bg-white/[0.06] hover:text-white disabled:cursor-not-allowed disabled:opacity-20"
-                title="تقديم"
-              >
-                <ArrowUp className="size-3.5" />
-              </button>
-              <button
-                type="button"
-                onClick={() => onMove(template.id, "down")}
-                disabled={index === total - 1}
-                className="inline-flex size-7 items-center justify-center rounded-lg border border-white/8 bg-white/[0.03] text-white/50 transition hover:bg-white/[0.06] hover:text-white disabled:cursor-not-allowed disabled:opacity-20"
-                title="تأخير"
-              >
-                <ArrowDown className="size-3.5" />
-              </button>
-
-              <div className="relative group">
-                <button
-                  type="button"
-                  className="inline-flex size-7 items-center justify-center rounded-lg border border-white/8 bg-white/[0.03] text-white/50 transition hover:bg-white/[0.06] hover:text-white"
-                  title="تغيير الحالة"
-                >
-                  {template.status === "PUBLISHED" ? <Eye className="size-3.5" /> : <EyeOff className="size-3.5" />}
-                </button>
-                <div className="absolute right-0 top-full z-10 mt-1 hidden min-w-[140px] rounded-xl border border-white/10 bg-black/90 p-1 shadow-xl group-hover:block">
-                  <StatusOption onClick={() => handleStatusChange("PUBLISHED")} label="نشر" icon={Eye} active={template.status === "PUBLISHED"} />
-                  <StatusOption onClick={() => handleStatusChange("DRAFT")} label="مسودة" icon={Pencil} active={template.status === "DRAFT"} />
-                  <StatusOption onClick={() => handleStatusChange("COMING_SOON")} label="قريباً" icon={Sparkles} active={template.status === "COMING_SOON"} />
-                  <StatusOption onClick={() => handleStatusChange("HIDDEN")} label="مخفي" icon={EyeOff} active={template.status === "HIDDEN"} />
-                  <StatusOption onClick={() => handleStatusChange("ARCHIVED")} label="أرشفة" icon={Archive} active={template.status === "ARCHIVED"} danger />
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => setInlineEditing(true)}
-                className="inline-flex size-7 items-center justify-center rounded-lg border border-white/8 bg-white/[0.03] text-white/50 transition hover:bg-white/[0.06] hover:text-white"
-                title="تعديل الاسم والوصف"
-              >
-                <Pencil className="size-3.5" />
-              </button>
-              <a
-                href={`/templates/${template.code}/preview`}
-                target="_blank"
-                className="inline-flex size-7 items-center justify-center rounded-lg border border-white/8 bg-white/[0.03] text-white/50 transition hover:bg-white/[0.06] hover:text-white"
-                title="معاينة"
-              >
-                <Eye className="size-3.5" />
-              </a>
-              <button
-                type="button"
-                onClick={onEdit}
-                className={cn(
-                  "inline-flex size-7 items-center justify-center rounded-lg border transition",
-                  isEditing
-                    ? "border-amber-300/30 bg-amber-300/10 text-[#f3cf73]"
-                    : "border-white/8 bg-white/[0.03] text-white/50 hover:bg-white/[0.06] hover:text-white",
-                )}
-                title="تعديل التفاصيل الكاملة"
-              >
-                <Settings2 className="size-3.5" />
-              </button>
-            </>
-          )}
-        </div>
+      <div className="flex items-center gap-0.5 shrink-0" onClick={(e) => e.stopPropagation()}>
+        <IconBtn onClick={() => onMove(template.id, "up")} disabled={index === 0} title="تقديم"><ArrowUp className="size-3" /></IconBtn>
+        <IconBtn onClick={() => onMove(template.id, "down")} disabled={index === total - 1} title="تأخير"><ArrowDown className="size-3" /></IconBtn>
+        <IconBtn onClick={() => { if (inl) { onQuickUpdate(template.id, nm, ds); } setInl(!inl); }} title="تعديل الاسم والوصف"><Pencil className="size-3" /></IconBtn>
+        <a href={`/templates/${template.code}/preview`} target="_blank" className="inline-flex size-6 items-center justify-center rounded-md border border-white/6 text-white/35 hover:bg-white/[0.05] hover:text-white" title="معاينة"><Eye className="size-3" /></a>
+        <IconBtn onClick={onEditToggle} title="تعديل تفاصيل القالب" active={isEditing}><Settings2 className="size-3" /></IconBtn>
       </div>
     </div>
   );
 }
 
-function StatusOption({ onClick, label, icon: Icon, active, danger }: { onClick: () => void; label: string; icon: typeof Eye; active: boolean; danger?: boolean }) {
+function IconBtn({ onClick, disabled, title, active, children }: { onClick: () => void; disabled?: boolean; title: string; active?: boolean; children: ReactNode }) {
   return (
     <button
       type="button"
       onClick={onClick}
+      disabled={disabled}
+      title={title}
       className={cn(
-        "flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-black transition",
+        "inline-flex size-6 items-center justify-center rounded-md border transition",
         active
-          ? danger
-            ? "bg-red-500/15 text-red-300"
-            : "bg-amber-300/10 text-[#f3cf73]"
-          : danger
-            ? "text-white/50 hover:bg-red-500/10 hover:text-red-300"
-            : "text-white/60 hover:bg-white/[0.06] hover:text-white",
+          ? "border-amber-300/30 bg-amber-300/10 text-[#f3cf73]"
+          : "border-white/6 text-white/35 hover:border-white/10 hover:bg-white/[0.05] hover:text-white",
+        disabled ? "cursor-not-allowed opacity-20 hover:border-white/6 hover:bg-transparent hover:text-white/35" : "",
       )}
     >
-      <Icon className="size-3.5" /> {label}
+      {children}
     </button>
   );
 }
@@ -384,75 +310,47 @@ function TemplateEditor({
   unifiedDefaults: Record<string, unknown>;
   onClose: () => void;
 }) {
-  const settings = isRecord(template.settings) ? template.settings : {};
-  const previewData = isRecord(template.previewData) ? template.previewData : {};
+  const settings = isRec(template.settings) ? template.settings : {};
+  const previewData = isRec(template.previewData) ? template.previewData : {};
   const [activeTab, setActiveTab] = useState<"basic" | "content" | "packages" | "extras" | "gallery" | "contact">("basic");
 
-  const getPackages = (): unknown[] => {
-    const pkgs = previewData.packages;
-    if (Array.isArray(pkgs)) return pkgs;
-    const defaults = unifiedDefaults.packages;
-    if (Array.isArray(defaults)) return defaults;
-    return [];
-  };
-
-  const getExtras = (): unknown[] => {
-    const extras = previewData.extras;
-    if (Array.isArray(extras)) return extras;
-    const defaults = unifiedDefaults.extras;
-    if (Array.isArray(defaults)) return defaults;
-    return [];
-  };
-
-  const getGallery = (): unknown[] => {
-    const gallery = previewData.gallery;
-    if (Array.isArray(gallery)) return gallery;
-    const defaults = unifiedDefaults.gallery;
-    if (Array.isArray(defaults)) return defaults;
-    return [];
-  };
+  const packages = getArr(previewData, "packages", unifiedDefaults);
+  const extras = getArr(previewData, "extras", unifiedDefaults);
+  const gallery = getArr(previewData, "gallery", unifiedDefaults);
 
   return (
-    <div className="mt-4 rounded-2xl border border-amber-300/20 bg-amber-300/[0.04] p-4">
-      <div className="mb-3 flex items-center justify-between">
+    <div className="mt-1 rounded-xl border border-amber-300/20 bg-amber-300/[0.04] p-3" onClick={(e) => e.stopPropagation()}>
+      <div className="mb-2 flex items-center justify-between">
         <div>
-          <h3 className="text-sm font-black text-[#f3cf73]">تعديل: {template.name}</h3>
-          <p className="mt-0.5 text-xs font-bold text-white/40">جميع تفاصيل القالب</p>
+          <h3 className="text-xs font-black text-[#f3cf73]">تعديل: {template.name}</h3>
+          <p className="text-[0.6rem] font-bold text-white/35">جميع تفاصيل القالب</p>
         </div>
-        <button
-          type="button"
-          onClick={onClose}
-          className="inline-flex size-8 items-center justify-center rounded-lg border border-white/10 bg-white/[0.04] text-white/50 transition hover:bg-white/[0.08] hover:text-white"
-        >
-          <X className="size-4" />
-        </button>
+        <button type="button" onClick={onClose} className="inline-flex size-6 items-center justify-center rounded-md border border-white/10 text-white/40 hover:bg-white/[0.06] hover:text-white"><X className="size-3" /></button>
       </div>
 
-      <form action={saveTemplateAction} className="grid gap-4">
+      <form action={saveTemplateAction} className="grid gap-3">
         <input type="hidden" name="id" value={template.id} />
 
-        <div className="flex flex-wrap gap-2 border-b border-white/8 pb-3">
-          <TabBtn active={activeTab === "basic"} onClick={() => setActiveTab("basic")} icon={Settings2} label="أساسي" />
-          <TabBtn active={activeTab === "content"} onClick={() => setActiveTab("content")} icon={Sparkles} label="المحتوى" />
-          <TabBtn active={activeTab === "packages"} onClick={() => setActiveTab("packages")} icon={Package} label="الباقات" />
-          <TabBtn active={activeTab === "extras"} onClick={() => setActiveTab("extras")} icon={Sparkles} label="الإضافات" />
-          <TabBtn active={activeTab === "gallery"} onClick={() => setActiveTab("gallery")} icon={ImageIcon} label="المعرض" />
-          <TabBtn active={activeTab === "contact"} onClick={() => setActiveTab("contact")} icon={Phone} label="التواصل" />
+        <div className="flex flex-wrap gap-1 border-b border-white/8 pb-2">
+          <ETab active={activeTab === "basic"} onClick={() => setActiveTab("basic")} icon={Settings2} label="أساسي" />
+          <ETab active={activeTab === "content"} onClick={() => setActiveTab("content")} icon={Sparkles} label="المحتوى" />
+          <ETab active={activeTab === "packages"} onClick={() => setActiveTab("packages")} icon={Package} label="الباقات" />
+          <ETab active={activeTab === "extras"} onClick={() => setActiveTab("extras")} icon={Sparkles} label="الإضافات" />
+          <ETab active={activeTab === "gallery"} onClick={() => setActiveTab("gallery")} icon={ImageIcon} label="المعرض" />
+          <ETab active={activeTab === "contact"} onClick={() => setActiveTab("contact")} icon={Phone} label="التواصل" />
         </div>
 
         {activeTab === "basic" && (
-          <div className="grid gap-3 sm:grid-cols-2">
-            <Field label="اسم القالب"><input name="name" defaultValue={template.name} className={inputClass} /></Field>
-            <Field label="رمز القالب"><input name="code" defaultValue={template.code} className={inputClass} dir="ltr" /></Field>
-            <Field label="الإصدار"><input name="version" defaultValue={stringFrom(settings.version, "1.0.0")} className={inputClass} dir="ltr" /></Field>
-            <Field label="الثيم">
+          <div className="grid gap-2 sm:grid-cols-3">
+            <F label="اسم القالب"><input name="name" defaultValue={template.name} className={inputClass} /></F>
+            <F label="رمز القالب"><input name="code" defaultValue={template.code} className={inputClass} dir="ltr" /></F>
+            <F label="الإصدار"><input name="version" defaultValue={str(settings.version, "1.0.0")} className={inputClass} dir="ltr" /></F>
+            <F label="الثيم">
               <select name="themeId" defaultValue={template.theme.id} className={inputClass}>
-                {themes.map((theme) => (
-                  <option key={theme.id} value={theme.id}>{theme.name} — {theme.code}</option>
-                ))}
+                {themes.map((t) => <option key={t.id} value={t.id}>{t.name} — {t.code}</option>)}
               </select>
-            </Field>
-            <Field label="حالة النشر">
+            </F>
+            <F label="حالة النشر">
               <select name="status" defaultValue={template.status} className={inputClass}>
                 <option value="PUBLISHED">منشور</option>
                 <option value="DRAFT">مسودة</option>
@@ -460,185 +358,146 @@ function TemplateEditor({
                 <option value="HIDDEN">مخفي</option>
                 <option value="ARCHIVED">مؤرشف</option>
               </select>
-            </Field>
-            <Field label="ترتيب الظهور"><input name="showroomOrder" type="number" defaultValue={template.showroomOrder} className={inputClass} /></Field>
-            <Field label="صورة المعاينة" wide><input name="previewImage" defaultValue={template.previewImage ?? ""} className={inputClass} placeholder="https://..." dir="ltr" /></Field>
-            <Field label="صورة الغلاف" wide><input name="coverImage" defaultValue={pickFromPreview(previewData, "coverImage")} className={inputClass} placeholder="https://..." dir="ltr" /></Field>
+            </F>
+            <F label="ترتيب الظهور"><input name="showroomOrder" type="number" defaultValue={template.showroomOrder} className={inputClass} /></F>
+            <F label="صورة المعاينة"><input name="previewImage" defaultValue={template.previewImage ?? ""} className={inputClass} placeholder="https://..." dir="ltr" /></F>
+            <F label="صورة Hero"><input name="heroImageUrl" defaultValue={pv(previewData, "heroImageUrl", str(unifiedDefaults.heroImageUrl))} className={inputClass} placeholder="https://..." dir="ltr" /></F>
           </div>
         )}
 
         {activeTab === "content" && (
-          <div className="grid gap-3 sm:grid-cols-2">
-            <Field label="الوصف" wide>
-              <textarea name="description" defaultValue={pickFromPreview(previewData, "description", stringFrom(unifiedDefaults.description))} rows={3} className={`${textareaClass} min-h-20`} />
-            </Field>
-            <Field label="اسم الاستوديو"><input name="studioName" defaultValue={pickFromPreview(previewData, "studioName", stringFrom(unifiedDefaults.studioName))} className={inputClass} /></Field>
-            <Field label="اسم المصور"><input name="photographerName" defaultValue={pickFromPreview(previewData, "photographerName", stringFrom(unifiedDefaults.photographerName))} className={inputClass} /></Field>
-            <Field label="مكان العمل"><input name="workLocation" defaultValue={pickFromPreview(previewData, "workLocation", stringFrom(unifiedDefaults.workLocation))} className={inputClass} /></Field>
-            <Field label="Hero - Eyebrow"><input name="heroEyebrow" defaultValue={pickFromPreview(previewData, "heroEyebrow", stringFrom(unifiedDefaults.heroEyebrow))} className={inputClass} dir="ltr" /></Field>
-            <Field label="Hero - CTA"><input name="heroCtaLabel" defaultValue={pickFromPreview(previewData, "heroCtaLabel", stringFrom(unifiedDefaults.heroCtaLabel))} className={inputClass} /></Field>
-            <Field label="صورة Hero" wide><input name="heroImageUrl" defaultValue={pickFromPreview(previewData, "heroImageUrl", stringFrom(unifiedDefaults.heroImageUrl))} className={inputClass} placeholder="https://..." dir="ltr" /></Field>
-            <Field label="عنوان الباقات"><input name="packagesTitle" defaultValue={pickFromPreview(previewData, "packagesTitle", stringFrom(unifiedDefaults.packagesTitle))} className={inputClass} /></Field>
-            <Field label="وصف الباقات"><input name="packagesDescription" defaultValue={pickFromPreview(previewData, "packagesDescription", stringFrom(unifiedDefaults.packagesDescription))} className={inputClass} /></Field>
-            <Field label="عنوان الإضافات"><input name="extrasTitle" defaultValue={pickFromPreview(previewData, "extrasTitle", stringFrom(unifiedDefaults.extrasTitle))} className={inputClass} /></Field>
-            <Field label="وصف الإضافات"><input name="extrasDescription" defaultValue={pickFromPreview(previewData, "extrasDescription", stringFrom(unifiedDefaults.extrasDescription))} className={inputClass} /></Field>
-            <Field label="عنوان المعرض"><input name="galleryTitle" defaultValue={pickFromPreview(previewData, "galleryTitle", stringFrom(unifiedDefaults.galleryTitle))} className={inputClass} /></Field>
-            <Field label="وصف المعرض"><input name="galleryDescription" defaultValue={pickFromPreview(previewData, "galleryDescription", stringFrom(unifiedDefaults.galleryDescription))} className={inputClass} /></Field>
+          <div className="grid gap-2 sm:grid-cols-2">
+            <F label="الوصف (يظهر في صفحة القوالب)" wide>
+              <textarea name="description" defaultValue={pv(previewData, "description", str(unifiedDefaults.description))} rows={2} className={textareaClass} />
+            </F>
+            <F label="اسم الاستوديو"><input name="studioName" defaultValue={pv(previewData, "studioName", str(unifiedDefaults.studioName))} className={inputClass} /></F>
+            <F label="اسم المصور"><input name="photographerName" defaultValue={pv(previewData, "photographerName", str(unifiedDefaults.photographerName))} className={inputClass} /></F>
+            <F label="مكان العمل"><input name="workLocation" defaultValue={pv(previewData, "workLocation", str(unifiedDefaults.workLocation))} className={inputClass} /></F>
+            <F label="Hero - Eyebrow"><input name="heroEyebrow" defaultValue={pv(previewData, "heroEyebrow", str(unifiedDefaults.heroEyebrow))} className={inputClass} dir="ltr" /></F>
+            <F label="Hero - CTA"><input name="heroCtaLabel" defaultValue={pv(previewData, "heroCtaLabel", str(unifiedDefaults.heroCtaLabel))} className={inputClass} /></F>
+            <F label="عنوان الباقات"><input name="packagesTitle" defaultValue={pv(previewData, "packagesTitle", str(unifiedDefaults.packagesTitle))} className={inputClass} /></F>
+            <F label="وصف الباقات"><input name="packagesDescription" defaultValue={pv(previewData, "packagesDescription", str(unifiedDefaults.packagesDescription))} className={inputClass} /></F>
+            <F label="عنوان الإضافات"><input name="extrasTitle" defaultValue={pv(previewData, "extrasTitle", str(unifiedDefaults.extrasTitle))} className={inputClass} /></F>
+            <F label="وصف الإضافات"><input name="extrasDescription" defaultValue={pv(previewData, "extrasDescription", str(unifiedDefaults.extrasDescription))} className={inputClass} /></F>
+            <F label="عنوان المعرض"><input name="galleryTitle" defaultValue={pv(previewData, "galleryTitle", str(unifiedDefaults.galleryTitle))} className={inputClass} /></F>
+            <F label="وصف المعرض"><input name="galleryDescription" defaultValue={pv(previewData, "galleryDescription", str(unifiedDefaults.galleryDescription))} className={inputClass} /></F>
           </div>
         )}
 
         {activeTab === "packages" && (
-          <div className="grid gap-3">
-            <p className="text-xs font-black text-white/50">الباقات (JSON)</p>
-            <input type="hidden" name="packages" defaultValue={JSON.stringify(getPackages(), null, 2)} />
+          <div className="grid gap-2">
+            <p className="text-[0.6rem] font-bold text-white/40">الباقات (JSON - يمكن تعديلها كقائمة كائنات)</p>
+            <input type="hidden" name="packages" value={JSON.stringify(packages)} />
             <textarea
               name="packagesJson"
-              defaultValue={JSON.stringify(getPackages(), null, 2)}
-              rows={12}
-              className={`${textareaClass} min-h-40 font-mono`}
+              defaultValue={JSON.stringify(packages, null, 2)}
+              rows={10}
+              className={`${textareaClass} min-h-32`}
               dir="ltr"
               onChange={(e) => {
-                const hidden = e.target.form?.querySelector('input[name="packages"]') as HTMLInputElement | null;
-                if (hidden) hidden.value = e.target.value;
+                const h = e.currentTarget.form?.querySelector('input[name="packages"]') as HTMLInputElement | null;
+                if (h) h.value = e.target.value;
               }}
             />
           </div>
         )}
 
         {activeTab === "extras" && (
-          <div className="grid gap-3">
-            <p className="text-xs font-black text-white/50">الإضافات (JSON)</p>
-            <input type="hidden" name="extras" defaultValue={JSON.stringify(getExtras(), null, 2)} />
+          <div className="grid gap-2">
+            <p className="text-[0.6rem] font-bold text-white/40">الإضافات (JSON)</p>
+            <input type="hidden" name="extras" value={JSON.stringify(extras)} />
             <textarea
               name="extrasJson"
-              defaultValue={JSON.stringify(getExtras(), null, 2)}
-              rows={10}
-              className={`${textareaClass} min-h-32 font-mono`}
+              defaultValue={JSON.stringify(extras, null, 2)}
+              rows={8}
+              className={`${textareaClass} min-h-28`}
               dir="ltr"
               onChange={(e) => {
-                const hidden = e.target.form?.querySelector('input[name="extras"]') as HTMLInputElement | null;
-                if (hidden) hidden.value = e.target.value;
+                const h = e.currentTarget.form?.querySelector('input[name="extras"]') as HTMLInputElement | null;
+                if (h) h.value = e.target.value;
               }}
             />
           </div>
         )}
 
         {activeTab === "gallery" && (
-          <div className="grid gap-3">
-            <p className="text-xs font-black text-white/50">المعرض (JSON)</p>
-            <input type="hidden" name="gallery" defaultValue={JSON.stringify(getGallery(), null, 2)} />
+          <div className="grid gap-2">
+            <p className="text-[0.6rem] font-bold text-white/40">المعرض (JSON)</p>
+            <input type="hidden" name="gallery" value={JSON.stringify(gallery)} />
             <textarea
               name="galleryJson"
-              defaultValue={JSON.stringify(getGallery(), null, 2)}
-              rows={10}
-              className={`${textareaClass} min-h-32 font-mono`}
+              defaultValue={JSON.stringify(gallery, null, 2)}
+              rows={8}
+              className={`${textareaClass} min-h-28`}
               dir="ltr"
               onChange={(e) => {
-                const hidden = e.target.form?.querySelector('input[name="gallery"]') as HTMLInputElement | null;
-                if (hidden) hidden.value = e.target.value;
+                const h = e.currentTarget.form?.querySelector('input[name="gallery"]') as HTMLInputElement | null;
+                if (h) h.value = e.target.value;
               }}
             />
           </div>
         )}
 
         {activeTab === "contact" && (
-          <div className="grid gap-3 sm:grid-cols-2">
-            <Field label="الهاتف"><input name="contactPhone" defaultValue={pickFromPreview(previewData, "contactPhone", stringFrom(unifiedDefaults.contactPhone))} className={inputClass} dir="ltr" /></Field>
-            <Field label="واتساب"><input name="contactWhatsapp" defaultValue={pickFromPreview(previewData, "contactWhatsapp", stringFrom(unifiedDefaults.contactWhatsapp))} className={inputClass} dir="ltr" /></Field>
-            <Field label="البريد الإلكتروني"><input name="contactEmail" type="email" defaultValue={pickFromPreview(previewData, "contactEmail", stringFrom(unifiedDefaults.contactEmail))} className={inputClass} dir="ltr" /></Field>
-            <Field label="إنستغرام"><input name="contactInstagram" defaultValue={pickFromPreview(previewData, "contactInstagram", stringFrom(unifiedDefaults.contactInstagram))} className={inputClass} dir="ltr" /></Field>
-            <Field label="فيسبوك"><input name="contactFacebook" defaultValue={pickFromPreview(previewData, "contactFacebook", stringFrom(unifiedDefaults.contactFacebook))} className={inputClass} dir="ltr" /></Field>
-            <Field label="تيك توك"><input name="contactTiktok" defaultValue={pickFromPreview(previewData, "contactTiktok", stringFrom(unifiedDefaults.contactTiktok))} className={inputClass} dir="ltr" /></Field>
+          <div className="grid gap-2 sm:grid-cols-3">
+            <F label="الهاتف"><input name="contactPhone" defaultValue={pv(previewData, "contactPhone", str(unifiedDefaults.contactPhone))} className={inputClass} dir="ltr" /></F>
+            <F label="واتساب"><input name="contactWhatsapp" defaultValue={pv(previewData, "contactWhatsapp", str(unifiedDefaults.contactWhatsapp))} className={inputClass} dir="ltr" /></F>
+            <F label="البريد"><input name="contactEmail" type="email" defaultValue={pv(previewData, "contactEmail", str(unifiedDefaults.contactEmail))} className={inputClass} dir="ltr" /></F>
+            <F label="إنستغرام"><input name="contactInstagram" defaultValue={pv(previewData, "contactInstagram", str(unifiedDefaults.contactInstagram))} className={inputClass} dir="ltr" /></F>
+            <F label="فيسبوك"><input name="contactFacebook" defaultValue={pv(previewData, "contactFacebook", str(unifiedDefaults.contactFacebook))} className={inputClass} dir="ltr" /></F>
+            <F label="تيك توك"><input name="contactTiktok" defaultValue={pv(previewData, "contactTiktok", str(unifiedDefaults.contactTiktok))} className={inputClass} dir="ltr" /></F>
           </div>
         )}
 
-        <div className="flex flex-wrap gap-2 border-t border-white/8 pt-3">
-          <button className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-gradient-to-br from-[#f3cf73] to-[#d4af37] px-3 text-xs font-black text-[#17120a]">
-            <Save className="size-3.5" /> حفظ
-          </button>
-          <FormButton action={duplicateTemplateAction} icon={Copy} label="نسخة" />
-          <FormButton action={createTemplateAction} icon={Plus} label="جديد" />
+        <div className="flex flex-wrap gap-1.5 border-t border-white/8 pt-2">
+          <button className="inline-flex h-7 items-center gap-1 rounded-lg bg-gradient-to-br from-[#f3cf73] to-[#d4af37] px-2.5 text-[0.65rem] font-black text-[#17120a]"><Save className="size-3" /> حفظ</button>
+          <form action={duplicateTemplateAction}>
+            <input type="hidden" name="id" value={template.id} />
+            <button type="submit" className="inline-flex h-7 items-center gap-1 rounded-lg border border-white/10 bg-white/[0.04] px-2.5 text-[0.65rem] font-bold text-white/55 hover:bg-white/[0.08] hover:text-white"><Copy className="size-3" /> إنشاء نسخة</button>
+          </form>
         </div>
       </form>
     </div>
   );
 }
 
-function TabBtn({ active, onClick, icon: Icon, label }: { active: boolean; onClick: () => void; icon: typeof Settings2; label: string }) {
+function ETab({ active, onClick, icon: Icon, label }: { active: boolean; onClick: () => void; icon: typeof Settings2; label: string }) {
   return (
     <button
       type="button"
       onClick={onClick}
       className={cn(
-        "inline-flex h-8 items-center gap-1.5 rounded-lg px-3 text-xs font-black transition",
+        "inline-flex h-6 items-center gap-1 rounded-md px-2 text-[0.6rem] font-bold transition",
         active
           ? "bg-amber-300/15 text-[#f3cf73] border border-amber-300/30"
-          : "border border-white/8 bg-white/[0.03] text-white/50 hover:bg-white/[0.06] hover:text-white",
+          : "border border-white/8 bg-white/[0.03] text-white/45 hover:bg-white/[0.06] hover:text-white",
       )}
     >
-      <Icon className="size-3.5" /> {label}
+      <Icon className="size-3" /> {label}
     </button>
-  );
-}
-
-function FormButton({ action, icon: Icon, label }: { action: (formData: FormData) => Promise<void>; icon: typeof Plus; label: string }) {
-  return (
-    <form action={action}>
-      <input type="hidden" name="id" value="" />
-      <button
-        type="submit"
-        className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.04] px-3 text-xs font-black text-white/60 transition hover:bg-white/[0.08] hover:text-white"
-      >
-        <Icon className="size-3.5" /> {label}
-      </button>
-    </form>
   );
 }
 
 function CreateForm({ themes, onClose }: { themes: ThemeOption[]; onClose: () => void }) {
   return (
-    <form action={createTemplateAction} className="mb-4 grid gap-3 rounded-2xl border border-amber-300/20 bg-amber-300/[0.04] p-4 sm:grid-cols-2">
+    <form action={createTemplateAction} className="mb-3 grid gap-2 rounded-xl border border-amber-300/20 bg-amber-300/[0.04] p-3 sm:grid-cols-2">
       <div className="sm:col-span-2">
-        <p className="text-xs font-black text-[#f3cf73]">قالب جديد</p>
-        <p className="mt-0.5 text-xs font-bold text-white/40">المحتوى سيتم توريثه من المصدر المشترك تلقائيًا</p>
+        <p className="text-[0.7rem] font-black text-[#f3cf73]">قالب جديد</p>
+        <p className="text-[0.6rem] font-bold text-white/35">المحتوى موروث من المصدر المشترك تلقائيًا</p>
       </div>
-      <Field label="اسم القالب">
-        <input name="name" required className={inputClass} placeholder="مثال: ستوديو كلاسيك" />
-      </Field>
-      <Field label="كود القالب">
-        <input name="code" className={inputClass} dir="ltr" placeholder="classic-studio" />
-      </Field>
-      <Field label="الثيم الأساسي">
-        <select name="themeId" required className={inputClass} defaultValue="">
-          <option value="" disabled>اختر الثيم</option>
-          {themes.map((theme) => (
-            <option key={theme.id} value={theme.id}>
-              {theme.name} — {theme.code}
-            </option>
-          ))}
-        </select>
-      </Field>
-      <div className="flex items-end gap-2">
-        <button className="inline-flex h-10 flex-1 items-center justify-center gap-1.5 rounded-xl bg-[#f3cf73] px-3 text-xs font-black text-[#17120a]">
-          <Plus className="size-3.5" /> إنشاء كمسودة
-        </button>
-        <button
-          type="button"
-          onClick={onClose}
-          className="inline-flex h-10 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] px-3 text-xs font-black text-white/60"
-        >
-          إلغاء
-        </button>
+      <F label="اسم القالب"><input name="name" required className={inputClass} placeholder="مثال: ستوديو كلاسيك" /></F>
+      <F label="كود القالب"><input name="code" className={inputClass} dir="ltr" placeholder="classic-studio" /></F>
+      <F label="الثيم">
+        <select name="themeId" required className={inputClass} defaultValue=""><option value="" disabled>اختر الثيم</option>{themes.map((t) => <option key={t.id} value={t.id}>{t.name} — {t.code}</option>)}</select>
+      </F>
+      <div className="flex items-end gap-1.5">
+        <button className="inline-flex h-8 flex-1 items-center justify-center gap-1 rounded-lg bg-[#f3cf73] px-2.5 text-[0.7rem] font-black text-[#17120a]"><Plus className="size-3" /> إنشاء</button>
+        <button type="button" onClick={onClose} className="inline-flex h-8 items-center rounded-lg border border-white/10 px-2.5 text-[0.7rem] font-bold text-white/50">إلغاء</button>
       </div>
     </form>
   );
 }
 
-function Field({ label, children, wide = false }: { label: string; children: ReactNode; wide?: boolean }) {
-  return (
-    <label className={cn("grid gap-1", wide && "sm:col-span-2")}>
-      <span className="text-[0.68rem] font-black text-white/50">{label}</span>
-      {children}
-    </label>
-  );
+function F({ label, children, wide }: { label: string; children: ReactNode; wide?: boolean }) {
+  return <label className={cn("grid gap-0.5", wide && "sm:col-span-2")}><span className="text-[0.6rem] font-bold text-white/45">{label}</span>{children}</label>;
 }
