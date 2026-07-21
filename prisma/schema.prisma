@@ -481,6 +481,7 @@ model Template {
   themeId       String
   code          String      @unique
   name          String
+  description   String      @default("")
   status        ThemeStatus @default(DRAFT)
   version       String      @default("1.0.0")
   showroomOrder Int         @default(0)
