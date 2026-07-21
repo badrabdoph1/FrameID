@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-07-19T19:19:42.757Z",
+  "updatedAt": "2026-07-21T01:08:07.351Z",
   "themes": [
     {
       "code": "luxe-studio",
@@ -241,7 +241,7 @@
           "instructions": "حوّل على رقم إنستا باي، ثم ارفع صورة إثبات الدفع من نفس الصفحة.",
           "notes": null,
           "isActive": true,
-          "sortOrder": 260
+          "sortOrder": 270
         }
       ]
     },
@@ -270,7 +270,7 @@
           "instructions": "حوّل على رقم فودافون كاش، ثم ارفع صورة إثبات الدفع من نفس الصفحة.",
           "notes": null,
           "isActive": true,
-          "sortOrder": 510
+          "sortOrder": 530
         }
       ]
     },
