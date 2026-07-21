@@ -131,59 +131,103 @@ export function getTemplateByCode(code: string): TemplateSummary | undefined {
   return themeRegistry.getTemplate(code);
 }
 
-export async function getPublishedTemplatesFromDb(): Promise<TemplateSummary[]> {
-  let unifiedContent: Record<string, unknown> | null = null;
+/**
+ * Helper: reads unified-content.json directly from disk.
+ * This is the SINGLE SOURCE OF TRUTH for shared content.
+ */
+async function readUnifiedContent(): Promise<Record<string, unknown> | null> {
   try {
     const { readFileSync } = await import("node:fs");
     const { join } = await import("node:path");
     const raw = readFileSync(join(process.cwd(), "content", "templates", "unified-content.json"), "utf-8");
     const parsed = JSON.parse(raw);
-    unifiedContent = parsed.data ?? null;
+    return (parsed.data as Record<string, unknown>) ?? null;
   } catch {
-    // file not available, will fall back to definitions
+    return null;
   }
+}
+
+export async function getPublishedTemplatesFromDb(): Promise<TemplateSummary[]> {
+  const unifiedContent = await readUnifiedContent();
+
+  const templateMap = new Map(
+    templateDefinitions.map((t) => [t.code, t])
+  );
+
+  // Read all non-deleted templates from DB
+  // We use status: { in: ["PUBLISHED", "DRAFT", "ARCHIVED", "HIDDEN", "COMING_SOON"] }
+  // but we only return PUBLISHED ones for the public page
+  // Actually, let's just read all and filter
+  let dbTemplates: Array<{
+    code: string;
+    name: string;
+    status: string;
+    showroomOrder: number;
+    previewData: unknown;
+    theme: { code: string } | null;
+  }> = [];
 
   try {
-    const templates = await prisma.template.findMany({
+    dbTemplates = await prisma.template.findMany({
       where: {
         deletedAt: null,
-        status: "PUBLISHED",
         code: { not: TEMPLATE_STARTER_DEFAULTS_CODE },
       },
       orderBy: { showroomOrder: "asc" },
       select: {
         code: true,
         name: true,
+        status: true,
         showroomOrder: true,
         previewData: true,
         theme: { select: { code: true } },
       },
     });
-
-    const templateMap = new Map(
-      templateDefinitions.map((t) => [t.code, t])
-    );
-
-    return templates.map((dbTemplate) => {
-      const definition = templateMap.get(dbTemplate.code);
-      const previewData = dbTemplate.previewData as Record<string, unknown> | null;
-      const description =
-        (typeof previewData?.description === "string" && previewData.description) ||
-        (typeof unifiedContent?.description === "string" && (unifiedContent.description as string)) ||
-        definition?.description ||
-        "";
-
-      return {
-        code: dbTemplate.code,
-        themeCode: dbTemplate.theme?.code || definition?.themeCode || "",
-        name: dbTemplate.name || definition?.name || "",
-        status: "published" as TemplateStatus,
-        showroomOrder: dbTemplate.showroomOrder,
-        description,
-        starterContent: definition?.starterContent || ({} as TemplateStarterContent),
-      };
-    });
   } catch {
-    return [];
+    // DB not available, fall back to definitions
+    dbTemplates = [];
   }
+
+  // Filter to only PUBLISHED templates for public page
+  const publishedDb = dbTemplates.filter((t) => t.status === "PUBLISHED");
+
+  // Build the result by merging DB metadata with unified content
+  return publishedDb.map((dbTemplate) => {
+    const definition = templateMap.get(dbTemplate.code);
+    const previewData = dbTemplate.previewData as Record<string, unknown> | null;
+
+    // Description priority:
+    // 1. DB previewData.description (template-specific override)
+    // 2. unified-content.json description (shared content)
+    // 3. definition description (hardcoded fallback)
+    const description =
+      (typeof previewData?.description === "string" && previewData.description) ||
+      (typeof unifiedContent?.description === "string" && (unifiedContent.description as string)) ||
+      definition?.description ||
+      "";
+
+    // Name priority:
+    // 1. DB name
+    // 2. unified-content studioName (if name is empty)
+    // 3. definition name
+    const name =
+      dbTemplate.name ||
+      (typeof unifiedContent?.studioName === "string" && (unifiedContent.studioName as string)) ||
+      definition?.name ||
+      "";
+
+    return {
+      code: dbTemplate.code,
+      themeCode: dbTemplate.theme?.code || definition?.themeCode || "",
+      name,
+      status: "published" as TemplateStatus,
+      showroomOrder: dbTemplate.showroomOrder,
+      description,
+      starterContent: definition?.starterContent || ({} as TemplateStarterContent),
+    };
+  });
+}
+
+export async function getUnifiedContent(): Promise<Record<string, unknown> | null> {
+  return readUnifiedContent();
 }

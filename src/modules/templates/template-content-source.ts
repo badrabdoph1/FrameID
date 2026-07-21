@@ -16,6 +16,7 @@ import {
   type TemplateStarterSharedDefaults,
   type TemplateStarterSharedOverrides,
 } from "@/modules/themes/template-starter-defaults";
+import { applyUnifiedContent } from "@/modules/themes/unified-content-applier";
 import {
   formatTemplatePrice,
   normalizeTemplateSections,
@@ -85,10 +86,12 @@ export function getTemplateContentSource(
   const theme = themeRegistry.getTheme(template.themeCode);
   if (!theme || theme.status !== "published") return null;
 
-  const content = applyTemplateStarterSharedDefaults(
-    clone(template.starterContent),
-    options.sharedDefaults ?? OFFICIAL_TEMPLATE_STARTER_DEFAULTS,
-    options.templateOverride ?? {},
+  const content = applyUnifiedContent(
+    applyTemplateStarterSharedDefaults(
+      clone(template.starterContent),
+      options.sharedDefaults ?? OFFICIAL_TEMPLATE_STARTER_DEFAULTS,
+      options.templateOverride ?? {},
+    ),
   );
 
   const source: TemplateContentSource = {

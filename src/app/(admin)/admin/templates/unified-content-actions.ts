@@ -5,10 +5,8 @@ import { redirect } from "next/navigation";
 import { writeFileSync, readFileSync as fsReadFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { prisma } from "@/lib/prisma";
 import { processError } from "@/lib/errors";
 import { requireAdminPermission } from "@/modules/admin/admin-permission-guards";
-import { TEMPLATE_STARTER_DEFAULTS_CODE } from "@/modules/themes/template-starter-defaults";
 import type { UnifiedTemplateContentSchema } from "@/lib/content/schemas/templates";
 import type { z } from "zod";
 
@@ -28,10 +26,6 @@ function readInt(formData: FormData, key: string, fallback = 0): number {
 
 function readBool(formData: FormData, key: string): boolean {
   return formData.get(key) === "on";
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 export async function saveUnifiedContentAction(formData: FormData) {
@@ -100,50 +94,6 @@ export async function saveUnifiedContentAction(formData: FormData) {
     currentContent.updatedAt = new Date().toISOString();
 
     writeFileSync(CONTENT_FILE, JSON.stringify(currentContent, null, 2), "utf-8");
-
-    const syncedFields: Record<string, unknown> = {
-      photographerName: data.photographerName,
-      studioName: data.studioName,
-      description: data.description,
-      heroImageUrl: data.heroImageUrl,
-      heroEyebrow: data.heroEyebrow,
-      heroCtaLabel: data.heroCtaLabel,
-      workLocation: data.workLocation,
-      packagesTitle: data.packagesTitle,
-      packagesDescription: data.packagesDescription,
-      packages: data.packages,
-      extrasTitle: data.extrasTitle,
-      extrasDescription: data.extrasDescription,
-      extras: data.extras,
-      galleryTitle: data.galleryTitle,
-      galleryDescription: data.galleryDescription,
-      gallery: data.gallery,
-      contactPhone: data.contactPhone,
-      contactWhatsapp: data.contactWhatsapp,
-      contactEmail: data.contactEmail,
-      contactInstagram: data.contactInstagram,
-      contactFacebook: data.contactFacebook,
-      contactTiktok: data.contactTiktok,
-    };
-
-    const allTemplates = await prisma.template.findMany({
-      where: { deletedAt: null, code: { not: TEMPLATE_STARTER_DEFAULTS_CODE } },
-      select: { id: true, previewData: true },
-    });
-
-    await Promise.all(
-      allTemplates.map(async (t) => {
-        const preview: Record<string, unknown> = isRecord(t.previewData) ? { ...t.previewData as Record<string, unknown> } : {};
-        for (const [key, value] of Object.entries(syncedFields)) {
-          preview[key] = value as unknown;
-        }
-        await prisma.$executeRawUnsafe(
-          `UPDATE "Template" SET "previewData" = $1::jsonb WHERE "id" = $2`,
-          JSON.stringify(preview),
-          t.id,
-        );
-      }),
-    );
     void admin;
   } catch (error) {
     const { userError } = await processError(error, { userId: admin.id, metadata: { action: "saveUnifiedContent" } });
@@ -151,6 +101,7 @@ export async function saveUnifiedContentAction(formData: FormData) {
   }
 
   revalidatePath("/admin/templates");
-  revalidatePath("/admin/content");
+  revalidatePath("/templates");
+  revalidatePath("/templates/[code]/preview");
   redirect("/admin/templates?unifiedContentSaved=1");
 }
