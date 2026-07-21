@@ -41,8 +41,9 @@ function readBool(value: unknown, fallback: boolean): boolean {
  * This overwrites: site info, hero, packages, extras, gallery, contact.
  */
 export function applyUnifiedContent(content: TemplateStarterContent): TemplateStarterContent {
-  const data = readUnifiedContentData();
-  if (!data) return content;
+  try {
+    const data = readUnifiedContentData();
+    if (!data) return content;
 
   const next = structuredClone(content);
 
@@ -77,7 +78,7 @@ export function applyUnifiedContent(content: TemplateStarterContent): TemplateSt
 
   // Packages items
   if (Array.isArray(data.packages) && data.packages.length > 0) {
-    next.packages = data.packages.map((pkg: unknown) => {
+    const mapped = data.packages.map((pkg: unknown) => {
       const p = (pkg ?? {}) as Record<string, unknown>;
       return {
         id: String(p.id ?? ""),
@@ -92,7 +93,8 @@ export function applyUnifiedContent(content: TemplateStarterContent): TemplateSt
         isHighlighted: readBool(p.isHighlighted, false),
         sortOrder: readInt(p.sortOrder, 0),
       };
-    }).filter((pkg) => pkg.name && pkg.features.length > 0);
+    }).filter((pkg) => pkg.name.length > 0);
+    if (mapped.length > 0) next.packages = mapped;
   }
 
   // Extras section title/description
@@ -101,7 +103,7 @@ export function applyUnifiedContent(content: TemplateStarterContent): TemplateSt
 
   // Extras items
   if (Array.isArray(data.extras) && data.extras.length > 0) {
-    next.extras = data.extras.map((extra: unknown) => {
+    const mapped = data.extras.map((extra: unknown) => {
       const e = (extra ?? {}) as Record<string, unknown>;
       return {
         id: String(e.id ?? ""),
@@ -112,7 +114,8 @@ export function applyUnifiedContent(content: TemplateStarterContent): TemplateSt
         iconKey: String(e.iconKey ?? "sparkles"),
         sortOrder: readInt(e.sortOrder, 0),
       };
-    }).filter((extra) => extra.name);
+    }).filter((extra) => extra.name.length > 0);
+    if (mapped.length > 0) next.extras = mapped;
   }
 
   // Gallery section title/description
@@ -126,7 +129,7 @@ export function applyUnifiedContent(content: TemplateStarterContent): TemplateSt
       description: readText(data.galleryDescription, next.gallery.album.description),
       sortOrder: next.gallery.album.sortOrder,
     };
-    next.gallery.images = data.gallery.map((img: unknown) => {
+    const mapped = data.gallery.map((img: unknown) => {
       const g = (img ?? {}) as Record<string, unknown>;
       return {
         id: String(g.id ?? ""),
@@ -136,7 +139,8 @@ export function applyUnifiedContent(content: TemplateStarterContent): TemplateSt
         sortOrder: readInt(g.sortOrder, 0),
         isFeatured: readBool(g.isFeatured, false),
       };
-    }).filter((img) => img.url);
+    }).filter((img) => img.url.length > 0);
+    if (mapped.length > 0) next.gallery.images = mapped;
   }
 
   // Contact section
@@ -155,4 +159,7 @@ export function applyUnifiedContent(content: TemplateStarterContent): TemplateSt
   next.contact.workLocation = readText(data.workLocation, next.contact.workLocation);
 
   return next;
+  } catch {
+    return content;
+  }
 }
