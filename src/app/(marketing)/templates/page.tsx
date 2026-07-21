@@ -42,14 +42,10 @@ export default async function TemplatesPage({ searchParams }: TemplatesPageProps
   const footer = getContent("marketing/footer");
   const isNewUser = from === "signup";
 
-  const templateHighlights: Record<string, { badge?: string; highlight?: string }> = {
+  const templateHighlights: Record<string, { badge?: string }> = {
     "noir-gold": {
       badge: "الأكثر استخداماً",
-      highlight: "مثالي لمصورين الزفاف والبورتريه اللي عايزين موقع فاخر يعكس احترافيتهم"
     },
-    "rose-blush": {
-      highlight: "مناسب لمصورين الخطوبة والأطفال اللي بيحبوا الستايل الناعم والعصري"
-    }
   };
 
   const breadcrumbJsonLd = {
@@ -183,7 +179,7 @@ export default async function TemplatesPage({ searchParams }: TemplatesPageProps
             <div className="grid gap-8 md:grid-cols-2 md:gap-10">
               {templates.map((template) => {
                 const meta = templateHighlights[template.code] ?? {};
-                const description = meta.highlight ?? template.description;
+                const description = template.description;
 
                 return (
                   <article

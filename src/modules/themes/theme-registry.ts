@@ -132,6 +132,17 @@ export function getTemplateByCode(code: string): TemplateSummary | undefined {
 }
 
 export async function getPublishedTemplatesFromDb(): Promise<TemplateSummary[]> {
+  let unifiedContent: Record<string, unknown> | null = null;
+  try {
+    const { readFileSync } = await import("node:fs");
+    const { join } = await import("node:path");
+    const raw = readFileSync(join(process.cwd(), "content", "templates", "unified-content.json"), "utf-8");
+    const parsed = JSON.parse(raw);
+    unifiedContent = parsed.data ?? null;
+  } catch {
+    // file not available, will fall back to definitions
+  }
+
   try {
     const templates = await prisma.template.findMany({
       where: {
@@ -156,7 +167,11 @@ export async function getPublishedTemplatesFromDb(): Promise<TemplateSummary[]> 
     return templates.map((dbTemplate) => {
       const definition = templateMap.get(dbTemplate.code);
       const previewData = dbTemplate.previewData as Record<string, unknown> | null;
-      const description = (typeof previewData?.description === "string" && previewData.description) || definition?.description || "";
+      const description =
+        (typeof previewData?.description === "string" && previewData.description) ||
+        (typeof unifiedContent?.description === "string" && (unifiedContent.description as string)) ||
+        definition?.description ||
+        "";
 
       return {
         code: dbTemplate.code,
