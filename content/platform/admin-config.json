@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-07-22T21:39:26.256Z",
+  "updatedAt": "2026-07-22T21:39:39.073Z",
   "themes": [
     {
       "code": "luxe-studio",
@@ -191,7 +191,7 @@
       "name": "بيزك",
       "priceAmount": 45,
       "currency": "EGP",
-      "billingInterval": "monthly",
+      "billingInterval": "unspecified",
       "features": {
         "ctaLabel": "اختار الباقة",
         "isPopular": true,
