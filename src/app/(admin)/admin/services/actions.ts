@@ -399,6 +399,77 @@ export async function completeManualFulfillmentAction(formData: FormData) {
   }
 }
 
+export async function refundServicePaymentAction(formData: FormData) {
+  const admin = await requireAdminPermission("services", "edit");
+  const paymentRequestId = value(formData, "paymentRequestId", 200);
+  const reason = value(formData, "reason", 1_000);
+  try {
+    if (!reason) throw new Error("سبب الاسترداد مطلوب.");
+    const runtime = createServicesPlatformRuntime(prisma);
+    const refunded = await runtime.payments.refund({
+      paymentRequestId,
+      reviewerId: admin.id,
+      reason,
+      idempotencyKey: `services-payment-refund:${paymentRequestId}`,
+    });
+    await runtime.entitlements.revokeSource({
+      tenantId: refunded.tenantId,
+      sourceType: "ACQUISITION",
+      sourceId: refunded.acquisitionId,
+      reason: `PAYMENT_REFUNDED:${reason}`,
+    });
+    await prisma.$transaction([
+      prisma.productInstance.updateMany({
+        where: { tenantId: refunded.tenantId, acquisitionId: refunded.acquisitionId, status: { in: ["PROVISIONING", "ACTIVE"] } },
+        data: { status: "SUSPENDED", suspendedAt: new Date() },
+      }),
+      prisma.serviceSubscription.updateMany({
+        where: { tenantId: refunded.tenantId, acquisitionId: refunded.acquisitionId, status: { in: ["TRIALING", "ACTIVE", "PAST_DUE", "GRACE_PERIOD", "SUSPENDED"] } },
+        data: { status: "CANCELLED", cancelledAt: new Date(), cancellationReason: `PAYMENT_REFUNDED:${reason}` },
+      }),
+    ]);
+    await audit(admin.id, "SERVICES_PAYMENT_REFUNDED", "PaymentRequest", paymentRequestId, { acquisitionId: refunded.acquisitionId, reason });
+    revalidatePath("/admin/services/acquisitions");
+    revalidatePath("/admin/services/entitlements");
+    revalidatePath("/dashboard/service-center");
+    redirect("/admin/services/acquisitions?refunded=1");
+  } catch (error) {
+    if (error instanceof Error && error.message.includes("NEXT_REDIRECT")) throw error;
+    fail("/admin/services/acquisitions", error);
+  }
+}
+
+export async function manageServiceSubscriptionAction(formData: FormData) {
+  const admin = await requireAdminPermission("services", "edit");
+  const subscriptionId = value(formData, "subscriptionId", 200);
+  const operation = value(formData, "operation", 40);
+  try {
+    const current = await prisma.serviceSubscription.findUniqueOrThrow({ where: { id: subscriptionId } });
+    const service = createServicesPlatformRuntime(prisma).subscriptions;
+    if (operation === "RENEW") {
+      const periodStart = current.currentPeriodEnd > new Date() ? current.currentPeriodEnd : new Date();
+      const periodEnd = new Date(periodStart);
+      periodEnd.setUTCDate(periodEnd.getUTCDate() + Math.max(1, Math.min(366, integer(formData, "days", 30))));
+      await service.renew({ subscriptionId, periodStart, periodEnd, idempotencyKey: `admin:${admin.id}:renew:${subscriptionId}:${periodEnd.toISOString()}` });
+    } else if (operation === "GRACE") {
+      await service.enterGrace({ subscriptionId, graceDays: Math.max(1, Math.min(30, integer(formData, "days", 7))), idempotencyKey: `admin:${admin.id}:grace:${subscriptionId}` });
+    } else if (operation === "CANCEL") {
+      await service.cancel({ subscriptionId, atPeriodEnd: false, reason: value(formData, "reason", 1_000) || "ADMIN_CANCELLED", idempotencyKey: `admin:${admin.id}:cancel:${subscriptionId}` });
+    } else if (operation === "EXPIRE") {
+      await service.expire({ subscriptionId, idempotencyKey: `admin:${admin.id}:expire:${subscriptionId}` });
+    } else {
+      throw new Error("عملية الاشتراك غير مدعومة.");
+    }
+    await audit(admin.id, `SERVICE_SUBSCRIPTION_${operation}`, "ServiceSubscription", subscriptionId);
+    revalidatePath("/admin/services/subscriptions");
+    revalidatePath("/dashboard/service-center");
+    redirect(`/admin/services/subscriptions?updated=${operation}`);
+  } catch (error) {
+    if (error instanceof Error && error.message.includes("NEXT_REDIRECT")) throw error;
+    fail("/admin/services/subscriptions", error);
+  }
+}
+
 export async function saveRecommendationRuleAction(formData: FormData) {
   const admin = await requireAdminPermission("services", "edit");
   const id = value(formData, "id", 200);

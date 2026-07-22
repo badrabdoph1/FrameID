@@ -14,3 +14,7 @@ export { evaluateOfferingEligibility } from "./eligibility";
 export { createProductInstanceService } from "./product-instance-service";
 export { createProductRegistry, ProductRegistryError } from "./product-registry";
 export { createServicesPlatformRuntime } from "./runtime";
+export { createServicesOutboxWorker } from "./outbox-worker";
+export { runServicesOutboxBatch } from "./outbox-runtime";
+export { runServicesReconciliation } from "./reconciliation";
+export type { RecommendationProvider, ProductAnalyticsSink, ProductProvisioningAdapter, ServicesDomainEventPublisher } from "./extensions";

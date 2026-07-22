@@ -119,6 +119,9 @@ export function createPrismaServicesPaymentRepository(prisma: PrismaClient): Ser
         if (!payment.acquisitionId || payment.status !== PaymentStatus.APPROVED) throw new Error("Only approved services payments can be refunded.");
         await tx.paymentRequest.update({ where: { id: payment.id }, data: { status: PaymentStatus.REFUNDED, reviewedByUserId: input.reviewerId, reviewedAt: input.refundedAt, adminNote: input.reason } });
         await tx.acquisition.update({ where: { id: payment.acquisitionId }, data: { status: AcquisitionStatus.REFUNDED } });
+        await tx.paymentRequestLog.create({
+          data: { paymentRequestId: payment.id, fromStatus: payment.status, toStatus: PaymentStatus.REFUNDED, action: "SERVICES_PAYMENT_REFUNDED", actorUserId: input.reviewerId, note: input.reason },
+        });
         await tx.servicesOutboxEvent.upsert({
           where: { deduplicationKey: input.idempotencyKey }, update: {},
           create: { aggregateType: "Acquisition", aggregateId: payment.acquisitionId, eventName: "services.payment.refunded", payload: { acquisitionId: payment.acquisitionId, paymentRequestId: payment.id, reason: input.reason, revokeEntitlements: true }, deduplicationKey: input.idempotencyKey },

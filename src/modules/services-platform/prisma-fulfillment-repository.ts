@@ -11,6 +11,7 @@ export function createPrismaFulfillmentRepository(prisma: PrismaClient): Fulfill
       const acquisition = await prisma.acquisition.findUnique({
         where: { id: acquisitionId },
         include: {
+          lines: { orderBy: { createdAt: "asc" }, take: 1, select: { billingInterval: true } },
           offering: {
             include: {
               product: { select: { id: true, code: true } },
@@ -37,6 +38,7 @@ export function createPrismaFulfillmentRepository(prisma: PrismaClient): Fulfill
         instanceKey: acquisition.offering.product
           ? typeof metadata.instanceKey === "string" ? metadata.instanceKey : `${acquisition.offering.product.code}:${acquisition.id}`
           : null,
+        billingInterval: acquisition.lines[0]?.billingInterval ?? "ONE_TIME",
         capabilities: acquisition.offering.capabilities.map((item) => ({
           capabilityKey: item.capability.key,
           capabilityId: item.capability.id,

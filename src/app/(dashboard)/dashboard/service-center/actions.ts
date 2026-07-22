@@ -65,6 +65,12 @@ export async function requestServiceOfferingAction(formData: FormData) {
       attributionId,
       properties: { source: "service_center" },
     });
+    if (attributionId) {
+      await prisma.recommendationDecision.updateMany({
+        where: { tenantId: session.tenant.id, attributionId },
+        data: { status: "CONVERTED", convertedAt: new Date() },
+      });
+    }
     if (acquisition.status === "REQUESTED" && acquisition.offering.salesMode === "SELF_SERVE") {
       if ((acquisition.acceptedTotal ?? 0) > 0) {
         await runtime.acquisitions.transition({ acquisitionId: acquisition.id, toStatus: "AWAITING_PAYMENT" });
@@ -197,5 +203,30 @@ export async function dismissServiceRecommendationAction(formData: FormData) {
   } catch (error) {
     if (error instanceof Error && error.message.includes("NEXT_REDIRECT")) throw error;
     failure("/dashboard/service-center?view=discover", error);
+  }
+}
+
+export async function cancelServiceSubscriptionAction(formData: FormData) {
+  const session = await customerSession();
+  const subscriptionId = text(formData, "subscriptionId", 200);
+  try {
+    const owned = await prisma.serviceSubscription.findFirst({
+      where: { id: subscriptionId, tenantId: session.tenant.id },
+      select: { id: true, cancelAtPeriodEnd: true },
+    });
+    if (!owned) throw new Error("الاشتراك غير موجود.");
+    if (!owned.cancelAtPeriodEnd) {
+      await createServicesPlatformRuntime(prisma).subscriptions.cancel({
+        subscriptionId,
+        atPeriodEnd: true,
+        reason: "CUSTOMER_REQUEST",
+        idempotencyKey: `subscription:${subscriptionId}:cancel-at-period-end`,
+      });
+    }
+    revalidatePath("/dashboard/service-center");
+    redirect("/dashboard/service-center?view=billing&subscription=cancelled");
+  } catch (error) {
+    if (error instanceof Error && error.message.includes("NEXT_REDIRECT")) throw error;
+    failure("/dashboard/service-center?view=billing", error);
   }
 }

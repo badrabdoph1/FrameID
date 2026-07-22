@@ -8,7 +8,7 @@ import { TrackedServiceLink } from "@/components/services/tracked-service-link";
 import { getCurrentRequestSession } from "@/modules/auth/request-session";
 import { getCustomerCatalogReadModel } from "@/modules/services-platform/prisma-catalog-repository";
 import { getTenantRecommendations } from "@/modules/services-platform/prisma-recommendations";
-import { dismissServiceRecommendationAction } from "./actions";
+import { cancelServiceSubscriptionAction, dismissServiceRecommendationAction } from "./actions";
 
 const views = [
   { key: "my", label: "خدماتي", icon: Boxes },
@@ -30,7 +30,7 @@ function money(amount: number, currency: string) {
 
 export const dynamic = "force-dynamic";
 
-export default async function ServiceCenterPage({ searchParams }: { searchParams: Promise<{ view?: string; error?: string; trial?: string }> }) {
+export default async function ServiceCenterPage({ searchParams }: { searchParams: Promise<{ view?: string; error?: string; trial?: string; subscription?: string }> }) {
   const session = await getCurrentRequestSession();
   if (!session) redirect("/login");
   const params = await searchParams;
@@ -135,6 +135,7 @@ export default async function ServiceCenterPage({ searchParams }: { searchParams
 
       {params.error ? <div role="alert" className="rounded-2xl border border-red-300/20 bg-red-500/10 p-4 text-sm font-bold text-red-100">{params.error}</div> : null}
       {params.trial === "started" ? <div className="rounded-2xl border border-emerald-300/20 bg-emerald-500/10 p-4 text-sm font-bold text-emerald-100">بدأت التجربة بنجاح.</div> : null}
+      {params.subscription === "cancelled" ? <div className="rounded-2xl border border-blue-300/20 bg-blue-500/10 p-4 text-sm font-bold text-blue-100">تم إيقاف التجديد التلقائي، وسيظل الاشتراك فعالًا حتى نهاية فترته الحالية.</div> : null}
 
       <nav className="grid grid-cols-4 gap-1 rounded-2xl border border-white/8 bg-white/[0.025] p-1.5" aria-label="أقسام مركز الخدمات">
         {views.map((view) => {
@@ -177,7 +178,7 @@ export default async function ServiceCenterPage({ searchParams }: { searchParams
       ) : null}
 
       {activeView === "billing" ? (
-        <section className="grid gap-5"><div><p className="text-xs font-black text-[#f3cf73]">ماليّات الخدمات</p><h2 className="mt-1 text-xl font-black text-white">الاشتراكات والمدفوعات</h2></div><div className="grid gap-3 md:grid-cols-2">{subscriptions.map((subscription) => <article key={subscription.id} className="rounded-2xl border border-white/8 bg-white/[0.03] p-5"><p className="text-xs font-black text-blue-200">اشتراك مستقل</p><h3 className="mt-2 font-black text-white">{subscription.offering.name}</h3><p className="mt-2 text-sm font-bold text-white/42">{statusAr[subscription.status] ?? subscription.status}</p><p className="mt-1 text-xs font-bold text-white/30">الفترة الحالية حتى {subscription.currentPeriodEnd.toLocaleDateString("ar-EG")}</p></article>)}{acquisitions.flatMap((acquisition) => acquisition.paymentRequests.map((payment) => <Link href={`/dashboard/service-center/acquisitions/${acquisition.id}`} key={payment.id} className="rounded-2xl border border-white/8 bg-white/[0.03] p-5 no-underline"><p className="text-xs font-black text-[#f3cf73]">دفعة خدمة</p><h3 className="mt-2 font-black text-white">{acquisition.offering.name}</h3><p className="mt-2 text-sm font-bold text-white/42">{money(payment.amount, payment.currency)} · {statusAr[payment.status] ?? payment.status}</p></Link>))}</div>{subscriptions.length === 0 && acquisitions.every((item) => item.paymentRequests.length === 0) ? <p className="rounded-2xl border border-dashed border-white/10 p-6 text-center text-sm font-bold text-white/40">لا توجد عمليات فوترة خاصة بالخدمات.</p> : null}</section>
+        <section className="grid gap-5"><div><p className="text-xs font-black text-[#f3cf73]">ماليّات الخدمات</p><h2 className="mt-1 text-xl font-black text-white">الاشتراكات والمدفوعات</h2></div><div className="grid gap-3 md:grid-cols-2">{subscriptions.map((subscription) => <article key={subscription.id} className="rounded-2xl border border-white/8 bg-white/[0.03] p-5"><p className="text-xs font-black text-blue-200">اشتراك مستقل</p><h3 className="mt-2 font-black text-white">{subscription.offering.name}</h3><p className="mt-2 text-sm font-bold text-white/42">{statusAr[subscription.status] ?? subscription.status}</p><p className="mt-1 text-xs font-bold text-white/30">الفترة الحالية حتى {subscription.currentPeriodEnd.toLocaleDateString("ar-EG")}</p>{subscription.cancelAtPeriodEnd ? <p className="mt-3 rounded-lg bg-amber-300/10 px-3 py-2 text-xs font-black text-amber-100">لن يتجدد بعد نهاية الفترة.</p> : ["ACTIVE", "TRIALING", "GRACE_PERIOD"].includes(subscription.status) ? <form action={cancelServiceSubscriptionAction} className="mt-3"><input type="hidden" name="subscriptionId" value={subscription.id} /><button className="rounded-lg border border-red-300/15 px-3 py-2 text-xs font-black text-red-100/75">إيقاف التجديد</button></form> : null}</article>)}{acquisitions.flatMap((acquisition) => acquisition.paymentRequests.map((payment) => <Link href={`/dashboard/service-center/acquisitions/${acquisition.id}`} key={payment.id} className="rounded-2xl border border-white/8 bg-white/[0.03] p-5 no-underline"><p className="text-xs font-black text-[#f3cf73]">دفعة خدمة</p><h3 className="mt-2 font-black text-white">{acquisition.offering.name}</h3><p className="mt-2 text-sm font-bold text-white/42">{money(payment.amount, payment.currency)} · {statusAr[payment.status] ?? payment.status}</p></Link>))}</div>{subscriptions.length === 0 && acquisitions.every((item) => item.paymentRequests.length === 0) ? <p className="rounded-2xl border border-dashed border-white/10 p-6 text-center text-sm font-bold text-white/40">لا توجد عمليات فوترة خاصة بالخدمات.</p> : null}</section>
       ) : null}
     </div>
   );

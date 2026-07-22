@@ -41,6 +41,7 @@ export type FulfillmentAcquisition = {
   workflowVersion: number;
   status: AcquisitionLifecycleStatus;
   instanceKey: string | null;
+  billingInterval: "ONE_TIME" | "MONTHLY" | "YEARLY";
   capabilities: Array<{ capabilityKey: string; capabilityId: string | null; value: unknown; quantity?: number | null }>;
 };
 
@@ -60,6 +61,7 @@ export function createFulfillmentService(input: {
   workflows: ReturnType<typeof createWorkflowRegistry>;
   grantEntitlement(input: { tenantId: string; productId: string | null; offeringId: string; capabilityId: string | null; capabilityKey: string; value: unknown; quantity?: number | null; sourceType: "ACQUISITION"; sourceId: string }): Promise<unknown>;
   activateProduct(input: { tenantId: string; productId: string; acquisitionId: string; instanceKey: string; configuration: unknown; idempotencyKey: string }): Promise<{ id: string }>;
+  createSubscription(input: { tenantId: string; offeringId: string; acquisitionId: string | null; billingInterval: "MONTHLY" | "YEARLY"; idempotencyKey: string }): Promise<{ id: string }>;
   now?: () => Date;
 }) {
   const now = input.now ?? (() => new Date());
@@ -88,9 +90,18 @@ export function createFulfillmentService(input: {
           idempotencyKey: `${idempotencyKey}:activation`,
         })
       : null;
+    const subscription = acquisition.billingInterval === "MONTHLY" || acquisition.billingInterval === "YEARLY"
+      ? await input.createSubscription({
+          tenantId: acquisition.tenantId,
+          offeringId: acquisition.offeringId,
+          acquisitionId: acquisition.id,
+          billingInterval: acquisition.billingInterval,
+          idempotencyKey: `${idempotencyKey}:subscription`,
+        })
+      : null;
     await input.repository.markSucceeded(runId, result, now());
     await input.repository.transitionAcquisition(acquisition.id, "FULFILLED");
-    return { status: "SUCCEEDED" as const, runId, productInstanceId: productInstance?.id ?? null };
+    return { status: "SUCCEEDED" as const, runId, productInstanceId: productInstance?.id ?? null, subscriptionId: subscription?.id ?? null };
   }
 
   return {

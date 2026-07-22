@@ -31,6 +31,7 @@ export function createServicesPlatformRuntime(
   const registry = createProductRegistry(productModules);
   const entitlements = createEntitlementService(createPrismaEntitlementRepository(prisma));
   const productInstances = createProductInstanceService(createPrismaProductInstanceRepository(prisma), registry);
+  const subscriptions = createServiceSubscriptionService(createPrismaServiceSubscriptionRepository(prisma));
   const communicationCore = createCommunicationCore(createPrismaCommunicationRepository(prisma));
   return {
     registry,
@@ -40,8 +41,8 @@ export function createServicesPlatformRuntime(
       createServicesCommunicationAdapter(communicationCore),
     ),
     payments: createServicesPaymentService(createPrismaServicesPaymentRepository(prisma)),
-    subscriptions: createServiceSubscriptionService(createPrismaServiceSubscriptionRepository(prisma)),
-    trials: createTrialService(createPrismaTrialRepository(prisma)),
+    subscriptions,
+    trials: createTrialService(createPrismaTrialRepository(prisma), undefined, { grantEntitlement: entitlements.grant }),
     usage: createUsageService(createPrismaUsageRepository(prisma)),
     entitlements,
     productInstances,
@@ -50,6 +51,7 @@ export function createServicesPlatformRuntime(
       workflows: createWorkflowRegistry(defaultWorkflowHandlers),
       grantEntitlement: entitlements.grant,
       activateProduct: productInstances.activate,
+      createSubscription: subscriptions.create,
     }),
   };
 }

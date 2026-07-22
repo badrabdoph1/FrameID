@@ -10,6 +10,37 @@ export function createPrismaServiceSubscriptionRepository(prisma: PrismaClient):
         select: { id: true, tenantId: true, status: true, currentPeriodStart: true, currentPeriodEnd: true, gracePeriodEndsAt: true, cancelAtPeriodEnd: true },
       });
     },
+    async create(input) {
+      return prisma.$transaction(async (tx) => {
+        const subscription = await tx.serviceSubscription.upsert({
+          where: { tenantId_idempotencyKey: { tenantId: input.tenantId, idempotencyKey: input.idempotencyKey } },
+          update: {},
+          create: {
+            tenantId: input.tenantId,
+            offeringId: input.offeringId,
+            acquisitionId: input.acquisitionId,
+            trialGrantId: input.trialGrantId,
+            status: input.status,
+            currentPeriodStart: input.currentPeriodStart,
+            currentPeriodEnd: input.currentPeriodEnd,
+            idempotencyKey: input.idempotencyKey,
+          },
+          select: { id: true, status: true },
+        });
+        await tx.servicesOutboxEvent.upsert({
+          where: { deduplicationKey: `${input.idempotencyKey}:created` },
+          update: {},
+          create: {
+            aggregateType: "ServiceSubscription",
+            aggregateId: subscription.id,
+            eventName: "services.subscription.created",
+            payload: { subscriptionId: subscription.id, tenantId: input.tenantId, offeringId: input.offeringId, acquisitionId: input.acquisitionId },
+            deduplicationKey: `${input.idempotencyKey}:created`,
+          },
+        });
+        return subscription;
+      });
+    },
     async update(input) {
       return prisma.$transaction(async (tx) => {
         const current = await tx.serviceSubscription.findUniqueOrThrow({ where: { id: input.id } });

@@ -63,3 +63,14 @@ _Avoid_: FrameID Plan, Offering
 **Legacy Plan**:
 خطة الفوترة الحالية لموقع الأسعار، وتبقى طبقة توافق حتى يتم نقل الاستهلاك إلى Offering وEntitlements.
 _Avoid_: Product, Offering جديد
+
+## Reliability and future extension
+
+**Services Outbox Event**:
+حدث نطاقي durable يُكتب مع التغيير التجاري ويُعالج بتأجير وإعادة محاولة وdead-letter، ولا يمثل Message Broker خارجيًا.
+
+**Recommendation Provider**:
+واجهة استبدال لمحرك الترشيحات. التنفيذ الحالي Rules-based، ويمكن لاحقًا إضافة ML/AI provider من دون تغيير Catalog أوAcquisition.
+
+**Product Provisioning Adapter**:
+حد المنتج التنفيذي المسؤول عن إنشاء أو تعليق النسخة الفعلية. لا يملك التسعير أو الدفع أو المحادثات.

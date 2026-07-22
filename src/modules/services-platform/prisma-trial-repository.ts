@@ -5,18 +5,28 @@ import type { TrialRepository } from "./trial-service";
 export function createPrismaTrialRepository(prisma: PrismaClient): TrialRepository {
   return {
     async getPolicy(policyId) {
-      const policy = await prisma.trialPolicy.findUnique({ where: { id: policyId } });
+      const policy = await prisma.trialPolicy.findUnique({
+        where: { id: policyId },
+        include: { offering: { include: { capabilities: { include: { capability: { select: { id: true, key: true } } } } } } },
+      });
       if (!policy) return null;
-      if (!policy.offeringId) throw new Error("A customer trial policy must be scoped to an offering.");
+      if (!policy.offeringId || !policy.offering) throw new Error("A customer trial policy must be scoped to an offering.");
       return {
         id: policy.id,
         productId: policy.productId,
         offeringId: policy.offeringId,
         durationDays: policy.durationDays,
         usageLimit: policy.usageLimit,
+        usageCapabilityKey: policy.usageCapabilityKey,
         graceDays: policy.graceDays,
         oncePerTenant: policy.oncePerTenant,
         isActive: policy.isActive,
+        capabilities: policy.offering.capabilities.map((item) => ({
+          capabilityId: item.capability.id,
+          capabilityKey: item.capability.key,
+          value: item.value,
+          quantity: policy.usageCapabilityKey === item.capability.key ? policy.usageLimit : null,
+        })),
       };
     },
     async hasPreviousGrant(tenantId, offeringId) {

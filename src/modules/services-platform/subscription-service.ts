@@ -12,6 +12,16 @@ export type ServiceSubscriptionRecord = {
 
 export interface ServiceSubscriptionRepository {
   getById(id: string): Promise<ServiceSubscriptionRecord | null>;
+  create(input: {
+    tenantId: string;
+    offeringId: string;
+    acquisitionId: string | null;
+    trialGrantId?: string | null;
+    status: "TRIALING" | "ACTIVE";
+    currentPeriodStart: Date;
+    currentPeriodEnd: Date;
+    idempotencyKey: string;
+  }): Promise<{ id: string; status: ServiceSubscriptionLifecycleStatus }>;
   update(input: {
     id: string;
     status: ServiceSubscriptionLifecycleStatus;
@@ -31,6 +41,13 @@ function addDays(date: Date, days: number) {
   return result;
 }
 
+function addBillingPeriod(date: Date, interval: "MONTHLY" | "YEARLY") {
+  const result = new Date(date);
+  if (interval === "MONTHLY") result.setUTCMonth(result.getUTCMonth() + 1);
+  else result.setUTCFullYear(result.getUTCFullYear() + 1);
+  return result;
+}
+
 export function createServiceSubscriptionService(repository: ServiceSubscriptionRepository, now: () => Date = () => new Date()) {
   async function get(id: string) {
     const subscription = await repository.getById(id);
@@ -38,6 +55,27 @@ export function createServiceSubscriptionService(repository: ServiceSubscription
     return subscription;
   }
   return {
+    create(input: {
+      tenantId: string;
+      offeringId: string;
+      acquisitionId: string | null;
+      trialGrantId?: string | null;
+      billingInterval: "MONTHLY" | "YEARLY";
+      idempotencyKey: string;
+      startsAt?: Date;
+    }) {
+      const currentPeriodStart = input.startsAt ?? now();
+      return repository.create({
+        tenantId: input.tenantId,
+        offeringId: input.offeringId,
+        acquisitionId: input.acquisitionId,
+        trialGrantId: input.trialGrantId,
+        status: input.trialGrantId ? "TRIALING" : "ACTIVE",
+        currentPeriodStart,
+        currentPeriodEnd: addBillingPeriod(currentPeriodStart, input.billingInterval),
+        idempotencyKey: input.idempotencyKey,
+      });
+    },
     async renew(input: { subscriptionId: string; periodStart: Date; periodEnd: Date; idempotencyKey: string }) {
       const subscription = await get(input.subscriptionId);
       if (["CANCELLED", "EXPIRED"].includes(subscription.status)) throw new Error(`Cannot renew ${subscription.status} subscription.`);
