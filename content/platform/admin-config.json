@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-07-21T02:19:29.087Z",
+  "updatedAt": "2026-07-22T21:39:06.545Z",
   "themes": [
     {
       "code": "luxe-studio",
@@ -133,10 +133,10 @@
   "plans": [
     {
       "code": "basic",
-      "name": "بيزك سنوي",
+      "name": "برو",
       "priceAmount": 550,
       "currency": "EGP",
-      "billingInterval": "yearly",
+      "billingInterval": "unspecified",
       "features": {
         "ctaLabel": "اختيار الباقة",
         "isPopular": false,
@@ -241,7 +241,7 @@
           "instructions": "حوّل على رقم إنستا باي، ثم ارفع صورة إثبات الدفع من نفس الصفحة.",
           "notes": null,
           "isActive": true,
-          "sortOrder": 290
+          "sortOrder": 300
         }
       ]
     },
@@ -270,7 +270,7 @@
           "instructions": "حوّل على رقم فودافون كاش، ثم ارفع صورة إثبات الدفع من نفس الصفحة.",
           "notes": null,
           "isActive": true,
-          "sortOrder": 570
+          "sortOrder": 590
         }
       ]
     },
