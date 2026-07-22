@@ -37,7 +37,7 @@ export function ForgotPasswordForm({ sent, error }: ForgotPasswordFormProps) {
           <span>لو الحساب مسجل ببريد إلكتروني، هنرسل لك رابط استعادة على البريد.</span>
         </div>
       ) : null}
-      {error ? <PasswordRecoverySupportCard /> : null}
+      {error ? <PasswordRecoverySupportCard message={error} /> : null}
 
       <div className="mb-4 flex gap-2">
         <button

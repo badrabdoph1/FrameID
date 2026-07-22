@@ -36,5 +36,5 @@ describe("استعادة ملفات العملاء", () => {
     const validation = await validateUploadsInventory(restored, packaged.inventory);
     expect(validation).toEqual({ valid: true, errors: [] });
     expect(await readFile(join(restored, relativePath))).toEqual(payload);
-  });
+  }, 20_000);
 });

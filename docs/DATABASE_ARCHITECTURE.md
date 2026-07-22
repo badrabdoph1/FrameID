@@ -49,6 +49,15 @@ Code-defined registry and database records serve different roles: code defines t
 - `BackupJob` and `RestoreJob` for operational recovery.
 - `ImpersonationSession` for controlled support access.
 
+### Services platform
+
+- Product and catalog definitions, versioned prices, capabilities, bundles, trial policies, workflows, and publication revisions.
+- Acquisitions and immutable line snapshots linked weakly to Communication contexts.
+- Fulfillment runs, Entitlements, Product Instances, Trial Grants, usage ledger entries, and independent service subscriptions.
+- Recommendation rules/decisions, product analytics events, and a lease-safe services outbox.
+
+`Package` and `ExtraService` remain photographer-owned content. `Plan` and `Subscription` remain legacy billing compatibility models until their consumers move to Offerings, Service Subscriptions, and Entitlements.
+
 ## Relationship rules
 
 - Tenant-owned records must be queried through their tenant or site boundary.

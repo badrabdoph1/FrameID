@@ -3,11 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import { prisma } from "@/lib/prisma";
 import { processError } from "@/lib/errors";
 import { requireAdminPermission } from "@/modules/admin/admin-permission-guards";
-import { commitContentFilesToGitHub } from "@/lib/content/git-sync";
-import { readFile, writeFile } from "node:fs/promises";
-import { join } from "node:path";
+import { syncPlatformConfigurationToGitHub } from "@/modules/setup/platform-configuration-git";
 
 function readString(formData: FormData, key: string): string {
   const value = formData.get(key);
@@ -33,45 +32,38 @@ export async function updatePaymentAccountAction(formData: FormData) {
   }
 
   try {
-    const configPath = join(
-      process.cwd(),
-      "content/platform/admin-config.json",
-    );
-    const raw = await readFile(configPath, "utf-8");
-    const config = JSON.parse(raw);
-
-    const methodMap: Record<string, string> = {
+    const methodMap = {
       instapay: "INSTAPAY",
       "vodafone-cash": "VODAFONE_CASH",
-    };
+    } as const;
     const method = methodMap[accountId];
     if (!method) throw new Error("حساب غير معروف");
 
-    const paymentSettings = config.paymentSettings;
-    if (!Array.isArray(paymentSettings)) throw new Error("إعدادات الدفع غير موجودة");
-
-    const setting = paymentSettings.find(
-      (s: Record<string, unknown>) => s.paymentMethod === method,
-    );
-    if (!setting || !Array.isArray(setting.accounts)) {
-      throw new Error("لم يتم العثور على الحساب");
-    }
-
-    setting.accounts[0] = {
-      ...setting.accounts[0],
-      accountName,
-      accountNumber,
-      accountIdentifier: accountNumber,
-      phoneNumber: accountNumber,
-      displayName: accountName,
-    };
-
-    await writeFile(configPath, JSON.stringify(config, null, 2), "utf-8");
-
-    await commitContentFilesToGitHub({
-      files: [{ path: "content/platform/admin-config.json", absolutePath: configPath }],
-      message: "تحديث حسابات الدفع",
+    const settings = await prisma.paymentSettings.findUnique({
+      where: { paymentMethod: method },
+      select: {
+        accounts: {
+          where: { deletedAt: null },
+          orderBy: { sortOrder: "asc" },
+          take: 1,
+          select: { id: true },
+        },
+      },
     });
+    const paymentAccountId = settings?.accounts[0]?.id;
+    if (!paymentAccountId) throw new Error("لم يتم العثور على الحساب");
+
+    await prisma.paymentAccount.update({
+      where: { id: paymentAccountId },
+      data: {
+        accountName,
+        accountNumber,
+        accountIdentifier: accountNumber,
+        phoneNumber: accountNumber,
+        displayName: accountName,
+      },
+    });
+    await syncPlatformConfigurationToGitHub({ actor: admin, reason: "تحديث حسابات الدفع" });
   } catch (error) {
     const { userError } = await processError(error, { metadata: { action: "updatePaymentAccount", accountId } });
     redirect(`/admin/settings/payment?error=${encodeURIComponent(userError.message)}`);
