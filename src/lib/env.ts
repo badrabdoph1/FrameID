@@ -45,7 +45,14 @@ export const env: Env = {
   SMTP_FROM_EMAIL: process.env.SMTP_FROM_EMAIL || "",
   PASSWORD_RESET_DELIVERY_MODE: (process.env.PASSWORD_RESET_DELIVERY_MODE || "console") as "console" | "email",
   SEED_SUPER_ADMIN_EMAIL: process.env.SEED_SUPER_ADMIN_EMAIL || "admin@example.com",
-  SEED_SUPER_ADMIN_PASSWORD: process.env.SEED_SUPER_ADMIN_PASSWORD || "",
+  SEED_SUPER_ADMIN_PASSWORD: (() => {
+    const pwd = process.env.SEED_SUPER_ADMIN_PASSWORD
+    if (process.env.NODE_ENV === "production" && (!pwd || pwd.length < 12)) {
+      console.error("⚠️  SEED_SUPER_ADMIN_PASSWORD is not set or is too weak in production. Super admin seed will be skipped.")
+      return ""
+    }
+    return pwd || ""
+  })(),
   isDev: process.env.NODE_ENV === "development",
   isProd: process.env.NODE_ENV === "production",
 };

@@ -157,11 +157,11 @@ async function checkApiAccess(request: NextRequest): Promise<"ALLOW" | "DENY" | 
         { signal: AbortSignal.timeout(5000) }
       )
       const retryData = await retryRes.json()
-      return retryData.allowed === false ? "DENY" : "ALLOW"
+      return retryData.allowed === true ? "ALLOW" : "DENY"
     }
     
     const data = await res.json()
-    if (data.allowed === false) {
+    if (data.allowed !== true) {
       return "DENY"
     }
     return "ALLOW"
@@ -190,11 +190,11 @@ async function checkSiteAccess(request: NextRequest): Promise<"ALLOW" | "DENY" |
         { signal: AbortSignal.timeout(5000) }
       )
       const retryData = await retryRes.json()
-      return retryData.allowed === false ? "DENY" : "ALLOW"
+      return retryData.allowed === true ? "ALLOW" : "DENY"
     }
     
     const data = await res.json()
-    if (data.allowed === false) {
+    if (data.allowed !== true) {
       return "DENY"
     }
     return "ALLOW"

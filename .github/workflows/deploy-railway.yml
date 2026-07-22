@@ -53,12 +53,10 @@ jobs:
           SESSION_SECRET: ${{ secrets.SESSION_SECRET }}
 
       - name: Install Railway CLI
-        run: npm install -g @railway/cli
+        run: npm install -g @railway/cli@latest
 
       - name: Login to Railway
         run: railway login --token "${{ secrets.RAILWAY_TOKEN }}"
-        env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
 
       - name: Deploy to Railway
         run: |
@@ -66,14 +64,18 @@ jobs:
             --project "${{ secrets.RAILWAY_PROJECT_ID }}" \
             --environment "${{ secrets.RAILWAY_ENVIRONMENT_ID }}" \
             --service "${{ secrets.RAILWAY_SERVICE_ID }}"
-        env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-          RAILWAY_PROJECT_ID: ${{ secrets.RAILWAY_PROJECT_ID }}
-          RAILWAY_ENVIRONMENT_ID: ${{ secrets.RAILWAY_ENVIRONMENT_ID }}
-          RAILWAY_SERVICE_ID: ${{ secrets.RAILWAY_SERVICE_ID }}
 
-      - name: Wait for deployment
+      - name: Verify deployment
         run: |
-          echo "انتظار إكمال النشر..."
-          sleep 30
-          echo "النشر اكتمل"
+          echo "التحقق من النشر..."
+          for i in $(seq 1 12); do
+            sleep 10
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" "https://frameid.up.railway.app/api/health" || echo "000")
+            if [ "$STATUS" = "200" ]; then
+              echo "✓ تم نشر الخدمة بنجاح (HTTP $STATUS)"
+              exit 0
+            fi
+            echo "محاولة $i/12: HTTP $STATUS - إعادة المحاولة..."
+          done
+          echo "فشل التحقق من نشر الخدمة بعد 12 محاولة"
+          exit 1

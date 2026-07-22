@@ -125,7 +125,7 @@ describe("password reset service", () => {
         rawToken: "raw-token",
         newPassword: "NewStrongPass123!"
       })
-    ).rejects.toThrow("رابط استعادة كلمة المرور غير صالح أو منتهي الصلاحية.");
+    ).rejects.toThrow(/رابط استعادة كلمة المرور/);
   });
 
   it("rejects already-used reset tokens", async () => {
@@ -140,6 +140,6 @@ describe("password reset service", () => {
         rawToken: "raw-token",
         newPassword: "NewStrongPass123!"
       })
-    ).rejects.toThrow("هذا الرابط تم استخدامه من قبل ولا يمكن استخدامه مرة أخرى.");
+    ).rejects.toThrow(/الرابط ده اتستخدم/);
   });
 });

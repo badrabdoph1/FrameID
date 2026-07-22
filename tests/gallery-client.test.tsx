@@ -4,6 +4,10 @@ import { describe, expect, it, vi } from "vitest";
 
 import { GalleryClient } from "@/app/(dashboard)/dashboard/gallery/gallery-client";
 
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ refresh: vi.fn() }),
+}));
+
 vi.mock("@/app/(dashboard)/dashboard/site-info/actions", () => ({
   uploadSiteImageAction: vi.fn(),
 }));

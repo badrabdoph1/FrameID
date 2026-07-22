@@ -82,8 +82,8 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
-      - name: Test critical flows
-        run: npx vitest run tests/template-starter-data.test.ts tests/signup-auto-publish.test.ts tests/media-upload-service.test.ts tests/platform-image-upload.test.ts
+      - name: Test all flows
+        run: npx vitest run
 
       - name: Production build
         run: npm run build

@@ -20,12 +20,25 @@ permissions:
 jobs:
   trigger:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
+      - name: تحديد نوع النسخة
+        id: backup-type
+        run: |
+          SCHEDULE_CRON="${{ github.event.schedule }}"
+          INPUT_TYPE="${{ github.event.inputs.type }}"
+          if [ -n "$INPUT_TYPE" ]; then
+            echo "type=$INPUT_TYPE" >> $GITHUB_OUTPUT
+          elif echo "$SCHEDULE_CRON" | grep -q "0 3 "; then
+            echo "type=FULL" >> $GITHUB_OUTPUT
+          else
+            echo "type=DATABASE" >> $GITHUB_OUTPUT
+          fi
+
       - name: تشغيل FrameID Backup Pipeline
         env:
           FRAMEID_BACKUP_URL: https://frameid.up.railway.app
-          REQUESTED_TYPE: ${{ github.event.inputs.type || (github.event.schedule == '0 3 * * *' && 'FULL') || 'DATABASE' }}
+          REQUESTED_TYPE: ${{ steps.backup-type.outputs.type }}
           BACKUP_MODE: ${{ github.event_name == 'schedule' && 'SCHEDULED' || 'FORCED' }}
         run: |
           OIDC_TOKEN="$(curl --fail-with-body --silent --show-error \

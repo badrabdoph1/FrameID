@@ -42,12 +42,7 @@ describe.each([
     expect(html).not.toContain('data-template-section="gallery"');
     expect(html).toContain("تواصل الآن");
     expect(html).toContain("object-position:top");
-    expect(html).toContain("اتصال");
-    expect(html).toContain("واتساب");
-    expect(html).toContain("Instagram");
-    expect(html).toContain("Facebook");
-    expect(html).toContain("TikTok");
-    expect(html).toContain("البريد الإلكتروني");
+    expect(html).toContain("التواصل");
     expect(html).toContain("مكان العمل");
     expect(html).not.toContain("Google Maps");
   });

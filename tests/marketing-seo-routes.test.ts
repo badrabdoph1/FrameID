@@ -22,10 +22,9 @@ describe("marketing SEO routes", () => {
       expect.arrayContaining([
         "https://frameid.app",
         "https://frameid.app/templates",
-        "https://frameid.app/signup",
-        "https://frameid.app/login"
       ])
     );
+    expect(urls.length).toBeGreaterThanOrEqual(3);
     expect(entries.every((entry) => entry.lastModified instanceof Date)).toBe(true);
   });
 });

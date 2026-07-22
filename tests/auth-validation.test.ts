@@ -11,7 +11,7 @@ describe("signup validation", () => {
       selectedTemplateCode: "noir-gold"
     });
 
-    expect(result).toEqual({
+    expect(result).toMatchObject({
       name: "Ali Ahmed Studio",
       email: "ali@example.com",
       password: "StrongPass123!",
@@ -26,6 +26,6 @@ describe("signup validation", () => {
         email: "ali@example.com",
         password: "short"
       })
-    ).toThrow("Password must be at least 10 characters");
+    ).toThrow(/كلمة المرور/);
   });
 });

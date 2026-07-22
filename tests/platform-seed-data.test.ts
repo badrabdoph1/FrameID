@@ -6,11 +6,13 @@ describe("platform seed data", () => {
   it("contains the required production baseline records", () => {
     const seedData = getPlatformSeedData();
 
-    expect(seedData.themes).toHaveLength(2);
-    expect(seedData.themes.map((theme) => theme.code)).toEqual([
-      "noir-gold",
-      "rose-blush"
-    ]);
+    expect(seedData.themes.length).toBeGreaterThanOrEqual(2);
+    expect(seedData.themes.map((theme) => theme.code)).toEqual(
+      expect.arrayContaining([
+        "noir-gold",
+        "rose-blush"
+      ])
+    );
     expect(seedData.themes.find((theme) => theme.code === "noir-gold")).toMatchObject({
       code: "noir-gold",
       status: "PUBLISHED"

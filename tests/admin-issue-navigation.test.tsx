@@ -13,6 +13,7 @@ const prismaMock = vi.hoisted(() => ({
     count: vi.fn().mockResolvedValue(2),
     aggregate: vi.fn().mockResolvedValue({ _sum: { amount: 4500 } }),
   },
+  user: { count: vi.fn().mockResolvedValue(5) },
 }));
 
 const issueStatsMock = vi.hoisted(() => vi.fn().mockResolvedValue({

@@ -1,5 +1,15 @@
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+vi.mock("@/lib/prisma", () => ({
+  prisma: {
+    user: { findFirst: vi.fn().mockResolvedValue(null) },
+  },
+}));
+
+vi.mock("@/lib/rate-limiter", () => ({
+  checkRateLimit: vi.fn().mockResolvedValue({ allowed: true }),
+}));
 
 import ForgotPasswordPage from "@/app/(marketing)/forgot-password/page";
 import ResetPasswordPage from "@/app/(marketing)/reset-password/page";
