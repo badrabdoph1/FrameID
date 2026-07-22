@@ -1,2 +1,2 @@
 -- DropForeignKey
-ALTER TABLE "ImpersonationSession" DROP CONSTRAINT "ImpersonationSession_adminId_fkey";
+ALTER TABLE IF EXISTS "ImpersonationSession" DROP CONSTRAINT IF EXISTS "ImpersonationSession_adminId_fkey";

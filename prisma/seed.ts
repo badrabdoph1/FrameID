@@ -2,6 +2,7 @@ import { Prisma, PrismaClient, PlatformPageKind } from "@prisma/client";
 
 import { getPlatformSeedData } from "../src/modules/setup/platform-seed-data";
 import { seedSuperAdminUser } from "../src/modules/setup/super-admin-seed-service";
+import { seedServicesPlatform } from "../src/modules/services-platform/seed-services-platform";
 
 const prisma = new PrismaClient();
 
@@ -74,6 +75,8 @@ async function main() {
       }
     });
   }
+
+  await seedServicesPlatform(prisma);
 
   for (const paymentSettings of seedData.paymentSettings) {
     const settings = await prisma.paymentSettings.upsert({
