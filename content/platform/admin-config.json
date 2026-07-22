@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-07-22T01:34:51.955Z",
+  "updatedAt": "2026-07-22T01:35:31.139Z",
   "themes": [
     {
       "code": "luxe-studio",
@@ -133,7 +133,7 @@
   "plans": [
     {
       "code": "basic",
-      "name": "بيزك سنوي",
+      "name": "برو",
       "priceAmount": 250,
       "currency": "EGP",
       "billingInterval": "unspecified",
