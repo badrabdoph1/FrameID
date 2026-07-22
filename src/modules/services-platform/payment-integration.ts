@@ -3,6 +3,7 @@ export type ServicesPaymentMethod = "INSTAPAY" | "VODAFONE_CASH" | "STRIPE" | "P
 export interface ServicesPaymentRepository {
   getPayableAcquisition(acquisitionId: string): Promise<{ id: string; tenantId: string; status: string; acceptedTotal: number | null; acceptedCurrency: string | null } | null>;
   createDraft(input: { acquisitionId: string; tenantId: string; method: ServicesPaymentMethod; paymentAccountId?: string | null; reference?: string | null; amount: number; currency: string }): Promise<{ id: string; status: "DRAFT" }>;
+  submit(input: { paymentRequestId: string; tenantId: string; proofAssetId: string; idempotencyKey: string; submittedAt: Date }): Promise<{ id: string; status: "SUBMITTED"; acquisitionId: string }>;
   approve(input: { paymentRequestId: string; reviewerId: string; idempotencyKey: string; approvedAt: Date }): Promise<{ acquisitionId: string; tenantId: string }>;
   reject(input: { paymentRequestId: string; reviewerId: string; reason: string; idempotencyKey: string; rejectedAt: Date }): Promise<{ acquisitionId: string; tenantId: string }>;
   refund(input: { paymentRequestId: string; reviewerId: string; reason: string; idempotencyKey: string; refundedAt: Date }): Promise<{ acquisitionId: string; tenantId: string }>;
@@ -21,6 +22,9 @@ export function createServicesPaymentService(repository: ServicesPaymentReposito
         amount: acquisition.acceptedTotal,
         currency: acquisition.acceptedCurrency,
       });
+    },
+    submit(input: { paymentRequestId: string; tenantId: string; proofAssetId: string; idempotencyKey: string }) {
+      return repository.submit({ ...input, submittedAt: now() });
     },
     approve(input: { paymentRequestId: string; reviewerId: string; idempotencyKey: string }) {
       return repository.approve({ ...input, approvedAt: now() });

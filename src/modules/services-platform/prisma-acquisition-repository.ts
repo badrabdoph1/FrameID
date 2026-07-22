@@ -1,7 +1,6 @@
 import { AcquisitionStatus, PriceBillingInterval, Prisma, type PrismaClient } from "@prisma/client";
 
 import type { AcquisitionRepository, AcquisitionRecord } from "./acquisition-service";
-import type { AcquisitionLifecycleStatus } from "./acquisition-state-machine";
 
 function asRecord(acquisition: {
   id: string;

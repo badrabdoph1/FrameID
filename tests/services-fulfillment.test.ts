@@ -41,4 +41,23 @@ describe("services fulfillment", () => {
     await expect(service.start({ acquisitionId: "acq", idempotencyKey: "manual_1" })).resolves.toEqual({ status: "WAITING_CUSTOMER", runId: "run" });
     expect(events).toEqual(["FULFILLING", "WAITING_CUSTOMER"]);
   });
+
+  it("lets operations complete a waiting manual run through the same entitlement and activation boundary", async () => {
+    const events: string[] = [];
+    const acquisition = { id: "acq", tenantId: "t", productId: "product", offeringId: "o", workflowKey: "manual_service", workflowVersion: 1, status: "FULFILLING" as const, instanceKey: "manual-primary", capabilities: [{ capabilityKey: "manual.access", capabilityId: null, value: true }] };
+    const repository: FulfillmentRepository = {
+      async getAcquisition() { return acquisition; },
+      async getRunAcquisitionId() { return { acquisitionId: "acq", status: "WAITING_INTERNAL" }; },
+      async createRun() { throw new Error("unused"); }, async markRunning() {},
+      async markSucceeded() { events.push("succeeded"); }, async markWaiting() {}, async markFailed() {},
+      async transitionAcquisition(_id, status) { events.push(status); },
+    };
+    const service = createFulfillmentService({
+      repository, workflows: createWorkflowRegistry([]),
+      async grantEntitlement(input) { events.push(`grant:${input.capabilityKey}`); },
+      async activateProduct() { events.push("activate"); return { id: "instance" }; },
+    });
+    await expect(service.completeManual({ runId: "run", result: { delivered: true }, idempotencyKey: "complete_1" })).resolves.toMatchObject({ status: "SUCCEEDED", productInstanceId: "instance" });
+    expect(events).toEqual(["grant:manual.access", "activate", "succeeded", "FULFILLED"]);
+  });
 });

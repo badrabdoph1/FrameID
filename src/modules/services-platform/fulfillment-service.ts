@@ -46,6 +46,7 @@ export type FulfillmentAcquisition = {
 
 export interface FulfillmentRepository {
   getAcquisition(acquisitionId: string): Promise<FulfillmentAcquisition | null>;
+  getRunAcquisitionId?(runId: string): Promise<{ acquisitionId: string; status: "PENDING" | "RUNNING" | "WAITING_CUSTOMER" | "WAITING_INTERNAL" | "READY" | "SUCCEEDED" | "FAILED" | "CANCELLED" } | null>;
   createRun(input: { acquisitionId: string; workflowKey: string; workflowVersion: number; idempotencyKey: string }): Promise<{ id: string; status: "PENDING" | "RUNNING" | "WAITING_CUSTOMER" | "WAITING_INTERNAL" | "READY" | "SUCCEEDED" | "FAILED" | "CANCELLED" }>;
   markRunning(runId: string): Promise<void>;
   markSucceeded(runId: string, result: unknown, finishedAt: Date): Promise<void>;
@@ -62,6 +63,36 @@ export function createFulfillmentService(input: {
   now?: () => Date;
 }) {
   const now = input.now ?? (() => new Date());
+
+  async function finalize(acquisition: FulfillmentAcquisition, runId: string, result: unknown, idempotencyKey: string) {
+    for (const capability of acquisition.capabilities) {
+      await input.grantEntitlement({
+        tenantId: acquisition.tenantId,
+        productId: acquisition.productId,
+        offeringId: acquisition.offeringId,
+        capabilityId: capability.capabilityId,
+        capabilityKey: capability.capabilityKey,
+        value: capability.value,
+        quantity: capability.quantity,
+        sourceType: "ACQUISITION",
+        sourceId: acquisition.id,
+      });
+    }
+    const productInstance = acquisition.productId && acquisition.instanceKey
+      ? await input.activateProduct({
+          tenantId: acquisition.tenantId,
+          productId: acquisition.productId,
+          acquisitionId: acquisition.id,
+          instanceKey: acquisition.instanceKey,
+          configuration: result,
+          idempotencyKey: `${idempotencyKey}:activation`,
+        })
+      : null;
+    await input.repository.markSucceeded(runId, result, now());
+    await input.repository.transitionAcquisition(acquisition.id, "FULFILLED");
+    return { status: "SUCCEEDED" as const, runId, productInstanceId: productInstance?.id ?? null };
+  }
+
   return {
     async start(command: { acquisitionId: string; idempotencyKey: string }) {
       const acquisition = await input.repository.getAcquisition(command.acquisitionId);
@@ -92,36 +123,23 @@ export function createFulfillmentService(input: {
           return { status: result.status, runId: run.id };
         }
 
-        for (const capability of acquisition.capabilities) {
-          await input.grantEntitlement({
-            tenantId: acquisition.tenantId,
-            productId: acquisition.productId,
-            offeringId: acquisition.offeringId,
-            capabilityId: capability.capabilityId,
-            capabilityKey: capability.capabilityKey,
-            value: capability.value,
-            quantity: capability.quantity,
-            sourceType: "ACQUISITION",
-            sourceId: acquisition.id,
-          });
-        }
-        const productInstance = acquisition.productId && acquisition.instanceKey
-          ? await input.activateProduct({
-              tenantId: acquisition.tenantId,
-              productId: acquisition.productId,
-              acquisitionId: acquisition.id,
-              instanceKey: acquisition.instanceKey,
-              configuration: result.result ?? null,
-              idempotencyKey: `${command.idempotencyKey}:activation`,
-            })
-          : null;
-        await input.repository.markSucceeded(run.id, result.result ?? null, now());
-        await input.repository.transitionAcquisition(acquisition.id, "FULFILLED");
-        return { status: "SUCCEEDED" as const, runId: run.id, productInstanceId: productInstance?.id ?? null };
+        return finalize(acquisition, run.id, result.result ?? null, command.idempotencyKey);
       } catch (error) {
         await input.repository.markFailed(run.id, error instanceof Error ? error.message : "Unknown fulfillment error", now());
         throw error;
       }
+    },
+    async completeManual(command: { runId: string; result: unknown; idempotencyKey: string }) {
+      if (!input.repository.getRunAcquisitionId) throw new Error("Manual completion is not supported by this repository.");
+      const run = await input.repository.getRunAcquisitionId(command.runId);
+      if (!run) throw new Error(`Fulfillment run not found: ${command.runId}`);
+      if (run.status === "SUCCEEDED") return { status: "SUCCEEDED" as const, runId: command.runId, productInstanceId: null };
+      if (!["WAITING_CUSTOMER", "WAITING_INTERNAL", "READY", "RUNNING", "FAILED"].includes(run.status)) {
+        throw new Error(`Fulfillment run cannot be completed from ${run.status}`);
+      }
+      const acquisition = await input.repository.getAcquisition(run.acquisitionId);
+      if (!acquisition || acquisition.status !== "FULFILLING") throw new Error("Fulfillment acquisition is not active.");
+      return finalize(acquisition, command.runId, command.result, command.idempotencyKey);
     },
   };
 }

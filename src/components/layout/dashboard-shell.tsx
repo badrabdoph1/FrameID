@@ -16,6 +16,7 @@ import {
   Package,
   Palette,
   Settings,
+  Sparkles,
   UserCircle,
   X,
   type LucideIcon,
@@ -37,7 +38,8 @@ type NavItem = {
 
 const navItems: NavItem[] = [
   { href: "/dashboard", label: "الرئيسية", shortLabel: "الرئيسية", description: "الرابط، التفعيل، وخطة اليوم.", icon: LayoutDashboard, priority: "primary" },
-  { href: "/dashboard/services", label: "الباقات", shortLabel: "الباقات", description: "أول خطوة: أسعارك وعروضك.", icon: Package, priority: "primary" },
+  { href: "/dashboard/service-center", label: "مركز الخدمات", shortLabel: "الخدمات", description: "اكتشف منتجات FrameID وتابع طلباتك.", icon: Sparkles, priority: "primary" },
+  { href: "/dashboard/services", label: "عروضي وأسعاري", shortLabel: "عروضي", description: "باقات التصوير التي تعرضها لعملائك.", icon: Package, priority: "secondary" },
   { href: "/dashboard/site-info", label: "التواصل", shortLabel: "التواصل", description: "اسم المصور، واتساب، وروابطك.", icon: UserCircle, priority: "primary" },
   { href: "/dashboard/gallery", label: "الصور", shortLabel: "الصور", description: "الصورة الشخصية، الغلاف، والألبومات.", icon: Images, priority: "primary" },
   { href: "/dashboard/publish", label: "النشر", shortLabel: "النشر", description: "انسخ الرابط وانشر الموقع.", icon: Globe2, priority: "primary" },

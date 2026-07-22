@@ -9,6 +9,7 @@ import { createBillingActivationService } from "@/modules/billing/billing-activa
 import { createPrismaBillingActivationRepository } from "@/modules/billing/prisma-billing-activation-repository";
 import { communicationLegacyBridge } from "@/modules/communication-center/runtime";
 import { lifecycleDurationOptions, type LifecycleDurationPreset } from "@/modules/lifecycle/customer-lifecycle";
+import { createServicesPlatformRuntime } from "@/modules/services-platform/runtime";
 
 export type PaymentActionResult = {
   ok: boolean;
@@ -39,6 +40,9 @@ function revalidatePaymentWorkspace() {
   revalidatePath("/admin/payments");
   revalidatePath("/admin/customers");
   revalidatePath("/dashboard");
+  revalidatePath("/dashboard/service-center");
+  revalidatePath("/admin/services/acquisitions");
+  revalidatePath("/admin/services/fulfillment");
 }
 
 export async function approvePaymentAction(formData: FormData): Promise<PaymentActionResult> {
@@ -51,6 +55,21 @@ export async function approvePaymentAction(formData: FormData): Promise<PaymentA
   }
 
   try {
+    const servicePayment = await prisma.paymentRequest.findUnique({ where: { id: paymentRequestId }, select: { acquisitionId: true } });
+    if (servicePayment?.acquisitionId) {
+      const runtime = createServicesPlatformRuntime(prisma);
+      const approved = await runtime.payments.approve({
+        paymentRequestId,
+        reviewerId: session.user.id,
+        idempotencyKey: `services-payment-approve:${paymentRequestId}`,
+      });
+      await runtime.fulfillment.start({
+        acquisitionId: approved.acquisitionId,
+        idempotencyKey: `payment-fulfillment:${approved.acquisitionId}`,
+      });
+      revalidatePaymentWorkspace();
+      return { ok: true, message: "تم قبول دفع الخدمة وبدء مسار التنفيذ." };
+    }
     const duration = parseDuration(formData);
     await getService().approvePayment({
       paymentRequestId,
@@ -77,6 +96,17 @@ export async function rejectPaymentAction(formData: FormData): Promise<PaymentAc
   if (typeof adminNote !== "string" || !adminNote.trim()) return { ok: false, message: "اكتب سبب الرفض." };
 
   try {
+    const servicePayment = await prisma.paymentRequest.findUnique({ where: { id: paymentRequestId }, select: { acquisitionId: true } });
+    if (servicePayment?.acquisitionId) {
+      await createServicesPlatformRuntime(prisma).payments.reject({
+        paymentRequestId,
+        reviewerId: session.user.id,
+        reason: adminNote.trim(),
+        idempotencyKey: `services-payment-reject:${paymentRequestId}`,
+      });
+      revalidatePaymentWorkspace();
+      return { ok: true, message: "تم رفض دفع الخدمة مع إبقاء الطلب متاحًا لإعادة الدفع." };
+    }
     await getService().rejectPayment({ paymentRequestId, reviewerId: session.user.id, adminName: session.user.name, reason: adminNote.trim() });
     revalidatePaymentWorkspace();
     return { ok: true, message: "تم رفض طلب الدفع." };

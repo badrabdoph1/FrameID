@@ -1,4 +1,4 @@
-import { AcquisitionStatus, PaymentStatus, Prisma, type PrismaClient } from "@prisma/client";
+import { AcquisitionStatus, PaymentStatus, type PrismaClient } from "@prisma/client";
 
 import type { ServicesPaymentRepository } from "./payment-integration";
 
@@ -16,6 +16,7 @@ export function createPrismaServicesPaymentRepository(prisma: PrismaClient): Ser
         orderBy: { createdAt: "desc" },
         select: { id: true, status: true },
       });
+      if (existing?.status !== PaymentStatus.DRAFT) throw new Error("A payment request is already under review for this acquisition.");
       if (existing) return { id: existing.id, status: "DRAFT" as const };
       const created = await prisma.paymentRequest.create({
         data: {
@@ -30,6 +31,30 @@ export function createPrismaServicesPaymentRepository(prisma: PrismaClient): Ser
         select: { id: true },
       });
       return { id: created.id, status: "DRAFT" as const };
+    },
+    async submit(input) {
+      return prisma.$transaction(async (tx) => {
+        const payment = await tx.paymentRequest.findFirst({
+          where: { id: input.paymentRequestId, tenantId: input.tenantId, acquisitionId: { not: null }, deletedAt: null },
+        });
+        if (!payment?.acquisitionId) throw new Error("Services payment request was not found for this tenant.");
+        if (payment.status === PaymentStatus.SUBMITTED || payment.status === PaymentStatus.UNDER_REVIEW) {
+          return { id: payment.id, status: "SUBMITTED" as const, acquisitionId: payment.acquisitionId };
+        }
+        if (payment.status !== PaymentStatus.DRAFT) throw new Error(`Payment cannot be submitted from status ${payment.status}`);
+        await tx.paymentRequest.update({
+          where: { id: payment.id },
+          data: { proofAssetId: input.proofAssetId, submittedAt: input.submittedAt, status: PaymentStatus.SUBMITTED },
+        });
+        await tx.paymentRequestLog.create({
+          data: { paymentRequestId: payment.id, fromStatus: PaymentStatus.DRAFT, toStatus: PaymentStatus.SUBMITTED, action: "SERVICES_PAYMENT_SUBMITTED" },
+        });
+        await tx.servicesOutboxEvent.upsert({
+          where: { deduplicationKey: input.idempotencyKey }, update: {},
+          create: { aggregateType: "Acquisition", aggregateId: payment.acquisitionId, eventName: "services.payment.submitted", payload: { acquisitionId: payment.acquisitionId, paymentRequestId: payment.id, tenantId: payment.tenantId }, deduplicationKey: input.idempotencyKey },
+        });
+        return { id: payment.id, status: "SUBMITTED" as const, acquisitionId: payment.acquisitionId };
+      });
     },
     async approve(input) {
       return prisma.$transaction(async (tx) => {

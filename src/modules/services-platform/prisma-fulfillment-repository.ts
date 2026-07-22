@@ -4,6 +4,9 @@ import type { FulfillmentRepository } from "./fulfillment-service";
 
 export function createPrismaFulfillmentRepository(prisma: PrismaClient): FulfillmentRepository {
   return {
+    getRunAcquisitionId(runId) {
+      return prisma.fulfillmentRun.findUnique({ where: { id: runId }, select: { acquisitionId: true, status: true } });
+    },
     async getAcquisition(acquisitionId) {
       const acquisition = await prisma.acquisition.findUnique({
         where: { id: acquisitionId },

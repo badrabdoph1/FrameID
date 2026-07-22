@@ -5,6 +5,8 @@ export { createServicesPaymentService } from "./payment-integration";
 export { createServiceSubscriptionService } from "./subscription-service";
 export { createTrialService } from "./trial-service";
 export { createUsageService, UsageLimitExceededError } from "./usage-service";
+export { evaluateRecommendationRules } from "./recommendation-engine";
+export { buildServicesFunnel } from "./analytics-service";
 export { getCustomerCatalogReadModel } from "./prisma-catalog-repository";
 export { createEntitlementService } from "./entitlement-service";
 export { resolveEntitlements } from "./entitlement-resolver";
