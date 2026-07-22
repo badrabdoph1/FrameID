@@ -32,11 +32,11 @@ export async function updatePaymentAccountAction(formData: FormData) {
   }
 
   try {
-    const methodMap = {
-      instapay: "INSTAPAY",
-      "vodafone-cash": "VODAFONE_CASH",
-    } as const;
-    const method = methodMap[accountId];
+    const method = accountId === "instapay"
+      ? "INSTAPAY" as const
+      : accountId === "vodafone-cash"
+        ? "VODAFONE_CASH" as const
+        : null;
     if (!method) throw new Error("حساب غير معروف");
 
     const settings = await prisma.paymentSettings.findUnique({
