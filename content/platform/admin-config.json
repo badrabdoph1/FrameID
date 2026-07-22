@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-07-22T21:39:06.545Z",
+  "updatedAt": "2026-07-22T21:39:26.256Z",
   "themes": [
     {
       "code": "luxe-studio",
@@ -134,7 +134,7 @@
     {
       "code": "basic",
       "name": "برو",
-      "priceAmount": 550,
+      "priceAmount": 250,
       "currency": "EGP",
       "billingInterval": "unspecified",
       "features": {
