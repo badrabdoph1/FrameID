@@ -27,7 +27,15 @@ import {
 
 type Variant = "noir" | "rose";
 
-export function UnifiedTemplatePresentation({ site, variant }: { site: PublicSiteViewModel; variant: Variant }) {
+export function UnifiedTemplatePresentation({ 
+  site, 
+  variant,
+  customPackagesSection: CustomPackages,
+}: { 
+  site: PublicSiteViewModel; 
+  variant: Variant;
+  customPackagesSection?: React.ComponentType<{ section: NormalizedTemplateSection; site: PublicSiteViewModel }>;
+}) {
   const displayName = site.contact.studioName?.trim() || site.hero.headline;
   const visibleSections = site.orderedSections.filter((section) => section.isVisible);
   const dark = variant === "noir";
@@ -44,7 +52,7 @@ export function UnifiedTemplatePresentation({ site, variant }: { site: PublicSit
         <TemplateHeader sections={visibleSections} variant={variant} displayName={displayName} />
         <main>
           {visibleSections.map((section) => (
-            <Section key={section.type} section={section} site={site} variant={variant} />
+            <Section key={section.type} section={section} site={site} variant={variant} customPackages={CustomPackages} />
           ))}
         </main>
         <footer className={cn("border-t py-10 text-center", dark ? "border-white/8 bg-[#080808]" : "border-[#eaddd4] bg-[#f4f8f3]") }>
@@ -78,11 +86,21 @@ function TemplateHeader({ sections, variant, displayName }: { sections: Normaliz
   );
 }
 
-function Section({ section, site, variant }: { section: NormalizedTemplateSection; site: PublicSiteViewModel; variant: Variant }) {
+function Section({ 
+  section, 
+  site, 
+  variant,
+  customPackages: CustomPackages,
+}: { 
+  section: NormalizedTemplateSection; 
+  site: PublicSiteViewModel; 
+  variant: Variant;
+  customPackages?: React.ComponentType<{ section: NormalizedTemplateSection; site: PublicSiteViewModel }>;
+}) {
   switch (section.type) {
     case "hero": return <HeroSection section={section} site={site} variant={variant} />;
     case "gallery": return site.gallery.length ? <GallerySection section={section} site={site} variant={variant} /> : null;
-    case "packages": return site.packages.length ? <PackagesSection section={section} site={site} variant={variant} /> : null;
+    case "packages": return site.packages.length ? (CustomPackages ? <CustomPackages section={section} site={site} /> : <PackagesSection section={section} site={site} variant={variant} />) : null;
     case "extras": return site.extras.length ? <ExtrasSection section={section} site={site} variant={variant} /> : null;
     case "contact": return <ContactSection section={section} site={site} variant={variant} />;
   }
