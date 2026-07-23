@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-07-22T21:39:39.073Z",
+  "updatedAt": "2026-07-23T10:38:38.177Z",
   "themes": [
     {
       "code": "luxe-studio",
@@ -191,7 +191,7 @@
       "name": "بيزك",
       "priceAmount": 45,
       "currency": "EGP",
-      "billingInterval": "unspecified",
+      "billingInterval": "monthly",
       "features": {
         "ctaLabel": "اختار الباقة",
         "isPopular": true,
@@ -241,7 +241,7 @@
           "instructions": "حوّل على رقم إنستا باي، ثم ارفع صورة إثبات الدفع من نفس الصفحة.",
           "notes": null,
           "isActive": true,
-          "sortOrder": 300
+          "sortOrder": 310
         }
       ]
     },
@@ -270,7 +270,7 @@
           "instructions": "حوّل على رقم فودافون كاش، ثم ارفع صورة إثبات الدفع من نفس الصفحة.",
           "notes": null,
           "isActive": true,
-          "sortOrder": 590
+          "sortOrder": 610
         }
       ]
     },
@@ -410,7 +410,7 @@
           }
         },
         "trialPolicy": {
-          "defaultDays": 40
+          "defaultDays": 14
         },
         "pendingReview": {
           "action": {
