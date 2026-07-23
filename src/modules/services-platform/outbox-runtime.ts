@@ -66,6 +66,14 @@ export function createDefaultServicesEventHandlers(prisma: PrismaClient): Servic
       },
     },
     {
+      eventName: "services.fulfillment.retry.requested",
+      async handle(event) {
+        const runId = stringPayload(event.payload, "runId");
+        if (!runId) return;
+        await createServicesPlatformRuntime(prisma).fulfillment.retry({ runId, idempotencyKey: `fulfillment:${runId}:recovery` });
+      },
+    },
+    {
       eventName: "services.payment.refunded",
       async handle(event) {
         const acquisitionId = stringPayload(event.payload, "acquisitionId");
@@ -84,7 +92,10 @@ export function createDefaultServicesEventHandlers(prisma: PrismaClient): Servic
       async handle(event) {
         const tenantId = stringPayload(event.payload, "tenantId");
         const acquisitionId = stringPayload(event.payload, "acquisitionId");
+        const offeringId = stringPayload(event.payload, "offeringId");
+        const attributionId = stringPayload(event.payload, "attributionId");
         const analyticsName = ({
+          "services.acquisition.requested": "acquisition.requested",
           "services.payment.submitted": "payment.submitted",
           "services.payment.approved": "payment.approved",
           "services.acquisition.fulfilled": "acquisition.fulfilled",
@@ -92,7 +103,7 @@ export function createDefaultServicesEventHandlers(prisma: PrismaClient): Servic
         await prisma.productAnalyticsEvent.upsert({
           where: { idempotencyKey: `outbox-analytics:${event.id}` },
           update: {},
-          create: { tenantId, acquisitionId, name: analyticsName, version: event.eventVersion, idempotencyKey: `outbox-analytics:${event.id}`, properties: { sourceEventName: event.eventName, aggregateType: event.aggregateType, aggregateId: event.aggregateId } },
+          create: { tenantId, acquisitionId, offeringId, attributionId, name: analyticsName, version: event.eventVersion, idempotencyKey: `outbox-analytics:${event.id}`, properties: { sourceEventName: event.eventName, aggregateType: event.aggregateType, aggregateId: event.aggregateId } },
         });
 
         const timelineBody = customerTimelineMessages[event.eventName];

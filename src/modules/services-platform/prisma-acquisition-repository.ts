@@ -3,6 +3,7 @@ import { AcquisitionStatus, PriceBillingInterval, Prisma, type PrismaClient } fr
 import type { AcquisitionRepository, AcquisitionRecord } from "./acquisition-service";
 import { evaluateOfferingEligibility, type EligibilityPolicy } from "./eligibility";
 import { buildPrismaEligibilityContext } from "./prisma-eligibility-context";
+import { resolveCommerceMarket } from "./commerce-market";
 
 function asRecord(acquisition: {
   id: string;
@@ -35,7 +36,7 @@ export function createPrismaAcquisitionRepository(prisma: PrismaClient): Acquisi
       if (existing) return asRecord(existing);
 
       const context = await buildPrismaEligibilityContext(prisma, input.tenantId);
-      const marketCode = context.country ?? "EG";
+      const { marketCode, currency } = resolveCommerceMarket(context);
       const now = new Date();
       const offering = await prisma.catalogOffering.findFirst({
         where: { id: input.offeringId, publicationStatus: "PUBLISHED", deletedAt: null },
@@ -46,9 +47,8 @@ export function createPrismaAcquisitionRepository(prisma: PrismaClient): Acquisi
             include: { componentOffering: { include: { product: { select: { code: true, publicationStatus: true, releaseStage: true } }, capabilities: { include: { capability: { select: { key: true } } } } } } },
           },
           prices: {
-            where: { isActive: true, currency: "EGP", marketCode: { in: [marketCode, "GLOBAL"] }, effectiveFrom: { lte: now }, OR: [{ effectiveTo: null }, { effectiveTo: { gt: now } }] },
+            where: { isActive: true, currency, marketCode: { in: [marketCode, "GLOBAL"] }, effectiveFrom: { lte: now }, OR: [{ effectiveTo: null }, { effectiveTo: { gt: now } }] },
             orderBy: [{ version: "desc" }, { effectiveFrom: "desc" }],
-            take: 10,
           },
         },
       });
@@ -111,7 +111,7 @@ export function createPrismaAcquisitionRepository(prisma: PrismaClient): Acquisi
           snapshotName: offering.name,
           unitAmount: price?.amount ?? 0,
           quantity: 1,
-          currency: price?.currency ?? "EGP",
+          currency: price?.currency ?? currency,
           billingInterval: price?.billingInterval ?? PriceBillingInterval.ONE_TIME,
           snapshot: snapshot as Prisma.InputJsonValue,
         },
@@ -122,7 +122,7 @@ export function createPrismaAcquisitionRepository(prisma: PrismaClient): Acquisi
           snapshotName: component.componentOffering.name,
           unitAmount: 0,
           quantity: component.quantity,
-          currency: price?.currency ?? "EGP",
+          currency: price?.currency ?? currency,
           billingInterval: price?.billingInterval ?? PriceBillingInterval.ONE_TIME,
           snapshot: {
             bundledByOfferingId: offering.id,
@@ -188,7 +188,7 @@ export function createPrismaAcquisitionRepository(prisma: PrismaClient): Acquisi
             aggregateType: "Acquisition",
             aggregateId: input.acquisitionId,
             eventName: "services.acquisition.requested",
-            payload: { acquisitionId: input.acquisitionId, conversationId: input.conversationId, tenantId: acquisition.tenantId },
+            payload: { acquisitionId: input.acquisitionId, conversationId: input.conversationId, tenantId: acquisition.tenantId, offeringId: acquisition.offeringId, attributionId: acquisition.attributionId },
             deduplicationKey: `acquisition:${input.acquisitionId}:requested`,
             correlationId: acquisition.correlationId,
           },

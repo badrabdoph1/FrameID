@@ -3,6 +3,7 @@ import { Prisma, type PrismaClient } from "@prisma/client";
 import type { EligibilityPolicy } from "./eligibility";
 import { evaluateRecommendationRules, type RecommendationContext, type RecommendationRuleInput } from "./recommendation-engine";
 import { getCustomerCatalogReadModel } from "./prisma-catalog-repository";
+import { resolveCommerceMarket } from "./commerce-market";
 
 function stringArray(value: Prisma.JsonValue): string[] {
   return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
@@ -15,6 +16,7 @@ export async function getTenantRecommendations(prisma: PrismaClient, input: {
   now?: Date;
 }) {
   const now = input.now ?? new Date();
+  const commerceMarket = resolveCommerceMarket(input.context);
   const [rules, priorDecisions, catalog] = await Promise.all([
     prisma.recommendationRule.findMany({
       where: { status: "ACTIVE", OR: [{ startsAt: null }, { startsAt: { lte: now } }], AND: [{ OR: [{ endsAt: null }, { endsAt: { gt: now } }] }] },
@@ -26,7 +28,7 @@ export async function getTenantRecommendations(prisma: PrismaClient, input: {
       orderBy: { createdAt: "desc" },
       take: 500,
     }),
-    getCustomerCatalogReadModel(prisma, { context: input.context, marketCode: "EG", currency: "EGP", now }),
+    getCustomerCatalogReadModel(prisma, { context: input.context, ...commerceMarket, now }),
   ]);
   const eligibleOfferingIds = new Set(catalog.products.flatMap((product) => product.offerings.filter((offering) => offering.eligible && offering.purchasable).map((offering) => offering.id)));
   const dismissedRuleKeys = priorDecisions.flatMap((decision) => {

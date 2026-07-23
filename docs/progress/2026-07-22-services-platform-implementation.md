@@ -63,7 +63,7 @@
 - Self-service المجاني يبدأ التنفيذ مباشرة، والمدفوع ينتظر Payment Approval.
 - Workflow Registry يدعم instant وautomatic وmanual وcustom quote وbeta application.
 - Fulfillment يمنح Entitlements، ينشئ Product Instance، وينشئ Service Subscription تلقائيًا للعروض الدورية.
-- Fulfillment له claim ذري ومسار تشغيل واحد ومؤشر جزئي يمنع أكثر من run نشط، مع retry يعيد الـWorkflow الفاشل ولا يتخطاه.
+- Fulfillment له claim ذري ومسار تشغيل واحد ومؤشر جزئي يمنع أكثر من run نشط، مع lease وتعافٍ تلقائي للـruns المتوقفة، وretry يعيد الـWorkflow الفاشل بمفاتيح side-effect ثابتة ولا يتخطاه.
 
 ### المرحلة 6 — نماذج البيع
 
@@ -77,7 +77,8 @@
 - إنشاء وتجديد وPast Due وGrace Period وإلغاء فوري أو نهاية الفترة وانتهاء.
 - Trial Grants زمنية أو محدودة بالاستخدام؛ قدرات العرض تُمنح كـEntitlements حتى نهاية المهلة.
 - استهلاك الحدود الدورية يحمل `periodKey`؛ لذلك يبدأ عداد جديد تلقائيًا مع فترة التجديد الجديدة بدل تجميع الاستخدام مدى الحياة.
-- Refund يسجل Payment Log، يحول Acquisition إلى Refunded، يسحب الحقوق، يعلق Product Instances، ويلغي الاشتراكات المرتبطة.
+- Refund يسجل Payment Log، يحول Acquisition إلى Refunded، يسحب الحقوق، يعلق Product Instances، ويلغي الاشتراكات المرتبطة. يُمنع الاسترداد أثناء `FULFILLING` حتى لا يتسابق التعويض مع التفعيل، ويمكن تنفيذه قبل بدء التنفيذ أو بعد اكتماله.
+- `PAST_DUE` لا يستمر بلا نهاية: تُنشأ مهلة افتراضية ثلاثة أيام عند غياب مهلة مزود الدفع، ثم تنتهي الخدمة وتُسحب الحقوق تلقائيًا.
 
 ### المرحلة 8 — التوصيات والتحليلات
 
@@ -92,7 +93,7 @@
 - Outbox worker بآلية claim/lease/retry/exponential backoff/dead-letter.
 - Cron محمي لتشغيل Outbox وCron للمصالحة.
 - جدولة Vercel: Outbox كل دقيقة وReconciliation كل خمس دقائق، مع بقاء المسارين صالحين لأي scheduler خارجي.
-- Reconciliation يعيد leases المنتهية، يحدّث حالات الاشتراكات، ويعيد طلب Fulfillment الناقص.
+- Reconciliation يعيد leases المنتهية، يسترجع Fulfillment المتوقف، يكمل Acquisition إذا نجحت آثاره قبل تعطل العملية، يحدّث حالات الاشتراكات، ويعيد طلب Fulfillment الناقص.
 - Extension Points لـRecommendation Provider وAnalytics Sink وProduct Provisioning وDomain Event Publisher.
 
 ## قاعدة البيانات والمهاجرات
@@ -145,6 +146,8 @@
 - عزل كل قراءة وكتابة للعميل بـ`tenantId` المستخرج من الجلسة؛ لا يؤخذ Tenant من input العميل.
 - أوامر الإدارة محمية بـAdmin Permission Guards ومسجلة في Audit Log.
 - السعر المرسل من العميل لا يُستخدم؛ الخادم يقرأ السعر المنشور ويخزنه كلقطة immutable.
+- السوق والعملة يُحلان من Selector مركزي تستخدمه صفحات Catalog وAcquisition وRecommendations، مع أولوية لسعر السوق ثم السعر العالمي بنفس العملة.
+- Payment approval/rejection/refund وإنشاء المسودة تستخدم row locks وتعيد التحقق من حالة Acquisition داخل المعاملة لمنع السباقات.
 - سياق الأهلية موحد ويُبنى من Tenant والخطة والدولة وعدد المواقع والمنتجات وAccess Tier entitlements، ويستخدمه Catalog وAcquisition وTrial وRecommendations.
 - فهارس مركبة لمسارات tenant/status/date وoffering/status وoutbox leasing وattribution.
 - حدود pagination/take في لوحات التشغيل، وفصل Read Models عن command services.
@@ -167,7 +170,7 @@
 
 - TypeScript: ناجح، دون أخطاء.
 - ESLint: ناجح، دون أخطاء؛ بقيت 52 warning تاريخية خارج ملفات المنصة.
-- الاختبارات: 183 ملف اختبار ناجح، 594 اختبارًا ناجحًا، صفر فشل.
+- الاختبارات: 183 ملف اختبار ناجح، 599 اختبارًا ناجحًا، صفر فشل.
 - Production Build: ناجح، وجميع مسارات العميل والإدارة والـAPI ظهرت في route manifest.
 - قاعدة PostgreSQL نظيفة: نجح `db:deploy:safe`، ونجح seed مرتين، وثبتت أعداد 1 Product و1 Offering و6 Workflows و3 Capabilities.
 - فهارس التحصين: تحقق وجود الفهارس الأربعة الخاصة بمنع Fulfillment المتوازي، توافق الاشتراكات القديمة، usage period، وtenant-scoped idempotency.

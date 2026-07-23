@@ -9,6 +9,7 @@ import { ServicesEventBeacon } from "@/components/services/services-event-beacon
 import { getCurrentRequestSession } from "@/modules/auth/request-session";
 import { getCustomerCatalogReadModel } from "@/modules/services-platform/prisma-catalog-repository";
 import { buildPrismaEligibilityContext } from "@/modules/services-platform/prisma-eligibility-context";
+import { resolveCommerceMarket } from "@/modules/services-platform/commerce-market";
 import { requestServiceOfferingAction, startServiceTrialAction } from "../actions";
 
 function money(amount: number, currency: string) {
@@ -47,8 +48,7 @@ export default async function ServiceProductPage({ params, searchParams }: { par
   if (!source) notFound();
   const catalog = await getCustomerCatalogReadModel(prisma, {
     context: eligibilityContext,
-    marketCode: eligibilityContext.country ?? "EG",
-    currency: "EGP",
+    ...resolveCommerceMarket(eligibilityContext),
   });
   const product = catalog.products.find((item) => item.code === productCode);
   if (!product) notFound();

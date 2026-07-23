@@ -79,9 +79,10 @@ export function createPrismaFulfillmentRepository(prisma: PrismaClient): Fulfill
       });
     },
     async markRunning(runId) {
+      const now = new Date();
       const updated = await prisma.fulfillmentRun.updateMany({
         where: { id: runId, status: { in: [FulfillmentStatus.PENDING, FulfillmentStatus.FAILED] } },
-        data: { status: FulfillmentStatus.RUNNING, startedAt: new Date(), attempts: { increment: 1 } },
+        data: { status: FulfillmentStatus.RUNNING, startedAt: now, attempts: { increment: 1 }, leaseOwner: `fulfillment:${runId}`, leaseExpiresAt: new Date(now.getTime() + 15 * 60_000), finishedAt: null, lastError: null },
       });
       return updated.count === 1;
     },
@@ -105,6 +106,8 @@ export function createPrismaFulfillmentRepository(prisma: PrismaClient): Fulfill
         data: {
           status: status as FulfillmentStatus,
           checkpoint: checkpoint === null ? Prisma.JsonNull : checkpoint as Prisma.InputJsonValue,
+          leaseOwner: null,
+          leaseExpiresAt: null,
         },
       });
     },
@@ -116,11 +119,15 @@ export function createPrismaFulfillmentRepository(prisma: PrismaClient): Fulfill
     },
     async transitionAcquisition(acquisitionId, status) {
       await prisma.$transaction(async (tx) => {
-        const acquisition = await tx.acquisition.update({
-          where: { id: acquisitionId },
+        const expectedStatuses = status === "FULFILLING"
+          ? [AcquisitionStatus.PAID, AcquisitionStatus.ACCEPTED]
+          : [AcquisitionStatus.FULFILLING];
+        const updated = await tx.acquisition.updateMany({
+          where: { id: acquisitionId, status: { in: expectedStatuses } },
           data: { status: status as AcquisitionStatus, ...(status === "FULFILLED" ? { fulfilledAt: new Date() } : {}) },
-          select: { correlationId: true, tenantId: true },
         });
+        const acquisition = await tx.acquisition.findUniqueOrThrow({ where: { id: acquisitionId }, select: { correlationId: true, tenantId: true, status: true } });
+        if (updated.count !== 1 && acquisition.status !== status) throw new Error(`Acquisition cannot transition to ${status} from ${acquisition.status}.`);
         await tx.servicesOutboxEvent.upsert({
           where: { deduplicationKey: `fulfillment:${acquisitionId}:acquisition:${status}` },
           update: {},

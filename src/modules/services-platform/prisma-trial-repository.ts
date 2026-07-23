@@ -17,10 +17,18 @@ export function createPrismaTrialRepository(prisma: PrismaClient): TrialReposito
       const context = await buildPrismaEligibilityContext(prisma, tenantId);
       const productResult = evaluateOfferingEligibility(context, policy.offering.product?.eligibilityPolicy as EligibilityPolicy | null);
       const offeringResult = evaluateOfferingEligibility(context, policy.offering.eligibilityPolicy as EligibilityPolicy | null);
+      const policyResult = evaluateOfferingEligibility(context, policy.eligibilityPolicy as EligibilityPolicy | null);
       const tiers = [policy.offering.product?.accessTier, policy.offering.accessTier].filter((item): item is string => Boolean(item));
-      if (!productResult.visible || !productResult.eligible || !offeringResult.visible || !offeringResult.eligible || tiers.some((tier) => tier !== "STANDARD" && !context.accessTiers?.includes(tier))) {
+      if (!productResult.visible || !productResult.eligible || !offeringResult.visible || !offeringResult.eligible || !policyResult.visible || !policyResult.eligible || tiers.some((tier) => tier !== "STANDARD" && !context.accessTiers?.includes(tier))) {
         throw new Error("Trial is not eligible for this tenant.");
       }
+    },
+    async getGrantByIdempotency(tenantId, idempotencyKey) {
+      const grant = await prisma.trialGrant.findUnique({
+        where: { tenantId_idempotencyKey: { tenantId, idempotencyKey } },
+        select: { id: true, status: true, startsAt: true, endsAt: true, graceEndsAt: true, usageLimit: true },
+      });
+      return grant?.status === "ACTIVE" ? { ...grant, status: "ACTIVE" as const } : null;
     },
     async getPolicy(policyId) {
       const policy = await prisma.trialPolicy.findUnique({

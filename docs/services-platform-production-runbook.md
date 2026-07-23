@@ -28,7 +28,8 @@
 
 - عدد `ServicesOutboxEvent` في `DEAD_LETTER` يجب أن يساوي صفرًا.
 - أقدم حدث `PENDING` لا ينبغي أن يتجاوز دقيقتين في التشغيل الطبيعي.
-- `FulfillmentRun` في `PROVISIONING` لأكثر من ساعة يظهر كـanomaly في reconciliation.
+- `ProductInstance` في `PROVISIONING` لأكثر من ساعة يظهر كـanomaly في reconciliation.
+- `FulfillmentRun` في `RUNNING` بعد انتهاء lease يُحوّل إلى `FAILED` ويُعاد طلب تشغيله تلقائيًا بمفتاح side-effect ثابت.
 - الاشتراكات `PAST_DUE` و`GRACE_PERIOD` تحتاج متابعة بوابة الدفع.
 - أي نتيجة `503` من reconciliation تعني حالة متدهورة وتتطلب تنبيهًا.
 
@@ -36,7 +37,12 @@
 
 - أحداث Outbox الفاشلة يعاد جدولتها تلقائيًا مع exponential backoff حتى `DEAD_LETTER`.
 - تنفيذ Fulfillment الفاشل يعاد من لوحة الإدارة بزر «إعادة المحاولة»؛ يعاد نفس Workflow ولا يسمح بالانتقال اليدوي فوق الفشل.
+- المصالحة تعيد تشغيل الـrun الذي انتهت lease الخاصة به، وتغلق Acquisition العالق في `FULFILLING` إذا كان الـrun قد وصل بالفعل إلى `SUCCEEDED`.
 - لا تنشئ FulfillmentRun يدويًا؛ استخدم runtime أو أعد حدث `services.fulfillment.requested` بمفتاح deduplication ثابت.
+
+## الاسترداد أثناء التنفيذ
+
+لا يسمح النظام بتحويل دفعة إلى `REFUNDED` بينما Acquisition في `FULFILLING`، لأن التزويد الخارجي قد يكون جارياً. انتظر اكتمال التنفيذ ثم نفّذ الاسترداد من لوحة الإدارة ليعمل مسار التعويض الكامل، أو استرد قبل بدء التنفيذ عندما تكون الحالة `PAID`.
 
 ## إضافة منتج جديد
 

@@ -20,3 +20,4 @@ export { runServicesReconciliation } from "./reconciliation";
 export type { RecommendationProvider, ProductAnalyticsSink, ProductProvisioningAdapter, ServicesDomainEventPublisher } from "./extensions";
 export { syncLegacyPricingEntitlements } from "./legacy-compatibility";
 export { buildPrismaEligibilityContext } from "./prisma-eligibility-context";
+export { resolveCommerceMarket } from "./commerce-market";

@@ -5,6 +5,7 @@ import { clientProductAnalyticsEventNames } from "@/modules/services-platform/pr
 import { buildPrismaEligibilityContext } from "@/modules/services-platform/prisma-eligibility-context";
 import { createPrismaServicesPaymentRepository } from "@/modules/services-platform/prisma-payment-repository";
 import { createPrismaUsageRepository } from "@/modules/services-platform/prisma-usage-repository";
+import { resolveCommerceMarket } from "@/modules/services-platform/commerce-market";
 
 describe("services platform hardening invariants", () => {
   it("does not accept authoritative lifecycle events from the client analytics endpoint", () => {
@@ -13,8 +14,25 @@ describe("services platform hardening invariants", () => {
     expect(clientProductAnalyticsEventNames).not.toContain("acquisition.requested");
   });
 
+  it("creates the first payment draft after revalidating the locked acquisition", async () => {
+    const transaction = {
+      $queryRaw: vi.fn().mockResolvedValue([]),
+      acquisition: { findUniqueOrThrow: vi.fn().mockResolvedValue({ tenantId: "tenant", status: AcquisitionStatus.AWAITING_PAYMENT, acceptedTotal: 49000, acceptedCurrency: "EGP" }) },
+      paymentRequest: {
+        findFirst: vi.fn().mockResolvedValue(null),
+        create: vi.fn().mockResolvedValue({ id: "payment" }),
+      },
+    };
+    const prisma = { $transaction: <T>(callback: (tx: typeof transaction) => Promise<T>) => callback(transaction) };
+    const repository = createPrismaServicesPaymentRepository(prisma as never);
+
+    await expect(repository.createDraft({ acquisitionId: "acquisition", tenantId: "tenant", method: "INSTAPAY", amount: 49000, currency: "EGP" })).resolves.toEqual({ id: "payment", status: "DRAFT" });
+    expect(transaction.paymentRequest.create).toHaveBeenCalledOnce();
+  });
+
   it("refuses payment approval when the acquisition is no longer awaiting payment", async () => {
     const transaction = {
+      $queryRaw: vi.fn().mockResolvedValue([]),
       paymentRequest: {
         findUniqueOrThrow: vi.fn().mockResolvedValue({
           id: "payment",
@@ -53,6 +71,41 @@ describe("services platform hardening invariants", () => {
     expect(transaction.paymentRequest.update).not.toHaveBeenCalled();
     expect(transaction.acquisition.update).not.toHaveBeenCalled();
     expect(transaction.servicesOutboxEvent.upsert).not.toHaveBeenCalled();
+    expect(transaction.$queryRaw).toHaveBeenCalledTimes(2);
+  });
+
+  it("defers refunds while fulfillment is running so compensation cannot race activation", async () => {
+    const transaction = {
+      $queryRaw: vi.fn().mockResolvedValue([]),
+      paymentRequest: {
+        findUniqueOrThrow: vi.fn().mockResolvedValue({ id: "payment", acquisitionId: "acquisition", tenantId: "tenant", status: PaymentStatus.APPROVED }),
+        update: vi.fn(),
+      },
+      acquisition: {
+        findUniqueOrThrow: vi.fn().mockResolvedValue({ status: AcquisitionStatus.FULFILLING }),
+        update: vi.fn(),
+      },
+      paymentRequestLog: { create: vi.fn() },
+      servicesOutboxEvent: { upsert: vi.fn() },
+    };
+    const prisma = { $transaction: <T>(callback: (tx: typeof transaction) => Promise<T>) => callback(transaction) };
+    const repository = createPrismaServicesPaymentRepository(prisma as never);
+
+    await expect(repository.refund({
+      paymentRequestId: "payment",
+      reviewerId: "admin",
+      reason: "requested",
+      idempotencyKey: "refund",
+      refundedAt: new Date("2026-07-22T00:00:00.000Z"),
+    })).rejects.toThrow(/cannot be refunded safely/i);
+    expect(transaction.paymentRequest.update).not.toHaveBeenCalled();
+    expect(transaction.acquisition.update).not.toHaveBeenCalled();
+  });
+
+  it("uses one market and currency selector for catalog and acquisition", () => {
+    expect(resolveCommerceMarket({ country: "sa" })).toEqual({ marketCode: "SA", currency: "SAR" });
+    expect(resolveCommerceMarket({ country: "AE" })).toEqual({ marketCode: "AE", currency: "AED" });
+    expect(resolveCommerceMarket({ country: "XX" })).toEqual({ marketCode: "XX", currency: "USD" });
   });
 
   it("builds one authoritative targeting context from tenant state and entitlements", async () => {

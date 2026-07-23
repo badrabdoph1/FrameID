@@ -8,6 +8,7 @@ import { TrackedServiceLink } from "@/components/services/tracked-service-link";
 import { getCurrentRequestSession } from "@/modules/auth/request-session";
 import { getCustomerCatalogReadModel } from "@/modules/services-platform/prisma-catalog-repository";
 import { buildPrismaEligibilityContext } from "@/modules/services-platform/prisma-eligibility-context";
+import { resolveCommerceMarket } from "@/modules/services-platform/commerce-market";
 import { getTenantRecommendations } from "@/modules/services-platform/prisma-recommendations";
 import { cancelServiceSubscriptionAction, dismissServiceRecommendationAction } from "./actions";
 
@@ -67,8 +68,7 @@ export default async function ServiceCenterPage({ searchParams }: { searchParams
 
   const shownCatalog = await getCustomerCatalogReadModel(prisma, {
     context: eligibilityContext,
-    marketCode: eligibilityContext.country ?? "EG",
-    currency: "EGP",
+    ...resolveCommerceMarket(eligibilityContext),
     now,
   });
   const ownedOfferingIds = [

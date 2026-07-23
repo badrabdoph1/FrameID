@@ -67,7 +67,8 @@ export function createFulfillmentService(input: {
 }) {
   const now = input.now ?? (() => new Date());
 
-  async function finalize(acquisition: FulfillmentAcquisition, runId: string, result: unknown, idempotencyKey: string) {
+  async function finalize(acquisition: FulfillmentAcquisition, runId: string, result: unknown) {
+    const sideEffectKey = `fulfillment:${runId}`;
     const capabilityGrants = new Map<string, FulfillmentAcquisition["capabilities"][number]>();
     for (const capability of acquisition.capabilities) {
       const existing = capabilityGrants.get(capability.capabilityKey);
@@ -95,7 +96,7 @@ export function createFulfillmentService(input: {
           acquisitionId: acquisition.id,
           instanceKey: acquisition.instanceKey,
           configuration: result,
-          idempotencyKey: `${idempotencyKey}:activation`,
+          idempotencyKey: `${sideEffectKey}:activation`,
         })
       : null;
     const additionalInstances = [];
@@ -106,7 +107,7 @@ export function createFulfillmentService(input: {
         acquisitionId: acquisition.id,
         instanceKey: activation.instanceKey,
         configuration: result,
-        idempotencyKey: `${idempotencyKey}:activation:${activation.productId}`,
+        idempotencyKey: `${sideEffectKey}:activation:${activation.productId}`,
       }));
     }
     const subscription = acquisition.billingInterval === "MONTHLY" || acquisition.billingInterval === "YEARLY"
@@ -115,7 +116,7 @@ export function createFulfillmentService(input: {
           offeringId: acquisition.offeringId,
           acquisitionId: acquisition.id,
           billingInterval: acquisition.billingInterval,
-          idempotencyKey: `${idempotencyKey}:subscription`,
+          idempotencyKey: `${sideEffectKey}:subscription`,
         })
       : null;
     await input.repository.markSucceeded(runId, result, now());
@@ -129,7 +130,7 @@ export function createFulfillmentService(input: {
     };
   }
 
-  async function execute(acquisition: FulfillmentAcquisition, runId: string, idempotencyKey: string) {
+  async function execute(acquisition: FulfillmentAcquisition, runId: string) {
     const claimed = await input.repository.markRunning(runId);
     if (!claimed) return { status: "RUNNING" as const, runId };
     try {
@@ -144,7 +145,7 @@ export function createFulfillmentService(input: {
         await input.repository.markWaiting(runId, result.status, result.checkpoint ?? null);
         return { status: result.status, runId };
       }
-      return finalize(acquisition, runId, result.result ?? null, idempotencyKey);
+      return finalize(acquisition, runId, result.result ?? null);
     } catch (error) {
       await input.repository.markFailed(runId, error instanceof Error ? error.message : "Unknown fulfillment error", now());
       throw error;
@@ -166,8 +167,13 @@ export function createFulfillmentService(input: {
       });
       if (run.status === "SUCCEEDED") return { status: "SUCCEEDED" as const, runId: run.id };
 
-      await input.repository.transitionAcquisition(acquisition.id, "FULFILLING");
-      return execute(acquisition, run.id, command.idempotencyKey);
+      try {
+        await input.repository.transitionAcquisition(acquisition.id, "FULFILLING");
+      } catch (error) {
+        await input.repository.markFailed(run.id, error instanceof Error ? error.message : "Acquisition transition failed", now());
+        throw error;
+      }
+      return execute(acquisition, run.id);
     },
     async retry(command: { runId: string; idempotencyKey: string }) {
       if (!input.repository.getRunAcquisitionId) throw new Error("Fulfillment retry is not supported by this repository.");
@@ -176,7 +182,7 @@ export function createFulfillmentService(input: {
       if (run.status !== "FAILED") throw new Error(`Only failed fulfillment runs can be retried, received ${run.status}.`);
       const acquisition = await input.repository.getAcquisition(run.acquisitionId);
       if (!acquisition || acquisition.status !== "FULFILLING") throw new Error("Fulfillment acquisition is not active.");
-      return execute(acquisition, command.runId, command.idempotencyKey);
+      return execute(acquisition, command.runId);
     },
     async completeManual(command: { runId: string; result: unknown; idempotencyKey: string }) {
       if (!input.repository.getRunAcquisitionId) throw new Error("Manual completion is not supported by this repository.");
@@ -188,7 +194,7 @@ export function createFulfillmentService(input: {
       }
       const acquisition = await input.repository.getAcquisition(run.acquisitionId);
       if (!acquisition || acquisition.status !== "FULFILLING") throw new Error("Fulfillment acquisition is not active.");
-      return finalize(acquisition, command.runId, command.result, command.idempotencyKey);
+      return finalize(acquisition, command.runId, command.result);
     },
   };
 }

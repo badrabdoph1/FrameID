@@ -8,6 +8,7 @@ describe("trial grants and usage limits", () => {
     let eligibilityChecks = 0;
     const repository: TrialRepository = {
       async getPolicy() { return { id: "policy_1", productId: "product_1", offeringId: "offering_1", durationDays: 14, usageLimit: 10, usageCapabilityKey: "ai.credits", graceDays: 2, oncePerTenant: true, isActive: true, capabilities: [] }; },
+      async getGrantByIdempotency() { return null; },
       async assertEligible() { eligibilityChecks += 1; },
       async hasPreviousGrant() { return false; },
       async createGrant(input) { return { id: "trial_1", status: "ACTIVE", startsAt: input.startsAt, endsAt: input.endsAt, graceEndsAt: input.graceEndsAt, usageLimit: input.usageLimit }; },
@@ -26,6 +27,7 @@ describe("trial grants and usage limits", () => {
     const grants: Array<{ capabilityKey: string; sourceId: string; endsAt: string | null }> = [];
     const repository: TrialRepository = {
       async getPolicy() { return { id: "policy", productId: "product", offeringId: "offering", durationDays: 7, usageLimit: null, usageCapabilityKey: null, graceDays: 2, oncePerTenant: true, isActive: true, capabilities: [{ capabilityId: "cap", capabilityKey: "gallery.access", value: true, quantity: null }] }; },
+      async getGrantByIdempotency() { return null; },
       async assertEligible() {},
       async hasPreviousGrant() { return false; },
       async createGrant(input) { return { id: "trial_1", status: "ACTIVE", startsAt: input.startsAt, endsAt: input.endsAt, graceEndsAt: input.graceEndsAt, usageLimit: input.usageLimit }; },
@@ -40,10 +42,27 @@ describe("trial grants and usage limits", () => {
   it("rejects a second once-per-tenant trial", async () => {
     const repository: TrialRepository = {
       async getPolicy() { return { id: "p", productId: null, offeringId: "o", durationDays: 7, usageLimit: null, usageCapabilityKey: null, graceDays: 0, oncePerTenant: true, isActive: true, capabilities: [] }; },
+      async getGrantByIdempotency() { return null; },
       async assertEligible() {},
       async hasPreviousGrant() { return true; }, async createGrant() { throw new Error("unused"); },
     };
     await expect(createTrialService(repository).start({ tenantId: "t", policyId: "p", idempotencyKey: "again" })).rejects.toThrow(/already used/i);
+  });
+
+  it("resumes the same trial request and repairs entitlement grants without consuming a second trial", async () => {
+    const entitlementSources: string[] = [];
+    const existing = { id: "trial_existing", status: "ACTIVE" as const, startsAt: new Date("2026-07-01"), endsAt: new Date("2026-07-08"), graceEndsAt: new Date("2026-07-09"), usageLimit: null };
+    const repository: TrialRepository = {
+      async getPolicy() { return { id: "policy", productId: "product", offeringId: "offering", durationDays: 7, usageLimit: null, usageCapabilityKey: null, graceDays: 1, oncePerTenant: true, isActive: true, capabilities: [{ capabilityId: "cap", capabilityKey: "gallery.access", value: true, quantity: null }] }; },
+      async getGrantByIdempotency() { return existing; },
+      async assertEligible() { throw new Error("must not re-evaluate an accepted retry"); },
+      async hasPreviousGrant() { throw new Error("must not treat the same key as a second trial"); },
+      async createGrant() { throw new Error("must not create a second grant"); },
+    };
+    const service = createTrialService(repository, undefined, { async grantEntitlement(input) { entitlementSources.push(input.sourceId); } });
+
+    await expect(service.start({ tenantId: "tenant", policyId: "policy", idempotencyKey: "same" })).resolves.toEqual(existing);
+    expect(entitlementSources).toEqual(["trial_existing"]);
   });
 
   it("records usage idempotently and fails closed when the entitlement limit would be exceeded", async () => {

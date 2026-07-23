@@ -228,6 +228,7 @@ export async function saveTrialPolicyAction(formData: FormData) {
   const path = productId ? `/admin/services/products/${productId}` : "/admin/services";
   try {
     if (!offeringId) throw new Error("يجب ربط تجربة العميل بعرض.");
+    if (formData.get("requiresPaymentMethod") === "on") throw new Error("اشتراط وسيلة دفع محفوظة غير متاح بعد؛ لا يمكن إنشاء سياسة Trial غير قابلة للاستخدام.");
     const trial = await prisma.trialPolicy.create({
       data: {
         productId,

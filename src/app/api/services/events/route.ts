@@ -21,8 +21,8 @@ export async function POST(request: Request) {
   if (properties && JSON.stringify(properties).length > 10_000) return NextResponse.json({ error: "event_too_large" }, { status: 413 });
   const [productExists, offeringExists, attributionExists] = await Promise.all([
     productId ? prisma.productDefinition.count({ where: { id: productId, publicationStatus: "PUBLISHED", deletedAt: null } }) : 1,
-    offeringId ? prisma.catalogOffering.count({ where: { id: offeringId, publicationStatus: "PUBLISHED", deletedAt: null } }) : 1,
-    attributionId ? prisma.recommendationDecision.count({ where: { attributionId, tenantId: session.tenant.id } }) : 1,
+    offeringId ? prisma.catalogOffering.count({ where: { id: offeringId, ...(productId ? { productId } : {}), publicationStatus: "PUBLISHED", deletedAt: null } }) : 1,
+    attributionId ? prisma.recommendationDecision.count({ where: { attributionId, tenantId: session.tenant.id, ...(offeringId ? { offeringId } : {}) } }) : 1,
   ]);
   if (!productExists || !offeringExists || !attributionExists) return NextResponse.json({ error: "invalid_reference" }, { status: 400 });
   const event = await trackProductAnalyticsEvent(prisma, {

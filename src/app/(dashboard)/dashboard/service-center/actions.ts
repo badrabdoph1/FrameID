@@ -55,16 +55,6 @@ export async function requestServiceOfferingAction(formData: FormData) {
       where: { id: result.id },
       include: { offering: { select: { salesMode: true } } },
     });
-    await trackProductAnalyticsEvent(prisma, {
-      name: "acquisition.requested",
-      idempotencyKey: `analytics:acquisition:${result.id}:requested`,
-      tenantId: session.tenant.id,
-      userId: session.user.id,
-      offeringId,
-      acquisitionId: result.id,
-      attributionId,
-      properties: { source: "service_center" },
-    });
     if (attributionId) {
       await prisma.recommendationDecision.updateMany({
         where: { tenantId: session.tenant.id, attributionId },

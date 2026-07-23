@@ -106,4 +106,27 @@ describe("services fulfillment", () => {
     await expect(service.start({ acquisitionId: "acq", idempotencyKey: "same-run" })).resolves.toEqual({ status: "RUNNING", runId: "run" });
     expect(workflowExecutions).toBe(0);
   });
+
+  it("fails the created run when the acquisition loses a concurrent transition", async () => {
+    const events: string[] = [];
+    const repository: FulfillmentRepository = {
+      async getAcquisition() { return { id: "acq", tenantId: "t", productId: null, offeringId: "o", workflowKey: "automatic", workflowVersion: 1, status: "PAID", instanceKey: null, additionalActivations: [], billingInterval: "ONE_TIME", capabilities: [] }; },
+      async createRun() { return { id: "run", status: "PENDING" }; },
+      async markRunning() { throw new Error("unused"); },
+      async markSucceeded() { throw new Error("unused"); },
+      async markWaiting() { throw new Error("unused"); },
+      async markFailed(_runId, message) { events.push(`failed:${message}`); },
+      async transitionAcquisition() { throw new Error("Acquisition cannot transition to FULFILLING from CANCELLED."); },
+    };
+    const service = createFulfillmentService({
+      repository,
+      workflows: createWorkflowRegistry([]),
+      async grantEntitlement() { throw new Error("unused"); },
+      async activateProduct() { throw new Error("unused"); },
+      async createSubscription() { throw new Error("unused"); },
+    });
+
+    await expect(service.start({ acquisitionId: "acq", idempotencyKey: "start" })).rejects.toThrow(/CANCELLED/);
+    expect(events).toEqual(["failed:Acquisition cannot transition to FULFILLING from CANCELLED."]);
+  });
 });

@@ -11,17 +11,19 @@ export async function syncLegacyPricingEntitlements(prisma: PrismaClient, input:
     SELECT subscription."id"
     FROM "Subscription" AS subscription
     WHERE subscription."deletedAt" IS NULL
-      AND subscription."status" IN ('TRIAL', 'ACTIVE')
-      AND subscription."currentPeriodEnd" > ${now}
+      AND (
+        (subscription."status" IN ('TRIAL', 'ACTIVE') AND subscription."currentPeriodEnd" > ${now})
+        OR subscription."status" = 'PAST_DUE'
+      )
       ${input.tenantId ? Prisma.sql`AND subscription."tenantId" = ${input.tenantId}` : Prisma.empty}
-      AND NOT EXISTS (
-        SELECT 1
+      AND (
+        SELECT COUNT(*)
         FROM "Entitlement" AS entitlement
         WHERE entitlement."sourceType" = 'LEGACY_SUBSCRIPTION'
           AND entitlement."sourceId" = subscription."id"
           AND entitlement."status" = 'ACTIVE'
-          AND entitlement."endsAt" = subscription."currentPeriodEnd"
-      )
+          AND entitlement."endsAt" IS NOT DISTINCT FROM CASE WHEN subscription."status" = 'PAST_DUE' THEN NULL ELSE subscription."currentPeriodEnd" END
+      ) < ${offering.capabilities.length}
     ORDER BY subscription."updatedAt" ASC
     LIMIT 5000
   `);
@@ -32,6 +34,7 @@ export async function syncLegacyPricingEntitlements(prisma: PrismaClient, input:
     include: { tenant: { select: { sites: { where: { deletedAt: null }, orderBy: { createdAt: "asc" }, take: 1, select: { id: true } } } } },
   });
   for (const subscription of subscriptions) {
+    const accessEndsAt = subscription.status === "PAST_DUE" ? null : subscription.currentPeriodEnd;
     await prisma.$transaction(async (tx) => {
       for (const item of offering.capabilities) {
         const capabilityValue = item.value === null
@@ -39,14 +42,14 @@ export async function syncLegacyPricingEntitlements(prisma: PrismaClient, input:
           : item.value as Prisma.InputJsonValue;
         await tx.entitlement.upsert({
           where: { tenantId_capabilityKey_sourceType_sourceId: { tenantId: subscription.tenantId, capabilityKey: item.capability.key, sourceType: "LEGACY_SUBSCRIPTION", sourceId: subscription.id } },
-          update: { status: "ACTIVE", productId: offering.product!.id, offeringId: offering.id, capabilityId: item.capability.id, value: capabilityValue, startsAt: subscription.currentPeriodStart, endsAt: subscription.currentPeriodEnd, revokedAt: null, revocationReason: null },
-          create: { tenantId: subscription.tenantId, productId: offering.product!.id, offeringId: offering.id, capabilityId: item.capability.id, capabilityKey: item.capability.key, sourceType: "LEGACY_SUBSCRIPTION", sourceId: subscription.id, status: "ACTIVE", value: capabilityValue, startsAt: subscription.currentPeriodStart, endsAt: subscription.currentPeriodEnd },
+          update: { status: "ACTIVE", productId: offering.product!.id, offeringId: offering.id, capabilityId: item.capability.id, value: capabilityValue, startsAt: subscription.currentPeriodStart, endsAt: accessEndsAt, revokedAt: null, revocationReason: null },
+          create: { tenantId: subscription.tenantId, productId: offering.product!.id, offeringId: offering.id, capabilityId: item.capability.id, capabilityKey: item.capability.key, sourceType: "LEGACY_SUBSCRIPTION", sourceId: subscription.id, status: "ACTIVE", value: capabilityValue, startsAt: subscription.currentPeriodStart, endsAt: accessEndsAt },
         });
       }
       await tx.productInstance.upsert({
         where: { tenantId_instanceKey: { tenantId: subscription.tenantId, instanceKey: `pricing-site:legacy:${subscription.id}` } },
-        update: { status: "ACTIVE", expiresAt: subscription.currentPeriodEnd, suspendedAt: null, activatedAt: subscription.activatedAt ?? subscription.currentPeriodStart },
-        create: { tenantId: subscription.tenantId, productId: offering.product!.id, instanceKey: `pricing-site:legacy:${subscription.id}`, externalRef: subscription.tenant.sites[0]?.id ?? null, configuration: { compatibility: "legacy-subscription" } as Prisma.InputJsonValue, status: "ACTIVE", activatedAt: subscription.activatedAt ?? subscription.currentPeriodStart, expiresAt: subscription.currentPeriodEnd },
+        update: { status: "ACTIVE", expiresAt: accessEndsAt, suspendedAt: null, activatedAt: subscription.activatedAt ?? subscription.currentPeriodStart },
+        create: { tenantId: subscription.tenantId, productId: offering.product!.id, instanceKey: `pricing-site:legacy:${subscription.id}`, externalRef: subscription.tenant.sites[0]?.id ?? null, configuration: { compatibility: "legacy-subscription" } as Prisma.InputJsonValue, status: "ACTIVE", activatedAt: subscription.activatedAt ?? subscription.currentPeriodStart, expiresAt: accessEndsAt },
       });
       await tx.servicesOutboxEvent.upsert({
         where: { deduplicationKey: `legacy-subscription:${subscription.id}:entitlements:${subscription.currentPeriodEnd.toISOString()}` },
@@ -78,7 +81,7 @@ export async function syncLegacyPricingEntitlements(prisma: PrismaClient, input:
     ...instanceCandidates.map((instance) => instance.instanceKey.slice("pricing-site:legacy:".length)),
   ])];
   const stillActive = candidateSourceIds.length ? await prisma.subscription.findMany({
-    where: { id: { in: candidateSourceIds }, deletedAt: null, status: { in: ["TRIAL", "ACTIVE"] }, currentPeriodEnd: { gt: now } },
+    where: { id: { in: candidateSourceIds }, deletedAt: null, OR: [{ status: { in: ["TRIAL", "ACTIVE"] }, currentPeriodEnd: { gt: now } }, { status: "PAST_DUE" }] },
     select: { id: true },
   }) : [];
   const activeSourceIds = new Set(stillActive.map((item) => item.id));

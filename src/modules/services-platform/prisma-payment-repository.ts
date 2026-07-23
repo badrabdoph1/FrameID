@@ -13,12 +13,22 @@ export function createPrismaServicesPaymentRepository(prisma: PrismaClient): Ser
     async createDraft(input) {
       return prisma.$transaction(async (tx) => {
         await tx.$queryRaw`SELECT id FROM "Acquisition" WHERE id = ${input.acquisitionId} FOR UPDATE`;
+        const acquisition = await tx.acquisition.findUniqueOrThrow({
+          where: { id: input.acquisitionId },
+          select: { tenantId: true, status: true, acceptedTotal: true, acceptedCurrency: true },
+        });
+        if (acquisition.tenantId !== input.tenantId || acquisition.status !== AcquisitionStatus.AWAITING_PAYMENT) {
+          throw new Error("Acquisition is no longer payable by this tenant.");
+        }
+        if (acquisition.acceptedTotal !== input.amount || acquisition.acceptedCurrency !== input.currency) {
+          throw new Error("Payment draft no longer matches the immutable acquisition snapshot.");
+        }
         const existing = await tx.paymentRequest.findFirst({
           where: { acquisitionId: input.acquisitionId, status: { in: [PaymentStatus.DRAFT, PaymentStatus.SUBMITTED, PaymentStatus.UNDER_REVIEW] }, deletedAt: null },
           orderBy: { createdAt: "desc" },
           select: { id: true, status: true },
         });
-        if (existing?.status !== PaymentStatus.DRAFT) throw new Error("A payment request is already under review for this acquisition.");
+        if (existing && existing.status !== PaymentStatus.DRAFT) throw new Error("A payment request is already under review for this acquisition.");
         if (existing) return { id: existing.id, status: "DRAFT" as const };
         const created = await tx.paymentRequest.create({
           data: {
@@ -37,6 +47,7 @@ export function createPrismaServicesPaymentRepository(prisma: PrismaClient): Ser
     },
     async submit(input) {
       return prisma.$transaction(async (tx) => {
+        await tx.$queryRaw`SELECT id FROM "PaymentRequest" WHERE id = ${input.paymentRequestId} FOR UPDATE`;
         const payment = await tx.paymentRequest.findFirst({
           where: { id: input.paymentRequestId, tenantId: input.tenantId, acquisitionId: { not: null }, deletedAt: null },
         });
@@ -61,6 +72,7 @@ export function createPrismaServicesPaymentRepository(prisma: PrismaClient): Ser
     },
     async approve(input) {
       return prisma.$transaction(async (tx) => {
+        await tx.$queryRaw`SELECT id FROM "PaymentRequest" WHERE id = ${input.paymentRequestId} FOR UPDATE`;
         const payment = await tx.paymentRequest.findUniqueOrThrow({ where: { id: input.paymentRequestId } });
         if (!payment.acquisitionId) throw new Error("Payment request is not linked to a services acquisition.");
         if (payment.status === PaymentStatus.APPROVED) {
@@ -70,6 +82,7 @@ export function createPrismaServicesPaymentRepository(prisma: PrismaClient): Ser
         if (!approvableStatuses.includes(payment.status)) {
           throw new Error(`Payment cannot be approved from status ${payment.status}`);
         }
+        await tx.$queryRaw`SELECT id FROM "Acquisition" WHERE id = ${payment.acquisitionId} FOR UPDATE`;
         const acquisition = await tx.acquisition.findUniqueOrThrow({ where: { id: payment.acquisitionId } });
         if (acquisition.status !== AcquisitionStatus.AWAITING_PAYMENT) {
           throw new Error(`Acquisition cannot be paid from status ${acquisition.status}`);
@@ -105,6 +118,7 @@ export function createPrismaServicesPaymentRepository(prisma: PrismaClient): Ser
     },
     async reject(input) {
       return prisma.$transaction(async (tx) => {
+        await tx.$queryRaw`SELECT id FROM "PaymentRequest" WHERE id = ${input.paymentRequestId} FOR UPDATE`;
         const payment = await tx.paymentRequest.findUniqueOrThrow({ where: { id: input.paymentRequestId } });
         if (!payment.acquisitionId) throw new Error("Payment request is not linked to a services acquisition.");
         if (payment.status !== PaymentStatus.DRAFT && payment.status !== PaymentStatus.SUBMITTED && payment.status !== PaymentStatus.UNDER_REVIEW) {
@@ -124,8 +138,14 @@ export function createPrismaServicesPaymentRepository(prisma: PrismaClient): Ser
     },
     async refund(input) {
       return prisma.$transaction(async (tx) => {
+        await tx.$queryRaw`SELECT id FROM "PaymentRequest" WHERE id = ${input.paymentRequestId} FOR UPDATE`;
         const payment = await tx.paymentRequest.findUniqueOrThrow({ where: { id: input.paymentRequestId } });
         if (!payment.acquisitionId || payment.status !== PaymentStatus.APPROVED) throw new Error("Only approved services payments can be refunded.");
+        await tx.$queryRaw`SELECT id FROM "Acquisition" WHERE id = ${payment.acquisitionId} FOR UPDATE`;
+        const acquisition = await tx.acquisition.findUniqueOrThrow({ where: { id: payment.acquisitionId }, select: { status: true } });
+        if (acquisition.status !== AcquisitionStatus.PAID && acquisition.status !== AcquisitionStatus.FULFILLED) {
+          throw new Error(`Acquisition cannot be refunded safely from status ${acquisition.status}`);
+        }
         await tx.paymentRequest.update({ where: { id: payment.id }, data: { status: PaymentStatus.REFUNDED, reviewedByUserId: input.reviewerId, reviewedAt: input.refundedAt, adminNote: input.reason } });
         await tx.acquisition.update({ where: { id: payment.acquisitionId }, data: { status: AcquisitionStatus.REFUNDED } });
         await tx.paymentRequestLog.create({
