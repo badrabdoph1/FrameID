@@ -23,8 +23,10 @@ function validDraft(): ProductDraft {
       code: "pricing-site-core",
       name: "Core",
       publicationStatus: "DRAFT",
+      workflowTemplateKey: "payment_then_auto",
       prices: [{ id: "price_1", amount: 49000, currency: "EGP", billingInterval: "YEARLY", isActive: true }],
       capabilityKeys: ["pricing_site.access"],
+      bundleComponents: [],
     }],
   };
 }
@@ -34,9 +36,7 @@ function repository(draft: ProductDraft): CatalogRepository & { published: numbe
   return {
     published,
     async getProductDraft() { return draft; },
-    async getNextRevision() { return 3; },
-    async saveRevision(input) { return { id: "revision_3", revision: input.revision }; },
-    async publishProduct(input) { published.push(input.revision); },
+    async publishRevision() { published.push(3); return { id: "revision_3", revision: 3 }; },
     async pauseProduct() {},
     async retireProduct() {},
   };

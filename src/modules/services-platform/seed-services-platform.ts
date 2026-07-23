@@ -9,6 +9,7 @@ import {
   SalesMode,
   type PrismaClient,
 } from "@prisma/client";
+import { syncLegacyPricingEntitlements } from "./legacy-compatibility";
 
 const WORKFLOW_TEMPLATES = [
   {
@@ -248,4 +249,5 @@ export async function seedServicesPlatform(prisma: PrismaClient) {
       publishedAt: new Date("2026-07-22T00:00:00.000Z"),
     },
   });
+  await syncLegacyPricingEntitlements(prisma);
 }

@@ -41,6 +41,7 @@ export type FulfillmentAcquisition = {
   workflowVersion: number;
   status: AcquisitionLifecycleStatus;
   instanceKey: string | null;
+  additionalActivations: Array<{ productId: string; instanceKey: string }>;
   billingInterval: "ONE_TIME" | "MONTHLY" | "YEARLY";
   capabilities: Array<{ capabilityKey: string; capabilityId: string | null; value: unknown; quantity?: number | null }>;
 };
@@ -49,7 +50,7 @@ export interface FulfillmentRepository {
   getAcquisition(acquisitionId: string): Promise<FulfillmentAcquisition | null>;
   getRunAcquisitionId?(runId: string): Promise<{ acquisitionId: string; status: "PENDING" | "RUNNING" | "WAITING_CUSTOMER" | "WAITING_INTERNAL" | "READY" | "SUCCEEDED" | "FAILED" | "CANCELLED" } | null>;
   createRun(input: { acquisitionId: string; workflowKey: string; workflowVersion: number; idempotencyKey: string }): Promise<{ id: string; status: "PENDING" | "RUNNING" | "WAITING_CUSTOMER" | "WAITING_INTERNAL" | "READY" | "SUCCEEDED" | "FAILED" | "CANCELLED" }>;
-  markRunning(runId: string): Promise<void>;
+  markRunning(runId: string): Promise<boolean>;
   markSucceeded(runId: string, result: unknown, finishedAt: Date): Promise<void>;
   markWaiting(runId: string, status: "WAITING_CUSTOMER" | "WAITING_INTERNAL" | "READY", checkpoint: unknown): Promise<void>;
   markFailed(runId: string, error: string, finishedAt: Date): Promise<void>;
@@ -67,7 +68,14 @@ export function createFulfillmentService(input: {
   const now = input.now ?? (() => new Date());
 
   async function finalize(acquisition: FulfillmentAcquisition, runId: string, result: unknown, idempotencyKey: string) {
+    const capabilityGrants = new Map<string, FulfillmentAcquisition["capabilities"][number]>();
     for (const capability of acquisition.capabilities) {
+      const existing = capabilityGrants.get(capability.capabilityKey);
+      capabilityGrants.set(capability.capabilityKey, existing
+        ? { ...capability, quantity: (existing.quantity ?? 0) + (capability.quantity ?? 0) || null }
+        : capability);
+    }
+    for (const capability of capabilityGrants.values()) {
       await input.grantEntitlement({
         tenantId: acquisition.tenantId,
         productId: acquisition.productId,
@@ -90,6 +98,17 @@ export function createFulfillmentService(input: {
           idempotencyKey: `${idempotencyKey}:activation`,
         })
       : null;
+    const additionalInstances = [];
+    for (const activation of acquisition.additionalActivations) {
+      additionalInstances.push(await input.activateProduct({
+        tenantId: acquisition.tenantId,
+        productId: activation.productId,
+        acquisitionId: acquisition.id,
+        instanceKey: activation.instanceKey,
+        configuration: result,
+        idempotencyKey: `${idempotencyKey}:activation:${activation.productId}`,
+      }));
+    }
     const subscription = acquisition.billingInterval === "MONTHLY" || acquisition.billingInterval === "YEARLY"
       ? await input.createSubscription({
           tenantId: acquisition.tenantId,
@@ -101,7 +120,35 @@ export function createFulfillmentService(input: {
       : null;
     await input.repository.markSucceeded(runId, result, now());
     await input.repository.transitionAcquisition(acquisition.id, "FULFILLED");
-    return { status: "SUCCEEDED" as const, runId, productInstanceId: productInstance?.id ?? null, subscriptionId: subscription?.id ?? null };
+    return {
+      status: "SUCCEEDED" as const,
+      runId,
+      productInstanceId: productInstance?.id ?? additionalInstances[0]?.id ?? null,
+      productInstanceIds: [productInstance?.id, ...additionalInstances.map((item) => item.id)].filter((id): id is string => Boolean(id)),
+      subscriptionId: subscription?.id ?? null,
+    };
+  }
+
+  async function execute(acquisition: FulfillmentAcquisition, runId: string, idempotencyKey: string) {
+    const claimed = await input.repository.markRunning(runId);
+    if (!claimed) return { status: "RUNNING" as const, runId };
+    try {
+      const result = await input.workflows.get(acquisition.workflowKey).execute({
+        acquisitionId: acquisition.id,
+        tenantId: acquisition.tenantId,
+        offeringId: acquisition.offeringId,
+        productId: acquisition.productId,
+        runId,
+      });
+      if (result.status !== "COMPLETED") {
+        await input.repository.markWaiting(runId, result.status, result.checkpoint ?? null);
+        return { status: result.status, runId };
+      }
+      return finalize(acquisition, runId, result.result ?? null, idempotencyKey);
+    } catch (error) {
+      await input.repository.markFailed(runId, error instanceof Error ? error.message : "Unknown fulfillment error", now());
+      throw error;
+    }
   }
 
   return {
@@ -120,32 +167,23 @@ export function createFulfillmentService(input: {
       if (run.status === "SUCCEEDED") return { status: "SUCCEEDED" as const, runId: run.id };
 
       await input.repository.transitionAcquisition(acquisition.id, "FULFILLING");
-      await input.repository.markRunning(run.id);
-      try {
-        const result = await input.workflows.get(acquisition.workflowKey).execute({
-          acquisitionId: acquisition.id,
-          tenantId: acquisition.tenantId,
-          offeringId: acquisition.offeringId,
-          productId: acquisition.productId,
-          runId: run.id,
-        });
-        if (result.status !== "COMPLETED") {
-          await input.repository.markWaiting(run.id, result.status, result.checkpoint ?? null);
-          return { status: result.status, runId: run.id };
-        }
-
-        return finalize(acquisition, run.id, result.result ?? null, command.idempotencyKey);
-      } catch (error) {
-        await input.repository.markFailed(run.id, error instanceof Error ? error.message : "Unknown fulfillment error", now());
-        throw error;
-      }
+      return execute(acquisition, run.id, command.idempotencyKey);
+    },
+    async retry(command: { runId: string; idempotencyKey: string }) {
+      if (!input.repository.getRunAcquisitionId) throw new Error("Fulfillment retry is not supported by this repository.");
+      const run = await input.repository.getRunAcquisitionId(command.runId);
+      if (!run) throw new Error(`Fulfillment run not found: ${command.runId}`);
+      if (run.status !== "FAILED") throw new Error(`Only failed fulfillment runs can be retried, received ${run.status}.`);
+      const acquisition = await input.repository.getAcquisition(run.acquisitionId);
+      if (!acquisition || acquisition.status !== "FULFILLING") throw new Error("Fulfillment acquisition is not active.");
+      return execute(acquisition, command.runId, command.idempotencyKey);
     },
     async completeManual(command: { runId: string; result: unknown; idempotencyKey: string }) {
       if (!input.repository.getRunAcquisitionId) throw new Error("Manual completion is not supported by this repository.");
       const run = await input.repository.getRunAcquisitionId(command.runId);
       if (!run) throw new Error(`Fulfillment run not found: ${command.runId}`);
       if (run.status === "SUCCEEDED") return { status: "SUCCEEDED" as const, runId: command.runId, productInstanceId: null };
-      if (!["WAITING_CUSTOMER", "WAITING_INTERNAL", "READY", "RUNNING", "FAILED"].includes(run.status)) {
+      if (!["WAITING_CUSTOMER", "WAITING_INTERNAL", "READY", "RUNNING"].includes(run.status)) {
         throw new Error(`Fulfillment run cannot be completed from ${run.status}`);
       }
       const acquisition = await input.repository.getAcquisition(run.acquisitionId);

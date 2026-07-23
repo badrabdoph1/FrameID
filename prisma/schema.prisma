@@ -937,7 +937,7 @@ model PaymentRequest {
   adminNote        String?
   rejectionReason  String?
   proofAssetId     String?
-  reviewedByUserId String?       @map("reviewedById")
+  reviewedByUserId  String?       @map("reviewedById")
   reviewedAt       DateTime?
   createdAt        DateTime      @default(now())
   updatedAt        DateTime      @default(now())
@@ -2343,15 +2343,17 @@ model UsageLedger {
   tenantId       String
   entitlementId  String?
   capabilityKey  String
+  periodKey      String       @default("lifetime")
   delta          Int
-  idempotencyKey String       @unique
+  idempotencyKey String
   metadata       Json?
   occurredAt     DateTime     @default(now())
   createdAt      DateTime     @default(now())
   tenant         Tenant       @relation(fields: [tenantId], references: [id], onDelete: Restrict)
   entitlement    Entitlement? @relation(fields: [entitlementId], references: [id], onDelete: SetNull)
 
-  @@index([tenantId, capabilityKey, createdAt])
+  @@unique([tenantId, idempotencyKey])
+  @@index([tenantId, capabilityKey, periodKey, createdAt])
   @@index([entitlementId, createdAt])
 }
 

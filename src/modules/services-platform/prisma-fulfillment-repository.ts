@@ -17,6 +17,17 @@ export function createPrismaFulfillmentRepository(prisma: PrismaClient): Fulfill
               product: { select: { id: true, code: true } },
               workflowTemplate: { select: { key: true, version: true } },
               capabilities: { include: { capability: { select: { id: true, key: true } } } },
+              bundleComponents: {
+                orderBy: { sortOrder: "asc" },
+                include: {
+                  componentOffering: {
+                    include: {
+                      product: { select: { id: true, code: true } },
+                      capabilities: { include: { capability: { select: { id: true, key: true } } } },
+                    },
+                  },
+                },
+              },
             },
           },
         },
@@ -38,12 +49,20 @@ export function createPrismaFulfillmentRepository(prisma: PrismaClient): Fulfill
         instanceKey: acquisition.offering.product
           ? typeof metadata.instanceKey === "string" ? metadata.instanceKey : `${acquisition.offering.product.code}:${acquisition.id}`
           : null,
+        additionalActivations: acquisition.offering.bundleComponents.flatMap((component) => {
+          const product = component.componentOffering.product;
+          return product ? [{ productId: product.id, instanceKey: `${product.code}:${acquisition.id}:${component.componentOffering.id}` }] : [];
+        }),
         billingInterval: acquisition.lines[0]?.billingInterval ?? "ONE_TIME",
-        capabilities: acquisition.offering.capabilities.map((item) => ({
-          capabilityKey: item.capability.key,
-          capabilityId: item.capability.id,
-          value: item.value,
-        })),
+        capabilities: [
+          ...acquisition.offering.capabilities.map((item) => ({ capabilityKey: item.capability.key, capabilityId: item.capability.id, value: item.value })),
+          ...acquisition.offering.bundleComponents.flatMap((component) => component.componentOffering.capabilities.map((item) => ({
+            capabilityKey: item.capability.key,
+            capabilityId: item.capability.id,
+            value: item.value,
+            quantity: component.quantity,
+          }))),
+        ],
       };
     },
     createRun(input) {
@@ -60,10 +79,11 @@ export function createPrismaFulfillmentRepository(prisma: PrismaClient): Fulfill
       });
     },
     async markRunning(runId) {
-      await prisma.fulfillmentRun.update({
-        where: { id: runId },
+      const updated = await prisma.fulfillmentRun.updateMany({
+        where: { id: runId, status: { in: [FulfillmentStatus.PENDING, FulfillmentStatus.FAILED] } },
         data: { status: FulfillmentStatus.RUNNING, startedAt: new Date(), attempts: { increment: 1 } },
       });
+      return updated.count === 1;
     },
     async markSucceeded(runId, result, finishedAt) {
       await prisma.fulfillmentRun.update({
@@ -95,9 +115,17 @@ export function createPrismaFulfillmentRepository(prisma: PrismaClient): Fulfill
       });
     },
     async transitionAcquisition(acquisitionId, status) {
-      await prisma.acquisition.update({
-        where: { id: acquisitionId },
-        data: { status: status as AcquisitionStatus, ...(status === "FULFILLED" ? { fulfilledAt: new Date() } : {}) },
+      await prisma.$transaction(async (tx) => {
+        const acquisition = await tx.acquisition.update({
+          where: { id: acquisitionId },
+          data: { status: status as AcquisitionStatus, ...(status === "FULFILLED" ? { fulfilledAt: new Date() } : {}) },
+          select: { correlationId: true, tenantId: true },
+        });
+        await tx.servicesOutboxEvent.upsert({
+          where: { deduplicationKey: `fulfillment:${acquisitionId}:acquisition:${status}` },
+          update: {},
+          create: { aggregateType: "Acquisition", aggregateId: acquisitionId, eventName: `services.acquisition.${status.toLowerCase()}`, payload: { acquisitionId, tenantId: acquisition.tenantId, status }, deduplicationKey: `fulfillment:${acquisitionId}:acquisition:${status}`, correlationId: acquisition.correlationId },
+        });
       });
     },
   };

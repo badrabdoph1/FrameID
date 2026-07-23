@@ -1,6 +1,8 @@
 import { AcquisitionStatus, PriceBillingInterval, Prisma, type PrismaClient } from "@prisma/client";
 
 import type { AcquisitionRepository, AcquisitionRecord } from "./acquisition-service";
+import { evaluateOfferingEligibility, type EligibilityPolicy } from "./eligibility";
+import { buildPrismaEligibilityContext } from "./prisma-eligibility-context";
 
 function asRecord(acquisition: {
   id: string;
@@ -32,19 +34,46 @@ export function createPrismaAcquisitionRepository(prisma: PrismaClient): Acquisi
       });
       if (existing) return asRecord(existing);
 
+      const context = await buildPrismaEligibilityContext(prisma, input.tenantId);
+      const marketCode = context.country ?? "EG";
+      const now = new Date();
       const offering = await prisma.catalogOffering.findFirst({
         where: { id: input.offeringId, publicationStatus: "PUBLISHED", deletedAt: null },
         include: {
-          product: { select: { code: true } },
+          product: { select: { code: true, accessTier: true, eligibilityPolicy: true, releaseStage: true, publicationStatus: true } },
+          bundleComponents: {
+            orderBy: { sortOrder: "asc" },
+            include: { componentOffering: { include: { product: { select: { code: true, publicationStatus: true, releaseStage: true } }, capabilities: { include: { capability: { select: { key: true } } } } } } },
+          },
           prices: {
-            where: { isActive: true, effectiveFrom: { lte: new Date() }, OR: [{ effectiveTo: null }, { effectiveTo: { gt: new Date() } }] },
+            where: { isActive: true, currency: "EGP", marketCode: { in: [marketCode, "GLOBAL"] }, effectiveFrom: { lte: now }, OR: [{ effectiveTo: null }, { effectiveTo: { gt: now } }] },
             orderBy: [{ version: "desc" }, { effectiveFrom: "desc" }],
-            take: 1,
+            take: 10,
           },
         },
       });
       if (!offering) throw new Error(`Published offering not found: ${input.offeringId}`);
-      const price = offering.prices[0] ?? null;
+      if (
+        Boolean(offering.product?.publicationStatus && offering.product.publicationStatus !== "PUBLISHED")
+        || ["ANNOUNCED", "DEPRECATED"].includes(offering.releaseStage)
+        || Boolean(offering.product && ["ANNOUNCED", "DEPRECATED"].includes(offering.product.releaseStage))
+      ) {
+        throw new Error("Offering is not currently acquirable.");
+      }
+      const unavailableBundleComponent = offering.bundleComponents.find(({ componentOffering }) =>
+        componentOffering.publicationStatus !== "PUBLISHED"
+        || ["ANNOUNCED", "DEPRECATED"].includes(componentOffering.releaseStage)
+        || Boolean(componentOffering.product && componentOffering.product.publicationStatus !== "PUBLISHED")
+        || Boolean(componentOffering.product && ["ANNOUNCED", "DEPRECATED"].includes(componentOffering.product.releaseStage))
+      );
+      if (unavailableBundleComponent) throw new Error(`Bundle component is not currently available: ${unavailableBundleComponent.componentOffering.code}`);
+      const productEligibility = evaluateOfferingEligibility(context, offering.product?.eligibilityPolicy as EligibilityPolicy | null);
+      const offeringEligibility = evaluateOfferingEligibility(context, offering.eligibilityPolicy as EligibilityPolicy | null);
+      const tierAllowed = [offering.product?.accessTier, offering.accessTier].filter(Boolean).every((tier) => tier === "STANDARD" || context.accessTiers?.includes(tier!));
+      if (!productEligibility.visible || !productEligibility.eligible || !offeringEligibility.visible || !offeringEligibility.eligible || !tierAllowed) {
+        throw new Error("Offering is not eligible for this tenant.");
+      }
+      const price = offering.prices.sort((left, right) => Number(right.marketCode === marketCode) - Number(left.marketCode === marketCode) || right.version - left.version)[0] ?? null;
       if (!price && offering.type !== "CUSTOM_QUOTE") throw new Error(`Offering has no active price: ${offering.code}`);
       const correlationId = `services:${crypto.randomUUID()}`;
       const snapshot = {
@@ -64,11 +93,51 @@ export function createPrismaAcquisitionRepository(prisma: PrismaClient): Acquisi
           billingInterval: price.billingInterval,
           marketCode: price.marketCode,
         } : null,
+        bundleComponents: offering.bundleComponents.map((component) => ({
+          offeringId: component.componentOffering.id,
+          offeringCode: component.componentOffering.code,
+          offeringName: component.componentOffering.name,
+          productCode: component.componentOffering.product?.code ?? null,
+          quantity: component.quantity,
+          required: component.required,
+          capabilityKeys: component.componentOffering.capabilities.map((item) => item.capability.key),
+        })),
       };
+      const lines = [
+        {
+          offeringId: offering.id,
+          priceId: price?.id,
+          snapshotCode: offering.code,
+          snapshotName: offering.name,
+          unitAmount: price?.amount ?? 0,
+          quantity: 1,
+          currency: price?.currency ?? "EGP",
+          billingInterval: price?.billingInterval ?? PriceBillingInterval.ONE_TIME,
+          snapshot: snapshot as Prisma.InputJsonValue,
+        },
+        ...offering.bundleComponents.map((component) => ({
+          offeringId: component.componentOffering.id,
+          priceId: null,
+          snapshotCode: component.componentOffering.code,
+          snapshotName: component.componentOffering.name,
+          unitAmount: 0,
+          quantity: component.quantity,
+          currency: price?.currency ?? "EGP",
+          billingInterval: price?.billingInterval ?? PriceBillingInterval.ONE_TIME,
+          snapshot: {
+            bundledByOfferingId: offering.id,
+            required: component.required,
+            productCode: component.componentOffering.product?.code ?? null,
+            capabilityKeys: component.componentOffering.capabilities.map((item) => item.capability.key),
+          } as Prisma.InputJsonValue,
+        })),
+      ];
 
       const created = await prisma.$transaction(async (tx) => {
-        const acquisition = await tx.acquisition.create({
-          data: {
+        const acquisition = await tx.acquisition.upsert({
+          where: { tenantId_idempotencyKey: { tenantId: input.tenantId, idempotencyKey: input.idempotencyKey } },
+          update: {},
+          create: {
             tenantId: input.tenantId,
             offeringId: offering.id,
             idempotencyKey: input.idempotencyKey,
@@ -80,24 +149,14 @@ export function createPrismaAcquisitionRepository(prisma: PrismaClient): Acquisi
               customerMessage: input.customerMessage ?? null,
               catalogSnapshot: snapshot,
             } as Prisma.InputJsonValue,
-            lines: {
-              create: {
-                offeringId: offering.id,
-                priceId: price?.id,
-                snapshotCode: offering.code,
-                snapshotName: offering.name,
-                unitAmount: price?.amount ?? 0,
-                quantity: 1,
-                currency: price?.currency ?? "EGP",
-                billingInterval: price?.billingInterval ?? PriceBillingInterval.ONE_TIME,
-                snapshot: snapshot as Prisma.InputJsonValue,
-              },
-            },
+            lines: { create: lines },
           },
           include: { offering: { select: { name: true } } },
         });
-        await tx.servicesOutboxEvent.create({
-          data: {
+        await tx.servicesOutboxEvent.upsert({
+          where: { deduplicationKey: `acquisition:${acquisition.id}:created` },
+          update: {},
+          create: {
             aggregateType: "Acquisition",
             aggregateId: acquisition.id,
             eventName: "services.acquisition.created",
@@ -129,7 +188,7 @@ export function createPrismaAcquisitionRepository(prisma: PrismaClient): Acquisi
             aggregateType: "Acquisition",
             aggregateId: input.acquisitionId,
             eventName: "services.acquisition.requested",
-            payload: { acquisitionId: input.acquisitionId, conversationId: input.conversationId },
+            payload: { acquisitionId: input.acquisitionId, conversationId: input.conversationId, tenantId: acquisition.tenantId },
             deduplicationKey: `acquisition:${input.acquisitionId}:requested`,
             correlationId: acquisition.correlationId,
           },
@@ -148,6 +207,7 @@ export function createPrismaAcquisitionRepository(prisma: PrismaClient): Acquisi
         : input.toStatus === "DECLINED" ? { declineReasonCode: input.reason }
         : {};
       await prisma.$transaction(async (tx) => {
+        const acquisition = await tx.acquisition.findUniqueOrThrow({ where: { id: input.acquisitionId }, select: { tenantId: true, correlationId: true } });
         const updated = await tx.acquisition.updateMany({
           where: { id: input.acquisitionId, status: input.fromStatus as AcquisitionStatus },
           data: { status: input.toStatus as AcquisitionStatus, ...timestamps },
@@ -158,8 +218,9 @@ export function createPrismaAcquisitionRepository(prisma: PrismaClient): Acquisi
             aggregateType: "Acquisition",
             aggregateId: input.acquisitionId,
             eventName: `services.acquisition.${input.toStatus.toLowerCase()}`,
-            payload: { acquisitionId: input.acquisitionId, fromStatus: input.fromStatus, toStatus: input.toStatus, reason: input.reason ?? null },
+            payload: { acquisitionId: input.acquisitionId, tenantId: acquisition.tenantId, fromStatus: input.fromStatus, toStatus: input.toStatus, reason: input.reason ?? null },
             deduplicationKey: `acquisition:${input.acquisitionId}:${input.toStatus}:${input.occurredAt.toISOString()}`,
+            correlationId: acquisition.correlationId,
           },
         });
       });

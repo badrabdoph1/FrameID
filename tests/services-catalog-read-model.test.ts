@@ -78,4 +78,26 @@ describe("customer catalog read model", () => {
 
     expect(result.products).toEqual([]);
   });
+
+  it("keeps premium offers discoverable but not purchasable without the required access tier", () => {
+    const result = buildCatalogReadModel({
+      context: { tenantId: "tenant", accessTiers: ["STANDARD"] },
+      marketCode: "EG",
+      currency: "EGP",
+      now: new Date("2026-07-22T12:00:00.000Z"),
+      products: [{
+        id: "premium", code: "premium", name: "Premium", shortDescription: "Premium", description: null,
+        category: "premium", tags: [], media: [], releaseStage: "GA", accessTier: "PREMIUM", eligibilityPolicy: null,
+        sortOrder: 0, isFeatured: true,
+        offerings: [{
+          id: "premium-offer", code: "premium-offer", name: "Premium", shortDescription: "Premium", description: null,
+          type: "PLAN", salesMode: "SELF_SERVE", releaseStage: "GA", accessTier: "PREMIUM", eligibilityPolicy: null,
+          sortOrder: 0, prices: [], capabilityKeys: ["premium.access"],
+        }],
+      }],
+    });
+
+    expect(result.products[0]).toMatchObject({ eligible: false });
+    expect(result.products[0].offerings[0]).toMatchObject({ eligible: false, purchasable: false, ctaMode: "REQUEST_ACCESS", reasonCodes: ["ACCESS_TIER_REQUIRED"] });
+  });
 });

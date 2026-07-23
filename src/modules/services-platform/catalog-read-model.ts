@@ -70,6 +70,10 @@ function ctaFor(offering: CatalogReadOffering, eligible: boolean) {
   return "CONTACT" as const;
 }
 
+function hasAccessTier(context: EligibilityContext, accessTier: string) {
+  return accessTier === "STANDARD" || Boolean(context.accessTiers?.includes(accessTier));
+}
+
 export function buildCatalogReadModel(input: {
   products: CatalogReadProduct[];
   context: EligibilityContext;
@@ -82,6 +86,7 @@ export function buildCatalogReadModel(input: {
     .flatMap((product) => {
       const productEligibility = evaluateOfferingEligibility(input.context, product.eligibilityPolicy);
       if (!productEligibility.visible) return [];
+      const productTierAllowed = hasAccessTier(input.context, product.accessTier);
 
       const offerings = product.offerings
         .sort((left, right) => left.sortOrder - right.sortOrder)
@@ -89,7 +94,8 @@ export function buildCatalogReadModel(input: {
           const eligibility = evaluateOfferingEligibility(input.context, offering.eligibilityPolicy);
           if (!eligibility.visible) return [];
           const price = currentPrice(offering.prices, input.marketCode, input.currency, input.now);
-          const eligible = productEligibility.eligible && eligibility.eligible;
+          const offeringTierAllowed = hasAccessTier(input.context, offering.accessTier);
+          const eligible = productEligibility.eligible && eligibility.eligible && productTierAllowed && offeringTierAllowed;
           return [{
             id: offering.id,
             code: offering.code,
@@ -103,7 +109,11 @@ export function buildCatalogReadModel(input: {
             eligible,
             purchasable: eligible && offering.releaseStage !== "ANNOUNCED",
             recommended: productEligibility.recommended || eligibility.recommended,
-            reasonCodes: [...new Set([...productEligibility.reasonCodes, ...eligibility.reasonCodes])],
+            reasonCodes: [...new Set([
+              ...productEligibility.reasonCodes,
+              ...eligibility.reasonCodes,
+              ...(!productTierAllowed || !offeringTierAllowed ? ["ACCESS_TIER_REQUIRED"] : []),
+            ])],
             ctaMode: ctaFor(offering, eligible),
             displayPrice: price ? {
               amount: price.amount,
@@ -128,7 +138,7 @@ export function buildCatalogReadModel(input: {
         beta: product.releaseStage === "BETA",
         comingSoon: product.releaseStage === "ANNOUNCED",
         deprecated: product.releaseStage === "DEPRECATED",
-        eligible: productEligibility.eligible,
+        eligible: productEligibility.eligible && productTierAllowed,
         offerings,
       }];
     });

@@ -18,6 +18,7 @@ describe("Services Platform Prisma contract", () => {
     expect(schema).toContain("@@unique([tenantId, idempotencyKey])");
     expect(schema).toContain("@@index([tenantId, status, createdAt])");
     expect(schema).toContain("@@index([status, availableAt, leaseExpiresAt])");
-    expect(schema).toContain("@@index([tenantId, capabilityKey, createdAt])");
+    expect(schema).toContain("@@unique([tenantId, idempotencyKey])");
+    expect(schema).toContain("@@index([tenantId, capabilityKey, periodKey, createdAt])");
   });
 });

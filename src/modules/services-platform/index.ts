@@ -18,3 +18,5 @@ export { createServicesOutboxWorker } from "./outbox-worker";
 export { runServicesOutboxBatch } from "./outbox-runtime";
 export { runServicesReconciliation } from "./reconciliation";
 export type { RecommendationProvider, ProductAnalyticsSink, ProductProvisioningAdapter, ServicesDomainEventPublisher } from "./extensions";
+export { syncLegacyPricingEntitlements } from "./legacy-compatibility";
+export { buildPrismaEligibilityContext } from "./prisma-eligibility-context";

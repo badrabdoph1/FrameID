@@ -63,12 +63,8 @@ export async function approvePaymentAction(formData: FormData): Promise<PaymentA
         reviewerId: session.user.id,
         idempotencyKey: `services-payment-approve:${paymentRequestId}`,
       });
-      await runtime.fulfillment.start({
-        acquisitionId: approved.acquisitionId,
-        idempotencyKey: `payment-fulfillment:${approved.acquisitionId}`,
-      });
       revalidatePaymentWorkspace();
-      return { ok: true, message: "تم قبول دفع الخدمة وبدء مسار التنفيذ." };
+      return { ok: true, message: `تم قبول دفع الخدمة وإدراج التنفيذ الآمن للطلب ${approved.acquisitionId.slice(-6)}.` };
     }
     const duration = parseDuration(formData);
     await getService().approvePayment({

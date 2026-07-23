@@ -1,6 +1,8 @@
 import type { PrismaClient } from "@prisma/client";
+import { syncLegacyPricingEntitlements } from "./legacy-compatibility";
 
 export async function runServicesReconciliation(prisma: PrismaClient, now = new Date()) {
+  const legacyCompatibility = await syncLegacyPricingEntitlements(prisma, { now });
   const expiredLeases = await prisma.servicesOutboxEvent.updateMany({
     where: { status: "PROCESSING", leaseExpiresAt: { lt: now } },
     data: { status: "PENDING", leaseOwner: null, leaseExpiresAt: null, availableAt: now },
@@ -13,12 +15,51 @@ export async function runServicesReconciliation(prisma: PrismaClient, now = new 
   let pastDueSubscriptions = 0;
   for (const subscription of subscriptions) {
     const expire = subscription.status === "GRACE_PERIOD" || subscription.cancelAtPeriodEnd;
-    await prisma.serviceSubscription.update({
-      where: { id: subscription.id },
-      data: expire ? { status: "EXPIRED", cancelledAt: subscription.cancelAtPeriodEnd ? now : undefined } : { status: "PAST_DUE" },
+    await prisma.$transaction(async (tx) => {
+      const source = await tx.serviceSubscription.findUniqueOrThrow({ where: { id: subscription.id }, select: { tenantId: true, acquisitionId: true } });
+      const targetStatus = expire ? "EXPIRED" : "PAST_DUE";
+      await tx.serviceSubscription.update({
+        where: { id: subscription.id },
+        data: expire ? { status: targetStatus, cancelledAt: subscription.cancelAtPeriodEnd ? now : undefined } : { status: targetStatus },
+      });
+      if (expire && source.acquisitionId) {
+        await tx.entitlement.updateMany({
+          where: { tenantId: source.tenantId, sourceType: "ACQUISITION", sourceId: source.acquisitionId, status: { in: ["ACTIVE", "SUSPENDED"] } },
+          data: { status: "REVOKED", revokedAt: now, revocationReason: "SUBSCRIPTION_EXPIRED" },
+        });
+        await tx.productInstance.updateMany({
+          where: { tenantId: source.tenantId, acquisitionId: source.acquisitionId, status: { in: ["PROVISIONING", "ACTIVE"] } },
+          data: { status: "EXPIRED", expiresAt: now },
+        });
+      }
+      const deduplicationKey = `reconcile:subscription:${subscription.id}:${targetStatus}:${subscription.currentPeriodEnd.toISOString()}`;
+      await tx.servicesOutboxEvent.upsert({
+        where: { deduplicationKey },
+        update: {},
+        create: { aggregateType: "ServiceSubscription", aggregateId: subscription.id, eventName: `services.subscription.${targetStatus.toLowerCase()}`, payload: { subscriptionId: subscription.id, tenantId: source.tenantId, acquisitionId: source.acquisitionId, toStatus: targetStatus }, deduplicationKey },
+      });
     });
     if (expire) expiredSubscriptions += 1;
     else pastDueSubscriptions += 1;
+  }
+  const expiredTrials = await prisma.trialGrant.findMany({
+    where: { status: "ACTIVE", OR: [{ graceEndsAt: { lte: now } }, { graceEndsAt: null, endsAt: { lte: now } }] },
+    select: { id: true },
+    take: 500,
+  });
+  for (const trial of expiredTrials) {
+    await prisma.$transaction(async (tx) => {
+      const updated = await tx.trialGrant.update({ where: { id: trial.id }, data: { status: "EXPIRED" }, select: { tenantId: true } });
+      await tx.entitlement.updateMany({
+        where: { sourceType: "TRIAL_GRANT", sourceId: trial.id, status: { in: ["ACTIVE", "SUSPENDED"] } },
+        data: { status: "EXPIRED", revokedAt: now, revocationReason: "TRIAL_EXPIRED" },
+      });
+      await tx.servicesOutboxEvent.upsert({
+        where: { deduplicationKey: `reconcile:trial:${trial.id}:expired` },
+        update: {},
+        create: { aggregateType: "TrialGrant", aggregateId: trial.id, eventName: "services.trial.expired", payload: { trialGrantId: trial.id, tenantId: updated.tenantId }, deduplicationKey: `reconcile:trial:${trial.id}:expired` },
+      });
+    });
   }
   const missingRuns = await prisma.acquisition.findMany({
     where: { status: { in: ["PAID", "ACCEPTED"] }, fulfillmentRuns: { none: {} } },
@@ -42,7 +83,7 @@ export async function runServicesReconciliation(prisma: PrismaClient, now = new 
   return {
     status: degraded ? "DEGRADED" as const : "HEALTHY" as const,
     checkedAt: now.toISOString(),
-    repaired: { expiredLeases: expiredLeases.count, expiredSubscriptions, pastDueSubscriptions, fulfillmentRequests: missingRuns.length },
+    repaired: { expiredLeases: expiredLeases.count, expiredSubscriptions, pastDueSubscriptions, expiredTrials: expiredTrials.length, fulfillmentRequests: missingRuns.length, legacyCompatibility },
     metrics: { activeEntitlements },
     anomalies: { stuckOutbox, deadLetters, staleProvisioningInstances },
   };

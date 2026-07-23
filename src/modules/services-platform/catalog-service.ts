@@ -17,8 +17,16 @@ export type ProductDraftOffering = {
   name: string;
   type?: "PLAN" | "ADD_ON" | "ONE_TIME_SERVICE" | "MANAGED_SERVICE" | "BUNDLE" | "CUSTOM_QUOTE";
   publicationStatus: CatalogPublicationStatus;
+  workflowTemplateKey: string | null;
   prices: ProductDraftPrice[];
   capabilityKeys: string[];
+  bundleComponents: Array<{
+    offeringId: string;
+    offeringCode: string;
+    publicationStatus: CatalogPublicationStatus;
+    productId: string | null;
+    productPublicationStatus: CatalogPublicationStatus | null;
+  }>;
 };
 
 export type ProductDraft = {
@@ -45,9 +53,7 @@ export type CatalogRevisionInput = {
 
 export interface CatalogRepository {
   getProductDraft(productId: string): Promise<ProductDraft | null>;
-  getNextRevision(productId: string): Promise<number>;
-  saveRevision(input: CatalogRevisionInput): Promise<{ id: string; revision: number }>;
-  publishProduct(input: { productId: string; revision: number; publishedAt: Date }): Promise<void>;
+  publishRevision(input: Omit<CatalogRevisionInput, "revision">): Promise<{ id: string; revision: number }>;
   pauseProduct(productId: string): Promise<void>;
   retireProduct(productId: string): Promise<void>;
 }
@@ -71,9 +77,20 @@ function validateDraft(draft: ProductDraft, registry: ProductRegistry): string[]
 
   const adapter = registry.has(draft.registryKey) ? registry.get(draft.registryKey) : null;
   for (const offering of draft.offerings) {
+    if (!offering.workflowTemplateKey) errors.push(`Offering ${offering.code} requires a workflow template`);
     const priceOptional = offering.type === "CUSTOM_QUOTE";
     if (!priceOptional && !offering.prices.some((price) => price.isActive && price.amount >= 0)) {
       errors.push(`Offering ${offering.code} requires an active price`);
+    }
+    if (offering.type === "BUNDLE") {
+      if (!offering.bundleComponents.length) errors.push(`Bundle ${offering.code} requires at least one component`);
+      for (const component of offering.bundleComponents) {
+        const publishedWithCurrentProduct = component.productId === draft.id && !["PAUSED", "RETIRED"].includes(component.publicationStatus);
+        const externallyPublished = component.productId !== draft.id
+          && component.publicationStatus === "PUBLISHED"
+          && (!component.productPublicationStatus || component.productPublicationStatus === "PUBLISHED");
+        if (!publishedWithCurrentProduct && !externallyPublished) errors.push(`Bundle component is not publishable: ${component.offeringCode}`);
+      }
     }
     if (adapter) {
       for (const capabilityKey of offering.capabilityKeys) {
@@ -107,18 +124,15 @@ export function createCatalogService(
       const validationErrors = validateDraft(snapshot, registry);
       if (validationErrors.length) throw new CatalogValidationError(validationErrors);
 
-      const revision = await repository.getNextRevision(input.productId);
       const publishedAt = now();
-      const saved = await repository.saveRevision({
+      const saved = await repository.publishRevision({
         productId: input.productId,
-        revision,
         snapshot: structuredClone(snapshot),
         actorId: input.actorId,
         actorName: input.actorName,
         changeNote: input.changeNote,
         publishedAt,
       });
-      await repository.publishProduct({ productId: input.productId, revision, publishedAt });
       return { revisionId: saved.id, revision: saved.revision };
     },
     pause(productId: string) { return repository.pauseProduct(productId); },

@@ -368,7 +368,7 @@ export async function startAcquisitionFulfillmentAction(formData: FormData) {
   const admin = await requireAdminPermission("services", "edit");
   const acquisitionId = value(formData, "acquisitionId", 200);
   try {
-    await createServicesPlatformRuntime(prisma).fulfillment.start({ acquisitionId, idempotencyKey: `admin-fulfillment:${acquisitionId}` });
+    await createServicesPlatformRuntime(prisma).fulfillment.start({ acquisitionId, idempotencyKey: `fulfillment:${acquisitionId}` });
     await audit(admin.id, "FULFILLMENT_STARTED", "Acquisition", acquisitionId);
     revalidatePath("/admin/services/fulfillment");
     revalidatePath("/admin/services/acquisitions");
@@ -393,6 +393,21 @@ export async function completeManualFulfillmentAction(formData: FormData) {
     revalidatePath("/admin/services/acquisitions");
     revalidatePath("/dashboard/service-center");
     redirect("/admin/services/fulfillment?completed=1");
+  } catch (error) {
+    if (error instanceof Error && error.message.includes("NEXT_REDIRECT")) throw error;
+    fail("/admin/services/fulfillment", error);
+  }
+}
+
+export async function retryFailedFulfillmentAction(formData: FormData) {
+  const admin = await requireAdminPermission("services", "edit");
+  const runId = value(formData, "runId", 200);
+  try {
+    await createServicesPlatformRuntime(prisma).fulfillment.retry({ runId, idempotencyKey: `fulfillment-retry:${runId}:${randomUUID()}` });
+    await audit(admin.id, "FULFILLMENT_RETRIED", "FulfillmentRun", runId);
+    revalidatePath("/admin/services/fulfillment");
+    revalidatePath("/admin/services/acquisitions");
+    redirect("/admin/services/fulfillment?retried=1");
   } catch (error) {
     if (error instanceof Error && error.message.includes("NEXT_REDIRECT")) throw error;
     fail("/admin/services/fulfillment", error);

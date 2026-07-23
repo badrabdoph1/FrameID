@@ -1,9 +1,27 @@
 import { TrialGrantStatus, type PrismaClient } from "@prisma/client";
 
 import type { TrialRepository } from "./trial-service";
+import { evaluateOfferingEligibility, type EligibilityPolicy } from "./eligibility";
+import { buildPrismaEligibilityContext } from "./prisma-eligibility-context";
 
 export function createPrismaTrialRepository(prisma: PrismaClient): TrialRepository {
   return {
+    async assertEligible(tenantId, policyId) {
+      const policy = await prisma.trialPolicy.findUnique({
+        where: { id: policyId },
+        include: { offering: { include: { product: true } } },
+      });
+      if (!policy?.isActive || !policy.offering || policy.offering.publicationStatus !== "PUBLISHED" || policy.offering.product && policy.offering.product.publicationStatus !== "PUBLISHED") throw new Error("Trial offering is not published.");
+      if (["ANNOUNCED", "DEPRECATED"].includes(policy.offering.releaseStage) || policy.offering.product && ["ANNOUNCED", "DEPRECATED"].includes(policy.offering.product.releaseStage)) throw new Error("Trial offering is not currently available.");
+      if (policy.requiresPaymentMethod) throw new Error("This trial requires a supported saved payment method.");
+      const context = await buildPrismaEligibilityContext(prisma, tenantId);
+      const productResult = evaluateOfferingEligibility(context, policy.offering.product?.eligibilityPolicy as EligibilityPolicy | null);
+      const offeringResult = evaluateOfferingEligibility(context, policy.offering.eligibilityPolicy as EligibilityPolicy | null);
+      const tiers = [policy.offering.product?.accessTier, policy.offering.accessTier].filter((item): item is string => Boolean(item));
+      if (!productResult.visible || !productResult.eligible || !offeringResult.visible || !offeringResult.eligible || tiers.some((tier) => tier !== "STANDARD" && !context.accessTiers?.includes(tier))) {
+        throw new Error("Trial is not eligible for this tenant.");
+      }
+    },
     async getPolicy(policyId) {
       const policy = await prisma.trialPolicy.findUnique({
         where: { id: policyId },

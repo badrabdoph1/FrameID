@@ -2,6 +2,7 @@ import { Prisma, type PrismaClient } from "@prisma/client";
 
 import type { EligibilityPolicy } from "./eligibility";
 import { evaluateRecommendationRules, type RecommendationContext, type RecommendationRuleInput } from "./recommendation-engine";
+import { getCustomerCatalogReadModel } from "./prisma-catalog-repository";
 
 function stringArray(value: Prisma.JsonValue): string[] {
   return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
@@ -14,37 +15,56 @@ export async function getTenantRecommendations(prisma: PrismaClient, input: {
   now?: Date;
 }) {
   const now = input.now ?? new Date();
-  const [rules, priorDecisions] = await Promise.all([
+  const [rules, priorDecisions, catalog] = await Promise.all([
     prisma.recommendationRule.findMany({
       where: { status: "ACTIVE", OR: [{ startsAt: null }, { startsAt: { lte: now } }], AND: [{ OR: [{ endsAt: null }, { endsAt: { gt: now } }] }] },
       orderBy: [{ priority: "desc" }, { updatedAt: "desc" }],
     }),
     prisma.recommendationDecision.findMany({
-      where: { tenantId: input.context.tenantId, placement: input.placement, status: "DISMISSED" },
-      include: { rule: { select: { key: true, cooldownHours: true } } },
-      orderBy: { dismissedAt: "desc" },
-      take: 100,
+      where: { tenantId: input.context.tenantId, placement: input.placement, createdAt: { gte: new Date(now.getTime() - 30 * 86_400_000) } },
+      include: { rule: { select: { key: true, cooldownHours: true, frequencyCap: true } } },
+      orderBy: { createdAt: "desc" },
+      take: 500,
     }),
+    getCustomerCatalogReadModel(prisma, { context: input.context, marketCode: "EG", currency: "EGP", now }),
   ]);
+  const eligibleOfferingIds = new Set(catalog.products.flatMap((product) => product.offerings.filter((offering) => offering.eligible && offering.purchasable).map((offering) => offering.id)));
   const dismissedRuleKeys = priorDecisions.flatMap((decision) => {
     if (!decision.rule?.key || !decision.dismissedAt) return [];
     const cooldownMs = (decision.rule.cooldownHours ?? 24 * 30) * 3_600_000;
     return decision.dismissedAt.getTime() + cooldownMs > now.getTime() ? [decision.rule.key] : [];
   });
-  const mapped: RecommendationRuleInput[] = rules.map((rule) => ({
+  const decisionCountByRule = new Map<string, number>();
+  for (const decision of priorDecisions) {
+    if (decision.rule?.key) decisionCountByRule.set(decision.rule.key, (decisionCountByRule.get(decision.rule.key) ?? 0) + 1);
+  }
+  const frequencyCappedRuleKeys = priorDecisions.flatMap((decision) => {
+    const key = decision.rule?.key;
+    const cap = decision.rule?.frequencyCap;
+    return key && cap != null && (decisionCountByRule.get(key) ?? 0) >= cap ? [key] : [];
+  });
+  const mapped: RecommendationRuleInput[] = rules.flatMap((rule) => {
+    const action = rule.action as { offeringId: string; score?: number };
+    if (!eligibleOfferingIds.has(action.offeringId)) return [];
+    return [{
     id: rule.id,
     key: rule.key,
     status: rule.status,
     priority: rule.priority,
     conditions: rule.conditions as EligibilityPolicy,
-    action: rule.action as { offeringId: string; score?: number },
+    action,
     placements: stringArray(rule.placements),
     reasonCodes: stringArray(rule.reasonCodes),
     startsAt: rule.startsAt,
     endsAt: rule.endsAt,
-  }));
+    }];
+  });
   const evaluated = evaluateRecommendationRules({
-    context: { ...input.context, dismissedRuleKeys: [...new Set([...input.context.dismissedRuleKeys, ...dismissedRuleKeys])] },
+    context: {
+      ...input.context,
+      dismissedRuleKeys: [...new Set([...input.context.dismissedRuleKeys, ...dismissedRuleKeys])],
+      excludedRuleKeys: [...new Set([...(input.context.excludedRuleKeys ?? []), ...frequencyCappedRuleKeys])],
+    },
     rules: mapped,
     placement: input.placement,
     now,

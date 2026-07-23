@@ -13,6 +13,7 @@ export type TrialPolicyRecord = {
 
 export interface TrialRepository {
   getPolicy(policyId: string): Promise<TrialPolicyRecord | null>;
+  assertEligible(tenantId: string, policyId: string): Promise<void>;
   hasPreviousGrant(tenantId: string, offeringId: string): Promise<boolean>;
   createGrant(input: {
     tenantId: string;
@@ -43,6 +44,7 @@ export function createTrialService(
     async start(input: { tenantId: string; policyId: string; idempotencyKey: string }) {
       const policy = await repository.getPolicy(input.policyId);
       if (!policy?.isActive) throw new Error("Trial policy is not active.");
+      await repository.assertEligible(input.tenantId, input.policyId);
       if (policy.oncePerTenant && await repository.hasPreviousGrant(input.tenantId, policy.offeringId)) {
         throw new Error("This tenant has already used this trial.");
       }

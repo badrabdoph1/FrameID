@@ -12,10 +12,6 @@ ALTER TYPE "PaymentStatus" ADD VALUE 'UNDER_REVIEW';
 ALTER TYPE "PaymentStatus" ADD VALUE 'CANCELLED';
 ALTER TYPE "PaymentStatus" ADD VALUE 'REFUNDED';
 
--- PostgreSQL requires newly-added enum values to be committed before they are
--- referenced by a column default later in this migration.
-COMMIT;
-
 -- AlterTable
 ALTER TABLE "Tenant" ADD COLUMN     "gracePeriodEndsAt" TIMESTAMP(3),
 ADD COLUMN     "trialDays" INTEGER NOT NULL DEFAULT 14;

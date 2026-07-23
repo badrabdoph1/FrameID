@@ -11,26 +11,29 @@ export function createPrismaServicesPaymentRepository(prisma: PrismaClient): Ser
       });
     },
     async createDraft(input) {
-      const existing = await prisma.paymentRequest.findFirst({
-        where: { acquisitionId: input.acquisitionId, status: { in: [PaymentStatus.DRAFT, PaymentStatus.SUBMITTED, PaymentStatus.UNDER_REVIEW] }, deletedAt: null },
-        orderBy: { createdAt: "desc" },
-        select: { id: true, status: true },
+      return prisma.$transaction(async (tx) => {
+        await tx.$queryRaw`SELECT id FROM "Acquisition" WHERE id = ${input.acquisitionId} FOR UPDATE`;
+        const existing = await tx.paymentRequest.findFirst({
+          where: { acquisitionId: input.acquisitionId, status: { in: [PaymentStatus.DRAFT, PaymentStatus.SUBMITTED, PaymentStatus.UNDER_REVIEW] }, deletedAt: null },
+          orderBy: { createdAt: "desc" },
+          select: { id: true, status: true },
+        });
+        if (existing?.status !== PaymentStatus.DRAFT) throw new Error("A payment request is already under review for this acquisition.");
+        if (existing) return { id: existing.id, status: "DRAFT" as const };
+        const created = await tx.paymentRequest.create({
+          data: {
+            acquisitionId: input.acquisitionId,
+            tenantId: input.tenantId,
+            method: input.method,
+            paymentAccountId: input.paymentAccountId,
+            reference: input.reference,
+            amount: input.amount,
+            currency: input.currency,
+          },
+          select: { id: true },
+        });
+        return { id: created.id, status: "DRAFT" as const };
       });
-      if (existing?.status !== PaymentStatus.DRAFT) throw new Error("A payment request is already under review for this acquisition.");
-      if (existing) return { id: existing.id, status: "DRAFT" as const };
-      const created = await prisma.paymentRequest.create({
-        data: {
-          acquisitionId: input.acquisitionId,
-          tenantId: input.tenantId,
-          method: input.method,
-          paymentAccountId: input.paymentAccountId,
-          reference: input.reference,
-          amount: input.amount,
-          currency: input.currency,
-        },
-        select: { id: true },
-      });
-      return { id: created.id, status: "DRAFT" as const };
     },
     async submit(input) {
       return prisma.$transaction(async (tx) => {
@@ -68,6 +71,9 @@ export function createPrismaServicesPaymentRepository(prisma: PrismaClient): Ser
           throw new Error(`Payment cannot be approved from status ${payment.status}`);
         }
         const acquisition = await tx.acquisition.findUniqueOrThrow({ where: { id: payment.acquisitionId } });
+        if (acquisition.status !== AcquisitionStatus.AWAITING_PAYMENT) {
+          throw new Error(`Acquisition cannot be paid from status ${acquisition.status}`);
+        }
         if (acquisition.acceptedTotal !== payment.amount || acquisition.acceptedCurrency !== payment.currency) {
           throw new Error("Payment amount no longer matches the immutable acquisition snapshot.");
         }
@@ -101,6 +107,9 @@ export function createPrismaServicesPaymentRepository(prisma: PrismaClient): Ser
       return prisma.$transaction(async (tx) => {
         const payment = await tx.paymentRequest.findUniqueOrThrow({ where: { id: input.paymentRequestId } });
         if (!payment.acquisitionId) throw new Error("Payment request is not linked to a services acquisition.");
+        if (payment.status !== PaymentStatus.DRAFT && payment.status !== PaymentStatus.SUBMITTED && payment.status !== PaymentStatus.UNDER_REVIEW) {
+          throw new Error(`Payment cannot be rejected from status ${payment.status}`);
+        }
         await tx.paymentRequest.update({
           where: { id: payment.id },
           data: { status: PaymentStatus.REJECTED, reviewedByUserId: input.reviewerId, reviewedAt: input.rejectedAt, rejectionReason: input.reason },
@@ -124,7 +133,7 @@ export function createPrismaServicesPaymentRepository(prisma: PrismaClient): Ser
         });
         await tx.servicesOutboxEvent.upsert({
           where: { deduplicationKey: input.idempotencyKey }, update: {},
-          create: { aggregateType: "Acquisition", aggregateId: payment.acquisitionId, eventName: "services.payment.refunded", payload: { acquisitionId: payment.acquisitionId, paymentRequestId: payment.id, reason: input.reason, revokeEntitlements: true }, deduplicationKey: input.idempotencyKey },
+          create: { aggregateType: "Acquisition", aggregateId: payment.acquisitionId, eventName: "services.payment.refunded", payload: { acquisitionId: payment.acquisitionId, paymentRequestId: payment.id, tenantId: payment.tenantId, reason: input.reason, revokeEntitlements: true }, deduplicationKey: input.idempotencyKey },
         });
         return { acquisitionId: payment.acquisitionId, tenantId: payment.tenantId };
       });

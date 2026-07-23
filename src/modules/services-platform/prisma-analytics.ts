@@ -5,6 +5,10 @@ export const productAnalyticsEventNames = [
   "acquisition.requested", "payment.started", "payment.submitted", "payment.approved", "acquisition.fulfilled", "subscription.cancelled",
 ] as const;
 
+export const clientProductAnalyticsEventNames = [
+  "catalog.viewed", "offering.viewed", "recommendation.shown", "recommendation.clicked", "recommendation.dismissed", "payment.started",
+] as const satisfies readonly ProductAnalyticsEventName[];
+
 export type ProductAnalyticsEventName = typeof productAnalyticsEventNames[number];
 
 export async function trackProductAnalyticsEvent(prisma: PrismaClient, input: {

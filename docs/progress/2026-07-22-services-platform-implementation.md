@@ -30,12 +30,14 @@
 - إنشاء كل طلب خدمة عبر واجهة Communication Core العامة.
 - ربط المحادثة بسياق ضعيف: `namespace=services`, `entityType=acquisition`, `relationKey=primary`.
 - إنشاء WorkItem من نفس أمر فتح المحادثة عند احتياج العرض لتنفيذ تشغيلي.
+- نشر تغييرات الطلب والدفع والتنفيذ كـSystem Events داخل Timeline المحادثة، ومزامنة WorkItem إلى `IN_PROGRESS` و`WAITING_CUSTOMER` و`RESOLVED` عبر Outbox.
 - لم يُنشأ نظام رسائل أو طلبات موازٍ.
 
 ### المرحلة 2 — Product Registry وCatalog
 
 - Product Definitions وOfferings وأسعار زمنية وCapabilities وBundles وTrial Policies وWorkflow Templates.
 - Draft/Preview/Publish/Pause/Retire مع `CatalogRevision` immutable.
+- نشر النسخة والمنتج والعروض وحدث Outbox داخل transaction واحدة مع row lock، ومنع نشر عرض بلا Workflow أو Bundle غير قابل للتنفيذ.
 - Read Model مخصص للعميل يدعم السوق والعملة والأهلية وComing Soon وBeta.
 - Product Registry قابل لإضافة adapters جديدة دون تعديل خدمات Catalog أوAcquisition.
 
@@ -44,6 +46,7 @@
 - Resolver حتمي لدمج المنح وسياسات `REPLACE`, `SUM`, `MAX`, `ANY`.
 - Entitlements مستقلة عن Tenant/Billing/Product status.
 - دعم أكثر من Product Instance وأكثر من اشتراك لنفس Tenant.
+- مزامنة اشتراكات موقع الأسعار القديمة إلى Entitlements وProduct Instances فعلية دون دمج نماذج الاشتراك.
 - سحب الحقوق حسب مصدرها، وحدود استخدام متزامنة داخل transaction بمستوى Serializable.
 
 ### المرحلة 4 — مركز الخدمات
@@ -56,9 +59,11 @@
 ### المرحلة 5 — دورة الاقتناء والتنفيذ
 
 - دورة Acquisition محكومة بآلة حالات تمنع القفز بين الدفع والتنفيذ.
+- فرض الأهلية والسوق ومرحلة الإصدار وAccess Tier على الخادم وقت الطلب، وليس في واجهة العميل فقط.
 - Self-service المجاني يبدأ التنفيذ مباشرة، والمدفوع ينتظر Payment Approval.
 - Workflow Registry يدعم instant وautomatic وmanual وcustom quote وbeta application.
 - Fulfillment يمنح Entitlements، ينشئ Product Instance، وينشئ Service Subscription تلقائيًا للعروض الدورية.
+- Fulfillment له claim ذري ومسار تشغيل واحد ومؤشر جزئي يمنع أكثر من run نشط، مع retry يعيد الـWorkflow الفاشل ولا يتخطاه.
 
 ### المرحلة 6 — نماذج البيع
 
@@ -71,6 +76,7 @@
 - Multiple Service Subscriptions مستقلة عن اشتراك Tenant القديم.
 - إنشاء وتجديد وPast Due وGrace Period وإلغاء فوري أو نهاية الفترة وانتهاء.
 - Trial Grants زمنية أو محدودة بالاستخدام؛ قدرات العرض تُمنح كـEntitlements حتى نهاية المهلة.
+- استهلاك الحدود الدورية يحمل `periodKey`؛ لذلك يبدأ عداد جديد تلقائيًا مع فترة التجديد الجديدة بدل تجميع الاستخدام مدى الحياة.
 - Refund يسجل Payment Log، يحول Acquisition إلى Refunded، يسحب الحقوق، يعلق Product Instances، ويلغي الاشتراكات المرتبطة.
 
 ### المرحلة 8 — التوصيات والتحليلات
@@ -78,22 +84,24 @@
 - Rules Engine حتمي مع الأهلية والأولوية والـplacement والاستبعاد والـcooldown.
 - Recommendation Decisions تحمل Attribution ID من العرض حتى Acquisition والتحويل.
 - أحداث Catalog view وOffering view وRecommendation shown/clicked/dismissed وAcquisition lifecycle.
+- فصل أحداث القياس المسموح للعميل بإرسالها عن أحداث lifecycle الموثوقة التي لا تُكتب إلا من Outbox.
 - Funnel وتحويل وإسناد ولوحة Admin مستقلة.
 
 ### المرحلة 9 — الاستعداد للتوسع
 
 - Outbox worker بآلية claim/lease/retry/exponential backoff/dead-letter.
 - Cron محمي لتشغيل Outbox وCron للمصالحة.
+- جدولة Vercel: Outbox كل دقيقة وReconciliation كل خمس دقائق، مع بقاء المسارين صالحين لأي scheduler خارجي.
 - Reconciliation يعيد leases المنتهية، يحدّث حالات الاشتراكات، ويعيد طلب Fulfillment الناقص.
 - Extension Points لـRecommendation Provider وAnalytics Sink وProduct Provisioning وDomain Event Publisher.
 
 ## قاعدة البيانات والمهاجرات
 
-- Migration: `20260722194500_services_platform_foundation`.
+- Migrations: `20260722194500_services_platform_foundation` و`20260723011000_services_platform_hardening`.
 - أضيف 21 نموذجًا تشغيليًا للمنصة و15 enum، وربط اختياري من `PaymentRequest` إلى `Acquisition`.
-- عُدلت مهاجرات تاريخية غير آمنة لتصبح قابلة للتطبيق على قاعدة جديدة (`IF EXISTS` / `IF NOT EXISTS` وتصحيح transaction)، دون حذف بيانات حالية.
-- تم تطبيق سلسلة المهاجرات كاملة على قاعدة PostgreSQL نظيفة، ثم تشغيل seed الخدمات مرتين لإثبات idempotency.
-- توجد فروق schema قديمة سابقة للمنصة بين بعض migrations التاريخية وPrisma schema الحالي؛ لم تُسوَّ بتغييرات تدميرية لأنها خارج نطاق المنصة وتحتاج migration baseline مستقلة.
+- لم تُعدّل أي migration تاريخية؛ أُعيدت الملفات القديمة إلى checksums الأصلية حتى لا يحدث drift في البيئات القائمة.
+- كشف الاختبار من قاعدة فارغة أن migration الدفع التاريخية `20260708060000_add_payment_system` تفشل قبل المنصة بسبب استخدام enum جديدة داخل transaction واحدة. هذه مشكلة سابقة لا يمكن إصلاحها بتعديل الملف بعد تطبيقه في بيئات أخرى.
+- مسار النشر الرسمي الحالي للمشروع `db:deploy:safe` يطبق Prisma schema ثم migration التحصين ذات الفهارس الجزئية ثم seed؛ جرى اختباره على PostgreSQL نظيف. إصلاح تاريخ Prisma بالكامل يحتاج rebaseline مستقلة مخططًا لها، لا تعديل checksums القديمة.
 
 ## الشاشات الجديدة
 
@@ -137,6 +145,7 @@
 - عزل كل قراءة وكتابة للعميل بـ`tenantId` المستخرج من الجلسة؛ لا يؤخذ Tenant من input العميل.
 - أوامر الإدارة محمية بـAdmin Permission Guards ومسجلة في Audit Log.
 - السعر المرسل من العميل لا يُستخدم؛ الخادم يقرأ السعر المنشور ويخزنه كلقطة immutable.
+- سياق الأهلية موحد ويُبنى من Tenant والخطة والدولة وعدد المواقع والمنتجات وAccess Tier entitlements، ويستخدمه Catalog وAcquisition وTrial وRecommendations.
 - فهارس مركبة لمسارات tenant/status/date وoffering/status وoutbox leasing وattribution.
 - حدود pagination/take في لوحات التشغيل، وفصل Read Models عن command services.
 - عمليات الاستخدام المتنافسة تعمل بـSerializable transaction، وكل workers قابلة لإعادة التشغيل.
@@ -153,3 +162,12 @@
 - يُشغّل Outbox دوريًا بفاصل قصير، وتُشغّل المصالحة كل 5–15 دقيقة.
 - يجب مراقبة `DEAD_LETTER` وstale provisioning وPAST_DUE، وإضافة alert عند تجاوز الصفر.
 - إضافة منتج جديد تتطلب Product Definition وOfferings منشورة وProduct adapter فقط؛ لا تتطلب تعديل Catalog أوAcquisition أوBilling أوCommunication Core.
+
+## نتيجة التحقق النهائية
+
+- TypeScript: ناجح، دون أخطاء.
+- ESLint: ناجح، دون أخطاء؛ بقيت 52 warning تاريخية خارج ملفات المنصة.
+- الاختبارات: 183 ملف اختبار ناجح، 594 اختبارًا ناجحًا، صفر فشل.
+- Production Build: ناجح، وجميع مسارات العميل والإدارة والـAPI ظهرت في route manifest.
+- قاعدة PostgreSQL نظيفة: نجح `db:deploy:safe`، ونجح seed مرتين، وثبتت أعداد 1 Product و1 Offering و6 Workflows و3 Capabilities.
+- فهارس التحصين: تحقق وجود الفهارس الأربعة الخاصة بمنع Fulfillment المتوازي، توافق الاشتراكات القديمة، usage period، وtenant-scoped idempotency.

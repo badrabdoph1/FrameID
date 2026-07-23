@@ -64,6 +64,12 @@ export async function checkTenantAccess(tenant: TenantAccessData): Promise<Acces
 
   if (subStatus === "SUSPENDED" || tenant.status === "SUSPENDED") return { allowed: false, reason: "SUSPENDED" };
 
+  const productEntitlement = await prisma.entitlement.findFirst({
+    where: { tenantId: tenant.id, capabilityKey: "pricing_site.access", status: "ACTIVE", startsAt: { lte: now }, OR: [{ endsAt: null }, { endsAt: { gt: now } }] },
+    select: { id: true },
+  });
+  if (productEntitlement) return { allowed: true, reason: "ACTIVE" };
+
   if (subStatus === "ACTIVE" || tenant.status === "ACTIVE") {
     if (!subscriptionEnd || subscriptionEnd > now) return { allowed: true, reason: "ACTIVE" };
     await syncCustomerLifecycle(prisma, { tenantId: tenant.id, now, limit: 1 });

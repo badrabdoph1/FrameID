@@ -17,12 +17,9 @@ export function createPrismaUsageRepository(prisma: PrismaClient): UsageReposito
   return {
     consume(input) {
       return prisma.$transaction(async (tx) => {
-        const duplicate = await tx.usageLedger.findUnique({ where: { idempotencyKey: input.idempotencyKey } });
-        const consumedAggregate = await tx.usageLedger.aggregate({
-          where: { tenantId: input.tenantId, capabilityKey: input.capabilityKey },
-          _sum: { delta: true },
+        const duplicate = await tx.usageLedger.findUnique({
+          where: { tenantId_idempotencyKey: { tenantId: input.tenantId, idempotencyKey: input.idempotencyKey } },
         });
-        const consumed = consumedAggregate._sum.delta ?? 0;
         const entitlements = await tx.entitlement.findMany({
           where: {
             tenantId: input.tenantId,
@@ -35,6 +32,28 @@ export function createPrismaUsageRepository(prisma: PrismaClient): UsageReposito
           orderBy: { startsAt: "asc" },
         });
         if (!entitlements.length) throw new Error(`No active entitlement for ${input.capabilityKey}.`);
+        const acquisitionSourceIds = entitlements.filter((item) => item.sourceType === "ACQUISITION").map((item) => item.sourceId);
+        const trialSourceIds = entitlements.filter((item) => item.sourceType === "TRIAL_GRANT").map((item) => item.sourceId);
+        const [subscriptionPeriod, trialPeriod] = await Promise.all([
+          acquisitionSourceIds.length ? tx.serviceSubscription.findFirst({
+            where: { tenantId: input.tenantId, acquisitionId: { in: acquisitionSourceIds }, status: { in: ["TRIALING", "ACTIVE", "GRACE_PERIOD"] } },
+            orderBy: { currentPeriodStart: "desc" },
+            select: { id: true, currentPeriodStart: true },
+          }) : null,
+          trialSourceIds.length ? tx.trialGrant.findFirst({
+            where: { tenantId: input.tenantId, id: { in: trialSourceIds }, status: "ACTIVE" },
+            orderBy: { startsAt: "desc" },
+            select: { id: true },
+          }) : null,
+        ]);
+        const periodKey = subscriptionPeriod
+          ? `subscription:${subscriptionPeriod.id}:${subscriptionPeriod.currentPeriodStart.toISOString()}`
+          : trialPeriod ? `trial:${trialPeriod.id}` : "lifetime";
+        const consumedAggregate = await tx.usageLedger.aggregate({
+          where: { tenantId: input.tenantId, capabilityKey: input.capabilityKey, periodKey },
+          _sum: { delta: true },
+        });
+        const consumed = consumedAggregate._sum.delta ?? 0;
         const limit = numericLimit(entitlements);
         if (duplicate) return { consumed, limit, duplicate: true };
         const attempted = consumed + input.amount;
@@ -44,6 +63,7 @@ export function createPrismaUsageRepository(prisma: PrismaClient): UsageReposito
             tenantId: input.tenantId,
             entitlementId: entitlements[0].id,
             capabilityKey: input.capabilityKey,
+            periodKey,
             delta: input.amount,
             idempotencyKey: input.idempotencyKey,
             metadata: input.metadata == null ? undefined : input.metadata as Prisma.InputJsonValue,

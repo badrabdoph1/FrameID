@@ -7,6 +7,7 @@ import { ServicesEventBeacon } from "@/components/services/services-event-beacon
 import { TrackedServiceLink } from "@/components/services/tracked-service-link";
 import { getCurrentRequestSession } from "@/modules/auth/request-session";
 import { getCustomerCatalogReadModel } from "@/modules/services-platform/prisma-catalog-repository";
+import { buildPrismaEligibilityContext } from "@/modules/services-platform/prisma-eligibility-context";
 import { getTenantRecommendations } from "@/modules/services-platform/prisma-recommendations";
 import { cancelServiceSubscriptionAction, dismissServiceRecommendationAction } from "./actions";
 
@@ -36,28 +37,12 @@ export default async function ServiceCenterPage({ searchParams }: { searchParams
   const params = await searchParams;
   const activeView = views.some((view) => view.key === params.view) ? params.view! : "my";
   const now = new Date();
-  const [tenant, siteCount, activeProducts, catalog, acquisitions, subscriptions, trials] = await Promise.all([
-    prisma.tenant.findUniqueOrThrow({ where: { id: session.tenant.id }, select: { createdAt: true } }),
-    prisma.site.count({ where: { tenantId: session.tenant.id, deletedAt: null } }),
+  const [eligibilityContext, activeProducts, acquisitions, subscriptions, trials] = await Promise.all([
+    buildPrismaEligibilityContext(prisma, session.tenant.id, now),
     prisma.productInstance.findMany({
       where: { tenantId: session.tenant.id, status: { in: ["PROVISIONING", "ACTIVE", "SUSPENDED", "EXPIRED"] } },
       include: { product: { select: { code: true, name: true, shortDescription: true, category: true } } },
       orderBy: { updatedAt: "desc" },
-    }),
-    getCustomerCatalogReadModel(prisma, {
-      context: {
-        tenantId: session.tenant.id,
-        planCodes: session.subscription?.plan?.code ? [session.subscription.plan.code] : [],
-        customerType: "PHOTOGRAPHER",
-        country: "EG",
-        language: "ar",
-        siteCount: 1,
-        activeProductCodes: [],
-        customerAgeDays: 0,
-      },
-      marketCode: "EG",
-      currency: "EGP",
-      now,
     }),
     prisma.acquisition.findMany({
       where: { tenantId: session.tenant.id },
@@ -80,23 +65,12 @@ export default async function ServiceCenterPage({ searchParams }: { searchParams
     }),
   ]);
 
-  const activeCodes = activeProducts.map((instance) => instance.product.code);
-  const contextualCatalog = await getCustomerCatalogReadModel(prisma, {
-    context: {
-      tenantId: session.tenant.id,
-      planCodes: session.subscription?.plan?.code ? [session.subscription.plan.code] : [],
-      customerType: "PHOTOGRAPHER",
-      country: "EG",
-      language: "ar",
-      siteCount,
-      activeProductCodes: activeCodes,
-      customerAgeDays: Math.floor((now.getTime() - tenant.createdAt.getTime()) / 86_400_000),
-    },
-    marketCode: "EG",
+  const shownCatalog = await getCustomerCatalogReadModel(prisma, {
+    context: eligibilityContext,
+    marketCode: eligibilityContext.country ?? "EG",
     currency: "EGP",
     now,
   });
-  const shownCatalog = contextualCatalog.products.length ? contextualCatalog : catalog;
   const ownedOfferingIds = [
     ...acquisitions.filter((item) => item.status === "FULFILLED").map((item) => item.offeringId),
     ...subscriptions.filter((item) => ["ACTIVE", "TRIALING", "GRACE_PERIOD"].includes(item.status)).map((item) => item.offeringId),
@@ -104,13 +78,7 @@ export default async function ServiceCenterPage({ searchParams }: { searchParams
   ];
   const recommendations = await getTenantRecommendations(prisma, {
     context: {
-      tenantId: session.tenant.id,
-      planCodes: session.subscription?.plan?.code ? [session.subscription.plan.code] : [],
-      country: "EG",
-      language: "ar",
-      siteCount,
-      activeProductCodes: activeCodes,
-      customerAgeDays: Math.floor((now.getTime() - tenant.createdAt.getTime()) / 86_400_000),
+      ...eligibilityContext,
       ownedOfferingIds,
       dismissedRuleKeys: [],
     },

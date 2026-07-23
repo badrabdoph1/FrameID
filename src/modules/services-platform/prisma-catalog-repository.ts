@@ -16,6 +16,20 @@ export function createPrismaCatalogRepository(prisma: PrismaClient): CatalogRepo
             include: {
               prices: { orderBy: [{ version: "desc" }, { effectiveFrom: "desc" }] },
               capabilities: { include: { capability: { select: { key: true } } } },
+              workflowTemplate: { select: { key: true } },
+              bundleComponents: {
+                include: {
+                  componentOffering: {
+                    select: {
+                      id: true,
+                      code: true,
+                      publicationStatus: true,
+                      productId: true,
+                      product: { select: { publicationStatus: true } },
+                    },
+                  },
+                },
+              },
             },
           },
         },
@@ -36,6 +50,7 @@ export function createPrismaCatalogRepository(prisma: PrismaClient): CatalogRepo
           name: offering.name,
           type: offering.type,
           publicationStatus: offering.publicationStatus,
+          workflowTemplateKey: offering.workflowTemplate?.key ?? null,
           prices: offering.prices.map((price) => ({
             id: price.id,
             amount: price.amount,
@@ -44,46 +59,33 @@ export function createPrismaCatalogRepository(prisma: PrismaClient): CatalogRepo
             isActive: price.isActive,
           })),
           capabilityKeys: offering.capabilities.map((capability) => capability.capability.key),
+          bundleComponents: offering.bundleComponents.map(({ componentOffering }) => ({
+            offeringId: componentOffering.id,
+            offeringCode: componentOffering.code,
+            publicationStatus: componentOffering.publicationStatus,
+            productId: componentOffering.productId,
+            productPublicationStatus: componentOffering.product?.publicationStatus ?? null,
+          })),
         })),
       } satisfies ProductDraft;
     },
-    async getNextRevision(productId) {
-      const aggregate = await prisma.catalogRevision.aggregate({
-        where: { productId },
-        _max: { revision: true },
+    async publishRevision(input) {
+      return prisma.$transaction(async (tx) => {
+        await tx.$queryRaw`SELECT id FROM "ProductDefinition" WHERE id = ${input.productId} FOR UPDATE`;
+        const aggregate = await tx.catalogRevision.aggregate({ where: { productId: input.productId }, _max: { revision: true } });
+        const revision = (aggregate._max.revision ?? 0) + 1;
+        const saved = await tx.catalogRevision.create({
+          data: { productId: input.productId, revision, status: ProductPublicationStatus.PUBLISHED, snapshot: input.snapshot as unknown as Prisma.InputJsonValue, actorId: input.actorId, actorName: input.actorName, changeNote: input.changeNote, publishedAt: input.publishedAt },
+          select: { id: true, revision: true },
+        });
+        await tx.productDefinition.update({ where: { id: input.productId }, data: { publicationStatus: ProductPublicationStatus.PUBLISHED, publishedRevision: revision, publishedAt: input.publishedAt } });
+        await tx.catalogOffering.updateMany({ where: { productId: input.productId, publicationStatus: { in: ["DRAFT", "IN_REVIEW", "PAUSED"] }, deletedAt: null }, data: { publicationStatus: ProductPublicationStatus.PUBLISHED, publishedAt: input.publishedAt } });
+        await tx.servicesOutboxEvent.upsert({
+          where: { deduplicationKey: `catalog:${input.productId}:published:${revision}` }, update: {},
+          create: { aggregateType: "ProductDefinition", aggregateId: input.productId, eventName: "services.catalog.published", payload: { productId: input.productId, revision }, deduplicationKey: `catalog:${input.productId}:published:${revision}` },
+        });
+        return saved;
       });
-      return (aggregate._max.revision ?? 0) + 1;
-    },
-    async saveRevision(input) {
-      return prisma.catalogRevision.create({
-        data: {
-          productId: input.productId,
-          revision: input.revision,
-          status: ProductPublicationStatus.PUBLISHED,
-          snapshot: input.snapshot as unknown as Prisma.InputJsonValue,
-          actorId: input.actorId,
-          actorName: input.actorName,
-          changeNote: input.changeNote,
-          publishedAt: input.publishedAt,
-        },
-        select: { id: true, revision: true },
-      });
-    },
-    async publishProduct(input) {
-      await prisma.$transaction([
-        prisma.productDefinition.update({
-          where: { id: input.productId },
-          data: {
-            publicationStatus: ProductPublicationStatus.PUBLISHED,
-            publishedRevision: input.revision,
-            publishedAt: input.publishedAt,
-          },
-        }),
-        prisma.catalogOffering.updateMany({
-          where: { productId: input.productId, publicationStatus: { in: ["DRAFT", "IN_REVIEW", "PAUSED"] }, deletedAt: null },
-          data: { publicationStatus: ProductPublicationStatus.PUBLISHED, publishedAt: input.publishedAt },
-        }),
-      ]);
     },
     async pauseProduct(productId) {
       await prisma.productDefinition.update({ where: { id: productId }, data: { publicationStatus: ProductPublicationStatus.PAUSED } });
