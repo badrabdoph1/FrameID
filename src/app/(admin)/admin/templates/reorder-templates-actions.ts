@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma";
 import { processError } from "@/lib/errors";
 import { requireAdminPermission } from "@/modules/admin/admin-permission-guards";
 import { TEMPLATE_STARTER_DEFAULTS_CODE } from "@/modules/themes/template-starter-defaults";
+import { ensureTemplatesInDatabase } from "@/app/(admin)/admin/templates/sync-template-definitions-action";
 
 function readString(formData: FormData, key: string): string {
   const value = formData.get(key);
@@ -15,6 +16,7 @@ function readString(formData: FormData, key: string): string {
 
 export async function reorderTemplatesAction(formData: FormData) {
   const admin = await requireAdminPermission("templates", "edit");
+  await ensureTemplatesInDatabase();
   const raw = readString(formData, "order");
   if (!raw) redirect("/admin/templates?error=ترتيب-غير-صحيح");
 
@@ -47,6 +49,7 @@ export async function reorderTemplatesAction(formData: FormData) {
 
 export async function moveTemplateAction(formData: FormData) {
   const admin = await requireAdminPermission("templates", "edit");
+  await ensureTemplatesInDatabase();
   const id = readString(formData, "id");
   const direction = readString(formData, "direction");
   if (!id || !["up", "down", "top", "bottom"].includes(direction)) {
@@ -54,8 +57,19 @@ export async function moveTemplateAction(formData: FormData) {
   }
 
   try {
+    // البحث عن القالب - يدعم ID حقيقي أو code-based ID
+    let actualId = id;
+    if (id.startsWith("code-")) {
+      const code = id.replace("code-", "");
+      const byCode = await prisma.template.findFirst({
+        where: { code, deletedAt: null },
+        select: { id: true },
+      });
+      if (byCode) actualId = byCode.id;
+    }
+
     const current = await prisma.template.findFirst({
-      where: { id, deletedAt: null, code: { not: TEMPLATE_STARTER_DEFAULTS_CODE } },
+      where: { id: actualId, deletedAt: null, code: { not: TEMPLATE_STARTER_DEFAULTS_CODE } },
       select: { showroomOrder: true },
     });
     if (!current) redirect("/admin/templates?error=القالب-غير-موجود");
@@ -66,7 +80,7 @@ export async function moveTemplateAction(formData: FormData) {
       select: { id: true, showroomOrder: true },
     });
 
-    const currentIndex = siblings.findIndex((t) => t.id === id);
+    const currentIndex = siblings.findIndex((t) => t.id === actualId);
     if (currentIndex === -1) redirect("/admin/templates?error=القالب-غير-موجود");
 
     const targetIndex =
@@ -97,5 +111,4 @@ export async function moveTemplateAction(formData: FormData) {
 
   revalidatePath("/admin/templates");
   revalidatePath("/templates");
-  redirect("/admin/templates?saved=1");
 }
