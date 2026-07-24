@@ -20,18 +20,43 @@ export async function toggleTemplateStatusAction(formData: FormData) {
   }
 
   try {
-    const template = await prisma.template.findFirst({
+    // البحث عن القالب بالـ ID (قد يكون DB id أو code-based id)
+    let template = await prisma.template.findFirst({
       where: { id, deletedAt: null },
       select: { id: true, code: true },
     });
+
+    // إذا كان الـ ID هو code-based (لم يتم إنشاؤه في DB بعد)، نبحث بالـ code
+    if (!template && id.startsWith("code-")) {
+      const code = id.replace("code-", "");
+      template = await prisma.template.findFirst({
+        where: { code, deletedAt: null },
+        select: { id: true, code: true },
+      });
+    }
 
     if (!template) {
       redirect("/admin/templates?error=template-not-found");
     }
 
     await prisma.template.update({
-      where: { id },
+      where: { id: template.id },
       data: { status: nextStatus as "PUBLISHED" | "DRAFT" | "ARCHIVED" },
+    });
+
+    // سجل التدقيق
+    await prisma.auditLog.create({
+      data: {
+        action: `TEMPLATE_STATUS_${nextStatus}`,
+        entityType: "Template",
+        entityId: template.id,
+        metadata: {
+          adminId: admin.id,
+          code: template.code,
+          previousStatus: formData.get("status") as string,
+          newStatus: nextStatus,
+        },
+      },
     });
   } catch (error) {
     const { userError } = await processError(error, {

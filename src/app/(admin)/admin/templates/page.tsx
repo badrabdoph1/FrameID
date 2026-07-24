@@ -8,7 +8,7 @@ import { requireAdminPermission } from "@/modules/admin/admin-permission-guards"
 import { TemplatesManager } from "@/app/(admin)/admin/templates/templates-manager";
 import { UnifiedContentSection } from "@/app/(admin)/admin/templates/unified-content-section";
 import { TEMPLATE_STARTER_DEFAULTS_CODE } from "@/modules/themes/template-starter-defaults";
-import { templateDefinitions, themeDefinitions } from "@/modules/themes/definitions";
+import { ensureTemplatesInDatabase } from "@/app/(admin)/admin/templates/sync-template-definitions-action";
 
 export const dynamic = "force-dynamic";
 
@@ -54,6 +54,9 @@ export default async function AdminTemplatesPage({ searchParams }: Props) {
   await requireAdminPermission("templates", "view");
   const params = await searchParams;
 
+  // إنشاء أي قوالب/ثيمات جديدة في قاعدة البيانات تلقائياً
+  await ensureTemplatesInDatabase();
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let templates: any[] = [];
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -82,42 +85,6 @@ export default async function AdminTemplatesPage({ searchParams }: Props) {
         }),
       ]);
     } catch { /* DB unavailable */ }
-  }
-
-  // إضافة القوالب من الكود التي غير موجودة في قاعدة البيانات
-  const dbTemplateCodes = new Set(templates.map(t => t.code));
-  for (const templateDef of templateDefinitions) {
-    if (templateDef.code === TEMPLATE_STARTER_DEFAULTS_CODE) continue;
-    if (!dbTemplateCodes.has(templateDef.code)) {
-      // إضافة القالب من الكود
-      const themeDef = themeDefinitions.find(t => t.code === templateDef.themeCode);
-      templates.push({
-        id: `code-${templateDef.code}`,
-        name: templateDef.name,
-        code: templateDef.code,
-        status: templateDef.status.toUpperCase(),
-        showroomOrder: templateDef.showroomOrder,
-        previewData: { description: templateDef.description },
-        settings: templateDef.starterContent.themeSettings,
-        theme: {
-          id: `theme-${themeDef?.code || templateDef.themeCode}`,
-          name: themeDef?.name || templateDef.themeCode,
-          code: themeDef?.code || templateDef.themeCode,
-        },
-      });
-    }
-  }
-
-  // إضافة الثيمات من الكود التي غير موجودة في قاعدة البيانات
-  const dbThemeCodes = new Set(themes.map(t => t.code));
-  for (const themeDef of themeDefinitions) {
-    if (!dbThemeCodes.has(themeDef.code)) {
-      themes.push({
-        id: `code-${themeDef.code}`,
-        name: themeDef.name,
-        code: themeDef.code,
-      });
-    }
   }
 
   let unifiedContent: Record<string, unknown> = {};
