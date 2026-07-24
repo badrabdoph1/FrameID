@@ -1,239 +1,277 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import { Image, Package, Phone, Save, Sparkles, Upload } from "lucide-react";
+import {
+  Check,
+  Image as ImageIcon,
+  Package,
+  Pencil,
+  Phone,
+  Save,
+  Sparkles,
+  Star,
+  Trash2,
+  Upload,
+  X,
+} from "lucide-react";
+
 import { saveUnifiedContentAction } from "@/app/(admin)/admin/templates/unified-content-actions";
 import type { z } from "zod";
 import type { UnifiedTemplateContentSchema } from "@/lib/content/schemas/templates";
 
 type UnifiedContent = z.infer<typeof UnifiedTemplateContentSchema>;
 
-const inputClass = "min-h-11 w-full rounded-2xl border border-white/10 bg-black/18 px-3.5 text-sm font-extrabold text-[#fff8ea]/90 outline-none transition placeholder:text-white/25 focus:border-amber-300/55 focus:ring-4 focus:ring-amber-300/10";
-
-type TabKey = "hero" | "packages" | "extras" | "gallery" | "contact";
+const inputClass = "min-h-10 w-full rounded-xl border border-white/10 bg-black/20 px-3 text-xs font-bold text-[#fff8ea]/90 outline-none transition placeholder:text-white/25 focus:border-amber-300/50 focus:ring-2 focus:ring-amber-300/10";
+const textareaClass = "w-full rounded-xl border border-white/10 bg-black/20 px-3 py-2.5 text-xs font-bold text-[#fff8ea]/90 outline-none transition placeholder:text-white/25 focus:border-amber-300/50 focus:ring-2 focus:ring-amber-300/10 resize-none";
 
 export function UnifiedContentEditor({ content }: { content: UnifiedContent }) {
-  const [activeTab, setActiveTab] = useState<TabKey>("hero");
+  const [tab, setTab] = useState<"hero" | "packages" | "extras" | "gallery" | "contact">("packages");
+
+  const tabs: { key: typeof tab; icon: typeof Package; label: string }[] = [
+    { key: "hero", icon: Sparkles, label: "الأساسي" },
+    { key: "packages", icon: Package, label: "الباقات" },
+    { key: "extras", icon: Sparkles, label: "الإضافات" },
+    { key: "gallery", icon: ImageIcon, label: "المعرض" },
+    { key: "contact", icon: Phone, label: "التواصل" },
+  ];
 
   return (
-    <section className="rounded-3xl border border-amber-300/20 bg-amber-300/[0.055] p-4">
-      <div className="flex items-start gap-3">
-        <span className="grid size-10 shrink-0 place-items-center rounded-2xl bg-amber-300/12 text-[#f3cf73]"><Sparkles className="size-5" /></span>
-        <div>
-          <p className="text-xs font-black text-[#f3cf73]">المحتوى الموحد للقوالب</p>
-          <h2 className="mt-1 text-lg font-black text-[#fff7e8]">تحرير شامل — يطبّق على كل القوالب الجاهزة</h2>
-          <p className="mt-1 max-w-3xl text-xs font-bold leading-6 text-white/45">كل خانة هنا تُحدِّث كل القوالب الجاهزة تلقائيًا. لا يمس هذا التعديل مواقع العملاء المنشأة بالفعل.</p>
+    <form action={saveUnifiedContentAction} className="rounded-2xl border border-amber-300/20 bg-amber-300/[0.04]">
+      {/* رأس القسم */}
+      <div className="flex items-center gap-3 border-b border-white/6 px-4 py-3">
+        <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-amber-300/10 text-[#f3cf73]"><Sparkles className="size-4" /></span>
+        <div className="flex-1">
+          <h2 className="text-sm font-black text-[#fff7e8]">المحتوى الموحد للقوالب</h2>
+          <p className="text-[0.65rem] font-bold text-white/40">كل تعديل هنا يطبّق على جميع القوالب تلقائياً</p>
         </div>
+        <button type="submit" className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-gradient-to-r from-[#f3cf73] to-[#d4af37] px-3.5 text-xs font-black text-[#17120a]"><Save className="size-3.5" /> حفظ الكل</button>
       </div>
 
-      <form action={saveUnifiedContentAction} className="mt-4 grid gap-4">
-        <div className="flex flex-wrap gap-2 border-b border-white/8 pb-3">
-          <TabButton active={activeTab === "hero"} onClick={() => setActiveTab("hero")} icon={Sparkles} label="الواجهة والبيانات" />
-          <TabButton active={activeTab === "packages"} onClick={() => setActiveTab("packages")} icon={Package} label="الباقات" />
-          <TabButton active={activeTab === "extras"} onClick={() => setActiveTab("extras")} icon={Sparkles} label="الإضافات" />
-          <TabButton active={activeTab === "gallery"} onClick={() => setActiveTab("gallery")} icon={Image} label="المعرض" />
-          <TabButton active={activeTab === "contact"} onClick={() => setActiveTab("contact")} icon={Phone} label="التواصل" />
-        </div>
+      {/* تبويبات */}
+      <div className="flex gap-1 overflow-x-auto border-b border-white/6 px-4 py-2">
+        {tabs.map((t) => (
+          <button
+            key={t.key}
+            type="button"
+            onClick={() => setTab(t.key)}
+            className={tab === t.key
+              ? "inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg bg-amber-300/15 px-3 text-[0.7rem] font-bold text-[#f3cf73]"
+              : "inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg px-3 text-[0.7rem] font-bold text-white/40 hover:bg-white/[0.04] hover:text-white/70"}
+          >
+            <t.icon className="size-3" /> {t.label}
+          </button>
+        ))}
+      </div>
 
-        {activeTab === "hero" ? <HeroEditor content={content} /> : null}
-        {activeTab === "packages" ? <PackagesEditor content={content} /> : null}
-        {activeTab === "extras" ? <ExtrasEditor content={content} /> : null}
-        {activeTab === "gallery" ? <GalleryEditor content={content} /> : null}
-        {activeTab === "contact" ? <ContactEditor content={content} /> : null}
-
-        <button className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-gradient-to-br from-[#f3cf73] to-[#d4af37] px-4 text-sm font-black text-[#17120a] shadow-lg transition hover:-translate-y-0.5">
-          <Save className="size-4" /> حفظ المحتوى الموحد
-        </button>
-      </form>
-    </section>
+      {/* المحتوى */}
+      <div className="p-4">
+        {tab === "hero" && <HeroEditor content={content} />}
+        {tab === "packages" && <PackagesEditor content={content} />}
+        {tab === "extras" && <ExtrasEditor content={content} />}
+        {tab === "gallery" && <GalleryEditor content={content} />}
+        {tab === "contact" && <ContactEditor content={content} />}
+      </div>
+    </form>
   );
 }
 
-function TabButton({ active, onClick, icon: Icon, label }: { active: boolean; onClick: () => void; icon: typeof Package; label: string }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={active
-        ? "inline-flex min-h-10 items-center gap-2 rounded-2xl border border-amber-300/40 bg-amber-300/15 px-4 text-xs font-black text-[#f3cf73]"
-        : "inline-flex min-h-10 items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-4 text-xs font-black text-white/60 transition hover:bg-white/[0.08]"
-      }
-    >
-      <Icon className="size-4" /> {label}
-    </button>
-  );
-}
-
+/* ───────── Hero / الأساسي ───────── */
 function HeroEditor({ content }: { content: UnifiedContent }) {
   return (
-    <div className="grid gap-3 sm:grid-cols-2">
-      <Field label="اسم المصور" wide>
-        <input name="photographerName" defaultValue={content.photographerName} className={inputClass} />
-      </Field>
-      <Field label="اسم الاستوديو">
-        <input name="studioName" defaultValue={content.studioName} className={inputClass} />
-      </Field>
-      <Field label="مكان العمل">
-        <input name="workLocation" defaultValue={content.workLocation} className={inputClass} />
-      </Field>
-      <Field label="الوصف" wide>
-        <textarea name="description" defaultValue={content.description} rows={3} className={`${inputClass} min-h-24 py-3`} />
-      </Field>
-
-      <Field label="عبارة Hero العلوية (Eyebrow)" wide>
-        <input name="heroEyebrow" defaultValue={content.heroEyebrow} className={inputClass} dir="ltr" />
-      </Field>
-      <Field label="نص زر Hero (CTA)">
-        <input name="heroCtaLabel" defaultValue={content.heroCtaLabel} className={inputClass} />
-      </Field>
-      <Field label="عنوان قسم الباقات">
-        <input name="packagesTitle" defaultValue={content.packagesTitle} className={inputClass} />
-      </Field>
-
-      <Field label="صورة Hero الرئيسية" wide>
-        <div className="grid grid-cols-[auto_1fr] items-center gap-2">
-          <span className="grid size-11 place-items-center rounded-2xl border border-white/10 bg-white/[0.04] text-white/35"><Image className="size-4" /></span>
-          <input name="heroImageUrl" defaultValue={content.heroImageUrl} className={inputClass} placeholder="https://..." dir="ltr" />
-        </div>
-      </Field>
-      <Field label="وصف قسم الباقات" wide>
-        <input name="packagesDescription" defaultValue={content.packagesDescription} className={inputClass} />
-      </Field>
+    <div className="grid gap-2.5 sm:grid-cols-2">
+      <F label="اسم المصور" wide><input name="photographerName" defaultValue={content.photographerName} className={inputClass} /></F>
+      <F label="اسم الاستوديو"><input name="studioName" defaultValue={content.studioName} className={inputClass} /></F>
+      <F label="مكان العمل"><input name="workLocation" defaultValue={content.workLocation} className={inputClass} /></F>
+      <F label="الوصف العام" wide><textarea name="description" defaultValue={content.description} rows={2} className={textareaClass} /></F>
+      <F label="عبارة Hero العلوية" wide><input name="heroEyebrow" defaultValue={content.heroEyebrow} className={inputClass} dir="ltr" /></F>
+      <F label="نص زر الحجز"><input name="heroCtaLabel" defaultValue={content.heroCtaLabel} className={inputClass} /></F>
+      <F label="صورة Hero" wide><Img name="heroImageUrl" defaultValue={content.heroImageUrl} /></F>
     </div>
   );
 }
 
+/* ───────── الباقات ───────── */
 function PackagesEditor({ content }: { content: UnifiedContent }) {
   return (
     <div className="grid gap-3">
-      <p className="text-xs font-black text-white/55">الباقات ({content.packages.length})</p>
-      {content.packages.map((pkg, index) => (
-        <PackageCard key={pkg.id} pkg={pkg} index={index} />
-      ))}
+      <div className="flex flex-wrap items-end gap-2">
+        <F label="عنوان القسم" className="flex-1"><input name="packagesTitle" defaultValue={content.packagesTitle} className={inputClass} /></F>
+        <F label="الوصف" className="flex-[2]"><input name="packagesDescription" defaultValue={content.packagesDescription} className={inputClass} /></F>
+      </div>
+
+      <div className="grid gap-2">
+        <p className="text-[0.65rem] font-bold text-white/35">{content.packages.length} باقات</p>
+        {content.packages.map((pkg, i) => (
+          <PackageRow key={pkg.id} pkg={pkg} index={i} />
+        ))}
+      </div>
     </div>
   );
 }
 
-function PackageCard({ pkg, index }: { pkg: UnifiedContent["packages"][number]; index: number }) {
+function PackageRow({ pkg, index: i }: { pkg: UnifiedContent["packages"][number]; index: number }) {
+  const [open, setOpen] = useState(false);
+
   return (
-    <div className="grid gap-3 rounded-2xl border border-white/10 bg-black/16 p-3">
-      <div className="flex items-center justify-between">
-        <p className="text-xs font-black text-[#f3cf73]">باقة {index + 1}</p>
-        <input type="hidden" name={`package_${index}_id`} defaultValue={pkg.id} />
-      </div>
-      <div className="grid gap-3 sm:grid-cols-2">
-        <Field label="الاسم"><input name={`package_${index}_name`} defaultValue={pkg.name} className={inputClass} /></Field>
-        <Field label="الوصف القصير"><input name={`package_${index}_subtitle`} defaultValue={pkg.subtitle} className={inputClass} /></Field>
-        <Field label="السعر"><input name={`package_${index}_price`} type="number" defaultValue={pkg.priceAmount} className={inputClass} /></Field>
-        <Field label="العملة"><input name={`package_${index}_currency`} defaultValue={pkg.currency} className={inputClass} /></Field>
-        <Field label="ترتيب الظهور">
-          <input name={`package_${index}_sortOrder`} type="number" defaultValue={pkg.sortOrder} className={inputClass} />
-        </Field>
-        <Field label="صورة الباقة">
-          <ImageField name={`package_${index}_imageUrl`} defaultValue={pkg.imageUrl} />
-        </Field>
-      </div>
-      <Field label="المميزات (سطر لكل ميزة)">
-        <textarea name={`package_${index}_features`} defaultValue={pkg.features.join("\n")} rows={4} className={`${inputClass} min-h-24 py-3`} />
-      </Field>
-      <div className="flex flex-wrap items-center gap-3">
-        <label className="flex min-h-11 items-center gap-2 rounded-2xl border border-white/10 bg-black/15 px-3 text-sm font-black text-white/65">
-          <input type="checkbox" name={`package_${index}_highlighted`} defaultChecked={pkg.isHighlighted} className="size-4 accent-[#f3cf73]" /> شارة &quot;الأكثر طلباً&quot;
-        </label>
-      </div>
+    <div className="rounded-xl border border-white/8 bg-black/12">
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="flex w-full items-center gap-2.5 px-3 py-2.5 text-start"
+      >
+        <span className="grid size-6 shrink-0 place-items-center rounded-md bg-white/[0.05] text-[0.6rem] font-bold text-white/35">{i + 1}</span>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <span className="truncate text-xs font-bold text-[#fff7e8]">{pkg.name}</span>
+            {pkg.isHighlighted && <Star className="size-3 shrink-0 fill-amber-300/80 text-amber-300/80" />}
+          </div>
+          <span className="text-[0.65rem] font-bold text-white/35">{pkg.priceAmount.toLocaleString("ar-EG")} {pkg.currency}</span>
+        </div>
+        <span className={open ? "text-amber-300" : "text-white/25"}><Pencil className="size-3.5" /></span>
+      </button>
+
+      {open && (
+        <div className="border-t border-white/6 p-3 pt-2.5 grid gap-2.5">
+          <input type="hidden" name={`pkg_${i}_id`} defaultValue={pkg.id} />
+          <div className="grid gap-2.5 sm:grid-cols-3">
+            <F label="الاسم"><input name={`pkg_${i}_name`} defaultValue={pkg.name} className={inputClass} /></F>
+            <F label="السعر"><input name={`pkg_${i}_price`} type="number" defaultValue={pkg.priceAmount} className={inputClass} /></F>
+            <F label="العملة"><input name={`pkg_${i}_currency`} defaultValue={pkg.currency} className={inputClass} /></F>
+          </div>
+          <F label="الوصف القصير"><input name={`pkg_${i}_subtitle`} defaultValue={pkg.subtitle} className={inputClass} /></F>
+          <Img name={`pkg_${i}_imageUrl`} defaultValue={pkg.imageUrl} />
+          <F label="المميزات (كل ميزة في سطر)">
+            <textarea name={`pkg_${i}_features`} defaultValue={pkg.features.join("\n")} rows={4} className={textareaClass} placeholder="فوتوسيشن خارجي&#10;تعديل احترافي&#10;ألبوم فاخر" />
+          </F>
+          <label className="flex items-center gap-2 rounded-lg border border-white/8 bg-black/12 px-2.5 py-2 text-xs font-bold text-white/60 cursor-pointer hover:border-amber-300/20">
+            <input type="checkbox" name={`pkg_${i}_highlighted`} defaultChecked={pkg.isHighlighted} className="size-3.5 accent-[#f3cf73]" />
+            <Star className="size-3 text-amber-300/60" /> الباقة الأكثر طلباً
+          </label>
+        </div>
+      )}
     </div>
   );
 }
 
+/* ───────── الإضافات ───────── */
 function ExtrasEditor({ content }: { content: UnifiedContent }) {
   return (
-    <div className="grid gap-4">
-      <div className="grid gap-3 sm:grid-cols-2">
-        <Field label="عنوان قسم الإضافات"><input name="extrasTitle" defaultValue={content.extrasTitle} className={inputClass} /></Field>
-        <Field label="وصف قسم الإضافات"><input name="extrasDescription" defaultValue={content.extrasDescription} className={inputClass} /></Field>
+    <div className="grid gap-3">
+      <div className="flex flex-wrap items-end gap-2">
+        <F label="عنوان القسم" className="flex-1"><input name="extrasTitle" defaultValue={content.extrasTitle} className={inputClass} /></F>
+        <F label="الوصف" className="flex-[2]"><input name="extrasDescription" defaultValue={content.extrasDescription} className={inputClass} /></F>
       </div>
-      <div className="grid gap-3">
-        <p className="text-xs font-black text-white/55">الإضافات ({content.extras.length})</p>
-        {content.extras.map((extra, index) => (
-          <div key={extra.id} className="grid gap-3 rounded-2xl border border-white/10 bg-black/16 p-3">
-            <div className="flex items-center justify-between">
-              <p className="text-xs font-black text-[#f3cf73]">إضافة {index + 1}</p>
-              <input type="hidden" name={`extra_${index}_id`} defaultValue={extra.id} />
-            </div>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <Field label="الاسم"><input name={`extra_${index}_name`} defaultValue={extra.name} className={inputClass} /></Field>
-              <Field label="الوصف"><input name={`extra_${index}_description`} defaultValue={extra.description} className={inputClass} /></Field>
-              <Field label="السعر"><input name={`extra_${index}_price`} type="number" defaultValue={extra.priceAmount} className={inputClass} /></Field>
-              <Field label="العملة"><input name={`extra_${index}_currency`} defaultValue={extra.currency} className={inputClass} /></Field>
-              <Field label="مفتاح الأيقونة"><input name={`extra_${index}_iconKey`} defaultValue={extra.iconKey} className={inputClass} dir="ltr" /></Field>
-              <Field label="ترتيب الظهور">
-                <input name={`extra_${index}_sortOrder`} type="number" defaultValue={extra.sortOrder} className={inputClass} />
-              </Field>
-            </div>
-          </div>
+
+      <div className="grid gap-2">
+        <p className="text-[0.65rem] font-bold text-white/35">{content.extras.length} إضافات</p>
+        {content.extras.map((extra, i) => (
+          <ExtraRow key={extra.id} extra={extra} index={i} />
         ))}
       </div>
     </div>
   );
 }
 
+function ExtraRow({ extra, index: i }: { extra: UnifiedContent["extras"][number]; index: number }) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div className="rounded-xl border border-white/8 bg-black/12">
+      <button type="button" onClick={() => setOpen(!open)} className="flex w-full items-center gap-2.5 px-3 py-2.5 text-start">
+        <span className="grid size-6 shrink-0 place-items-center rounded-md bg-white/[0.05] text-[0.6rem] font-bold text-white/35">{i + 1}</span>
+        <div className="min-w-0 flex-1">
+          <span className="truncate text-xs font-bold text-[#fff7e8]">{extra.name}</span>
+          <span className="ml-2 text-[0.65rem] font-bold text-white/35">{extra.priceAmount.toLocaleString("ar-EG")} {extra.currency}</span>
+        </div>
+        <span className={open ? "text-amber-300" : "text-white/25"}><Pencil className="size-3.5" /></span>
+      </button>
+
+      {open && (
+        <div className="border-t border-white/6 p-3 pt-2.5 grid gap-2.5">
+          <input type="hidden" name={`ext_${i}_id`} defaultValue={extra.id} />
+          <F label="الاسم"><input name={`ext_${i}_name`} defaultValue={extra.name} className={inputClass} /></F>
+          <div className="grid gap-2.5 sm:grid-cols-2">
+            <F label="السعر"><input name={`ext_${i}_price`} type="number" defaultValue={extra.priceAmount} className={inputClass} /></F>
+            <F label="العملة"><input name={`ext_${i}_currency`} defaultValue={extra.currency} className={inputClass} /></F>
+          </div>
+          <F label="الوصف"><input name={`ext_${i}_description`} defaultValue={extra.description} className={inputClass} /></F>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ───────── المعرض ───────── */
 function GalleryEditor({ content }: { content: UnifiedContent }) {
   return (
-    <div className="grid gap-4">
-      <div className="grid gap-3 sm:grid-cols-2">
-        <Field label="عنوان المعرض"><input name="galleryTitle" defaultValue={content.galleryTitle} className={inputClass} /></Field>
-        <Field label="وصف المعرض"><input name="galleryDescription" defaultValue={content.galleryDescription} className={inputClass} /></Field>
+    <div className="grid gap-3">
+      <div className="flex flex-wrap items-end gap-2">
+        <F label="عنوان القسم" className="flex-1"><input name="galleryTitle" defaultValue={content.galleryTitle} className={inputClass} /></F>
+        <F label="الوصف" className="flex-[2]"><input name="galleryDescription" defaultValue={content.galleryDescription} className={inputClass} /></F>
       </div>
-      <div className="grid gap-3">
-        <p className="text-xs font-black text-white/55">الصور ({content.gallery.length})</p>
-        {content.gallery.map((image, index) => (
-          <div key={image.id} className="grid gap-3 rounded-2xl border border-white/10 bg-black/16 p-3">
-            <div className="flex items-center justify-between">
-              <p className="text-xs font-black text-[#f3cf73]">صورة {index + 1}</p>
-              <input type="hidden" name={`gallery_${index}_id`} defaultValue={image.id} />
-            </div>
-            <Field label="رابط الصورة">
-              <ImageField name={`gallery_${index}_url`} defaultValue={image.url} />
-            </Field>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <Field label="النص البديل"><input name={`gallery_${index}_alt`} defaultValue={image.alt} className={inputClass} /></Field>
-              <Field label="التسمية"><input name={`gallery_${index}_caption`} defaultValue={image.caption} className={inputClass} /></Field>
-              <Field label="ترتيب الظهور">
-                <input name={`gallery_${index}_sortOrder`} type="number" defaultValue={image.sortOrder} className={inputClass} />
-              </Field>
-              <label className="flex min-h-11 items-center gap-2 rounded-2xl border border-white/10 bg-black/15 px-3 text-sm font-black text-white/65">
-                <input type="checkbox" name={`gallery_${index}_isFeatured`} defaultChecked={image.isFeatured} className="size-4 accent-[#f3cf73]" /> مميّزة
-              </label>
-            </div>
-          </div>
+
+      <div className="grid gap-2">
+        <p className="text-[0.65rem] font-bold text-white/35">{content.gallery.length} صور</p>
+        {content.gallery.map((img, i) => (
+          <GalleryRow key={img.id} img={img} index={i} />
         ))}
       </div>
     </div>
   );
 }
 
-function ContactEditor({ content }: { content: UnifiedContent }) {
+function GalleryRow({ img, index: i }: { img: UnifiedContent["gallery"][number]; index: number }) {
+  const [open, setOpen] = useState(false);
+
   return (
-    <div className="grid gap-3 sm:grid-cols-2">
-      <Field label="الهاتف"><input name="contactPhone" defaultValue={content.contactPhone ?? ""} className={inputClass} dir="ltr" /></Field>
-      <Field label="واتساب"><input name="contactWhatsapp" defaultValue={content.contactWhatsapp ?? ""} className={inputClass} dir="ltr" /></Field>
-      <Field label="البريد الإلكتروني"><input name="contactEmail" type="email" defaultValue={content.contactEmail ?? ""} className={inputClass} dir="ltr" /></Field>
-      <Field label="إنستغرام"><input name="contactInstagram" defaultValue={content.contactInstagram ?? ""} className={inputClass} dir="ltr" /></Field>
-      <Field label="فيسبوك"><input name="contactFacebook" defaultValue={content.contactFacebook ?? ""} className={inputClass} dir="ltr" /></Field>
-      <Field label="تيك توك"><input name="contactTiktok" defaultValue={content.contactTiktok ?? ""} className={inputClass} dir="ltr" /></Field>
+    <div className="rounded-xl border border-white/8 bg-black/12">
+      <button type="button" onClick={() => setOpen(!open)} className="flex w-full items-center gap-2.5 px-3 py-2.5 text-start">
+        <span className="grid size-6 shrink-0 place-items-center rounded-md bg-white/[0.05] text-[0.6rem] font-bold text-white/35">{i + 1}</span>
+        <div className="size-7 shrink-0 overflow-hidden rounded-lg bg-black/20">
+          {img.url ? <img src={img.url} alt="" className="size-full object-cover" /> : <ImageIcon className="m-auto size-3 text-white/15" />}
+        </div>
+        <span className="truncate text-xs font-bold text-[#fff7e8]">{img.alt || img.caption || `صورة ${i + 1}`}</span>
+        <span className={open ? "text-amber-300" : "text-white/25"}><Pencil className="size-3.5" /></span>
+      </button>
+
+      {open && (
+        <div className="border-t border-white/6 p-3 pt-2.5 grid gap-2.5">
+          <input type="hidden" name={`gal_${i}_id`} defaultValue={img.id} />
+          <Img name={`gal_${i}_url`} defaultValue={img.url} />
+          <div className="grid gap-2.5 sm:grid-cols-2">
+            <F label="النص البديل"><input name={`gal_${i}_alt`} defaultValue={img.alt} className={inputClass} /></F>
+            <F label="التسمية"><input name={`gal_${i}_caption`} defaultValue={img.caption} className={inputClass} /></F>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
-function ImageField({ name, defaultValue }: { name: string; defaultValue: string }) {
+/* ───────── التواصل ───────── */
+function ContactEditor({ content }: { content: UnifiedContent }) {
+  return (
+    <div className="grid gap-2.5 sm:grid-cols-3">
+      <F label="الهاتف"><input name="contactPhone" defaultValue={content.contactPhone ?? ""} className={inputClass} dir="ltr" /></F>
+      <F label="واتساب"><input name="contactWhatsapp" defaultValue={content.contactWhatsapp ?? ""} className={inputClass} dir="ltr" /></F>
+      <F label="البريد"><input name="contactEmail" type="email" defaultValue={content.contactEmail ?? ""} className={inputClass} dir="ltr" /></F>
+      <F label="إنستغرام"><input name="contactInstagram" defaultValue={content.contactInstagram ?? ""} className={inputClass} dir="ltr" /></F>
+      <F label="فيسبوك"><input name="contactFacebook" defaultValue={content.contactFacebook ?? ""} className={inputClass} dir="ltr" /></F>
+      <F label="تيك توك"><input name="contactTiktok" defaultValue={content.contactTiktok ?? ""} className={inputClass} dir="ltr" /></F>
+    </div>
+  );
+}
+
+/* ───────── Helpers ───────── */
+function Img({ name, defaultValue }: { name: string; defaultValue: string }) {
   return (
     <div className="grid grid-cols-[auto_1fr] items-center gap-2">
-      <span className="grid size-11 place-items-center rounded-2xl border border-white/10 bg-white/[0.04] text-white/35"><Upload className="size-4" /></span>
+      <span className="grid size-9 place-items-center rounded-lg border border-white/10 bg-white/[0.03] text-white/30"><Upload className="size-3.5" /></span>
       <input name={name} defaultValue={defaultValue} className={inputClass} placeholder="https://..." dir="ltr" />
     </div>
   );
 }
 
-function Field({ label, children, wide = false }: { label: string; children: ReactNode; wide?: boolean }) {
-  return <label className={wide ? "grid gap-1.5 sm:col-span-2" : "grid gap-1.5"}><span className="text-xs font-black text-white/55">{label}</span>{children}</label>;
+function F({ label, children, className = "", wide }: { label: string; children: ReactNode; className?: string; wide?: boolean }) {
+  return <label className={`${wide ? "sm:col-span-2" : ""} grid gap-1 ${className}`}><span className="text-[0.65rem] font-bold text-white/40">{label}</span>{children}</label>;
 }
