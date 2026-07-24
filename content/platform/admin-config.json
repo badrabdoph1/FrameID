@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-07-24T14:20:34.644Z",
+  "updatedAt": "2026-07-24T14:38:14.727Z",
   "themes": [
     {
       "code": "luxe-studio",
@@ -143,14 +143,18 @@
     },
     {
       "code": "rose-blush",
-      "name": "أنيق وهادئ",
+      "name": "هادئ",
       "status": "PUBLISHED",
       "version": "1.0.0",
       "showroomOrder": 2,
-      "previewData": null,
+      "previewData": {
+        "heroImageUrl": "https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1800&q=85"
+      },
       "settings": {
         "motion": "gentle",
+        "version": "1.0.0",
         "colorPreset": "rose",
+        "contentSource": "starter-content-defaults",
         "layoutDensity": "spacious"
       },
       "themeCode": "rose-blush"
@@ -281,7 +285,7 @@
           "instructions": "حوّل على رقم إنستا باي، ثم ارفع صورة إثبات الدفع من نفس الصفحة.",
           "notes": null,
           "isActive": true,
-          "sortOrder": 330
+          "sortOrder": 340
         }
       ]
     },
@@ -310,7 +314,7 @@
           "instructions": "حوّل على رقم فودافون كاش، ثم ارفع صورة إثبات الدفع من نفس الصفحة.",
           "notes": null,
           "isActive": true,
-          "sortOrder": 650
+          "sortOrder": 670
         }
       ]
     },
