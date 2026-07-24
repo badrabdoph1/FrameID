@@ -1,0 +1,175 @@
+{
+  "version": 2,
+  "schemaVersion": 2,
+  "backupJobId": "cmryyx6pv000jo37lmf9ah6ny",
+  "backupType": "FULL",
+  "appVersion": "0.1.0",
+  "gitCommitSha": "639bd26b818f83f959ae2001720bb4c3cf5c5811",
+  "databaseVersion": "unknown",
+  "usersCount": 38,
+  "tenantsCount": 37,
+  "sitesCount": 37,
+  "mediaFilesCount": 168,
+  "customerDataCounts": {
+    "usersCount": 38,
+    "sessionsCount": 80,
+    "passwordResetTokensCount": 1,
+    "tenantsCount": 37,
+    "sitesCount": 37,
+    "siteContentSnapshotsCount": 0,
+    "siteThemeConfigsCount": 37,
+    "domainsCount": 0,
+    "siteSectionsCount": 185,
+    "galleryAlbumsCount": 37,
+    "galleryImagesCount": 130,
+    "mediaFilesCount": 168,
+    "contactProfilesCount": 37,
+    "seoSettingsCount": 37,
+    "packagesCount": 126,
+    "extraServicesCount": 124,
+    "lifecycleEventsCount": 0,
+    "subscriptionsCount": 35,
+    "subscriptionChangesCount": 5,
+    "paymentRequestsCount": 5,
+    "paymentRequestLogsCount": 5,
+    "notificationsCount": 6,
+    "customerNotificationLogsCount": 0,
+    "adminNotesCount": 0,
+    "supportCasesCount": 0,
+    "customerFeatureFlagsCount": 0,
+    "customerIssuesCount": 1,
+    "customerIssueEventsCount": 1,
+    "customerErrorLogsCount": 295
+  },
+  "uploadsInventory": [
+    {
+      "path": "cmrnjibd60006ms6fgu1qxqrq/4465e4f9-c482-4b1c-af06-37b1e009ae89-3ac48f21-1d3d-4ffc-814c-29277d83dbc5.webp",
+      "sizeBytes": 39242,
+      "sha256": "642d3f3e83ef670e528cc028b5eb9dd00e35b28b140b0f12feaf68f7c48795bd"
+    },
+    {
+      "path": "cmrnjibd60006ms6fgu1qxqrq/82e92a32-5674-4baf-b7c1-721f3522b9f5-231a549a-7d57-487e-977b-b50b3d3eb9f3.webp",
+      "sizeBytes": 53794,
+      "sha256": "a39213612d15a04dd1e30300a90fd46c9647f7a5d15ea641a041cf498f78f042"
+    },
+    {
+      "path": "cmrnjibd60006ms6fgu1qxqrq/ae12a3d6-8bb7-4224-b4b7-a927a4c30a69-525b5371-3e29-4202-888d-e70370595a6d.webp",
+      "sizeBytes": 144514,
+      "sha256": "31292f190d34b94bbe916df7e6c5faedf7b5038952ce258f7b85a379adb88a07"
+    },
+    {
+      "path": "cmrnjibd60006ms6fgu1qxqrq/c2cdeea2-e6f2-4b4b-a122-98249c7051ee-525b5371-3e29-4202-888d-e70370595a6d.webp",
+      "sizeBytes": 144514,
+      "sha256": "31292f190d34b94bbe916df7e6c5faedf7b5038952ce258f7b85a379adb88a07"
+    },
+    {
+      "path": "cmrpfxdqh002nl77mvrrflwol/b76dfc2b-addb-4bfd-b700-3bb0a4d5bba8-525b5371-3e29-4202-888d-e70370595a6d.webp",
+      "sizeBytes": 144514,
+      "sha256": "31292f190d34b94bbe916df7e6c5faedf7b5038952ce258f7b85a379adb88a07"
+    },
+    {
+      "path": "cmrq2wf590030ry7lxmrod6ss/3c76dab9-3edd-4417-a6b3-cfd82c72402b-089a0515-copy.webp",
+      "sizeBytes": 141178,
+      "sha256": "dad1c3c899bb0e8db9eba31ce3ec59787e3f814b6f74de77a7e83f744d1e9c60"
+    },
+    {
+      "path": "cmrq2wf590030ry7lxmrod6ss/4a1522d6-e808-4a0d-bb0b-796bcee8826a-089a0531.webp",
+      "sizeBytes": 63532,
+      "sha256": "cd2a05c6d0061a7c197a73b3f2c9ba92907af232a0c6c37b08c5596f882d3649"
+    },
+    {
+      "path": "cmrq2wf590030ry7lxmrod6ss/4d598554-24eb-470f-9726-63020ca36bd5-089a1311-copy.jpg1111.webp",
+      "sizeBytes": 287672,
+      "sha256": "f4c17dee864c1cf284f5c5fed5fb981f6e855ec2ee061454a3b03733e6caef9e"
+    },
+    {
+      "path": "cmrq2wf590030ry7lxmrod6ss/552bb3af-645c-4030-8aba-d8daf236bbab-089a1544-copy.webp",
+      "sizeBytes": 111862,
+      "sha256": "2f3cb8f0b8e407658c8b86e7e141c523030a994e10b710e5add6a3e5db77e4a7"
+    },
+    {
+      "path": "cmrq2wf590030ry7lxmrod6ss/5602cfd2-e3bf-4aa4-9416-85f87fcfee6a-089a0531.webp",
+      "sizeBytes": 63532,
+      "sha256": "cd2a05c6d0061a7c197a73b3f2c9ba92907af232a0c6c37b08c5596f882d3649"
+    },
+    {
+      "path": "cmrqm87850008r07mkhhoipk5/7fb575ee-9596-4512-be4d-7e69c8447c83-02.webp",
+      "sizeBytes": 24806,
+      "sha256": "a6b2f99acedb6201d437452505870022dfc4201690b54bd2ac3dee8da9db5d6c"
+    },
+    {
+      "path": "cmrsmrup8003vmv7lny4y0zcn/32e27785-f729-4247-8003-d5b1b1e58de5-white-and-black-elegant-wedding-invitation.webp",
+      "sizeBytes": 137896,
+      "sha256": "91c71d77d216a60165f2252c5aeff9a7faa7dda0cb0c39f7955320f45659e850"
+    },
+    {
+      "path": "cmrsmrup8003vmv7lny4y0zcn/37baf619-ab16-48b9-9f5d-5e3c16be66e2-white-simple-wedding-photo-collage-portrait.webp",
+      "sizeBytes": 302408,
+      "sha256": "6ee5f31b5db7a031efd12738318e03036f6710eb03886e9f84433621bc61c026"
+    },
+    {
+      "path": "cmrsmrup8003vmv7lny4y0zcn/795e6bdc-23df-45e2-a56d-4fe64d0174ab-white-script-photo-save-the-date-wedding-invitation.webp",
+      "sizeBytes": 627230,
+      "sha256": "e864e166ba2826b9e43c907acc39c5d82e51f7d1c534ccfa91d42d9c84d94acf"
+    },
+    {
+      "path": "cmrsmrup8003vmv7lny4y0zcn/b4902e1d-7257-456d-98f0-d4ca720af88c-black-and-cream-elegant-wedding-photo-collage.webp",
+      "sizeBytes": 300790,
+      "sha256": "56adea6e9ea8e359836edb482a2589ca120ee5db351c1730c8387de2bdb1c820"
+    },
+    {
+      "path": "cmrsmrup8003vmv7lny4y0zcn/f2b59bf1-7b9b-43a5-b0ab-d411a6fd4d54-white-minimalist-save-the-date-invitation.webp",
+      "sizeBytes": 121718,
+      "sha256": "b9f3d628c2303ee40aa4863113d6f13b897eb653dbb5fe95abbe7a99fdf0852e"
+    },
+    {
+      "path": "cmrsy62nj000as47mg04gs6gk/04d0059e-e054-46b1-a442-50d04c12e5a5-black-and-white-classic-handwritten-photography-logo.webp",
+      "sizeBytes": 21552,
+      "sha256": "dd08b5378e760ce88e62298d01e526bb60475ed115f614dc135082354077d90c"
+    },
+    {
+      "path": "cmrsy62nj000as47mg04gs6gk/44701cf3-5fa9-4e4a-abdc-2f9d87332ba5-.webp",
+      "sizeBytes": 18554,
+      "sha256": "c3f9a55a349be9ad593512214bc8d44e40c0787b0cccebc58e24439fb4db8f43"
+    },
+    {
+      "path": "cmrsy62nj000as47mg04gs6gk/4728257d-ce89-46a6-9b09-59108ca51457-hsn03209.webp",
+      "sizeBytes": 111750,
+      "sha256": "142b5943acddd001800d8dcb75a34e7d21931efa1ddf8c6efbf498e08686d030"
+    },
+    {
+      "path": "cmrsy62nj000as47mg04gs6gk/481b1115-591c-4449-bcc1-2f8de85e7c01-hsn03363.webp",
+      "sizeBytes": 38250,
+      "sha256": "f071cb2466dcc4ea76e335116c4177b4f58e45be473da6c35fad7d89546f92f5"
+    },
+    {
+      "path": "cmrsy62nj000as47mg04gs6gk/83277047-d321-4fad-a79a-8213c6494dae-img-0850.webp",
+      "sizeBytes": 39204,
+      "sha256": "896950043281194c6c9974ad1a54a1a471158ac29ce9eb5fe27977c6c5292442"
+    },
+    {
+      "path": "cmrxg5vvb0005li7mfnkzu0j5/b43860c6-092a-4dae-a158-2ccb78af02b9-inbound3829683528532004803.webp",
+      "sizeBytes": 211524,
+      "sha256": "2025d9fd42d5256f7e8470c8a92997c0cb2e29e4986c00ae0222e5ba68e1d24d"
+    }
+  ],
+  "databaseSizeBytes": 10877444,
+  "uploadsSizeBytes": 3140730,
+  "contentSizeBytes": 0,
+  "compressionAlgorithm": "gzip",
+  "encryptionEnabled": false,
+  "artifactChecksums": {
+    "database": "e2f94c54088773ea621821ec3c7da233f81bafb127a76a4a2e91d887297c5402",
+    "uploads": "8a5680f198ad694e94565d4a5f6154fa81afa660fcc8db7faf124f295d894528"
+  },
+  "createdAt": "2026-07-24T13:20:38.483Z",
+  "totalSizeBytes": 14018174,
+  "files": {
+    "database": "database.sql.gz",
+    "uploads": "uploads.tar.gz",
+    "content": null,
+    "manifest": "manifest.json",
+    "checksum": "checksum.sha256"
+  },
+  "checksum": "534025a79f8c8e595047ff2d3dacbb29930efe7c6d86e492bd762c58bdb3c192"
+}
