@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-07-24T14:40:09.831Z",
+  "updatedAt": "2026-07-24T14:55:40.562Z",
   "themes": [
     {
       "code": "luxe-studio",
@@ -109,25 +109,6 @@
       "themeCode": "noir-gold"
     },
     {
-      "code": "prestige",
-      "name": "موحد",
-      "status": "PUBLISHED",
-      "version": "1.0.0",
-      "showroomOrder": 0,
-      "previewData": {
-        "description": "قالب فاخر بتأثيرات بصرية مبهرة وتجربة مستخدم استثنائية. مثالي للمصورين المحترفين اللي عايزين موقع يعكس الفخامة والاحترافية.",
-        "heroImageUrl": "https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1800&q=85"
-      },
-      "settings": {
-        "motion": "smooth",
-        "version": "1.0.0",
-        "colorPreset": "prestige",
-        "contentSource": "starter-content-defaults",
-        "layoutDensity": "luxury"
-      },
-      "themeCode": "prestige"
-    },
-    {
       "code": "noir-gold",
       "name": "كلاسك",
       "status": "PUBLISHED",
@@ -176,6 +157,25 @@
         "layoutDensity": "editorial"
       },
       "themeCode": "luxe-studio"
+    },
+    {
+      "code": "prestige",
+      "name": "موحد",
+      "status": "PUBLISHED",
+      "version": "1.0.0",
+      "showroomOrder": 7,
+      "previewData": {
+        "description": "قالب فاخر بتأثيرات بصرية مبهرة وتجربة مستخدم استثنائية. مثالي للمصورين المحترفين اللي عايزين موقع يعكس الفخامة والاحترافية.",
+        "heroImageUrl": "https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1800&q=85"
+      },
+      "settings": {
+        "motion": "smooth",
+        "version": "1.0.0",
+        "colorPreset": "prestige",
+        "contentSource": "starter-content-defaults",
+        "layoutDensity": "luxury"
+      },
+      "themeCode": "prestige"
     }
   ],
   "plans": [
@@ -289,7 +289,7 @@
           "instructions": "حوّل على رقم إنستا باي، ثم ارفع صورة إثبات الدفع من نفس الصفحة.",
           "notes": null,
           "isActive": true,
-          "sortOrder": 340
+          "sortOrder": 350
         }
       ]
     },
@@ -318,7 +318,7 @@
           "instructions": "حوّل على رقم فودافون كاش، ثم ارفع صورة إثبات الدفع من نفس الصفحة.",
           "notes": null,
           "isActive": true,
-          "sortOrder": 670
+          "sortOrder": 690
         }
       ]
     },
