@@ -12,6 +12,7 @@ import {
   Package,
   Pencil,
   Phone,
+  Play,
   Plus,
   Save,
   Settings2,
@@ -26,6 +27,7 @@ import {
 } from "@/app/(admin)/admin/templates/management-actions";
 import { moveTemplateAction } from "@/app/(admin)/admin/templates/reorder-templates-actions";
 import { quickUpdateTemplateAction } from "@/app/(admin)/admin/templates/quick-update-template-actions";
+import { toggleTemplateStatusAction } from "@/app/(admin)/admin/templates/toggle-template-status-action";
 import { cn } from "@/lib/utils/cn";
 
 export type TemplateItem = {
@@ -272,6 +274,7 @@ function TemplateRow({
         <IconBtn onClick={() => onMove(template.id, "up")} disabled={index === 0} title="تقديم"><ArrowUp className="size-3" /></IconBtn>
         <IconBtn onClick={() => onMove(template.id, "down")} disabled={index === total - 1} title="تأخير"><ArrowDown className="size-3" /></IconBtn>
         <IconBtn onClick={() => { if (inl) { onQuickUpdate(template.id, nm, ds); } setInl(!inl); }} title="تعديل الاسم والوصف"><Pencil className="size-3" /></IconBtn>
+        <StatusToggleButton template={template} />
         <a href={`/templates/${template.code}/preview`} target="_blank" className="inline-flex size-6 items-center justify-center rounded-md border border-white/6 text-white/35 hover:bg-white/[0.05] hover:text-white" title="معاينة"><Eye className="size-3" /></a>
         <IconBtn onClick={onEditToggle} title="تعديل تفاصيل القالب" active={isEditing}><Settings2 className="size-3" /></IconBtn>
       </div>
@@ -500,4 +503,40 @@ function CreateForm({ themes, onClose }: { themes: ThemeOption[]; onClose: () =>
 
 function F({ label, children, wide }: { label: string; children: ReactNode; wide?: boolean }) {
   return <label className={cn("grid gap-0.5", wide && "sm:col-span-2")}><span className="text-[0.6rem] font-bold text-white/45">{label}</span>{children}</label>;
+}
+
+function StatusToggleButton({ template }: { template: TemplateItem }) {
+  const status = template.status;
+  const nextStatus = status === "PUBLISHED" ? "DRAFT" : status === "ARCHIVED" ? "DRAFT" : "PUBLISHED";
+  const label = nextStatus === "PUBLISHED" ? "نشر" : nextStatus === "DRAFT" ? "إخفاء" : "نشر";
+
+  return (
+    <form action={toggleTemplateStatusAction}>
+      <input type="hidden" name="id" value={template.id} />
+      <input type="hidden" name="status" value={status} />
+      <input type="hidden" name="nextStatus" value={nextStatus} />
+      <button
+        type="submit"
+        title={
+          status === "PUBLISHED" ? "إخفاء القالب (تحويل لمسودة)" :
+          status === "ARCHIVED" ? "تفعيل القالب (تحويل لمسودة)" :
+          status === "DRAFT" ? "نشر القالب" :
+          status === "COMING_SOON" ? "نشر القالب" :
+          "نشر القالب"
+        }
+        className={cn(
+          "inline-flex size-6 items-center justify-center rounded-md border transition text-xs",
+          status === "PUBLISHED"
+            ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20"
+            : status === "ARCHIVED"
+              ? "border-white/10 bg-white/[0.03] text-white/35 hover:bg-amber-300/10 hover:text-[#f3cf73]"
+              : status === "DRAFT"
+                ? "border-amber-300/20 bg-amber-300/[0.06] text-amber-300 hover:bg-amber-300/15"
+                : "border-orange-500/20 bg-orange-500/[0.06] text-orange-400 hover:bg-orange-500/15",
+        )}
+      >
+        {status === "PUBLISHED" ? <EyeOff className="size-3" /> : status === "ARCHIVED" ? <Play className="size-3" /> : <Eye className="size-3" />}
+      </button>
+    </form>
+  );
 }
