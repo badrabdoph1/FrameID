@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-07-24T14:39:47.215Z",
+  "updatedAt": "2026-07-24T14:40:09.831Z",
   "themes": [
     {
       "code": "luxe-studio",
@@ -110,7 +110,7 @@
     },
     {
       "code": "prestige",
-      "name": "الرّاقى",
+      "name": "موحد",
       "status": "PUBLISHED",
       "version": "1.0.0",
       "showroomOrder": 0,
