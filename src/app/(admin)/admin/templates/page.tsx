@@ -8,7 +8,7 @@ import { requireAdminPermission } from "@/modules/admin/admin-permission-guards"
 import { TemplatesManager } from "@/app/(admin)/admin/templates/templates-manager";
 import { UnifiedContentSection } from "@/app/(admin)/admin/templates/unified-content-section";
 import { TEMPLATE_STARTER_DEFAULTS_CODE } from "@/modules/themes/template-starter-defaults";
-import { syncTemplateDefinitionsIfNeeded } from "@/app/(admin)/admin/templates/sync-template-definitions-action";
+import { ensureTemplatesInDatabase } from "@/app/(admin)/admin/templates/sync-template-definitions-action";
 
 export const dynamic = "force-dynamic";
 
@@ -54,8 +54,8 @@ export default async function AdminTemplatesPage({ searchParams }: Props) {
   await requireAdminPermission("templates", "view");
   const params = await searchParams;
 
-  // مزامنة القوالب الجديدة من الكود إلى قاعدة البيانات
-  await syncTemplateDefinitionsIfNeeded();
+  // إنشاء أي قوالب/ثيمات جديدة في قاعدة البيانات تلقائياً
+  await ensureTemplatesInDatabase();
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let templates: any[] = [];

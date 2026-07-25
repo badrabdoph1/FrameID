@@ -12,6 +12,7 @@ import {
   Package,
   Pencil,
   Phone,
+  Play,
   Plus,
   Save,
   Settings2,
@@ -26,6 +27,7 @@ import {
 } from "@/app/(admin)/admin/templates/management-actions";
 import { moveTemplateAction } from "@/app/(admin)/admin/templates/reorder-templates-actions";
 import { quickUpdateTemplateAction } from "@/app/(admin)/admin/templates/quick-update-template-actions";
+import { toggleTemplateStatusAction } from "@/app/(admin)/admin/templates/toggle-template-status-action";
 import { cn } from "@/lib/utils/cn";
 
 export type TemplateItem = {
@@ -272,6 +274,7 @@ function TemplateRow({
         <IconBtn onClick={() => onMove(template.id, "up")} disabled={index === 0} title="تقديم"><ArrowUp className="size-3" /></IconBtn>
         <IconBtn onClick={() => onMove(template.id, "down")} disabled={index === total - 1} title="تأخير"><ArrowDown className="size-3" /></IconBtn>
         <IconBtn onClick={() => { if (inl) { onQuickUpdate(template.id, nm, ds); } setInl(!inl); }} title="تعديل الاسم والوصف"><Pencil className="size-3" /></IconBtn>
+        <StatusToggleButton template={template} />
         <a href={`/templates/${template.code}/preview`} target="_blank" className="inline-flex size-6 items-center justify-center rounded-md border border-white/6 text-white/35 hover:bg-white/[0.05] hover:text-white" title="معاينة"><Eye className="size-3" /></a>
         <IconBtn onClick={onEditToggle} title="تعديل تفاصيل القالب" active={isEditing}><Settings2 className="size-3" /></IconBtn>
       </div>
@@ -312,7 +315,7 @@ function TemplateEditor({
 }) {
   const settings = isRec(template.settings) ? template.settings : {};
   const previewData = isRec(template.previewData) ? template.previewData : {};
-  const [activeTab, setActiveTab] = useState<"basic" | "content" | "packages" | "extras" | "gallery" | "contact">("basic");
+  const [activeTab, setActiveTab] = useState<"basic" | "preview">("basic");
 
   const packages = getArr(previewData, "packages", unifiedDefaults);
   const extras = getArr(previewData, "extras", unifiedDefaults);
@@ -332,12 +335,8 @@ function TemplateEditor({
         <input type="hidden" name="id" value={template.id} />
 
         <div className="flex flex-wrap gap-1 border-b border-white/8 pb-2">
-          <ETab active={activeTab === "basic"} onClick={() => setActiveTab("basic")} icon={Settings2} label="أساسي" />
-          <ETab active={activeTab === "content"} onClick={() => setActiveTab("content")} icon={Sparkles} label="المحتوى" />
-          <ETab active={activeTab === "packages"} onClick={() => setActiveTab("packages")} icon={Package} label="الباقات" />
-          <ETab active={activeTab === "extras"} onClick={() => setActiveTab("extras")} icon={Sparkles} label="الإضافات" />
-          <ETab active={activeTab === "gallery"} onClick={() => setActiveTab("gallery")} icon={ImageIcon} label="المعرض" />
-          <ETab active={activeTab === "contact"} onClick={() => setActiveTab("contact")} icon={Phone} label="التواصل" />
+          <ETab active={activeTab === "basic"} onClick={() => setActiveTab("basic")} icon={Settings2} label="الإعدادات" />
+          <ETab active={activeTab === "preview"} onClick={() => setActiveTab("preview")} icon={Eye} label="المعاينة" />
         </div>
 
         {activeTab === "basic" && (
@@ -354,98 +353,23 @@ function TemplateEditor({
               <select name="status" defaultValue={template.status} className={inputClass}>
                 <option value="PUBLISHED">منشور</option>
                 <option value="DRAFT">مسودة</option>
-                <option value="COMING_SOON">قريباً</option>
-                <option value="HIDDEN">مخفي</option>
                 <option value="ARCHIVED">مؤرشف</option>
               </select>
             </F>
             <F label="ترتيب الظهور"><input name="showroomOrder" type="number" defaultValue={template.showroomOrder} className={inputClass} /></F>
             <F label="صورة المعاينة"><input name="previewImage" defaultValue={template.previewImage ?? ""} className={inputClass} placeholder="https://..." dir="ltr" /></F>
-            <F label="صورة Hero"><input name="heroImageUrl" defaultValue={pv(previewData, "heroImageUrl", str(unifiedDefaults.heroImageUrl))} className={inputClass} placeholder="https://..." dir="ltr" /></F>
           </div>
         )}
 
-        {activeTab === "content" && (
-          <div className="grid gap-2 sm:grid-cols-2">
-            <F label="الوصف (يظهر في صفحة القوالب)" wide>
-              <textarea name="description" defaultValue={pv(previewData, "description", str(unifiedDefaults.description))} rows={2} className={textareaClass} />
-            </F>
-            <F label="اسم الاستوديو"><input name="studioName" defaultValue={pv(previewData, "studioName", str(unifiedDefaults.studioName))} className={inputClass} /></F>
-            <F label="اسم المصور"><input name="photographerName" defaultValue={pv(previewData, "photographerName", str(unifiedDefaults.photographerName))} className={inputClass} /></F>
-            <F label="مكان العمل"><input name="workLocation" defaultValue={pv(previewData, "workLocation", str(unifiedDefaults.workLocation))} className={inputClass} /></F>
-            <F label="Hero - Eyebrow"><input name="heroEyebrow" defaultValue={pv(previewData, "heroEyebrow", str(unifiedDefaults.heroEyebrow))} className={inputClass} dir="ltr" /></F>
-            <F label="Hero - CTA"><input name="heroCtaLabel" defaultValue={pv(previewData, "heroCtaLabel", str(unifiedDefaults.heroCtaLabel))} className={inputClass} /></F>
-            <F label="عنوان الباقات"><input name="packagesTitle" defaultValue={pv(previewData, "packagesTitle", str(unifiedDefaults.packagesTitle))} className={inputClass} /></F>
-            <F label="وصف الباقات"><input name="packagesDescription" defaultValue={pv(previewData, "packagesDescription", str(unifiedDefaults.packagesDescription))} className={inputClass} /></F>
-            <F label="عنوان الإضافات"><input name="extrasTitle" defaultValue={pv(previewData, "extrasTitle", str(unifiedDefaults.extrasTitle))} className={inputClass} /></F>
-            <F label="وصف الإضافات"><input name="extrasDescription" defaultValue={pv(previewData, "extrasDescription", str(unifiedDefaults.extrasDescription))} className={inputClass} /></F>
-            <F label="عنوان المعرض"><input name="galleryTitle" defaultValue={pv(previewData, "galleryTitle", str(unifiedDefaults.galleryTitle))} className={inputClass} /></F>
-            <F label="وصف المعرض"><input name="galleryDescription" defaultValue={pv(previewData, "galleryDescription", str(unifiedDefaults.galleryDescription))} className={inputClass} /></F>
-          </div>
-        )}
-
-        {activeTab === "packages" && (
-          <div className="grid gap-2">
-            <p className="text-[0.6rem] font-bold text-white/40">الباقات (JSON - يمكن تعديلها كقائمة كائنات)</p>
-            <input type="hidden" name="packages" value={JSON.stringify(packages)} />
-            <textarea
-              name="packagesJson"
-              defaultValue={JSON.stringify(packages, null, 2)}
-              rows={10}
-              className={`${textareaClass} min-h-32`}
-              dir="ltr"
-              onChange={(e) => {
-                const h = e.currentTarget.form?.querySelector('input[name="packages"]') as HTMLInputElement | null;
-                if (h) h.value = e.target.value;
-              }}
-            />
-          </div>
-        )}
-
-        {activeTab === "extras" && (
-          <div className="grid gap-2">
-            <p className="text-[0.6rem] font-bold text-white/40">الإضافات (JSON)</p>
-            <input type="hidden" name="extras" value={JSON.stringify(extras)} />
-            <textarea
-              name="extrasJson"
-              defaultValue={JSON.stringify(extras, null, 2)}
-              rows={8}
-              className={`${textareaClass} min-h-28`}
-              dir="ltr"
-              onChange={(e) => {
-                const h = e.currentTarget.form?.querySelector('input[name="extras"]') as HTMLInputElement | null;
-                if (h) h.value = e.target.value;
-              }}
-            />
-          </div>
-        )}
-
-        {activeTab === "gallery" && (
-          <div className="grid gap-2">
-            <p className="text-[0.6rem] font-bold text-white/40">المعرض (JSON)</p>
-            <input type="hidden" name="gallery" value={JSON.stringify(gallery)} />
-            <textarea
-              name="galleryJson"
-              defaultValue={JSON.stringify(gallery, null, 2)}
-              rows={8}
-              className={`${textareaClass} min-h-28`}
-              dir="ltr"
-              onChange={(e) => {
-                const h = e.currentTarget.form?.querySelector('input[name="gallery"]') as HTMLInputElement | null;
-                if (h) h.value = e.target.value;
-              }}
-            />
-          </div>
-        )}
-
-        {activeTab === "contact" && (
-          <div className="grid gap-2 sm:grid-cols-3">
-            <F label="الهاتف"><input name="contactPhone" defaultValue={pv(previewData, "contactPhone", str(unifiedDefaults.contactPhone))} className={inputClass} dir="ltr" /></F>
-            <F label="واتساب"><input name="contactWhatsapp" defaultValue={pv(previewData, "contactWhatsapp", str(unifiedDefaults.contactWhatsapp))} className={inputClass} dir="ltr" /></F>
-            <F label="البريد"><input name="contactEmail" type="email" defaultValue={pv(previewData, "contactEmail", str(unifiedDefaults.contactEmail))} className={inputClass} dir="ltr" /></F>
-            <F label="إنستغرام"><input name="contactInstagram" defaultValue={pv(previewData, "contactInstagram", str(unifiedDefaults.contactInstagram))} className={inputClass} dir="ltr" /></F>
-            <F label="فيسبوك"><input name="contactFacebook" defaultValue={pv(previewData, "contactFacebook", str(unifiedDefaults.contactFacebook))} className={inputClass} dir="ltr" /></F>
-            <F label="تيك توك"><input name="contactTiktok" defaultValue={pv(previewData, "contactTiktok", str(unifiedDefaults.contactTiktok))} className={inputClass} dir="ltr" /></F>
+        {activeTab === "preview" && (
+          <div className="rounded-xl border border-white/10 bg-black/10 p-4 text-center">
+            <Eye className="mx-auto size-8 text-white/15" />
+            <p className="mt-2 text-xs font-bold text-white/40">
+              محتوى القالب (باقات، إضافات، معرض، تواصل) يتم تعديله من
+              <br />
+              <strong className="text-[#f3cf73]">المحرر الموحد</strong> في أعلى الصفحة
+            </p>
+            <p className="mt-1 text-[0.65rem] font-bold text-white/25">التعديل في المحرر الموحد يطبّق على جميع القوالب تلقائياً</p>
           </div>
         )}
 
@@ -500,4 +424,40 @@ function CreateForm({ themes, onClose }: { themes: ThemeOption[]; onClose: () =>
 
 function F({ label, children, wide }: { label: string; children: ReactNode; wide?: boolean }) {
   return <label className={cn("grid gap-0.5", wide && "sm:col-span-2")}><span className="text-[0.6rem] font-bold text-white/45">{label}</span>{children}</label>;
+}
+
+function StatusToggleButton({ template }: { template: TemplateItem }) {
+  const status = template.status;
+  const nextStatus = status === "PUBLISHED" ? "DRAFT" : status === "ARCHIVED" ? "DRAFT" : "PUBLISHED";
+  const label = nextStatus === "PUBLISHED" ? "نشر" : nextStatus === "DRAFT" ? "إخفاء" : "نشر";
+
+  return (
+    <form action={toggleTemplateStatusAction}>
+      <input type="hidden" name="id" value={template.id} />
+      <input type="hidden" name="status" value={status} />
+      <input type="hidden" name="nextStatus" value={nextStatus} />
+      <button
+        type="submit"
+        title={
+          status === "PUBLISHED" ? "إخفاء القالب (تحويل لمسودة)" :
+          status === "ARCHIVED" ? "تفعيل القالب (تحويل لمسودة)" :
+          status === "DRAFT" ? "نشر القالب" :
+          status === "COMING_SOON" ? "نشر القالب" :
+          "نشر القالب"
+        }
+        className={cn(
+          "inline-flex size-6 items-center justify-center rounded-md border transition text-xs",
+          status === "PUBLISHED"
+            ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20"
+            : status === "ARCHIVED"
+              ? "border-white/10 bg-white/[0.03] text-white/35 hover:bg-amber-300/10 hover:text-[#f3cf73]"
+              : status === "DRAFT"
+                ? "border-amber-300/20 bg-amber-300/[0.06] text-amber-300 hover:bg-amber-300/15"
+                : "border-orange-500/20 bg-orange-500/[0.06] text-orange-400 hover:bg-orange-500/15",
+        )}
+      >
+        {status === "PUBLISHED" ? <EyeOff className="size-3" /> : status === "ARCHIVED" ? <Play className="size-3" /> : <Eye className="size-3" />}
+      </button>
+    </form>
+  );
 }

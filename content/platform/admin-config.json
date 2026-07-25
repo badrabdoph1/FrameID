@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-07-22T11:26:45.386Z",
+  "updatedAt": "2026-07-24T14:40:09.831Z",
   "themes": [
     {
       "code": "luxe-studio",
@@ -33,6 +33,27 @@
         "motion": "quiet",
         "colorPreset": "champagne",
         "layoutDensity": "editorial"
+      },
+      "contentSchema": {
+        "supportedSections": [
+          "hero",
+          "gallery",
+          "packages",
+          "extras",
+          "contact"
+        ]
+      }
+    },
+    {
+      "code": "prestige",
+      "name": "الرّاقى",
+      "status": "ARCHIVED",
+      "version": "1.0.0",
+      "category": "photography",
+      "defaultConfig": {
+        "motion": "smooth",
+        "colorPreset": "prestige",
+        "layoutDensity": "luxury"
       },
       "contentSchema": {
         "supportedSections": [
@@ -88,6 +109,25 @@
       "themeCode": "noir-gold"
     },
     {
+      "code": "prestige",
+      "name": "موحد",
+      "status": "PUBLISHED",
+      "version": "1.0.0",
+      "showroomOrder": 0,
+      "previewData": {
+        "description": "قالب فاخر بتأثيرات بصرية مبهرة وتجربة مستخدم استثنائية. مثالي للمصورين المحترفين اللي عايزين موقع يعكس الفخامة والاحترافية.",
+        "heroImageUrl": "https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1800&q=85"
+      },
+      "settings": {
+        "motion": "smooth",
+        "version": "1.0.0",
+        "colorPreset": "prestige",
+        "contentSource": "starter-content-defaults",
+        "layoutDensity": "luxury"
+      },
+      "themeCode": "prestige"
+    },
+    {
       "code": "noir-gold",
       "name": "كلاسك",
       "status": "PUBLISHED",
@@ -103,28 +143,36 @@
     },
     {
       "code": "rose-blush",
-      "name": "أنيق وهادئ",
+      "name": "هادئ",
       "status": "PUBLISHED",
       "version": "1.0.0",
       "showroomOrder": 2,
-      "previewData": null,
+      "previewData": {
+        "heroImageUrl": "https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1800&q=85"
+      },
       "settings": {
         "motion": "gentle",
+        "version": "1.0.0",
         "colorPreset": "rose",
+        "contentSource": "starter-content-defaults",
         "layoutDensity": "spacious"
       },
       "themeCode": "rose-blush"
     },
     {
       "code": "luxe-studio",
-      "name": "استوديو فاخر",
+      "name": "استوديو",
       "status": "PUBLISHED",
       "version": "1.0.0",
       "showroomOrder": 3,
-      "previewData": null,
+      "previewData": {
+        "heroImageUrl": "https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1800&q=85"
+      },
       "settings": {
         "motion": "refined",
+        "version": "1.0.0",
         "colorPreset": "charcoal",
+        "contentSource": "starter-content-defaults",
         "layoutDensity": "editorial"
       },
       "themeCode": "luxe-studio"
@@ -162,7 +210,7 @@
       "name": "الباقة الماسية",
       "priceAmount": 169900,
       "currency": "EGP",
-      "billingInterval": "monthly",
+      "billingInterval": "unspecified",
       "features": {
         "ctaLabel": "اختيار الباقة",
         "isPopular": false,
@@ -241,7 +289,7 @@
           "instructions": "حوّل على رقم إنستا باي، ثم ارفع صورة إثبات الدفع من نفس الصفحة.",
           "notes": null,
           "isActive": true,
-          "sortOrder": 320
+          "sortOrder": 340
         }
       ]
     },
@@ -270,7 +318,7 @@
           "instructions": "حوّل على رقم فودافون كاش، ثم ارفع صورة إثبات الدفع من نفس الصفحة.",
           "notes": null,
           "isActive": true,
-          "sortOrder": 630
+          "sortOrder": 670
         }
       ]
     },
@@ -410,7 +458,7 @@
           }
         },
         "trialPolicy": {
-          "defaultDays": 40
+          "defaultDays": 14
         },
         "pendingReview": {
           "action": {

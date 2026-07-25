@@ -6,6 +6,10 @@ const TEMPLATES_GRID_HASH = "#templates-grid";
 
 export function TemplatesScrollReset() {
   useEffect(() => {
+    window.history.scrollRestoration = "manual";
+
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+
     if (window.location.hash !== TEMPLATES_GRID_HASH) return;
 
     const cleanUrl = `${window.location.pathname}${window.location.search}`;
