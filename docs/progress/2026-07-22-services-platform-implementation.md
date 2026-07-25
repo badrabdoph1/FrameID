@@ -171,7 +171,7 @@
 ## نتيجة التحقق النهائية
 
 - TypeScript: ناجح، دون أخطاء.
-- ESLint: ناجح، دون أخطاء؛ بقيت 52 warning تاريخية خارج ملفات المنصة.
+- ESLint: ناجح، دون أخطاء؛ بقيت 63 warning تاريخية خارج ملفات المنصة بعد دمج آخر تحديثات `main`.
 - الاختبارات: 183 ملف اختبار ناجح، 606 اختبارات ناجحة، صفر فشل.
 - Production Build: ناجح، وجميع مسارات العميل والإدارة والـAPI ظهرت في route manifest.
 - قاعدة PostgreSQL نظيفة: نجح `db:deploy:safe`، ونجح seed مرتين، وثبتت أعداد 1 Product و1 Offering و6 Workflows و3 Capabilities.

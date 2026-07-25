@@ -32,12 +32,12 @@ describe("templates scroll reset", () => {
     expect(window.scrollTo).toHaveBeenCalledWith({ top: 0, left: 0, behavior: "instant" });
   });
 
-  it("does not change other template page hashes", () => {
+  it("keeps other template page hashes while resetting scroll to the top", () => {
     window.history.replaceState(null, "", "/templates#main-content");
 
     render(<TemplatesScrollReset />);
 
     expect(window.location.hash).toBe("#main-content");
-    expect(window.scrollTo).not.toHaveBeenCalled();
+    expect(window.scrollTo).toHaveBeenCalledWith({ top: 0, left: 0, behavior: "instant" });
   });
 });
