@@ -150,8 +150,8 @@
 - واجهة العميل وAcquisition يقرآن آخر `CatalogRevision` منشور لا صفوف Draft الحية، وFulfillment يقرأ لقطة Acquisition v2 فقط؛ لذلك لا تغيّر تعديلات الأدمن غير المنشورة ما يراه أو يستلمه العميل.
 - مفاتيح Communication الخاصة بالخدمات تحمل namespace للـtenant، ويعيد Communication Core التحقق من tenant/mode/type عند replay، كما يرفض Acquisition ربط محادثة تخص tenant آخر.
 - السوق والعملة يُحلان من Selector مركزي تستخدمه صفحات Catalog وAcquisition وRecommendations، مع أولوية لسعر السوق ثم السعر العالمي بنفس العملة.
-- Payment approval/rejection/refund وإنشاء المسودة تستخدم row locks وتعيد التحقق من حالة Acquisition داخل المعاملة لمنع السباقات.
-- إعادة أوامر الرفض والاسترداد بعد نجاحها تُرجع النتيجة السابقة فقط عند تطابق idempotency key والحدث والدفعة؛ أي collision مختلف يُرفض.
+- كل أوامر تحويل حالة Payment الحاملة لـ`idempotencyKey` تستخدم قفلًا استشاريًا داخل المعاملة على المفتاح قبل أي mutation، ثم row locks وإعادة تحقق من حالة Acquisition؛ لذلك لا يستطيع مفتاح واحد تنفيذ أمرين أو التأثير في دفعتين حتى عند التزامن.
+- إعادة أوامر Payment تُرجع النتيجة السابقة فقط عند تطابق المفتاح ونوع الحدث والدفعة؛ أي collision مختلف يُرفض قبل تعديل الحالة. كما تتحقق Acquisition من تطابق Offering وهوية الطالب عند إعادة نفس المفتاح، بما في ذلك سباق الإنشاء المتزامن.
 - أوامر الاشتراك تسترجع نتيجة الـidempotency قبل حراس دورة الحياة، ثم تحمل `expectedStatus` و`expectedPeriodEnd` وتمنع الفترات المتراجعة وتقفل صف الاشتراك قبل التحديث؛ وربط المحادثة واعتماد عرض السعر يقفلان Acquisition قبل التحقق والانتقال.
 - سياق الأهلية موحد ويُبنى من Tenant والخطة والدولة وعدد المواقع والمنتجات وAccess Tier entitlements، ويستخدمه Catalog وAcquisition وTrial وRecommendations.
 - فهارس مركبة لمسارات tenant/status/date وoffering/status وoutbox leasing وattribution.
@@ -175,7 +175,7 @@
 
 - TypeScript: ناجح، دون أخطاء.
 - ESLint: ناجح، دون أخطاء؛ بقيت 63 warning تاريخية خارج ملفات المنصة بعد دمج آخر تحديثات `main`.
-- الاختبارات: 183 ملف اختبار ناجح، 612 اختبارًا ناجحًا، صفر فشل.
+- الاختبارات: 183 ملف اختبار ناجح، 614 اختبارًا ناجحًا، صفر فشل.
 - Production Build: ناجح، وجميع مسارات العميل والإدارة والـAPI ظهرت في route manifest.
 - قاعدة PostgreSQL نظيفة: نجح `db:deploy:safe`، ونجح seed مرتين، وثبتت أعداد 1 Product و1 Offering و6 Workflows و3 Capabilities. ثبت كذلك أن Revision المنشور يستخدم snapshot v2 وأن تعديل أدمن تجريبي ظل محفوظًا بعد إعادة seed دون إنشاء Revision زائد.
 - فهارس التحصين: تحقق وجود الفهارس الأربعة الخاصة بمنع Fulfillment المتوازي، توافق الاشتراكات القديمة، usage period، وtenant-scoped idempotency.

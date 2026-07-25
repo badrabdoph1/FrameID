@@ -42,7 +42,7 @@ Seed منصة الخدمات insert-only: يضيف baseline الناقص ولا 
 - أحداث Outbox الفاشلة يعاد جدولتها تلقائيًا مع exponential backoff حتى `DEAD_LETTER`.
 - تنفيذ Fulfillment الفاشل يعاد من لوحة الإدارة بزر «إعادة المحاولة»؛ يعاد نفس Workflow ولا يسمح بالانتقال اليدوي فوق الفشل.
 - المصالحة تعيد تشغيل الـrun الذي انتهت lease الخاصة به، وتغلق Acquisition العالق في `FULFILLING` إذا كان الـrun قد وصل بالفعل إلى `SUCCEEDED`.
-- المصالحة تستعيد محادثة الطلب الذي تعطل بين إنشاء Acquisition وفتح Communication، وتعيد Context Reference المفقود مع التحقق من تطابق tenant.
+- المصالحة تستعيد محادثة الطلب الذي تعطل بين إنشاء Acquisition وفتح Communication، وتعيد Context Reference المفقود مع التحقق من تطابق tenant ومن زوج `conversationId + entityId` معًا.
 - أي Workflow قد يتجاوز 15 دقيقة يجب أن يستدعي `context.heartbeat()` دوريًا؛ فقدان الـtoken يوقف الكتابة النهائية ويترك المصالحة للمحاولة الأحدث.
 - لا تنشئ FulfillmentRun يدويًا؛ استخدم runtime أو أعد حدث `services.fulfillment.requested` بمفتاح deduplication ثابت.
 

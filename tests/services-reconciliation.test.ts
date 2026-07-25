@@ -41,7 +41,7 @@ describe("services reconciliation", () => {
         updateMany: vi.fn().mockResolvedValue({ count: 1 }),
       },
       communicationConversation: { findMany: vi.fn().mockResolvedValue([{ id: "conversation", tenantId: "tenant" }]) },
-      communicationContextReference: { findMany: vi.fn().mockResolvedValue([]), upsert: vi.fn() },
+      communicationContextReference: { findMany: vi.fn().mockResolvedValue([{ conversationId: "old-conversation", entityId: "linked" }]), upsert: vi.fn() },
       entitlement: { count: vi.fn().mockResolvedValue(0), updateMany: vi.fn().mockResolvedValue({ count: 1 }) },
       productInstance: { count: vi.fn().mockResolvedValue(0), updateMany: vi.fn().mockResolvedValue({ count: 1 }) },
     };

@@ -27,7 +27,7 @@ describe("services platform hardening invariants", () => {
         updateMany: vi.fn(),
       },
       communicationConversation: { findUnique: vi.fn().mockResolvedValue({ tenantId: "tenant" }) },
-      servicesOutboxEvent: { upsert: vi.fn() },
+      servicesOutboxEvent: { findUnique: vi.fn().mockResolvedValue(null), upsert: vi.fn() },
     };
     const prisma = { $transaction: <T>(callback: (tx: typeof transaction) => Promise<T>) => callback(transaction) };
     const repository = createPrismaAcquisitionRepository(prisma as never);
@@ -45,7 +45,7 @@ describe("services platform hardening invariants", () => {
         updateMany: vi.fn(),
       },
       communicationConversation: { findUnique: vi.fn().mockResolvedValue({ tenantId: "tenant-b" }) },
-      servicesOutboxEvent: { upsert: vi.fn() },
+      servicesOutboxEvent: { findUnique: vi.fn().mockResolvedValue(null), upsert: vi.fn() },
     };
     const prisma = { $transaction: <T>(callback: (tx: typeof transaction) => Promise<T>) => callback(transaction) };
 
@@ -55,6 +55,32 @@ describe("services platform hardening invariants", () => {
       requestedAt: new Date(),
     })).rejects.toThrow(/same tenant/i);
     expect(transaction.acquisition.updateMany).not.toHaveBeenCalled();
+  });
+
+  it("rejects acquisition idempotency replay for a different offering before catalog lookup", async () => {
+    const prisma = {
+      acquisition: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: "existing",
+          tenantId: "tenant",
+          offeringId: "offering-a",
+          status: AcquisitionStatus.DRAFT,
+          correlationId: "correlation",
+          conversationId: null,
+          metadata: { requestedByUserId: "user" },
+          offering: { name: "A" },
+        }),
+      },
+      catalogOffering: { findUnique: vi.fn() },
+    };
+
+    await expect(createPrismaAcquisitionRepository(prisma as never).createFromCatalog({
+      tenantId: "tenant",
+      userId: "user",
+      offeringId: "offering-b",
+      idempotencyKey: "same-key",
+    })).rejects.toThrow(/request identity/i);
+    expect(prisma.catalogOffering.findUnique).not.toHaveBeenCalled();
   });
 
   it("creates the first payment draft after revalidating the locked acquisition", async () => {
@@ -98,7 +124,7 @@ describe("services platform hardening invariants", () => {
         update: vi.fn(),
       },
       paymentRequestLog: { create: vi.fn() },
-      servicesOutboxEvent: { upsert: vi.fn() },
+      servicesOutboxEvent: { findUnique: vi.fn().mockResolvedValue(null), upsert: vi.fn() },
     };
     const prisma = {
       $transaction: <T>(callback: (tx: typeof transaction) => Promise<T>) => callback(transaction),
@@ -114,7 +140,7 @@ describe("services platform hardening invariants", () => {
     expect(transaction.paymentRequest.update).not.toHaveBeenCalled();
     expect(transaction.acquisition.update).not.toHaveBeenCalled();
     expect(transaction.servicesOutboxEvent.upsert).not.toHaveBeenCalled();
-    expect(transaction.$queryRaw).toHaveBeenCalledTimes(2);
+    expect(transaction.$queryRaw).toHaveBeenCalledTimes(3);
   });
 
   it("defers refunds while fulfillment is running so compensation cannot race activation", async () => {
@@ -129,7 +155,7 @@ describe("services platform hardening invariants", () => {
         update: vi.fn(),
       },
       paymentRequestLog: { create: vi.fn() },
-      servicesOutboxEvent: { upsert: vi.fn() },
+      servicesOutboxEvent: { findUnique: vi.fn().mockResolvedValue(null), upsert: vi.fn() },
     };
     const prisma = { $transaction: <T>(callback: (tx: typeof transaction) => Promise<T>) => callback(transaction) };
     const repository = createPrismaServicesPaymentRepository(prisma as never);
@@ -162,6 +188,25 @@ describe("services platform hardening invariants", () => {
 
     await expect(operation === "reject" ? repository.reject(command) : repository.refund(command)).resolves.toEqual({ acquisitionId: "acquisition", tenantId: "tenant" });
     expect(transaction.servicesOutboxEvent.findUnique).toHaveBeenCalledWith(expect.objectContaining({ where: { deduplicationKey: idempotencyKey } }));
+  });
+
+  it("rejects a payment idempotency collision before mutating payment state", async () => {
+    const update = vi.fn();
+    const transaction = {
+      $queryRaw: vi.fn().mockResolvedValue([]),
+      paymentRequest: { findUniqueOrThrow: vi.fn().mockResolvedValue({ id: "payment", acquisitionId: "acquisition", tenantId: "tenant", status: PaymentStatus.SUBMITTED }) , update },
+      servicesOutboxEvent: { findUnique: vi.fn().mockResolvedValue({ eventName: "services.payment.refunded", aggregateId: "other-acquisition", payload: { paymentRequestId: "other-payment" } }) },
+    };
+    const prisma = { $transaction: <T>(callback: (tx: typeof transaction) => Promise<T>) => callback(transaction) };
+
+    await expect(createPrismaServicesPaymentRepository(prisma as never).reject({
+      paymentRequestId: "payment",
+      reviewerId: "admin",
+      reason: "invalid",
+      idempotencyKey: "already-used",
+      rejectedAt: new Date(),
+    })).rejects.toThrow(/idempotency key/i);
+    expect(update).not.toHaveBeenCalled();
   });
 
   it("uses one market and currency selector for catalog and acquisition", () => {

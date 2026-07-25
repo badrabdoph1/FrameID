@@ -34,6 +34,19 @@ function asRecord(acquisition: {
   };
 }
 
+function assertReplayIdentity(
+  acquisition: { offeringId: string; metadata: Prisma.JsonValue | null },
+  input: { offeringId: string; userId: string },
+) {
+  const metadata = acquisition.metadata && typeof acquisition.metadata === "object" && !Array.isArray(acquisition.metadata)
+    ? acquisition.metadata as Record<string, Prisma.JsonValue>
+    : {};
+  const originalUserId = typeof metadata.requestedByUserId === "string" ? metadata.requestedByUserId : null;
+  if (acquisition.offeringId !== input.offeringId || (originalUserId && originalUserId !== input.userId)) {
+    throw new Error("Acquisition idempotency key is already bound to another request identity.");
+  }
+}
+
 export function createPrismaAcquisitionRepository(prisma: PrismaClient): AcquisitionRepository {
   return {
     async createFromCatalog(input) {
@@ -41,7 +54,10 @@ export function createPrismaAcquisitionRepository(prisma: PrismaClient): Acquisi
         where: { tenantId_idempotencyKey: { tenantId: input.tenantId, idempotencyKey: input.idempotencyKey } },
         include: { offering: { select: { name: true } } },
       });
-      if (existing) return asRecord(existing);
+      if (existing) {
+        assertReplayIdentity(existing, input);
+        return asRecord(existing);
+      }
 
       const context = await buildPrismaEligibilityContext(prisma, input.tenantId);
       const { marketCode, currency } = resolveCommerceMarket(context);
@@ -161,6 +177,7 @@ export function createPrismaAcquisitionRepository(prisma: PrismaClient): Acquisi
           },
           include: { offering: { select: { name: true } } },
         });
+        assertReplayIdentity(acquisition, input);
         await tx.servicesOutboxEvent.upsert({
           where: { deduplicationKey: `acquisition:${acquisition.id}:created` },
           update: {},

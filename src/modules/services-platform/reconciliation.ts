@@ -156,11 +156,11 @@ export async function runServicesReconciliation(
       prisma.communicationConversation.findMany({ where: { id: { in: conversationIds } }, select: { id: true, tenantId: true } }),
       prisma.communicationContextReference.findMany({
         where: { namespace: "services", entityType: "acquisition", entityId: { in: communicationCandidates.map((item) => item.id) }, relationKey: "primary" },
-        select: { entityId: true },
+        select: { conversationId: true, entityId: true },
       }),
     ]);
     const conversationTenants = new Map(conversations.map((item) => [item.id, item.tenantId]));
-    const contextAcquisitions = new Set(contexts.map((item) => item.entityId));
+    const contextLinks = new Set(contexts.map((item) => `${item.conversationId}:${item.entityId}`));
     const requestOffering = options.requestOffering ?? createServicesPlatformRuntime(prisma).acquisitions.requestOffering;
     for (const acquisition of communicationCandidates) {
       const conversationTenant = acquisition.conversationId ? conversationTenants.get(acquisition.conversationId) : undefined;
@@ -169,7 +169,7 @@ export async function runServicesReconciliation(
           unsafeCommunicationLinks += 1;
           continue;
         }
-        if (!contextAcquisitions.has(acquisition.id)) {
+        if (!contextLinks.has(`${acquisition.conversationId}:${acquisition.id}`)) {
           await prisma.communicationContextReference.upsert({
             where: {
               conversationId_namespace_entityType_entityId_relationKey: {
