@@ -25,6 +25,7 @@ export interface TrialRepository {
     endsAt: Date | null;
     graceEndsAt: Date | null;
     usageLimit: number | null;
+    oncePerTenant: boolean;
   }): Promise<{ id: string; status: "ACTIVE"; startsAt: Date; endsAt: Date | null; graceEndsAt: Date | null; usageLimit: number | null }>;
 }
 
@@ -65,6 +66,7 @@ export function createTrialService(
           endsAt,
           graceEndsAt,
           usageLimit: policy.usageLimit,
+          oncePerTenant: policy.oncePerTenant,
         });
       }
       if (dependencies) {

@@ -59,21 +59,33 @@ export function createPrismaTrialRepository(prisma: PrismaClient): TrialReposito
       return await prisma.trialGrant.count({ where: { tenantId, offeringId } }) > 0;
     },
     async createGrant(input) {
-      const grant = await prisma.trialGrant.upsert({
-        where: { tenantId_idempotencyKey: { tenantId: input.tenantId, idempotencyKey: input.idempotencyKey } },
-        update: {},
-        create: {
-          tenantId: input.tenantId,
-          productId: input.productId,
-          offeringId: input.offeringId,
-          idempotencyKey: input.idempotencyKey,
-          startsAt: input.startsAt,
-          endsAt: input.endsAt,
-          graceEndsAt: input.graceEndsAt,
-          usageLimit: input.usageLimit,
-          status: TrialGrantStatus.ACTIVE,
-        },
-        select: { id: true, status: true, startsAt: true, endsAt: true, graceEndsAt: true, usageLimit: true },
+      const grant = await prisma.$transaction(async (tx) => {
+        await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${input.tenantId}), hashtext(${input.offeringId}))`;
+        const existing = await tx.trialGrant.findUnique({
+          where: { tenantId_idempotencyKey: { tenantId: input.tenantId, idempotencyKey: input.idempotencyKey } },
+          select: { id: true, offeringId: true, status: true, startsAt: true, endsAt: true, graceEndsAt: true, usageLimit: true },
+        });
+        if (existing) {
+          if (existing.offeringId !== input.offeringId || existing.status !== TrialGrantStatus.ACTIVE) throw new Error("Trial idempotency key is already bound to another or inactive grant.");
+          return existing;
+        }
+        if (input.oncePerTenant && await tx.trialGrant.count({ where: { tenantId: input.tenantId, offeringId: input.offeringId } }) > 0) {
+          throw new Error("This tenant has already used this trial.");
+        }
+        return tx.trialGrant.create({
+          data: {
+            tenantId: input.tenantId,
+            productId: input.productId,
+            offeringId: input.offeringId,
+            idempotencyKey: input.idempotencyKey,
+            startsAt: input.startsAt,
+            endsAt: input.endsAt,
+            graceEndsAt: input.graceEndsAt,
+            usageLimit: input.usageLimit,
+            status: TrialGrantStatus.ACTIVE,
+          },
+          select: { id: true, offeringId: true, status: true, startsAt: true, endsAt: true, graceEndsAt: true, usageLimit: true },
+        });
       });
       return { ...grant, status: "ACTIVE" as const };
     },

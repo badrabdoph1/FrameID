@@ -171,16 +171,24 @@ export function createPrismaAcquisitionRepository(prisma: PrismaClient): Acquisi
     },
     async attachConversation(input) {
       return prisma.$transaction(async (tx) => {
+        await tx.$queryRaw`SELECT id FROM "Acquisition" WHERE id = ${input.acquisitionId} FOR UPDATE`;
         const current = await tx.acquisition.findUniqueOrThrow({ where: { id: input.acquisitionId } });
         if (current.conversationId && current.conversationId !== input.conversationId) {
           throw new Error("Acquisition is already attached to another conversation.");
         }
+        if (!current.conversationId && current.status !== AcquisitionStatus.DRAFT) {
+          throw new Error(`Acquisition cannot attach a conversation from status ${current.status}.`);
+        }
+        if (!current.conversationId) {
+          const attached = await tx.acquisition.updateMany({
+            where: { id: input.acquisitionId, status: AcquisitionStatus.DRAFT, conversationId: null },
+            data: { conversationId: input.conversationId, status: AcquisitionStatus.REQUESTED, requestedAt: input.requestedAt },
+          });
+          if (attached.count !== 1) throw new Error("Acquisition conversation attachment changed concurrently.");
+        }
         const acquisition = current.conversationId
           ? current
-          : await tx.acquisition.update({
-              where: { id: input.acquisitionId },
-              data: { conversationId: input.conversationId, status: AcquisitionStatus.REQUESTED, requestedAt: input.requestedAt },
-            });
+          : await tx.acquisition.findUniqueOrThrow({ where: { id: input.acquisitionId } });
         await tx.servicesOutboxEvent.upsert({
           where: { deduplicationKey: `acquisition:${input.acquisitionId}:requested` },
           update: {},

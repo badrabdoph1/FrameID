@@ -313,6 +313,7 @@ export async function setCustomQuoteAction(formData: FormData) {
   try {
     if (!Number.isSafeInteger(amount) || amount <= 0) throw new Error("قيمة عرض السعر غير صالحة.");
     await prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT id FROM "Acquisition" WHERE id = ${acquisitionId} FOR UPDATE`;
       const acquisition = await tx.acquisition.findUniqueOrThrow({ where: { id: acquisitionId } });
       if (!(["REQUESTED", "QUALIFYING", "ACCEPTED"] as string[]).includes(acquisition.status)) throw new Error("حالة الطلب لا تقبل عرض سعر جديد.");
       await tx.acquisition.update({ where: { id: acquisitionId }, data: { acceptedTotal: amount, acceptedCurrency: currency, status: "AWAITING_PAYMENT", acceptedAt: new Date() } });

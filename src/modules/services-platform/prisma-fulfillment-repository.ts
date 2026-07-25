@@ -78,17 +78,25 @@ export function createPrismaFulfillmentRepository(prisma: PrismaClient): Fulfill
         select: { id: true, status: true },
       });
     },
-    async markRunning(runId) {
+    async markRunning(runId, leaseOwner, allowedStatuses = ["PENDING", "FAILED"]) {
       const now = new Date();
       const updated = await prisma.fulfillmentRun.updateMany({
-        where: { id: runId, status: { in: [FulfillmentStatus.PENDING, FulfillmentStatus.FAILED] } },
-        data: { status: FulfillmentStatus.RUNNING, startedAt: now, attempts: { increment: 1 }, leaseOwner: `fulfillment:${runId}`, leaseExpiresAt: new Date(now.getTime() + 15 * 60_000), finishedAt: null, lastError: null },
+        where: { id: runId, status: { in: allowedStatuses as FulfillmentStatus[] } },
+        data: { status: FulfillmentStatus.RUNNING, startedAt: now, attempts: { increment: 1 }, leaseOwner, leaseExpiresAt: new Date(now.getTime() + 15 * 60_000), finishedAt: null, lastError: null },
       });
       return updated.count === 1;
     },
-    async markSucceeded(runId, result, finishedAt) {
-      await prisma.fulfillmentRun.update({
-        where: { id: runId },
+    async renewLease(runId, leaseOwner) {
+      const now = new Date();
+      const updated = await prisma.fulfillmentRun.updateMany({
+        where: { id: runId, status: FulfillmentStatus.RUNNING, leaseOwner, leaseExpiresAt: { gt: now } },
+        data: { leaseExpiresAt: new Date(now.getTime() + 15 * 60_000) },
+      });
+      return updated.count === 1;
+    },
+    async markSucceeded(runId, leaseOwner, result, finishedAt) {
+      const updated = await prisma.fulfillmentRun.updateMany({
+        where: { id: runId, status: FulfillmentStatus.RUNNING, leaseOwner, leaseExpiresAt: { gt: finishedAt } },
         data: {
           status: FulfillmentStatus.SUCCEEDED,
           result: result === null ? Prisma.JsonNull : result as Prisma.InputJsonValue,
@@ -99,10 +107,12 @@ export function createPrismaFulfillmentRepository(prisma: PrismaClient): Fulfill
           lastError: null,
         },
       });
+      return updated.count === 1;
     },
-    async markWaiting(runId, status, checkpoint) {
-      await prisma.fulfillmentRun.update({
-        where: { id: runId },
+    async markWaiting(runId, leaseOwner, status, checkpoint) {
+      const now = new Date();
+      const updated = await prisma.fulfillmentRun.updateMany({
+        where: { id: runId, status: FulfillmentStatus.RUNNING, leaseOwner, leaseExpiresAt: { gt: now } },
         data: {
           status: status as FulfillmentStatus,
           checkpoint: checkpoint === null ? Prisma.JsonNull : checkpoint as Prisma.InputJsonValue,
@@ -110,12 +120,16 @@ export function createPrismaFulfillmentRepository(prisma: PrismaClient): Fulfill
           leaseExpiresAt: null,
         },
       });
+      return updated.count === 1;
     },
-    async markFailed(runId, error, finishedAt) {
-      await prisma.fulfillmentRun.update({
-        where: { id: runId },
+    async markFailed(runId, leaseOwner, error, finishedAt) {
+      const updated = await prisma.fulfillmentRun.updateMany({
+        where: leaseOwner
+          ? { id: runId, status: FulfillmentStatus.RUNNING, leaseOwner, leaseExpiresAt: { gt: finishedAt } }
+          : { id: runId, status: FulfillmentStatus.PENDING },
         data: { status: FulfillmentStatus.FAILED, lastError: error, finishedAt, leaseOwner: null, leaseExpiresAt: null },
       });
+      return updated.count === 1;
     },
     async transitionAcquisition(acquisitionId, status) {
       await prisma.$transaction(async (tx) => {

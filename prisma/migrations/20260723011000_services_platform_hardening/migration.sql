@@ -11,7 +11,7 @@ WITH ranked_active_runs AS (
 )
 UPDATE "FulfillmentRun" AS run
 SET
-  "status" = 'FAILED',
+  "status" = 'CANCELLED',
   "lastError" = 'Superseded while enforcing one active fulfillment run per acquisition.',
   "finishedAt" = CURRENT_TIMESTAMP,
   "leaseOwner" = NULL,

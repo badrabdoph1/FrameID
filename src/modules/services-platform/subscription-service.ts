@@ -12,6 +12,7 @@ export type ServiceSubscriptionRecord = {
 
 export interface ServiceSubscriptionRepository {
   getById(id: string): Promise<ServiceSubscriptionRecord | null>;
+  getProcessedUpdate(id: string, idempotencyKey: string): Promise<{ id: string; status: ServiceSubscriptionLifecycleStatus } | null>;
   create(input: {
     tenantId: string;
     offeringId: string;
@@ -24,6 +25,8 @@ export interface ServiceSubscriptionRepository {
   }): Promise<{ id: string; status: ServiceSubscriptionLifecycleStatus }>;
   update(input: {
     id: string;
+    expectedStatus: ServiceSubscriptionLifecycleStatus;
+    expectedPeriodEnd: Date;
     status: ServiceSubscriptionLifecycleStatus;
     idempotencyKey: string;
     currentPeriodStart?: Date;
@@ -77,11 +80,16 @@ export function createServiceSubscriptionService(repository: ServiceSubscription
       });
     },
     async renew(input: { subscriptionId: string; periodStart: Date; periodEnd: Date; idempotencyKey: string }) {
+      const processed = await repository.getProcessedUpdate(input.subscriptionId, input.idempotencyKey);
+      if (processed) return processed;
       const subscription = await get(input.subscriptionId);
       if (["CANCELLED", "EXPIRED"].includes(subscription.status)) throw new Error(`Cannot renew ${subscription.status} subscription.`);
       if (input.periodEnd <= input.periodStart) throw new Error("Subscription period end must follow period start.");
+      if (input.periodStart < subscription.currentPeriodEnd) throw new Error("Subscription renewal cannot move the billing period backwards or overlap the current period.");
       return repository.update({
         id: subscription.id,
+        expectedStatus: subscription.status,
+        expectedPeriodEnd: subscription.currentPeriodEnd,
         status: "ACTIVE",
         currentPeriodStart: input.periodStart,
         currentPeriodEnd: input.periodEnd,
@@ -91,21 +99,29 @@ export function createServiceSubscriptionService(repository: ServiceSubscription
       });
     },
     async enterGrace(input: { subscriptionId: string; graceDays: number; idempotencyKey: string }) {
+      const processed = await repository.getProcessedUpdate(input.subscriptionId, input.idempotencyKey);
+      if (processed) return processed;
       const subscription = await get(input.subscriptionId);
       if (subscription.status !== "PAST_DUE") throw new Error("Only past-due subscriptions can enter grace period.");
       if (!Number.isSafeInteger(input.graceDays) || input.graceDays < 1) throw new Error("Grace days must be positive.");
       return repository.update({
         id: subscription.id,
+        expectedStatus: subscription.status,
+        expectedPeriodEnd: subscription.currentPeriodEnd,
         status: "GRACE_PERIOD",
         gracePeriodEndsAt: addDays(now(), input.graceDays),
         idempotencyKey: input.idempotencyKey,
       });
     },
     async cancel(input: { subscriptionId: string; atPeriodEnd: boolean; reason: string; idempotencyKey: string }) {
+      const processed = await repository.getProcessedUpdate(input.subscriptionId, input.idempotencyKey);
+      if (processed) return processed;
       const subscription = await get(input.subscriptionId);
       if (["CANCELLED", "EXPIRED"].includes(subscription.status)) return { id: subscription.id, status: subscription.status };
       return repository.update({
         id: subscription.id,
+        expectedStatus: subscription.status,
+        expectedPeriodEnd: subscription.currentPeriodEnd,
         status: input.atPeriodEnd ? subscription.status : "CANCELLED",
         cancelAtPeriodEnd: input.atPeriodEnd,
         cancelledAt: input.atPeriodEnd ? null : now(),
@@ -114,11 +130,13 @@ export function createServiceSubscriptionService(repository: ServiceSubscription
       });
     },
     async expire(input: { subscriptionId: string; idempotencyKey: string }) {
+      const processed = await repository.getProcessedUpdate(input.subscriptionId, input.idempotencyKey);
+      if (processed) return processed;
       const subscription = await get(input.subscriptionId);
       if (!(["GRACE_PERIOD", "PAST_DUE", "ACTIVE"] as ServiceSubscriptionLifecycleStatus[]).includes(subscription.status)) {
         throw new Error(`Cannot expire ${subscription.status} subscription.`);
       }
-      return repository.update({ id: subscription.id, status: "EXPIRED", idempotencyKey: input.idempotencyKey });
+      return repository.update({ id: subscription.id, expectedStatus: subscription.status, expectedPeriodEnd: subscription.currentPeriodEnd, status: "EXPIRED", idempotencyKey: input.idempotencyKey });
     },
   };
 }

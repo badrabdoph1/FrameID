@@ -1,9 +1,13 @@
 import { AcquisitionStatus, PaymentStatus } from "@prisma/client";
+import { readFileSync } from "node:fs";
 import { describe, expect, it, vi } from "vitest";
 
 import { clientProductAnalyticsEventNames } from "@/modules/services-platform/prisma-analytics";
 import { buildPrismaEligibilityContext } from "@/modules/services-platform/prisma-eligibility-context";
 import { createPrismaServicesPaymentRepository } from "@/modules/services-platform/prisma-payment-repository";
+import { createPrismaFulfillmentRepository } from "@/modules/services-platform/prisma-fulfillment-repository";
+import { createPrismaAcquisitionRepository } from "@/modules/services-platform/prisma-acquisition-repository";
+import { createPrismaServiceSubscriptionRepository } from "@/modules/services-platform/prisma-subscription-repository";
 import { createPrismaUsageRepository } from "@/modules/services-platform/prisma-usage-repository";
 import { resolveCommerceMarket } from "@/modules/services-platform/commerce-market";
 
@@ -12,6 +16,23 @@ describe("services platform hardening invariants", () => {
     expect(clientProductAnalyticsEventNames).not.toContain("payment.approved");
     expect(clientProductAnalyticsEventNames).not.toContain("acquisition.fulfilled");
     expect(clientProductAnalyticsEventNames).not.toContain("acquisition.requested");
+  });
+
+  it("never revives a cancelled acquisition while attaching a conversation", async () => {
+    const transaction = {
+      $queryRaw: vi.fn().mockResolvedValue([]),
+      acquisition: {
+        findUniqueOrThrow: vi.fn().mockResolvedValue({ id: "acquisition", tenantId: "tenant", status: AcquisitionStatus.CANCELLED, conversationId: null }),
+        updateMany: vi.fn(),
+      },
+      servicesOutboxEvent: { upsert: vi.fn() },
+    };
+    const prisma = { $transaction: <T>(callback: (tx: typeof transaction) => Promise<T>) => callback(transaction) };
+    const repository = createPrismaAcquisitionRepository(prisma as never);
+
+    await expect(repository.attachConversation({ acquisitionId: "acquisition", conversationId: "conversation", requestedAt: new Date() })).rejects.toThrow(/CANCELLED/);
+    expect(transaction.acquisition.updateMany).not.toHaveBeenCalled();
+    expect(transaction.servicesOutboxEvent.upsert).not.toHaveBeenCalled();
   });
 
   it("creates the first payment draft after revalidating the locked acquisition", async () => {
@@ -106,6 +127,50 @@ describe("services platform hardening invariants", () => {
     expect(resolveCommerceMarket({ country: "sa" })).toEqual({ marketCode: "SA", currency: "SAR" });
     expect(resolveCommerceMarket({ country: "AE" })).toEqual({ marketCode: "AE", currency: "AED" });
     expect(resolveCommerceMarket({ country: "XX" })).toEqual({ marketCode: "XX", currency: "USD" });
+  });
+
+  it("fences fulfillment completion by the current running lease owner", async () => {
+    const updateMany = vi.fn().mockResolvedValue({ count: 1 });
+    const repository = createPrismaFulfillmentRepository({ fulfillmentRun: { updateMany } } as never);
+    const finishedAt = new Date("2026-07-22T00:00:00.000Z");
+
+    await expect(repository.markSucceeded("run", "lease-attempt-2", { ready: true }, finishedAt)).resolves.toBe(true);
+    expect(updateMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: { id: "run", status: "RUNNING", leaseOwner: "lease-attempt-2", leaseExpiresAt: { gt: finishedAt } },
+    }));
+  });
+
+  it("rejects a stale active-to-active subscription update after a newer period wins", async () => {
+    const update = vi.fn();
+    const transaction = {
+      $queryRaw: vi.fn().mockResolvedValue([]),
+      servicesOutboxEvent: { findUnique: vi.fn().mockResolvedValue(null) },
+      serviceSubscription: {
+        findUniqueOrThrow: vi.fn().mockResolvedValue({ id: "subscription", status: "ACTIVE", currentPeriodEnd: new Date("2026-10-01T00:00:00.000Z") }),
+        update,
+      },
+    };
+    const prisma = { $transaction: <T>(callback: (tx: typeof transaction) => Promise<T>) => callback(transaction) };
+    const repository = createPrismaServiceSubscriptionRepository(prisma as never);
+
+    await expect(repository.update({
+      id: "subscription",
+      expectedStatus: "ACTIVE",
+      expectedPeriodEnd: new Date("2026-09-01T00:00:00.000Z"),
+      status: "ACTIVE",
+      currentPeriodStart: new Date("2026-09-01T00:00:00.000Z"),
+      currentPeriodEnd: new Date("2026-10-01T00:00:00.000Z"),
+      idempotencyKey: "renew-september",
+    })).rejects.toThrow(/billing period changed concurrently/i);
+    expect(transaction.$queryRaw).toHaveBeenCalledTimes(2);
+    expect(update).not.toHaveBeenCalled();
+  });
+
+  it("cancels superseded active fulfillment rows before creating the unique index", () => {
+    const migration = readFileSync("prisma/migrations/20260723011000_services_platform_hardening/migration.sql", "utf8");
+    expect(migration).toMatch(/active_rank > 1/);
+    expect(migration).toMatch(/"status" = 'CANCELLED'/);
+    expect(migration).not.toMatch(/"status" = 'FAILED'[\s\S]*active_rank > 1/);
   });
 
   it("builds one authoritative targeting context from tenant state and entitlements", async () => {

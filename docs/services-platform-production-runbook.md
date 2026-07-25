@@ -30,6 +30,7 @@
 - أقدم حدث `PENDING` لا ينبغي أن يتجاوز دقيقتين في التشغيل الطبيعي.
 - `ProductInstance` في `PROVISIONING` لأكثر من ساعة يظهر كـanomaly في reconciliation.
 - `FulfillmentRun` في `RUNNING` بعد انتهاء lease يُحوّل إلى `FAILED` ويُعاد طلب تشغيله تلقائيًا بمفتاح side-effect ثابت.
+- كل محاولة تحمل fencing token مستقلًا؛ محاولة فقدت الـlease أو انتهت صلاحيته زمنيًا لا تستطيع التجديد أو كتابة `SUCCEEDED` أو `FAILED` أو checkpoint فوق محاولة أحدث.
 - الاشتراكات `PAST_DUE` و`GRACE_PERIOD` تحتاج متابعة بوابة الدفع.
 - أي نتيجة `503` من reconciliation تعني حالة متدهورة وتتطلب تنبيهًا.
 
@@ -38,6 +39,7 @@
 - أحداث Outbox الفاشلة يعاد جدولتها تلقائيًا مع exponential backoff حتى `DEAD_LETTER`.
 - تنفيذ Fulfillment الفاشل يعاد من لوحة الإدارة بزر «إعادة المحاولة»؛ يعاد نفس Workflow ولا يسمح بالانتقال اليدوي فوق الفشل.
 - المصالحة تعيد تشغيل الـrun الذي انتهت lease الخاصة به، وتغلق Acquisition العالق في `FULFILLING` إذا كان الـrun قد وصل بالفعل إلى `SUCCEEDED`.
+- أي Workflow قد يتجاوز 15 دقيقة يجب أن يستدعي `context.heartbeat()` دوريًا؛ فقدان الـtoken يوقف الكتابة النهائية ويترك المصالحة للمحاولة الأحدث.
 - لا تنشئ FulfillmentRun يدويًا؛ استخدم runtime أو أعد حدث `services.fulfillment.requested` بمفتاح deduplication ثابت.
 
 ## الاسترداد أثناء التنفيذ

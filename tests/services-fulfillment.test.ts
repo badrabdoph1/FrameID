@@ -9,7 +9,8 @@ describe("services fulfillment", () => {
       async getAcquisition() { return { id: "acq_1", tenantId: "tenant_1", productId: "product_1", offeringId: "offering_1", workflowKey: "payment_then_auto", workflowVersion: 1, status: "PAID", instanceKey: "pricing-primary", additionalActivations: [{ productId: "gallery_product", instanceKey: "gallery:acq_1" }], billingInterval: "MONTHLY", capabilities: [{ capabilityKey: "pricing_site.access", capabilityId: "cap_1", value: true }] }; },
       async createRun(input) { events.push(`run:${input.idempotencyKey}`); return { id: "run_1", status: "PENDING" }; },
       async markRunning() { events.push("running"); return true; },
-      async markSucceeded() { events.push("succeeded"); },
+      async renewLease() { return true; },
+      async markSucceeded() { events.push("succeeded"); return true; },
       async markWaiting() { throw new Error("unused"); },
       async markFailed() { throw new Error("unused"); },
       async transitionAcquisition(_id, status) { events.push(`acquisition:${status}`); },
@@ -32,8 +33,8 @@ describe("services fulfillment", () => {
     const repository: FulfillmentRepository = {
       async getAcquisition() { return { id: "acq", tenantId: "t", productId: null, offeringId: "o", workflowKey: "manual_service", workflowVersion: 1, status: "ACCEPTED", instanceKey: null, additionalActivations: [], billingInterval: "ONE_TIME", capabilities: [] }; },
       async createRun() { return { id: "run", status: "PENDING" }; },
-      async markRunning() { return true; }, async markSucceeded() { throw new Error("unused"); },
-      async markWaiting(_id, status) { events.push(status); }, async markFailed() {},
+      async markRunning() { return true; }, async renewLease() { return true; }, async markSucceeded() { throw new Error("unused"); },
+      async markWaiting(_id, _leaseOwner, status) { events.push(status); return true; }, async markFailed() { return true; },
       async transitionAcquisition(_id, status) { events.push(status); },
     };
     const workflows = createWorkflowRegistry([{ key: "manual_service", async execute() { return { status: "WAITING_CUSTOMER", checkpoint: { question: "assets" } }; } }]);
@@ -49,8 +50,8 @@ describe("services fulfillment", () => {
     const repository: FulfillmentRepository = {
       async getAcquisition() { return acquisition; },
       async getRunAcquisitionId() { return { acquisitionId: "acq", status: "WAITING_INTERNAL" }; },
-      async createRun() { throw new Error("unused"); }, async markRunning() { return true; },
-      async markSucceeded() { events.push("succeeded"); }, async markWaiting() {}, async markFailed() {},
+      async createRun() { throw new Error("unused"); }, async markRunning() { return true; }, async renewLease() { return true; },
+      async markSucceeded() { events.push("succeeded"); return true; }, async markWaiting() { return true; }, async markFailed() { return true; },
       async transitionAcquisition(_id, status) { events.push(status); },
     };
     const service = createFulfillmentService({
@@ -71,8 +72,9 @@ describe("services fulfillment", () => {
       async getRunAcquisitionId() { return { acquisitionId: "acq", status: "FAILED" }; },
       async createRun() { throw new Error("unused"); },
       async markRunning() { events.push("running"); return true; },
-      async markSucceeded() { events.push("succeeded"); },
-      async markWaiting() {}, async markFailed() {},
+      async renewLease() { return true; },
+      async markSucceeded() { events.push("succeeded"); return true; },
+      async markWaiting() { return true; }, async markFailed() { return true; },
       async transitionAcquisition(_id, status) { events.push(status); },
     };
     const service = createFulfillmentService({
@@ -89,6 +91,7 @@ describe("services fulfillment", () => {
       async getAcquisition() { return { id: "acq", tenantId: "t", productId: null, offeringId: "o", workflowKey: "automatic", workflowVersion: 1, status: "PAID", instanceKey: null, additionalActivations: [], billingInterval: "ONE_TIME", capabilities: [] }; },
       async createRun() { return { id: "run", status: "PENDING" }; },
       async markRunning() { return false; },
+      async renewLease() { return true; },
       async markSucceeded() { throw new Error("unused"); },
       async markWaiting() { throw new Error("unused"); },
       async markFailed() { throw new Error("unused"); },
@@ -113,9 +116,10 @@ describe("services fulfillment", () => {
       async getAcquisition() { return { id: "acq", tenantId: "t", productId: null, offeringId: "o", workflowKey: "automatic", workflowVersion: 1, status: "PAID", instanceKey: null, additionalActivations: [], billingInterval: "ONE_TIME", capabilities: [] }; },
       async createRun() { return { id: "run", status: "PENDING" }; },
       async markRunning() { throw new Error("unused"); },
+      async renewLease() { throw new Error("unused"); },
       async markSucceeded() { throw new Error("unused"); },
       async markWaiting() { throw new Error("unused"); },
-      async markFailed(_runId, message) { events.push(`failed:${message}`); },
+      async markFailed(_runId, _leaseOwner, message) { events.push(`failed:${message}`); return true; },
       async transitionAcquisition() { throw new Error("Acquisition cannot transition to FULFILLING from CANCELLED."); },
     };
     const service = createFulfillmentService({
@@ -128,5 +132,29 @@ describe("services fulfillment", () => {
 
     await expect(service.start({ acquisitionId: "acq", idempotencyKey: "start" })).rejects.toThrow(/CANCELLED/);
     expect(events).toEqual(["failed:Acquisition cannot transition to FULFILLING from CANCELLED."]);
+  });
+
+  it("fences an expired attempt from overwriting a newer fulfillment claim", async () => {
+    const events: string[] = [];
+    const repository: FulfillmentRepository = {
+      async getAcquisition() { return { id: "acq", tenantId: "t", productId: null, offeringId: "o", workflowKey: "automatic", workflowVersion: 1, status: "PAID", instanceKey: null, additionalActivations: [], billingInterval: "ONE_TIME", capabilities: [] }; },
+      async createRun() { return { id: "run", status: "PENDING" }; },
+      async markRunning() { return true; },
+      async renewLease() { events.push("heartbeat"); return true; },
+      async markSucceeded() { events.push("stale-completion-rejected"); return false; },
+      async markWaiting() { return true; },
+      async markFailed() { events.push("stale-failure-rejected"); return false; },
+      async transitionAcquisition(_id, status) { events.push(`acquisition:${status}`); },
+    };
+    const service = createFulfillmentService({
+      repository,
+      workflows: createWorkflowRegistry([{ key: "automatic", async execute(context) { await context.heartbeat(); return { status: "COMPLETED" }; } }]),
+      async grantEntitlement() {},
+      async activateProduct() { throw new Error("unused"); },
+      async createSubscription() { throw new Error("unused"); },
+    });
+
+    await expect(service.start({ acquisitionId: "acq", idempotencyKey: "start" })).rejects.toThrow(/lease was lost/i);
+    expect(events).toEqual(["acquisition:FULFILLING", "heartbeat", "stale-completion-rejected", "stale-failure-rejected"]);
   });
 });

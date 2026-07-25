@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+
 import type { AcquisitionLifecycleStatus } from "./acquisition-state-machine";
 
 export type FulfillmentExecutionResult =
@@ -10,6 +12,7 @@ export type FulfillmentContext = {
   offeringId: string;
   productId: string | null;
   runId: string;
+  heartbeat(): Promise<void>;
 };
 
 export type WorkflowHandler = {
@@ -50,10 +53,11 @@ export interface FulfillmentRepository {
   getAcquisition(acquisitionId: string): Promise<FulfillmentAcquisition | null>;
   getRunAcquisitionId?(runId: string): Promise<{ acquisitionId: string; status: "PENDING" | "RUNNING" | "WAITING_CUSTOMER" | "WAITING_INTERNAL" | "READY" | "SUCCEEDED" | "FAILED" | "CANCELLED" } | null>;
   createRun(input: { acquisitionId: string; workflowKey: string; workflowVersion: number; idempotencyKey: string }): Promise<{ id: string; status: "PENDING" | "RUNNING" | "WAITING_CUSTOMER" | "WAITING_INTERNAL" | "READY" | "SUCCEEDED" | "FAILED" | "CANCELLED" }>;
-  markRunning(runId: string): Promise<boolean>;
-  markSucceeded(runId: string, result: unknown, finishedAt: Date): Promise<void>;
-  markWaiting(runId: string, status: "WAITING_CUSTOMER" | "WAITING_INTERNAL" | "READY", checkpoint: unknown): Promise<void>;
-  markFailed(runId: string, error: string, finishedAt: Date): Promise<void>;
+  markRunning(runId: string, leaseOwner: string, allowedStatuses?: Array<"PENDING" | "FAILED" | "WAITING_CUSTOMER" | "WAITING_INTERNAL" | "READY">): Promise<boolean>;
+  renewLease(runId: string, leaseOwner: string): Promise<boolean>;
+  markSucceeded(runId: string, leaseOwner: string, result: unknown, finishedAt: Date): Promise<boolean>;
+  markWaiting(runId: string, leaseOwner: string, status: "WAITING_CUSTOMER" | "WAITING_INTERNAL" | "READY", checkpoint: unknown): Promise<boolean>;
+  markFailed(runId: string, leaseOwner: string | null, error: string, finishedAt: Date): Promise<boolean>;
   transitionAcquisition(acquisitionId: string, status: "FULFILLING" | "FULFILLED"): Promise<void>;
 }
 
@@ -67,7 +71,7 @@ export function createFulfillmentService(input: {
 }) {
   const now = input.now ?? (() => new Date());
 
-  async function finalize(acquisition: FulfillmentAcquisition, runId: string, result: unknown) {
+  async function finalize(acquisition: FulfillmentAcquisition, runId: string, leaseOwner: string, result: unknown) {
     const sideEffectKey = `fulfillment:${runId}`;
     const capabilityGrants = new Map<string, FulfillmentAcquisition["capabilities"][number]>();
     for (const capability of acquisition.capabilities) {
@@ -119,7 +123,8 @@ export function createFulfillmentService(input: {
           idempotencyKey: `${sideEffectKey}:subscription`,
         })
       : null;
-    await input.repository.markSucceeded(runId, result, now());
+    const completed = await input.repository.markSucceeded(runId, leaseOwner, result, now());
+    if (!completed) throw new Error("Fulfillment lease was lost before completion.");
     await input.repository.transitionAcquisition(acquisition.id, "FULFILLED");
     return {
       status: "SUCCEEDED" as const,
@@ -131,7 +136,8 @@ export function createFulfillmentService(input: {
   }
 
   async function execute(acquisition: FulfillmentAcquisition, runId: string) {
-    const claimed = await input.repository.markRunning(runId);
+    const leaseOwner = `fulfillment:${runId}:${randomUUID()}`;
+    const claimed = await input.repository.markRunning(runId, leaseOwner);
     if (!claimed) return { status: "RUNNING" as const, runId };
     try {
       const result = await input.workflows.get(acquisition.workflowKey).execute({
@@ -140,14 +146,17 @@ export function createFulfillmentService(input: {
         offeringId: acquisition.offeringId,
         productId: acquisition.productId,
         runId,
+        async heartbeat() {
+          if (!await input.repository.renewLease(runId, leaseOwner)) throw new Error("Fulfillment lease was lost.");
+        },
       });
       if (result.status !== "COMPLETED") {
-        await input.repository.markWaiting(runId, result.status, result.checkpoint ?? null);
+        if (!await input.repository.markWaiting(runId, leaseOwner, result.status, result.checkpoint ?? null)) throw new Error("Fulfillment lease was lost before checkpointing.");
         return { status: result.status, runId };
       }
-      return finalize(acquisition, runId, result.result ?? null);
+      return await finalize(acquisition, runId, leaseOwner, result.result ?? null);
     } catch (error) {
-      await input.repository.markFailed(runId, error instanceof Error ? error.message : "Unknown fulfillment error", now());
+      await input.repository.markFailed(runId, leaseOwner, error instanceof Error ? error.message : "Unknown fulfillment error", now());
       throw error;
     }
   }
@@ -170,7 +179,7 @@ export function createFulfillmentService(input: {
       try {
         await input.repository.transitionAcquisition(acquisition.id, "FULFILLING");
       } catch (error) {
-        await input.repository.markFailed(run.id, error instanceof Error ? error.message : "Acquisition transition failed", now());
+        await input.repository.markFailed(run.id, null, error instanceof Error ? error.message : "Acquisition transition failed", now());
         throw error;
       }
       return execute(acquisition, run.id);
@@ -189,12 +198,20 @@ export function createFulfillmentService(input: {
       const run = await input.repository.getRunAcquisitionId(command.runId);
       if (!run) throw new Error(`Fulfillment run not found: ${command.runId}`);
       if (run.status === "SUCCEEDED") return { status: "SUCCEEDED" as const, runId: command.runId, productInstanceId: null };
-      if (!["WAITING_CUSTOMER", "WAITING_INTERNAL", "READY", "RUNNING"].includes(run.status)) {
+      if (!["WAITING_CUSTOMER", "WAITING_INTERNAL", "READY"].includes(run.status)) {
         throw new Error(`Fulfillment run cannot be completed from ${run.status}`);
       }
       const acquisition = await input.repository.getAcquisition(run.acquisitionId);
       if (!acquisition || acquisition.status !== "FULFILLING") throw new Error("Fulfillment acquisition is not active.");
-      return finalize(acquisition, command.runId, command.result);
+      const leaseOwner = `fulfillment:${command.runId}:${randomUUID()}`;
+      const claimed = await input.repository.markRunning(command.runId, leaseOwner, ["WAITING_CUSTOMER", "WAITING_INTERNAL", "READY"]);
+      if (!claimed) return { status: "RUNNING" as const, runId: command.runId, productInstanceId: null };
+      try {
+        return await finalize(acquisition, command.runId, leaseOwner, command.result);
+      } catch (error) {
+        await input.repository.markFailed(command.runId, leaseOwner, error instanceof Error ? error.message : "Unknown fulfillment error", now());
+        throw error;
+      }
     },
   };
 }

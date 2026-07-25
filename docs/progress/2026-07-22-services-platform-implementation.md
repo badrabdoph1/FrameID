@@ -63,7 +63,7 @@
 - Self-service المجاني يبدأ التنفيذ مباشرة، والمدفوع ينتظر Payment Approval.
 - Workflow Registry يدعم instant وautomatic وmanual وcustom quote وbeta application.
 - Fulfillment يمنح Entitlements، ينشئ Product Instance، وينشئ Service Subscription تلقائيًا للعروض الدورية.
-- Fulfillment له claim ذري ومسار تشغيل واحد ومؤشر جزئي يمنع أكثر من run نشط، مع lease وتعافٍ تلقائي للـruns المتوقفة، وretry يعيد الـWorkflow الفاشل بمفاتيح side-effect ثابتة ولا يتخطاه.
+- Fulfillment له claim ذري ومسار تشغيل واحد ومؤشر جزئي يمنع أكثر من run نشط، مع lease وfencing token فريد لكل محاولة وheartbeat للـworkflows الطويلة وتعافٍ تلقائي للـruns المتوقفة. كل كتابة نهائية مشروطة بملكية الـtoken، والـretry يعيد الـWorkflow الفاشل بمفاتيح side-effect ثابتة ولا يتخطاه.
 
 ### المرحلة 6 — نماذج البيع
 
@@ -76,6 +76,7 @@
 - Multiple Service Subscriptions مستقلة عن اشتراك Tenant القديم.
 - إنشاء وتجديد وPast Due وGrace Period وإلغاء فوري أو نهاية الفترة وانتهاء.
 - Trial Grants زمنية أو محدودة بالاستخدام؛ قدرات العرض تُمنح كـEntitlements حتى نهاية المهلة.
+- قاعدة `oncePerTenant` محمية بقفل PostgreSQL advisory داخل معاملة إنشاء المنحة، وليس بفحص واجهة أو قراءة سابقة فقط.
 - استهلاك الحدود الدورية يحمل `periodKey`؛ لذلك يبدأ عداد جديد تلقائيًا مع فترة التجديد الجديدة بدل تجميع الاستخدام مدى الحياة.
 - Refund يسجل Payment Log، يحول Acquisition إلى Refunded، يسحب الحقوق، يعلق Product Instances، ويلغي الاشتراكات المرتبطة. يُمنع الاسترداد أثناء `FULFILLING` حتى لا يتسابق التعويض مع التفعيل، ويمكن تنفيذه قبل بدء التنفيذ أو بعد اكتماله.
 - `PAST_DUE` لا يستمر بلا نهاية: تُنشأ مهلة افتراضية ثلاثة أيام عند غياب مهلة مزود الدفع، ثم تنتهي الخدمة وتُسحب الحقوق تلقائيًا.
@@ -148,6 +149,7 @@
 - السعر المرسل من العميل لا يُستخدم؛ الخادم يقرأ السعر المنشور ويخزنه كلقطة immutable.
 - السوق والعملة يُحلان من Selector مركزي تستخدمه صفحات Catalog وAcquisition وRecommendations، مع أولوية لسعر السوق ثم السعر العالمي بنفس العملة.
 - Payment approval/rejection/refund وإنشاء المسودة تستخدم row locks وتعيد التحقق من حالة Acquisition داخل المعاملة لمنع السباقات.
+- أوامر الاشتراك تسترجع نتيجة الـidempotency قبل حراس دورة الحياة، ثم تحمل `expectedStatus` و`expectedPeriodEnd` وتمنع الفترات المتراجعة وتقفل صف الاشتراك قبل التحديث؛ وربط المحادثة واعتماد عرض السعر يقفلان Acquisition قبل التحقق والانتقال.
 - سياق الأهلية موحد ويُبنى من Tenant والخطة والدولة وعدد المواقع والمنتجات وAccess Tier entitlements، ويستخدمه Catalog وAcquisition وTrial وRecommendations.
 - فهارس مركبة لمسارات tenant/status/date وoffering/status وoutbox leasing وattribution.
 - حدود pagination/take في لوحات التشغيل، وفصل Read Models عن command services.
@@ -170,7 +172,7 @@
 
 - TypeScript: ناجح، دون أخطاء.
 - ESLint: ناجح، دون أخطاء؛ بقيت 52 warning تاريخية خارج ملفات المنصة.
-- الاختبارات: 183 ملف اختبار ناجح، 599 اختبارًا ناجحًا، صفر فشل.
+- الاختبارات: 183 ملف اختبار ناجح، 606 اختبارات ناجحة، صفر فشل.
 - Production Build: ناجح، وجميع مسارات العميل والإدارة والـAPI ظهرت في route manifest.
 - قاعدة PostgreSQL نظيفة: نجح `db:deploy:safe`، ونجح seed مرتين، وثبتت أعداد 1 Product و1 Offering و6 Workflows و3 Capabilities.
 - فهارس التحصين: تحقق وجود الفهارس الأربعة الخاصة بمنع Fulfillment المتوازي، توافق الاشتراكات القديمة، usage period، وtenant-scoped idempotency.

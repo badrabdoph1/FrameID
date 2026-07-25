@@ -10,6 +10,15 @@ export function createPrismaServiceSubscriptionRepository(prisma: PrismaClient):
         select: { id: true, tenantId: true, status: true, currentPeriodStart: true, currentPeriodEnd: true, gracePeriodEndsAt: true, cancelAtPeriodEnd: true },
       });
     },
+    async getProcessedUpdate(id, idempotencyKey) {
+      const event = await prisma.servicesOutboxEvent.findUnique({
+        where: { deduplicationKey: idempotencyKey },
+        select: { aggregateType: true, aggregateId: true },
+      });
+      if (!event) return null;
+      if (event.aggregateType !== "ServiceSubscription" || event.aggregateId !== id) throw new Error("Idempotency key is already bound to another operation.");
+      return prisma.serviceSubscription.findUniqueOrThrow({ where: { id }, select: { id: true, status: true } });
+    },
     async create(input) {
       return prisma.$transaction(async (tx) => {
         const subscription = await tx.serviceSubscription.upsert({
@@ -43,11 +52,17 @@ export function createPrismaServiceSubscriptionRepository(prisma: PrismaClient):
     },
     async update(input) {
       return prisma.$transaction(async (tx) => {
-        const processed = await tx.servicesOutboxEvent.findUnique({ where: { deduplicationKey: input.idempotencyKey }, select: { id: true } });
+        await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext('services-subscription-command'), hashtext(${input.idempotencyKey}))`;
+        await tx.$queryRaw`SELECT id FROM "ServiceSubscription" WHERE id = ${input.id} FOR UPDATE`;
+        const processed = await tx.servicesOutboxEvent.findUnique({ where: { deduplicationKey: input.idempotencyKey }, select: { aggregateType: true, aggregateId: true } });
         if (processed) {
+          if (processed.aggregateType !== "ServiceSubscription" || processed.aggregateId !== input.id) throw new Error("Idempotency key is already bound to another operation.");
           return tx.serviceSubscription.findUniqueOrThrow({ where: { id: input.id }, select: { id: true, status: true } });
         }
         const current = await tx.serviceSubscription.findUniqueOrThrow({ where: { id: input.id } });
+        if (current.status !== input.expectedStatus || current.currentPeriodEnd.getTime() !== input.expectedPeriodEnd.getTime()) {
+          throw new Error("Service subscription status or billing period changed concurrently.");
+        }
         const subscription = await tx.serviceSubscription.update({
           where: { id: input.id },
           data: {
