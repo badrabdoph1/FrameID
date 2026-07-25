@@ -1,7 +1,16 @@
 import type { PrismaClient } from "@prisma/client";
 import { syncLegacyPricingEntitlements } from "./legacy-compatibility";
+import { createServicesPlatformRuntime } from "./runtime";
 
-export async function runServicesReconciliation(prisma: PrismaClient, now = new Date()) {
+function metadataObject(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {};
+}
+
+export async function runServicesReconciliation(
+  prisma: PrismaClient,
+  now = new Date(),
+  options: { requestOffering?: ReturnType<typeof createServicesPlatformRuntime>["acquisitions"]["requestOffering"] } = {},
+) {
   const legacyCompatibility = await syncLegacyPricingEntitlements(prisma, { now });
   const expiredLeases = await prisma.servicesOutboxEvent.updateMany({
     where: { status: "PROCESSING", leaseExpiresAt: { lt: now } },
@@ -129,18 +138,95 @@ export async function runServicesReconciliation(prisma: PrismaClient, now = new 
       create: { aggregateType: "Acquisition", aggregateId: acquisition.id, eventName: "services.fulfillment.requested", payload: { acquisitionId: acquisition.id }, deduplicationKey: `reconcile:fulfillment:${acquisition.id}`, correlationId: acquisition.correlationId },
     });
   }
+  const communicationCandidates = await prisma.acquisition.findMany({
+    where: {
+      OR: [{ status: "DRAFT" }, { conversationId: { not: null } }],
+      createdAt: { lt: new Date(now.getTime() - 5 * 60_000) },
+    },
+    select: { id: true, tenantId: true, offeringId: true, idempotencyKey: true, correlationId: true, conversationId: true, status: true, metadata: true },
+    take: 500,
+  });
+  let recoveredConversations = 0;
+  let recoveredContextReferences = 0;
+  let unsafeCommunicationLinks = 0;
+  let unrecoverableOrphans = 0;
+  if (communicationCandidates.length) {
+    const conversationIds = communicationCandidates.flatMap((item) => item.conversationId ? [item.conversationId] : []);
+    const [conversations, contexts] = await Promise.all([
+      prisma.communicationConversation.findMany({ where: { id: { in: conversationIds } }, select: { id: true, tenantId: true } }),
+      prisma.communicationContextReference.findMany({
+        where: { namespace: "services", entityType: "acquisition", entityId: { in: communicationCandidates.map((item) => item.id) }, relationKey: "primary" },
+        select: { entityId: true },
+      }),
+    ]);
+    const conversationTenants = new Map(conversations.map((item) => [item.id, item.tenantId]));
+    const contextAcquisitions = new Set(contexts.map((item) => item.entityId));
+    const requestOffering = options.requestOffering ?? createServicesPlatformRuntime(prisma).acquisitions.requestOffering;
+    for (const acquisition of communicationCandidates) {
+      const conversationTenant = acquisition.conversationId ? conversationTenants.get(acquisition.conversationId) : undefined;
+      if (acquisition.conversationId && conversationTenant !== undefined) {
+        if (conversationTenant !== acquisition.tenantId) {
+          unsafeCommunicationLinks += 1;
+          continue;
+        }
+        if (!contextAcquisitions.has(acquisition.id)) {
+          await prisma.communicationContextReference.upsert({
+            where: {
+              conversationId_namespace_entityType_entityId_relationKey: {
+                conversationId: acquisition.conversationId,
+                namespace: "services",
+                entityType: "acquisition",
+                entityId: acquisition.id,
+                relationKey: "primary",
+              },
+            },
+            update: {},
+            create: { conversationId: acquisition.conversationId, namespace: "services", entityType: "acquisition", entityId: acquisition.id, relationKey: "primary", sourceModule: "services" },
+          });
+          recoveredContextReferences += 1;
+        }
+        continue;
+      }
+
+      const metadata = metadataObject(acquisition.metadata);
+      const userId = typeof metadata.requestedByUserId === "string" ? metadata.requestedByUserId : null;
+      if (!userId) {
+        unrecoverableOrphans += 1;
+        continue;
+      }
+      if (acquisition.status !== "DRAFT" && acquisition.status !== "REQUESTED") {
+        unrecoverableOrphans += 1;
+        continue;
+      }
+      if (acquisition.status === "REQUESTED") {
+        const reset = await prisma.acquisition.updateMany({
+          where: { id: acquisition.id, status: "REQUESTED", conversationId: acquisition.conversationId },
+          data: { status: "DRAFT", conversationId: null, requestedAt: null },
+        });
+        if (reset.count !== 1) continue;
+      }
+      await requestOffering({
+        tenantId: acquisition.tenantId,
+        userId,
+        offeringId: acquisition.offeringId,
+        idempotencyKey: acquisition.idempotencyKey,
+        customerMessage: typeof metadata.customerMessage === "string" ? metadata.customerMessage : null,
+      });
+      recoveredConversations += 1;
+    }
+  }
   const [stuckOutbox, deadLetters, activeEntitlements, staleProvisioningInstances] = await Promise.all([
     prisma.servicesOutboxEvent.count({ where: { status: "PROCESSING", leaseExpiresAt: { lt: now } } }),
     prisma.servicesOutboxEvent.count({ where: { status: "DEAD_LETTER" } }),
     prisma.entitlement.count({ where: { status: "ACTIVE" } }),
     prisma.productInstance.count({ where: { status: "PROVISIONING", createdAt: { lt: new Date(now.getTime() - 60 * 60_000) } } }),
   ]);
-  const degraded = deadLetters > 0 || stuckOutbox > 0 || staleProvisioningInstances > 0;
+  const degraded = deadLetters > 0 || stuckOutbox > 0 || staleProvisioningInstances > 0 || unsafeCommunicationLinks > 0 || unrecoverableOrphans > 0;
   return {
     status: degraded ? "DEGRADED" as const : "HEALTHY" as const,
     checkedAt: now.toISOString(),
-    repaired: { expiredLeases: expiredLeases.count, expiredSubscriptions, pastDueSubscriptions, expiredTrials: expiredTrials.length, fulfillmentRequests: missingRuns.length, recoveredFulfillmentRuns, finalizedAcquisitions, legacyCompatibility },
+    repaired: { expiredLeases: expiredLeases.count, expiredSubscriptions, pastDueSubscriptions, expiredTrials: expiredTrials.length, fulfillmentRequests: missingRuns.length, recoveredFulfillmentRuns, finalizedAcquisitions, recoveredConversations, recoveredContextReferences, legacyCompatibility },
     metrics: { activeEntitlements },
-    anomalies: { stuckOutbox, deadLetters, staleProvisioningInstances },
+    anomalies: { stuckOutbox, deadLetters, staleProvisioningInstances, unsafeCommunicationLinks, unrecoverableOrphans },
   };
 }

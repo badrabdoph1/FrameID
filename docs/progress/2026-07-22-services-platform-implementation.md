@@ -94,7 +94,7 @@
 - Outbox worker بآلية claim/lease/retry/exponential backoff/dead-letter.
 - Cron محمي لتشغيل Outbox وCron للمصالحة.
 - جدولة Vercel: Outbox كل دقيقة وReconciliation كل خمس دقائق، مع بقاء المسارين صالحين لأي scheduler خارجي.
-- Reconciliation يعيد leases المنتهية، يسترجع Fulfillment المتوقف، يكمل Acquisition إذا نجحت آثاره قبل تعطل العملية، يحدّث حالات الاشتراكات، ويعيد طلب Fulfillment الناقص.
+- Reconciliation يعيد leases المنتهية، يسترجع Fulfillment المتوقف، يكمل Acquisition إذا نجحت آثاره قبل تعطل العملية، يحدّث حالات الاشتراكات، ويعيد طلب Fulfillment الناقص. كما يعيد فتح Communication للطلبات اليتيمة واستعادة Context References المفقودة، ويرفع الروابط العابرة للـtenant أو الحالات غير القابلة للإصلاح كـ`DEGRADED`.
 - Extension Points لـRecommendation Provider وAnalytics Sink وProduct Provisioning وDomain Event Publisher.
 
 ## قاعدة البيانات والمهاجرات
@@ -147,8 +147,11 @@
 - عزل كل قراءة وكتابة للعميل بـ`tenantId` المستخرج من الجلسة؛ لا يؤخذ Tenant من input العميل.
 - أوامر الإدارة محمية بـAdmin Permission Guards ومسجلة في Audit Log.
 - السعر المرسل من العميل لا يُستخدم؛ الخادم يقرأ السعر المنشور ويخزنه كلقطة immutable.
+- واجهة العميل وAcquisition يقرآن آخر `CatalogRevision` منشور لا صفوف Draft الحية، وFulfillment يقرأ لقطة Acquisition v2 فقط؛ لذلك لا تغيّر تعديلات الأدمن غير المنشورة ما يراه أو يستلمه العميل.
+- مفاتيح Communication الخاصة بالخدمات تحمل namespace للـtenant، ويعيد Communication Core التحقق من tenant/mode/type عند replay، كما يرفض Acquisition ربط محادثة تخص tenant آخر.
 - السوق والعملة يُحلان من Selector مركزي تستخدمه صفحات Catalog وAcquisition وRecommendations، مع أولوية لسعر السوق ثم السعر العالمي بنفس العملة.
 - Payment approval/rejection/refund وإنشاء المسودة تستخدم row locks وتعيد التحقق من حالة Acquisition داخل المعاملة لمنع السباقات.
+- إعادة أوامر الرفض والاسترداد بعد نجاحها تُرجع النتيجة السابقة فقط عند تطابق idempotency key والحدث والدفعة؛ أي collision مختلف يُرفض.
 - أوامر الاشتراك تسترجع نتيجة الـidempotency قبل حراس دورة الحياة، ثم تحمل `expectedStatus` و`expectedPeriodEnd` وتمنع الفترات المتراجعة وتقفل صف الاشتراك قبل التحديث؛ وربط المحادثة واعتماد عرض السعر يقفلان Acquisition قبل التحقق والانتقال.
 - سياق الأهلية موحد ويُبنى من Tenant والخطة والدولة وعدد المواقع والمنتجات وAccess Tier entitlements، ويستخدمه Catalog وAcquisition وTrial وRecommendations.
 - فهارس مركبة لمسارات tenant/status/date وoffering/status وoutbox leasing وattribution.
@@ -172,7 +175,7 @@
 
 - TypeScript: ناجح، دون أخطاء.
 - ESLint: ناجح، دون أخطاء؛ بقيت 63 warning تاريخية خارج ملفات المنصة بعد دمج آخر تحديثات `main`.
-- الاختبارات: 183 ملف اختبار ناجح، 606 اختبارات ناجحة، صفر فشل.
+- الاختبارات: 183 ملف اختبار ناجح، 612 اختبارًا ناجحًا، صفر فشل.
 - Production Build: ناجح، وجميع مسارات العميل والإدارة والـAPI ظهرت في route manifest.
-- قاعدة PostgreSQL نظيفة: نجح `db:deploy:safe`، ونجح seed مرتين، وثبتت أعداد 1 Product و1 Offering و6 Workflows و3 Capabilities.
+- قاعدة PostgreSQL نظيفة: نجح `db:deploy:safe`، ونجح seed مرتين، وثبتت أعداد 1 Product و1 Offering و6 Workflows و3 Capabilities. ثبت كذلك أن Revision المنشور يستخدم snapshot v2 وأن تعديل أدمن تجريبي ظل محفوظًا بعد إعادة seed دون إنشاء Revision زائد.
 - فهارس التحصين: تحقق وجود الفهارس الأربعة الخاصة بمنع Fulfillment المتوازي، توافق الاشتراكات القديمة، usage period، وtenant-scoped idempotency.

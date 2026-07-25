@@ -60,13 +60,7 @@ export async function seedServicesPlatform(prisma: PrismaClient) {
   for (const workflow of WORKFLOW_TEMPLATES) {
     await prisma.workflowTemplate.upsert({
       where: { key_version: { key: workflow.key, version: 1 } },
-      update: {
-        name: workflow.name,
-        description: workflow.description,
-        fulfillmentMode: workflow.fulfillmentMode,
-        steps: workflow.steps as unknown as Prisma.InputJsonValue,
-        isActive: true,
-      },
+      update: {},
       create: {
         ...workflow,
         version: 1,
@@ -82,22 +76,7 @@ export async function seedServicesPlatform(prisma: PrismaClient) {
 
   const product = await prisma.productDefinition.upsert({
     where: { code: "pricing-site" },
-    update: {
-      registryKey: "pricing-site",
-      name: "موقع صفحات الأسعار",
-      shortDescription: "أنشئ واعرض باقات التصوير في موقع احترافي باسمك.",
-      description: "المنتج الأساسي من FrameID لإدارة صفحات الأسعار والباقات وتجربة العميل.",
-      category: "websites",
-      tags: ["pricing", "website", "photography"] as Prisma.InputJsonValue,
-      publicationStatus: ProductPublicationStatus.PUBLISHED,
-      releaseStage: ProductReleaseStage.GA,
-      accessTier: "STANDARD",
-      sortOrder: 10,
-      isFeatured: true,
-      publishedRevision: 1,
-      publishedAt: new Date("2026-07-22T00:00:00.000Z"),
-      deletedAt: null,
-    },
+    update: {},
     create: {
       code: "pricing-site",
       registryKey: "pricing-site",
@@ -119,23 +98,7 @@ export async function seedServicesPlatform(prisma: PrismaClient) {
 
   const offering = await prisma.catalogOffering.upsert({
     where: { code: "pricing-site-core" },
-    update: {
-      productId: product.id,
-      workflowTemplateId: activationWorkflow.id,
-      name: "FrameID الأساسي",
-      shortDescription: "موقع أسعار احترافي مع إدارة الباقات والعملاء المحتملين.",
-      type: OfferingType.PLAN,
-      salesMode: SalesMode.SELF_SERVE,
-      fulfillmentMode: FulfillmentMode.AUTOMATIC,
-      activationMode: ActivationMode.AFTER_PAYMENT,
-      publicationStatus: ProductPublicationStatus.PUBLISHED,
-      releaseStage: ProductReleaseStage.GA,
-      accessTier: "STANDARD",
-      requirements: { onboarding: ["business_name", "contact_profile"] } as Prisma.InputJsonValue,
-      sortOrder: 10,
-      publishedAt: new Date("2026-07-22T00:00:00.000Z"),
-      deletedAt: null,
-    },
+    update: {},
     create: {
       productId: product.id,
       workflowTemplateId: activationWorkflow.id,
@@ -155,7 +118,7 @@ export async function seedServicesPlatform(prisma: PrismaClient) {
     },
   });
 
-  await prisma.catalogPrice.upsert({
+  const price = await prisma.catalogPrice.upsert({
     where: {
       offeringId_version_currency_marketCode: {
         offeringId: offering.id,
@@ -164,11 +127,7 @@ export async function seedServicesPlatform(prisma: PrismaClient) {
         marketCode: "EG",
       },
     },
-    update: {
-      amount: 49000,
-      billingInterval: PriceBillingInterval.YEARLY,
-      isActive: true,
-    },
+    update: {},
     create: {
       offeringId: offering.id,
       version: 1,
@@ -185,15 +144,13 @@ export async function seedServicesPlatform(prisma: PrismaClient) {
     { key: "pricing_site.sites", name: "عدد مواقع الأسعار", valueType: "QUANTITY", unit: "site", value: 1 },
     { key: "storage.gb", name: "مساحة التخزين", valueType: "QUANTITY", unit: "GB", value: 5 },
   ] as const;
+  const capabilityKeys: string[] = [];
+  const capabilitySnapshots: Array<{ capabilityId: string; capabilityKey: string; value: boolean | number }> = [];
 
   for (const capabilityInput of capabilities) {
     const capability = await prisma.capabilityDefinition.upsert({
       where: { key: capabilityInput.key },
-      update: {
-        name: capabilityInput.name,
-        valueType: capabilityInput.valueType,
-        unit: "unit" in capabilityInput ? capabilityInput.unit : null,
-      },
+      update: {},
       create: {
         key: capabilityInput.key,
         name: capabilityInput.name,
@@ -204,13 +161,15 @@ export async function seedServicesPlatform(prisma: PrismaClient) {
 
     await prisma.offeringCapability.upsert({
       where: { offeringId_capabilityId: { offeringId: offering.id, capabilityId: capability.id } },
-      update: { value: capabilityInput.value as Prisma.InputJsonValue },
+      update: {},
       create: {
         offeringId: offering.id,
         capabilityId: capability.id,
         value: capabilityInput.value as Prisma.InputJsonValue,
       },
     });
+    capabilityKeys.push(capability.key);
+    capabilitySnapshots.push({ capabilityId: capability.id, capabilityKey: capability.key, value: capabilityInput.value });
   }
 
   const trial = await prisma.trialPolicy.findFirst({
@@ -227,7 +186,7 @@ export async function seedServicesPlatform(prisma: PrismaClient) {
     isActive: true,
   };
   if (trial) {
-    await prisma.trialPolicy.update({ where: { id: trial.id }, data: trialData });
+    // Baseline seeding is insert-only. Admin-managed policies are never overwritten on deploy.
   } else {
     await prisma.trialPolicy.create({ data: { ...trialData, name: "تجربة 14 يومًا" } });
   }
@@ -240,9 +199,54 @@ export async function seedServicesPlatform(prisma: PrismaClient) {
       revision: 1,
       status: ProductPublicationStatus.PUBLISHED,
       snapshot: {
-        productCode: product.code,
-        offeringCodes: [offering.code],
-        schemaVersion: 1,
+        id: product.id,
+        code: product.code,
+        registryKey: product.registryKey,
+        name: product.name,
+        shortDescription: product.shortDescription,
+        description: product.description,
+        category: product.category,
+        tags: product.tags,
+        media: product.media,
+        publicationStatus: product.publicationStatus,
+        releaseStage: product.releaseStage,
+        accessTier: product.accessTier,
+        eligibilityPolicy: product.eligibilityPolicy,
+        sortOrder: product.sortOrder,
+        isFeatured: product.isFeatured,
+        schemaVersion: 2,
+        offerings: [{
+          id: offering.id,
+          code: offering.code,
+          name: offering.name,
+          shortDescription: offering.shortDescription,
+          description: offering.description,
+          type: offering.type,
+          salesMode: offering.salesMode,
+          fulfillmentMode: offering.fulfillmentMode,
+          activationMode: offering.activationMode,
+          publicationStatus: offering.publicationStatus,
+          releaseStage: offering.releaseStage,
+          accessTier: offering.accessTier,
+          requirements: offering.requirements,
+          eligibilityPolicy: offering.eligibilityPolicy,
+          sortOrder: offering.sortOrder,
+          workflowTemplateKey: "payment_then_auto",
+          workflowTemplateVersion: 1,
+          prices: [{
+            id: price.id,
+            amount: price.amount,
+            currency: price.currency,
+            marketCode: price.marketCode,
+            billingInterval: price.billingInterval,
+            effectiveFrom: price.effectiveFrom.toISOString(),
+            effectiveTo: price.effectiveTo?.toISOString() ?? null,
+            isActive: price.isActive,
+          }],
+          capabilityKeys,
+          capabilities: capabilitySnapshots,
+          bundleComponents: [],
+        }],
       } as Prisma.InputJsonValue,
       actorName: "FrameID system seed",
       changeNote: "Initial published catalog revision",

@@ -30,7 +30,7 @@ describe("acquisition lifecycle", () => {
     const result = await service.requestOffering({ tenantId: "tenant_1", userId: "user_1", offeringId: "offering_1", idempotencyKey: "request_1", attributionId: "recommendation_1", customerMessage: "I need a logo" });
 
     expect(result).toMatchObject({ id: "acq_1", status: "REQUESTED", conversationId: "conversation_1", workItemId: "work_1" });
-    expect(events).toEqual(["create:request_1", "conversation:acq_1:services:request_1", "attach:conversation_1"]);
+    expect(events).toEqual(["create:request_1", "conversation:acq_1:services:tenant_1:request_1", "attach:conversation_1"]);
   });
 
   it("does not open a second conversation when an idempotent retry already has one", async () => {

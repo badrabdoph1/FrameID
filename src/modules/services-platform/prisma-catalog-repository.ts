@@ -1,6 +1,6 @@
 import { Prisma, ProductPublicationStatus, type PrismaClient } from "@prisma/client";
 
-import type { CatalogRepository, ProductDraft } from "./catalog-service";
+import { parsePublishedCatalogSnapshot, type CatalogRepository, type ProductDraft } from "./catalog-service";
 import type { EligibilityContext, EligibilityPolicy } from "./eligibility";
 import { buildCatalogReadModel, type CatalogReadProduct } from "./catalog-read-model";
 
@@ -15,17 +15,20 @@ export function createPrismaCatalogRepository(prisma: PrismaClient): CatalogRepo
             orderBy: { sortOrder: "asc" },
             include: {
               prices: { orderBy: [{ version: "desc" }, { effectiveFrom: "desc" }] },
-              capabilities: { include: { capability: { select: { key: true } } } },
-              workflowTemplate: { select: { key: true } },
+              capabilities: { include: { capability: { select: { id: true, key: true } } } },
+              workflowTemplate: { select: { key: true, version: true } },
               bundleComponents: {
                 include: {
                   componentOffering: {
                     select: {
                       id: true,
                       code: true,
+                      name: true,
                       publicationStatus: true,
                       productId: true,
-                      product: { select: { publicationStatus: true } },
+                      product: { select: { code: true, publicationStatus: true } },
+                      releaseStage: true,
+                      capabilities: { include: { capability: { select: { id: true, key: true } } } },
                     },
                   },
                 },
@@ -41,30 +44,58 @@ export function createPrismaCatalogRepository(prisma: PrismaClient): CatalogRepo
         registryKey: product.registryKey,
         name: product.name,
         shortDescription: product.shortDescription,
+        description: product.description,
         category: product.category,
+        tags: product.tags,
+        media: product.media,
         publicationStatus: product.publicationStatus,
         releaseStage: product.releaseStage,
+        accessTier: product.accessTier,
+        eligibilityPolicy: product.eligibilityPolicy,
+        sortOrder: product.sortOrder,
+        isFeatured: product.isFeatured,
+        schemaVersion: 2,
         offerings: product.offerings.map((offering) => ({
           id: offering.id,
           code: offering.code,
           name: offering.name,
+          shortDescription: offering.shortDescription,
+          description: offering.description,
           type: offering.type,
+          salesMode: offering.salesMode,
+          fulfillmentMode: offering.fulfillmentMode,
+          activationMode: offering.activationMode,
           publicationStatus: offering.publicationStatus,
+          releaseStage: offering.releaseStage,
+          accessTier: offering.accessTier,
+          requirements: offering.requirements,
+          eligibilityPolicy: offering.eligibilityPolicy,
+          sortOrder: offering.sortOrder,
           workflowTemplateKey: offering.workflowTemplate?.key ?? null,
+          workflowTemplateVersion: offering.workflowTemplate?.version ?? null,
           prices: offering.prices.map((price) => ({
             id: price.id,
             amount: price.amount,
             currency: price.currency,
+            marketCode: price.marketCode,
             billingInterval: price.billingInterval,
+            effectiveFrom: price.effectiveFrom.toISOString(),
+            effectiveTo: price.effectiveTo?.toISOString() ?? null,
             isActive: price.isActive,
           })),
           capabilityKeys: offering.capabilities.map((capability) => capability.capability.key),
-          bundleComponents: offering.bundleComponents.map(({ componentOffering }) => ({
+          capabilities: offering.capabilities.map((item) => ({ capabilityId: item.capability.id, capabilityKey: item.capability.key, value: item.value })),
+          bundleComponents: offering.bundleComponents.map(({ componentOffering, quantity, required }) => ({
             offeringId: componentOffering.id,
             offeringCode: componentOffering.code,
+            offeringName: componentOffering.name,
             publicationStatus: componentOffering.publicationStatus,
             productId: componentOffering.productId,
             productPublicationStatus: componentOffering.product?.publicationStatus ?? null,
+            productCode: componentOffering.product?.code ?? null,
+            quantity,
+            required,
+            capabilities: componentOffering.capabilities.map((item) => ({ capabilityId: item.capability.id, capabilityKey: item.capability.key, value: item.value })),
           })),
         })),
       } satisfies ProductDraft;
@@ -106,56 +137,61 @@ export async function getCustomerCatalogReadModel(prisma: PrismaClient, input: {
   const products = await prisma.productDefinition.findMany({
     where: { publicationStatus: ProductPublicationStatus.PUBLISHED, deletedAt: null },
     orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
-    include: {
-      offerings: {
-        where: { publicationStatus: ProductPublicationStatus.PUBLISHED, deletedAt: null },
-        orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
-        include: {
-          prices: { where: { isActive: true }, orderBy: { effectiveFrom: "desc" } },
-          capabilities: { include: { capability: { select: { key: true } } } },
-        },
+    select: {
+      id: true,
+      revisions: {
+        where: { status: ProductPublicationStatus.PUBLISHED },
+        orderBy: { revision: "desc" },
+        take: 1,
+        select: { snapshot: true },
       },
     },
   });
 
-  const mapped: CatalogReadProduct[] = products.map((product) => ({
-    id: product.id,
-    code: product.code,
-    name: product.name,
-    shortDescription: product.shortDescription,
-    description: product.description,
-    category: product.category,
-    tags: product.tags,
-    media: product.media,
-    releaseStage: product.releaseStage,
-    accessTier: product.accessTier,
-    eligibilityPolicy: product.eligibilityPolicy as EligibilityPolicy | null,
-    sortOrder: product.sortOrder,
-    isFeatured: product.isFeatured,
-    offerings: product.offerings.map((offering) => ({
-      id: offering.id,
-      code: offering.code,
-      name: offering.name,
-      shortDescription: offering.shortDescription,
-      description: offering.description,
-      type: offering.type,
-      salesMode: offering.salesMode,
-      releaseStage: offering.releaseStage,
-      accessTier: offering.accessTier,
-      eligibilityPolicy: offering.eligibilityPolicy as EligibilityPolicy | null,
-      sortOrder: offering.sortOrder,
-      prices: offering.prices.map((price) => ({
-        id: price.id,
-        amount: price.amount,
-        currency: price.currency,
-        marketCode: price.marketCode,
-        billingInterval: price.billingInterval,
-        effectiveFrom: price.effectiveFrom,
-        effectiveTo: price.effectiveTo,
-      })),
-      capabilityKeys: offering.capabilities.map((capability) => capability.capability.key),
-    })),
-  }));
+  const mapped: CatalogReadProduct[] = products.flatMap((product) => {
+    const snapshot = parsePublishedCatalogSnapshot(product.revisions[0]?.snapshot);
+    if (!snapshot) return [];
+    return [{
+      id: snapshot.id,
+      code: snapshot.code,
+      name: snapshot.name,
+      shortDescription: snapshot.shortDescription,
+      description: snapshot.description,
+      category: snapshot.category,
+      tags: snapshot.tags,
+      media: snapshot.media,
+      releaseStage: snapshot.releaseStage,
+      accessTier: snapshot.accessTier,
+      eligibilityPolicy: snapshot.eligibilityPolicy as EligibilityPolicy | null,
+      sortOrder: snapshot.sortOrder,
+      isFeatured: snapshot.isFeatured,
+      offerings: snapshot.offerings
+        .filter((offering) => !["PAUSED", "RETIRED"].includes(offering.publicationStatus))
+        .map((offering) => ({
+          id: offering.id,
+          code: offering.code,
+          name: offering.name,
+          shortDescription: offering.shortDescription,
+          description: offering.description,
+          type: offering.type ?? "MANAGED_SERVICE",
+          salesMode: offering.salesMode,
+          releaseStage: offering.releaseStage,
+          accessTier: offering.accessTier,
+          eligibilityPolicy: offering.eligibilityPolicy as EligibilityPolicy | null,
+          sortOrder: offering.sortOrder,
+          prices: offering.prices.filter((price) => price.isActive).map((price) => ({
+            id: price.id,
+            amount: price.amount,
+            currency: price.currency,
+            marketCode: price.marketCode,
+            billingInterval: price.billingInterval,
+            effectiveFrom: new Date(price.effectiveFrom),
+            effectiveTo: price.effectiveTo ? new Date(price.effectiveTo) : null,
+          })),
+          capabilityKeys: offering.capabilityKeys,
+        })),
+    }];
+  });
 
   return buildCatalogReadModel({ ...input, products: mapped, now });
 }

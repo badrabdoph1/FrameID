@@ -4,6 +4,7 @@ import type { AcquisitionRepository, AcquisitionRecord } from "./acquisition-ser
 import { evaluateOfferingEligibility, type EligibilityPolicy } from "./eligibility";
 import { buildPrismaEligibilityContext } from "./prisma-eligibility-context";
 import { resolveCommerceMarket } from "./commerce-market";
+import { parsePublishedCatalogSnapshot } from "./catalog-service";
 
 function asRecord(acquisition: {
   id: string;
@@ -12,13 +13,20 @@ function asRecord(acquisition: {
   status: AcquisitionStatus;
   correlationId: string;
   conversationId: string | null;
+  metadata: Prisma.JsonValue | null;
   offering: { name: string };
 }): AcquisitionRecord {
+  const metadata = acquisition.metadata && typeof acquisition.metadata === "object" && !Array.isArray(acquisition.metadata)
+    ? acquisition.metadata as Record<string, Prisma.JsonValue>
+    : {};
+  const catalogSnapshot = metadata.catalogSnapshot && typeof metadata.catalogSnapshot === "object" && !Array.isArray(metadata.catalogSnapshot)
+    ? metadata.catalogSnapshot as Record<string, Prisma.JsonValue>
+    : {};
   return {
     id: acquisition.id,
     tenantId: acquisition.tenantId,
     offeringId: acquisition.offeringId,
-    offeringName: acquisition.offering.name,
+    offeringName: typeof catalogSnapshot.offeringName === "string" ? catalogSnapshot.offeringName : acquisition.offering.name,
     status: acquisition.status,
     correlationId: acquisition.correlationId,
     conversationId: acquisition.conversationId,
@@ -38,69 +46,67 @@ export function createPrismaAcquisitionRepository(prisma: PrismaClient): Acquisi
       const context = await buildPrismaEligibilityContext(prisma, input.tenantId);
       const { marketCode, currency } = resolveCommerceMarket(context);
       const now = new Date();
-      const offering = await prisma.catalogOffering.findFirst({
-        where: { id: input.offeringId, publicationStatus: "PUBLISHED", deletedAt: null },
-        include: {
-          product: { select: { code: true, accessTier: true, eligibilityPolicy: true, releaseStage: true, publicationStatus: true } },
-          bundleComponents: {
-            orderBy: { sortOrder: "asc" },
-            include: { componentOffering: { include: { product: { select: { code: true, publicationStatus: true, releaseStage: true } }, capabilities: { include: { capability: { select: { key: true } } } } } } },
-          },
-          prices: {
-            where: { isActive: true, currency, marketCode: { in: [marketCode, "GLOBAL"] }, effectiveFrom: { lte: now }, OR: [{ effectiveTo: null }, { effectiveTo: { gt: now } }] },
-            orderBy: [{ version: "desc" }, { effectiveFrom: "desc" }],
-          },
+      const offeringRef = await prisma.catalogOffering.findUnique({
+        where: { id: input.offeringId },
+        select: { productId: true, deletedAt: true },
+      });
+      if (!offeringRef?.productId || offeringRef.deletedAt) throw new Error(`Published offering not found: ${input.offeringId}`);
+      const productRecord = await prisma.productDefinition.findFirst({
+        where: { id: offeringRef.productId, publicationStatus: "PUBLISHED", deletedAt: null },
+        select: {
+          revisions: { where: { status: "PUBLISHED" }, orderBy: { revision: "desc" }, take: 1, select: { snapshot: true } },
         },
       });
-      if (!offering) throw new Error(`Published offering not found: ${input.offeringId}`);
+      const product = parsePublishedCatalogSnapshot(productRecord?.revisions[0]?.snapshot);
+      const offering = product?.offerings.find((candidate) => candidate.id === input.offeringId && !["PAUSED", "RETIRED"].includes(candidate.publicationStatus));
+      if (!product || !offering) throw new Error(`Published offering snapshot not found: ${input.offeringId}`);
+      if (!offering.workflowTemplateKey || !offering.workflowTemplateVersion) throw new Error(`Published offering has no workflow snapshot: ${offering.code}`);
       if (
-        Boolean(offering.product?.publicationStatus && offering.product.publicationStatus !== "PUBLISHED")
-        || ["ANNOUNCED", "DEPRECATED"].includes(offering.releaseStage)
-        || Boolean(offering.product && ["ANNOUNCED", "DEPRECATED"].includes(offering.product.releaseStage))
+        ["ANNOUNCED", "DEPRECATED"].includes(offering.releaseStage)
+        || ["ANNOUNCED", "DEPRECATED"].includes(product.releaseStage)
       ) {
         throw new Error("Offering is not currently acquirable.");
       }
-      const unavailableBundleComponent = offering.bundleComponents.find(({ componentOffering }) =>
-        componentOffering.publicationStatus !== "PUBLISHED"
-        || ["ANNOUNCED", "DEPRECATED"].includes(componentOffering.releaseStage)
-        || Boolean(componentOffering.product && componentOffering.product.publicationStatus !== "PUBLISHED")
-        || Boolean(componentOffering.product && ["ANNOUNCED", "DEPRECATED"].includes(componentOffering.product.releaseStage))
-      );
-      if (unavailableBundleComponent) throw new Error(`Bundle component is not currently available: ${unavailableBundleComponent.componentOffering.code}`);
-      const productEligibility = evaluateOfferingEligibility(context, offering.product?.eligibilityPolicy as EligibilityPolicy | null);
+      const productEligibility = evaluateOfferingEligibility(context, product.eligibilityPolicy as EligibilityPolicy | null);
       const offeringEligibility = evaluateOfferingEligibility(context, offering.eligibilityPolicy as EligibilityPolicy | null);
-      const tierAllowed = [offering.product?.accessTier, offering.accessTier].filter(Boolean).every((tier) => tier === "STANDARD" || context.accessTiers?.includes(tier!));
+      const tierAllowed = [product.accessTier, offering.accessTier].every((tier) => tier === "STANDARD" || context.accessTiers?.includes(tier));
       if (!productEligibility.visible || !productEligibility.eligible || !offeringEligibility.visible || !offeringEligibility.eligible || !tierAllowed) {
         throw new Error("Offering is not eligible for this tenant.");
       }
-      const price = offering.prices.sort((left, right) => Number(right.marketCode === marketCode) - Number(left.marketCode === marketCode) || right.version - left.version)[0] ?? null;
+      const price = offering.prices
+        .filter((candidate) => candidate.isActive && candidate.currency === currency && [marketCode, "GLOBAL"].includes(candidate.marketCode) && new Date(candidate.effectiveFrom) <= now && (!candidate.effectiveTo || new Date(candidate.effectiveTo) > now))
+        .sort((left, right) => Number(right.marketCode === marketCode) - Number(left.marketCode === marketCode) || new Date(right.effectiveFrom).getTime() - new Date(left.effectiveFrom).getTime())[0] ?? null;
       if (!price && offering.type !== "CUSTOM_QUOTE") throw new Error(`Offering has no active price: ${offering.code}`);
       const correlationId = `services:${crypto.randomUUID()}`;
       const snapshot = {
+        schemaVersion: 2,
         offeringCode: offering.code,
         offeringName: offering.name,
-        productCode: offering.product?.code ?? null,
+        productId: product.id,
+        productCode: product.code,
+        workflow: { key: offering.workflowTemplateKey, version: offering.workflowTemplateVersion },
         offeringType: offering.type,
         salesMode: offering.salesMode,
         fulfillmentMode: offering.fulfillmentMode,
         activationMode: offering.activationMode,
         requirements: offering.requirements,
+        capabilities: offering.capabilities,
         price: price ? {
           id: price.id,
-          version: price.version,
           amount: price.amount,
           currency: price.currency,
           billingInterval: price.billingInterval,
           marketCode: price.marketCode,
         } : null,
         bundleComponents: offering.bundleComponents.map((component) => ({
-          offeringId: component.componentOffering.id,
-          offeringCode: component.componentOffering.code,
-          offeringName: component.componentOffering.name,
-          productCode: component.componentOffering.product?.code ?? null,
+          offeringId: component.offeringId,
+          offeringCode: component.offeringCode,
+          offeringName: component.offeringName,
+          productId: component.productId,
+          productCode: component.productCode,
           quantity: component.quantity,
           required: component.required,
-          capabilityKeys: component.componentOffering.capabilities.map((item) => item.capability.key),
+          capabilities: component.capabilities,
         })),
       };
       const lines = [
@@ -116,10 +122,10 @@ export function createPrismaAcquisitionRepository(prisma: PrismaClient): Acquisi
           snapshot: snapshot as Prisma.InputJsonValue,
         },
         ...offering.bundleComponents.map((component) => ({
-          offeringId: component.componentOffering.id,
+          offeringId: component.offeringId,
           priceId: null,
-          snapshotCode: component.componentOffering.code,
-          snapshotName: component.componentOffering.name,
+          snapshotCode: component.offeringCode,
+          snapshotName: component.offeringName,
           unitAmount: 0,
           quantity: component.quantity,
           currency: price?.currency ?? currency,
@@ -127,8 +133,9 @@ export function createPrismaAcquisitionRepository(prisma: PrismaClient): Acquisi
           snapshot: {
             bundledByOfferingId: offering.id,
             required: component.required,
-            productCode: component.componentOffering.product?.code ?? null,
-            capabilityKeys: component.componentOffering.capabilities.map((item) => item.capability.key),
+            productCode: component.productCode,
+            productId: component.productId,
+            capabilities: component.capabilities,
           } as Prisma.InputJsonValue,
         })),
       ];
@@ -146,6 +153,7 @@ export function createPrismaAcquisitionRepository(prisma: PrismaClient): Acquisi
             acceptedCurrency: price?.currency ?? null,
             acceptedTotal: price?.amount ?? null,
             metadata: {
+              requestedByUserId: input.userId,
               customerMessage: input.customerMessage ?? null,
               catalogSnapshot: snapshot,
             } as Prisma.InputJsonValue,
@@ -173,6 +181,13 @@ export function createPrismaAcquisitionRepository(prisma: PrismaClient): Acquisi
       return prisma.$transaction(async (tx) => {
         await tx.$queryRaw`SELECT id FROM "Acquisition" WHERE id = ${input.acquisitionId} FOR UPDATE`;
         const current = await tx.acquisition.findUniqueOrThrow({ where: { id: input.acquisitionId } });
+        const conversation = await tx.communicationConversation.findUnique({
+          where: { id: input.conversationId },
+          select: { tenantId: true },
+        });
+        if (!conversation || conversation.tenantId !== current.tenantId) {
+          throw new Error("Acquisition conversation must belong to the same tenant.");
+        }
         if (current.conversationId && current.conversationId !== input.conversationId) {
           throw new Error("Acquisition is already attached to another conversation.");
         }

@@ -14,6 +14,8 @@
 4. يشغّل إصلاحات التوافق التاريخية idempotently.
 5. يشغّل seed المنصة.
 
+Seed منصة الخدمات insert-only: يضيف baseline الناقص ولا يعيد كتابة Product أوOffering أوPrice أوCapability أوTrial Policy أوWorkflow موجودة، ولا ينشر تعديل Draft تلقائيًا.
+
 لا تعدّل ملفات migrations التاريخية. سلسلة `prisma migrate deploy` القديمة تحتوي دينًا سابقًا في migration الدفع، وإصلاحها الصحيح هو مشروع rebaseline مستقل بعد جرد قواعد الإنتاج، لا تغيير checksum داخل feature branch.
 
 ## الجدولة
@@ -33,12 +35,14 @@
 - كل محاولة تحمل fencing token مستقلًا؛ محاولة فقدت الـlease أو انتهت صلاحيته زمنيًا لا تستطيع التجديد أو كتابة `SUCCEEDED` أو `FAILED` أو checkpoint فوق محاولة أحدث.
 - الاشتراكات `PAST_DUE` و`GRACE_PERIOD` تحتاج متابعة بوابة الدفع.
 - أي نتيجة `503` من reconciliation تعني حالة متدهورة وتتطلب تنبيهًا.
+- `unsafeCommunicationLinks` أو`unrecoverableOrphans` فوق الصفر تعني رابطًا غير آمن أو طلبًا يفتقد بيانات الاستعادة، وتحتاج مراجعة تشغيلية فورية.
 
 ## استعادة حدث أو تنفيذ فاشل
 
 - أحداث Outbox الفاشلة يعاد جدولتها تلقائيًا مع exponential backoff حتى `DEAD_LETTER`.
 - تنفيذ Fulfillment الفاشل يعاد من لوحة الإدارة بزر «إعادة المحاولة»؛ يعاد نفس Workflow ولا يسمح بالانتقال اليدوي فوق الفشل.
 - المصالحة تعيد تشغيل الـrun الذي انتهت lease الخاصة به، وتغلق Acquisition العالق في `FULFILLING` إذا كان الـrun قد وصل بالفعل إلى `SUCCEEDED`.
+- المصالحة تستعيد محادثة الطلب الذي تعطل بين إنشاء Acquisition وفتح Communication، وتعيد Context Reference المفقود مع التحقق من تطابق tenant.
 - أي Workflow قد يتجاوز 15 دقيقة يجب أن يستدعي `context.heartbeat()` دوريًا؛ فقدان الـtoken يوقف الكتابة النهائية ويترك المصالحة للمحاولة الأحدث.
 - لا تنشئ FulfillmentRun يدويًا؛ استخدم runtime أو أعد حدث `services.fulfillment.requested` بمفتاح deduplication ثابت.
 

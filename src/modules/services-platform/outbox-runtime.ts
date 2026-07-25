@@ -20,6 +20,8 @@ const customerTimelineMessages: Readonly<Record<string, string>> = {
   "services.payment.refunded": "تم تسجيل استرداد الدفعة.",
   "services.acquisition.fulfilling": "بدأ الفريق تنفيذ الخدمة.",
   "services.acquisition.waiting_customer": "يحتاج الفريق معلومات أو إجراءً منك لاستكمال الخدمة.",
+  "services.acquisition.waiting_internal": "الطلب بانتظار إجراء داخلي من فريق FrameID.",
+  "services.acquisition.ready": "الخدمة جاهزة للمراجعة أو التسليم النهائي.",
   "services.acquisition.fulfilled": "اكتمل تنفيذ الخدمة وأصبحت جاهزة في حسابك.",
   "services.acquisition.cancelled": "تم إلغاء طلب الخدمة.",
   "services.acquisition.declined": "تعذر قبول طلب الخدمة.",
@@ -28,6 +30,8 @@ const customerTimelineMessages: Readonly<Record<string, string>> = {
 const workItemTargetStatus = {
   "services.acquisition.fulfilling": "IN_PROGRESS",
   "services.acquisition.waiting_customer": "WAITING_CUSTOMER",
+  "services.acquisition.waiting_internal": "WAITING_INTERNAL",
+  "services.acquisition.ready": "WAITING_INTERNAL",
   "services.acquisition.fulfilled": "RESOLVED",
 } as const;
 

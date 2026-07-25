@@ -7,6 +7,7 @@ import { buildPrismaEligibilityContext } from "@/modules/services-platform/prism
 import { createPrismaServicesPaymentRepository } from "@/modules/services-platform/prisma-payment-repository";
 import { createPrismaFulfillmentRepository } from "@/modules/services-platform/prisma-fulfillment-repository";
 import { createPrismaAcquisitionRepository } from "@/modules/services-platform/prisma-acquisition-repository";
+import { getCustomerCatalogReadModel } from "@/modules/services-platform/prisma-catalog-repository";
 import { createPrismaServiceSubscriptionRepository } from "@/modules/services-platform/prisma-subscription-repository";
 import { createPrismaUsageRepository } from "@/modules/services-platform/prisma-usage-repository";
 import { resolveCommerceMarket } from "@/modules/services-platform/commerce-market";
@@ -25,6 +26,7 @@ describe("services platform hardening invariants", () => {
         findUniqueOrThrow: vi.fn().mockResolvedValue({ id: "acquisition", tenantId: "tenant", status: AcquisitionStatus.CANCELLED, conversationId: null }),
         updateMany: vi.fn(),
       },
+      communicationConversation: { findUnique: vi.fn().mockResolvedValue({ tenantId: "tenant" }) },
       servicesOutboxEvent: { upsert: vi.fn() },
     };
     const prisma = { $transaction: <T>(callback: (tx: typeof transaction) => Promise<T>) => callback(transaction) };
@@ -33,6 +35,26 @@ describe("services platform hardening invariants", () => {
     await expect(repository.attachConversation({ acquisitionId: "acquisition", conversationId: "conversation", requestedAt: new Date() })).rejects.toThrow(/CANCELLED/);
     expect(transaction.acquisition.updateMany).not.toHaveBeenCalled();
     expect(transaction.servicesOutboxEvent.upsert).not.toHaveBeenCalled();
+  });
+
+  it("refuses attaching a services acquisition to another tenant conversation", async () => {
+    const transaction = {
+      $queryRaw: vi.fn().mockResolvedValue([]),
+      acquisition: {
+        findUniqueOrThrow: vi.fn().mockResolvedValue({ id: "acquisition", tenantId: "tenant-a", status: AcquisitionStatus.DRAFT, conversationId: null }),
+        updateMany: vi.fn(),
+      },
+      communicationConversation: { findUnique: vi.fn().mockResolvedValue({ tenantId: "tenant-b" }) },
+      servicesOutboxEvent: { upsert: vi.fn() },
+    };
+    const prisma = { $transaction: <T>(callback: (tx: typeof transaction) => Promise<T>) => callback(transaction) };
+
+    await expect(createPrismaAcquisitionRepository(prisma as never).attachConversation({
+      acquisitionId: "acquisition",
+      conversationId: "foreign-conversation",
+      requestedAt: new Date(),
+    })).rejects.toThrow(/same tenant/i);
+    expect(transaction.acquisition.updateMany).not.toHaveBeenCalled();
   });
 
   it("creates the first payment draft after revalidating the locked acquisition", async () => {
@@ -123,6 +145,25 @@ describe("services platform hardening invariants", () => {
     expect(transaction.acquisition.update).not.toHaveBeenCalled();
   });
 
+  it.each([
+    { operation: "reject" as const, status: PaymentStatus.REJECTED, eventName: "services.payment.rejected", idempotencyKey: "reject-once" },
+    { operation: "refund" as const, status: PaymentStatus.REFUNDED, eventName: "services.payment.refunded", idempotencyKey: "refund-once" },
+  ])("replays a completed $operation payment command only with its original idempotency key", async ({ operation, status, eventName, idempotencyKey }) => {
+    const transaction = {
+      $queryRaw: vi.fn().mockResolvedValue([]),
+      paymentRequest: { findUniqueOrThrow: vi.fn().mockResolvedValue({ id: "payment", acquisitionId: "acquisition", tenantId: "tenant", status }) },
+      servicesOutboxEvent: {
+        findUnique: vi.fn().mockResolvedValue({ eventName, aggregateId: "acquisition", payload: { paymentRequestId: "payment" } }),
+      },
+    };
+    const prisma = { $transaction: <T>(callback: (tx: typeof transaction) => Promise<T>) => callback(transaction) };
+    const repository = createPrismaServicesPaymentRepository(prisma as never);
+    const command = { paymentRequestId: "payment", reviewerId: "admin", reason: "reason", idempotencyKey, rejectedAt: new Date(), refundedAt: new Date() };
+
+    await expect(operation === "reject" ? repository.reject(command) : repository.refund(command)).resolves.toEqual({ acquisitionId: "acquisition", tenantId: "tenant" });
+    expect(transaction.servicesOutboxEvent.findUnique).toHaveBeenCalledWith(expect.objectContaining({ where: { deduplicationKey: idempotencyKey } }));
+  });
+
   it("uses one market and currency selector for catalog and acquisition", () => {
     expect(resolveCommerceMarket({ country: "sa" })).toEqual({ marketCode: "SA", currency: "SAR" });
     expect(resolveCommerceMarket({ country: "AE" })).toEqual({ marketCode: "AE", currency: "AED" });
@@ -138,6 +179,90 @@ describe("services platform hardening invariants", () => {
     expect(updateMany).toHaveBeenCalledWith(expect.objectContaining({
       where: { id: "run", status: "RUNNING", leaseOwner: "lease-attempt-2", leaseExpiresAt: { gt: finishedAt } },
     }));
+  });
+
+  it("builds fulfillment exclusively from the immutable acquisition line snapshot", async () => {
+    const findUnique = vi.fn().mockResolvedValue({
+      id: "acquisition",
+      tenantId: "tenant",
+      offeringId: "offering",
+      status: AcquisitionStatus.PAID,
+      metadata: {},
+      lines: [{
+        offeringId: "offering",
+        billingInterval: "YEARLY",
+        snapshot: {
+          schemaVersion: 2,
+          productId: "product",
+          productCode: "pricing-site",
+          workflow: { key: "payment_then_auto", version: 4 },
+          capabilities: [{ capabilityId: "capability", capabilityKey: "pricing_site.access", value: true }],
+          bundleComponents: [],
+        },
+      }],
+    });
+    const repository = createPrismaFulfillmentRepository({ acquisition: { findUnique } } as never);
+
+    await expect(repository.getAcquisition("acquisition")).resolves.toMatchObject({
+      productId: "product",
+      workflowKey: "payment_then_auto",
+      workflowVersion: 4,
+      capabilities: [{ capabilityKey: "pricing_site.access", capabilityId: "capability", value: true }],
+    });
+    expect(findUnique).toHaveBeenCalledWith(expect.objectContaining({
+      include: { lines: expect.any(Object) },
+    }));
+    expect(findUnique.mock.calls[0][0].include).not.toHaveProperty("offering");
+  });
+
+  it("emits a transactional lifecycle event when fulfillment waits for the customer", async () => {
+    const transaction = {
+      fulfillmentRun: {
+        updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+        findUniqueOrThrow: vi.fn().mockResolvedValue({ attempts: 2, acquisition: { id: "acquisition", tenantId: "tenant", correlationId: "correlation" } }),
+      },
+      servicesOutboxEvent: { upsert: vi.fn().mockResolvedValue({}) },
+    };
+    const prisma = { $transaction: <T>(callback: (tx: typeof transaction) => Promise<T>) => callback(transaction) };
+
+    await expect(createPrismaFulfillmentRepository(prisma as never).markWaiting("run", "lease", "WAITING_CUSTOMER", { field: "logo" })).resolves.toBe(true);
+    expect(transaction.servicesOutboxEvent.upsert).toHaveBeenCalledWith(expect.objectContaining({
+      create: expect.objectContaining({ eventName: "services.acquisition.waiting_customer", aggregateId: "acquisition" }),
+    }));
+  });
+
+  it("serves the last published catalog revision instead of edited live draft rows", async () => {
+    const snapshot = {
+      id: "product",
+      code: "pricing-site",
+      registryKey: "pricing-site",
+      name: "Published name",
+      shortDescription: "Published description",
+      description: null,
+      category: "websites",
+      tags: [],
+      media: [],
+      publicationStatus: "PUBLISHED",
+      releaseStage: "GA",
+      accessTier: "STANDARD",
+      eligibilityPolicy: null,
+      sortOrder: 1,
+      isFeatured: true,
+      schemaVersion: 2,
+      offerings: [],
+    };
+    const findMany = vi.fn().mockResolvedValue([{ id: "product", name: "Unpublished edit", revisions: [{ snapshot }] }]);
+
+    const catalog = await getCustomerCatalogReadModel({ productDefinition: { findMany } } as never, {
+      context: { tenantId: "tenant" },
+      marketCode: "EG",
+      currency: "EGP",
+      now: new Date("2026-07-22T00:00:00.000Z"),
+    });
+
+    expect(catalog.products[0].name).toBe("Published name");
+    expect(findMany.mock.calls[0][0]).toHaveProperty("select.revisions");
+    expect(findMany.mock.calls[0][0]).not.toHaveProperty("include.offerings");
   });
 
   it("rejects a stale active-to-active subscription update after a newer period wins", async () => {

@@ -7,25 +7,51 @@ export type ProductDraftPrice = {
   id: string;
   amount: number;
   currency: string;
+  marketCode: string;
   billingInterval: "ONE_TIME" | "MONTHLY" | "YEARLY";
+  effectiveFrom: string;
+  effectiveTo: string | null;
   isActive: boolean;
+};
+
+export type ProductDraftCapability = {
+  capabilityId: string;
+  capabilityKey: string;
+  value: unknown;
 };
 
 export type ProductDraftOffering = {
   id: string;
   code: string;
   name: string;
+  shortDescription: string;
+  description: string | null;
   type?: "PLAN" | "ADD_ON" | "ONE_TIME_SERVICE" | "MANAGED_SERVICE" | "BUNDLE" | "CUSTOM_QUOTE";
+  salesMode: "SELF_SERVE" | "REQUEST" | "QUOTE_ONLY" | "CONTACT_ONLY";
+  fulfillmentMode: "AUTOMATIC" | "MANUAL" | "HYBRID" | "EXTERNAL";
+  activationMode: "INSTANT" | "AFTER_PAYMENT" | "AFTER_APPROVAL" | "SCHEDULED";
   publicationStatus: CatalogPublicationStatus;
+  releaseStage: CatalogReleaseStage;
+  accessTier: string;
+  requirements: unknown;
+  eligibilityPolicy: unknown;
+  sortOrder: number;
   workflowTemplateKey: string | null;
+  workflowTemplateVersion: number | null;
   prices: ProductDraftPrice[];
   capabilityKeys: string[];
+  capabilities: ProductDraftCapability[];
   bundleComponents: Array<{
     offeringId: string;
     offeringCode: string;
+    offeringName: string;
     publicationStatus: CatalogPublicationStatus;
     productId: string | null;
     productPublicationStatus: CatalogPublicationStatus | null;
+    productCode: string | null;
+    quantity: number;
+    required: boolean;
+    capabilities: ProductDraftCapability[];
   }>;
 };
 
@@ -35,11 +61,26 @@ export type ProductDraft = {
   registryKey: string;
   name: string;
   shortDescription: string;
+  description: string | null;
   category: string;
+  tags: unknown;
+  media: unknown;
   publicationStatus: CatalogPublicationStatus;
   releaseStage: CatalogReleaseStage;
+  accessTier: string;
+  eligibilityPolicy: unknown;
+  sortOrder: number;
+  isFeatured: boolean;
+  schemaVersion: 2;
   offerings: ProductDraftOffering[];
 };
+
+export function parsePublishedCatalogSnapshot(value: unknown): ProductDraft | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const snapshot = value as Partial<ProductDraft>;
+  if (snapshot.schemaVersion !== 2 || typeof snapshot.id !== "string" || typeof snapshot.code !== "string" || !Array.isArray(snapshot.offerings)) return null;
+  return snapshot as ProductDraft;
+}
 
 export type CatalogRevisionInput = {
   productId: string;

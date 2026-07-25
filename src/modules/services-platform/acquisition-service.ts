@@ -14,6 +14,7 @@ export type AcquisitionRecord = {
 export interface AcquisitionRepository {
   createFromCatalog(input: {
     tenantId: string;
+    userId: string;
     offeringId: string;
     idempotencyKey: string;
     attributionId?: string | null;
@@ -61,7 +62,7 @@ export function createAcquisitionService(
         userId: input.userId,
         offeringName: acquisition.offeringName,
         customerMessage: input.customerMessage?.trim() || `أرغب في طلب خدمة ${acquisition.offeringName}.`,
-        idempotencyKey: `services:${input.idempotencyKey}`,
+        idempotencyKey: `services:${acquisition.tenantId}:${input.idempotencyKey}`,
         correlationId: acquisition.correlationId,
         context: { namespace: "services", entityType: "acquisition", entityId: acquisition.id, relationKey: "primary" },
         workItemRequired: acquisition.workItemRequired,

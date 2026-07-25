@@ -2,6 +2,23 @@ import { AcquisitionStatus, FulfillmentStatus, Prisma, type PrismaClient } from 
 
 import type { FulfillmentRepository } from "./fulfillment-service";
 
+function objectValue(value: Prisma.JsonValue | null | undefined): Record<string, Prisma.JsonValue> | null {
+  return value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, Prisma.JsonValue> : null;
+}
+
+function snapshotCapabilities(value: Prisma.JsonValue | null | undefined) {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((entry) => {
+    const item = objectValue(entry);
+    if (!item || typeof item.capabilityKey !== "string") return [];
+    return [{
+      capabilityKey: item.capabilityKey,
+      capabilityId: typeof item.capabilityId === "string" ? item.capabilityId : null,
+      value: item.value ?? null,
+    }];
+  });
+}
+
 export function createPrismaFulfillmentRepository(prisma: PrismaClient): FulfillmentRepository {
   return {
     getRunAcquisitionId(runId) {
@@ -11,57 +28,53 @@ export function createPrismaFulfillmentRepository(prisma: PrismaClient): Fulfill
       const acquisition = await prisma.acquisition.findUnique({
         where: { id: acquisitionId },
         include: {
-          lines: { orderBy: { createdAt: "asc" }, take: 1, select: { billingInterval: true } },
-          offering: {
-            include: {
-              product: { select: { id: true, code: true } },
-              workflowTemplate: { select: { key: true, version: true } },
-              capabilities: { include: { capability: { select: { id: true, key: true } } } },
-              bundleComponents: {
-                orderBy: { sortOrder: "asc" },
-                include: {
-                  componentOffering: {
-                    include: {
-                      product: { select: { id: true, code: true } },
-                      capabilities: { include: { capability: { select: { id: true, key: true } } } },
-                    },
-                  },
-                },
-              },
-            },
-          },
+          lines: { orderBy: { createdAt: "asc" }, select: { offeringId: true, billingInterval: true, snapshot: true } },
         },
       });
       if (!acquisition) return null;
       const metadata = acquisition.metadata && typeof acquisition.metadata === "object" && !Array.isArray(acquisition.metadata)
         ? acquisition.metadata as Record<string, Prisma.JsonValue>
         : {};
-      const workflow = acquisition.offering.workflowTemplate;
-      if (!workflow) throw new Error(`Offering has no workflow template: ${acquisition.offering.code}`);
+      const primaryLine = acquisition.lines.find((line) => line.offeringId === acquisition.offeringId) ?? acquisition.lines[0];
+      const snapshot = objectValue(primaryLine?.snapshot);
+      if (!primaryLine || snapshot?.schemaVersion !== 2) {
+        throw new Error(`Acquisition ${acquisition.id} has no immutable fulfillment snapshot.`);
+      }
+      const workflow = objectValue(snapshot.workflow);
+      if (!workflow || typeof workflow.key !== "string" || typeof workflow.version !== "number") {
+        throw new Error(`Acquisition ${acquisition.id} has an invalid workflow snapshot.`);
+      }
+      const productId = typeof snapshot.productId === "string" ? snapshot.productId : null;
+      const productCode = typeof snapshot.productCode === "string" ? snapshot.productCode : null;
+      const bundles = Array.isArray(snapshot.bundleComponents) ? snapshot.bundleComponents : [];
       return {
         id: acquisition.id,
         tenantId: acquisition.tenantId,
-        productId: acquisition.offering.product?.id ?? null,
-        offeringId: acquisition.offering.id,
+        productId,
+        offeringId: acquisition.offeringId,
         workflowKey: workflow.key,
         workflowVersion: workflow.version,
         status: acquisition.status,
-        instanceKey: acquisition.offering.product
-          ? typeof metadata.instanceKey === "string" ? metadata.instanceKey : `${acquisition.offering.product.code}:${acquisition.id}`
+        instanceKey: productId && productCode
+          ? typeof metadata.instanceKey === "string" ? metadata.instanceKey : `${productCode}:${acquisition.id}`
           : null,
-        additionalActivations: acquisition.offering.bundleComponents.flatMap((component) => {
-          const product = component.componentOffering.product;
-          return product ? [{ productId: product.id, instanceKey: `${product.code}:${acquisition.id}:${component.componentOffering.id}` }] : [];
+        additionalActivations: bundles.flatMap((entry) => {
+          const component = objectValue(entry);
+          const componentProductId = component && typeof component.productId === "string" ? component.productId : null;
+          const componentProductCode = component && typeof component.productCode === "string" ? component.productCode : null;
+          const componentOfferingId = component && typeof component.offeringId === "string" ? component.offeringId : null;
+          return componentProductId && componentProductCode && componentOfferingId
+            ? [{ productId: componentProductId, instanceKey: `${componentProductCode}:${acquisition.id}:${componentOfferingId}` }]
+            : [];
         }),
-        billingInterval: acquisition.lines[0]?.billingInterval ?? "ONE_TIME",
+        billingInterval: primaryLine.billingInterval,
         capabilities: [
-          ...acquisition.offering.capabilities.map((item) => ({ capabilityKey: item.capability.key, capabilityId: item.capability.id, value: item.value })),
-          ...acquisition.offering.bundleComponents.flatMap((component) => component.componentOffering.capabilities.map((item) => ({
-            capabilityKey: item.capability.key,
-            capabilityId: item.capability.id,
-            value: item.value,
-            quantity: component.quantity,
-          }))),
+          ...snapshotCapabilities(snapshot.capabilities),
+          ...bundles.flatMap((entry) => {
+            const component = objectValue(entry);
+            const quantity = component && typeof component.quantity === "number" ? component.quantity : 1;
+            return snapshotCapabilities(component?.capabilities).map((capability) => ({ ...capability, quantity }));
+          }),
         ],
       };
     },
@@ -111,16 +124,36 @@ export function createPrismaFulfillmentRepository(prisma: PrismaClient): Fulfill
     },
     async markWaiting(runId, leaseOwner, status, checkpoint) {
       const now = new Date();
-      const updated = await prisma.fulfillmentRun.updateMany({
-        where: { id: runId, status: FulfillmentStatus.RUNNING, leaseOwner, leaseExpiresAt: { gt: now } },
-        data: {
-          status: status as FulfillmentStatus,
-          checkpoint: checkpoint === null ? Prisma.JsonNull : checkpoint as Prisma.InputJsonValue,
-          leaseOwner: null,
-          leaseExpiresAt: null,
-        },
+      return prisma.$transaction(async (tx) => {
+        const updated = await tx.fulfillmentRun.updateMany({
+          where: { id: runId, status: FulfillmentStatus.RUNNING, leaseOwner, leaseExpiresAt: { gt: now } },
+          data: {
+            status: status as FulfillmentStatus,
+            checkpoint: checkpoint === null ? Prisma.JsonNull : checkpoint as Prisma.InputJsonValue,
+            leaseOwner: null,
+            leaseExpiresAt: null,
+          },
+        });
+        if (updated.count !== 1) return false;
+        const run = await tx.fulfillmentRun.findUniqueOrThrow({
+          where: { id: runId },
+          select: { attempts: true, acquisition: { select: { id: true, tenantId: true, correlationId: true } } },
+        });
+        const eventSuffix = status.toLowerCase();
+        await tx.servicesOutboxEvent.upsert({
+          where: { deduplicationKey: `fulfillment:${runId}:${eventSuffix}:attempt:${run.attempts}` },
+          update: {},
+          create: {
+            aggregateType: "Acquisition",
+            aggregateId: run.acquisition.id,
+            eventName: `services.acquisition.${eventSuffix}`,
+            payload: { acquisitionId: run.acquisition.id, tenantId: run.acquisition.tenantId, runId, status },
+            deduplicationKey: `fulfillment:${runId}:${eventSuffix}:attempt:${run.attempts}`,
+            correlationId: run.acquisition.correlationId,
+          },
+        });
+        return true;
       });
-      return updated.count === 1;
     },
     async markFailed(runId, leaseOwner, error, finishedAt) {
       const updated = await prisma.fulfillmentRun.updateMany({

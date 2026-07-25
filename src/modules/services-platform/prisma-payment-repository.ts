@@ -1,6 +1,22 @@
-import { AcquisitionStatus, PaymentStatus, type PrismaClient } from "@prisma/client";
+import { AcquisitionStatus, PaymentStatus, Prisma, type PrismaClient } from "@prisma/client";
 
 import type { ServicesPaymentRepository } from "./payment-integration";
+
+async function assertTerminalReplay(
+  tx: Prisma.TransactionClient,
+  input: { idempotencyKey: string; eventName: string; paymentRequestId: string; acquisitionId: string },
+) {
+  const event = await tx.servicesOutboxEvent.findUnique({
+    where: { deduplicationKey: input.idempotencyKey },
+    select: { eventName: true, aggregateId: true, payload: true },
+  });
+  const payload = event?.payload && typeof event.payload === "object" && !Array.isArray(event.payload)
+    ? event.payload as Record<string, unknown>
+    : null;
+  if (!event || event.eventName !== input.eventName || event.aggregateId !== input.acquisitionId || payload?.paymentRequestId !== input.paymentRequestId) {
+    throw new Error("Idempotency key does not match the completed payment command.");
+  }
+}
 
 export function createPrismaServicesPaymentRepository(prisma: PrismaClient): ServicesPaymentRepository {
   return {
@@ -121,6 +137,10 @@ export function createPrismaServicesPaymentRepository(prisma: PrismaClient): Ser
         await tx.$queryRaw`SELECT id FROM "PaymentRequest" WHERE id = ${input.paymentRequestId} FOR UPDATE`;
         const payment = await tx.paymentRequest.findUniqueOrThrow({ where: { id: input.paymentRequestId } });
         if (!payment.acquisitionId) throw new Error("Payment request is not linked to a services acquisition.");
+        if (payment.status === PaymentStatus.REJECTED) {
+          await assertTerminalReplay(tx, { idempotencyKey: input.idempotencyKey, eventName: "services.payment.rejected", paymentRequestId: payment.id, acquisitionId: payment.acquisitionId });
+          return { acquisitionId: payment.acquisitionId, tenantId: payment.tenantId };
+        }
         if (payment.status !== PaymentStatus.DRAFT && payment.status !== PaymentStatus.SUBMITTED && payment.status !== PaymentStatus.UNDER_REVIEW) {
           throw new Error(`Payment cannot be rejected from status ${payment.status}`);
         }
@@ -140,7 +160,12 @@ export function createPrismaServicesPaymentRepository(prisma: PrismaClient): Ser
       return prisma.$transaction(async (tx) => {
         await tx.$queryRaw`SELECT id FROM "PaymentRequest" WHERE id = ${input.paymentRequestId} FOR UPDATE`;
         const payment = await tx.paymentRequest.findUniqueOrThrow({ where: { id: input.paymentRequestId } });
-        if (!payment.acquisitionId || payment.status !== PaymentStatus.APPROVED) throw new Error("Only approved services payments can be refunded.");
+        if (!payment.acquisitionId) throw new Error("Only approved services payments can be refunded.");
+        if (payment.status === PaymentStatus.REFUNDED) {
+          await assertTerminalReplay(tx, { idempotencyKey: input.idempotencyKey, eventName: "services.payment.refunded", paymentRequestId: payment.id, acquisitionId: payment.acquisitionId });
+          return { acquisitionId: payment.acquisitionId, tenantId: payment.tenantId };
+        }
+        if (payment.status !== PaymentStatus.APPROVED) throw new Error("Only approved services payments can be refunded.");
         await tx.$queryRaw`SELECT id FROM "Acquisition" WHERE id = ${payment.acquisitionId} FOR UPDATE`;
         const acquisition = await tx.acquisition.findUniqueOrThrow({ where: { id: payment.acquisitionId }, select: { status: true } });
         if (acquisition.status !== AcquisitionStatus.PAID && acquisition.status !== AcquisitionStatus.FULFILLED) {

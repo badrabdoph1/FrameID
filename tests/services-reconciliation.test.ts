@@ -4,6 +4,7 @@ import { runServicesReconciliation } from "@/modules/services-platform/reconcili
 
 describe("services reconciliation", () => {
   it("recovers expired leases and advances expired subscription periods", async () => {
+    const requestOffering = vi.fn().mockResolvedValue({});
     const prisma = {
       catalogOffering: { findFirst: vi.fn().mockResolvedValue(null) },
       servicesOutboxEvent: {
@@ -30,20 +31,30 @@ describe("services reconciliation", () => {
       trialGrant: { findMany: vi.fn().mockResolvedValue([{ id: "trial" }]), update: vi.fn().mockResolvedValue({ tenantId: "tenant" }) },
       fulfillmentRun: { findMany: vi.fn().mockResolvedValue([{ id: "stale-run", acquisitionId: "stale-acq" }]), updateMany: vi.fn().mockResolvedValue({ count: 1 }) },
       acquisition: {
-        findMany: vi.fn().mockResolvedValueOnce([{ id: "done-acq", tenantId: "tenant", correlationId: "done-corr" }]).mockResolvedValueOnce([{ id: "acq", correlationId: "corr" }]),
+        findMany: vi.fn()
+          .mockResolvedValueOnce([{ id: "done-acq", tenantId: "tenant", correlationId: "done-corr" }])
+          .mockResolvedValueOnce([{ id: "acq", correlationId: "corr" }])
+          .mockResolvedValueOnce([
+            { id: "orphan", tenantId: "tenant", offeringId: "offer", idempotencyKey: "request", correlationId: "orphan-corr", conversationId: null, status: "DRAFT", metadata: { requestedByUserId: "user", customerMessage: "help" } },
+            { id: "linked", tenantId: "tenant", offeringId: "offer", idempotencyKey: "linked", correlationId: "linked-corr", conversationId: "conversation", status: "REQUESTED", metadata: {} },
+          ]),
         updateMany: vi.fn().mockResolvedValue({ count: 1 }),
       },
+      communicationConversation: { findMany: vi.fn().mockResolvedValue([{ id: "conversation", tenantId: "tenant" }]) },
+      communicationContextReference: { findMany: vi.fn().mockResolvedValue([]), upsert: vi.fn() },
       entitlement: { count: vi.fn().mockResolvedValue(0), updateMany: vi.fn().mockResolvedValue({ count: 1 }) },
       productInstance: { count: vi.fn().mockResolvedValue(0), updateMany: vi.fn().mockResolvedValue({ count: 1 }) },
     };
     Object.assign(prisma, { $queryRaw: vi.fn().mockResolvedValue([]) });
     Object.assign(prisma, { $transaction: async (callback: (tx: typeof prisma) => Promise<unknown>) => callback(prisma) });
 
-    const report = await runServicesReconciliation(prisma as never, new Date("2026-07-22T00:00:00.000Z"));
+    const report = await runServicesReconciliation(prisma as never, new Date("2026-07-22T00:00:00.000Z"), { requestOffering });
 
-    expect(report.repaired).toMatchObject({ expiredLeases: 2, expiredSubscriptions: 3, pastDueSubscriptions: 2, expiredTrials: 1, fulfillmentRequests: 1, recoveredFulfillmentRuns: 1, finalizedAcquisitions: 1 });
+    expect(report.repaired).toMatchObject({ expiredLeases: 2, expiredSubscriptions: 3, pastDueSubscriptions: 2, expiredTrials: 1, fulfillmentRequests: 1, recoveredFulfillmentRuns: 1, finalizedAcquisitions: 1, recoveredConversations: 1, recoveredContextReferences: 1 });
     expect(prisma.servicesOutboxEvent.upsert).toHaveBeenCalledWith(expect.objectContaining({ where: { deduplicationKey: "reconcile:fulfillment:acq" } }));
     expect(prisma.servicesOutboxEvent.upsert).toHaveBeenCalledWith(expect.objectContaining({ where: { deduplicationKey: "reconcile:fulfillment-run:stale-run:retry" } }));
     expect(prisma.servicesOutboxEvent.upsert).toHaveBeenCalledWith(expect.objectContaining({ where: { deduplicationKey: "reconcile:acquisition:done-acq:fulfilled" } }));
+    expect(requestOffering).toHaveBeenCalledWith(expect.objectContaining({ tenantId: "tenant", userId: "user", idempotencyKey: "request" }));
+    expect(prisma.communicationContextReference.upsert).toHaveBeenCalledOnce();
   });
 });
