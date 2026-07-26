@@ -1,20 +1,25 @@
-import { CreditCard, Headphones, MessageCircle, Save, Share2, UsersRound } from "lucide-react";
+import { CreditCard, Headphones, MessageCircle, Save, Share2, Sparkles, UsersRound } from "lucide-react";
 
 import { AdminPageShell } from "@/components/layout/admin-page-shell";
 import { requireAdminPermission } from "@/modules/admin/admin-permission-guards";
+import { prisma } from "@/lib/prisma";
+import { isServicesPlatformUiVisible } from "@/modules/services-platform/ui-visibility";
 import { getSupportSettings, toWhatsappHref } from "@/modules/support/support-settings";
-import { updateSupportWhatsappAction } from "@/app/(admin)/admin/settings/actions";
+import { updateServicesPlatformVisibilityAction, updateSupportWhatsappAction } from "@/app/(admin)/admin/settings/actions";
 
 export const dynamic = "force-dynamic";
 
 type Props = {
-  searchParams: Promise<{ supportSaved?: string; supportError?: string }>;
+  searchParams: Promise<{ supportSaved?: string; supportError?: string; servicesVisibilitySaved?: string; servicesVisibilityError?: string }>;
 };
 
 export default async function AdminSettingsPage({ searchParams }: Props) {
   await requireAdminPermission("settings", "view");
   const params = await searchParams;
-  const supportSettings = await getSupportSettings();
+  const [supportSettings, servicesPlatformVisible] = await Promise.all([
+    getSupportSettings(),
+    isServicesPlatformUiVisible(prisma),
+  ]);
 
   return (
     <AdminPageShell
@@ -27,6 +32,52 @@ export default async function AdminSettingsPage({ searchParams }: Props) {
         <SettingsLink href="/admin/social-preview" title="معاينة المشاركة" description="عنوان ووصف وصورة الروابط." icon={Share2} />
         <SettingsLink href="/admin/admin-users" title="فريق الإدارة" description="الحسابات والجلسات والصلاحيات." icon={UsersRound} />
       </nav>
+
+      <section className="mt-6 overflow-hidden rounded-3xl border border-amber-300/18 bg-[linear-gradient(135deg,rgba(243,207,115,0.11),rgba(255,255,255,0.035))]">
+        <header className="flex items-start gap-3 border-b border-white/10 p-5">
+          <span className="grid size-11 place-items-center rounded-2xl bg-amber-300/12 text-[#f3cf73]">
+            <Sparkles className="size-5" aria-hidden />
+          </span>
+          <div>
+            <h2 className="text-lg font-black text-[#fff7e8]">منصة الخدمات</h2>
+            <p className="mt-1 text-sm font-bold leading-7 text-white/48">
+              تحكم في ظهور مركز الخدمات داخل لوحات العميل والأدمن. عند الإخفاء تُحجب الروابط والصفحات المباشرة، بينما تستمر المعالجة الخلفية للطلبات القائمة بأمان.
+            </p>
+          </div>
+        </header>
+
+        <form action={updateServicesPlatformVisibilityAction} className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
+          <label htmlFor="servicesPlatformVisible" className="flex cursor-pointer items-center gap-3 rounded-2xl border border-white/8 bg-black/15 px-4 py-3">
+            <input
+              id="servicesPlatformVisible"
+              name="servicesPlatformVisible"
+              type="checkbox"
+              defaultChecked={servicesPlatformVisible}
+              className="size-5 accent-amber-300"
+            />
+            <span>
+              <strong className="block text-sm font-black text-[#fff7e8]">إظهار قسم الخدمات</strong>
+              <small className="mt-1 block text-xs font-bold text-white/42">الحالة الحالية: {servicesPlatformVisible ? "ظاهر" : "مخفي وتحت التطوير"}</small>
+            </span>
+          </label>
+
+          <button className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-[#f3cf73] px-5 text-sm font-black text-[#17120a] transition hover:-translate-y-0.5 hover:bg-[#ffe29a]">
+            <Save className="size-4" aria-hidden />
+            حفظ حالة الظهور
+          </button>
+        </form>
+
+        {params.servicesVisibilitySaved ? (
+          <div className="mx-5 mb-5 rounded-2xl border border-emerald-300/20 bg-emerald-300/10 px-4 py-3 text-sm font-black text-emerald-200">
+            تم {params.servicesVisibilitySaved === "visible" ? "إظهار" : "إخفاء"} منصة الخدمات بنجاح.
+          </div>
+        ) : null}
+        {params.servicesVisibilityError ? (
+          <div className="mx-5 mb-5 rounded-2xl border border-red-300/20 bg-red-300/10 px-4 py-3 text-sm font-black text-red-200">
+            {params.servicesVisibilityError}
+          </div>
+        ) : null}
+      </section>
 
       <section className="mt-6 overflow-hidden rounded-3xl border border-emerald-400/16 bg-[linear-gradient(135deg,rgba(16,185,129,0.10),rgba(255,255,255,0.035))]">
         <header className="flex items-start gap-3 border-b border-white/10 p-5">

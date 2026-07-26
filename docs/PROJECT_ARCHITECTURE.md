@@ -52,3 +52,7 @@ A full migration combines the Git repository for platform code/content with a ve
 Legacy local-only snapshots and automatic restore paths are disabled and are not part of the production disaster-recovery architecture.
 
 Platform-managed configuration is versioned under `content/` and platform assets under `public/platform/`. Admin mutations create Git commits and revision entries; PostgreSQL rows for plans, themes, templates, payment configuration, and platform flags are runtime mirrors rebuilt by the production seed. Customer records and `public/uploads` never become source files.
+
+## Services Platform source of truth
+
+تعريفات Product Registry التنفيذية وbaseline Catalog تبقى في Git. أما إصدارات Catalog المنشورة، الأسعار الفعالة، Acquisitions، Fulfillment، Entitlements، Product Instances، Service Subscriptions، Recommendation decisions، وAnalytics events فمصدر حقيقتها التشغيلي PostgreSQL. لا يعيد Seed الكتابة فوق إصدارات Catalog المنشورة؛ يضيف baseline ناقصًا فقط. تصدير Catalog إلى Git هو نسخة استعادة وتدقيق، وليس writer تشغيليًا موازيًا.

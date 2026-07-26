@@ -210,7 +210,7 @@
       "name": "الباقة الماسية",
       "priceAmount": 169900,
       "currency": "EGP",
-      "billingInterval": "monthly",
+      "billingInterval": "unspecified",
       "features": {
         "ctaLabel": "اختيار الباقة",
         "isPopular": false,
@@ -239,7 +239,7 @@
       "name": "بيزك",
       "priceAmount": 45,
       "currency": "EGP",
-      "billingInterval": "monthly",
+      "billingInterval": "unspecified",
       "features": {
         "ctaLabel": "اختار الباقة",
         "isPopular": true,

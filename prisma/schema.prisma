@@ -305,6 +305,130 @@ enum CommunicationDeliveryStatus {
   CANCELLED
 }
 
+enum ProductPublicationStatus {
+  DRAFT
+  IN_REVIEW
+  PUBLISHED
+  PAUSED
+  RETIRED
+}
+
+enum ProductReleaseStage {
+  ANNOUNCED
+  PRIVATE_PREVIEW
+  BETA
+  GA
+  DEPRECATED
+}
+
+enum OfferingType {
+  PLAN
+  ADD_ON
+  ONE_TIME_SERVICE
+  MANAGED_SERVICE
+  BUNDLE
+  CUSTOM_QUOTE
+}
+
+enum SalesMode {
+  SELF_SERVE
+  REQUEST
+  QUOTE_ONLY
+  CONTACT_ONLY
+}
+
+enum FulfillmentMode {
+  AUTOMATIC
+  MANUAL
+  HYBRID
+  EXTERNAL
+}
+
+enum ActivationMode {
+  INSTANT
+  AFTER_PAYMENT
+  AFTER_APPROVAL
+  SCHEDULED
+}
+
+enum PriceBillingInterval {
+  ONE_TIME
+  MONTHLY
+  YEARLY
+}
+
+enum AcquisitionStatus {
+  DRAFT
+  REQUESTED
+  QUALIFYING
+  ACCEPTED
+  AWAITING_PAYMENT
+  PAID
+  FULFILLING
+  FULFILLED
+  DECLINED
+  CANCELLED
+  REFUNDED
+}
+
+enum FulfillmentStatus {
+  PENDING
+  RUNNING
+  WAITING_CUSTOMER
+  WAITING_INTERNAL
+  READY
+  SUCCEEDED
+  FAILED
+  CANCELLED
+}
+
+enum EntitlementStatus {
+  ACTIVE
+  SUSPENDED
+  EXPIRED
+  REVOKED
+}
+
+enum ProductInstanceStatus {
+  PROVISIONING
+  ACTIVE
+  SUSPENDED
+  EXPIRED
+  DEPROVISIONED
+}
+
+enum TrialGrantStatus {
+  ACTIVE
+  EXHAUSTED
+  EXPIRED
+  CONVERTED
+  REVOKED
+}
+
+enum ServiceSubscriptionStatus {
+  TRIALING
+  ACTIVE
+  PAST_DUE
+  GRACE_PERIOD
+  CANCELLED
+  EXPIRED
+  SUSPENDED
+}
+
+enum RecommendationRuleStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  ARCHIVED
+}
+
+enum ServicesOutboxStatus {
+  PENDING
+  PROCESSING
+  PROCESSED
+  DEAD_LETTER
+}
+
 model User {
   id              String    @id @default(cuid())
   email           String    @unique
@@ -331,6 +455,7 @@ model User {
   communicationReadCursors          CommunicationReadCursor[]    @relation("CommunicationReadCursorCustomer")
   communicationAttachmentsUploaded  CommunicationAttachment[]    @relation("CommunicationAttachmentCustomerUploader")
   communicationWorkItemEvents       CommunicationWorkItemEvent[] @relation("CommunicationWorkItemEventCustomerActor")
+  productAnalyticsEvents            ProductAnalyticsEvent[]
 
   @@index([role, deletedAt])
 }
@@ -396,6 +521,14 @@ model Tenant {
   customerMessageRecipients  CustomerMessageRecipient[]
   communicationConversations CommunicationConversation[]
   communicationAudiences     CommunicationAudience[]
+  acquisitions               Acquisition[]
+  entitlements               Entitlement[]
+  productInstances           ProductInstance[]
+  trialGrants                TrialGrant[]
+  usageLedgerEntries         UsageLedger[]
+  serviceSubscriptions       ServiceSubscription[]
+  recommendationDecisions    RecommendationDecision[]
+  productAnalyticsEvents     ProductAnalyticsEvent[]
 
   @@index([ownerUserId, status])
 }
@@ -793,6 +926,7 @@ model PaymentRequest {
   subscriptionId   String?
   planId           String?
   paymentAccountId String?
+  acquisitionId    String?
   amount           Int
   currency         String        @default("EGP")
   method           PaymentMethod
@@ -813,6 +947,7 @@ model PaymentRequest {
   subscription   Subscription?       @relation(fields: [subscriptionId], references: [id])
   plan           Plan?               @relation(fields: [planId], references: [id])
   paymentAccount PaymentAccount?     @relation(fields: [paymentAccountId], references: [id])
+  acquisition    Acquisition?        @relation(fields: [acquisitionId], references: [id])
   proofAsset     MediaAsset?         @relation("PaymentProof", fields: [proofAssetId], references: [id])
   // reviewer FK removed — reviewedByUserId stores AdminUser or User ID (no FK — admins ≠ users)
   logs           PaymentRequestLog[]
@@ -820,6 +955,7 @@ model PaymentRequest {
   @@index([tenantId, status])
   @@index([subscriptionId])
   @@index([paymentAccountId])
+  @@index([acquisitionId, status])
   @@index([proofAssetId])
   @@index([reviewedByUserId])
 }
@@ -1841,4 +1977,518 @@ model CommunicationDeliveryAttempt {
   @@index([status, availableAt, leaseExpiresAt])
   @@index([outboxEventId, channelKey])
   @@index([tenantId, channelKey, createdAt])
+}
+
+// Services Platform. Communication references remain opaque by design.
+model ProductDefinition {
+  id                String                   @id @default(cuid())
+  code              String                   @unique
+  registryKey       String                   @unique
+  name              String
+  shortDescription  String
+  description       String?
+  category          String
+  tags              Json
+  media             Json?
+  publicationStatus ProductPublicationStatus @default(DRAFT)
+  releaseStage      ProductReleaseStage      @default(ANNOUNCED)
+  accessTier        String                   @default("STANDARD")
+  eligibilityPolicy Json?
+  sortOrder         Int                      @default(0)
+  isFeatured        Boolean                  @default(false)
+  publishedRevision Int?
+  publishedAt       DateTime?
+  createdAt         DateTime                 @default(now())
+  updatedAt         DateTime                 @updatedAt
+  deletedAt         DateTime?
+  offerings         CatalogOffering[]
+  revisions         CatalogRevision[]
+  trialPolicies     TrialPolicy[]
+  entitlements      Entitlement[]
+  productInstances  ProductInstance[]
+  trialGrants       TrialGrant[]
+  analyticsEvents   ProductAnalyticsEvent[]
+
+  @@index([publicationStatus, releaseStage, sortOrder])
+  @@index([category, publicationStatus])
+}
+
+model WorkflowTemplate {
+  id              String            @id @default(cuid())
+  key             String
+  version         Int               @default(1)
+  name            String
+  description     String?
+  fulfillmentMode FulfillmentMode
+  steps           Json
+  isActive        Boolean           @default(true)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  offerings       CatalogOffering[]
+
+  @@unique([key, version])
+  @@index([key, isActive, version])
+}
+
+model CatalogOffering {
+  id                      String                   @id @default(cuid())
+  productId               String?
+  workflowTemplateId      String?
+  code                    String                   @unique
+  name                    String
+  shortDescription        String
+  description             String?
+  type                    OfferingType
+  salesMode               SalesMode                @default(REQUEST)
+  fulfillmentMode         FulfillmentMode          @default(MANUAL)
+  activationMode          ActivationMode           @default(AFTER_APPROVAL)
+  publicationStatus       ProductPublicationStatus @default(DRAFT)
+  releaseStage            ProductReleaseStage      @default(ANNOUNCED)
+  accessTier              String                   @default("STANDARD")
+  requirements            Json?
+  eligibilityPolicy       Json?
+  sortOrder               Int                      @default(0)
+  publishedAt             DateTime?
+  createdAt               DateTime                 @default(now())
+  updatedAt               DateTime                 @updatedAt
+  deletedAt               DateTime?
+  product                 ProductDefinition?       @relation(fields: [productId], references: [id], onDelete: Restrict)
+  workflowTemplate        WorkflowTemplate?        @relation(fields: [workflowTemplateId], references: [id], onDelete: Restrict)
+  prices                  CatalogPrice[]
+  capabilities            OfferingCapability[]
+  bundleComponents        BundleComponent[]        @relation("BundleParent")
+  componentOfBundles      BundleComponent[]        @relation("BundleItem")
+  trialPolicies           TrialPolicy[]
+  acquisitions            Acquisition[]
+  acquisitionLines        AcquisitionLine[]
+  entitlements            Entitlement[]
+  trialGrants             TrialGrant[]
+  serviceSubscriptions    ServiceSubscription[]
+  recommendationDecisions RecommendationDecision[]
+  analyticsEvents         ProductAnalyticsEvent[]
+
+  @@index([productId, publicationStatus, sortOrder])
+  @@index([type, publicationStatus, releaseStage])
+  @@index([workflowTemplateId])
+}
+
+model CatalogPrice {
+  id               String               @id @default(cuid())
+  offeringId       String
+  version          Int                  @default(1)
+  currency         String               @default("EGP")
+  amount           Int
+  billingInterval  PriceBillingInterval
+  marketCode       String               @default("GLOBAL")
+  effectiveFrom    DateTime             @default(now())
+  effectiveTo      DateTime?
+  isActive         Boolean              @default(true)
+  metadata         Json?
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+  offering         CatalogOffering      @relation(fields: [offeringId], references: [id], onDelete: Cascade)
+  acquisitionLines AcquisitionLine[]
+
+  @@unique([offeringId, version, currency, marketCode])
+  @@index([offeringId, isActive, effectiveFrom, effectiveTo])
+  @@index([currency, marketCode, isActive])
+}
+
+model CapabilityDefinition {
+  id                String               @id @default(cuid())
+  key               String               @unique
+  name              String
+  description       String?
+  valueType         String               @default("BOOLEAN")
+  unit              String?
+  aggregationPolicy String               @default("REPLACE")
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+  offerings         OfferingCapability[]
+  entitlements      Entitlement[]
+}
+
+model OfferingCapability {
+  id           String               @id @default(cuid())
+  offeringId   String
+  capabilityId String
+  value        Json
+  sortOrder    Int                  @default(0)
+  offering     CatalogOffering      @relation(fields: [offeringId], references: [id], onDelete: Cascade)
+  capability   CapabilityDefinition @relation(fields: [capabilityId], references: [id], onDelete: Restrict)
+
+  @@unique([offeringId, capabilityId])
+  @@index([capabilityId, offeringId])
+}
+
+model BundleComponent {
+  id                  String          @id @default(cuid())
+  bundleOfferingId    String
+  componentOfferingId String
+  quantity            Int             @default(1)
+  required            Boolean         @default(true)
+  sortOrder           Int             @default(0)
+  bundleOffering      CatalogOffering @relation("BundleParent", fields: [bundleOfferingId], references: [id], onDelete: Cascade)
+  componentOffering   CatalogOffering @relation("BundleItem", fields: [componentOfferingId], references: [id], onDelete: Restrict)
+
+  @@unique([bundleOfferingId, componentOfferingId])
+  @@index([componentOfferingId])
+}
+
+model TrialPolicy {
+  id                    String             @id @default(cuid())
+  productId             String?
+  offeringId            String?
+  name                  String
+  durationDays          Int?
+  usageLimit            Int?
+  usageCapabilityKey    String?
+  oncePerTenant         Boolean            @default(true)
+  requiresPaymentMethod Boolean            @default(false)
+  graceDays             Int                @default(0)
+  eligibilityPolicy     Json?
+  isActive              Boolean            @default(true)
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+  product               ProductDefinition? @relation(fields: [productId], references: [id], onDelete: Cascade)
+  offering              CatalogOffering?   @relation(fields: [offeringId], references: [id], onDelete: Cascade)
+
+  @@index([productId, isActive])
+  @@index([offeringId, isActive])
+}
+
+model CatalogRevision {
+  id          String                   @id @default(cuid())
+  productId   String
+  revision    Int
+  status      ProductPublicationStatus @default(DRAFT)
+  snapshot    Json
+  actorId     String?
+  actorName   String?
+  changeNote  String?
+  publishedAt DateTime?
+  createdAt   DateTime                 @default(now())
+  product     ProductDefinition        @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, revision])
+  @@index([productId, status, createdAt])
+}
+
+model Acquisition {
+  id                   String                  @id @default(cuid())
+  tenantId             String
+  offeringId           String
+  status               AcquisitionStatus       @default(DRAFT)
+  source               String                  @default("SERVICE_CENTER")
+  idempotencyKey       String
+  correlationId        String                  @unique
+  attributionId        String?
+  conversationId       String?
+  acceptedCurrency     String?
+  acceptedTotal        Int?
+  declineReasonCode    String?
+  cancellationReason   String?
+  metadata             Json?
+  requestedAt          DateTime?
+  acceptedAt           DateTime?
+  paidAt               DateTime?
+  fulfilledAt          DateTime?
+  cancelledAt          DateTime?
+  createdAt            DateTime                @default(now())
+  updatedAt            DateTime                @updatedAt
+  tenant               Tenant                  @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  offering             CatalogOffering         @relation(fields: [offeringId], references: [id], onDelete: Restrict)
+  lines                AcquisitionLine[]
+  paymentRequests      PaymentRequest[]
+  fulfillmentRuns      FulfillmentRun[]
+  productInstances     ProductInstance[]
+  serviceSubscriptions ServiceSubscription[]
+  analyticsEvents      ProductAnalyticsEvent[]
+
+  @@unique([tenantId, idempotencyKey])
+  @@index([tenantId, status, createdAt])
+  @@index([offeringId, status, createdAt])
+  @@index([conversationId])
+  @@index([attributionId])
+}
+
+model AcquisitionLine {
+  id              String               @id @default(cuid())
+  acquisitionId   String
+  offeringId      String
+  priceId         String?
+  snapshotCode    String
+  snapshotName    String
+  unitAmount      Int
+  quantity        Int                  @default(1)
+  currency        String
+  billingInterval PriceBillingInterval
+  snapshot        Json
+  createdAt       DateTime             @default(now())
+  acquisition     Acquisition          @relation(fields: [acquisitionId], references: [id], onDelete: Cascade)
+  offering        CatalogOffering      @relation(fields: [offeringId], references: [id], onDelete: Restrict)
+  price           CatalogPrice?        @relation(fields: [priceId], references: [id], onDelete: SetNull)
+
+  @@index([acquisitionId, createdAt])
+  @@index([offeringId, priceId])
+}
+
+model FulfillmentRun {
+  id              String            @id @default(cuid())
+  acquisitionId   String
+  workflowKey     String
+  workflowVersion Int               @default(1)
+  status          FulfillmentStatus @default(PENDING)
+  idempotencyKey  String            @unique
+  attempts        Int               @default(0)
+  checkpoint      Json?
+  result          Json?
+  lastError       String?
+  leaseOwner      String?
+  leaseExpiresAt  DateTime?
+  startedAt       DateTime?
+  readyAt         DateTime?
+  finishedAt      DateTime?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  acquisition     Acquisition       @relation(fields: [acquisitionId], references: [id], onDelete: Cascade)
+
+  @@index([acquisitionId, status, createdAt])
+  @@index([status, leaseExpiresAt])
+}
+
+model Entitlement {
+  id               String                @id @default(cuid())
+  tenantId         String
+  productId        String?
+  offeringId       String?
+  capabilityId     String?
+  capabilityKey    String
+  sourceType       String
+  sourceId         String
+  status           EntitlementStatus     @default(ACTIVE)
+  value            Json
+  quantity         Int?
+  startsAt         DateTime              @default(now())
+  endsAt           DateTime?
+  suspendedAt      DateTime?
+  revokedAt        DateTime?
+  revocationReason String?
+  createdAt        DateTime              @default(now())
+  updatedAt        DateTime              @updatedAt
+  tenant           Tenant                @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  product          ProductDefinition?    @relation(fields: [productId], references: [id], onDelete: Restrict)
+  offering         CatalogOffering?      @relation(fields: [offeringId], references: [id], onDelete: Restrict)
+  capability       CapabilityDefinition? @relation(fields: [capabilityId], references: [id], onDelete: Restrict)
+  usage            UsageLedger[]
+
+  @@unique([tenantId, capabilityKey, sourceType, sourceId])
+  @@index([tenantId, status, endsAt])
+  @@index([tenantId, capabilityKey, status])
+  @@index([sourceType, sourceId])
+}
+
+model ProductInstance {
+  id              String                @id @default(cuid())
+  tenantId        String
+  productId       String
+  acquisitionId   String?
+  status          ProductInstanceStatus @default(PROVISIONING)
+  instanceKey     String
+  externalRef     String?
+  configuration   Json?
+  activatedAt     DateTime?
+  expiresAt       DateTime?
+  suspendedAt     DateTime?
+  deprovisionedAt DateTime?
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+  tenant          Tenant                @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  product         ProductDefinition     @relation(fields: [productId], references: [id], onDelete: Restrict)
+  acquisition     Acquisition?          @relation(fields: [acquisitionId], references: [id], onDelete: SetNull)
+
+  @@unique([tenantId, instanceKey])
+  @@index([tenantId, productId, status])
+  @@index([acquisitionId])
+}
+
+model TrialGrant {
+  id             String                @id @default(cuid())
+  tenantId       String
+  productId      String?
+  offeringId     String
+  status         TrialGrantStatus      @default(ACTIVE)
+  idempotencyKey String
+  startsAt       DateTime              @default(now())
+  endsAt         DateTime?
+  graceEndsAt    DateTime?
+  usageLimit     Int?
+  usageConsumed  Int                   @default(0)
+  convertedAt    DateTime?
+  revokedAt      DateTime?
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
+  tenant         Tenant                @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  product        ProductDefinition?    @relation(fields: [productId], references: [id], onDelete: Restrict)
+  offering       CatalogOffering       @relation(fields: [offeringId], references: [id], onDelete: Restrict)
+  subscriptions  ServiceSubscription[]
+
+  @@unique([tenantId, idempotencyKey])
+  @@index([tenantId, status, endsAt])
+  @@index([offeringId, status])
+}
+
+model UsageLedger {
+  id             String       @id @default(cuid())
+  tenantId       String
+  entitlementId  String?
+  capabilityKey  String
+  periodKey      String       @default("lifetime")
+  delta          Int
+  idempotencyKey String
+  metadata       Json?
+  occurredAt     DateTime     @default(now())
+  createdAt      DateTime     @default(now())
+  tenant         Tenant       @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  entitlement    Entitlement? @relation(fields: [entitlementId], references: [id], onDelete: SetNull)
+
+  @@unique([tenantId, idempotencyKey])
+  @@index([tenantId, capabilityKey, periodKey, createdAt])
+  @@index([entitlementId, createdAt])
+}
+
+model ServiceSubscription {
+  id                     String                    @id @default(cuid())
+  tenantId               String
+  offeringId             String
+  acquisitionId          String?
+  trialGrantId           String?
+  status                 ServiceSubscriptionStatus @default(ACTIVE)
+  idempotencyKey         String
+  provider               String?
+  providerSubscriptionId String?
+  currentPeriodStart     DateTime
+  currentPeriodEnd       DateTime
+  gracePeriodEndsAt      DateTime?
+  cancelAtPeriodEnd      Boolean                   @default(false)
+  cancelledAt            DateTime?
+  cancellationReason     String?
+  createdAt              DateTime                  @default(now())
+  updatedAt              DateTime                  @updatedAt
+  tenant                 Tenant                    @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  offering               CatalogOffering           @relation(fields: [offeringId], references: [id], onDelete: Restrict)
+  acquisition            Acquisition?              @relation(fields: [acquisitionId], references: [id], onDelete: SetNull)
+  trialGrant             TrialGrant?               @relation(fields: [trialGrantId], references: [id], onDelete: SetNull)
+
+  @@unique([tenantId, idempotencyKey])
+  @@unique([provider, providerSubscriptionId])
+  @@index([tenantId, status, currentPeriodEnd])
+  @@index([offeringId, status])
+  @@index([gracePeriodEndsAt])
+}
+
+model RecommendationRule {
+  id            String                   @id @default(cuid())
+  key           String                   @unique
+  name          String
+  status        RecommendationRuleStatus @default(DRAFT)
+  version       Int                      @default(1)
+  priority      Int                      @default(0)
+  conditions    Json
+  action        Json
+  placements    Json
+  reasonCodes   Json
+  frequencyCap  Int?
+  cooldownHours Int?
+  startsAt      DateTime?
+  endsAt        DateTime?
+  createdAt     DateTime                 @default(now())
+  updatedAt     DateTime                 @updatedAt
+  decisions     RecommendationDecision[]
+
+  @@index([status, priority, startsAt, endsAt])
+}
+
+model RecommendationDecision {
+  id            String              @id @default(cuid())
+  tenantId      String
+  ruleId        String?
+  offeringId    String
+  attributionId String              @unique
+  placement     String
+  score         Float               @default(0)
+  reasonCodes   Json
+  status        String              @default("SHOWN")
+  expiresAt     DateTime?
+  dismissedAt   DateTime?
+  clickedAt     DateTime?
+  convertedAt   DateTime?
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+  tenant        Tenant              @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  rule          RecommendationRule? @relation(fields: [ruleId], references: [id], onDelete: SetNull)
+  offering      CatalogOffering     @relation(fields: [offeringId], references: [id], onDelete: Restrict)
+
+  @@index([tenantId, placement, status, createdAt])
+  @@index([offeringId, status, createdAt])
+  @@index([ruleId, createdAt])
+}
+
+model ProductAnalyticsEvent {
+  id             String             @id @default(cuid())
+  tenantId       String?
+  userId         String?
+  productId      String?
+  offeringId     String?
+  acquisitionId  String?
+  name           String
+  version        Int                @default(1)
+  attributionId  String?
+  sessionKey     String?
+  idempotencyKey String             @unique
+  properties     Json?
+  occurredAt     DateTime           @default(now())
+  createdAt      DateTime           @default(now())
+  tenant         Tenant?            @relation(fields: [tenantId], references: [id], onDelete: SetNull)
+  user           User?              @relation(fields: [userId], references: [id], onDelete: SetNull)
+  product        ProductDefinition? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  offering       CatalogOffering?   @relation(fields: [offeringId], references: [id], onDelete: SetNull)
+  acquisition    Acquisition?       @relation(fields: [acquisitionId], references: [id], onDelete: SetNull)
+
+  @@index([name, occurredAt])
+  @@index([tenantId, name, occurredAt])
+  @@index([productId, offeringId, name, occurredAt])
+  @@index([attributionId, occurredAt])
+}
+
+model ServicesOutboxEvent {
+  id               String               @id @default(cuid())
+  aggregateType    String
+  aggregateId      String
+  eventName        String
+  eventVersion     Int                  @default(1)
+  payload          Json
+  deduplicationKey String               @unique
+  correlationId    String?
+  causationId      String?
+  status           ServicesOutboxStatus @default(PENDING)
+  attempts         Int                  @default(0)
+  availableAt      DateTime             @default(now())
+  leaseOwner       String?
+  leaseExpiresAt   DateTime?
+  processedAt      DateTime?
+  lastError        String?
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+
+  @@index([status, availableAt, leaseExpiresAt])
+  @@index([aggregateType, aggregateId, createdAt])
+  @@index([correlationId, createdAt])
+}
+
+model ServicesReconciliationCheckpoint {
+  scope     String   @id
+  cursorId  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

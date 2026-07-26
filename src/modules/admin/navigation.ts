@@ -94,6 +94,14 @@ export const adminRoutes: AdminRouteDefinition[] = [
   defineRoute({ id: "payments", href: "/admin/payments", labelAr: "مراجعة المدفوعات", descriptionAr: "قبول أو رفض إثباتات الدفع", sectionId: "billing", visibility: "daily", keywords: ["دفع", "إثبات", "مراجعة"], icon: CreditCard, parentHref: "/admin/billing" }),
   defineRoute({ id: "subscriptions", href: "/admin/subscriptions", labelAr: "الاشتراكات", descriptionAr: "التجارب والاشتراكات والتجديدات", sectionId: "billing", visibility: "daily", keywords: ["اشتراك", "تجربة", "تجديد"], icon: BadgeCheck, parentHref: "/admin/billing" }),
   defineRoute({ id: "plans", href: "/admin/plans", labelAr: "الباقات", descriptionAr: "أسعار ومزايا الباقات", sectionId: "billing", visibility: "daily", keywords: ["باقات", "سعر", "خطة"], icon: BadgeCheck, parentHref: "/admin/billing" }),
+  defineRoute({ id: "services-platform", href: "/admin/services", labelAr: "منصة الخدمات", descriptionAr: "المنتجات والعروض والطلبات والتفعيل", sectionId: "billing", visibility: "daily", keywords: ["خدمات", "منتجات", "كتالوج", "طلبات"], icon: Sparkles, parentHref: "/admin" }),
+  defineRoute({ id: "services-product", href: "/admin/services/products/[id]", labelAr: "تفاصيل المنتج", descriptionAr: "العروض والأسعار والقدرات والنشر", sectionId: "billing", visibility: "contextual", keywords: ["منتج", "عرض", "سعر"], icon: Sparkles, parentHref: "/admin/services" }),
+  defineRoute({ id: "services-acquisitions", href: "/admin/services/acquisitions", labelAr: "طلبات الخدمات", descriptionAr: "تأهيل وتسعير ومتابعة الطلبات", sectionId: "billing", visibility: "daily", keywords: ["طلبات", "تنفيذ", "عرض سعر"], icon: ClipboardList, parentHref: "/admin/services" }),
+  defineRoute({ id: "services-entitlements", href: "/admin/services/entitlements", labelAr: "الاستحقاقات", descriptionAr: "صلاحيات وقدرات العملاء الفعلية", sectionId: "billing", visibility: "advanced", keywords: ["استحقاقات", "صلاحيات", "قدرات"], icon: BadgeCheck, parentHref: "/admin/services" }),
+  defineRoute({ id: "services-fulfillment", href: "/admin/services/fulfillment", labelAr: "تنفيذ الخدمات", descriptionAr: "مسارات التنفيذ اليدوية والآلية", sectionId: "billing", visibility: "daily", keywords: ["تنفيذ", "تسليم", "تشغيل"], icon: Activity, parentHref: "/admin/services" }),
+  defineRoute({ id: "services-subscriptions", href: "/admin/services/subscriptions", labelAr: "اشتراكات الخدمات", descriptionAr: "التجديد والمهلة وإلغاء اشتراكات المنتجات", sectionId: "billing", visibility: "daily", keywords: ["اشتراكات", "تجديد", "مهلة"], icon: BadgeCheck, parentHref: "/admin/services" }),
+  defineRoute({ id: "services-recommendations", href: "/admin/services/recommendations", labelAr: "ترشيحات الخدمات", descriptionAr: "قواعد Cross-sell وUp-sell", sectionId: "billing", visibility: "advanced", keywords: ["ترشيحات", "بيع إضافي", "قواعد"], icon: Sparkles, parentHref: "/admin/services" }),
+  defineRoute({ id: "services-analytics", href: "/admin/analytics/services", labelAr: "تحليلات الخدمات", descriptionAr: "Funnel والتحويل والإسناد", sectionId: "billing", visibility: "advanced", keywords: ["تحليلات", "تحويل", "إسناد"], icon: Activity, parentHref: "/admin/services" }),
   defineRoute({ id: "deactivation-control", href: "/admin/deactivation-control", labelAr: "التحكم في التعطيل", descriptionAr: "تعليق التعطيل التلقائي للحسابات التجريبية والمدفوعة", sectionId: "communication", visibility: "daily", keywords: ["تعطيل", "تعليق", "إيقاف", "حسابات"], icon: PauseCircle, parentHref: "/admin/communications" }),
   defineRoute({ id: "payment-settings", href: "/admin/settings/payment", labelAr: "وسائل الدفع", descriptionAr: "الحسابات التي يستقبل عليها الدفع", sectionId: "billing", visibility: "daily", keywords: ["حساب", "محفظة", "تحويل"], icon: Settings, parentHref: "/admin/settings" }),
 
@@ -150,7 +158,7 @@ function routeToNavItem(routeId: string): AdminNavItem {
 const sectionDefinitions: Array<Omit<AdminSection, "links"> & { routeIds: string[] }> = [
   { id: "command", title: "القيادة", shortDescription: "ما يحتاج تدخلك الآن", description: "أولويات اليوم والبحث الشامل", accent: "gold", badge: "اليوم", icon: Home, routeIds: ["admin-home", "admin-search"] },
   { id: "customers", title: "العملاء", shortDescription: "العملاء والمواقع", description: "العملاء ومواقعهم وحالة حساباتهم", accent: "green", icon: Users, routeIds: ["customers", "customer-requests", "sites"] },
-  { id: "billing", title: "المالية", shortDescription: "المدفوعات والاشتراكات", description: "التحصيل والتجديد والباقات ووسائل الدفع", accent: "blue", icon: CreditCard, routeIds: ["billing", "payments", "subscriptions", "plans", "payment-settings"] },
+  { id: "billing", title: "المالية والخدمات", shortDescription: "المنتجات والمدفوعات", description: "منصة الخدمات والتحصيل والتجديد والباقات", accent: "blue", icon: CreditCard, routeIds: ["services-platform", "services-acquisitions", "services-fulfillment", "billing", "payments", "subscriptions", "plans", "payment-settings"] },
   { id: "content", title: "المحتوى", shortDescription: "الصفحات والقوالب والوسائط", description: "كل أدوات تحرير ونشر المحتوى", accent: "rose", icon: Palette, routeIds: ["content", "templates", "onboarding-cards", "themes", "media", "social-preview"] },
   { id: "communication", title: "التواصل", shortDescription: "الرسائل والدعم", description: "تجربة العميل والإشعارات والدعم والبريد", accent: "violet", icon: MessageSquareText, routeIds: ["communications", "communication-broadcasts", "deactivation-control", "messages", "customer-outreach", "notifications", "support", "email"] },
   { id: "system", title: "النظام", shortDescription: "الصحة والتشغيل والطوارئ", description: "الأخطاء والنسخ والإعدادات والأدوات المتقدمة", accent: "slate", icon: ShieldCheck, routeIds: ["system", "platform", "operations", "errors", "trash", "cleanup", "backups", "settings"] },
@@ -162,6 +170,19 @@ export const adminSections: AdminSection[] = sectionDefinitions.map(
     links: routeIds.map(routeToNavItem),
   }),
 );
+
+export function getVisibleAdminSections(servicesPlatformVisible = true): AdminSection[] {
+  if (servicesPlatformVisible) return adminSections;
+
+  return adminSections
+    .map((section) => ({
+      ...section,
+      links: section.links.filter((link) =>
+        !link.href.startsWith("/admin/services")
+        && link.href !== "/admin/analytics/services"),
+    }))
+    .filter((section) => section.links.length > 0);
+}
 
 export const allAdminLinks: AdminNavItem[] = adminRoutes
   .filter((route) => route.visibility !== "contextual")

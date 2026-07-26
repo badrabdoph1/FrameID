@@ -94,3 +94,21 @@ Client components handle interaction and previews; they must not become authorit
 ## Change requirement
 
 Any modification to one of these flows must update this file and the corresponding domain document in the same commit.
+
+## Services Platform acquisition
+
+1. Catalog resolves the published Offering and server-authoritative Price for the current Tenant.
+2. Eligibility returns visibility, purchasability, CTA mode, and reason codes.
+3. Acquisition stores immutable line and price snapshots with an idempotency key.
+4. Services calls Communication Core to open a Conversation and optional WorkItem, then attaches an opaque services/acquisition context.
+5. PaymentRequest is created only when the workflow requires payment.
+6. Approval advances Acquisition; Fulfillment claims the workflow through a lease-safe worker.
+7. Successful fulfillment grants Entitlements and creates or updates Product Instances idempotently.
+8. Meaningful changes append Communication system events; operational details remain inside Services.
+
+## Services access
+
+1. A Product module asks Entitlement Resolver for the current Tenant and capability key.
+2. The resolver filters revoked, expired, and not-yet-active grants and combines compatible limits.
+3. Usage-limited commands consume allowance atomically and write a UsageLedger row.
+4. Tenant account status may deny all access for security reasons, but billing expiry for one Product never changes another Product's status.

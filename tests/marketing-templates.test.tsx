@@ -15,8 +15,8 @@ describe("marketing templates page", () => {
     ).toBeInTheDocument();
 
     const previewLinks = screen.getAllByRole("link", { name: /شوف شكل الموقع/u });
-    expect(previewLinks[0]).toHaveAttribute("href", "/templates/noir-gold/preview");
+    expect(previewLinks[0]).toHaveAttribute("href", "/templates/prestige/preview");
     const useLinks = screen.getAllByRole("link", { name: /استخدم الموقع ده/u });
-    expect(useLinks[0]).toHaveAttribute("href", "/signup?template=noir-gold");
+    expect(useLinks[0]).toHaveAttribute("href", "/signup?template=prestige");
   });
 });

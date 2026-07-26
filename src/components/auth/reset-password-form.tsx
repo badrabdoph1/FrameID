@@ -24,7 +24,7 @@ type ResetPasswordFormProps = {
 
 export function ResetPasswordForm({ token, error }: ResetPasswordFormProps) {
   if (error) {
-    return <PasswordRecoverySupportCard />;
+    return <PasswordRecoverySupportCard message={error} />;
   }
 
   return (

@@ -1,10 +1,10 @@
 "use client"
 
-import { useState, useCallback, useRef, useEffect } from "react"
+import { useState, useCallback, useRef, useEffect, useMemo } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { Search, LogOut, ExternalLink, PanelLeftClose, PanelLeft } from "lucide-react"
-import { adminSections, type AdminSection } from "@/modules/admin/navigation"
+import { getVisibleAdminSections, type AdminSection } from "@/modules/admin/navigation"
 import { adminLogoutAction } from "@/app/_actions/admin-logout"
 import { useAdmin } from "@/components/layout/admin-context"
 import { cn } from "@/lib/utils/cn"
@@ -15,10 +15,10 @@ function isAdminLinkActive(pathname: string | null, href: string): boolean {
   return pathname === href || pathname.startsWith(`${href}/`)
 }
 
-function findActiveAdminSection(pathname: string | null): AdminSection | undefined {
+function findActiveAdminSection(pathname: string | null, sections: AdminSection[]): AdminSection | undefined {
   if (!pathname) return undefined
 
-  const candidates = adminSections
+  const candidates = sections
     .map((section) => {
       const bestMatch = section.links
         .filter((link) => isAdminLinkActive(pathname, link.href))
@@ -82,17 +82,18 @@ function SecondaryPanel({ sections, collapsed }: { sections: AdminSection[]; col
   )
 }
 
-export function AdminSidebar() {
+export function AdminSidebar({ servicesPlatformVisible = true }: { servicesPlatformVisible?: boolean }) {
   const pathname = usePathname()
   const router = useRouter()
   const { sidebarCollapsed, toggleSidebarCollapsed } = useAdmin()
+  const adminSections = useMemo(() => getVisibleAdminSections(servicesPlatformVisible), [servicesPlatformVisible])
   const [activeSection, setActiveSection] = useState<string | null>(null)
   const sectionRefs = useRef<Map<string, HTMLButtonElement>>(new Map())
 
   useEffect(() => {
-    const found = findActiveAdminSection(pathname)
+    const found = findActiveAdminSection(pathname, adminSections)
     setActiveSection(found?.id ?? adminSections[0]?.id ?? null)
-  }, [pathname])
+  }, [adminSections, pathname])
 
   const setSectionRef = useCallback((id: string, el: HTMLButtonElement | null) => {
     if (el) sectionRefs.current.set(id, el)
@@ -119,7 +120,7 @@ export function AdminSidebar() {
       const prev = adminSections[idx - 1]
       if (prev) sectionRefs.current.get(prev.id)?.focus()
     }
-  }, [goToSection])
+  }, [adminSections, goToSection])
 
   const currentSections = adminSections.filter((s) => s.id === activeSection)
 

@@ -27,7 +27,15 @@ import {
 
 type Variant = "noir" | "rose";
 
-export function UnifiedTemplatePresentation({ site, variant }: { site: PublicSiteViewModel; variant: Variant }) {
+export function UnifiedTemplatePresentation({
+  site,
+  variant,
+  customPackagesSection: CustomPackages,
+}: {
+  site: PublicSiteViewModel;
+  variant: Variant;
+  customPackagesSection?: React.ComponentType<{ section: NormalizedTemplateSection; site: PublicSiteViewModel }>;
+}) {
   const displayName = site.contact.studioName?.trim() || site.hero.headline;
   const visibleSections = site.orderedSections.filter((section) => section.isVisible);
   const dark = variant === "noir";
@@ -44,7 +52,7 @@ export function UnifiedTemplatePresentation({ site, variant }: { site: PublicSit
         <TemplateHeader sections={visibleSections} variant={variant} displayName={displayName} />
         <main>
           {visibleSections.map((section) => (
-            <Section key={section.type} section={section} site={site} variant={variant} />
+            <Section key={section.type} section={section} site={site} variant={variant} customPackages={CustomPackages} />
           ))}
         </main>
         <footer className={cn("border-t py-10 text-center", dark ? "border-white/8 bg-[#080808]" : "border-[#eaddd4] bg-[#f4f8f3]") }>
@@ -78,11 +86,21 @@ function TemplateHeader({ sections, variant, displayName }: { sections: Normaliz
   );
 }
 
-function Section({ section, site, variant }: { section: NormalizedTemplateSection; site: PublicSiteViewModel; variant: Variant }) {
+function Section({
+  section,
+  site,
+  variant,
+  customPackages: CustomPackages,
+}: {
+  section: NormalizedTemplateSection;
+  site: PublicSiteViewModel;
+  variant: Variant;
+  customPackages?: React.ComponentType<{ section: NormalizedTemplateSection; site: PublicSiteViewModel }>;
+}) {
   switch (section.type) {
     case "hero": return <HeroSection section={section} site={site} variant={variant} />;
     case "gallery": return site.gallery.length ? <GallerySection section={section} site={site} variant={variant} /> : null;
-    case "packages": return site.packages.length ? <PackagesSection section={section} site={site} variant={variant} /> : null;
+    case "packages": return site.packages.length ? (CustomPackages ? <CustomPackages section={section} site={site} /> : <PackagesSection section={section} site={site} variant={variant} />) : null;
     case "extras": return site.extras.length ? <ExtrasSection section={section} site={site} variant={variant} /> : null;
     case "contact": return <ContactSection section={section} site={site} variant={variant} />;
   }
@@ -132,9 +150,11 @@ function PackagesSection({ section, site, variant }: { section: NormalizedTempla
   const snap = section.settings.layout !== "stack";
   return (
     <section id="packages" data-template-section="packages" className={cn("scroll-mt-16 py-14 md:py-24", dark ? "border-y border-white/6 bg-[#050505]" : "bg-[#fff8f4]") }>
-      <div className="container-page">
-        <SectionHeading section={section} variant={variant} />
-        <div className={cn("mt-8 gap-4", snap ? "-mx-4 flex snap-x overflow-x-auto px-4 pb-3 [scrollbar-width:none] md:mx-0 md:grid md:grid-cols-3 md:px-0 [&::-webkit-scrollbar]:hidden" : "grid") }>
+      <div className="mx-auto max-w-[1180px] px-4 md:px-0">
+        <div className="container-page">
+          <SectionHeading section={section} variant={variant} />
+        </div>
+        <div className={cn("mt-8 gap-4", snap ? "flex snap-x overflow-x-auto px-4 pb-3 [scrollbar-width:none] md:mx-0 md:grid md:grid-cols-3 md:gap-6 md:px-0 [&::-webkit-scrollbar]:hidden" : "grid mx-auto max-w-[1180px] px-4 md:px-0") }>
           {site.packages.map((item, index) => {
             const imageUrl = item.imageUrl ?? site.gallery[index % Math.max(site.gallery.length, 1)]?.url;
             return <article key={item.id} className={cn("relative flex flex-col overflow-visible rounded-[1.6rem] border p-4", snap && "w-[84vw] shrink-0 snap-center md:w-auto", dark ? "border-white/9 bg-[#101010]" : "border-[#eaddd4] bg-white shadow-[0_20px_60px_rgba(44,24,16,.07)]") }>

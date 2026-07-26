@@ -160,6 +160,9 @@ export function createPrismaCommunicationRepository(prisma: PrismaClient): Commu
           select: {
             id: true,
             number: true,
+            tenantId: true,
+            mode: true,
+            typeKey: true,
             entries: {
               where: { idempotencyKey: command.firstEntry.idempotencyKey },
               select: { id: true, sequence: true },
@@ -169,6 +172,9 @@ export function createPrismaCommunicationRepository(prisma: PrismaClient): Commu
           },
         });
         if (existing) {
+          if (existing.tenantId !== command.tenantId || existing.mode !== command.mode || existing.typeKey !== command.typeKey) {
+            throw new Error("مفتاح idempotency مستخدم لمحادثة بسياق أو tenant مختلف.");
+          }
           const firstEntry = existing.entries[0];
           if (!firstEntry) throw new Error("المحادثة المعادة لا تحتوي المدخل الأول المتوقع.");
           return {

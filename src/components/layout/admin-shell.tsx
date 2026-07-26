@@ -26,7 +26,7 @@ function RouteChangeProgress() {
   return <div id="admin-route-progress" className="admin-route-progress" style={{ display: "none" }} />
 }
 
-function ShellContent({ children }: { children: React.ReactNode }) {
+function ShellContent({ children, servicesPlatformVisible }: { children: React.ReactNode; servicesPlatformVisible: boolean }) {
   const { sidebarCollapsed } = useAdmin()
   const [mounted, setMounted] = useState(false)
   const pathname = usePathname()
@@ -53,7 +53,7 @@ function ShellContent({ children }: { children: React.ReactNode }) {
       <RouteChangeProgress />
 
       <div className="hidden lg:block">
-        <AdminSidebar />
+        <AdminSidebar servicesPlatformVisible={servicesPlatformVisible} />
       </div>
 
       <div
@@ -70,15 +70,15 @@ function ShellContent({ children }: { children: React.ReactNode }) {
         </main>
       </div>
 
-      <AdminMobileNav />
+      <AdminMobileNav servicesPlatformVisible={servicesPlatformVisible} />
     </div>
   )
 }
 
-export function AdminShell({ children }: { children: React.ReactNode }) {
+export function AdminShell({ children, servicesPlatformVisible = true }: { children: React.ReactNode; servicesPlatformVisible?: boolean }) {
   return (
     <AdminProvider>
-      <ShellContent>{children}</ShellContent>
+      <ShellContent servicesPlatformVisible={servicesPlatformVisible}>{children}</ShellContent>
     </AdminProvider>
   )
 }

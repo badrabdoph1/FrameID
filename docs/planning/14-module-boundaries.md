@@ -285,6 +285,63 @@
 
 - all modules.
 
+## Services Catalog Module
+
+### Owns
+
+- Product definitions and publication revisions.
+- Offerings, prices, capabilities, bundles, trial policies, and workflow definitions.
+- customer catalog read models and eligibility decisions.
+
+### Does Not Own
+
+- customer messages or WorkItem state.
+- payment approval, fulfillment execution, or access grants.
+
+## Acquisition Module
+
+### Owns
+
+- immutable commercial request snapshots and acquisition lifecycle.
+- correlation between catalog choice, communication context, payment, and fulfillment.
+
+### Does Not Own
+
+- conversation content, payment truth, or product access.
+
+## Fulfillment Module
+
+### Owns
+
+- trusted workflow templates and execution lifecycle.
+- retry-safe orchestration from paid/accepted acquisition to activation.
+
+### Does Not Own
+
+- pricing, communication timelines, or entitlement resolution.
+
+## Entitlement Module
+
+### Owns
+
+- capability grants, limits, expiry, usage consumption, and access resolution.
+- product instances and their independent operational lifecycle.
+
+### Does Not Own
+
+- feature rollout flags or tenant account status.
+
+## Services Recommendation and Analytics Modules
+
+### Owns
+
+- deterministic recommendation rules, decisions, attribution, and frequency policy.
+- versioned product funnel events and aggregate read models.
+
+### Does Not Own
+
+- eligibility overrides, access grants, or arbitrary customer PII.
+
 ## Dependency Rule
 
 UI can call actions/services.
@@ -307,3 +364,6 @@ Admin UI cannot bypass module services.
 - Site slug validation must live in one place only.
 - Product modules must not write Communication tables or Outbox rows directly.
 - Communication Core must not import Product modules or interpret their entity IDs.
+- Feature Flags must not be used as commercial entitlements.
+- Payment approval must not activate a Product directly; Fulfillment consumes the approved state idempotently.
+- Product access must resolve through Entitlements, never through UI visibility or latest-plan assumptions.

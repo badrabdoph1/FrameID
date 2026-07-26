@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 
 import HomePage from "@/app/(marketing)/page";
 import { getContent } from "@/lib/content";
+import { loadPublishedHomePageState } from "@/modules/platform-pages/home-page-runtime";
 
 async function renderHomepage() {
   return render(await HomePage());
@@ -12,9 +13,12 @@ async function renderHomepage() {
 describe("marketing homepage", () => {
   it("renders the published page document through the real public renderer", async () => {
     const homepage = getContent("marketing/homepage");
+    const { document } = await loadPublishedHomePageState();
     const { container } = await renderHomepage();
 
-    expect(container.querySelectorAll("[data-page-section]")).toHaveLength(6);
+    expect(container.querySelectorAll("[data-page-section]")).toHaveLength(
+      document.sections.filter((section) => section.status === "visible").length,
+    );
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(homepage.hero.headline);
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(homepage.hero.headlineHighlight);
   });

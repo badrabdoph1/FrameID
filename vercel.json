@@ -1,4 +1,14 @@
 {
+  "crons": [
+    {
+      "path": "/api/cron/services-outbox",
+      "schedule": "* * * * *"
+    },
+    {
+      "path": "/api/cron/services-reconciliation",
+      "schedule": "*/5 * * * *"
+    }
+  ],
   "rewrites": [
     {
       "source": "/(.*)",
