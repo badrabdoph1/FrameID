@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-07-26T12:49:32.358Z",
+  "updatedAt": "2026-07-26T12:50:43.081Z",
   "themes": [
     {
       "code": "luxe-studio",
@@ -289,7 +289,7 @@
           "instructions": "حوّل على رقم إنستا باي، ثم ارفع صورة إثبات الدفع من نفس الصفحة.",
           "notes": null,
           "isActive": true,
-          "sortOrder": 360
+          "sortOrder": 370
         }
       ]
     },
@@ -318,7 +318,7 @@
           "instructions": "حوّل على رقم فودافون كاش، ثم ارفع صورة إثبات الدفع من نفس الصفحة.",
           "notes": null,
           "isActive": true,
-          "sortOrder": 710
+          "sortOrder": 730
         }
       ]
     },
@@ -401,7 +401,7 @@
       "value": {
         "trial": {
           "timer": {
-            "enabled": true
+            "enabled": false
           },
           "action": {
             "href": null,
@@ -411,7 +411,7 @@
           "message": {
             "tone": "info",
             "title": "حسابك تجريبي برجاء التأكد من التفعيل",
-            "enabled": true,
+            "enabled": false,
             "description": "فعّل الاشتراك قبل نهاية الفترة التجريبية حتى يظل موقعك متاحًا للعملاء."
           }
         },
@@ -458,7 +458,7 @@
           }
         },
         "trialPolicy": {
-          "defaultDays": 1
+          "defaultDays": 14
         },
         "pendingReview": {
           "action": {
@@ -477,7 +477,7 @@
     },
     {
       "key": "services-platform-ui-visible",
-      "enabled": true,
+      "enabled": false,
       "value": null
     }
   ],
