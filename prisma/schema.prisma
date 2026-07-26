@@ -2485,3 +2485,10 @@ model ServicesOutboxEvent {
   @@index([aggregateType, aggregateId, createdAt])
   @@index([correlationId, createdAt])
 }
+
+model ServicesReconciliationCheckpoint {
+  scope     String   @id
+  cursorId  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

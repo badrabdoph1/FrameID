@@ -10,6 +10,7 @@ import { createPrismaAcquisitionRepository } from "@/modules/services-platform/p
 import { getCustomerCatalogReadModel } from "@/modules/services-platform/prisma-catalog-repository";
 import { createPrismaServiceSubscriptionRepository } from "@/modules/services-platform/prisma-subscription-repository";
 import { createPrismaUsageRepository } from "@/modules/services-platform/prisma-usage-repository";
+import { createPrismaTrialRepository } from "@/modules/services-platform/prisma-trial-repository";
 import { resolveCommerceMarket } from "@/modules/services-platform/commerce-market";
 
 describe("services platform hardening invariants", () => {
@@ -207,6 +208,53 @@ describe("services platform hardening invariants", () => {
       rejectedAt: new Date(),
     })).rejects.toThrow(/idempotency key/i);
     expect(update).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    { operation: "submit" as const, status: PaymentStatus.APPROVED, eventName: "services.payment.submitted" },
+    { operation: "approve" as const, status: PaymentStatus.REFUNDED, eventName: "services.payment.approved" },
+  ])("replays $operation after the payment lifecycle has advanced", async ({ operation, status, eventName }) => {
+    const payment = { id: "payment", acquisitionId: "acquisition", tenantId: "tenant", status };
+    const transaction = {
+      $queryRaw: vi.fn().mockResolvedValue([]),
+      paymentRequest: { findFirst: vi.fn().mockResolvedValue(payment), findUniqueOrThrow: vi.fn().mockResolvedValue(payment) },
+      servicesOutboxEvent: { findUnique: vi.fn().mockResolvedValue({ eventName, aggregateId: "acquisition", payload: { paymentRequestId: "payment" } }) },
+    };
+    const repository = createPrismaServicesPaymentRepository({ $transaction: <T>(callback: (tx: typeof transaction) => Promise<T>) => callback(transaction) } as never);
+
+    if (operation === "submit") {
+      await expect(repository.submit({ paymentRequestId: "payment", tenantId: "tenant", proofAssetId: "proof", submittedAt: new Date(), idempotencyKey: "original" })).resolves.toMatchObject({ status: "SUBMITTED" });
+    } else {
+      await expect(repository.approve({ paymentRequestId: "payment", reviewerId: "admin", approvedAt: new Date(), idempotencyKey: "original" })).resolves.toEqual({ acquisitionId: "acquisition", tenantId: "tenant" });
+    }
+  });
+
+  it("rejects a fulfillment run key bound to another acquisition", async () => {
+    const repository = createPrismaFulfillmentRepository({
+      fulfillmentRun: { upsert: vi.fn().mockResolvedValue({ id: "run", status: "SUCCEEDED", acquisitionId: "other", workflowKey: "workflow", workflowVersion: 1 }) },
+    } as never);
+
+    await expect(repository.createRun({ acquisitionId: "acquisition", workflowKey: "workflow", workflowVersion: 1, idempotencyKey: "shared" })).rejects.toThrow(/another acquisition/i);
+  });
+
+  it("does not expose a live trial policy missing from the published revision", async () => {
+    const snapshot = {
+      id: "product", code: "product", registryKey: "pricing-site", name: "Published", shortDescription: "Published", description: null,
+      category: "websites", tags: [], media: [], publicationStatus: "PUBLISHED", releaseStage: "GA", accessTier: "STANDARD",
+      eligibilityPolicy: null, sortOrder: 0, isFeatured: true, schemaVersion: 2,
+      offerings: [{
+        id: "offering", code: "offering", name: "Published offering", shortDescription: "Published", description: null, type: "PLAN",
+        salesMode: "SELF_SERVE", fulfillmentMode: "AUTOMATIC", activationMode: "INSTANT", publicationStatus: "PUBLISHED", releaseStage: "GA",
+        accessTier: "STANDARD", requirements: null, eligibilityPolicy: null, sortOrder: 0, workflowTemplateKey: "auto", workflowTemplateVersion: 1,
+        prices: [], capabilityKeys: [], capabilities: [], bundleComponents: [], trialPolicies: [],
+      }],
+    };
+    const repository = createPrismaTrialRepository({
+      trialPolicy: { findUnique: vi.fn().mockResolvedValue({ productId: "product", offering: { productId: "product" } }) },
+      productDefinition: { findFirst: vi.fn().mockResolvedValue({ revisions: [{ snapshot }] }) },
+    } as never);
+
+    await expect(repository.getPolicy("draft-trial")).resolves.toBeNull();
   });
 
   it("uses one market and currency selector for catalog and acquisition", () => {

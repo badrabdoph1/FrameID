@@ -73,7 +73,6 @@ export function createPrismaServicesPaymentRepository(prisma: PrismaClient): Ser
         if (!payment?.acquisitionId) throw new Error("Services payment request was not found for this tenant.");
         const replay = await paymentCommandReplay(tx, { idempotencyKey: input.idempotencyKey, eventName: "services.payment.submitted", paymentRequestId: payment.id, acquisitionId: payment.acquisitionId });
         if (replay) {
-          if (payment.status !== PaymentStatus.SUBMITTED && payment.status !== PaymentStatus.UNDER_REVIEW) throw new Error("Payment command event exists without its submitted state.");
           return { id: payment.id, status: "SUBMITTED" as const, acquisitionId: payment.acquisitionId };
         }
         if (payment.status !== PaymentStatus.DRAFT) throw new Error(`Payment cannot be submitted from status ${payment.status}`);
@@ -99,7 +98,6 @@ export function createPrismaServicesPaymentRepository(prisma: PrismaClient): Ser
         if (!payment.acquisitionId) throw new Error("Payment request is not linked to a services acquisition.");
         const replay = await paymentCommandReplay(tx, { idempotencyKey: input.idempotencyKey, eventName: "services.payment.approved", paymentRequestId: payment.id, acquisitionId: payment.acquisitionId });
         if (replay) {
-          if (payment.status !== PaymentStatus.APPROVED) throw new Error("Payment command event exists without its approved state.");
           return { acquisitionId: payment.acquisitionId, tenantId: payment.tenantId };
         }
         const approvableStatuses: PaymentStatus[] = [PaymentStatus.SUBMITTED, PaymentStatus.UNDER_REVIEW, PaymentStatus.DRAFT];
@@ -148,7 +146,6 @@ export function createPrismaServicesPaymentRepository(prisma: PrismaClient): Ser
         if (!payment.acquisitionId) throw new Error("Payment request is not linked to a services acquisition.");
         const replay = await paymentCommandReplay(tx, { idempotencyKey: input.idempotencyKey, eventName: "services.payment.rejected", paymentRequestId: payment.id, acquisitionId: payment.acquisitionId });
         if (replay) {
-          if (payment.status !== PaymentStatus.REJECTED) throw new Error("Payment command event exists without its terminal state.");
           return { acquisitionId: payment.acquisitionId, tenantId: payment.tenantId };
         }
         if (payment.status !== PaymentStatus.DRAFT && payment.status !== PaymentStatus.SUBMITTED && payment.status !== PaymentStatus.UNDER_REVIEW) {
@@ -174,7 +171,6 @@ export function createPrismaServicesPaymentRepository(prisma: PrismaClient): Ser
         if (!payment.acquisitionId) throw new Error("Only approved services payments can be refunded.");
         const replay = await paymentCommandReplay(tx, { idempotencyKey: input.idempotencyKey, eventName: "services.payment.refunded", paymentRequestId: payment.id, acquisitionId: payment.acquisitionId });
         if (replay) {
-          if (payment.status !== PaymentStatus.REFUNDED) throw new Error("Payment command event exists without its terminal state.");
           return { acquisitionId: payment.acquisitionId, tenantId: payment.tenantId };
         }
         if (payment.status !== PaymentStatus.APPROVED) throw new Error("Only approved services payments can be refunded.");

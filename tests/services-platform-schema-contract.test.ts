@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 const schema = readFileSync(join(process.cwd(), "prisma/schema.prisma"), "utf8");
-const models = ["ProductDefinition","CatalogOffering","CatalogPrice","CapabilityDefinition","OfferingCapability","BundleComponent","TrialPolicy","WorkflowTemplate","CatalogRevision","Acquisition","AcquisitionLine","FulfillmentRun","Entitlement","ProductInstance","TrialGrant","UsageLedger","ServiceSubscription","RecommendationRule","RecommendationDecision","ProductAnalyticsEvent","ServicesOutboxEvent"];
+const models = ["ProductDefinition","CatalogOffering","CatalogPrice","CapabilityDefinition","OfferingCapability","BundleComponent","TrialPolicy","WorkflowTemplate","CatalogRevision","Acquisition","AcquisitionLine","FulfillmentRun","Entitlement","ProductInstance","TrialGrant","UsageLedger","ServiceSubscription","RecommendationRule","RecommendationDecision","ProductAnalyticsEvent","ServicesOutboxEvent","ServicesReconciliationCheckpoint"];
 const enums = ["ProductPublicationStatus","ProductReleaseStage","OfferingType","SalesMode","FulfillmentMode","ActivationMode","PriceBillingInterval","AcquisitionStatus","FulfillmentStatus","EntitlementStatus","ProductInstanceStatus","TrialGrantStatus","ServiceSubscriptionStatus","RecommendationRuleStatus","ServicesOutboxStatus"];
 
 describe("Services Platform Prisma contract", () => {

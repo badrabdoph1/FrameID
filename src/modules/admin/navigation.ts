@@ -171,6 +171,19 @@ export const adminSections: AdminSection[] = sectionDefinitions.map(
   }),
 );
 
+export function getVisibleAdminSections(servicesPlatformVisible = true): AdminSection[] {
+  if (servicesPlatformVisible) return adminSections;
+
+  return adminSections
+    .map((section) => ({
+      ...section,
+      links: section.links.filter((link) =>
+        !link.href.startsWith("/admin/services")
+        && link.href !== "/admin/analytics/services"),
+    }))
+    .filter((section) => section.links.length > 0);
+}
+
 export const allAdminLinks: AdminNavItem[] = adminRoutes
   .filter((route) => route.visibility !== "contextual")
   .map((route) => ({ href: route.href, label: route.labelAr, icon: route.icon }));

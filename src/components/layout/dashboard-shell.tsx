@@ -155,11 +155,12 @@ function CustomerIdentityBar({ photographerName, unreadCommunicationCount = 0 }:
   );
 }
 
-export function DashboardShell({ children, siteSlug, hasSubscription, photographerName, unreadCommunicationCount = 0 }: { children: ReactNode; siteSlug?: string; hasSubscription?: boolean; photographerName?: string; unreadCommunicationCount?: number }) {
+export function DashboardShell({ children, siteSlug, hasSubscription, photographerName, unreadCommunicationCount = 0, servicesPlatformVisible = true }: { children: ReactNode; siteSlug?: string; hasSubscription?: boolean; photographerName?: string; unreadCommunicationCount?: number; servicesPlatformVisible?: boolean }) {
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const visibleNavItems = navItems.filter((item) => {
     if (item.href === "/dashboard/billing" && !hasSubscription) return false;
+    if (item.href === "/dashboard/service-center" && !servicesPlatformVisible) return false;
     return true;
   });
   const primaryNav = visibleNavItems.filter((item) => item.priority === "primary").slice(0, 4);

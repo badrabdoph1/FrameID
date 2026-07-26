@@ -11,10 +11,19 @@
 1. يطبّق إصلاح التوافق السابق للدفع.
 2. يزامن Prisma schema الحالي.
 3. يطبق `20260723011000_services_platform_hardening` لضمان الفهارس الجزئية التي لا يمثلها Prisma schema.
-4. يشغّل إصلاحات التوافق التاريخية idempotently.
-5. يشغّل seed المنصة.
+4. يطبق `20260726021500_services_reconciliation_checkpoints` لحفظ مؤشرات المصالحة الدورية.
+5. يشغّل إصلاحات التوافق التاريخية idempotently.
+6. يشغّل seed المنصة.
 
 Seed منصة الخدمات insert-only: يضيف baseline الناقص ولا يعيد كتابة Product أوOffering أوPrice أوCapability أوTrial Policy أوWorkflow موجودة، ولا ينشر تعديل Draft تلقائيًا.
+
+## إتاحة الواجهة أثناء التطوير
+
+- مفتاح الإتاحة المركزي هو `services-platform-ui-visible` في `FeatureFlag` على مستوى `PLATFORM`.
+- عدم وجود المفتاح يعني أن منصة الخدمات مخفية افتراضيًا.
+- يُدار المفتاح من «إعدادات المنصة ← منصة الخدمات ← إظهار قسم الخدمات».
+- عند الإخفاء تختفي روابط مركز الخدمات من لوحات العميل والأدمن، وتُحجب مساراتها المباشرة وإجراءات النماذج القديمة المفتوحة قبل الإخفاء.
+- الإخفاء يخص واجهة الوصول فقط؛ لا يوقف Outbox أوالمصالحة أومعالجة الطلبات القائمة في الخلفية.
 
 لا تعدّل ملفات migrations التاريخية. سلسلة `prisma migrate deploy` القديمة تحتوي دينًا سابقًا في migration الدفع، وإصلاحها الصحيح هو مشروع rebaseline مستقل بعد جرد قواعد الإنتاج، لا تغيير checksum داخل feature branch.
 
@@ -43,6 +52,9 @@ Seed منصة الخدمات insert-only: يضيف baseline الناقص ولا 
 - تنفيذ Fulfillment الفاشل يعاد من لوحة الإدارة بزر «إعادة المحاولة»؛ يعاد نفس Workflow ولا يسمح بالانتقال اليدوي فوق الفشل.
 - المصالحة تعيد تشغيل الـrun الذي انتهت lease الخاصة به، وتغلق Acquisition العالق في `FULFILLING` إذا كان الـrun قد وصل بالفعل إلى `SUCCEEDED`.
 - المصالحة تستعيد محادثة الطلب الذي تعطل بين إنشاء Acquisition وفتح Communication، وتعيد Context Reference المفقود مع التحقق من تطابق tenant ومن زوج `conversationId + entityId` معًا.
+- المصالحة تستدعي `Communication Core.attachContext` عند الإصلاح كي يمر التحقق ويُنشأ Communication Outbox Event، ولا تكتب في جداول Communication مباشرة.
+- راقب `entitlementDrift` و`instanceDrift` و`unreadableFulfillmentSnapshots`؛ أي قيمة فوق الصفر تعني اختلافًا بين لقطة الطلب المكتمل وما تم منحه أو تفعيله فعليًا، وتحوّل نتيجة المصالحة إلى `DEGRADED`.
+- تحفظ `ServicesReconciliationCheckpoint` موضع keyset مستقلًا لفحص Communication وFulfilled Acquisitions. عند نهاية كل دورة يعود المؤشر إلى البداية، وبذلك تُفحص كل السجلات تدريجيًا مهما تجاوز العدد حد الدفعة 500.
 - أي Workflow قد يتجاوز 15 دقيقة يجب أن يستدعي `context.heartbeat()` دوريًا؛ فقدان الـtoken يوقف الكتابة النهائية ويترك المصالحة للمحاولة الأحدث.
 - لا تنشئ FulfillmentRun يدويًا؛ استخدم runtime أو أعد حدث `services.fulfillment.requested` بمفتاح deduplication ثابت.
 

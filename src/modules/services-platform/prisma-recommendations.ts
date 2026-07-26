@@ -31,6 +31,11 @@ export async function getTenantRecommendations(prisma: PrismaClient, input: {
     getCustomerCatalogReadModel(prisma, { context: input.context, ...commerceMarket, now }),
   ]);
   const eligibleOfferingIds = new Set(catalog.products.flatMap((product) => product.offerings.filter((offering) => offering.eligible && offering.purchasable).map((offering) => offering.id)));
+  const publishedOfferingView = new Map(catalog.products.flatMap((product) => product.offerings.map((offering) => [offering.id, {
+    id: offering.id,
+    name: offering.name,
+    product: { code: product.code, name: product.name },
+  }] as const)));
   const dismissedRuleKeys = priorDecisions.flatMap((decision) => {
     if (!decision.rule?.key || !decision.dismissedAt) return [];
     const cooldownMs = (decision.rule.cooldownHours ?? 24 * 30) * 3_600_000;
@@ -72,9 +77,9 @@ export async function getTenantRecommendations(prisma: PrismaClient, input: {
     now,
   }).slice(0, input.limit ?? 6);
   const day = now.toISOString().slice(0, 10);
-  const decisions = await Promise.all(evaluated.map((decision) => {
+  const decisions = await Promise.all(evaluated.map(async (decision) => {
     const attributionId = `rec:${input.context.tenantId}:${decision.ruleId}:${decision.offeringId}:${input.placement}:${day}`;
-    return prisma.recommendationDecision.upsert({
+    const saved = await prisma.recommendationDecision.upsert({
       where: { attributionId },
       update: { score: decision.score, reasonCodes: decision.reasonCodes as Prisma.InputJsonValue, expiresAt: new Date(now.getTime() + 24 * 3_600_000) },
       create: {
@@ -87,8 +92,10 @@ export async function getTenantRecommendations(prisma: PrismaClient, input: {
         reasonCodes: decision.reasonCodes as Prisma.InputJsonValue,
         expiresAt: new Date(now.getTime() + 24 * 3_600_000),
       },
-      include: { offering: { include: { product: { select: { code: true, name: true } }, prices: { where: { isActive: true }, orderBy: { effectiveFrom: "desc" }, take: 1 } } } },
     });
+    const offering = publishedOfferingView.get(decision.offeringId);
+    if (!offering) throw new Error("Published recommendation offering disappeared during evaluation.");
+    return { ...saved, offering };
   }));
   return decisions;
 }

@@ -3,22 +3,41 @@ import { TrialGrantStatus, type PrismaClient } from "@prisma/client";
 import type { TrialRepository } from "./trial-service";
 import { evaluateOfferingEligibility, type EligibilityPolicy } from "./eligibility";
 import { buildPrismaEligibilityContext } from "./prisma-eligibility-context";
+import { parsePublishedCatalogSnapshot } from "./catalog-service";
+
+async function loadPublishedPolicy(prisma: PrismaClient, policyId: string) {
+  const locator = await prisma.trialPolicy.findUnique({
+    where: { id: policyId },
+    select: { productId: true, offering: { select: { productId: true } } },
+  });
+  const productId = locator?.productId ?? locator?.offering?.productId;
+  if (!productId) return null;
+  const productRecord = await prisma.productDefinition.findFirst({
+    where: { id: productId, publicationStatus: "PUBLISHED", deletedAt: null },
+    select: { revisions: { where: { status: "PUBLISHED" }, orderBy: { revision: "desc" }, take: 1, select: { snapshot: true } } },
+  });
+  const product = parsePublishedCatalogSnapshot(productRecord?.revisions[0]?.snapshot);
+  if (!product) return null;
+  for (const offering of product.offerings) {
+    const policy = (offering.trialPolicies ?? []).find((candidate) => candidate.id === policyId);
+    if (policy) return { product, offering, policy };
+  }
+  return null;
+}
 
 export function createPrismaTrialRepository(prisma: PrismaClient): TrialRepository {
   return {
     async assertEligible(tenantId, policyId) {
-      const policy = await prisma.trialPolicy.findUnique({
-        where: { id: policyId },
-        include: { offering: { include: { product: true } } },
-      });
-      if (!policy?.isActive || !policy.offering || policy.offering.publicationStatus !== "PUBLISHED" || policy.offering.product && policy.offering.product.publicationStatus !== "PUBLISHED") throw new Error("Trial offering is not published.");
-      if (["ANNOUNCED", "DEPRECATED"].includes(policy.offering.releaseStage) || policy.offering.product && ["ANNOUNCED", "DEPRECATED"].includes(policy.offering.product.releaseStage)) throw new Error("Trial offering is not currently available.");
+      const published = await loadPublishedPolicy(prisma, policyId);
+      if (!published?.policy.isActive) throw new Error("Trial offering is not published.");
+      const { product, offering, policy } = published;
+      if (["ANNOUNCED", "DEPRECATED"].includes(offering.releaseStage) || ["ANNOUNCED", "DEPRECATED"].includes(product.releaseStage)) throw new Error("Trial offering is not currently available.");
       if (policy.requiresPaymentMethod) throw new Error("This trial requires a supported saved payment method.");
       const context = await buildPrismaEligibilityContext(prisma, tenantId);
-      const productResult = evaluateOfferingEligibility(context, policy.offering.product?.eligibilityPolicy as EligibilityPolicy | null);
-      const offeringResult = evaluateOfferingEligibility(context, policy.offering.eligibilityPolicy as EligibilityPolicy | null);
+      const productResult = evaluateOfferingEligibility(context, product.eligibilityPolicy as EligibilityPolicy | null);
+      const offeringResult = evaluateOfferingEligibility(context, offering.eligibilityPolicy as EligibilityPolicy | null);
       const policyResult = evaluateOfferingEligibility(context, policy.eligibilityPolicy as EligibilityPolicy | null);
-      const tiers = [policy.offering.product?.accessTier, policy.offering.accessTier].filter((item): item is string => Boolean(item));
+      const tiers = [product.accessTier, offering.accessTier];
       if (!productResult.visible || !productResult.eligible || !offeringResult.visible || !offeringResult.eligible || !policyResult.visible || !policyResult.eligible || tiers.some((tier) => tier !== "STANDARD" && !context.accessTiers?.includes(tier))) {
         throw new Error("Trial is not eligible for this tenant.");
       }
@@ -31,27 +50,24 @@ export function createPrismaTrialRepository(prisma: PrismaClient): TrialReposito
       return grant?.status === "ACTIVE" ? { ...grant, status: "ACTIVE" as const } : null;
     },
     async getPolicy(policyId) {
-      const policy = await prisma.trialPolicy.findUnique({
-        where: { id: policyId },
-        include: { offering: { include: { capabilities: { include: { capability: { select: { id: true, key: true } } } } } } },
-      });
-      if (!policy) return null;
-      if (!policy.offeringId || !policy.offering) throw new Error("A customer trial policy must be scoped to an offering.");
+      const published = await loadPublishedPolicy(prisma, policyId);
+      if (!published) return null;
+      const { product, offering, policy } = published;
       return {
         id: policy.id,
-        productId: policy.productId,
-        offeringId: policy.offeringId,
+        productId: policy.productId ?? product.id,
+        offeringId: offering.id,
         durationDays: policy.durationDays,
         usageLimit: policy.usageLimit,
         usageCapabilityKey: policy.usageCapabilityKey,
         graceDays: policy.graceDays,
         oncePerTenant: policy.oncePerTenant,
         isActive: policy.isActive,
-        capabilities: policy.offering.capabilities.map((item) => ({
-          capabilityId: item.capability.id,
-          capabilityKey: item.capability.key,
+        capabilities: offering.capabilities.map((item) => ({
+          capabilityId: item.capabilityId,
+          capabilityKey: item.capabilityKey,
           value: item.value,
-          quantity: policy.usageCapabilityKey === item.capability.key ? policy.usageLimit : null,
+          quantity: policy.usageCapabilityKey === item.capabilityKey ? policy.usageLimit : null,
         })),
       };
     },

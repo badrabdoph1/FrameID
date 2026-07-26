@@ -27,12 +27,12 @@ import {
 
 type Variant = "noir" | "rose";
 
-export function UnifiedTemplatePresentation({ 
-  site, 
+export function UnifiedTemplatePresentation({
+  site,
   variant,
   customPackagesSection: CustomPackages,
-}: { 
-  site: PublicSiteViewModel; 
+}: {
+  site: PublicSiteViewModel;
   variant: Variant;
   customPackagesSection?: React.ComponentType<{ section: NormalizedTemplateSection; site: PublicSiteViewModel }>;
 }) {
@@ -86,14 +86,14 @@ function TemplateHeader({ sections, variant, displayName }: { sections: Normaliz
   );
 }
 
-function Section({ 
-  section, 
-  site, 
+function Section({
+  section,
+  site,
   variant,
   customPackages: CustomPackages,
-}: { 
-  section: NormalizedTemplateSection; 
-  site: PublicSiteViewModel; 
+}: {
+  section: NormalizedTemplateSection;
+  site: PublicSiteViewModel;
   variant: Variant;
   customPackages?: React.ComponentType<{ section: NormalizedTemplateSection; site: PublicSiteViewModel }>;
 }) {

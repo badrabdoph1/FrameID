@@ -40,6 +40,9 @@ describe("customer catalog read model", () => {
             { id: "eg", amount: 1500, currency: "EGP", marketCode: "EG", billingInterval: "MONTHLY", effectiveFrom: new Date("2026-07-01"), effectiveTo: null },
           ],
           capabilityKeys: ["gallery.access"],
+          capabilities: [{ capabilityId: "capability", capabilityKey: "gallery.access", value: true }],
+          bundleComponents: [{ offeringId: "component", offeringCode: "component", offeringName: "Component", quantity: 1, required: true }],
+          trialPolicies: [{ id: "trial", durationDays: 14, usageLimit: null, usageCapabilityKey: null, graceDays: 0, requiresPaymentMethod: false, isActive: true }],
         }],
       }],
     });
@@ -49,6 +52,8 @@ describe("customer catalog read model", () => {
       displayPrice: { amount: 1500, currency: "EGP", billingInterval: "MONTHLY" },
       ctaMode: "JOIN_BETA",
       eligible: true,
+      capabilities: [{ capabilityId: "capability", capabilityKey: "gallery.access", value: true }],
+      trialPolicies: [{ id: "trial", durationDays: 14 }],
     });
   });
 

@@ -20,6 +20,21 @@ export type ProductDraftCapability = {
   value: unknown;
 };
 
+export type ProductDraftTrialPolicy = {
+  id: string;
+  productId: string | null;
+  offeringId: string;
+  name: string;
+  durationDays: number | null;
+  usageLimit: number | null;
+  usageCapabilityKey: string | null;
+  oncePerTenant: boolean;
+  requiresPaymentMethod: boolean;
+  graceDays: number;
+  eligibilityPolicy: unknown;
+  isActive: boolean;
+};
+
 export type ProductDraftOffering = {
   id: string;
   code: string;
@@ -41,6 +56,7 @@ export type ProductDraftOffering = {
   prices: ProductDraftPrice[];
   capabilityKeys: string[];
   capabilities: ProductDraftCapability[];
+  trialPolicies?: ProductDraftTrialPolicy[];
   bundleComponents: Array<{
     offeringId: string;
     offeringCode: string;

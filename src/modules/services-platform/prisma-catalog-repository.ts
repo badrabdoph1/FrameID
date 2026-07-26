@@ -16,6 +16,7 @@ export function createPrismaCatalogRepository(prisma: PrismaClient): CatalogRepo
             include: {
               prices: { orderBy: [{ version: "desc" }, { effectiveFrom: "desc" }] },
               capabilities: { include: { capability: { select: { id: true, key: true } } } },
+              trialPolicies: { orderBy: { createdAt: "asc" } },
               workflowTemplate: { select: { key: true, version: true } },
               bundleComponents: {
                 include: {
@@ -85,6 +86,20 @@ export function createPrismaCatalogRepository(prisma: PrismaClient): CatalogRepo
           })),
           capabilityKeys: offering.capabilities.map((capability) => capability.capability.key),
           capabilities: offering.capabilities.map((item) => ({ capabilityId: item.capability.id, capabilityKey: item.capability.key, value: item.value })),
+          trialPolicies: offering.trialPolicies.map((policy) => ({
+            id: policy.id,
+            productId: policy.productId,
+            offeringId: offering.id,
+            name: policy.name,
+            durationDays: policy.durationDays,
+            usageLimit: policy.usageLimit,
+            usageCapabilityKey: policy.usageCapabilityKey,
+            oncePerTenant: policy.oncePerTenant,
+            requiresPaymentMethod: policy.requiresPaymentMethod,
+            graceDays: policy.graceDays,
+            eligibilityPolicy: policy.eligibilityPolicy,
+            isActive: policy.isActive,
+          })),
           bundleComponents: offering.bundleComponents.map(({ componentOffering, quantity, required }) => ({
             offeringId: componentOffering.id,
             offeringCode: componentOffering.code,
@@ -189,6 +204,23 @@ export async function getCustomerCatalogReadModel(prisma: PrismaClient, input: {
             effectiveTo: price.effectiveTo ? new Date(price.effectiveTo) : null,
           })),
           capabilityKeys: offering.capabilityKeys,
+          capabilities: offering.capabilities,
+          bundleComponents: offering.bundleComponents.map((component) => ({
+            offeringId: component.offeringId,
+            offeringCode: component.offeringCode,
+            offeringName: component.offeringName,
+            quantity: component.quantity,
+            required: component.required,
+          })),
+          trialPolicies: (offering.trialPolicies ?? []).map((policy) => ({
+            id: policy.id,
+            durationDays: policy.durationDays,
+            usageLimit: policy.usageLimit,
+            usageCapabilityKey: policy.usageCapabilityKey,
+            graceDays: policy.graceDays,
+            requiresPaymentMethod: policy.requiresPaymentMethod,
+            isActive: policy.isActive,
+          })),
         })),
     }];
   });

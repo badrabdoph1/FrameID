@@ -26,6 +26,30 @@ import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { PhotographerShell } from "@/components/layout/photographer-shell";
 
 describe("application shells", () => {
+  it("hides the services platform from customer and admin navigation when it is disabled", () => {
+    const HiddenServicesDashboardShell = DashboardShell as React.ComponentType<
+      React.ComponentProps<typeof DashboardShell> & { servicesPlatformVisible: boolean }
+    >;
+    const HiddenServicesAdminShell = AdminShell as React.ComponentType<
+      React.ComponentProps<typeof AdminShell> & { servicesPlatformVisible: boolean }
+    >;
+
+    const customer = render(
+      <HiddenServicesDashboardShell siteSlug="demo" servicesPlatformVisible={false}>
+        <p>Customer dashboard content</p>
+      </HiddenServicesDashboardShell>
+    );
+    expect(customer.container.querySelector('a[href="/dashboard/service-center"]')).toBeNull();
+    customer.unmount();
+
+    const admin = render(
+      <HiddenServicesAdminShell servicesPlatformVisible={false}>
+        <p>Admin content</p>
+      </HiddenServicesAdminShell>
+    );
+    expect(admin.container.querySelector('a[href^="/admin/services"]')).toBeNull();
+  });
+
   it("renders photographer dashboard navigation as a reusable shell", () => {
     render(
       <PhotographerShell>

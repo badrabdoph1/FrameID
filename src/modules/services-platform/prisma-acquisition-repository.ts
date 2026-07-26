@@ -42,7 +42,7 @@ function assertReplayIdentity(
     ? acquisition.metadata as Record<string, Prisma.JsonValue>
     : {};
   const originalUserId = typeof metadata.requestedByUserId === "string" ? metadata.requestedByUserId : null;
-  if (acquisition.offeringId !== input.offeringId || (originalUserId && originalUserId !== input.userId)) {
+  if (acquisition.offeringId !== input.offeringId || originalUserId !== input.userId) {
     throw new Error("Acquisition idempotency key is already bound to another request identity.");
   }
 }
@@ -100,6 +100,7 @@ export function createPrismaAcquisitionRepository(prisma: PrismaClient): Acquisi
         offeringName: offering.name,
         productId: product.id,
         productCode: product.code,
+        productName: product.name,
         workflow: { key: offering.workflowTemplateKey, version: offering.workflowTemplateVersion },
         offeringType: offering.type,
         salesMode: offering.salesMode,

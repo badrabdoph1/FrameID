@@ -78,8 +78,8 @@ export function createPrismaFulfillmentRepository(prisma: PrismaClient): Fulfill
         ],
       };
     },
-    createRun(input) {
-      return prisma.fulfillmentRun.upsert({
+    async createRun(input) {
+      const run = await prisma.fulfillmentRun.upsert({
         where: { idempotencyKey: input.idempotencyKey },
         update: {},
         create: {
@@ -88,8 +88,12 @@ export function createPrismaFulfillmentRepository(prisma: PrismaClient): Fulfill
           workflowVersion: input.workflowVersion,
           idempotencyKey: input.idempotencyKey,
         },
-        select: { id: true, status: true },
+        select: { id: true, status: true, acquisitionId: true, workflowKey: true, workflowVersion: true },
       });
+      if (run.acquisitionId !== input.acquisitionId || run.workflowKey !== input.workflowKey || run.workflowVersion !== input.workflowVersion) {
+        throw new Error("Fulfillment idempotency key is already bound to another acquisition or workflow.");
+      }
+      return { id: run.id, status: run.status };
     },
     async markRunning(runId, leaseOwner, allowedStatuses = ["PENDING", "FAILED"]) {
       const now = new Date();

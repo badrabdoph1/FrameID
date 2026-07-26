@@ -172,9 +172,8 @@ export async function seedServicesPlatform(prisma: PrismaClient) {
     capabilitySnapshots.push({ capabilityId: capability.id, capabilityKey: capability.key, value: capabilityInput.value });
   }
 
-  const trial = await prisma.trialPolicy.findFirst({
+  const existingTrial = await prisma.trialPolicy.findFirst({
     where: { offeringId: offering.id, name: "تجربة 14 يومًا" },
-    select: { id: true },
   });
   const trialData = {
     productId: product.id,
@@ -185,11 +184,7 @@ export async function seedServicesPlatform(prisma: PrismaClient) {
     graceDays: 2,
     isActive: true,
   };
-  if (trial) {
-    // Baseline seeding is insert-only. Admin-managed policies are never overwritten on deploy.
-  } else {
-    await prisma.trialPolicy.create({ data: { ...trialData, name: "تجربة 14 يومًا" } });
-  }
+  const trial = existingTrial ?? await prisma.trialPolicy.create({ data: { ...trialData, name: "تجربة 14 يومًا" } });
 
   await prisma.catalogRevision.upsert({
     where: { productId_revision: { productId: product.id, revision: 1 } },
@@ -245,6 +240,20 @@ export async function seedServicesPlatform(prisma: PrismaClient) {
           }],
           capabilityKeys,
           capabilities: capabilitySnapshots,
+          trialPolicies: [{
+            id: trial.id,
+            productId: trial.productId,
+            offeringId: offering.id,
+            name: trial.name,
+            durationDays: trial.durationDays,
+            usageLimit: trial.usageLimit,
+            usageCapabilityKey: trial.usageCapabilityKey,
+            oncePerTenant: trial.oncePerTenant,
+            requiresPaymentMethod: trial.requiresPaymentMethod,
+            graceDays: trial.graceDays,
+            eligibilityPolicy: trial.eligibilityPolicy,
+            isActive: trial.isActive,
+          }],
           bundleComponents: [],
         }],
       } as Prisma.InputJsonValue,

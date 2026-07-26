@@ -94,13 +94,13 @@
 - Outbox worker بآلية claim/lease/retry/exponential backoff/dead-letter.
 - Cron محمي لتشغيل Outbox وCron للمصالحة.
 - جدولة Vercel: Outbox كل دقيقة وReconciliation كل خمس دقائق، مع بقاء المسارين صالحين لأي scheduler خارجي.
-- Reconciliation يعيد leases المنتهية، يسترجع Fulfillment المتوقف، يكمل Acquisition إذا نجحت آثاره قبل تعطل العملية، يحدّث حالات الاشتراكات، ويعيد طلب Fulfillment الناقص. كما يعيد فتح Communication للطلبات اليتيمة واستعادة Context References المفقودة، ويرفع الروابط العابرة للـtenant أو الحالات غير القابلة للإصلاح كـ`DEGRADED`.
+- Reconciliation يعيد leases المنتهية، يسترجع Fulfillment المتوقف، يكمل Acquisition إذا نجحت آثاره قبل تعطل العملية، يحدّث حالات الاشتراكات، ويعيد طلب Fulfillment الناقص. كما يعيد فتح Communication للطلبات اليتيمة، ويستعيد Context References عبر أمر `Communication Core.attachContext`، ويقارن لقطة كل Acquisition مكتمل بالـEntitlements والـProduct Instances الفعلية لاكتشاف drift، ويرفع الحالات غير الآمنة كـ`DEGRADED`. يستخدم مساري Communication وFulfillment keyset cursors دائمة كي تتقدم المصالحة عبر كل البيانات على دفعات 500 دون تجويع السجلات القديمة.
 - Extension Points لـRecommendation Provider وAnalytics Sink وProduct Provisioning وDomain Event Publisher.
 
 ## قاعدة البيانات والمهاجرات
 
-- Migrations: `20260722194500_services_platform_foundation` و`20260723011000_services_platform_hardening`.
-- أضيف 21 نموذجًا تشغيليًا للمنصة و15 enum، وربط اختياري من `PaymentRequest` إلى `Acquisition`.
+- Migrations: `20260722194500_services_platform_foundation` و`20260723011000_services_platform_hardening` و`20260726021500_services_reconciliation_checkpoints`.
+- أضيف 22 نموذجًا تشغيليًا للمنصة و15 enum، وربط اختياري من `PaymentRequest` إلى `Acquisition`.
 - لم تُعدّل أي migration تاريخية؛ أُعيدت الملفات القديمة إلى checksums الأصلية حتى لا يحدث drift في البيئات القائمة.
 - كشف الاختبار من قاعدة فارغة أن migration الدفع التاريخية `20260708060000_add_payment_system` تفشل قبل المنصة بسبب استخدام enum جديدة داخل transaction واحدة. هذه مشكلة سابقة لا يمكن إصلاحها بتعديل الملف بعد تطبيقه في بيئات أخرى.
 - مسار النشر الرسمي الحالي للمشروع `db:deploy:safe` يطبق Prisma schema ثم migration التحصين ذات الفهارس الجزئية ثم seed؛ جرى اختباره على PostgreSQL نظيف. إصلاح تاريخ Prisma بالكامل يحتاج rebaseline مستقلة مخططًا لها، لا تعديل checksums القديمة.
@@ -147,11 +147,11 @@
 - عزل كل قراءة وكتابة للعميل بـ`tenantId` المستخرج من الجلسة؛ لا يؤخذ Tenant من input العميل.
 - أوامر الإدارة محمية بـAdmin Permission Guards ومسجلة في Audit Log.
 - السعر المرسل من العميل لا يُستخدم؛ الخادم يقرأ السعر المنشور ويخزنه كلقطة immutable.
-- واجهة العميل وAcquisition يقرآن آخر `CatalogRevision` منشور لا صفوف Draft الحية، وFulfillment يقرأ لقطة Acquisition v2 فقط؛ لذلك لا تغيّر تعديلات الأدمن غير المنشورة ما يراه أو يستلمه العميل.
+- واجهة العميل وAcquisition وRecommendations وTrial Resolver يقرؤون آخر `CatalogRevision` منشور لا صفوف Draft الحية، بما في ذلك Capabilities وBundles وTrial Policies، وFulfillment يقرأ لقطة Acquisition v2 فقط؛ لذلك لا تغيّر تعديلات الأدمن غير المنشورة ما يراه أو يستلمه العميل.
 - مفاتيح Communication الخاصة بالخدمات تحمل namespace للـtenant، ويعيد Communication Core التحقق من tenant/mode/type عند replay، كما يرفض Acquisition ربط محادثة تخص tenant آخر.
 - السوق والعملة يُحلان من Selector مركزي تستخدمه صفحات Catalog وAcquisition وRecommendations، مع أولوية لسعر السوق ثم السعر العالمي بنفس العملة.
 - كل أوامر تحويل حالة Payment الحاملة لـ`idempotencyKey` تستخدم قفلًا استشاريًا داخل المعاملة على المفتاح قبل أي mutation، ثم row locks وإعادة تحقق من حالة Acquisition؛ لذلك لا يستطيع مفتاح واحد تنفيذ أمرين أو التأثير في دفعتين حتى عند التزامن.
-- إعادة أوامر Payment تُرجع النتيجة السابقة فقط عند تطابق المفتاح ونوع الحدث والدفعة؛ أي collision مختلف يُرفض قبل تعديل الحالة. كما تتحقق Acquisition من تطابق Offering وهوية الطالب عند إعادة نفس المفتاح، بما في ذلك سباق الإنشاء المتزامن.
+- إعادة أوامر Payment تُرجع النتيجة السابقة عند تطابق المفتاح ونوع الحدث والدفعة حتى إذا تقدمت دورة الحياة لاحقًا؛ أي collision مختلف يُرفض قبل تعديل الحالة. كما تتحقق Acquisition من تطابق Offering وهوية الطالب عند إعادة نفس المفتاح، ويتحقق Fulfillment من Acquisition والـWorkflow المرتبطين بالمفتاح، بما في ذلك سباقات الإنشاء المتزامن.
 - أوامر الاشتراك تسترجع نتيجة الـidempotency قبل حراس دورة الحياة، ثم تحمل `expectedStatus` و`expectedPeriodEnd` وتمنع الفترات المتراجعة وتقفل صف الاشتراك قبل التحديث؛ وربط المحادثة واعتماد عرض السعر يقفلان Acquisition قبل التحقق والانتقال.
 - سياق الأهلية موحد ويُبنى من Tenant والخطة والدولة وعدد المواقع والمنتجات وAccess Tier entitlements، ويستخدمه Catalog وAcquisition وTrial وRecommendations.
 - فهارس مركبة لمسارات tenant/status/date وoffering/status وoutbox leasing وattribution.
@@ -175,7 +175,7 @@
 
 - TypeScript: ناجح، دون أخطاء.
 - ESLint: ناجح، دون أخطاء؛ بقيت 63 warning تاريخية خارج ملفات المنصة بعد دمج آخر تحديثات `main`.
-- الاختبارات: 183 ملف اختبار ناجح، 614 اختبارًا ناجحًا، صفر فشل.
+- الاختبارات: 185 ملف اختبار ناجح، 626 اختبارًا ناجحًا، صفر فشل.
 - Production Build: ناجح، وجميع مسارات العميل والإدارة والـAPI ظهرت في route manifest.
-- قاعدة PostgreSQL نظيفة: نجح `db:deploy:safe`، ونجح seed مرتين، وثبتت أعداد 1 Product و1 Offering و6 Workflows و3 Capabilities. ثبت كذلك أن Revision المنشور يستخدم snapshot v2 وأن تعديل أدمن تجريبي ظل محفوظًا بعد إعادة seed دون إنشاء Revision زائد.
+- قاعدة PostgreSQL نظيفة: نجح `db:deploy:safe`، ونجح seed مرتين، وثبتت أعداد 1 Product و1 Offering و6 Workflows و3 Capabilities. ثبت كذلك أن Revision المنشور يستخدم snapshot v2 ويحمل Trial Policy المنشورة، وأن تعديل أدمن تجريبي ظل محفوظًا بعد إعادة seed دون إنشاء Revision زائد.
 - فهارس التحصين: تحقق وجود الفهارس الأربعة الخاصة بمنع Fulfillment المتوازي، توافق الاشتراكات القديمة، usage period، وtenant-scoped idempotency.

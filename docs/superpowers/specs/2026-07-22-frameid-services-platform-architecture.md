@@ -1,6 +1,6 @@
 # FrameID Services Platform – Architecture & Product Ecosystem Design
 
-**الحالة:** معتمد للتنفيذ  
+**الحالة:** معتمد للتنفيذ
 **التاريخ:** 2026-07-22
 
 ## القرار التنفيذي

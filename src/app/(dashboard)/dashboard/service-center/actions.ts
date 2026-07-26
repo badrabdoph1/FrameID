@@ -13,6 +13,7 @@ import { createPrismaMediaUploadRepository } from "@/modules/media/prisma-media-
 import { createServicesPlatformRuntime } from "@/modules/services-platform/runtime";
 import { dismissRecommendation } from "@/modules/services-platform/prisma-recommendations";
 import { trackProductAnalyticsEvent } from "@/modules/services-platform/prisma-analytics";
+import { isServicesPlatformUiVisible } from "@/modules/services-platform/ui-visibility";
 
 const paymentMethods = new Set(["INSTAPAY", "VODAFONE_CASH", "STRIPE", "PAYPAL"]);
 const proofTypes = new Set(["image/jpeg", "image/png", "image/webp"]);
@@ -20,6 +21,7 @@ const proofTypes = new Set(["image/jpeg", "image/png", "image/webp"]);
 async function customerSession() {
   const session = await getCurrentRequestSession();
   if (!session) redirect("/login");
+  if (!(await isServicesPlatformUiVisible(prisma))) redirect("/dashboard");
   return session;
 }
 
@@ -53,15 +55,21 @@ export async function requestServiceOfferingAction(formData: FormData) {
     });
     const acquisition = await prisma.acquisition.findUniqueOrThrow({
       where: { id: result.id },
-      include: { offering: { select: { salesMode: true } } },
+      select: { id: true, status: true, acceptedTotal: true, metadata: true },
     });
+    const metadata = acquisition.metadata && typeof acquisition.metadata === "object" && !Array.isArray(acquisition.metadata)
+      ? acquisition.metadata as Record<string, unknown>
+      : {};
+    const catalogSnapshot = metadata.catalogSnapshot && typeof metadata.catalogSnapshot === "object" && !Array.isArray(metadata.catalogSnapshot)
+      ? metadata.catalogSnapshot as Record<string, unknown>
+      : {};
     if (attributionId) {
       await prisma.recommendationDecision.updateMany({
         where: { tenantId: session.tenant.id, attributionId },
         data: { status: "CONVERTED", convertedAt: new Date() },
       });
     }
-    if (acquisition.status === "REQUESTED" && acquisition.offering.salesMode === "SELF_SERVE") {
+    if (acquisition.status === "REQUESTED" && catalogSnapshot.salesMode === "SELF_SERVE") {
       if ((acquisition.acceptedTotal ?? 0) > 0) {
         await runtime.acquisitions.transition({ acquisitionId: acquisition.id, toStatus: "AWAITING_PAYMENT" });
       } else {

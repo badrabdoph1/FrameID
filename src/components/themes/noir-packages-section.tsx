@@ -81,7 +81,7 @@ export function NoirPackagesSection({ section, site }: NoirPackagesSectionProps)
             {site.packages.map((item, index) => {
               const isActive = index === activeIndex;
               const imageUrl = item.imageUrl ?? site.gallery[index % Math.max(site.gallery.length, 1)]?.url;
-              
+
               return (
                 <article
                   key={item.id}
@@ -90,8 +90,8 @@ export function NoirPackagesSection({ section, site }: NoirPackagesSectionProps)
                     "flex flex-col overflow-hidden rounded-[1.6rem] border border-white/9 bg-[#101010]",
                     "transition-all duration-500 ease-out",
                     "snap-center",
-                    isActive 
-                      ? "scale-100 opacity-100 shadow-2xl shadow-[#e5c07b]/10" 
+                    isActive
+                      ? "scale-100 opacity-100 shadow-2xl shadow-[#e5c07b]/10"
                       : "scale-[0.95] opacity-70"
                   )}
                   style={{ scrollSnapAlign: "center" }}

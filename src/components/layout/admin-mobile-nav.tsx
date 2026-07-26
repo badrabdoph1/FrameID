@@ -5,7 +5,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Bell, ExternalLink, Home, LogOut, Menu, Search, X } from "lucide-react"
 import { useAdmin } from "@/components/layout/admin-context"
-import { adminSections } from "@/modules/admin/navigation"
+import { adminSections, getVisibleAdminSections, type AdminSection } from "@/modules/admin/navigation"
 import { cn } from "@/lib/utils/cn"
 
 function isAdminLinkActive(pathname: string | null, href: string): boolean {
@@ -14,14 +14,14 @@ function isAdminLinkActive(pathname: string | null, href: string): boolean {
   return pathname === href || pathname.startsWith(`${href}/`)
 }
 
-function isSectionActive(pathname: string | null, sectionId: string): boolean {
-  const section = adminSections.find((item) => item.id === sectionId)
+function isSectionActive(pathname: string | null, sectionId: string, sections: AdminSection[]): boolean {
+  const section = sections.find((item) => item.id === sectionId)
   if (!section) return false
   return section.links.some((link) => isAdminLinkActive(pathname, link.href))
 }
 
-function currentSection(pathname: string | null) {
-  return adminSections.find((section) => isSectionActive(pathname, section.id)) ?? adminSections[0]
+function currentSection(pathname: string | null, sections: AdminSection[]) {
+  return sections.find((section) => isSectionActive(pathname, section.id, sections)) ?? sections[0]
 }
 
 function MobileSectionLinks({ pathname, title, links, onNavigate }: { pathname: string | null; title: string; links: typeof adminSections[number]["links"]; onNavigate?: () => void }) {
@@ -43,15 +43,16 @@ function MobileSectionLinks({ pathname, title, links, onNavigate }: { pathname: 
   )
 }
 
-export function AdminMobileNav() {
+export function AdminMobileNav({ servicesPlatformVisible = true }: { servicesPlatformVisible?: boolean }) {
   const pathname = usePathname()
   const { mobileMenuOpen, toggleMobileMenu } = useAdmin()
+  const visibleAdminSections = getVisibleAdminSections(servicesPlatformVisible)
   const searchRef = useRef<HTMLInputElement>(null)
 
-  const primarySections = adminSections.slice(0, 4)
-  const overflowSections = adminSections.slice(4)
-  const overflowActive = overflowSections.some((section) => isSectionActive(pathname, section.id))
-  const activeSection = currentSection(pathname)
+  const primarySections = visibleAdminSections.slice(0, 4)
+  const overflowSections = visibleAdminSections.slice(4)
+  const overflowActive = overflowSections.some((section) => isSectionActive(pathname, section.id, visibleAdminSections))
+  const activeSection = currentSection(pathname, visibleAdminSections)
   const title = activeSection?.title ?? "القيادة"
   const activeLinks = activeSection?.links ?? []
 
@@ -120,7 +121,7 @@ export function AdminMobileNav() {
             {primarySections.map((section) => {
               const Icon = section.icon
               const href = section.links[0]?.href ?? "/admin"
-              const isActive = isSectionActive(pathname, section.id)
+              const isActive = isSectionActive(pathname, section.id, visibleAdminSections)
               return (
                 <Link key={section.id} href={href} className={cn("admin-mobile-bottom-link", isActive && "is-active")}> 
                   <Icon className="size-5" aria-hidden />
@@ -177,9 +178,9 @@ export function AdminMobileNav() {
           </form>
 
           <section className="grid gap-3">
-            {adminSections.map((section) => {
+            {visibleAdminSections.map((section) => {
               const Icon = section.icon
-              const sectionActive = isSectionActive(pathname, section.id)
+              const sectionActive = isSectionActive(pathname, section.id, visibleAdminSections)
               return (
                 <article key={section.id} className={cn("rounded-3xl border bg-white/[0.035] p-3", sectionActive ? "border-amber-500/35" : "border-white/10")}>
                   <Link href={section.links[0]?.href ?? "/admin"} onClick={toggleMobileMenu} className="grid grid-cols-[auto,1fr] items-center gap-3 no-underline">

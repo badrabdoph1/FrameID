@@ -28,6 +28,9 @@ export type CatalogReadOffering = {
   sortOrder: number;
   prices: CatalogReadPrice[];
   capabilityKeys: string[];
+  capabilities?: Array<{ capabilityId: string; capabilityKey: string; value: unknown }>;
+  bundleComponents?: Array<{ offeringId: string; offeringCode: string; offeringName: string; quantity: number; required: boolean }>;
+  trialPolicies?: Array<{ id: string; durationDays: number | null; usageLimit: number | null; usageCapabilityKey: string | null; graceDays: number; requiresPaymentMethod: boolean; isActive: boolean }>;
 };
 
 export type CatalogReadProduct = {
@@ -106,6 +109,9 @@ export function buildCatalogReadModel(input: {
             releaseStage: offering.releaseStage,
             accessTier: offering.accessTier,
             capabilityKeys: offering.capabilityKeys,
+            capabilities: offering.capabilities ?? [],
+            bundleComponents: offering.bundleComponents ?? [],
+            trialPolicies: (offering.trialPolicies ?? []).filter((policy) => policy.isActive),
             eligible,
             purchasable: eligible && offering.releaseStage !== "ANNOUNCED",
             recommended: productEligibility.recommended || eligibility.recommended,

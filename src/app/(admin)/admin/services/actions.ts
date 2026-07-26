@@ -16,8 +16,15 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { prisma } from "@/lib/prisma";
-import { requireAdminPermission } from "@/modules/admin/admin-permission-guards";
+import { requireAdminPermission as requireBaseAdminPermission } from "@/modules/admin/admin-permission-guards";
 import { createServicesPlatformRuntime } from "@/modules/services-platform/runtime";
+import { isServicesPlatformUiVisible } from "@/modules/services-platform/ui-visibility";
+
+async function requireAdminPermission(center: string, action: "edit") {
+  const admin = await requireBaseAdminPermission(center, action);
+  if (!(await isServicesPlatformUiVisible(prisma))) redirect("/admin/settings");
+  return admin;
+}
 
 function value(formData: FormData, key: string, max = 5_000) {
   const entry = formData.get(key);

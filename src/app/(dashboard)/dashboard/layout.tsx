@@ -10,6 +10,7 @@ import { prisma } from "@/lib/prisma";
 import type { RenderingSafetyConfig } from "@/lib/client/rendering-diagnostics";
 import { getCurrentRequestSession } from "@/modules/auth/request-session";
 import { communicationCenterQueries } from "@/modules/communication-center/runtime";
+import { isServicesPlatformUiVisible } from "@/modules/services-platform/ui-visibility";
 import "@/app/android-rendering-safety.css";
 
 export const metadata: Metadata = {
@@ -54,7 +55,7 @@ export default async function DashboardLayout({
     redirect("/login");
   }
 
-  const [flags, unreadCommunicationCount] = await Promise.all([prisma.featureFlag.findMany({
+  const [flags, unreadCommunicationCount, servicesPlatformVisible] = await Promise.all([prisma.featureFlag.findMany({
     where: {
       key: "safe-rendering",
       enabled: true,
@@ -66,7 +67,7 @@ export default async function DashboardLayout({
     },
     orderBy: { updatedAt: "asc" },
     select: { value: true },
-  }), communicationCenterQueries.getCustomerUnreadCount(session.tenant.id, session.user.id)]);
+  }), communicationCenterQueries.getCustomerUnreadCount(session.tenant.id, session.user.id), isServicesPlatformUiVisible(prisma)]);
 
   const renderingConfig = flags.reduce<RenderingSafetyConfig>((current, flag) => {
     const next = toRenderingConfig(flag.value);
@@ -82,7 +83,7 @@ export default async function DashboardLayout({
     <>
       <RenderingSafetyMode config={renderingConfig} userId={session.user.id} />
       <DashboardScrollReset />
-      <DashboardShell siteSlug={session.site.slug} hasSubscription={session.subscription?.status === "ACTIVE"} photographerName={session.user.name} unreadCommunicationCount={unreadCommunicationCount}>{children}</DashboardShell>
+      <DashboardShell siteSlug={session.site.slug} hasSubscription={session.subscription?.status === "ACTIVE"} photographerName={session.user.name} unreadCommunicationCount={unreadCommunicationCount} servicesPlatformVisible={servicesPlatformVisible}>{children}</DashboardShell>
       <PwaInstallButton context="dashboard" />
     </>
   );
