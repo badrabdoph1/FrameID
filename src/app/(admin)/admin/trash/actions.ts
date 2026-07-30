@@ -51,7 +51,7 @@ export async function permanentDeleteAction(formData: FormData) {
   redirect("/admin/trash?deleted=1");
 }
 
-export async function emptyTrashAction(_formData: FormData) {
+export async function emptyTrashAction() {
   const { admin, service } = await getService();
 
   try {

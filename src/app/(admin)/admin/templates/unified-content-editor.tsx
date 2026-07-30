@@ -2,7 +2,6 @@
 
 import { useState, type ReactNode } from "react";
 import {
-  Check,
   Image as ImageIcon,
   Package,
   Pencil,
@@ -10,9 +9,7 @@ import {
   Save,
   Sparkles,
   Star,
-  Trash2,
   Upload,
-  X,
 } from "lucide-react";
 
 import { saveUnifiedContentAction } from "@/app/(admin)/admin/templates/unified-content-actions";

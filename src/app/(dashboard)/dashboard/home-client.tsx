@@ -12,7 +12,6 @@ import {
   ChevronLeft,
   Circle,
   Copy,
-  CreditCard,
   ExternalLink,
   Eye,
   LayoutDashboard,

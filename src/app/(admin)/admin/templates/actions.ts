@@ -26,16 +26,6 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function readJsonObject(raw: string, fallback: Record<string, unknown> = {}): Record<string, unknown> {
-  if (!raw) return fallback;
-  try {
-    const parsed = JSON.parse(raw);
-    return isRecord(parsed) ? parsed : fallback;
-  } catch {
-    return fallback;
-  }
-}
-
 async function auditTemplate(input: { adminId: string; adminEmail?: string; action: string; templateId: string; code: string; metadata?: JsonRecord }) {
   await prisma.auditLog.create({
     data: {

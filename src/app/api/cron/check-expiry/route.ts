@@ -2,15 +2,11 @@ import { prisma } from "@/lib/prisma";
 
 export const maxDuration = 60;
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const authHeader = process.env.CRON_SECRET
-      ? { Authorization: `Bearer ${process.env.CRON_SECRET}` }
-      : undefined;
-
-    if (authHeader) {
-      const requestAuth = "";
-      if (requestAuth !== authHeader.Authorization) {
+    if (process.env.CRON_SECRET) {
+      const authHeader = request.headers.get("authorization");
+      if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
         return Response.json({ error: "Unauthorized" }, { status: 401 });
       }
     }

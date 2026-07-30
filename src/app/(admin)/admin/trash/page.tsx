@@ -100,12 +100,6 @@ export default async function AdminTrashPage({ searchParams }: Props) {
     prisma.tenant.count({ where }),
   ]);
 
-  // Convert Date objects to strings for rendering
-  const mappedTenants = tenants.map(t => ({
-    ...t,
-    deletedAtStr: t.deletedAt?.toISOString() ?? null,
-  }));
-
   const totalPages = Math.ceil(total / PAGE_SIZE);
 
   const buildLink = (params: Record<string, string | undefined>) => {

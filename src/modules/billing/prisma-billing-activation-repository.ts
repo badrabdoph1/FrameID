@@ -95,7 +95,7 @@ export function createPrismaBillingActivationRepository(
       })) as { tenantId: string };
     },
 
-    async requestReupload(paymentRequestId, _reviewerId, _note) {
+    async requestReupload(paymentRequestId) {
       await prisma.paymentRequest.update({ where: { id: paymentRequestId }, data: { status: "DRAFT", proofAssetId: null, reviewedByUserId: null, reviewedAt: null } });
     },
 
@@ -115,7 +115,7 @@ export function createPrismaBillingActivationRepository(
       await prisma.site.updateMany({ where: { tenantId: sub.tenantId, deletedAt: null }, data: { status: "EXPIRED", isPublished: false } });
     },
 
-    async cancelPaymentRequest(id, _cancelledAt) {
+    async cancelPaymentRequest(id) {
       return (await prisma.paymentRequest.update({ where: { id }, data: { status: "CANCELLED" }, select: { tenantId: true, subscriptionId: true } })) as { tenantId: string; subscriptionId: string };
     },
 

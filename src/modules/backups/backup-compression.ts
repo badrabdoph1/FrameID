@@ -19,7 +19,7 @@ async function isZstdAvailable(): Promise<boolean> {
   try {
     await new Promise<void>((resolve, reject) => {
       const child = spawn("which", ["zstd"], { stdio: ["ignore", "ignore", "pipe"] });
-      child.on("close", (code) => resolve());
+      child.on("close", () => resolve());
       child.on("error", reject);
     });
     return true;

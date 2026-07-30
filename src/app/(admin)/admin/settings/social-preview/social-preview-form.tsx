@@ -316,23 +316,4 @@ function clamp(value: number, min: number, max: number) { return Math.min(max, M
 function formatBytes(bytes: number) { return bytes >= 1024 * 1024 ? `${(bytes / 1024 / 1024).toFixed(2)} MB` : `${Math.max(1, Math.round(bytes / 1024))} KB`; }
 function toSameOriginUrl(url: string) { try { const parsed = new URL(url, window.location.origin); return `${parsed.pathname}${parsed.search}`; } catch { return url; } }
 
-function uploadImage(file: File, onProgress: (value: number) => void, onPersisting: () => void): Promise<{ imageUrl: string; bytes: number }> {
-  return new Promise((resolve, reject) => {
-    const xhr = new XMLHttpRequest();
-    const form = new FormData();
-    form.append("image", file);
-    form.append("width", String(TARGET_WIDTH));
-    form.append("height", String(TARGET_HEIGHT));
-    xhr.open("POST", "/api/admin/social-preview/upload");
-    xhr.upload.onprogress = (event) => { if (event.lengthComputable) onProgress(15 + Math.min(60, Math.round((event.loaded / event.total) * 60))); };
-    xhr.upload.onload = onPersisting;
-    xhr.onerror = () => reject(new Error("انقطع الاتصال أثناء رفع الصورة."));
-    xhr.onload = () => {
-      let payload: { ok?: boolean; imageUrl?: string; error?: string; bytes?: number; verified?: boolean } = {};
-      try { payload = JSON.parse(xhr.responseText) as typeof payload; } catch { /* noop */ }
-      if (xhr.status < 200 || xhr.status >= 300 || !payload.ok || !payload.imageUrl || !payload.verified || !payload.bytes) return reject(new Error(payload.error ?? "فشل تثبيت الصورة والتحقق منها على الخادم."));
-      resolve({ imageUrl: toSameOriginUrl(payload.imageUrl), bytes: payload.bytes });
-    };
-    xhr.send(form);
-  });
-}
+

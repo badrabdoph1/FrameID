@@ -9,14 +9,11 @@ import {
   EyeOff,
   ImageIcon,
   LayoutTemplate,
-  Package,
   Pencil,
-  Phone,
   Play,
   Plus,
   Save,
   Settings2,
-  Sparkles,
   X,
 } from "lucide-react";
 
@@ -46,7 +43,6 @@ export type TemplateItem = {
 export type ThemeOption = { id: string; name: string; code: string };
 
 const inputClass = "min-h-9 w-full rounded-lg border border-white/10 bg-black/18 px-2.5 text-xs font-bold text-[#fff8ea]/90 outline-none transition placeholder:text-white/25 focus:border-amber-300/55 focus:ring-2 focus:ring-amber-300/10";
-const textareaClass = "w-full rounded-lg border border-white/10 bg-black/18 px-2.5 py-2 text-xs font-bold text-[#fff8ea]/90 outline-none transition placeholder:text-white/25 focus:border-amber-300/55 focus:ring-2 focus:ring-amber-300/10 font-mono";
 
 function statusLabel(s: string) {
   if (s === "PUBLISHED") return "منشور";
@@ -69,12 +65,6 @@ function isRec(v: unknown): v is Record<string, unknown> {
 }
 
 function str(v: unknown, fb = "") {
-  return typeof v === "string" ? v : fb;
-}
-
-function pv(previewData: Record<string, unknown> | undefined, key: string, fb = ""): string {
-  if (!previewData) return fb;
-  const v = previewData[key];
   return typeof v === "string" ? v : fb;
 }
 
@@ -317,10 +307,6 @@ function TemplateEditor({
   const previewData = isRec(template.previewData) ? template.previewData : {};
   const [activeTab, setActiveTab] = useState<"basic" | "preview">("basic");
 
-  const packages = getArr(previewData, "packages", unifiedDefaults);
-  const extras = getArr(previewData, "extras", unifiedDefaults);
-  const gallery = getArr(previewData, "gallery", unifiedDefaults);
-
   return (
     <div className="mt-1 rounded-xl border border-amber-300/20 bg-amber-300/[0.04] p-3" onClick={(e) => e.stopPropagation()}>
       <div className="mb-2 flex items-center justify-between">
@@ -429,7 +415,6 @@ function F({ label, children, wide }: { label: string; children: ReactNode; wide
 function StatusToggleButton({ template }: { template: TemplateItem }) {
   const status = template.status;
   const nextStatus = status === "PUBLISHED" ? "DRAFT" : status === "ARCHIVED" ? "DRAFT" : "PUBLISHED";
-  const label = nextStatus === "PUBLISHED" ? "نشر" : nextStatus === "DRAFT" ? "إخفاء" : "نشر";
 
   return (
     <form action={toggleTemplateStatusAction}>

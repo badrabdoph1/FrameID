@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useMemo, useState, type MouseEvent } from "react";
+import { useMemo, useState } from "react";
 import {
   Camera,
   Check,

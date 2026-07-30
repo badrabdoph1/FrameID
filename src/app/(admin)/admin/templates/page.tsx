@@ -95,7 +95,6 @@ export default async function AdminTemplatesPage({ searchParams }: Props) {
   } catch { /* file not available */ }
 
   const message = getMessage(params);
-  const previewDataCache = new Map<string, Record<string, unknown>>();
 
   return (
     <AdminPageShell

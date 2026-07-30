@@ -2,9 +2,7 @@
 
 import { revalidatePath, revalidateTag } from "next/cache";
 
-import { prisma } from "@/lib/prisma";
 import { processError } from "@/lib/errors";
-import { requireAdminPermission } from "@/modules/admin/admin-permission-guards";
 import { requireSuperAdminSession } from "@/modules/admin/admin-page-guards";
 import { uploadPlatformSocialPreviewImage } from "@/modules/media/platform-image-upload";
 import {
@@ -18,7 +16,7 @@ import { syncPlatformConfigurationToGitHub } from "@/modules/setup/platform-conf
 const PAGE_PATH = "/admin/social-preview";
 
 export async function savePlatformSocialPreviewAction() {
-  const session = await requireSuperAdminSession();
+  await requireSuperAdminSession();
   revalidateTag(PLATFORM_SOCIAL_PREVIEW_CACHE_TAG);
   revalidatePath("/", "layout");
   revalidatePath("/templates");

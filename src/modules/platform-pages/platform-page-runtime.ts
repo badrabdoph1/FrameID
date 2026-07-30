@@ -12,8 +12,12 @@ export async function loadPublishedPlatformPage(
     return legacyDocument;
   }
 
-  const loader = createPlatformPageDocumentLoader(createPrismaPlatformPageRepository());
-  return loader.load(pageKey, legacyDocument);
+  try {
+    const loader = createPlatformPageDocumentLoader(createPrismaPlatformPageRepository());
+    return await loader.load(pageKey, legacyDocument);
+  } catch {
+    return legacyDocument;
+  }
 }
 
 export async function loadPublishedPlatformPageState(
@@ -25,8 +29,12 @@ export async function loadPublishedPlatformPageState(
     return { document: legacyDocument, versionTag: legacyVersionTag };
   }
 
-  const stored = await createPrismaPlatformPageRepository().findByKey(pageKey);
-  return stored
-    ? { document: stored.document, versionTag: `page-${stored.version}` }
-    : { document: legacyDocument, versionTag: legacyVersionTag };
+  try {
+    const stored = await createPrismaPlatformPageRepository().findByKey(pageKey);
+    return stored
+      ? { document: stored.document, versionTag: `page-${stored.version}` }
+      : { document: legacyDocument, versionTag: legacyVersionTag };
+  } catch {
+    return { document: legacyDocument, versionTag: legacyVersionTag };
+  }
 }

@@ -7,7 +7,6 @@ import {
   Eye,
   ImageIcon,
   LayoutTemplate,
-  Palette,
   Plus,
   RotateCcw,
   Save,

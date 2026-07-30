@@ -1,6 +1,20 @@
 import React from "react";
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+vi.mock("@/lib/prisma", () => ({
+  prisma: {
+    template: {
+      findMany: vi.fn().mockRejectedValue(new Error("DB not available in tests")),
+    },
+    featureFlag: {
+      findMany: vi.fn().mockResolvedValue([]),
+    },
+    theme: {
+      findMany: vi.fn().mockResolvedValue([]),
+    },
+  },
+}));
 
 import TemplatesPage from "@/app/(marketing)/templates/page";
 

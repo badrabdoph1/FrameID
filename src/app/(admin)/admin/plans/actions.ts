@@ -15,10 +15,6 @@ function redirectPlanError(code: string): never {
   redirect(`/admin/plans?error=${encodeURIComponent(code)}`);
 }
 
-function safeRedirect(url: string) {
-  try { redirect(url); } catch { /* next.js redirect thrown */ }
-}
-
 function slugifyPlanCode(value: string): string {
   const slug = value
     .trim()

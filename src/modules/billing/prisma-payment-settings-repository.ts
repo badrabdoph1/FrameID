@@ -1,7 +1,6 @@
 import type {
   PaymentSettingsRepository,
   PaymentMethodWithAccounts,
-  PaymentAccountItem,
   PaymentSettingsData,
   PaymentAccountData,
 } from "@/modules/billing/payment-settings-service";

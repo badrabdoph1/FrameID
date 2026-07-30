@@ -8,7 +8,6 @@ import { prisma } from "@/lib/prisma";
 import { processError } from "@/lib/errors";
 import { requireAdminPermission } from "@/modules/admin/admin-permission-guards";
 import {
-  assertTemplateCode,
   buildTemplateDefaults,
   nextAvailableTemplateCode,
 } from "@/modules/templates/template-admin-policy";

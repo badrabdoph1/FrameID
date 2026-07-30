@@ -80,32 +80,42 @@ export async function suspendCustomerAction(formData: FormData) {
   const { admin, service } = await getService();
   const id = readFormString(formData, "customerId");
   const reason = readFormString(formData, "reason");
-  return withErrorHandling("suspendCustomer", () => service.suspendCustomer(id, { id: admin.id, name: admin.name }, reason));
+  const result = await withErrorHandling("suspendCustomer", () => service.suspendCustomer(id, { id: admin.id, name: admin.name }, reason));
+  revalidatePath("/admin/customers");
+  return result;
 }
 
 export async function activateCustomerAction(formData: FormData) {
   const { admin, service } = await getService();
   const id = readFormString(formData, "customerId");
-  return withErrorHandling("activateCustomer", () => service.activateCustomer(id, { id: admin.id, name: admin.name }));
+  const result = await withErrorHandling("activateCustomer", () => service.activateCustomer(id, { id: admin.id, name: admin.name }));
+  revalidatePath("/admin/customers");
+  return result;
 }
 
 export async function archiveCustomerAction(formData: FormData) {
   const { admin, service } = await getService();
   const id = readFormString(formData, "customerId");
-  return withErrorHandling("archiveCustomer", () => service.archiveCustomer(id, { id: admin.id, name: admin.name }));
+  const result = await withErrorHandling("archiveCustomer", () => service.archiveCustomer(id, { id: admin.id, name: admin.name }));
+  revalidatePath("/admin/customers");
+  return result;
 }
 
 export async function deleteCustomerAction(formData: FormData) {
   const { admin, service } = await getService();
   const id = readFormString(formData, "customerId");
-  return withErrorHandling("deleteCustomer", () => service.deleteCustomer(id, { id: admin.id, name: admin.name }));
+  const result = await withErrorHandling("deleteCustomer", () => service.deleteCustomer(id, { id: admin.id, name: admin.name }));
+  revalidatePath("/admin/customers");
+  return result;
 }
 
 export async function resetCustomerPasswordAction(formData: FormData) {
   const { admin, service } = await getService();
   const userId = readFormString(formData, "userId");
   const newPassword = readFormString(formData, "newPassword");
-  return withErrorHandling("resetCustomerPassword", () => service.resetCustomerPassword(userId, newPassword, { id: admin.id, name: admin.name }));
+  const result = await withErrorHandling("resetCustomerPassword", () => service.resetCustomerPassword(userId, newPassword, { id: admin.id, name: admin.name }));
+  revalidatePath("/admin/customers");
+  return result;
 }
 
 export async function extendCustomerTrialAction(formData: FormData) {

@@ -14,7 +14,7 @@ afterEach(async () => {
 });
 
 describe("استعادة ملفات العملاء", () => {
-  it("يعيد ملفًا ثنائيًا حقيقيًا بحجم 2MB بنفس SHA-256", async () => {
+  it("يعيد ملفًا ثنائيًا حقيقيًا بحجم 2MB بنفس SHA-256", { timeout: 20_000 }, async () => {
     const root = await mkdtemp(join(tmpdir(), "frameid-uploads-roundtrip-"));
     roots.push(root);
     const uploads = join(root, "uploads");
@@ -36,5 +36,5 @@ describe("استعادة ملفات العملاء", () => {
     const validation = await validateUploadsInventory(restored, packaged.inventory);
     expect(validation).toEqual({ valid: true, errors: [] });
     expect(await readFile(join(restored, relativePath))).toEqual(payload);
-  }, 20_000);
+  });
 });

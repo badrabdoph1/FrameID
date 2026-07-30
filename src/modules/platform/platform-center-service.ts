@@ -164,13 +164,11 @@ async function computeIntegrity(): Promise<IntegrityResult> {
         : "ليس على Railway",
   });
 
-  let _dbConnected = false;
   let dbLatencyMs = 0;
   try {
     const start = Date.now();
     await prisma.$queryRaw`SELECT 1`;
     dbLatencyMs = Date.now() - start;
-    _dbConnected = true;
     checks.push({
       id: "postgresql",
       label: "PostgreSQL يعمل",
@@ -195,7 +193,7 @@ async function computeIntegrity(): Promise<IntegrityResult> {
     detail: uploadsDir ? "مجلد uploads موجود" : "مجلد uploads غير موجود",
   });
 
-  const [latestBackup, latestRestore, contentRevisionCount, themeCount, templateCount, planCount] = await Promise.all([
+  const [latestBackup, , contentRevisionCount, themeCount, templateCount, planCount] = await Promise.all([
     prisma.backupJob.findFirst({ where: { status: "COMPLETED" }, orderBy: { completedAt: "desc" }, select: { completedAt: true, metadata: true } }),
     prisma.restoreJob.findFirst({ where: { status: "COMPLETED" }, orderBy: { completedAt: "desc" }, select: { completedAt: true } }),
     prisma.contentRevision.count(),

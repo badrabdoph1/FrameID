@@ -1,5 +1,4 @@
 import type { BackupJobRepository } from "@/modules/backups/backup-job-service";
-import type { BackupManifest } from "@/modules/backups/backup-manifest";
 import { CUSTOMER_DATA_COUNT_QUERIES } from "@/modules/backups/customer-data-inventory";
 
 type PrismaBackupJobClient = {
@@ -49,7 +48,7 @@ export function createPrismaBackupJobRepository(prisma: PrismaBackupJobClient): 
         customerDataCounts,
       };
     },
-    async saveManifest(_input: BackupManifest) {
+    async saveManifest() {
       // The manifest is persisted inside the verified backup artifact.
     },
     async markCompleted(input) {

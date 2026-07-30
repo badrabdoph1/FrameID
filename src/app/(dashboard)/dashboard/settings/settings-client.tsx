@@ -41,7 +41,7 @@ const roleLabel: Record<string, string> = {
 export function SettingsClient({ userName, userEmail, userPhone, userRole, siteTitle: initialSiteTitle, siteSlug, siteStatus, siteUrl, slugChangeUsed, templateChangeUsed: _templateChangeUsed, deletionStatus, requestMessage, errorMessage }: SettingsClientProps) {
   const [copied, setCopied] = useState(false);
   const [editingTitle, setEditingTitle] = useState(false);
-  const [siteTitle, setSiteTitle] = useState(initialSiteTitle);
+  const [siteTitle] = useState(initialSiteTitle);
   const [showDeletionModal, setShowDeletionModal] = useState(false);
   const titleInputRef = useRef<HTMLInputElement>(null);
   const badge = statusBadge[siteStatus] ?? { label: siteStatus, color: "rgba(245, 234, 214, 0.5)", bg: "rgba(245, 234, 214, 0.05)", icon: ShieldCheck };

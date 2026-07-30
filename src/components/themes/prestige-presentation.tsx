@@ -20,7 +20,6 @@ import {
   BookingFAB,
   PackageSelectButton,
   TemplateBookingProvider,
-  useBooking,
 } from "@/components/themes/template-booking-client";
 import { cn } from "@/lib/utils/cn";
 import type { PublicSiteViewModel } from "@/modules/public-sites/public-site-view-model";
