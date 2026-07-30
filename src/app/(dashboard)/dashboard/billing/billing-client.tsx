@@ -138,8 +138,9 @@ const SUPPORT_EMAIL = "support@frameid.app";
 function billingIntervalLabel(value: string) {
   if (value === "yearly") return "سنوي";
   if (value === "lifetime") return "مدى الحياة";
-  if (value === "unknown") return "";
-  return "شهري";
+  if (value === "unspecified" || value === "unknown" || value === "one_time") return "";
+  if (value === "monthly") return "شهري";
+  return "";
 }
 
 function normalizeFeatures(value: unknown): { description: string; badgeLabel: string; isPopular: boolean; isComingSoon: boolean; featureLines: string[] } {

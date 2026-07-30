@@ -107,8 +107,9 @@ function normalizeFeatures(value: unknown): VisualFeatures {
 function intervalLabel(value: string) {
   if (value === "yearly") return "سنوي";
   if (value === "lifetime") return "مدى الحياة";
-  if (value === "unspecified" || value === "unknown") return "";
-  return "شهري";
+  if (value === "unspecified" || value === "unknown" || value === "one_time") return "";
+  if (value === "monthly") return "شهري";
+  return "";
 }
 
 function formatMoney(amount: number, currency: string) {
