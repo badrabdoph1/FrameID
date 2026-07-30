@@ -9,8 +9,6 @@ import {
 } from "@/lib/content/git-sync";
 import { logger } from "@/lib/errors/logger";
 
-const GITHUB_RAW_BASE = "https://raw.githubusercontent.com";
-
 export function createGitHubMediaStorage({
   publicRoot = join(process.cwd(), "public"),
   uploadsBasePath = "uploads",
@@ -30,22 +28,23 @@ export function createGitHubMediaStorage({
 
       const config = resolveGitHubContentConfig();
       if (config) {
-        const result = await commitPlatformAssetToGitHub({
+        commitPlatformAssetToGitHub({
           path: `public/${relativePath}`,
           bytes: input.bytes,
           message: "رفع صورة عبر لوحة التحكم",
-        });
-        if (result.commitSha) {
-          return {
-            url: `${GITHUB_RAW_BASE}/${config.repository}/${config.branch}/public/${relativePath.replaceAll("\\", "/")}`,
-          };
-        }
-        if (result.error) {
-          logger.error("FID-UPLOAD-GIT-001", `GitHub commit failed: ${result.error}`, {
+        }).then((result) => {
+          if (result.error) {
+            logger.error("FID-UPLOAD-GIT-001", `GitHub commit failed: ${result.error}`, {
+              path: relativePath,
+              storageKey: input.storageKey,
+            });
+          }
+        }).catch((err) => {
+          logger.error("FID-UPLOAD-GIT-001", `GitHub commit failed: ${err instanceof Error ? err.message : String(err)}`, {
             path: relativePath,
             storageKey: input.storageKey,
           });
-        }
+        });
       }
 
       return { url: localUrl };

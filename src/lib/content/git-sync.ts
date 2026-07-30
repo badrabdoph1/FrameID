@@ -32,6 +32,7 @@ async function getCurrentFileSha(config: NonNullable<ReturnType<typeof resolveGi
       "x-github-api-version": "2022-11-28",
     },
     cache: "no-store",
+    signal: AbortSignal.timeout(12000),
   });
 
   if (response.status === 404) return null;
@@ -59,6 +60,7 @@ async function putEncodedFile(config: NonNullable<ReturnType<typeof resolveGitHu
       branch: config.branch,
       ...(sha ? { sha } : {}),
     }),
+    signal: AbortSignal.timeout(15000),
   });
 
   if (!response.ok) {
