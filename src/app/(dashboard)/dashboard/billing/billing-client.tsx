@@ -228,10 +228,7 @@ export function BillingClient({ session, plans, paymentMethods, paymentRequest, 
 
   const wrappedCreate = useCallback(async (_prev: ActionResult | null, fd: FormData): Promise<ActionResult | null> => createPaymentDraftAction(fd), []);
   const [createState, createAction, createPending] = useActionState<ActionResult | null, FormData>(wrappedCreate, null);
-  const completeSubmitAction = useCallback(async (_prev: ActionResult | null, fd: FormData): Promise<ActionResult | null> => {
-    return uploadAndSubmitProofAction(fd);
-  }, []);
-  const [completePaymentState, completePaymentAction, completePaymentPending] = useActionState<ActionResult | null, FormData>(completeSubmitAction, null);
+  const [completePaymentState, completePaymentAction, completePaymentPending] = useActionState<ActionResult | null, FormData>(uploadAndSubmitProofAction, null);
   const wrappedSubmit = useCallback(async (_prev: ActionResult | null, fd: FormData): Promise<ActionResult | null> => submitPaymentRequestAction(fd), []);
   const [submitState, submitAction, submitPending] = useActionState<ActionResult | null, FormData>(wrappedSubmit, null);
   const wrappedCancel = useCallback(async (_prev: ActionResult | null, fd: FormData): Promise<ActionResult | null> => cancelPaymentRequestAction(fd), []);

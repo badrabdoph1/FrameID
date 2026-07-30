@@ -186,7 +186,7 @@ export async function updatePaymentDraftAction(formData: FormData): Promise<Acti
   }
 }
 
-export async function uploadAndSubmitProofAction(formData: FormData): Promise<ActionResult> {
+export async function uploadAndSubmitProofAction(_prev: ActionResult | null, formData: FormData): Promise<ActionResult | null> {
   const session = await getSessionWithSub();
   const draftId = cleanString(formData.get("draftId"));
   const proof = formData.get("proof");
