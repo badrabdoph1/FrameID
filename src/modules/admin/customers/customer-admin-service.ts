@@ -11,6 +11,8 @@ import type {
   CustomerAdminNote,
   CustomerAuditEntry,
 } from "./customer-types";
+import { syncCustomerLifecycle } from "@/modules/lifecycle/customer-lifecycle";
+import { prisma } from "@/lib/prisma";
 
 export type AdminActor = {
   id: string;
@@ -129,6 +131,7 @@ export function createCustomerAdminService(repo: CustomerAdminRepository) {
     const newEndDate = new Date();
     newEndDate.setDate(newEndDate.getDate() + days);
     await repo.extendTrial(tenantId, newEndDate, actor.id);
+    await syncCustomerLifecycle(prisma, { tenantId, now: new Date(), limit: 1 });
   }
 
   async function activateSubscription(subscriptionId: string, tenantId: string, actor: AdminActor): Promise<void> {

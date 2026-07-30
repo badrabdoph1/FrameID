@@ -112,7 +112,10 @@ export async function extendCustomerTrialAction(formData: FormData) {
   const { admin, service } = await getService();
   const tenantId = readFormString(formData, "tenantId");
   const days = readFormInt(formData, "days");
-  return withErrorHandling("extendCustomerTrial", () => service.extendTrial(tenantId, days, { id: admin.id, name: admin.name }), { userId: admin.id });
+  const result = await withErrorHandling("extendCustomerTrial", () => service.extendTrial(tenantId, days, { id: admin.id, name: admin.name }), { userId: admin.id });
+  revalidatePath(`/admin/customers/${tenantId}`);
+  revalidatePath("/admin/customers");
+  return result;
 }
 
 export async function activateCustomerSubscriptionAction(formData: FormData) {

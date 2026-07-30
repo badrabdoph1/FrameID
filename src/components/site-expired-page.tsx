@@ -5,5 +5,5 @@ type Props = {
 };
 
 export function SiteExpiredPage({ isOwner = false }: Props) {
-  return <SiteUnavailableExperience isOwner={isOwner} homeHref="/" loginHref="/login" dashboardHref="/dashboard" />;
+  return <SiteUnavailableExperience isOwner={isOwner} homeHref="/" loginHref="/login" dashboardHref="/login" />;
 }

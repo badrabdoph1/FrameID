@@ -703,6 +703,11 @@ export function createCustomerAdminRepository(prisma: PrismaClient) {
         data: { trialEndsAt: newEndDate },
       });
 
+      await tx.subscription.updateMany({
+        where: { tenantId, status: "TRIAL" },
+        data: { currentPeriodEnd: newEndDate, expiresAt: newEndDate },
+      });
+
       await tx.auditLog.create({
         data: {
           actorId: actorId,
