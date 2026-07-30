@@ -11,7 +11,7 @@ import {
   cancelPaymentRequestAction,
   createPaymentDraftAction,
   submitPaymentRequestAction,
-  uploadProofAction,
+  uploadAndSubmitProofAction,
 } from "@/app/(dashboard)/dashboard/billing/actions";
 
 type PlanData = {
@@ -229,11 +229,7 @@ export function BillingClient({ session, plans, paymentMethods, paymentRequest, 
   const wrappedCreate = useCallback(async (_prev: ActionResult | null, fd: FormData): Promise<ActionResult | null> => createPaymentDraftAction(fd), []);
   const [createState, createAction, createPending] = useActionState<ActionResult | null, FormData>(wrappedCreate, null);
   const completeSubmitAction = useCallback(async (_prev: ActionResult | null, fd: FormData): Promise<ActionResult | null> => {
-    const uploaded = await uploadProofAction(fd);
-    if (!uploaded.success) return uploaded;
-    const submittedForm = new FormData();
-    submittedForm.set("draftId", String(fd.get("draftId") ?? ""));
-    return submitPaymentRequestAction(submittedForm);
+    return uploadAndSubmitProofAction(fd);
   }, []);
   const [completePaymentState, completePaymentAction, completePaymentPending] = useActionState<ActionResult | null, FormData>(completeSubmitAction, null);
   const wrappedSubmit = useCallback(async (_prev: ActionResult | null, fd: FormData): Promise<ActionResult | null> => submitPaymentRequestAction(fd), []);

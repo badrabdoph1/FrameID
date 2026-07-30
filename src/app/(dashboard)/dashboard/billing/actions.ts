@@ -186,7 +186,7 @@ export async function updatePaymentDraftAction(formData: FormData): Promise<Acti
   }
 }
 
-export async function uploadProofAction(formData: FormData): Promise<ActionResult> {
+export async function uploadAndSubmitProofAction(formData: FormData): Promise<ActionResult> {
   const session = await getSessionWithSub();
   const draftId = cleanString(formData.get("draftId"));
   const proof = formData.get("proof");
@@ -203,13 +203,19 @@ export async function uploadProofAction(formData: FormData): Promise<ActionResul
     }).uploadImage({ tenantId: session.tenant.id, file: proof, alt: "إثبات دفع" }).then((asset) => asset.id);
 
     await getService().uploadPaymentProof(draftId, assetId);
+
+    const request = await getOwnedPaymentRequest(draftId, session.tenant.id);
+    if (!request.proofAssetId) throw new Error("يرجى رفع إثبات الدفع قبل إرسال الطلب");
+    await getService().submitPayment(draftId);
+
+    revalidatePath("/dashboard");
     revalidatePath("/dashboard/billing");
     return { success: true };
   } catch (error) {
     const { userError } = await processError(error, {
       userId: session.user.id,
       tenantId: session.tenant.id,
-      metadata: { action: "uploadProof", draftId },
+      metadata: { action: "uploadAndSubmitProof", draftId },
     });
     return { success: false, error: userError.message };
   }
